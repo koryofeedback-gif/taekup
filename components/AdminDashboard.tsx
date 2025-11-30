@@ -967,9 +967,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
                         <input type="text" placeholder="Coach Name" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, name: e.target.value})} />
                         <input type="email" placeholder="Email Address" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, email: e.target.value})} />
                         <input type="password" placeholder="Temp Password" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, password: e.target.value})} />
-                        <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, location: e.target.value})}>
-                            {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
-                        </select>
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 font-bold">Main Location</label>
+                            <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, location: e.target.value})}>
+                                <option value="">Select Location</option>
+                                {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1 font-bold">Assigned Classes</label>
+                            <select multiple className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, assignedClasses: Array.from(e.target.selectedOptions, option => option.value)})}>
+                                {((tempCoach.location ? data.locationClasses?.[tempCoach.location] : []) || data.classes || []).map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple classes</p>
+                        </div>
                         <button onClick={handleAddCoach} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded">Add Coach</button>
                     </div>
                 </Modal>
