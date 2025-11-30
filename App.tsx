@@ -492,23 +492,9 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
                 <div className="w-full">
                     <Link
                         to="/"
-                        className="flex text-4xl font-black tracking-tighter leading-none select-none hover:scale-105 transition-transform cursor-pointer"
-                        style={{ fontFamily: 'Arial, sans-serif' }}
+                        className="flex hover:scale-105 transition-transform cursor-pointer"
                     >
-                        <span className="text-white drop-shadow-sm">T</span>
-                        <span className="text-[#FFD700] drop-shadow-sm">A</span>
-                        <span className="text-[#00A000] drop-shadow-sm">E</span>
-                        <span className="text-[#0040FF] drop-shadow-sm">K</span>
-                        <span className="text-[#FF0000] drop-shadow-sm">U</span>
-                        <span
-                            className="text-black"
-                            style={{
-                                WebkitTextStroke: '1.2px white',
-                                textShadow: '0 0 1px rgba(255,255,255,0.5)',
-                            }}
-                        >
-                            P
-                        </span>
+                        <img src="/taekup-logo.png" alt="TaekUp" className="h-10" />
                     </Link>
                 </div>
                 <nav className="hidden md:flex items-center space-x-6">
