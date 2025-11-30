@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import type { WizardData, Coach, Student } from '../../types';
 import { sendCoachWelcomeEmail } from '../../services/geminiService';
 
@@ -49,10 +49,13 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
     // Bulk Import State
     const [parsedStudents, setParsedStudents] = useState<Student[]>([]);
     const [bulkError, setBulkError] = useState('');
-    const [pasteData, setPasteData] = useState(''); // Text area state
+    const [pasteData, setPasteData] = useState('');
     const [batchLocation, setBatchLocation] = useState(data.branchNames?.[0] || 'Main Location');
     const [batchClass, setBatchClass] = useState('');
-    const [isValidated, setIsValidated] = useState(false); // Track validation status
+    const [isValidated, setIsValidated] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [importMethod, setImportMethod] = useState<'file' | 'paste'>('file');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const locations = data.branchNames && data.branchNames.length > 0 ? data.branchNames : ['Main Location'];
 
@@ -136,13 +139,14 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
     };
     
     // --- BULK PARSING LOGIC ---
-    const validateBulkData = () => {
-        if (!pasteData.trim()) return;
+    const validateBulkData = (inputText?: string) => {
+        const textToProcess = inputText ?? pasteData;
+        if (!textToProcess.trim()) return;
         setBulkError('');
         setParsedStudents([]);
         setIsValidated(false);
 
-        const rows = pasteData.split(/\r?\n/).filter(r => r.trim().length > 0);
+        const rows = textToProcess.split(/\r?\n/).filter(r => r.trim().length > 0);
         const newStudents: Student[] = [];
         let hasError = false;
 
@@ -266,12 +270,85 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
     };
 
     const confirmBulkImport = () => {
-        onUpdate({ students: [...data.students, ...parsedStudents] });
+        const validStudents = parsedStudents.filter(s => s.beltId !== 'INVALID_BELT' && s.name);
+        onUpdate({ students: [...data.students, ...validStudents] });
         setParsedStudents([]);
         setPasteData('');
         setIsValidated(false);
         setStudentAddMode('manual');
     };
+
+    const downloadTemplate = () => {
+        const headers = ['Name', 'Age', 'Birthday', 'Gender', 'Belt', 'Stripes', 'Parent Name', 'Parent Email', 'Parent Phone', 'Location', 'Class'];
+        const sampleRow = ['John Doe', '8', '2016-05-15', 'Male', data.belts[0]?.name || 'White Belt', '0', 'Jane Doe', 'jane@example.com', '555-0123', locations[0], ''];
+        const csvContent = [headers.join(','), sampleRow.join(',')].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'student_import_template.csv';
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleFileUpload = useCallback((file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            setPasteData(text);
+            setIsValidated(false);
+            setTimeout(() => validateBulkData(text), 100);
+        };
+        reader.readAsText(file);
+    }, []);
+
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file && (file.type === 'text/csv' || file.name.endsWith('.csv') || file.type === 'text/plain')) {
+            handleFileUpload(file);
+        } else {
+            setBulkError('Please upload a CSV file');
+        }
+    }, [handleFileUpload]);
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleFileUpload(file);
+        }
+    };
+
+    const updateParsedStudent = (index: number, field: keyof Student, value: any) => {
+        setParsedStudents(prev => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], [field]: value };
+            if (field === 'beltId' && value !== 'INVALID_BELT') {
+                const pps = getPointsPerStripeForBelt(value);
+                updated[index].totalPoints = (updated[index].stripes || 0) * pps;
+            }
+            return updated;
+        });
+        setIsValidated(false);
+    };
+
+    const removeFromPreview = (index: number) => {
+        setParsedStudents(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const validCount = parsedStudents.filter(s => s.beltId !== 'INVALID_BELT' && s.name).length;
+    const errorCount = parsedStudents.filter(s => s.beltId === 'INVALID_BELT' || !s.name).length;
 
     return (
         <div className="space-y-8">
@@ -428,15 +505,37 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                     </div>
                 ) : (
                     <div className="space-y-4 mb-4">
-                        <div className="bg-gray-900/50 p-4 rounded border border-gray-600 text-sm text-gray-300">
-                            <p className="font-bold mb-2">Instructions:</p>
-                            <p>Copy and paste from Excel/Sheets. Required Format:</p>
-                            <code className="block bg-black p-2 mt-1 rounded text-green-400 text-xs whitespace-nowrap overflow-x-auto">
-                                Name | Age | Birthday | Gender | Belt | Stripes | Parent | Email | Phone | [Location] | [Class]
-                            </code>
-                            <p className="mt-2 text-xs text-gray-500">Note: Use Tab or Comma separator. Birthday format: YYYY-MM-DD.</p>
+                        {/* Download Template Button */}
+                        <div className="flex justify-between items-center">
+                            <p className="text-gray-400 text-sm">Import students from a spreadsheet</p>
+                            <button
+                                onClick={downloadTemplate}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download Template
+                            </button>
                         </div>
-                        
+
+                        {/* Import Method Toggle */}
+                        <div className="flex bg-gray-700/50 rounded p-1 w-fit">
+                            <button 
+                                onClick={() => setImportMethod('file')}
+                                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${importMethod === 'file' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                Upload File
+                            </button>
+                            <button 
+                                onClick={() => setImportMethod('paste')}
+                                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${importMethod === 'paste' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                Paste Data
+                            </button>
+                        </div>
+
+                        {/* Default Location & Class */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
@@ -453,64 +552,192 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                             </div>
                         </div>
 
-                        <textarea 
-                            value={pasteData}
-                            onChange={e => { setPasteData(e.target.value); setIsValidated(false); }}
-                            className="w-full h-32 bg-gray-900 border border-gray-600 rounded p-2 text-white text-xs font-mono"
-                            placeholder={`John Doe\t8\t2016-05-15\tMale\tWhite Belt\t0\tJane Doe\tjane@ex.com\t555-0123`}
-                        />
+                        {/* File Upload Dropzone */}
+                        {importMethod === 'file' ? (
+                            <div
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onClick={() => fileInputRef.current?.click()}
+                                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
+                                    isDragging 
+                                        ? 'border-blue-500 bg-blue-500/10' 
+                                        : 'border-gray-600 hover:border-gray-500 hover:bg-gray-800/50'
+                                }`}
+                            >
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".csv,.txt"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                />
+                                <svg className="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p className="text-white font-medium mb-1">
+                                    {isDragging ? 'Drop your file here' : 'Drag & drop your CSV file here'}
+                                </p>
+                                <p className="text-gray-500 text-sm">or click to browse</p>
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="bg-gray-900/50 p-3 rounded border border-gray-700 mb-2">
+                                    <p className="text-xs text-gray-400">
+                                        <span className="font-bold text-gray-300">Format:</span> Name, Age, Birthday, Gender, Belt, Stripes, Parent, Email, Phone
+                                    </p>
+                                </div>
+                                <textarea 
+                                    value={pasteData}
+                                    onChange={e => { setPasteData(e.target.value); setIsValidated(false); setParsedStudents([]); }}
+                                    className="w-full h-32 bg-gray-900 border border-gray-600 rounded p-3 text-white text-sm font-mono focus:border-blue-500 focus:outline-none"
+                                    placeholder={`John Doe, 8, 2016-05-15, Male, White Belt, 0, Jane Doe, jane@example.com, 555-0123`}
+                                />
+                                <button 
+                                    onClick={() => validateBulkData()}
+                                    disabled={!pasteData.trim()}
+                                    className="mt-2 w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-2 px-4 rounded transition-colors"
+                                >
+                                    Parse Data
+                                </button>
+                            </div>
+                        )}
                         
-                        {bulkError && <p className="text-red-400 text-sm font-bold bg-red-900/20 p-2 rounded">{bulkError}</p>}
+                        {/* Error Message */}
+                        {bulkError && (
+                            <div className="flex items-center gap-2 text-red-400 text-sm font-medium bg-red-900/20 p-3 rounded border border-red-800/50">
+                                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {bulkError}
+                            </div>
+                        )}
                         
-                        {parsedStudents.length > 0 && !bulkError && (
-                            <div className="bg-gray-900 p-2 rounded border border-gray-700">
-                                <p className="text-gray-400 text-xs font-bold mb-2 uppercase tracking-wide">Preview Data ({parsedStudents.length})</p>
-                                <div className="max-h-40 overflow-y-auto">
-                                    <table className="w-full text-xs text-left text-gray-300">
-                                        <thead className="text-gray-500 sticky top-0 bg-gray-900">
+                        {/* Preview Table with Status Summary */}
+                        {parsedStudents.length > 0 && (
+                            <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
+                                {/* Summary Header */}
+                                <div className="flex items-center justify-between p-3 bg-gray-800/50 border-b border-gray-700">
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-white font-bold">Preview</span>
+                                        <div className="flex items-center gap-3 text-sm">
+                                            {validCount > 0 && (
+                                                <span className="flex items-center gap-1 text-green-400">
+                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    {validCount} ready
+                                                </span>
+                                            )}
+                                            {errorCount > 0 && (
+                                                <span className="flex items-center gap-1 text-red-400">
+                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                    </svg>
+                                                    {errorCount} need fixes
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => { setParsedStudents([]); setPasteData(''); }}
+                                        className="text-gray-400 hover:text-white text-sm"
+                                    >
+                                        Clear All
+                                    </button>
+                                </div>
+
+                                {/* Table */}
+                                <div className="max-h-64 overflow-y-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-gray-400 text-xs uppercase bg-gray-800/50 sticky top-0">
                                             <tr>
-                                                <th className="pb-1">Name</th>
-                                                <th className="pb-1">Belt</th>
-                                                <th className="pb-1">Birthday</th>
-                                                <th className="pb-1">Location</th>
-                                                <th className="pb-1">Status</th>
+                                                <th className="px-3 py-2">Status</th>
+                                                <th className="px-3 py-2">Name</th>
+                                                <th className="px-3 py-2">Belt</th>
+                                                <th className="px-3 py-2">Age</th>
+                                                <th className="px-3 py-2">Parent Email</th>
+                                                <th className="px-3 py-2">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                            {parsedStudents.map((s, i) => (
-                                                <tr key={i} className="border-t border-gray-800">
-                                                    <td className="py-1 font-bold">{s.name}</td>
-                                                    <td className={`py-1 ${s.beltId === 'INVALID_BELT' ? 'text-red-500 font-bold' : ''}`}>
-                                                        {s.beltId === 'INVALID_BELT' ? 'Unknown Belt' : data.belts.find(b => b.id === s.beltId)?.name}
-                                                    </td>
-                                                    <td className="py-1">{s.birthday || '-'}</td>
-                                                    <td className="py-1">{s.location}</td>
-                                                    <td className="py-1">
-                                                        {s.beltId === 'INVALID_BELT' ? '❌' : '✅'}
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                        <tbody className="divide-y divide-gray-800">
+                                            {parsedStudents.map((student, index) => {
+                                                const hasError = student.beltId === 'INVALID_BELT' || !student.name;
+                                                return (
+                                                    <tr key={index} className={`${hasError ? 'bg-red-900/10' : 'bg-gray-900/50'} hover:bg-gray-800/50`}>
+                                                        <td className="px-3 py-2">
+                                                            {hasError ? (
+                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20 text-red-400">
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400">
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-3 py-2">
+                                                            <input
+                                                                type="text"
+                                                                value={student.name}
+                                                                onChange={(e) => updateParsedStudent(index, 'name', e.target.value)}
+                                                                className={`bg-transparent border-b ${!student.name ? 'border-red-500' : 'border-transparent hover:border-gray-600'} focus:border-blue-500 outline-none text-white w-full py-1`}
+                                                            />
+                                                        </td>
+                                                        <td className="px-3 py-2">
+                                                            <select
+                                                                value={student.beltId}
+                                                                onChange={(e) => updateParsedStudent(index, 'beltId', e.target.value)}
+                                                                className={`bg-gray-800 border ${student.beltId === 'INVALID_BELT' ? 'border-red-500' : 'border-gray-700'} rounded px-2 py-1 text-white text-xs focus:border-blue-500 outline-none`}
+                                                            >
+                                                                {student.beltId === 'INVALID_BELT' && (
+                                                                    <option value="INVALID_BELT" className="text-red-400">Select Belt...</option>
+                                                                )}
+                                                                {data.belts.map(b => (
+                                                                    <option key={b.id} value={b.id}>{b.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td className="px-3 py-2 text-gray-300">{student.age || '-'}</td>
+                                                        <td className="px-3 py-2 text-gray-400 text-xs">{student.parentEmail || '-'}</td>
+                                                        <td className="px-3 py-2">
+                                                            <button
+                                                                onClick={() => removeFromPreview(index)}
+                                                                className="text-gray-500 hover:text-red-400 transition-colors"
+                                                                title="Remove"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                </svg>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {/* Import Button */}
+                                <div className="p-3 bg-gray-800/50 border-t border-gray-700">
+                                    <button 
+                                        onClick={confirmBulkImport}
+                                        disabled={validCount === 0}
+                                        className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Import {validCount} Student{validCount !== 1 ? 's' : ''}
+                                        {errorCount > 0 && <span className="text-green-200/70 text-sm ml-1">({errorCount} will be skipped)</span>}
+                                    </button>
+                                </div>
                             </div>
                         )}
-
-                        <div className="flex space-x-3">
-                            <button 
-                                onClick={validateBulkData}
-                                className="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded transition-colors"
-                            >
-                                Validate Data
-                            </button>
-                            <button 
-                                onClick={confirmBulkImport}
-                                disabled={!isValidated || parsedStudents.length === 0}
-                                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-2 px-4 rounded transition-colors"
-                            >
-                                Import {parsedStudents.length} Students
-                            </button>
-                        </div>
                     </div>
                 )}
 
