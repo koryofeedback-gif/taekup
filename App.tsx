@@ -489,7 +489,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
     return (
         <header className="bg-gray-900/80 backdrop-blur-sm sticky top-0 z-40 border-b border-gray-800">
             <div className="w-full px-6 py-3 flex justify-between items-center">
-                <div className="w-full">
+                <div>
                     <Link
                         to="/"
                         className="flex hover:scale-105 transition-transform cursor-pointer"
@@ -497,24 +497,24 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
                         <img src="/taekup-logo.png" alt="TaekUp" style={{ height: '70px' }} />
                     </Link>
                 </div>
-                <nav className="hidden md:flex items-center space-x-6">
+                <nav className="flex items-center space-x-3 md:space-x-6">
                     {!isLoggedIn && (
                         <>
                             <Link
                                 to="/"
-                                className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+                                className="text-gray-300 hover:text-white transition-colors text-xs md:text-sm font-medium"
                             >
                                 MyTaek
                             </Link>
                             <a
                                 href="#features"
-                                className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+                                className="text-gray-300 hover:text-white transition-colors text-xs md:text-sm font-medium"
                             >
                                 Features
                             </a>
                             <Link
                                 to="/login"
-                                className="text-white hover:text-blue-400 font-bold text-sm transition-colors"
+                                className="text-white hover:text-sky-400 font-bold text-xs md:text-sm transition-colors"
                             >
                                 Log In
                             </Link>
@@ -523,7 +523,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
                     {isLoggedIn && (
                         <button
                             onClick={onLogout}
-                            className="text-red-400 hover:text-red-300 font-bold text-sm transition-colors"
+                            className="text-red-400 hover:text-red-300 font-bold text-xs md:text-sm transition-colors"
                         >
                             Log Out
                         </button>
