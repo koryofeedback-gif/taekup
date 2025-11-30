@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
 
@@ -781,6 +781,89 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
     const [tempCoach, setTempCoach] = useState<Partial<Coach>>({});
     const [tempClass, setTempClass] = useState<Partial<ScheduleItem>>({});
     const [tempEvent, setTempEvent] = useState<Partial<CalendarEvent>>({});
+    
+    // Bulk Import State
+    const [studentImportMethod, setStudentImportMethod] = useState<'single' | 'bulk'>('single');
+    const [bulkStudentData, setBulkStudentData] = useState('');
+    const [parsedBulkStudents, setParsedBulkStudents] = useState<Student[]>([]);
+    const [bulkError, setBulkError] = useState('');
+    const [bulkLocation, setBulkLocation] = useState(data.branchNames?.[0] || 'Main Location');
+    const [bulkClass, setBulkClass] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const handleFileUpload = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            setBulkStudentData(text);
+            parseBulkStudents(text);
+        };
+        reader.readAsText(file);
+    };
+
+    const parseBulkStudents = (csv: string) => {
+        const lines = csv.split('\n').filter(l => l.trim());
+        const newStudents: Student[] = [];
+        let hasError = false;
+
+        lines.forEach((line, i) => {
+            const cols = line.split(/[,\t]/).map(c => c.trim());
+            const name = cols[0];
+            const beltName = cols[4];
+            
+            if (!name) return;
+
+            let belt = data.belts.find(b => b.name.toLowerCase() === beltName?.toLowerCase());
+            if (!belt) {
+                const beltIdx = parseInt(beltName) - 1;
+                if (!isNaN(beltIdx) && data.belts[beltIdx]) belt = data.belts[beltIdx];
+            }
+
+            newStudents.push({
+                id: `student-${Date.now()}-${i}`,
+                name: cols[0],
+                age: parseInt(cols[1]) || undefined,
+                birthday: cols[2] || '',
+                gender: (['Male', 'Female', 'Other', 'Prefer not to say'].includes(cols[3]) ? cols[3] : 'Male') as 'Male' | 'Female' | 'Other' | 'Prefer not to say',
+                beltId: belt?.id || 'INVALID_BELT',
+                stripes: parseInt(cols[5]) || 0,
+                parentName: cols[6] || '',
+                parentEmail: cols[7] || '',
+                parentPhone: cols[8] || '',
+                location: bulkLocation,
+                assignedClass: bulkClass || 'General Class',
+                joinDate: new Date().toISOString().split('T')[0],
+                totalPoints: (parseInt(cols[5]) || 0) * (belt ? 64 : 0),
+                attendanceCount: 0,
+                lastPromotionDate: new Date().toISOString(),
+                isReadyForGrading: false,
+                performanceHistory: [],
+                feedbackHistory: [],
+                photo: null,
+                medicalInfo: '',
+                badges: [],
+                sparringStats: { matches: 0, wins: 0, draws: 0, headKicks: 0, bodyKicks: 0, punches: 0, takedowns: 0, defense: 0 },
+                lifeSkillsHistory: [],
+                customHabits: [
+                    { id: 'h1', question: 'Did they make their bed?', category: 'Chores', icon: '🛏️', isActive: true },
+                    { id: 'h2', question: 'Did they brush their teeth?', category: 'Health', icon: '🦷', isActive: true },
+                    { id: 'h3', question: 'Did they show respect to parents?', category: 'Character', icon: '🙇', isActive: true },
+                ]
+            });
+        });
+
+        setParsedBulkStudents(newStudents);
+        setBulkError(newStudents.length === 0 ? 'No valid data found' : '');
+    };
+
+    const confirmBulkImport = () => {
+        const validStudents = parsedBulkStudents.filter(s => s.beltId !== 'INVALID_BELT');
+        onUpdateData({ students: [...data.students, ...validStudents] });
+        setParsedBulkStudents([]);
+        setBulkStudentData('');
+        setModalType(null);
+    };
 
     const handleAddStudent = () => {
         const totalStudents = data.students.length;
@@ -925,39 +1008,81 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
 
             {/* MODALS */}
             {modalType === 'student' && (
-                <Modal title="Add New Student" onClose={() => setModalType(null)}>
-                    <div className="space-y-4">
-                        <input type="text" placeholder="Full Name" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, name: e.target.value})} />
-                        <div className="grid grid-cols-2 gap-4">
-                            <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, beltId: e.target.value})}>
-                                <option value="">Select Belt</option>
-                                {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
-                            <input type="number" placeholder="Stripes" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, stripes: parseInt(e.target.value)})} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, location: e.target.value})}>
-                                {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
-                            </select>
-                            <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, assignedClass: e.target.value})}>
-                                <option value="">Select Class</option>
-                                {((tempStudent.location ? data.locationClasses?.[tempStudent.location] : []) || data.classes || []).map(c => (
-                                    <option key={c} value={c}>{c}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="border-t border-gray-600 pt-4">
-                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent Info</p>
-                            <input type="text" placeholder="Parent Name" className="w-full bg-gray-700 rounded p-2 text-white mb-2" onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} />
-                            <input type="email" placeholder="Parent Email" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} />
-                        </div>
-                        {data.clubSponsoredPremium && (
-                            <p className="text-xs text-indigo-300 bg-indigo-900/20 p-2 rounded">
-                                💰 Adds $1.99/mo to your bill (Sponsored Premium active).
-                            </p>
-                        )}
-                        <button onClick={handleAddStudent} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded">Add Student</button>
+                <Modal title="Add Students" onClose={() => setModalType(null)}>
+                    <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4">
+                        <button onClick={() => setStudentImportMethod('single')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'single' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>Single</button>
+                        <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>Bulk Import</button>
                     </div>
+
+                    {studentImportMethod === 'single' ? (
+                        <div className="space-y-4">
+                            <input type="text" placeholder="Full Name" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, name: e.target.value})} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, beltId: e.target.value})}>
+                                    <option value="">Select Belt</option>
+                                    {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                </select>
+                                <input type="number" placeholder="Stripes" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, stripes: parseInt(e.target.value)})} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, location: e.target.value})}>
+                                    {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
+                                </select>
+                                <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, assignedClass: e.target.value})}>
+                                    <option value="">Select Class</option>
+                                    {((tempStudent.location ? data.locationClasses?.[tempStudent.location] : []) || data.classes || []).map(c => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="border-t border-gray-600 pt-4">
+                                <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent Info</p>
+                                <input type="text" placeholder="Parent Name" className="w-full bg-gray-700 rounded p-2 text-white mb-2" onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} />
+                                <input type="email" placeholder="Parent Email" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} />
+                            </div>
+                            {data.clubSponsoredPremium && (
+                                <p className="text-xs text-indigo-300 bg-indigo-900/20 p-2 rounded">
+                                    💰 Adds $1.99/mo to your bill (Sponsored Premium active).
+                                </p>
+                            )}
+                            <button onClick={handleAddStudent} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded">Add Student</button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
+                                    <select value={bulkLocation} onChange={e => setBulkLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                        {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
+                                    <select value={bulkClass} onChange={e => setBulkClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                        <option value="">Auto-assign</option>
+                                        {(data.locationClasses?.[bulkLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
+                                <p className="text-xs text-gray-400"><span className="font-bold">Format:</span> Name, Age, Birthday, Gender, Belt, Stripes, Parent, Email, Phone</p>
+                            </div>
+                            <textarea value={bulkStudentData} onChange={e => { setBulkStudentData(e.target.value); setParsedBulkStudents([]); }} placeholder="Paste CSV data here..." className="w-full h-24 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
+                            <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">Parse Data</button>
+                            {bulkError && <p className="text-red-400 text-sm">{bulkError}</p>}
+                            {parsedBulkStudents.length > 0 && (
+                                <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
+                                    <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedBulkStudents.length}):</p>
+                                    {parsedBulkStudents.map((s, i) => (
+                                        <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800">
+                                            {s.name} - {data.belts.find(b => b.id === s.beltId)?.name || '❌'}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <button onClick={confirmBulkImport} disabled={parsedBulkStudents.length === 0} className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded">Import {parsedBulkStudents.length} Students</button>
+                        </div>
+                    )}
                 </Modal>
             )}
 
