@@ -18,7 +18,7 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                         src="/mytaek-logo.png" 
                         alt="MyTaek Logo" 
                         className="h-16 group-hover:scale-105 transition-transform"
-                        style={{ filter: 'invert(1) hue-rotate(180deg)' }}
+                        style={{ filter: 'invert(1) hue-rotate(180deg) saturate(1.5)' }}
                     />
                 </div>
 
