@@ -12,7 +12,16 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
             
             {/* --- CUSTOM HEADER --- */}
             <div className="absolute top-0 left-0 right-0 z-50 px-8 py-6 flex justify-between items-center">
-                {/* Left: Navigation / Login */}
+                {/* Left: BRAND LOGO */}
+                <div className="flex items-center space-x-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                    <img 
+                        src="/taekup-logo.png" 
+                        alt="TaekUp Logo" 
+                        className="h-10 group-hover:scale-105 transition-transform"
+                    />
+                </div>
+
+                {/* Right: Navigation / Login */}
                 <div className="flex items-center space-x-6">
                     <Link
                         to="/login"
@@ -20,15 +29,6 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                     >
                         Log In
                     </Link>
-                </div>
-
-                {/* Right: BRAND LOGO */}
-                <div className="flex items-center space-x-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                    <img 
-                        src="/taekup-logo.png" 
-                        alt="TaekUp Logo" 
-                        className="h-8 group-hover:scale-105 transition-transform"
-                    />
                 </div>
             </div>
 
