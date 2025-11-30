@@ -48,9 +48,6 @@ interface HeroSectionProps {
 const HeroSection: React.FC<HeroSectionProps> = ({ showSignup, onStartTrial, onSignupSuccess }) => (
     <div className="relative text-center py-20 md:py-32 px-6 bg-dots-pattern">
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-900/80 to-gray-900"></div>
-        <div className="absolute top-6 left-6 z-20">
-            <img src="/taekup-logo.png" alt="TaekUp" className="h-10 md:h-12" />
-        </div>
         <div className="relative z-10 max-w-4xl mx-auto">
             {showSignup ? (
                 <>
