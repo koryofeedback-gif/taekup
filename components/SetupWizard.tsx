@@ -30,6 +30,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
       const defaults: Partial<WizardData> = {
         ownerName: '',
         city: '',
+        language: 'English',
         branches: 1,
         branchNames: ['Main Location'], // Default branch name
         branchAddresses: [''],
@@ -66,6 +67,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
         events: [],
         privateSlots: [],
         clubSponsoredPremium: false,
+        challenges: [],
       };
 
       if (savedData) {
@@ -141,6 +143,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
             ...initialData,
             ownerName: '',
             city: '',
+            language: 'English',
             branches: 1,
             branchNames: ['Main Location'],
             branchAddresses: [''],
@@ -177,6 +180,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
             events: [],
             privateSlots: [],
             clubSponsoredPremium: false,
+            challenges: [],
           });
           setCurrentStep(1);
           setFormKey(prev => prev + 1); // Force re-mount of all step components
