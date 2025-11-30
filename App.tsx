@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { SetupWizard } from './components/SetupWizard';
 import { TaekBot } from './components/TaekBot';
 import { CoachDashboard } from './components/CoachDashboard';
@@ -430,15 +430,11 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
     primaryColor,
     href,
 }) => {
-    const handleClick = () => {
-        window.location.href = href;
-    };
-
     return (
-        <button
-            onClick={handleClick}
+        <Link
+            to={href}
             className={`bg-gray-800 border border-gray-700/50 shadow-lg flex flex-col p-8 transition-all duration-300 ${themeStyle} text-left w-full
-                   hover:border-white/20 hover:-translate-y-1`}
+                   hover:border-white/20 hover:-translate-y-1 block`}
         >
             <h2 className="text-2xl font-bold mb-4" style={{ color: primaryColor }}>
                 {title}
@@ -453,7 +449,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             >
                 {buttonText}
             </div>
-        </button>
+        </Link>
     );
 };
 
@@ -464,20 +460,12 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
-    const handleGoHome = () => {
-        window.location.href = '/';
-    };
-
-    const handleLogin = () => {
-        window.location.href = '/login';
-    };
-
     return (
         <header className="bg-gray-900/80 backdrop-blur-sm sticky top-0 z-40 border-b border-gray-800">
             <div className="w-full px-6 py-3 flex justify-between items-center">
                 <div className="w-full">
-                    <button
-                        onClick={handleGoHome}
+                    <Link
+                        to="/"
                         className="flex text-4xl font-black tracking-tighter leading-none select-none hover:scale-105 transition-transform cursor-pointer"
                         style={{ fontFamily: 'Arial, sans-serif' }}
                     >
@@ -495,29 +483,29 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
                         >
                             P
                         </span>
-                    </button>
+                    </Link>
                 </div>
                 <nav className="hidden md:flex items-center space-x-6">
                     {!isLoggedIn && (
                         <>
-                            <button
-                                onClick={handleGoHome}
+                            <Link
+                                to="/"
                                 className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
                             >
                                 MyTaek
-                            </button>
+                            </Link>
                             <a
                                 href="#features"
                                 className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
                             >
                                 Features
                             </a>
-                            <button
-                                onClick={handleLogin}
+                            <Link
+                                to="/login"
                                 className="text-white hover:text-blue-400 font-bold text-sm transition-colors"
                             >
                                 Log In
-                            </button>
+                            </Link>
                         </>
                     )}
                     {isLoggedIn && (

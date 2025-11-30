@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface MyTaekHomeProps {
     onNavigate: (page: string) => void;
@@ -13,12 +14,12 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
             <div className="absolute top-0 left-0 right-0 z-50 px-8 py-6 flex justify-between items-center">
                 {/* Left: Navigation / Login */}
                 <div className="flex items-center space-x-6">
-                    <button 
-                        onClick={() => onNavigate('login')} 
+                    <Link
+                        to="/login"
                         className="text-zinc-400 hover:text-white text-sm font-bold tracking-widest uppercase transition-colors"
                     >
                         Log In
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Right: BRAND LOGO */}
@@ -59,13 +60,13 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                     </p>
 
                     <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
-                        <button 
-                            onClick={() => onNavigate('landing')}
-                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(220,38,38,0.3)] text-lg"
+                        <Link
+                            to="/landing"
+                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(220,38,38,0.3)] text-lg text-center"
                         >
                             Start Free Trial
-                        </button>
-                        <button 
+                        </Link>
+                        <button
                             onClick={() => document.getElementById('ecosystem')?.scrollIntoView({ behavior: 'smooth' })}
                             className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold py-4 px-10 rounded-full transition-all text-lg"
                         >
@@ -91,13 +92,13 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                         <p className="text-zinc-400 mb-8 leading-relaxed text-sm min-h-[80px]">
                             The operating system for your club. Manage students, automate feedback, and turn your curriculum into passive income.
                         </p>
-                        <button 
-                            onClick={() => onNavigate('landing')}
+                        <Link
+                            to="/landing"
                             className="w-full bg-black border border-zinc-700 hover:border-white text-white font-bold py-3 px-4 rounded-lg transition-all flex items-center justify-between group-hover:bg-white group-hover:text-black"
                         >
                             <span>Launch App</span>
                             <span>→</span>
-                        </button>
+                        </Link>
                     </div>
 
                     {/* TaekFunDo Card */}
@@ -185,12 +186,12 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
             <div className="py-24 text-center bg-gradient-to-t from-zinc-900 to-black relative border-t border-zinc-800">
                 <div className="max-w-3xl mx-auto px-6">
                     <h2 className="text-3xl md:text-4xl font-bold text-white mb-8">Ready to elevate your Dojang?</h2>
-                    <button 
-                        onClick={() => onNavigate('landing')}
-                        className="bg-white text-black hover:bg-zinc-200 text-lg font-bold py-4 px-10 rounded-full transition-all transform hover:scale-105 shadow-xl"
+                    <Link
+                        to="/landing"
+                        className="bg-white text-black hover:bg-zinc-200 text-lg font-bold py-4 px-10 rounded-full transition-all transform hover:scale-105 shadow-xl inline-block"
                     >
                         Start with TaekUp
-                    </button>
+                    </Link>
                 </div>
             </div>
 
