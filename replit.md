@@ -13,6 +13,14 @@ The project has been successfully configured to run on Replit. The development s
 - Created .gitignore for Node.js projects
 - Configured workflow for frontend development server
 - Set up deployment configuration for static site hosting
+- **Enhanced Bulk Student Import** (Step 5 of Setup Wizard):
+  - Drag & drop CSV file upload with visual dropzone
+  - Downloadable CSV template with correct column headers
+  - Toggle between file upload and paste modes
+  - Interactive preview table with inline editing
+  - Real-time validation with green/red status indicators
+  - Summary showing valid/error counts
+  - Belt selection uses dropdown with proper ID binding
 
 ## Project Architecture
 
