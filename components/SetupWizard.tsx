@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { SignupData, WizardData } from '../types';
 import { ProgressIndicator } from './wizard/ProgressIndicator';
 import { Step1ClubInfo } from './wizard/Step1ClubInfo';
@@ -19,6 +20,7 @@ interface SetupWizardProps {
 const STORAGE_KEY = 'taekup_wizard_draft';
 
 export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplete }) => {
+  const navigate = useNavigate();
   // Key to force re-render of steps when resetting
   const [formKey, setFormKey] = useState(0);
 

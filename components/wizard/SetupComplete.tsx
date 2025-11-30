@@ -6,6 +6,14 @@ interface SetupCompleteProps {
 }
 
 export const SetupComplete: React.FC<SetupCompleteProps> = ({ onGoToDashboard }) => {
+  const handleClick = () => {
+    onGoToDashboard();
+    // Navigate to dashboard after a small delay to allow state updates
+    setTimeout(() => {
+      window.location.href = '/app/admin';
+    }, 200);
+  };
+
   return (
     <div className="container mx-auto px-6 py-20 md:py-32 text-center">
       <div className="max-w-2xl mx-auto">
@@ -14,10 +22,10 @@ export const SetupComplete: React.FC<SetupCompleteProps> = ({ onGoToDashboard })
           Setup Complete!
         </h1>
         <p className="text-xl text-gray-300 mb-8">
-          Your TaekUp system is ready. Let’s start tracking your students’ journey.
+          Your TaekUp system is ready. Let's start tracking your students' journey.
         </p>
         <button
-          onClick={onGoToDashboard}
+          onClick={handleClick}
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105 shadow-lg shadow-blue-600/30"
         >
           Go to Dashboard →
