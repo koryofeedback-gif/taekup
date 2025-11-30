@@ -48,7 +48,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSignupSuccess }) => {
             id="country"
             value={country}
             onChange={e => setCountry(e.target.value)}
-            className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-white"
+            className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm text-white"
           >
             {COUNTRIES.map(c => <option key={c}>{c}</option>)}
           </select>
@@ -59,17 +59,17 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSignupSuccess }) => {
             type="checkbox"
             checked={agreed}
             onChange={e => setAgreed(e.target.checked)}
-            className="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+            className="h-4 w-4 text-sky-500 bg-gray-700 border-gray-600 rounded focus:ring-sky-500"
           />
           <label htmlFor="agree" className="ml-2 block text-sm text-gray-400">
-            I agree to the <a href="#" className="font-medium text-blue-400 hover:text-blue-300">Terms and Conditions</a>
+            I agree to the <a href="#" className="font-medium text-sky-300 hover:text-blue-300">Terms and Conditions</a>
           </label>
         </div>
         {error && <p className="text-red-400 text-sm">{error}</p>}
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed transition-colors"
+          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-sky-500 disabled:bg-blue-800 disabled:cursor-not-allowed transition-colors"
         >
           {isLoading ? (
             <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -94,7 +94,7 @@ const InputField: React.FC<InputFieldProps> = ({ label, id, ...props }) => (
     <input
       id={id}
       {...props}
-      className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-white placeholder-gray-400"
+      className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm text-white placeholder-gray-400"
     />
   </div>
 );

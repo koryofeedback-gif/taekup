@@ -23,7 +23,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({ totalSteps
                 onClick={() => onStepClick(step)}
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900
                   ${isActive 
-                    ? 'bg-blue-600 border-blue-600 text-white scale-110 shadow-[0_0_15px_rgba(37,99,235,0.5)]' 
+                    ? 'bg-sky-500 border-blue-600 text-white scale-110 shadow-[0_0_15px_rgba(37,99,235,0.5)]' 
                     : isCompleted 
                         ? 'bg-green-500 border-green-500 text-white hover:bg-green-600' 
                         : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-200'

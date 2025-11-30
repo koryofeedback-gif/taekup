@@ -69,7 +69,7 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
 
     const renderWelcome = () => (
         <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
-            <div className="w-48 h-48 bg-gray-800 rounded-full flex items-center justify-center border-4 border-blue-500 shadow-[0_0_50px_rgba(59,130,246,0.5)] mb-8 overflow-hidden">
+            <div className="w-48 h-48 bg-gray-800 rounded-full flex items-center justify-center border-4 border-sky-500 shadow-[0_0_50px_rgba(59,130,246,0.5)] mb-8 overflow-hidden">
                 {typeof data.logo === 'string' ? (
                     <img src={data.logo} alt="Logo" className="w-full h-full object-cover" />
                 ) : (
@@ -99,7 +99,7 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-5xl font-black text-blue-400">{student.totalPoints}</p>
+                            <p className="text-5xl font-black text-sky-300">{student.totalPoints}</p>
                             <p className="text-sm text-gray-500 uppercase font-bold">Points</p>
                         </div>
                     </div>
@@ -127,12 +127,12 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
 
     const renderEvents = () => (
         <div className="h-full flex flex-col justify-center px-20 animate-fade-in">
-            <h2 className="text-5xl font-bold text-blue-400 mb-16 text-center uppercase tracking-widest flex items-center justify-center">
+            <h2 className="text-5xl font-bold text-sky-300 mb-16 text-center uppercase tracking-widest flex items-center justify-center">
                 <span className="text-7xl mr-4">📅</span> Upcoming Events
             </h2>
             <div className="grid gap-8">
                 {upcomingEvents.map(evt => (
-                    <div key={evt.id} className="flex bg-gray-800 border-l-8 border-blue-500 rounded-r-2xl overflow-hidden shadow-xl">
+                    <div key={evt.id} className="flex bg-gray-800 border-l-8 border-sky-500 rounded-r-2xl overflow-hidden shadow-xl">
                         <div className="bg-gray-700 w-48 flex flex-col items-center justify-center p-4 border-r border-gray-600">
                             <span className="text-3xl font-bold text-gray-400 uppercase">{new Date(evt.date).toLocaleString('default', { month: 'short' })}</span>
                             <span className="text-7xl font-black text-white">{new Date(evt.date).getDate()}</span>
@@ -216,7 +216,7 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
             <div className="absolute bottom-0 left-0 w-full h-2 bg-gray-800">
                 <div 
                     key={currentSlide} // Key forces reset of animation on slide change
-                    className="h-full bg-blue-500 transition-all duration-linear w-full origin-left animate-progress"
+                    className="h-full bg-sky-400 transition-all duration-linear w-full origin-left animate-progress"
                     style={{ animationDuration: '10000ms' }}
                 ></div>
             </div>

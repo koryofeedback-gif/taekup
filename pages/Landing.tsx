@@ -52,7 +52,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ showSignup, onStartTrial, onS
             {showSignup ? (
                 <>
                     <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
-                        Start Your <span className="text-blue-400">14-Day</span> Free Trial
+                        Start Your <span className="text-sky-300">14-Day</span> Free Trial
                     </h1>
                     <p className="text-lg text-gray-300 mb-8">
                         No credit card required. Unlock your dojang's full potential today.
@@ -70,7 +70,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ showSignup, onStartTrial, onS
                     <div className="flex flex-col items-center">
                         <button
                             onClick={onStartTrial}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105 shadow-lg shadow-blue-600/30"
+                            className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105 shadow-lg shadow-blue-600/30"
                         >
                             Start Free Trial
                         </button>
@@ -117,7 +117,7 @@ const FeaturesSection: React.FC = () => (
                 <h3 className="font-bold text-white text-lg mb-2">Looking for Website & Payments?</h3>
                 <p className="text-gray-400 text-sm">
                     Yes, we have them too. TaekUp includes a{' '}
-                    <strong className="text-blue-400">Parent Web App</strong> (no more generic websites) and{' '}
+                    <strong className="text-sky-300">Parent Web App</strong> (no more generic websites) and{' '}
                     <strong className="text-green-400">Integrated Payments</strong> (via Stripe) at no extra cost.
                 </p>
             </div>
@@ -161,8 +161,8 @@ const MarketingSection: React.FC = () => (
                 </div>
             </div>
 
-            <div className="mt-16 bg-blue-900/20 inline-block py-2 px-6 rounded-full border border-blue-500/30">
-                <span className="text-blue-400 font-bold uppercase tracking-wide text-sm">The TaekUp Guarantee</span>
+            <div className="mt-16 bg-blue-900/20 inline-block py-2 px-6 rounded-full border border-sky-500/30">
+                <span className="text-sky-300 font-bold uppercase tracking-wide text-sm">The TaekUp Guarantee</span>
             </div>
         </div>
     </div>
@@ -215,8 +215,8 @@ interface FeatureCardProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
-    <div className="bg-gray-800 p-8 rounded-lg border border-gray-700/50 shadow-lg hover:border-blue-500/50 hover:-translate-y-1 transition-all duration-300">
-        <div className="bg-gray-700 text-blue-400 rounded-full h-12 w-12 flex items-center justify-center mb-6 text-2xl">
+    <div className="bg-gray-800 p-8 rounded-lg border border-gray-700/50 shadow-lg hover:border-sky-500/50 hover:-translate-y-1 transition-all duration-300">
+        <div className="bg-gray-700 text-sky-300 rounded-full h-12 w-12 flex items-center justify-center mb-6 text-2xl">
             {icon}
         </div>
         <h3 className="text-xl font-bold text-white mb-3">{title}</h3>

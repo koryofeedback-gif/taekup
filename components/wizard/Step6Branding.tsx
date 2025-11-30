@@ -200,7 +200,7 @@ const ThemeButton: React.FC<{ label: string; isActive: boolean; onClick: () => v
     onClick={onClick}
     className={`px-4 py-2 text-sm font-medium rounded-md transition-colors w-full ${
       isActive
-        ? 'bg-blue-600 text-white'
+        ? 'bg-sky-500 text-white'
         : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
     }`}
   >

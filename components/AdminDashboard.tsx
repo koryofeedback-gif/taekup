@@ -25,7 +25,7 @@ const PRICING_TIERS = [
 const SidebarItem: React.FC<{ icon: string; label: string; active: boolean; onClick: () => void }> = ({ icon, label, active, onClick }) => (
     <button 
         onClick={onClick}
-        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${active ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${active ? 'bg-sky-500 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
     >
         <span className="text-xl">{icon}</span>
         <span className="font-medium">{label}</span>
@@ -100,7 +100,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                     <span className="text-2xl mb-2">🥋</span>
                     <span className="font-bold text-white text-sm">+ Add Coach</span>
                 </button>
-                <button onClick={() => onNavigate('coach-dashboard')} className="bg-blue-900/30 hover:bg-blue-900/50 p-4 rounded-lg border border-blue-500/30 flex flex-col items-center justify-center transition-all hover:-translate-y-1">
+                <button onClick={() => onNavigate('coach-dashboard')} className="bg-blue-900/30 hover:bg-blue-900/50 p-4 rounded-lg border border-sky-500/30 flex flex-col items-center justify-center transition-all hover:-translate-y-1">
                     <span className="text-2xl mb-2">📋</span>
                     <span className="font-bold text-blue-200 text-sm">Coach Dashboard</span>
                 </button>
@@ -128,7 +128,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                     <div className="grid md:grid-cols-2 gap-10">
                         <div>
                             <label className="block text-sm text-gray-300 mb-4">
-                                If <span className="text-blue-400 font-bold text-lg">{adoptionRate}%</span> of your students subscribe to Premium...
+                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your students subscribe to Premium...
                             </label>
                             <input 
                                 type="range" 
@@ -199,7 +199,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 title="Student Roster" 
                 description="Manage your students, belts, and assignments." 
                 action={
-                    <button onClick={() => onOpenModal('student')} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-lg">
+                    <button onClick={() => onOpenModal('student')} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded shadow-lg">
                         + Add Student
                     </button>
                 }
@@ -210,7 +210,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     placeholder="Search students..." 
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 w-full md:w-64"
+                    className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500 w-full md:w-64"
                 />
                 <select 
                     value={locationFilter} 
@@ -218,7 +218,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         setLocationFilter(e.target.value);
                         setClassFilter('All Classes'); // Reset class when location changes
                     }}
-                    className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500"
                 >
                     <option>All Locations</option>
                     {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
@@ -226,7 +226,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 <select 
                     value={classFilter} 
                     onChange={e => setClassFilter(e.target.value)}
-                    className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500"
                     disabled={locationFilter === 'All Locations' && (!data.classes || data.classes.length === 0)}
                 >
                     <option>All Classes</option>
@@ -235,7 +235,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 <select 
                     value={beltFilter} 
                     onChange={e => setBeltFilter(e.target.value)}
-                    className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500"
                 >
                     <option>All Belts</option>
                     {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -264,7 +264,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                 <td className="px-6 py-4">{new Date(s.joinDate).toLocaleDateString()}</td>
                                 <td className="px-6 py-4 text-right space-x-3">
                                     {onViewPortal && (
-                                        <button onClick={() => onViewPortal(s.id)} className="text-blue-400 hover:text-blue-300 font-bold text-xs" title="View as Parent">
+                                        <button onClick={() => onViewPortal(s.id)} className="text-sky-300 hover:text-blue-300 font-bold text-xs" title="View as Parent">
                                             👁️ Portal
                                         </button>
                                     )}
@@ -293,7 +293,7 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                 title="Staff Management" 
                 description="Manage coaches, permissions, and assignments." 
                 action={
-                    <button onClick={() => onOpenModal('coach')} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-lg">
+                    <button onClick={() => onOpenModal('coach')} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded shadow-lg">
                         + Add Coach
                     </button>
                 }
@@ -374,7 +374,7 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                 <div className="space-y-2">
                                     {classes.map(c => (
                                         <div key={c.id} className="bg-gray-700/50 p-2 rounded text-xs group relative hover:bg-gray-700 transition-colors">
-                                            <p className="font-bold text-blue-400">{c.time}</p>
+                                            <p className="font-bold text-sky-300">{c.time}</p>
                                             <p className="text-white font-medium truncate">{c.className}</p>
                                             <p className="text-gray-500 truncate">{c.instructor}</p>
                                             <button 
@@ -449,7 +449,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     <button
                         key={tab}
                         onClick={() => setActiveSubTab(tab as any)}
-                        className={`pb-2 px-2 text-sm font-medium capitalize transition-colors ${activeSubTab === tab ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                        className={`pb-2 px-2 text-sm font-medium capitalize transition-colors ${activeSubTab === tab ? 'text-sky-300 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                     >
                         {tab}
                     </button>
@@ -509,7 +509,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         </div>
                         <button 
                             onClick={() => onUpdateData({ belts: [...data.belts, { id: `custom-${Date.now()}`, name: 'New Belt', color1: '#ffffff' }] })}
-                            className="mt-4 text-blue-400 hover:text-blue-300 text-sm font-bold"
+                            className="mt-4 text-sky-300 hover:text-blue-300 text-sm font-bold"
                         >
                             + Add Belt Level
                         </button>
@@ -555,7 +555,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                 branchAddresses: [...(data.branchAddresses || []), '']
                             })
                         }}
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded"
+                        className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-4 rounded"
                     >
                         + Add New Location
                     </button>
@@ -662,7 +662,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 </div>
                             </div>
 
-                            <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-sm">
+                            <button className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded text-sm">
                                 Connect Bank Account
                             </button>
                             <p className="text-[10px] text-gray-500 text-center">Secure payouts via Stripe Connect</p>
@@ -704,7 +704,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                             </div>
                             <div className="w-full bg-gray-700 rounded-full h-2">
                                 <div 
-                                    className="bg-blue-500 h-2 rounded-full" 
+                                    className="bg-sky-400 h-2 rounded-full" 
                                     style={{ width: `${Math.min((totalStudents / (currentTier.limit === Infinity ? 1000 : currentTier.limit)) * 100, 100)}%` }}
                                 ></div>
                             </div>
@@ -967,7 +967,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
             {/* SIDEBAR */}
             <div className="w-64 bg-gray-800 border-r border-gray-700 hidden md:flex flex-col">
                 <div className="p-6 border-b border-gray-700">
-                    <h2 className="text-xl font-black text-white tracking-tight">TAEKUP <span className="text-blue-500 text-xs align-top">ADMIN</span></h2>
+                    <h2 className="text-xl font-black text-white tracking-tight">TAEKUP <span className="text-sky-400 text-xs align-top">ADMIN</span></h2>
                     <p className="text-gray-500 text-xs mt-1 truncate">{data.clubName}</p>
                 </div>
                 <div className="flex-1 overflow-y-auto py-4 space-y-1">
@@ -1010,8 +1010,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
             {modalType === 'student' && (
                 <Modal title="Add Students" onClose={() => setModalType(null)}>
                     <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4">
-                        <button onClick={() => setStudentImportMethod('single')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'single' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>Single</button>
-                        <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>Bulk Import</button>
+                        <button onClick={() => setStudentImportMethod('single')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'single' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Single</button>
+                        <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Bulk Import</button>
                     </div>
 
                     {studentImportMethod === 'single' ? (
@@ -1045,7 +1045,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
                                     💰 Adds $1.99/mo to your bill (Sponsored Premium active).
                                 </p>
                             )}
-                            <button onClick={handleAddStudent} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded">Add Student</button>
+                            <button onClick={handleAddStudent} className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded">Add Student</button>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -1108,7 +1108,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
                             </select>
                             <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple classes</p>
                         </div>
-                        <button onClick={handleAddCoach} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded">Add Coach</button>
+                        <button onClick={handleAddCoach} className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded">Add Coach</button>
                     </div>
                 </Modal>
             )}

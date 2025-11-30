@@ -65,7 +65,7 @@ const EditInput: React.FC<{ label: string; value: string | number; onChange: (va
     <div className="mb-2">
         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{label}</label>
         {options ? (
-            <select value={value} onChange={e => onChange(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-sm focus:border-blue-500 outline-none h-8">
+            <select value={value} onChange={e => onChange(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-sm focus:border-sky-500 outline-none h-8">
                 {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
         ) : (
@@ -73,7 +73,7 @@ const EditInput: React.FC<{ label: string; value: string | number; onChange: (va
                 type={type} 
                 value={value} 
                 onChange={e => onChange(type === 'number' ? parseInt(e.target.value) || '' : e.target.value)} 
-                className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-sm focus:border-blue-500 outline-none h-8"
+                className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-sm focus:border-sky-500 outline-none h-8"
             />
         )}
     </div>
@@ -139,7 +139,7 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
         <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 relative">
              <div className="absolute top-4 right-4 z-10">
                 {!isEditing ? (
-                     onUpdate && <button onClick={() => setIsEditing(true)} className="text-xs font-bold text-blue-400 hover:text-blue-300 bg-gray-800 px-2 py-1 rounded border border-gray-700 transition-colors">EDIT</button>
+                     onUpdate && <button onClick={() => setIsEditing(true)} className="text-xs font-bold text-sky-300 hover:text-blue-300 bg-gray-800 px-2 py-1 rounded border border-gray-700 transition-colors">EDIT</button>
                 ) : (
                     <div className="flex space-x-2">
                         <button onClick={handleCancel} className="text-xs font-bold text-gray-400 hover:text-white bg-gray-800 px-2 py-1 rounded border border-gray-700 transition-colors">CANCEL</button>
@@ -182,7 +182,7 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
                     )}
                     
                     {isEditing && !formData.photo && (
-                        <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1.5 border-2 border-gray-900 pointer-events-none">
+                        <div className="absolute bottom-0 right-0 bg-sky-400 rounded-full p-1.5 border-2 border-gray-900 pointer-events-none">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                             </svg>
@@ -193,7 +193,7 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
                 {!isEditing ? (
                     <h2 className="text-xl font-bold text-white">{student.name}</h2>
                 ) : (
-                    <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center text-white font-bold mb-2 w-full focus:border-blue-500 outline-none" placeholder="Student Name" />
+                    <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center text-white font-bold mb-2 w-full focus:border-sky-500 outline-none" placeholder="Student Name" />
                 )}
                 
                 {!isEditing && (
@@ -223,7 +223,7 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
             ) : (
                 <div className="space-y-3 mt-4">
                     <div>
-                        <h4 className="text-xs font-bold text-blue-400 uppercase mb-2">Personal Details</h4>
+                        <h4 className="text-xs font-bold text-sky-300 uppercase mb-2">Personal Details</h4>
                         <div className="grid grid-cols-2 gap-2">
                              <EditInput label="Age" type="number" value={formData.age || ''} onChange={v => setFormData({...formData, age: v})} />
                              <EditInput label="Gender" value={formData.gender} options={genderOptions} onChange={v => setFormData({...formData, gender: v})} />
@@ -232,7 +232,7 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
                     </div>
                     
                     <div className="border-t border-gray-700 pt-3">
-                         <h4 className="text-xs font-bold text-blue-400 uppercase mb-2">Club Details</h4>
+                         <h4 className="text-xs font-bold text-sky-300 uppercase mb-2">Club Details</h4>
                          <EditInput label="Belt Rank" value={formData.beltId} options={beltOptions} onChange={v => setFormData({...formData, beltId: v})} />
                          <div className="grid grid-cols-2 gap-2">
                              <EditInput label="Current Stripes" type="number" value={formData.stripes} onChange={handleStripesChange} />
@@ -243,7 +243,7 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
                     </div>
 
                     <div className="border-t border-gray-700 pt-3">
-                         <h4 className="text-xs font-bold text-blue-400 uppercase mb-2">Parent Info</h4>
+                         <h4 className="text-xs font-bold text-sky-300 uppercase mb-2">Parent Info</h4>
                          <EditInput label="Parent Name" value={formData.parentName || ''} onChange={v => setFormData({...formData, parentName: v})} />
                          <EditInput label="Parent Email" value={formData.parentEmail || ''} onChange={v => setFormData({...formData, parentEmail: v})} />
                          <EditInput label="Parent Phone" value={formData.parentPhone || ''} onChange={v => setFormData({...formData, parentPhone: v})} />
@@ -276,7 +276,7 @@ const PerformanceSummary: React.FC<{ student: Student, rules: WizardData }> = ({
     
     const nextStripeIndex = Math.min(currentBeltStripes, stripesPerBelt - 1);
     
-    let progressBarColor = 'bg-blue-500';
+    let progressBarColor = 'bg-sky-400';
     if (isMaxedOut) {
         progressBarColor = 'bg-yellow-400'; // Gold for max
     } else if (rules.useColorCodedStripes && rules.stripeColors && rules.stripeColors[nextStripeIndex]) {

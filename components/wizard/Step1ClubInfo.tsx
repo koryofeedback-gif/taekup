@@ -110,7 +110,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
           Welcome to {data.clubName}!
         </h1>
         <p className="text-gray-400 mt-2">
-            Let’s set up your TaekUp Dojang account, Master <span className={data.ownerName ? 'text-blue-400' : 'text-gray-500 italic'}>{data.ownerName || '(Your Name)'}</span>.
+            Let’s set up your TaekUp Dojang account, Master <span className={data.ownerName ? 'text-sky-300' : 'text-gray-500 italic'}>{data.ownerName || '(Your Name)'}</span>.
         </p>
       </div>
       
@@ -170,12 +170,12 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                       {/* Location Settings Header */}
                       <div className="mb-4 space-y-3">
                           <div>
-                              <label className="block text-xs text-blue-400 font-bold uppercase tracking-wider mb-1">Location {index + 1} Name</label>
+                              <label className="block text-xs text-sky-300 font-bold uppercase tracking-wider mb-1">Location {index + 1} Name</label>
                               <input 
                                   type="text" 
                                   value={branchName} 
                                   onChange={(e) => handleBranchNameChange(index, e.target.value)}
-                                  className="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white font-bold w-full focus:ring-2 focus:ring-blue-500 outline-none"
+                                  className="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white font-bold w-full focus:ring-2 focus:ring-sky-500 outline-none"
                                   placeholder="e.g. Downtown Dojang"
                               />
                           </div>
@@ -185,7 +185,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                                   type="text" 
                                   value={data.branchAddresses?.[index] || ''} 
                                   onChange={(e) => handleBranchAddressChange(index, e.target.value)}
-                                  className="bg-gray-700/50 border border-gray-600 rounded px-3 py-2 text-white text-sm w-full focus:ring-2 focus:ring-blue-500 outline-none"
+                                  className="bg-gray-700/50 border border-gray-600 rounded px-3 py-2 text-white text-sm w-full focus:ring-2 focus:ring-sky-500 outline-none"
                                   placeholder="e.g. 123 Main St, City"
                               />
                           </div>
@@ -203,11 +203,11 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                                   onChange={(e) => setNewClassName(p => ({...p, [index]: e.target.value}))}
                                   onKeyDown={(e) => e.key === 'Enter' && handleAddClassToLocation(index, branchName)}
                                   placeholder="Class name (e.g. Tiny Tigers)"
-                                  className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white w-full focus:outline-none focus:border-blue-500"
+                                  className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white w-full focus:outline-none focus:border-sky-500"
                               />
                               <button 
                                   onClick={() => handleAddClassToLocation(index, branchName)}
-                                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 rounded text-sm font-bold"
+                                  className="bg-sky-500 hover:bg-sky-600 text-white px-3 rounded text-sm font-bold"
                               >
                                   +
                               </button>
@@ -235,7 +235,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
         <label htmlFor="slogan" className="block text-sm font-medium text-gray-300">Slogan (Optional)</label>
         <div className="mt-1 flex items-center space-x-2">
             <input id="slogan" value={data.slogan} onChange={e => onUpdate({ slogan: e.target.value })} placeholder="e.g., Discipline. Focus. Spirit." className="wizard-input flex-1" />
-            <button type="button" onClick={handleGenerateSlogan} disabled={isSloganLoading} className="bg-blue-600/50 hover:bg-blue-600/70 text-sm text-white font-semibold py-2 px-3 rounded-md transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center">
+            <button type="button" onClick={handleGenerateSlogan} disabled={isSloganLoading} className="bg-sky-500/50 hover:bg-sky-500/70 text-sm text-white font-semibold py-2 px-3 rounded-md transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center">
               {isSloganLoading ? (
                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -260,8 +260,8 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
         }
         .wizard-input:focus {
             outline: none;
-            border-color: #3B82F6; /* focus:border-blue-500 */
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-blue-500 */
+            border-color: #3B82F6; /* focus:border-sky-500 */
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-sky-500 */
         }
        `}</style>
     </div>

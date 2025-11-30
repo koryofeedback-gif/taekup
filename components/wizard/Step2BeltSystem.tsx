@@ -17,7 +17,7 @@ const PresetButton: React.FC<{
     onClick={onClick}
     className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex-grow md:flex-grow-0 ${
       isActive
-        ? 'bg-blue-600 text-white'
+        ? 'bg-sky-500 text-white'
         : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
     }`}
   >
@@ -143,8 +143,8 @@ export const Step2BeltSystem: React.FC<Step2Props> = ({ data, onUpdate }) => {
         }
         .wizard-input:focus {
             outline: none;
-            border-color: #3B82F6; /* focus:border-blue-500 */
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-blue-500 */
+            border-color: #3B82F6; /* focus:border-sky-500 */
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-sky-500 */
         }
        `}</style>
     </div>

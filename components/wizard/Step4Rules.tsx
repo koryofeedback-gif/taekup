@@ -7,7 +7,7 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ c
     <button
         type="button"
         onClick={onChange}
-        className={`${checked ? 'bg-blue-600' : 'bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800`}
+        className={`${checked ? 'bg-sky-500' : 'bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-800`}
         role="switch"
         aria-checked={checked}
     >
@@ -73,7 +73,7 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
                                 name="pointsRule" 
                                 checked={!data.useCustomPointsPerBelt} 
                                 onChange={() => onUpdate({ useCustomPointsPerBelt: false })}
-                                className="form-radio text-blue-600 h-4 w-4"
+                                className="form-radio text-sky-500 h-4 w-4"
                             />
                             <span className="ml-2 text-white">Simple (Same for all)</span>
                         </label>
@@ -83,7 +83,7 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
                                 name="pointsRule" 
                                 checked={data.useCustomPointsPerBelt} 
                                 onChange={() => onUpdate({ useCustomPointsPerBelt: true })}
-                                className="form-radio text-blue-600 h-4 w-4"
+                                className="form-radio text-sky-500 h-4 w-4"
                             />
                             <span className="ml-2 text-white">Advanced (Per Belt)</span>
                         </label>
@@ -124,7 +124,7 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
                                                 type="number"
                                                 value={data.pointsPerBelt[belt.id] || data.pointsPerStripe}
                                                 onChange={e => handlePointsPerBeltChange(belt.id, parseInt(e.target.value) || 0)}
-                                                className="w-24 bg-gray-900 border border-gray-600 rounded p-1 text-center text-white focus:ring-blue-500"
+                                                className="w-24 bg-gray-900 border border-gray-600 rounded p-1 text-center text-white focus:ring-sky-500"
                                             />
                                         </td>
                                     </tr>
@@ -227,8 +227,8 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
         }
         .wizard-input:focus {
             outline: none;
-            border-color: #3B82F6; /* focus:border-blue-500 */
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-blue-500 */
+            border-color: #3B82F6; /* focus:border-sky-500 */
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-sky-500 */
         }
       `}</style>
     </div>

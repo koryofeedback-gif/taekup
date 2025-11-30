@@ -124,8 +124,8 @@ export const Step3Skills: React.FC<Step3Props> = ({ data, onUpdate }) => {
             }
             .wizard-input:focus {
                 outline: none;
-                border-color: #3B82F6; /* focus:border-blue-500 */
-                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-blue-500 */
+                border-color: #3B82F6; /* focus:border-sky-500 */
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-sky-500 */
             }
              .wizard-input:disabled {
                 background-color: #4B5563; /* bg-gray-600 */
@@ -142,7 +142,7 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ c
     <button
         type="button"
         onClick={onChange}
-        className={`${checked ? 'bg-blue-600' : 'bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800`}
+        className={`${checked ? 'bg-sky-500' : 'bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-800`}
         role="switch"
         aria-checked={checked}
     >

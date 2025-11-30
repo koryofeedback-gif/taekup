@@ -80,7 +80,7 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
     return (
         <div className="w-full bg-gray-700 rounded-full h-4 relative overflow-hidden border border-gray-600" title={`Total Points: ${totalPointsWithSession}`}>
             <div 
-                className={`h-4 rounded-full transition-all duration-300 ${hasMaxStripes ? 'bg-yellow-400' : 'bg-blue-500'}`} 
+                className={`h-4 rounded-full transition-all duration-300 ${hasMaxStripes ? 'bg-yellow-400' : 'bg-sky-400'}`} 
                 style={{ width: `${progressPercent}%` }}
             ></div>
             <div className="absolute inset-0 flex items-center justify-center">
@@ -190,7 +190,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                                         <p className="text-xs text-gray-400">{belt?.name}</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-bold text-blue-400">{s.totalPoints} pts</span>
+                                <span className="text-sm font-bold text-sky-300">{s.totalPoints} pts</span>
                             </div>
                         )
                     })}
@@ -312,7 +312,7 @@ const CertificateModal: React.FC<{ student: Student; newBelt: string; data: Wiza
                 </div>
 
                 {/* Marketing / Viral Engine Section */}
-                <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-6 border-t border-blue-500/30">
+                <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-6 border-t border-sky-500/30">
                     <div className="flex justify-between items-start">
                         <div>
                             <h3 className="text-xl font-bold text-white flex items-center">
@@ -334,7 +334,7 @@ const CertificateModal: React.FC<{ student: Student; newBelt: string; data: Wiza
                     {showSharePreview && (
                         <div className="mt-4 bg-white rounded-lg p-4 max-w-sm mx-auto shadow-lg text-gray-800">
                             <div className="flex items-center space-x-2 mb-3">
-                                <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
+                                <div className="w-8 h-8 bg-sky-500 rounded-full"></div>
                                 <div>
                                     <p className="font-bold text-sm leading-tight">Proud Parent</p>
                                     <p className="text-xs text-gray-500">Just now • 🌎</p>
@@ -343,7 +343,7 @@ const CertificateModal: React.FC<{ student: Student; newBelt: string; data: Wiza
                             <p className="text-sm mb-2">
                                 So proud of {student.name} for earning their {newBelt}! 🥋 big thanks to {data.clubName}.
                             </p>
-                            <p className="text-sm mb-3 text-blue-600 font-medium">
+                            <p className="text-sm mb-3 text-sky-500 font-medium">
                                 Want to try it out? Use my link for a FREE WEEK! 👇
                             </p>
                             <div className="bg-gray-100 rounded border border-gray-300 overflow-hidden">
@@ -361,7 +361,7 @@ const CertificateModal: React.FC<{ student: Student; newBelt: string; data: Wiza
                         </div>
                     )}
                     
-                    <div className="mt-4 flex items-center justify-between bg-blue-800/30 p-3 rounded border border-blue-500/20">
+                    <div className="mt-4 flex items-center justify-between bg-blue-800/30 p-3 rounded border border-sky-500/20">
                         <div className="flex items-center text-sm">
                             <span className="text-2xl mr-3">🎁</span>
                             <div>
@@ -382,7 +382,7 @@ const CertificateModal: React.FC<{ student: Student; newBelt: string; data: Wiza
                     <button className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded flex items-center transition-colors">
                         <span className="mr-2">⬇️</span> Download PDF
                     </button>
-                    <button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center shadow-lg transition-colors">
+                    <button onClick={handleSend} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded flex items-center shadow-lg transition-colors">
                         <span className="mr-2">📧</span> Email (With Referral Link)
                     </button>
                 </div>
@@ -415,10 +415,10 @@ const NoteEditorModal: React.FC<{student: Student, initialNote: string, onSave: 
         <Modal onClose={onClose} title={`Add Note for ${student.name}`}>
             <div className="space-y-4">
                 <p className="text-sm text-gray-400">Add a quick note about the student's performance. This will be used by the AI to generate parent feedback.</p>
-                <textarea value={note} onChange={e => setNote(e.target.value)} className="w-full h-24 bg-gray-700 text-white p-2 rounded-md border border-gray-600 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Good energy but talking a bit."/>
+                <textarea value={note} onChange={e => setNote(e.target.value)} className="w-full h-24 bg-gray-700 text-white p-2 rounded-md border border-gray-600 focus:ring-sky-500 focus:border-sky-500" placeholder="e.g., Good energy but talking a bit."/>
                 <div className="flex justify-end space-x-2">
                     <button onClick={onClose} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">Cancel</button>
-                    <button onClick={() => onSave(note)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Save Note</button>
+                    <button onClick={() => onSave(note)} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-md">Save Note</button>
                 </div>
             </div>
         </Modal>
@@ -432,13 +432,13 @@ const FeedbackPreviewModal: React.FC<{messages: Record<string, string>, students
                 const studentName = students.find(s => s.id === studentId)?.name;
                 return (
                     <div key={studentId} className="bg-gray-900/50 p-3 rounded-lg">
-                        <p className="font-bold text-blue-400">{studentName}</p>
+                        <p className="font-bold text-sky-300">{studentName}</p>
                         <p className="text-gray-300 italic">"{message}"</p>
                     </div>
                 );
             })}
              <div className="flex justify-end">
-                 <button onClick={onClose} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Close</button>
+                 <button onClick={onClose} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-md">Close</button>
             </div>
         </div>
     </Modal>
@@ -1094,7 +1094,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                                 <button 
                                     onClick={() => setActiveView('grading')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'grading' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'grading' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                                 >
                                     📋 Grading
                                 </button>
@@ -1112,7 +1112,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('schedule')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'schedule' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'schedule' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                                 >
                                     📅 Schedule
                                 </button>
@@ -1130,7 +1130,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                             setActiveLocationFilter(e.target.value);
                                             setActiveClassFilter('all'); // Reset class filter on location change
                                         }} 
-                                        className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-blue-500 focus:border-blue-500"
+                                        className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
                                     >
                                         <option value="all">📍 All Locations</option>
                                         {locations.map(loc => <option key={loc} value={loc}>📍 {loc}</option>)}
@@ -1138,7 +1138,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     <select 
                                         value={activeClassFilter} 
                                         onChange={e => setActiveClassFilter(e.target.value)} 
-                                        className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-blue-500 focus:border-blue-500"
+                                        className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
                                         disabled={activeLocationFilter === 'all' && availableClasses.length === 0}
                                     >
                                         <option value="all">⏰ All Classes</option>
@@ -1148,7 +1148,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 <div className="flex flex-wrap items-center gap-4">
                                      <div>
                                         <label htmlFor="belt-filter" className="text-xs font-medium text-gray-400 mr-2">Filter by Belt:</label>
-                                        <select id="belt-filter" value={activeBeltFilter} onChange={e => setActiveBeltFilter(e.target.value)} className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <select id="belt-filter" value={activeBeltFilter} onChange={e => setActiveBeltFilter(e.target.value)} className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-1 px-2 focus:ring-sky-500 focus:border-sky-500">
                                             <option value="all">All Belts</option>
                                             {data.belts.map(belt => <option key={belt.id} value={belt.id}>{belt.name}</option>)}
                                         </select>
@@ -1172,7 +1172,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     <tr>
                                         <th className="px-4 py-3">Student</th>
                                         {activeSkills.map(s => <th key={s.id} className="px-3 py-3 text-center">{s.name}</th>)}
-                                        {data.homeworkBonus && <th className="px-2 py-3 text-center text-blue-400">Homework</th>}
+                                        {data.homeworkBonus && <th className="px-2 py-3 text-center text-sky-300">Homework</th>}
                                         {data.coachBonus && <th className="px-2 py-3 text-center text-purple-400">Bonus</th>}
                                         <th className="px-2 py-3 text-center">Total</th>
                                         <th className="px-4 py-3 min-w-[200px]">Stripe Bar</th>
@@ -1200,7 +1200,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         return (
                                         <tr key={student.id} className={`border-b border-gray-700 transition-all ${rowClass}`}>
                                             <td className="px-4 py-2 font-medium text-white whitespace-nowrap">
-                                                <button onClick={() => setViewingStudent(student)} className="hover:text-blue-400 flex items-center">
+                                                <button onClick={() => setViewingStudent(student)} className="hover:text-sky-300 flex items-center">
                                                     {student.name} 
                                                     {newStripes > 0 && <span className="ml-2 animate-bounce">🎉</span>}
                                                     {isReady && <span className="ml-2" title="Ready for Promotion">🌟</span>}
@@ -1208,7 +1208,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 <div className="text-[10px] text-gray-500 font-normal">{student.location} • {student.assignedClass}</div>
                                             </td>
                                             {activeSkills.map(skill => <td key={skill.id} className="px-3 py-2"><ScoreDropdown score={sessionScores[student.id]?.[skill.id]} onChange={score => handleScoreChange(student.id, skill.id, score)} /></td>)}
-                                            {data.homeworkBonus && <td className="px-2 py-2"><input type="number" min="0" placeholder="0" value={homeworkPoints[student.id] || ''} onChange={e => handleHomeworkChange(student.id, parseInt(e.target.value) || 0)} className="w-16 bg-gray-700 text-blue-300 font-bold p-1 rounded-md border border-gray-600 text-center focus:ring-blue-500"/></td>}
+                                            {data.homeworkBonus && <td className="px-2 py-2"><input type="number" min="0" placeholder="0" value={homeworkPoints[student.id] || ''} onChange={e => handleHomeworkChange(student.id, parseInt(e.target.value) || 0)} className="w-16 bg-gray-700 text-blue-300 font-bold p-1 rounded-md border border-gray-600 text-center focus:ring-sky-500"/></td>}
                                             {data.coachBonus && <td className="px-2 py-2"><input type="number" min="0" placeholder="0" value={bonusPoints[student.id] || ''} onChange={e => handleBonusChange(student.id, parseInt(e.target.value) || 0)} className="w-16 bg-gray-700 text-purple-300 font-bold p-1 rounded-md border border-gray-600 text-center focus:ring-purple-500"/></td>}
                                             <td className="px-2 py-2 text-center font-bold text-lg">{sessionTotal}</td>
                                             <td className="px-4 py-2">
@@ -1248,8 +1248,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                             )}
 
                                             <td className="px-2 py-2 text-center text-lg"><button onClick={() => handleOpenNoteModal(student)} className="hover:scale-125 transition-transform">{notes[student.id] ? '✍️' : '🎤'}</button></td>
-                                            <td className="px-2 py-2 text-center"><button onClick={() => setViewingStudent(student)} className="text-xl hover:text-blue-400 transition-colors">👁️</button></td>
-                                            <td className="px-4 py-2 text-center"><input type="checkbox" checked={!!attendance[student.id]} onChange={() => setAttendance(p => ({...p, [student.id]: !p[student.id]}))} className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"/></td>
+                                            <td className="px-2 py-2 text-center"><button onClick={() => setViewingStudent(student)} className="text-xl hover:text-sky-300 transition-colors">👁️</button></td>
+                                            <td className="px-4 py-2 text-center"><input type="checkbox" checked={!!attendance[student.id]} onChange={() => setAttendance(p => ({...p, [student.id]: !p[student.id]}))} className="w-5 h-5 text-sky-500 bg-gray-700 border-gray-600 rounded focus:ring-sky-500"/></td>
                                         </tr>
                                     )}))}
                                 </tbody>
@@ -1271,7 +1271,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 </div>
                                 <div className="text-2xl font-black text-white italic">VS</div>
                                 <div className="w-1/3 bg-blue-900/20 p-4 rounded-lg border border-blue-600/50">
-                                    <label className="block text-blue-400 font-bold mb-2 text-center">BLUE FIGHTER</label>
+                                    <label className="block text-sky-300 font-bold mb-2 text-center">BLUE FIGHTER</label>
                                     <select value={fighter2} onChange={e => setFighter2(e.target.value)} className="w-full bg-gray-800 text-white border border-gray-700 rounded p-2">
                                         <option value="">Select Fighter</option>
                                         {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -1293,8 +1293,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     </div>
                                     {/* Blue Controls */}
                                     <div className="space-y-4">
-                                        <button onClick={() => updateSparringStats(2, 'head')} className="w-full h-20 bg-blue-600 hover:bg-blue-500 text-white font-black text-2xl rounded-xl shadow-lg active:scale-95 transition-transform">HEAD KICK ({sparringSession.f2Stats.head})</button>
-                                        <button onClick={() => updateSparringStats(2, 'body')} className="w-full h-16 bg-blue-700 hover:bg-blue-600 text-white font-bold text-xl rounded-xl shadow-lg active:scale-95 transition-transform">BODY KICK ({sparringSession.f2Stats.body})</button>
+                                        <button onClick={() => updateSparringStats(2, 'head')} className="w-full h-20 bg-sky-500 hover:bg-sky-400 text-white font-black text-2xl rounded-xl shadow-lg active:scale-95 transition-transform">HEAD KICK ({sparringSession.f2Stats.head})</button>
+                                        <button onClick={() => updateSparringStats(2, 'body')} className="w-full h-16 bg-blue-700 hover:bg-sky-500 text-white font-bold text-xl rounded-xl shadow-lg active:scale-95 transition-transform">BODY KICK ({sparringSession.f2Stats.body})</button>
                                         <div className="grid grid-cols-2 gap-4">
                                             <button onClick={() => updateSparringStats(2, 'punch')} className="h-16 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl">PUNCH ({sparringSession.f2Stats.punches})</button>
                                             <button onClick={() => updateSparringStats(2, 'takedown')} className="h-16 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl">TAKEDOWN ({sparringSession.f2Stats.takedowns})</button>
@@ -1327,7 +1327,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         {(data.schedule || []).filter(s => s.instructor === coachName || coachName === data.ownerName).map(cls => (
                                             <div key={cls.id} className="bg-gray-800 p-3 rounded border border-gray-700 flex justify-between items-center">
                                                 <div>
-                                                    <span className="text-blue-400 font-bold mr-2">{cls.day} {cls.time}</span>
+                                                    <span className="text-sky-300 font-bold mr-2">{cls.day} {cls.time}</span>
                                                     <span className="text-white font-medium">{cls.className}</span>
                                                     <p className="text-xs text-gray-500">{cls.location} • {cls.instructor}</p>
                                                 </div>
@@ -1395,7 +1395,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 {isGenerating ? <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : '✨ Generate Feedback'}
                             </button>
                             {Object.keys(parentMessages).length > 0 && <button onClick={() => setFeedbackPreviewOpen(true)} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 text-sm rounded-md">🧾 Preview Messages</button>}
-                            <button onClick={handleSaveAndNotify} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 text-sm rounded-md">Save & Notify Parents</button>
+                            <button onClick={handleSaveAndNotify} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-6 text-sm rounded-md">Save & Notify Parents</button>
                         </div>
                     )}
                 </div>

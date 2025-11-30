@@ -290,7 +290,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
             {/* Hero Card */}
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-700 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-sky-400/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
                 
                 <div className="flex items-center space-x-4 relative z-10">
                     <div className="w-16 h-16 rounded-full border-2 border-white/20 overflow-hidden bg-gray-700 shadow-md">
@@ -350,7 +350,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <p className="text-[10px] text-gray-400">View your stats & rating</p>
                     </div>
                 </div>
-                <div className="text-blue-500 group-hover:text-white transition-colors font-bold">VIEW &gt;</div>
+                <div className="text-sky-400 group-hover:text-white transition-colors font-bold">VIEW &gt;</div>
             </div>
 
             {/* Home Dojo Teaser */}
@@ -392,12 +392,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <h3 className="font-bold text-gray-200 px-2 text-sm uppercase tracking-wider">Coach Feedback</h3>
                 {student.feedbackHistory && student.feedbackHistory.length > 0 ? (
                     student.feedbackHistory.slice().reverse().slice(0, 3).map((fb, idx) => (
-                        <div key={idx} className="bg-gray-800 p-4 rounded-xl border-l-4 border-blue-500 shadow-sm relative overflow-hidden">
+                        <div key={idx} className="bg-gray-800 p-4 rounded-xl border-l-4 border-sky-500 shadow-sm relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-2 opacity-10 text-4xl">💬</div>
                             <p className="text-gray-300 text-sm italic mb-2 relative z-10">"{fb.text}"</p>
                             <div className="flex justify-between items-center text-xs text-gray-500 relative z-10">
                                 <span>{new Date(fb.date).toLocaleDateString()}</span>
-                                <span className="flex items-center font-medium text-blue-400">
+                                <span className="flex items-center font-medium text-sky-300">
                                     {fb.isAIGenerated ? '✨ Coach AI' : `👤 ${fb.coachName}`}
                                 </span>
                             </div>
@@ -507,7 +507,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         
                         {hasVideos ? (
                             studentVideos.map((video, idx) => (
-                                <a key={idx} href={video.url} target="_blank" rel="noopener noreferrer" className="bg-gray-800 rounded-xl overflow-hidden shadow-lg border border-gray-700 flex group cursor-pointer hover:border-blue-500 transition-colors">
+                                <a key={idx} href={video.url} target="_blank" rel="noopener noreferrer" className="bg-gray-800 rounded-xl overflow-hidden shadow-lg border border-gray-700 flex group cursor-pointer hover:border-sky-500 transition-colors">
                                     <div className="w-24 bg-gray-900 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-300">
                                         🥋
                                     </div>
@@ -516,7 +516,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         <p className="text-xs text-gray-500 mt-1">Watch Video</p>
                                     </div>
                                     <div className="flex items-center px-4">
-                                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center group-hover:bg-blue-500 shadow-lg shadow-blue-600/30">
+                                        <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center group-hover:bg-sky-400 shadow-lg shadow-blue-600/30">
                                             <span className="text-white text-xs">▶</span>
                                         </div>
                                     </div>
@@ -611,7 +611,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-4">
                             <div className="flex justify-between text-xs text-gray-300 mb-2">
                                 <span>Training Frequency</span>
-                                <span className="font-bold text-blue-400">{simulatedAttendance} Classes / Week</span>
+                                <span className="font-bold text-sky-300">{simulatedAttendance} Classes / Week</span>
                             </div>
                             <input 
                                 type="range" 
@@ -647,7 +647,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
 
                     <div className="text-center py-6">
-                        <div className="w-24 h-24 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                        <div className="w-24 h-24 bg-sky-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-sky-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
                             <span className="text-4xl">🚀</span>
                         </div>
                         <h3 className="text-xl font-bold text-white">Your Journey</h3>
@@ -657,11 +657,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <div className="relative pl-8 border-l-2 border-gray-700 space-y-8 ml-6">
                         {timelineEvents.map((event, i) => (
                             <div key={i} className="relative">
-                                <div className="absolute -left-[41px] bg-gray-900 border-2 border-blue-500 rounded-full w-10 h-10 flex items-center justify-center text-xl shadow-lg shadow-blue-900/50">
+                                <div className="absolute -left-[41px] bg-gray-900 border-2 border-sky-500 rounded-full w-10 h-10 flex items-center justify-center text-xl shadow-lg shadow-blue-900/50">
                                     {event.icon}
                                 </div>
-                                <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm hover:border-blue-500/50 transition-colors">
-                                    <span className="text-xs font-bold text-blue-400 uppercase tracking-wide">{new Date(event.date).toLocaleDateString()}</span>
+                                <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm hover:border-sky-500/50 transition-colors">
+                                    <span className="text-xs font-bold text-sky-300 uppercase tracking-wide">{new Date(event.date).toLocaleDateString()}</span>
                                     <h4 className="font-bold text-white text-lg mt-1">{event.title}</h4>
                                 </div>
                             </div>
@@ -729,7 +729,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             {/* Top Stats */}
                             <div className="flex justify-between items-start relative z-10 mb-2">
                                 <div>
-                                    <span className="text-4xl font-black text-blue-400 italic">{ovr}</span>
+                                    <span className="text-4xl font-black text-sky-300 italic">{ovr}</span>
                                     <span className="block text-[10px] text-blue-200 font-bold uppercase">OVR</span>
                                 </div>
                                 <div className="text-right">
@@ -740,7 +740,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
                             {/* Photo Area */}
                             <div className="relative z-10 flex-1 flex items-end justify-center mb-4">
-                                <div className="w-32 h-32 rounded-full border-4 border-blue-500 overflow-hidden shadow-[0_0_20px_rgba(59,130,246,0.5)] bg-gray-800">
+                                <div className="w-32 h-32 rounded-full border-4 border-sky-500 overflow-hidden shadow-[0_0_20px_rgba(59,130,246,0.5)] bg-gray-800">
                                     {student.photo ? (
                                         <img src={student.photo} className="w-full h-full object-cover" />
                                     ) : (
@@ -786,7 +786,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 </div>
                                 <div className="bg-gray-900 p-2 rounded">
                                     <p className="text-xs text-gray-500 uppercase">Takedowns</p>
-                                    <p className="font-mono font-bold text-blue-400">{stats.takedowns}</p>
+                                    <p className="font-mono font-bold text-sky-300">{stats.takedowns}</p>
                                 </div>
                             </div>
                         </div>
@@ -815,7 +815,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                  <div key={cls.id} className="p-4 border-b border-gray-700 last:border-0 flex justify-between items-center">
                                      <div>
                                          <p className="font-bold text-white text-lg">{cls.day}</p>
-                                         <p className="text-sm text-blue-400 font-bold">{cls.time} • {cls.className}</p>
+                                         <p className="text-sm text-sky-300 font-bold">{cls.time} • {cls.className}</p>
                                          <p className="text-xs text-gray-500 mt-1">Instructor: {cls.instructor}</p>
                                      </div>
                                      <div className="text-right">
@@ -1020,7 +1020,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Today's Check-in</h4>
                         <button 
                             onClick={toggleEditMode}
-                            className={`text-xs font-bold px-3 py-1 rounded-full border transition-colors flex items-center ${hasPremiumAccess ? 'bg-gray-800 text-blue-400 border-blue-500 hover:bg-gray-700' : 'bg-gray-800 text-gray-500 border-gray-600'}`}
+                            className={`text-xs font-bold px-3 py-1 rounded-full border transition-colors flex items-center ${hasPremiumAccess ? 'bg-gray-800 text-sky-300 border-sky-500 hover:bg-gray-700' : 'bg-gray-800 text-gray-500 border-gray-600'}`}
                         >
                             {!hasPremiumAccess && <span className="mr-1">🔒</span>}
                             {isEditingHabits ? 'Done' : 'Customize'}
@@ -1132,7 +1132,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 };
 
 const NavButton: React.FC<{ icon: string; label: string; active: boolean; onClick: () => void; isPremium?: boolean }> = ({ icon, label, active, onClick, isPremium }) => (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center min-w-[50px] w-full h-full relative transition-colors ${active ? 'text-blue-400' : 'text-gray-500 hover:text-gray-300'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center justify-center min-w-[50px] w-full h-full relative transition-colors ${active ? 'text-sky-300' : 'text-gray-500 hover:text-gray-300'}`}>
         <span className={`text-xl mb-1 transition-transform ${active ? 'scale-110' : ''}`}>{icon}</span>
         <span className="text-[9px] font-medium tracking-wide">{label}</span>
         {isPremium && <span className="absolute top-2 right-1 w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.8)]"></span>}

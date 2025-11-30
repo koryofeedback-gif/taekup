@@ -242,7 +242,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
             </div>
             <button
                 onClick={handleNext}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition-colors shadow-lg shadow-blue-900/20"
+                className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-6 rounded-md transition-colors shadow-lg shadow-blue-900/20"
                 title="Ctrl + Enter"
             >
                 {currentStep === 6 ? 'Finish Setup' : 'Next'}

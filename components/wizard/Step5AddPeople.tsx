@@ -403,7 +403,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                 <button
                                     key={cls}
                                     onClick={() => toggleCoachClass(cls)}
-                                    className={`px-3 py-1 rounded text-xs font-bold border ${newCoach.assignedClasses?.includes(cls) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-gray-700 border-gray-600 text-gray-400'}`}
+                                    className={`px-3 py-1 rounded text-xs font-bold border ${newCoach.assignedClasses?.includes(cls) ? 'bg-sky-500 border-blue-600 text-white' : 'bg-gray-700 border-gray-600 text-gray-400'}`}
                                 >
                                     {cls}
                                 </button>
@@ -415,7 +415,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                 <button 
                     onClick={handleAddCoach}
                     disabled={!newCoach.name || !newCoach.email}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors mb-6"
+                    className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors mb-6"
                 >
                     Add Coach
                 </button>
@@ -443,13 +443,13 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                     <div className="flex bg-gray-700 rounded p-1">
                         <button 
                             onClick={() => setStudentAddMode('manual')}
-                            className={`px-3 py-1 rounded text-xs font-bold transition-colors ${studentAddMode === 'manual' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-3 py-1 rounded text-xs font-bold transition-colors ${studentAddMode === 'manual' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             Manual
                         </button>
                         <button 
                             onClick={() => setStudentAddMode('bulk')}
-                            className={`px-3 py-1 rounded text-xs font-bold transition-colors ${studentAddMode === 'bulk' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-3 py-1 rounded text-xs font-bold transition-colors ${studentAddMode === 'bulk' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             Bulk Import
                         </button>
@@ -498,7 +498,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                         <button 
                             onClick={handleAddStudent}
                             disabled={!newStudent.name || !newStudent.beltId}
-                            className="md:col-span-2 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors"
+                            className="md:col-span-2 w-full bg-sky-500 hover:bg-sky-600 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors"
                         >
                             Add Student
                         </button>
@@ -523,13 +523,13 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                         <div className="flex bg-gray-700/50 rounded p-1 w-fit">
                             <button 
                                 onClick={() => setImportMethod('file')}
-                                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${importMethod === 'file' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${importMethod === 'file' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
                             >
                                 Upload File
                             </button>
                             <button 
                                 onClick={() => setImportMethod('paste')}
-                                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${importMethod === 'paste' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${importMethod === 'paste' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
                             >
                                 Paste Data
                             </button>
@@ -561,7 +561,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                 onClick={() => fileInputRef.current?.click()}
                                 className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
                                     isDragging 
-                                        ? 'border-blue-500 bg-blue-500/10' 
+                                        ? 'border-sky-500 bg-sky-400/10' 
                                         : 'border-gray-600 hover:border-gray-500 hover:bg-gray-800/50'
                                 }`}
                             >
@@ -590,7 +590,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                 <textarea 
                                     value={pasteData}
                                     onChange={e => { setPasteData(e.target.value); setIsValidated(false); setParsedStudents([]); }}
-                                    className="w-full h-32 bg-gray-900 border border-gray-600 rounded p-3 text-white text-sm font-mono focus:border-blue-500 focus:outline-none"
+                                    className="w-full h-32 bg-gray-900 border border-gray-600 rounded p-3 text-white text-sm font-mono focus:border-sky-500 focus:outline-none"
                                     placeholder={`John Doe, 8, 2016-05-15, Male, White Belt, 0, Jane Doe, jane@example.com, 555-0123`}
                                 />
                                 <button 
@@ -685,14 +685,14 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                                                 type="text"
                                                                 value={student.name}
                                                                 onChange={(e) => updateParsedStudent(index, 'name', e.target.value)}
-                                                                className={`bg-transparent border-b ${!student.name ? 'border-red-500' : 'border-transparent hover:border-gray-600'} focus:border-blue-500 outline-none text-white w-full py-1`}
+                                                                className={`bg-transparent border-b ${!student.name ? 'border-red-500' : 'border-transparent hover:border-gray-600'} focus:border-sky-500 outline-none text-white w-full py-1`}
                                                             />
                                                         </td>
                                                         <td className="px-3 py-2">
                                                             <select
                                                                 value={student.beltId}
                                                                 onChange={(e) => updateParsedStudent(index, 'beltId', e.target.value)}
-                                                                className={`bg-gray-800 border ${student.beltId === 'INVALID_BELT' ? 'border-red-500' : 'border-gray-700'} rounded px-2 py-1 text-white text-xs focus:border-blue-500 outline-none`}
+                                                                className={`bg-gray-800 border ${student.beltId === 'INVALID_BELT' ? 'border-red-500' : 'border-gray-700'} rounded px-2 py-1 text-white text-xs focus:border-sky-500 outline-none`}
                                                             >
                                                                 {student.beltId === 'INVALID_BELT' && (
                                                                     <option value="INVALID_BELT" className="text-red-400">Select Belt...</option>

@@ -101,7 +101,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
-                            className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-sky-500 outline-none"
                             placeholder="user@example.com"
                         />
                     </div>
@@ -111,14 +111,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                             type="password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
-                            className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-sky-500 outline-none"
                             placeholder="••••••••"
                         />
                     </div>
                     {error && <p className="text-red-400 text-sm">{error}</p>}
                     <button
                         type="submit"
-                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors"
+                        className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-3 rounded-lg transition-colors"
                     >
                         Log In
                     </button>

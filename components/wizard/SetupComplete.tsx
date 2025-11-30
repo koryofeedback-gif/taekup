@@ -26,7 +26,7 @@ export const SetupComplete: React.FC<SetupCompleteProps> = ({ onGoToDashboard })
         </p>
         <button
           onClick={handleClick}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105 shadow-lg shadow-blue-600/30"
+          className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105 shadow-lg shadow-blue-600/30"
         >
           Go to Dashboard →
         </button>

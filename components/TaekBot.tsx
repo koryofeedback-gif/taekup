@@ -39,7 +39,7 @@ export const TaekBot: React.FC = () => {
             <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${isOpen ? 'opacity-0 scale-90' : 'opacity-100 scale-100'}`}>
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                    className="bg-sky-500 text-white rounded-full p-4 shadow-lg hover:bg-sky-600 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-900"
                     aria-label="Open Chat"
                 >
                     <ChatIcon />
@@ -57,7 +57,7 @@ export const TaekBot: React.FC = () => {
                     <div className="space-y-4">
                         {messages.map((msg, index) => (
                             <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-xs md:max-w-sm rounded-lg px-4 py-2 ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'}`}>
+                                <div className={`max-w-xs md:max-w-sm rounded-lg px-4 py-2 ${msg.sender === 'user' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-200'}`}>
                                     <p className="text-sm" dangerouslySetInnerHTML={{__html: msg.text.replace(/\n/g, '<br />')}}></p>
                                 </div>
                             </div>
@@ -85,7 +85,7 @@ export const TaekBot: React.FC = () => {
                             placeholder="Ask a question..."
                             className="flex-1 bg-transparent px-4 py-2 text-white placeholder-gray-400 focus:outline-none"
                         />
-                        <button type="submit" className="text-blue-400 p-2 hover:text-blue-300 disabled:text-gray-500" disabled={isLoading || !inputValue.trim()}>
+                        <button type="submit" className="text-sky-300 p-2 hover:text-blue-300 disabled:text-gray-500" disabled={isLoading || !inputValue.trim()}>
                             <SendIcon />
                         </button>
                     </div>
