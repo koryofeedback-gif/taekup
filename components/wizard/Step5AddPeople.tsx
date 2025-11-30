@@ -426,6 +426,9 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                             <div>
                                 <p className="font-bold text-white">{coach.name}</p>
                                 <p className="text-xs text-gray-400">{coach.email}</p>
+                                {coach.assignedClasses && coach.assignedClasses.length > 0 && (
+                                    <p className="text-xs text-sky-400 mt-1">Classes: {coach.assignedClasses.join(', ')}</p>
+                                )}
                             </div>
                             <button onClick={() => handleRemoveCoach(coach.id)} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
                         </div>
@@ -745,7 +748,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                     {data.students.slice().reverse().map(student => (
                         <div key={student.id} className="flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700">
                             <div>
-                                <p className="font-bold text-white">{student.name} <span className="text-xs font-normal text-gray-400">({student.age ? `${student.age}y` : ''})</span></p>
+                                <p className="font-bold text-white">{student.name} {student.age && <span className="text-xs font-normal text-gray-400">({student.age}y)</span>}</p>
                                 <p className="text-xs text-gray-400">
                                     {data.belts.find(b => b.id === student.beltId)?.name} 
                                     {student.stripes > 0 && ` • ${student.stripes} stripes`}
