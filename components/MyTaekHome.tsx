@@ -11,13 +11,13 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
         <div className="bg-black min-h-screen font-sans text-white selection:bg-red-600 selection:text-white relative">
             
             {/* --- CUSTOM HEADER --- */}
-            <div className="absolute top-0 left-0 right-0 z-50 px-8 py-6 flex justify-between items-center">
+            <div className="absolute top-0 left-0 right-0 z-50 px-8 py-4 flex justify-between items-center">
                 {/* Left: MYTAEK LOGO */}
                 <div className="flex items-center group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                     <img 
                         src="/mytaek-logo.png" 
                         alt="MyTaek Logo" 
-                        className="h-16 group-hover:scale-105 transition-transform"
+                        className="h-32 group-hover:scale-105 transition-transform"
                     />
                 </div>
 
