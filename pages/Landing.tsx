@@ -49,6 +49,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ showSignup, onStartTrial, onS
     <div className="relative text-center py-20 md:py-32 px-6 bg-dots-pattern">
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-900/80 to-gray-900"></div>
         <div className="relative z-10 max-w-4xl mx-auto">
+            {!showSignup && (
+                <div className="mb-8 flex justify-center">
+                    <img src="/taekup-logo.png" alt="TaekUp" className="h-16 md:h-20" />
+                </div>
+            )}
             {showSignup ? (
                 <>
                     <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-4">

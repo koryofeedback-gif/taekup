@@ -23,19 +23,12 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Right: BRAND LOGO */}
-                <div className="flex items-center space-x-4 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                    <div className="text-right hidden md:block">
-                        <span className="block font-black text-white text-lg leading-none tracking-tighter">MYTAEK</span>
-                        <span className="block text-[10px] text-red-600 font-bold tracking-widest uppercase">Ecosystem</span>
-                    </div>
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-red-600/20 blur-md rounded-full group-hover:bg-red-600/40 transition-all"></div>
-                        <img 
-                            src="https://i.imgur.com/R1rXjXG.jpeg" 
-                            alt="MyTaek Logo" 
-                            className="w-14 h-14 rounded-full border-2 border-zinc-800 relative z-10 group-hover:scale-105 transition-transform"
-                        />
-                    </div>
+                <div className="flex items-center space-x-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                    <img 
+                        src="/taekup-logo.png" 
+                        alt="TaekUp Logo" 
+                        className="h-8 group-hover:scale-105 transition-transform"
+                    />
                 </div>
             </div>
 
