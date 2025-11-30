@@ -19,17 +19,41 @@ import type { SignupData, WizardData, Student } from './types';
 
 // Main App Component with Router
 const App: React.FC = () => {
-    const [signupData, setSignupData] = useState<SignupData | null>(null);
-    const [finalWizardData, setFinalWizardData] = useState<WizardData | null>(null);
+    const [signupData, setSignupDataState] = useState<SignupData | null>(() => {
+        const saved = localStorage.getItem('taekup_signup_data');
+        return saved ? JSON.parse(saved) : null;
+    });
+    const [finalWizardData, setFinalWizardDataState] = useState<WizardData | null>(() => {
+        const saved = localStorage.getItem('taekup_wizard_data');
+        return saved ? JSON.parse(saved) : null;
+    });
     const [onboardingMessage, setOnboardingMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [loggedInUserType, setLoggedInUserType] = useState<'owner' | 'coach' | 'parent' | null>(null);
     const [loggedInUserName, setLoggedInUserName] = useState<string | null>(null);
     const [parentStudentId, setParentStudentId] = useState<string | null>(null);
 
+    const setSignupData = useCallback((data: SignupData | null) => {
+        setSignupDataState(data);
+        if (data) {
+            localStorage.setItem('taekup_signup_data', JSON.stringify(data));
+        } else {
+            localStorage.removeItem('taekup_signup_data');
+        }
+    }, []);
+
+    const setFinalWizardData = useCallback((data: WizardData | null) => {
+        setFinalWizardDataState(data);
+        if (data) {
+            localStorage.setItem('taekup_wizard_data', JSON.stringify(data));
+        } else {
+            localStorage.removeItem('taekup_wizard_data');
+        }
+    }, []);
+
     const handleSignupSuccess = useCallback((data: SignupData) => {
         setSignupData(data);
-    }, []);
+    }, [setSignupData]);
 
     const handleSetupComplete = useCallback(async (data: WizardData) => {
         setIsProcessing(true);
@@ -54,28 +78,30 @@ const App: React.FC = () => {
     }, []);
 
     const handleStudentDataUpdate = useCallback((updatedStudents: Student[]) => {
-        if (!finalWizardData) return;
-        setFinalWizardData(prevData => {
+        setFinalWizardDataState(prevData => {
             if (!prevData) return null;
-            return {
+            const updated = {
                 ...prevData,
                 students: updatedStudents,
             };
+            localStorage.setItem('taekup_wizard_data', JSON.stringify(updated));
+            return updated;
         });
-    }, [finalWizardData]);
+    }, []);
 
     const handleWizardDataUpdate = useCallback(
         (updates: Partial<WizardData>) => {
-            if (!finalWizardData) return;
-            setFinalWizardData(prevData => {
+            setFinalWizardDataState(prevData => {
                 if (!prevData) return null;
-                return {
+                const updated = {
                     ...prevData,
                     ...updates,
                 };
+                localStorage.setItem('taekup_wizard_data', JSON.stringify(updated));
+                return updated;
             });
         },
-        [finalWizardData]
+        []
     );
 
     const handleViewStudentPortal = useCallback((studentId: string) => {
