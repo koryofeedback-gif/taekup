@@ -494,7 +494,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
                         to="/"
                         className="flex hover:scale-105 transition-transform cursor-pointer"
                     >
-                        <img src="/taekup-logo.png" alt="TaekUp" style={{ height: '67px' }} />
+                        <img src="/taekup-logo.png" alt="TaekUp" style={{ height: '70px' }} />
                     </Link>
                 </div>
                 <nav className="hidden md:flex items-center space-x-6">
