@@ -9,13 +9,23 @@ import { LobbyDisplay } from './components/LobbyDisplay';
 import { MyTaekHome } from './components/MyTaekHome';
 import { LoginPage } from './pages/Login';
 import { LandingPage } from './pages/Landing';
+import { PricingPage } from './pages/PricingPage';
+import { AccountLockedPage } from './pages/AccountLockedPage';
+import { TrialBanner } from './components/TrialBanner';
 import {
     sendCoachWelcomeEmail,
     sendParentWelcomeEmail,
     getOnboardingMessage,
 } from './services/geminiService';
+import {
+    initSubscription,
+    loadSubscription,
+    saveSubscription,
+    updateSubscriptionPlan,
+    checkAccountStatus,
+} from './services/subscriptionService';
 import { SEO } from './components/SEO';
-import type { SignupData, WizardData, Student } from './types';
+import type { SignupData, WizardData, Student, SubscriptionStatus, SubscriptionPlanId } from './types';
 
 // Main App Component with Router
 const App: React.FC = () => {
@@ -27,11 +37,15 @@ const App: React.FC = () => {
         const saved = localStorage.getItem('taekup_wizard_data');
         return saved ? JSON.parse(saved) : null;
     });
+    const [subscription, setSubscription] = useState<SubscriptionStatus | null>(() => {
+        return loadSubscription();
+    });
     const [onboardingMessage, setOnboardingMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [loggedInUserType, setLoggedInUserType] = useState<'owner' | 'coach' | 'parent' | null>(null);
     const [loggedInUserName, setLoggedInUserName] = useState<string | null>(null);
     const [parentStudentId, setParentStudentId] = useState<string | null>(null);
+    const [showPricing, setShowPricing] = useState(false);
 
     const setSignupData = useCallback((data: SignupData | null) => {
         setSignupDataState(data);
@@ -52,8 +66,24 @@ const App: React.FC = () => {
     }, []);
 
     const handleSignupSuccess = useCallback((data: SignupData) => {
-        setSignupData(data);
+        const dataWithTrial = {
+            ...data,
+            trialStartDate: new Date().toISOString()
+        };
+        setSignupData(dataWithTrial);
+        
+        const newSubscription = initSubscription(dataWithTrial.trialStartDate);
+        setSubscription(newSubscription);
+        saveSubscription(newSubscription);
     }, [setSignupData]);
+
+    const handleSelectPlan = useCallback((planId: SubscriptionPlanId) => {
+        if (subscription) {
+            const updated = updateSubscriptionPlan(subscription, planId);
+            setSubscription(updated);
+            setShowPricing(false);
+        }
+    }, [subscription]);
 
     const handleSetupComplete = useCallback(async (data: WizardData) => {
         setIsProcessing(true);
@@ -130,6 +160,8 @@ const App: React.FC = () => {
             <AppContent
                 signupData={signupData}
                 finalWizardData={finalWizardData}
+                subscription={subscription}
+                showPricing={showPricing}
                 onboardingMessage={onboardingMessage}
                 isProcessing={isProcessing}
                 loggedInUserType={loggedInUserType}
@@ -142,6 +174,9 @@ const App: React.FC = () => {
                 onViewStudentPortal={handleViewStudentPortal}
                 onLoginSuccess={handleLoginSuccess}
                 onLogout={handleLogout}
+                onSelectPlan={handleSelectPlan}
+                onShowPricing={() => setShowPricing(true)}
+                onHidePricing={() => setShowPricing(false)}
             />
         </BrowserRouter>
     );
@@ -150,6 +185,8 @@ const App: React.FC = () => {
 interface AppContentProps {
     signupData: SignupData | null;
     finalWizardData: WizardData | null;
+    subscription: SubscriptionStatus | null;
+    showPricing: boolean;
     onboardingMessage: string;
     isProcessing: boolean;
     loggedInUserType: 'owner' | 'coach' | 'parent' | null;
@@ -162,11 +199,16 @@ interface AppContentProps {
     onViewStudentPortal: (studentId: string) => void;
     onLoginSuccess: (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string) => void;
     onLogout: () => void;
+    onSelectPlan: (planId: SubscriptionPlanId) => void;
+    onShowPricing: () => void;
+    onHidePricing: () => void;
 }
 
 const AppContent: React.FC<AppContentProps> = ({
     signupData,
     finalWizardData,
+    subscription,
+    showPricing,
     onboardingMessage,
     isProcessing,
     loggedInUserType,
@@ -179,14 +221,52 @@ const AppContent: React.FC<AppContentProps> = ({
     onViewStudentPortal,
     onLoginSuccess,
     onLogout,
+    onSelectPlan,
+    onShowPricing,
+    onHidePricing,
 }) => {
     const location = useLocation();
     const isAppSubdomain = window.location.hostname.startsWith('app.');
     const isDojangTV = location.pathname === '/app/tv';
     const isMyTaekHome = location.pathname === '/';
+    
+    const accountStatus = finalWizardData && subscription 
+        ? checkAccountStatus(finalWizardData.students, subscription)
+        : { isLocked: false, requiredPlan: null, daysRemaining: 14 };
+    
+    if (showPricing && finalWizardData) {
+        return (
+            <PricingPage
+                students={finalWizardData.students}
+                currentPlanId={subscription?.planId}
+                onSelectPlan={onSelectPlan}
+                onBack={onHidePricing}
+            />
+        );
+    }
+    
+    if (accountStatus.isLocked && finalWizardData && loggedInUserType) {
+        const isOwner = loggedInUserType === 'owner';
+        const isTrialExpired = !subscription?.planId;
+        return (
+            <AccountLockedPage
+                students={finalWizardData.students}
+                clubName={finalWizardData.clubName}
+                onSelectPlan={isOwner ? onSelectPlan : undefined}
+                isOwner={isOwner}
+                isTrialExpired={isTrialExpired}
+            />
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 font-sans">
+            {subscription && loggedInUserType === 'owner' && !isDojangTV && !isMyTaekHome && (
+                <TrialBanner 
+                    subscription={subscription} 
+                    onUpgradeClick={onShowPricing}
+                />
+            )}
             {!isDojangTV && !isMyTaekHome && (
                 <Header
                     isLoggedIn={!!loggedInUserType}

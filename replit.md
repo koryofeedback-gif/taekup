@@ -6,21 +6,24 @@ TaekUp is a comprehensive martial arts club management platform built with React
 ## Current State
 The project has been successfully configured to run on Replit. The development server is running on port 5000 and the frontend is accessible via the webview.
 
-## Recent Changes (November 30, 2025)
+## Recent Changes (December 1, 2025)
+- **Subscription & Trial System Implementation**:
+  - 14-day free trial with unlimited access during trial
+  - 4 pricing tiers: Starter ($24.99), Standard ($59), Growth ($129), Empire ($199)
+  - Student-based plan limits (25/75/150/unlimited)
+  - Trial banner showing days remaining
+  - Account lock page when trial expires
+  - Plan selection with recommended tier based on student count
+  - Account locking enforced for all user types (owner, coach, parent)
+  - Stripe integration set up for payment processing
+- **Dual AI System**:
+  - TaekBot now powered by GPT-4o for higher accuracy
+  - Gemini API available for routine tasks
+  - Both services with fallback responses
+
+## Previous Changes (November 30, 2025)
 - Configured Vite to work with Replit proxy (host: 0.0.0.0, port: 5000)
-- Installed all npm dependencies
-- Fixed TypeScript LSP errors by installing @types/node
-- Created .gitignore for Node.js projects
-- Configured workflow for frontend development server
-- Set up deployment configuration for static site hosting
-- **Enhanced Bulk Student Import** (Step 5 of Setup Wizard):
-  - Drag & drop CSV file upload with visual dropzone
-  - Downloadable CSV template with correct column headers
-  - Toggle between file upload and paste modes
-  - Interactive preview table with inline editing
-  - Real-time validation with green/red status indicators
-  - Summary showing valid/error counts
-  - Belt selection uses dropdown with proper ID binding
+- Enhanced Bulk Student Import (Step 5 of Setup Wizard)
 
 ## Project Architecture
 

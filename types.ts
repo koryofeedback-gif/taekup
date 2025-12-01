@@ -9,6 +9,7 @@ export interface SignupData {
   email: string;
   country: string;
   password?: string; // Added password field for security
+  trialStartDate?: string; // ISO date when trial started
 }
 
 export interface Belt {
@@ -153,6 +154,29 @@ export interface Student {
   badges: string[]; // New: For gamification rewards
   lifeSkillsHistory: LifeSkill[]; // Log of completed habits
   customHabits: Habit[]; // Personalized list of questions
+}
+
+// Subscription Plan Types
+export type SubscriptionPlanId = 'starter' | 'standard' | 'growth' | 'empire';
+
+export interface SubscriptionPlan {
+  id: SubscriptionPlanId;
+  name: string;
+  price: number; // Monthly price in dollars
+  studentLimit: number | null; // null = unlimited
+  features: string[];
+  icon: string; // emoji
+  popular?: boolean;
+}
+
+export interface SubscriptionStatus {
+  planId: SubscriptionPlanId | null;
+  trialStartDate: string; // ISO date string
+  trialEndDate: string; // ISO date string
+  isTrialActive: boolean;
+  isLocked: boolean;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
 }
 
 export interface WizardData {
