@@ -48,6 +48,8 @@ const App: React.FC = () => {
     const [parentStudentId, setParentStudentId] = useState<string | null>(null);
     const [showPricing, setShowPricing] = useState(false);
     const [isDemoMode, setIsDemoMode] = useState(false);
+    const [demoWizardData, setDemoWizardData] = useState<WizardData | null>(null);
+    const [demoSubscription, setDemoSubscription] = useState<SubscriptionStatus | null>(null);
 
     const setSignupData = useCallback((data: SignupData | null) => {
         setSignupDataState(data);
@@ -155,11 +157,17 @@ const App: React.FC = () => {
         setLoggedInUserType(null);
         setLoggedInUserName(null);
         setParentStudentId(null);
-        setIsDemoMode(false);
-    }, []);
+        if (isDemoMode) {
+            setIsDemoMode(false);
+            setDemoWizardData(null);
+            setDemoSubscription(null);
+        }
+    }, [isDemoMode]);
 
     const handleEnterDemo = useCallback((role: 'owner' | 'coach' | 'parent', studentId?: string) => {
-        setFinalWizardDataState(DEMO_WIZARD_DATA);
+        setDemoWizardData(DEMO_WIZARD_DATA);
+        const newDemoSubscription = initSubscription(new Date().toISOString());
+        setDemoSubscription(newDemoSubscription);
         setIsDemoMode(true);
         setLoggedInUserType(role);
         setLoggedInUserName(role === 'owner' ? 'Demo Admin' : role === 'coach' ? 'Demo Coach' : 'Demo Parent');
@@ -168,8 +176,6 @@ const App: React.FC = () => {
         } else if (role === 'parent') {
             setParentStudentId(DEMO_WIZARD_DATA.students[0]?.id || null);
         }
-        const demoSubscription = initSubscription(new Date().toISOString());
-        setSubscription(demoSubscription);
     }, []);
 
     const handleSwitchDemoRole = useCallback((role: 'owner' | 'coach' | 'parent', studentId?: string) => {
@@ -180,12 +186,15 @@ const App: React.FC = () => {
         }
     }, []);
 
+    const activeWizardData = isDemoMode ? demoWizardData : finalWizardData;
+    const activeSubscription = isDemoMode ? demoSubscription : subscription;
+
     return (
         <BrowserRouter>
             <AppContent
                 signupData={signupData}
-                finalWizardData={finalWizardData}
-                subscription={subscription}
+                finalWizardData={activeWizardData}
+                subscription={activeSubscription}
                 showPricing={showPricing}
                 onboardingMessage={onboardingMessage}
                 isProcessing={isProcessing}
