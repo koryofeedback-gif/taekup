@@ -1,5 +1,7 @@
 import type { SubscriptionPlan, SubscriptionPlanId, SubscriptionStatus, Student } from '../types';
 
+// PRICING STRATEGY: Undercut Kicksite ($49/$99/$149/$199) at every level.
+// ALL plans get full features (App, Portal, AI). We only limit by student count.
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'starter',
@@ -8,11 +10,10 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     studentLimit: 25,
     icon: '🥋',
     features: [
-      'Up to 25 students',
-      'Basic attendance tracking',
-      'Parent portal access',
-      'Student progress reports',
-      'Email support'
+      'Up to 25 Students',
+      'Full AI Features',
+      'Parent Portal App',
+      'Revenue Share (70%)'
     ]
   },
   {
@@ -23,12 +24,10 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     icon: '👊',
     popular: true,
     features: [
-      'Up to 75 students',
+      'Up to 75 Students',
       'Everything in Starter',
-      'AI-powered lesson plans',
-      'Custom belt systems',
-      'Multi-location support',
-      'Priority email support'
+      'Multi-Location Support',
+      'Priority Support'
     ]
   },
   {
@@ -38,12 +37,10 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     studentLimit: 150,
     icon: '🚀',
     features: [
-      'Up to 150 students',
+      'Up to 150 Students',
       'Everything in Standard',
-      'Advanced analytics',
-      'Curriculum management',
-      'Competition tracking',
-      'Phone support'
+      'Advanced Analytics',
+      'Dedicated Success Mgr'
     ]
   },
   {
@@ -53,12 +50,10 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     studentLimit: null,
     icon: '👑',
     features: [
-      'Unlimited students',
+      'UNLIMITED Students',
       'Everything in Growth',
-      'White-label branding',
-      'API access',
-      'Dedicated account manager',
-      'Custom integrations'
+      'White-Label Domain',
+      'API Access'
     ]
   }
 ];
