@@ -180,3 +180,37 @@ None specified yet.
 3. Configure production Tailwind CSS (remove CDN)
 4. Add error boundary components
 5. Implement authentication system
+
+## Future Roadmap - Squad System (v2.0) 🛡️
+
+### Concept: House Cup Model (Like Harry Potter/Cobra Kai)
+Create semi-permanent "Squads" to increase retention through **team belonging**.
+
+### Why Squad System
+- **Identity & Retention**: Students identify with "Team Dragon" - they won't leave because they'd abandon their team
+- **Peer Motivation**: Classmates motivate each other ("Hami, do pushups so our team wins!")
+- **Sticky Engagement**: Turns solo home practice into team sport
+- **Zero Additional Content Needed**: The game is always "who wins the week?"
+
+### Squad System Features
+1. **Setup**: Admin creates 2-4 squads (Dragons, Tigers, Phoenix, Eagle) with colors
+2. **Auto-Assignment**: New students sorted into squads evenly by belt level
+3. **Collective XP**: Every student's XP from Rivals (1v1, Team Battles, Family, Mystery) counts toward squad total
+4. **Squad Leaderboard**: TV Lobby displays "DRAGONS: 4,500 XP | TIGERS: 4,200 XP"
+5. **Weekly Rewards**: Squad winners get +50 bonus XP per member each Sunday
+6. **Visual Theme**: Student app theme changes to squad color (red for Dragon, etc.)
+7. **Squad Stats**: Track squad wins, total XP, member roster, weekly rankings
+8. **Peer Pressure (Good)**: "Your squad won the week!" notifications drive engagement
+
+### Implementation Plan (Future)
+- Phase 1: Database schema (squads table, squad_id on students, squad_xp aggregation)
+- Phase 2: Admin squad management UI
+- Phase 3: Squad leaderboards (TV Lobby + App)
+- Phase 4: Weekly rewards calculation & notifications
+- Phase 5: Squad color themes & visual identity
+
+### Expected Impact
+- Home practice rate: 40% → 70%
+- Retention: 70% → 85%+
+- Engagement: More consistent (always team-driven)
+- Stickiness: Extreme (kids don't want to leave their squad)
