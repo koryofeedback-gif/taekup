@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Student, WizardData, PerformanceRecord, Belt, Habit } from '../types';
+import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory } from '../types';
 import { BeltIcon, CalendarIcon } from './icons/FeatureIcons';
 import { generateParentingAdvice } from '../services/geminiService';
 import { LANGUAGES } from '../constants';
@@ -30,7 +30,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [challengeResult, setChallengeResult] = useState<'pending' | 'win' | 'loss' | null>(null);
     const [isSimulatingChallenge, setIsSimulatingChallenge] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState<string>('');
-    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly' | 'inbox'>('arena');
+    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery'>('arena');
     const [challengeHistory, setChallengeHistory] = useState<Array<{
         id: string;
         opponent: string;
@@ -38,12 +38,33 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         result: 'win' | 'loss';
         date: string;
         xpEarned: number;
+        isTeam?: boolean;
+        isFamily?: boolean;
     }>>([
         { id: '1', opponent: 'Alex Kim', challenge: 'Pushups', result: 'win', date: '2 days ago', xpEarned: 50 },
         { id: '2', opponent: 'Sarah Chen', challenge: 'Plank Hold', result: 'loss', date: '3 days ago', xpEarned: 10 },
         { id: '3', opponent: 'Mike Park', challenge: 'High Kicks', result: 'win', date: '5 days ago', xpEarned: 75 },
     ]);
     const [rivalStats, setRivalStats] = useState({ wins: 12, losses: 5, streak: 3, xp: 850 });
+    
+    // Team Battle State
+    const [myTeam, setMyTeam] = useState<string[]>([]);
+    const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
+    const [teamBattleMode, setTeamBattleMode] = useState(false);
+    
+    // Parent-Child Challenge State
+    const [familyChallengeMode, setFamilyChallengeMode] = useState(false);
+    const [parentScore, setParentScore] = useState<string>('');
+    const [activeFamilyChallenge, setActiveFamilyChallenge] = useState<string | null>(null);
+    
+    // Mystery Challenge State
+    const [mysteryChallenge, setMysteryChallenge] = useState<{id: string; name: string; icon: string; xp: number; category: ChallengeCategory} | null>(null);
+    const [mysteryCompleted, setMysteryCompleted] = useState(false);
+    const [mysteryScore, setMysteryScore] = useState<string>('');
+    
+    // Daily Streak
+    const [dailyStreak, setDailyStreak] = useState(3);
+    const [lastChallengeDate, setLastChallengeDate] = useState<string>(new Date().toISOString().split('T')[0]);
     
     // Challenge Inbox State
     interface PendingChallenge {
@@ -993,7 +1014,30 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         const activeCustomChallenges = (data.customChallenges || []).filter(c => c.isActive);
         
-        // Challenge Categories with exercises
+        // Get streak XP multiplier
+        const getStreakMultiplier = () => {
+            if (dailyStreak >= 7) return 2.0;
+            if (dailyStreak >= 3) return 1.5;
+            return 1.0;
+        };
+        
+        // Belt tier for matchmaking
+        const getBeltTier = (beltId: string) => {
+            const beltIndex = data.belts.findIndex(b => b.id === beltId);
+            if (beltIndex < 3) return 'beginner';
+            if (beltIndex < 6) return 'intermediate';
+            return 'advanced';
+        };
+        
+        const studentBeltTier = getBeltTier(student.beltId);
+        
+        // Filter classmates by similar belt tier for fair matchmaking
+        const fairMatchClassmates = classmates.filter(c => {
+            const theirTier = getBeltTier(c.beltId);
+            return theirTier === studentBeltTier;
+        });
+        
+        // Challenge Categories - Consolidated to 3 (Power, Technique, Flexibility)
         const challengeCategories = [
             ...(activeCustomChallenges.length > 0 ? [{
                 name: 'Coach Picks',
@@ -1011,7 +1055,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 }))
             }] : []),
             {
-                name: 'Strength',
+                name: 'Power',
                 icon: '💪',
                 color: 'red',
                 challenges: [
@@ -1019,6 +1063,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     { id: 'squats', name: 'Squats', icon: '🦵', xp: 50 },
                     { id: 'plank', name: 'Plank Hold', icon: '🧱', xp: 75 },
                     { id: 'burpees', name: 'Burpees', icon: '🔥', xp: 100 },
+                    { id: 'running', name: '1-Mile Run', icon: '🏃', xp: 100 },
+                    { id: 'kicks100', name: '100 Kicks', icon: '💯', xp: 80 },
+                    { id: 'wallsit', name: 'Wall Sit', icon: '🧱', xp: 60 },
+                ]
+            },
+            {
+                name: 'Technique',
+                icon: '🎯',
+                color: 'blue',
+                challenges: [
+                    { id: 'forms', name: 'Forms Accuracy', icon: '🥋', xp: 100 },
+                    { id: 'combo', name: 'Combo Challenge', icon: '💥', xp: 80 },
+                    { id: 'balance', name: 'One-Leg Balance', icon: '🦩', xp: 70 },
+                    { id: 'breaking', name: 'Board Breaking', icon: '🪵', xp: 150 },
+                    { id: 'kicks30', name: '30-Second Kicks', icon: '🦵', xp: 60 },
+                    { id: 'punches30', name: '30-Second Punches', icon: '👊', xp: 60 },
+                    { id: 'jumprope', name: 'Jump Rope Speed', icon: '🪢', xp: 50 },
                 ]
             },
             {
@@ -1029,39 +1090,52 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     { id: 'splits', name: 'Splits Challenge', icon: '🤸', xp: 75 },
                     { id: 'highkick', name: 'High Kick Height', icon: '🦶', xp: 60 },
                     { id: 'bridge', name: 'Back Bridge', icon: '🌉', xp: 80 },
-                ]
-            },
-            {
-                name: 'Speed',
-                icon: '⚡',
-                color: 'yellow',
-                challenges: [
-                    { id: 'kicks30', name: '30-Second Kicks', icon: '🦵', xp: 60 },
-                    { id: 'punches30', name: '30-Second Punches', icon: '👊', xp: 60 },
-                    { id: 'jumprope', name: 'Jump Rope Speed', icon: '🪢', xp: 50 },
-                ]
-            },
-            {
-                name: 'Skill',
-                icon: '🎯',
-                color: 'blue',
-                challenges: [
-                    { id: 'forms', name: 'Forms Accuracy', icon: '🥋', xp: 100 },
-                    { id: 'combo', name: 'Combo Challenge', icon: '💥', xp: 80 },
-                    { id: 'balance', name: 'One-Leg Balance', icon: '🦩', xp: 70 },
-                    { id: 'breaking', name: 'Board Breaking', icon: '🪵', xp: 150 },
-                ]
-            },
-            {
-                name: 'Endurance',
-                icon: '🏃',
-                color: 'green',
-                challenges: [
-                    { id: 'running', name: '1-Mile Run', icon: '🏃', xp: 100 },
-                    { id: 'kicks100', name: '100 Kicks', icon: '💯', xp: 80 },
-                    { id: 'wallsit', name: 'Wall Sit', icon: '🧱', xp: 60 },
+                    { id: 'stretch', name: 'Touch Your Toes', icon: '🦶', xp: 40 },
+                    { id: 'sidekick', name: 'Side Kick Stretch', icon: '🦿', xp: 65 },
                 ]
             }
+        ];
+        
+        // Core challenges for mystery box (only from Power, Technique, Flexibility)
+        const mysteryChallenges: {id: string; name: string; icon: string; xp: number; category: ChallengeCategory}[] = [
+            ...challengeCategories
+                .filter(c => c.name === 'Power' || c.name === 'Technique' || c.name === 'Flexibility')
+                .flatMap(c => 
+                    c.challenges.map(ch => ({ 
+                        id: ch.id, 
+                        name: ch.name, 
+                        icon: ch.icon, 
+                        xp: ch.xp, 
+                        category: c.name as ChallengeCategory 
+                    }))
+                )
+        ];
+        
+        // Generate daily mystery challenge
+        const generateMysteryChallenge = () => {
+            if (mysteryChallenges.length === 0) return;
+            const today = new Date().toISOString().split('T')[0];
+            const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0);
+            const index = seed % mysteryChallenges.length;
+            const challenge = mysteryChallenges[index];
+            setMysteryChallenge({
+                ...challenge,
+                xp: Math.round(challenge.xp * 1.5) // 50% bonus for mystery
+            });
+        };
+        
+        // Initialize mystery challenge on first render
+        if (!mysteryChallenge && !mysteryCompleted) {
+            generateMysteryChallenge();
+        }
+        
+        // Family challenge pairs
+        const familyChallenges = [
+            { id: 'family_pushups', name: 'Parent vs Kid: Pushups', icon: '💪', xp: 100, description: 'Who can do more pushups?' },
+            { id: 'family_plank', name: 'Family Plank-Off', icon: '🧱', xp: 120, description: 'Hold plank together - longest wins!' },
+            { id: 'family_kicks', name: 'Kick Count Battle', icon: '🦶', xp: 80, description: '1 minute - most kicks wins!' },
+            { id: 'family_balance', name: 'Balance Challenge', icon: '🦩', xp: 90, description: 'One leg - who falls first loses!' },
+            { id: 'family_stretch', name: 'Flexibility Face-Off', icon: '🧘', xp: 75, description: 'Touch your toes competition' },
         ];
 
         // Weekly Challenges
@@ -1150,8 +1224,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             const result = await realtimeAcceptChallenge(activeChallenge.id, score);
             
             if (result) {
-                const xpEarned = result.xpEarned;
                 const won = result.won;
+                const streakMultiplier = getStreakMultiplier();
+                const baseXp = result.xpEarned;
+                const xpEarned = won ? Math.round(baseXp * streakMultiplier) : 10;
                 
                 if (won) {
                     setRivalStats(prev => ({ 
@@ -1160,6 +1236,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         streak: prev.streak + 1,
                         xp: prev.xp + xpEarned
                     }));
+                    setDailyStreak(prev => prev + 1);
+                    setLastChallengeDate(new Date().toISOString().split('T')[0]);
                 } else {
                     setRivalStats(prev => ({ ...prev, losses: prev.losses + 1, streak: 0, xp: prev.xp + 10 }));
                 }
@@ -1204,34 +1282,76 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <h3 className="text-2xl font-black text-white italic tracking-tighter relative z-10">DOJANG RIVALS</h3>
                         <p className="text-red-400 font-bold uppercase tracking-widest text-[10px] relative z-10">Challenge. Compete. Win.</p>
                         
-                        {/* Stats Bar */}
-                        <div className="flex justify-center gap-4 mt-3 relative z-10">
+                        {/* Simplified Stats Bar - Rank + XP + Streak */}
+                        <div className="flex justify-center gap-6 mt-3 relative z-10">
                             <div className="text-center">
-                                <div className="text-xl font-black text-green-400">{rivalStats.wins}</div>
-                                <div className="text-[10px] text-gray-400 uppercase">Wins</div>
+                                <div className="text-2xl font-black text-cyan-400">#{leaderboard.find(p => p.isYou)?.rank || '-'}</div>
+                                <div className="text-[10px] text-gray-400 uppercase">Rank</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-xl font-black text-red-400">{rivalStats.losses}</div>
-                                <div className="text-[10px] text-gray-400 uppercase">Losses</div>
+                                <div className="text-2xl font-black text-purple-400">{rivalStats.xp}</div>
+                                <div className="text-[10px] text-gray-400 uppercase">Total XP</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-xl font-black text-yellow-400">{rivalStats.streak}🔥</div>
+                                <div className="text-2xl font-black text-yellow-400">{rivalStats.streak}🔥</div>
                                 <div className="text-[10px] text-gray-400 uppercase">Streak</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-xl font-black text-purple-400">{rivalStats.xp}</div>
-                                <div className="text-[10px] text-gray-400 uppercase">XP</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Navigation Tabs */}
+                    {/* Streak & XP Multiplier Banner */}
+                    {dailyStreak >= 3 && (
+                        <div className="bg-gradient-to-r from-orange-900/50 to-yellow-900/50 p-3 rounded-xl border border-orange-500/30 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl">{dailyStreak >= 7 ? '🌟' : '🔥'}</span>
+                                <div>
+                                    <p className="text-white font-bold text-sm">{dailyStreak}-Day Streak!</p>
+                                    <p className="text-orange-300 text-xs">
+                                        {dailyStreak >= 7 ? '2x XP Bonus Active!' : '1.5x XP Bonus Active!'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-yellow-400 font-black text-lg">{getStreakMultiplier()}x</p>
+                                <p className="text-gray-400 text-[10px] uppercase">Multiplier</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Navigation Tabs - Row 1 */}
                     <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
                         {[
                             { id: 'arena', label: 'Arena', icon: '⚔️', badge: 0 },
                             { id: 'inbox', label: 'Inbox', icon: '📬', badge: totalPendingCount },
-                            { id: 'weekly', label: 'Weekly', icon: '🎯', badge: 0 },
+                            { id: 'mystery', label: 'Mystery', icon: '🎁', badge: mysteryCompleted ? 0 : 1 },
                             { id: 'leaderboard', label: 'Ranks', icon: '🏆', badge: 0 },
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setRivalsView(tab.id as typeof rivalsView)}
+                                className={`flex-1 py-2 px-2 rounded-md text-xs font-bold transition-all relative ${
+                                    rivalsView === tab.id 
+                                        ? 'bg-red-600 text-white' 
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                <span className="mr-1">{tab.icon}</span>
+                                {tab.label}
+                                {tab.badge > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                                        {tab.badge}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    {/* Navigation Tabs - Row 2 */}
+                    <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
+                        {[
+                            { id: 'teams', label: 'Teams', icon: '👥', badge: 0 },
+                            { id: 'family', label: 'Family', icon: '👨‍👧', badge: 0 },
+                            { id: 'weekly', label: 'Weekly', icon: '🎯', badge: 0 },
                             { id: 'history', label: 'History', icon: '📜', badge: 0 },
                         ].map(tab => (
                             <button
@@ -1271,22 +1391,38 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         )}
                                     </div>
 
-                                    {/* Select Opponent */}
+                                    {/* Select Opponent with Fair Matchmaking */}
                                     <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
-                                        <h4 className="font-bold text-white mb-3 flex items-center">
+                                        <h4 className="font-bold text-white mb-2 flex items-center">
                                             <span className="mr-2">👤</span> Choose Opponent
                                         </h4>
+                                        <p className="text-gray-400 text-xs mb-3">
+                                            <span className="text-green-400">Fair Match:</span> {studentBeltTier} tier ({fairMatchClassmates.length} available)
+                                        </p>
                                         <select 
                                             value={selectedRival} 
                                             onChange={e => setSelectedRival(e.target.value)}
                                             className="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 text-sm"
                                         >
                                             <option value="">Select Opponent...</option>
-                                            {classmates.map(c => (
-                                                <option key={c.id} value={c.id}>
-                                                    {c.name} ({data.belts.find(b => b.id === c.beltId)?.name})
-                                                </option>
-                                            ))}
+                                            {fairMatchClassmates.length > 0 && (
+                                                <optgroup label="Fair Match (Same Tier)">
+                                                    {fairMatchClassmates.map(c => (
+                                                        <option key={c.id} value={c.id}>
+                                                            ⚖️ {c.name} ({data.belts.find(b => b.id === c.beltId)?.name})
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            )}
+                                            {classmates.filter(c => !fairMatchClassmates.includes(c)).length > 0 && (
+                                                <optgroup label="All Others">
+                                                    {classmates.filter(c => !fairMatchClassmates.includes(c)).map(c => (
+                                                        <option key={c.id} value={c.id}>
+                                                            {c.name} ({data.belts.find(b => b.id === c.beltId)?.name})
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            )}
                                         </select>
                                     </div>
 
@@ -1632,7 +1768,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         {battle.result === 'win' ? '👑' : '💀'}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-white text-sm">vs {battle.opponent}</p>
+                                                        <p className="font-bold text-white text-sm">
+                                                            vs {battle.opponent}
+                                                            {battle.isTeam && <span className="ml-1 text-blue-400 text-[10px]">(Team)</span>}
+                                                            {battle.isFamily && <span className="ml-1 text-pink-400 text-[10px]">(Family)</span>}
+                                                        </p>
                                                         <p className="text-[10px] text-gray-400">{battle.challenge} • {battle.date}</p>
                                                     </div>
                                                 </div>
@@ -1645,6 +1785,298 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                         ))
                                     )}
+                                </div>
+                            )}
+
+                            {/* MYSTERY CHALLENGE VIEW */}
+                            {rivalsView === 'mystery' && (
+                                <div className="space-y-4">
+                                    <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 rounded-xl border border-purple-500/30 text-center">
+                                        <h4 className="font-bold text-white flex items-center justify-center mb-2">
+                                            <span className="mr-2 text-2xl">🎁</span> Daily Mystery Challenge
+                                        </h4>
+                                        <p className="text-xs text-purple-300">Complete today's surprise challenge for bonus XP!</p>
+                                    </div>
+                                    
+                                    {mysteryCompleted ? (
+                                        <div className="bg-gray-800 rounded-xl border border-green-500/30 p-8 text-center">
+                                            <div className="text-6xl mb-4">✅</div>
+                                            <h4 className="text-xl font-bold text-green-400 mb-2">Mystery Complete!</h4>
+                                            <p className="text-gray-400 text-sm">Come back tomorrow for a new mystery challenge</p>
+                                        </div>
+                                    ) : mysteryChallenge ? (
+                                        <div className="bg-gray-800 rounded-xl border border-purple-500/50 overflow-hidden">
+                                            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 text-center">
+                                                <div className="text-5xl mb-2 animate-bounce">{mysteryChallenge.icon}</div>
+                                                <h4 className="text-xl font-black text-white">{mysteryChallenge.name}</h4>
+                                                <p className="text-purple-200 text-xs">{mysteryChallenge.category} Challenge</p>
+                                            </div>
+                                            <div className="p-4">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <span className="text-gray-400 text-sm">Bonus XP Reward:</span>
+                                                    <span className="text-yellow-400 font-black text-xl">+{mysteryChallenge.xp} XP</span>
+                                                </div>
+                                                <div className="text-center text-gray-400 text-xs mb-4">
+                                                    <span className="text-green-400">1.5x bonus</span> for mystery completion!
+                                                </div>
+                                                
+                                                <div className="space-y-3">
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Enter your score..."
+                                                        value={mysteryScore}
+                                                        onChange={(e) => setMysteryScore(e.target.value)}
+                                                        className="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 text-center text-lg"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            if (!mysteryScore) return;
+                                                            const multiplier = getStreakMultiplier();
+                                                            const xpEarned = Math.round(mysteryChallenge.xp * multiplier);
+                                                            setRivalStats(prev => ({
+                                                                ...prev,
+                                                                wins: prev.wins + 1,
+                                                                streak: prev.streak + 1,
+                                                                xp: prev.xp + xpEarned
+                                                            }));
+                                                            setDailyStreak(prev => prev + 1);
+                                                            setChallengeHistory(prev => [{
+                                                                id: Date.now().toString(),
+                                                                opponent: 'Mystery Box',
+                                                                challenge: mysteryChallenge.name,
+                                                                result: 'win',
+                                                                date: 'Just now',
+                                                                xpEarned
+                                                            }, ...prev]);
+                                                            setMysteryCompleted(true);
+                                                            setMysteryScore('');
+                                                        }}
+                                                        disabled={!mysteryScore}
+                                                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all"
+                                                    >
+                                                        Complete Mystery Challenge!
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </div>
+                            )}
+
+                            {/* TEAM BATTLES VIEW */}
+                            {rivalsView === 'teams' && (
+                                <div className="space-y-4">
+                                    <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 p-4 rounded-xl border border-blue-500/30">
+                                        <h4 className="font-bold text-white flex items-center">
+                                            <span className="mr-2">👥</span> Team Battles
+                                        </h4>
+                                        <p className="text-xs text-blue-300">Team up with classmates for combined challenges!</p>
+                                    </div>
+                                    
+                                    <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                                        <h5 className="font-bold text-white mb-3 text-sm">Build Your Squad (2-3 members)</h5>
+                                        <div className="space-y-2 mb-4">
+                                            {fairMatchClassmates.length > 0 ? fairMatchClassmates.map(mate => (
+                                                <div 
+                                                    key={mate.id}
+                                                    onClick={() => {
+                                                        if (selectedTeammates.includes(mate.id)) {
+                                                            setSelectedTeammates(prev => prev.filter(id => id !== mate.id));
+                                                        } else if (selectedTeammates.length < 2) {
+                                                            setSelectedTeammates(prev => [...prev, mate.id]);
+                                                        }
+                                                    }}
+                                                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
+                                                        selectedTeammates.includes(mate.id)
+                                                            ? 'bg-blue-900/30 border-blue-500/50'
+                                                            : 'bg-gray-700 border-gray-600 hover:border-blue-500/30'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-lg mr-3">
+                                                            {mate.name[0]}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-white font-bold text-sm">{mate.name}</p>
+                                                            <p className="text-gray-400 text-[10px]">{data.belts.find(b => b.id === mate.beltId)?.name}</p>
+                                                        </div>
+                                                    </div>
+                                                    {selectedTeammates.includes(mate.id) && (
+                                                        <span className="text-blue-400 text-xl">✓</span>
+                                                    )}
+                                                </div>
+                                            )) : (
+                                                <p className="text-gray-500 text-sm text-center py-4">No classmates at your belt level for fair teams</p>
+                                            )}
+                                        </div>
+                                        
+                                        {selectedTeammates.length > 0 && (
+                                            <div className="bg-blue-900/20 p-3 rounded-lg border border-blue-500/30 mb-4">
+                                                <p className="text-blue-300 text-xs font-bold mb-2">Your Team:</p>
+                                                <div className="flex gap-2 flex-wrap">
+                                                    <span className="bg-cyan-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                                        {student.name} (You)
+                                                    </span>
+                                                    {selectedTeammates.map(id => {
+                                                        const mate = classmates.find(c => c.id === id);
+                                                        return mate ? (
+                                                            <span key={id} className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                                                {mate.name}
+                                                            </span>
+                                                        ) : null;
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        <button
+                                            disabled={selectedTeammates.length === 0}
+                                            onClick={() => {
+                                                setTeamBattleMode(true);
+                                                setMyTeam(selectedTeammates);
+                                            }}
+                                            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition-colors"
+                                        >
+                                            {selectedTeammates.length === 0 
+                                                ? 'Select Teammates First' 
+                                                : `Challenge as Team (${selectedTeammates.length + 1} members)`}
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
+                                        <h5 className="font-bold text-white mb-2 text-sm flex items-center">
+                                            <span className="mr-2">💡</span> How Team Battles Work
+                                        </h5>
+                                        <ul className="text-gray-400 text-xs space-y-1">
+                                            <li>• Combined scores from all team members</li>
+                                            <li>• XP is split equally among teammates</li>
+                                            <li>• Win together, lose together!</li>
+                                            <li>• Matchmaking pairs similar belt levels</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* FAMILY CHALLENGES VIEW */}
+                            {rivalsView === 'family' && (
+                                <div className="space-y-4">
+                                    <div className="bg-gradient-to-r from-pink-900/50 to-red-900/50 p-4 rounded-xl border border-pink-500/30">
+                                        <h4 className="font-bold text-white flex items-center">
+                                            <span className="mr-2">👨‍👧</span> Family Challenges
+                                        </h4>
+                                        <p className="text-xs text-pink-300">Challenge your parents at home for bonus XP!</p>
+                                    </div>
+                                    
+                                    <div className="grid gap-3">
+                                        {familyChallenges.map(challenge => (
+                                            <div 
+                                                key={challenge.id}
+                                                className={`bg-gray-800 rounded-xl border overflow-hidden transition-all ${
+                                                    activeFamilyChallenge === challenge.id 
+                                                        ? 'border-pink-500/50' 
+                                                        : 'border-gray-700 hover:border-pink-500/30'
+                                                }`}
+                                            >
+                                                <div 
+                                                    onClick={() => setActiveFamilyChallenge(
+                                                        activeFamilyChallenge === challenge.id ? null : challenge.id
+                                                    )}
+                                                    className="flex items-center justify-between p-4 cursor-pointer"
+                                                >
+                                                    <div className="flex items-center">
+                                                        <div className="w-12 h-12 rounded-full bg-pink-900/50 flex items-center justify-center text-2xl mr-3">
+                                                            {challenge.icon}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-white font-bold text-sm">{challenge.name}</p>
+                                                            <p className="text-gray-400 text-[10px]">{challenge.description}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-yellow-400 font-bold">+{challenge.xp} XP</p>
+                                                        <p className="text-gray-500 text-[10px]">for winner</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                {activeFamilyChallenge === challenge.id && (
+                                                    <div className="border-t border-gray-700 p-4 bg-gray-900/50">
+                                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                                            <div>
+                                                                <label className="text-gray-400 text-xs block mb-1">Your Score</label>
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="0"
+                                                                    value={myScore}
+                                                                    onChange={(e) => setMyScore(e.target.value)}
+                                                                    className="w-full bg-gray-700 text-white p-2 rounded-lg text-center"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-gray-400 text-xs block mb-1">Parent's Score</label>
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="0"
+                                                                    value={parentScore}
+                                                                    onChange={(e) => setParentScore(e.target.value)}
+                                                                    className="w-full bg-gray-700 text-white p-2 rounded-lg text-center"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (!myScore || !parentScore) return;
+                                                                const won = parseInt(myScore) > parseInt(parentScore);
+                                                                const multiplier = getStreakMultiplier();
+                                                                const xpEarned = won 
+                                                                    ? Math.round(challenge.xp * multiplier)
+                                                                    : Math.round(challenge.xp * 0.5 * multiplier);
+                                                                
+                                                                setRivalStats(prev => ({
+                                                                    ...prev,
+                                                                    wins: won ? prev.wins + 1 : prev.wins,
+                                                                    losses: won ? prev.losses : prev.losses + 1,
+                                                                    streak: won ? prev.streak + 1 : 0,
+                                                                    xp: prev.xp + xpEarned
+                                                                }));
+                                                                
+                                                                if (won) setDailyStreak(prev => prev + 1);
+                                                                
+                                                                setChallengeHistory(prev => [{
+                                                                    id: Date.now().toString(),
+                                                                    opponent: 'Parent',
+                                                                    challenge: challenge.name,
+                                                                    result: won ? 'win' : 'loss',
+                                                                    date: 'Just now',
+                                                                    xpEarned,
+                                                                    isFamily: true
+                                                                }, ...prev]);
+                                                                
+                                                                setActiveFamilyChallenge(null);
+                                                                setMyScore('');
+                                                                setParentScore('');
+                                                            }}
+                                                            disabled={!myScore || !parentScore}
+                                                            className="w-full bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white font-bold py-2 rounded-lg transition-colors"
+                                                        >
+                                                            Submit Results
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
+                                        <h5 className="font-bold text-white mb-2 text-sm flex items-center">
+                                            <span className="mr-2">💝</span> Family Bonding Benefits
+                                        </h5>
+                                        <ul className="text-gray-400 text-xs space-y-1">
+                                            <li>• Kids earn XP even when they lose (50%)</li>
+                                            <li>• Parents can let kids win for morale!</li>
+                                            <li>• Great for practicing at home</li>
+                                            <li>• Builds family martial arts culture</li>
+                                        </ul>
+                                    </div>
                                 </div>
                             )}
                         </>

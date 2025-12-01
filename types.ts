@@ -112,7 +112,7 @@ export interface Challenge {
     date: string;
 }
 
-export type ChallengeCategory = 'Strength' | 'Flexibility' | 'Speed' | 'Skill' | 'Endurance' | 'Custom';
+export type ChallengeCategory = 'Power' | 'Technique' | 'Flexibility' | 'Custom';
 
 export interface CustomChallenge {
     id: string;

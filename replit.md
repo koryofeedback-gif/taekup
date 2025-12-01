@@ -34,13 +34,18 @@ The project has been successfully configured to run on Replit. The development s
   - Category selector (Custom, Martial Arts, Health, School, Character, Family)
   - Custom habits shown separately from presets
   - Easy add/remove functionality
-- **Expanded Dojang Rivals System**:
-  - 5 Challenge Categories: Strength, Flexibility, Speed, Skill, Endurance
-  - 17 unique challenges with XP rewards (50-150 XP each)
+- **Enhanced Dojang Rivals System**:
+  - 3 Consolidated Challenge Categories: Power, Technique, Flexibility
+  - 19 unique challenges with XP rewards (40-150 XP each)
+  - Team Battles: Form squads of 2-3 students to compete together
+  - Parent-Child Challenges: Family engagement with 5 preset challenges
+  - Belt-Tier Matchmaking: Fair opponents based on belt level (beginner/intermediate/advanced)
+  - Daily Streak Bonuses: 3-day = 1.5x XP, 7-day = 2x XP multiplier
+  - Mystery Challenge Box: Daily random challenge with 1.5x bonus XP
+  - Simplified Stats: Rank, Total XP, and Streak display
   - Weekly Challenges with special rewards and progress tracking
   - Leaderboard showing top warriors in the dojo
-  - Battle History with win/loss tracking
-  - Stats tracking: Wins, Losses, Streak, Total XP
+  - Battle History with win/loss/team/family tracking
   - Badge/Achievement system (Iron Fist, Lightning, Warrior Spirit, etc.)
 - **Real-Time Challenge Notifications**:
   - Challenge Inbox with Received/Sent tabs and notification badges
@@ -53,7 +58,7 @@ The project has been successfully configured to run on Replit. The development s
   - Supabase real-time subscriptions ready (configure VITE_SUPABASE_URL/KEY)
 - **Coach Challenge Builder**:
   - Template-driven interface for creating custom challenges
-  - Challenge categories: Strength, Flexibility, Speed, Skill, Endurance, Custom
+  - Challenge categories: Power, Technique, Flexibility, Custom
   - Difficulty levels: Beginner, Intermediate, Advanced (with XP scaling)
   - Measurement types: Count, Seconds, Score, Reps, Distance
   - Optional video demonstration links (YouTube)

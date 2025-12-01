@@ -12,11 +12,9 @@ interface ChallengeBuilderProps {
 }
 
 const CATEGORY_OPTIONS: { value: ChallengeCategory; label: string; icon: string; color: string }[] = [
-    { value: 'Strength', label: 'Strength', icon: '💪', color: 'red' },
+    { value: 'Power', label: 'Power', icon: '💪', color: 'red' },
+    { value: 'Technique', label: 'Technique', icon: '🎯', color: 'blue' },
     { value: 'Flexibility', label: 'Flexibility', icon: '🧘', color: 'purple' },
-    { value: 'Speed', label: 'Speed', icon: '⚡', color: 'yellow' },
-    { value: 'Skill', label: 'Skill', icon: '🎯', color: 'blue' },
-    { value: 'Endurance', label: 'Endurance', icon: '🏃', color: 'green' },
     { value: 'Custom', label: 'Custom', icon: '⭐', color: 'cyan' },
 ];
 
@@ -54,7 +52,7 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
     
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [category, setCategory] = useState<ChallengeCategory>('Strength');
+    const [category, setCategory] = useState<ChallengeCategory>('Power');
     const [icon, setIcon] = useState('💪');
     const [baseXp, setBaseXp] = useState(50);
     const [videoUrl, setVideoUrl] = useState('');
@@ -68,7 +66,7 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
     const resetForm = () => {
         setName('');
         setDescription('');
-        setCategory('Strength');
+        setCategory('Power');
         setIcon('💪');
         setBaseXp(50);
         setVideoUrl('');
