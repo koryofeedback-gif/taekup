@@ -7,17 +7,20 @@ TaekUp is a comprehensive martial arts club management platform built with React
 The project has been successfully configured to run on Replit. The development server is running on port 5000 and the frontend is accessible via the webview.
 
 ## Recent Changes (December 1, 2025)
-- **Subscription & Trial System Implementation**:
-  - 14-day free trial with unlimited access during trial
-  - 4 pricing tiers: Starter ($24.99), Standard ($59), Growth ($129), Empire ($199)
-  - Student-based plan limits (25/75/150/unlimited)
+- **5-Tier "Ladder of Success" Pricing**:
+  - Starter: $24.99/mo (25 students) - Entry Level
+  - Pro: $39.99/mo (50 students) - Sweet Spot for Small Clubs
+  - Standard: $69/mo (80 students) - Growing Dojos
+  - Growth: $129/mo (150 students) - Serious Business
+  - Empire: $199/mo (Unlimited) - Scale Without Limits
+- **Subscription & Trial System**:
+  - 14-day free trial with unlimited access
+  - "Lock Strategy" - forces plan selection based on student count after trial
   - Trial banner showing days remaining
-  - Account lock page when trial expires
-  - Plan selection with recommended tier based on student count
-  - Account locking enforced for all user types (owner, coach, parent)
-  - Stripe integration set up for payment processing
+  - Account lock page with plan recommendations
+  - Stripe integration for payment processing
 - **Dual AI System**:
-  - TaekBot now powered by GPT-4o for higher accuracy
+  - TaekBot powered by GPT-4o for higher accuracy
   - Gemini API available for routine tasks
   - Both services with fallback responses
 

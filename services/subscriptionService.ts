@@ -1,6 +1,7 @@
 import type { SubscriptionPlan, SubscriptionPlanId, SubscriptionStatus, Student } from '../types';
 
-// PRICING STRATEGY: Undercut Kicksite ($49/$99/$149/$199) at every level.
+// PRICING STRATEGY: 5-Tier "Ladder of Success"
+// Undercut Kicksite ($49/$99/$149/$199) at every level.
 // ALL plans get full features (App, Portal, AI). We only limit by student count.
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
@@ -17,15 +18,28 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     ]
   },
   {
-    id: 'standard',
-    name: 'Standard',
-    price: 59.00,
-    studentLimit: 75,
-    icon: '👊',
+    id: 'pro',
+    name: 'Pro',
+    price: 39.99,
+    studentLimit: 50,
+    icon: '⚡',
     popular: true,
     features: [
-      'Up to 75 Students',
+      'Up to 50 Students',
       'Everything in Starter',
+      'The Sweet Spot for Small Clubs',
+      'Email + Chat Support'
+    ]
+  },
+  {
+    id: 'standard',
+    name: 'Standard',
+    price: 69.00,
+    studentLimit: 80,
+    icon: '👊',
+    features: [
+      'Up to 80 Students',
+      'Everything in Pro',
       'Multi-Location Support',
       'Priority Support'
     ]

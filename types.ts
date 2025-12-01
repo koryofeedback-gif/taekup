@@ -156,8 +156,8 @@ export interface Student {
   customHabits: Habit[]; // Personalized list of questions
 }
 
-// Subscription Plan Types
-export type SubscriptionPlanId = 'starter' | 'standard' | 'growth' | 'empire';
+// Subscription Plan Types - 5-Tier "Ladder of Success"
+export type SubscriptionPlanId = 'starter' | 'pro' | 'standard' | 'growth' | 'empire';
 
 export interface SubscriptionPlan {
   id: SubscriptionPlanId;

@@ -40,12 +40,13 @@ KEY SELLING POINTS (Use these to answer questions):
 2. **Pedagogy First**: We aren't just billing software. We have AI Lesson Planners, Curriculum Video tools, and Student Growth Analytics.
 3. **The Ecosystem**: We handle everything from the "Dojo Floor" (Teaching) to the "Front Desk" (Business).
 
-PRICING (If asked):
-- **Starter:** $24.99/mo (Up to 25 students).
-- **Standard:** $59.00/mo (Up to 75 students).
-- **Growth:** $129.00/mo (Up to 150 students).
-- **Empire:** $199.00/mo (Unlimited).
-- *Remind them:* The Revenue Share feature usually covers this cost entirely.
+PRICING (If asked) - 5-Tier "Ladder of Success":
+- **Starter:** $24.99/mo (Up to 25 students) - Entry Level.
+- **Pro:** $39.99/mo (Up to 50 students) - The Sweet Spot for small clubs.
+- **Standard:** $69.00/mo (Up to 80 students) - Growing dojos.
+- **Growth:** $129.00/mo (Up to 150 students) - Serious business.
+- **Empire:** $199.00/mo (Unlimited) - Scale without limits.
+- *Remind them:* The 70% Revenue Share feature usually covers this cost entirely!
 
 Be concise and helpful. If you don't know something, suggest they start the 14-Day Free Trial to see for themselves.`;
 
