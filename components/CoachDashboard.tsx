@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import type { WizardData, Student, PerformanceRecord, FeedbackRecord, CalendarEvent } from '../types';
+import type { WizardData, Student, PerformanceRecord, FeedbackRecord, CalendarEvent, CustomChallenge } from '../types';
 import { generateParentFeedback, generatePromotionMessage, generateLessonPlan } from '../services/geminiService';
 import { generateLessonPlanGPT } from '../services/openaiService';
 import { StudentProfile } from './StudentProfile';
+import { ChallengeBuilder } from './ChallengeBuilder';
 
 // --- TYPE DEFINITIONS ---
 type SessionScores = Record<string, Record<string, number | null>>;
@@ -665,8 +666,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const [certificateData, setCertificateData] = useState<{show: boolean, student: Student | null, newBelt: string}>({ show: false, student: null, newBelt: '' });
     
     // Navigation State
-    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'sparring' | 'planner'>('grading');
+    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'sparring' | 'planner' | 'challenges'>('grading');
     const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+    const [showChallengeBuilder, setShowChallengeBuilder] = useState(false);
 
     // SENSEI VOICE STATE
     const [isVoiceActive, setIsVoiceActive] = useState(false);
@@ -1026,6 +1028,38 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             onUpdateData({ events: [...(data.events || []), newEvent] });
         }
     }
+
+    const handleSaveChallenge = (challenge: CustomChallenge) => {
+        if (onUpdateData) {
+            const existingChallenges = data.customChallenges || [];
+            const existingIndex = existingChallenges.findIndex(c => c.id === challenge.id);
+            
+            if (existingIndex >= 0) {
+                const updated = [...existingChallenges];
+                updated[existingIndex] = challenge;
+                onUpdateData({ customChallenges: updated });
+            } else {
+                onUpdateData({ customChallenges: [...existingChallenges, challenge] });
+            }
+        }
+    };
+
+    const handleDeleteChallenge = (challengeId: string) => {
+        if (onUpdateData) {
+            const existingChallenges = data.customChallenges || [];
+            onUpdateData({ customChallenges: existingChallenges.filter(c => c.id !== challengeId) });
+        }
+    };
+
+    const handleToggleChallenge = (challengeId: string, isActive: boolean) => {
+        if (onUpdateData) {
+            const existingChallenges = data.customChallenges || [];
+            const updated = existingChallenges.map(c => 
+                c.id === challengeId ? { ...c, isActive } : c
+            );
+            onUpdateData({ customChallenges: updated });
+        }
+    };
     
     const calculateRowData = (student: Student) => {
         const studentScores = sessionScores[student.id] || {};
@@ -1131,7 +1165,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         <div className="flex flex-wrap justify-between items-center">
                             <div>
                                 <h1 className="text-xl font-bold text-white">
-                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : `🥊 Sparring Tracker`}
+                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : `🥊 Sparring Tracker`}
                                 </h1>
                                 <p className="text-sm text-gray-400">👤 Coach {coachName} | 🏫 {data.clubName}</p>
                             </div>
@@ -1168,6 +1202,12 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'schedule' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                                 >
                                     📅 Schedule
+                                </button>
+                                <button 
+                                    onClick={() => setActiveView('challenges')}
+                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'challenges' ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                >
+                                    🏆 Challenges
                                 </button>
                                 <button onClick={onBack} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 text-sm rounded-md transition-colors">Exit</button>
                             </div>
@@ -1441,6 +1481,100 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         </div>
                     )}
 
+                    {/* CHALLENGES VIEW */}
+                    {activeView === 'challenges' && (
+                        <div className="p-6 min-h-[500px] bg-gray-900">
+                            <div className="max-w-4xl mx-auto">
+                                <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-2xl p-8 border border-cyan-500/30 mb-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-white mb-2">Custom Challenge Builder</h2>
+                                            <p className="text-gray-400">Create unique challenges for your students to compete in Dojang Rivals</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowChallengeBuilder(true)}
+                                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold px-6 py-3 rounded-xl transition-all flex items-center gap-2"
+                                        >
+                                            <span className="text-xl">🏆</span>
+                                            Create Challenge
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+                                        <div className="text-4xl mb-2">📊</div>
+                                        <div className="text-3xl font-black text-cyan-400">{(data.customChallenges || []).filter(c => c.isActive).length}</div>
+                                        <div className="text-gray-400 text-sm">Active Challenges</div>
+                                    </div>
+                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+                                        <div className="text-4xl mb-2">🎯</div>
+                                        <div className="text-3xl font-black text-yellow-400">{(data.customChallenges || []).filter(c => c.weeklyChallenge).length}</div>
+                                        <div className="text-gray-400 text-sm">Weekly Challenges</div>
+                                    </div>
+                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+                                        <div className="text-4xl mb-2">👥</div>
+                                        <div className="text-3xl font-black text-green-400">{students.length}</div>
+                                        <div className="text-gray-400 text-sm">Students</div>
+                                    </div>
+                                </div>
+
+                                {(data.customChallenges || []).length === 0 ? (
+                                    <div className="text-center py-16 bg-gray-800/50 rounded-2xl border border-gray-700">
+                                        <div className="text-7xl mb-4">🏆</div>
+                                        <h3 className="text-2xl font-bold text-white mb-2">No Custom Challenges Yet</h3>
+                                        <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                                            Create your first custom challenge to give your students unique ways to compete and earn XP in Dojang Rivals!
+                                        </p>
+                                        <button
+                                            onClick={() => setShowChallengeBuilder(true)}
+                                            className="bg-cyan-500 hover:bg-cyan-400 text-white font-bold px-8 py-3 rounded-xl transition-all"
+                                        >
+                                            Create Your First Challenge
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                            <span className="text-green-400">●</span> Your Custom Challenges
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {(data.customChallenges || []).filter(c => c.isActive).map(challenge => (
+                                                <div key={challenge.id} className="bg-gray-800 rounded-xl border border-gray-700 p-4 hover:border-cyan-500/50 transition-all">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-12 h-12 bg-gray-700 rounded-xl flex items-center justify-center text-2xl">
+                                                            {challenge.icon}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-white">{challenge.name}</span>
+                                                                {challenge.weeklyChallenge && (
+                                                                    <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded-full">Weekly</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <span className="text-xs text-gray-500">{challenge.category}</span>
+                                                                <span className="text-xs text-gray-500">•</span>
+                                                                <span className="text-xs text-gray-500">{challenge.difficulty}</span>
+                                                                <span className="text-green-400 text-sm font-bold ml-auto">+{challenge.xp} XP</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setShowChallengeBuilder(true)}
+                                            className="w-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white font-bold py-4 rounded-xl transition-all border border-dashed border-gray-600 hover:border-cyan-500"
+                                        >
+                                            + Add More Challenges
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Footer Actions (Only for Grading View) */}
                     {activeView === 'grading' && (
                         <div className="p-4 bg-gray-800 rounded-b-lg border-t border-gray-700 flex flex-wrap gap-4 justify-end">
@@ -1469,6 +1603,17 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     newBelt={certificateData.newBelt} 
                     data={data}
                     onClose={() => setCertificateData({ show: false, student: null, newBelt: '' })} 
+                />
+            )}
+            {showChallengeBuilder && (
+                <ChallengeBuilder
+                    coachId={coachName}
+                    coachName={coachName}
+                    existingChallenges={data.customChallenges || []}
+                    onSaveChallenge={handleSaveChallenge}
+                    onDeleteChallenge={handleDeleteChallenge}
+                    onToggleChallenge={handleToggleChallenge}
+                    onClose={() => setShowChallengeBuilder(false)}
                 />
             )}
         </div>
