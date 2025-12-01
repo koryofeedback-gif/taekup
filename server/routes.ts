@@ -2,8 +2,67 @@ import express, { type Express, type Request, type Response } from 'express';
 import { storage } from './storage';
 import { stripeService } from './stripeService';
 import { getStripePublishableKey } from './stripeClient';
+import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail } from './aiService';
 
 export function registerRoutes(app: Express) {
+  app.post('/api/ai/taekbot', async (req: Request, res: Response) => {
+    try {
+      const { message, clubName, artType, language } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: 'message is required' });
+      }
+      
+      const response = await generateTaekBotResponse(message, {
+        name: clubName || 'your dojo',
+        artType: artType || 'martial arts',
+        language: language || 'English'
+      });
+      
+      res.json({ response });
+    } catch (error: any) {
+      console.error('TaekBot error:', error.message);
+      res.status(500).json({ error: 'Failed to generate response' });
+    }
+  });
+
+  app.post('/api/ai/class-plan', async (req: Request, res: Response) => {
+    try {
+      const { beltLevel, focusArea, classDuration, studentCount, language } = req.body;
+      
+      const plan = await generateClassPlan({
+        beltLevel: beltLevel || 'All Levels',
+        focusArea: focusArea || 'General Training',
+        classDuration: classDuration || 60,
+        studentCount: studentCount || 10,
+        language: language || 'English'
+      });
+      
+      res.json({ plan });
+    } catch (error: any) {
+      console.error('Class plan error:', error.message);
+      res.status(500).json({ error: 'Failed to generate class plan' });
+    }
+  });
+
+  app.post('/api/ai/welcome-email', async (req: Request, res: Response) => {
+    try {
+      const { clubName, studentName, parentName, artType, language } = req.body;
+      
+      const email = await generateWelcomeEmail({
+        clubName: clubName || 'Your Dojo',
+        studentName: studentName || 'Student',
+        parentName: parentName || 'Parent',
+        artType: artType || 'martial arts',
+        language: language || 'English'
+      });
+      
+      res.json({ email });
+    } catch (error: any) {
+      console.error('Welcome email error:', error.message);
+      res.status(500).json({ error: 'Failed to generate welcome email' });
+    }
+  });
   app.get('/api/stripe/publishable-key', async (req: Request, res: Response) => {
     try {
       const publishableKey = await getStripePublishableKey();

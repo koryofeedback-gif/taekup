@@ -31,16 +31,20 @@ async function initStripe() {
     const webhookBaseUrl = domains[0] ? `https://${domains[0]}` : `http://localhost:${PORT}`;
     
     try {
-      const { webhook, uuid } = await stripeSync.findOrCreateManagedWebhook(
+      const result = await stripeSync.findOrCreateManagedWebhook(
         `${webhookBaseUrl}/api/stripe/webhook`,
         {
           enabled_events: ['*'],
           description: 'TaekUp Stripe webhook',
         }
       );
-      console.log(`Webhook configured: ${webhook.url}`);
+      if (result && result.webhook) {
+        console.log(`Webhook configured: ${result.webhook.url}`);
+      } else {
+        console.log('Webhook created (URL not returned)');
+      }
     } catch (webhookError: any) {
-      console.warn('Webhook setup skipped:', webhookError.message);
+      console.warn('Webhook setup skipped:', webhookError.message || webhookError);
     }
 
     console.log('Syncing Stripe data in background...');
