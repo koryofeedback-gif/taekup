@@ -38,15 +38,23 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         const priceMap: StripePriceMap = {};
         
         for (const product of products) {
-          const tierName = product.name.toLowerCase();
-          if (product.prices && product.prices.length > 0) {
-            priceMap[tierName] = product.prices[0].id;
+          const metadata = product.metadata || {};
+          const planId = (
+            metadata.planId || 
+            metadata.tier || 
+            product.name || 
+            ''
+          ).toLowerCase().trim();
+          
+          if (planId && product.prices && product.prices.length > 0) {
+            priceMap[planId] = product.prices[0].id;
           }
         }
         
+        console.log('Loaded Stripe prices:', priceMap);
         setStripePrices(priceMap);
       } catch (err) {
-        console.warn('Could not load Stripe prices, using demo mode');
+        console.warn('Could not load Stripe prices, using demo mode:', err);
       }
     };
 
