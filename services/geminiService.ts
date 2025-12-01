@@ -8,8 +8,7 @@ let aiInstancePromise: Promise<GoogleGenerativeAI | null> | null = null;
 const getAiInstance = (): Promise<GoogleGenerativeAI | null> => {
   if (!aiInstancePromise) {
     aiInstancePromise = (async () => {
-      // Get API key from environment (Vite exposes it via import.meta.env with VITE_ prefix)
-      const apiKey = (import.meta.env as any).VITE_GOOGLE_API_KEY;
+      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
       
       if (!apiKey) {
         console.warn("VITE_GOOGLE_API_KEY is not available. Gemini API features will be disabled. AI will use fallback responses.");

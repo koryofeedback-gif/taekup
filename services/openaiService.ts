@@ -6,7 +6,7 @@ let openaiInstance: OpenAI | null = null;
 const getOpenAIInstance = () => {
   if (openaiInstance) return openaiInstance;
   
-  const apiKey = (import.meta.env as any).VITE_OPENAI_API_KEY;
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   
   if (!apiKey) {
     console.warn("VITE_OPENAI_API_KEY is not available. OpenAI features will be disabled.");
