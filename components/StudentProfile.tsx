@@ -434,6 +434,88 @@ const PerformanceHistoryGraph: React.FC<{ history: PerformanceRecord[], skills: 
     );
 };
 
+const RivalsEngagement: React.FC<{ student: Student }> = ({ student }) => {
+    const stats = student.rivalsStats;
+    
+    if (!stats || stats.xp === 0) {
+        return (
+            <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-lg text-white">Home Practice (Dojang Rivals)</h3>
+                    <span className="text-xs bg-gray-700 text-gray-400 px-2 py-1 rounded">No Activity Yet</span>
+                </div>
+                <p className="text-sm text-gray-500 text-center py-4">
+                    This student hasn't participated in Dojang Rivals challenges yet.
+                </p>
+            </div>
+        );
+    }
+    
+    const getEngagementLevel = (xp: number) => {
+        if (xp >= 5000) return { level: 'Champion', color: 'text-yellow-400', bg: 'bg-yellow-500/20', icon: '🏆' };
+        if (xp >= 2000) return { level: 'Warrior', color: 'text-purple-400', bg: 'bg-purple-500/20', icon: '⚔️' };
+        if (xp >= 1000) return { level: 'Rising Star', color: 'text-cyan-400', bg: 'bg-cyan-500/20', icon: '⭐' };
+        if (xp >= 500) return { level: 'Active', color: 'text-green-400', bg: 'bg-green-500/20', icon: '🔥' };
+        return { level: 'Getting Started', color: 'text-gray-400', bg: 'bg-gray-500/20', icon: '🌱' };
+    };
+    
+    const engagement = getEngagementLevel(stats.xp);
+    const winRate = stats.wins + stats.losses > 0 
+        ? Math.round((stats.wins / (stats.wins + stats.losses)) * 100) 
+        : 0;
+    
+    return (
+        <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg text-white">Home Practice (Dojang Rivals)</h3>
+                <span className={`text-sm ${engagement.bg} ${engagement.color} px-3 py-1 rounded-full font-medium`}>
+                    {engagement.icon} {engagement.level}
+                </span>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-cyan-400">{stats.xp.toLocaleString()}</div>
+                    <div className="text-xs text-gray-400">Total XP</div>
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-green-400">{stats.wins}</div>
+                    <div className="text-xs text-gray-400">Wins</div>
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-orange-400">{stats.dailyStreak}</div>
+                    <div className="text-xs text-gray-400">Day Streak</div>
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-purple-400">{winRate}%</div>
+                    <div className="text-xs text-gray-400">Win Rate</div>
+                </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="bg-gray-800/50 rounded p-2">
+                    <span className="text-gray-400">Team Battles:</span>
+                    <span className="text-white ml-1 font-medium">{stats.teamBattlesWon}</span>
+                </div>
+                <div className="bg-gray-800/50 rounded p-2">
+                    <span className="text-gray-400">Family Challenges:</span>
+                    <span className="text-white ml-1 font-medium">{stats.familyChallengesCompleted}</span>
+                </div>
+                <div className="bg-gray-800/50 rounded p-2">
+                    <span className="text-gray-400">Mystery Box:</span>
+                    <span className="text-white ml-1 font-medium">{stats.mysteryBoxCompleted}</span>
+                </div>
+            </div>
+            
+            {stats.lastChallengeDate && (
+                <div className="mt-3 text-xs text-gray-500 text-center">
+                    Last active: {new Date(stats.lastChallengeDate).toLocaleDateString()}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const FeedbackLog: React.FC<{ history: FeedbackRecord[] }> = ({ history }) => (
     <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
         <h3 className="font-semibold text-lg text-white mb-3">Feedback & Notes Log</h3>
@@ -466,6 +548,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({ student, data, o
                 </div>
                 <div className="lg:col-span-2 space-y-6">
                     <PerformanceSummary student={student} rules={data} />
+                    <RivalsEngagement student={student} />
                     <PerformanceHistoryGraph 
                         history={student.performanceHistory || []} 
                         skills={data.skills} 

@@ -72,6 +72,12 @@ The project has been successfully configured to run on Replit. The development s
   - Floating role switcher for instant view changes during demo
   - Isolated demo state - doesn't affect real user data
   - Easy exit to return to normal login flow
+- **Rivals XP Visibility for Coaches**:
+  - Student Profile shows "Home Practice (Dojang Rivals)" section
+  - Engagement levels: Champion (5000+ XP), Warrior (2000+), Rising Star (1000+), Active (500+)
+  - XP badges appear next to student names in Coach Dashboard (🏆/⚔️/⭐/🔥)
+  - Stats sync automatically from Parent Portal to student record
+  - Coaches can see: Total XP, Wins, Day Streak, Win Rate, Team/Family/Mystery stats
 
 ## Previous Changes (November 30, 2025)
 - Configured Vite to work with Replit proxy (host: 0.0.0.0, port: 5000)

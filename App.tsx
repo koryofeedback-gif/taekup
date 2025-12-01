@@ -441,6 +441,7 @@ const AppContent: React.FC<AppContentProps> = ({
                                     parentStudentId={parentStudentId}
                                     loggedInUserType={loggedInUserType}
                                     onLogout={onLogout}
+                                    onUpdateStudents={onStudentDataUpdate}
                                 />
                             ) : (
                                 <Navigate to="/login" replace />
@@ -489,6 +490,7 @@ interface ParentPortalRouteProps {
     parentStudentId: string | null;
     loggedInUserType: 'owner' | 'coach' | 'parent' | null;
     onLogout: () => void;
+    onUpdateStudents: (students: Student[]) => void;
 }
 
 const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
@@ -496,6 +498,7 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     parentStudentId,
     loggedInUserType,
     onLogout,
+    onUpdateStudents,
 }) => {
     let studentToShow: Student | undefined;
 
@@ -509,6 +512,13 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
         return <div className="text-center py-20 text-white">No students available.</div>;
     }
 
+    const handleUpdateStudent = (updatedStudent: Student) => {
+        const updatedStudents = data.students.map(s => 
+            s.id === updatedStudent.id ? updatedStudent : s
+        );
+        onUpdateStudents(updatedStudents);
+    };
+
     return (
         <>
             <SEO title={`Parent Portal - ${studentToShow.name} | TaekUp`} />
@@ -516,6 +526,7 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
                 student={studentToShow}
                 data={data}
                 onBack={loggedInUserType === 'owner' ? () => window.history.back() : onLogout}
+                onUpdateStudent={handleUpdateStudent}
             />
         </>
     );

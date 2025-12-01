@@ -1297,6 +1297,16 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     {student.name} 
                                                     {newStripes > 0 && <span className="ml-2 animate-bounce">🎉</span>}
                                                     {isReady && <span className="ml-2" title="Ready for Promotion">🌟</span>}
+                                                    {student.rivalsStats && student.rivalsStats.xp >= 500 && (
+                                                        <span 
+                                                            className="ml-2" 
+                                                            title={`Home Practice: ${student.rivalsStats.xp.toLocaleString()} XP`}
+                                                        >
+                                                            {student.rivalsStats.xp >= 5000 ? '🏆' : 
+                                                             student.rivalsStats.xp >= 2000 ? '⚔️' : 
+                                                             student.rivalsStats.xp >= 1000 ? '⭐' : '🔥'}
+                                                        </span>
+                                                    )}
                                                 </button>
                                                 <div className="text-[10px] text-gray-500 font-normal">{student.location} • {student.assignedClass}</div>
                                             </td>

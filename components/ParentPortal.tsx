@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory } from '../types';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory, RivalsStats } from '../types';
 import { BeltIcon, CalendarIcon } from './icons/FeatureIcons';
 import { generateParentingAdvice } from '../services/geminiService';
 import { LANGUAGES } from '../constants';
@@ -11,12 +11,13 @@ interface ParentPortalProps {
     student: Student;
     data: WizardData;
     onBack: () => void;
+    onUpdateStudent?: (student: Student) => void;
 }
 
 // Helper to get belt info
 const getBelt = (beltId: string, belts: Belt[]) => belts.find(b => b.id === beltId);
 
-export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack }) => {
+export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack, onUpdateStudent }) => {
     const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'home-dojo' | 'rivals'>('home');
     const [isPremium, setIsPremium] = useState(false); // Toggle to simulate upgrade
     const [missionChecks, setMissionChecks] = useState<Record<string, boolean>>({});
@@ -45,7 +46,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         { id: '2', opponent: 'Sarah Chen', challenge: 'Plank Hold', result: 'loss', date: '3 days ago', xpEarned: 10 },
         { id: '3', opponent: 'Mike Park', challenge: 'High Kicks', result: 'win', date: '5 days ago', xpEarned: 75 },
     ]);
-    const [rivalStats, setRivalStats] = useState({ wins: 12, losses: 5, streak: 3, xp: 850 });
+    const [rivalStats, setRivalStats] = useState(() => {
+        // Initialize from student's saved stats or use defaults
+        if (student.rivalsStats) {
+            return {
+                wins: student.rivalsStats.wins,
+                losses: student.rivalsStats.losses,
+                streak: student.rivalsStats.streak,
+                xp: student.rivalsStats.xp
+            };
+        }
+        return { wins: 0, losses: 0, streak: 0, xp: 0 };
+    });
+    
+    // Track additional rivals stats
+    const [teamBattlesWon, setTeamBattlesWon] = useState(student.rivalsStats?.teamBattlesWon || 0);
+    const [familyChallengesCompleted, setFamilyChallengesCompleted] = useState(student.rivalsStats?.familyChallengesCompleted || 0);
+    const [mysteryBoxCompleted, setMysteryBoxCompletedCount] = useState(student.rivalsStats?.mysteryBoxCompleted || 0);
     
     // Team Battle State
     const [myTeam, setMyTeam] = useState<string[]>([]);
@@ -63,8 +80,42 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [mysteryScore, setMysteryScore] = useState<string>('');
     
     // Daily Streak
-    const [dailyStreak, setDailyStreak] = useState(3);
-    const [lastChallengeDate, setLastChallengeDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [dailyStreak, setDailyStreak] = useState(student.rivalsStats?.dailyStreak || 0);
+    const [lastChallengeDate, setLastChallengeDate] = useState<string>(student.rivalsStats?.lastChallengeDate || new Date().toISOString().split('T')[0]);
+    
+    // Sync rivals stats to student record whenever they change
+    const syncRivalsStats = useCallback(() => {
+        if (!onUpdateStudent) return;
+        
+        const rivalsStatsToSync: RivalsStats = {
+            xp: rivalStats.xp,
+            wins: rivalStats.wins,
+            losses: rivalStats.losses,
+            streak: rivalStats.streak,
+            dailyStreak: dailyStreak,
+            lastChallengeDate: lastChallengeDate,
+            teamBattlesWon: teamBattlesWon,
+            familyChallengesCompleted: familyChallengesCompleted,
+            mysteryBoxCompleted: mysteryBoxCompleted
+        };
+        
+        const updatedStudent = {
+            ...student,
+            rivalsStats: rivalsStatsToSync
+        };
+        
+        onUpdateStudent(updatedStudent);
+    }, [rivalStats, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted, student, onUpdateStudent]);
+    
+    // Sync when stats change
+    useEffect(() => {
+        // Debounce the sync to avoid too many updates
+        const timeoutId = setTimeout(() => {
+            syncRivalsStats();
+        }, 500);
+        
+        return () => clearTimeout(timeoutId);
+    }, [rivalStats.xp, rivalStats.wins, rivalStats.losses, rivalStats.streak, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted]);
     
     // Challenge Inbox State
     interface PendingChallenge {
@@ -1840,6 +1891,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 xp: prev.xp + xpEarned
                                                             }));
                                                             setDailyStreak(prev => prev + 1);
+                                                            setMysteryBoxCompletedCount(prev => prev + 1);
+                                                            setLastChallengeDate(new Date().toISOString().split('T')[0]);
                                                             setChallengeHistory(prev => [{
                                                                 id: Date.now().toString(),
                                                                 opponent: 'Mystery Box',
@@ -2040,6 +2093,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 }));
                                                                 
                                                                 if (won) setDailyStreak(prev => prev + 1);
+                                                                setFamilyChallengesCompleted(prev => prev + 1);
+                                                                setLastChallengeDate(new Date().toISOString().split('T')[0]);
                                                                 
                                                                 setChallengeHistory(prev => [{
                                                                     id: Date.now().toString(),

@@ -150,6 +150,19 @@ export interface Habit {
     isCustom?: boolean; // True if created by parent
 }
 
+// Dojang Rivals stats for gamification
+export interface RivalsStats {
+  xp: number;
+  wins: number;
+  losses: number;
+  streak: number;
+  dailyStreak: number;
+  lastChallengeDate?: string;
+  teamBattlesWon: number;
+  familyChallengesCompleted: number;
+  mysteryBoxCompleted: number;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -177,6 +190,7 @@ export interface Student {
   badges: string[]; // New: For gamification rewards
   lifeSkillsHistory: LifeSkill[]; // Log of completed habits
   customHabits: Habit[]; // Personalized list of questions
+  rivalsStats?: RivalsStats; // Dojang Rivals engagement data
 }
 
 // Subscription Plan Types - 5-Tier "Ladder of Success"
