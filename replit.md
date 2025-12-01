@@ -51,6 +51,15 @@ The project has been successfully configured to run on Replit. The development s
   - PostgreSQL challenges table for persistence
   - BroadcastChannel API for cross-tab notifications in demo mode
   - Supabase real-time subscriptions ready (configure VITE_SUPABASE_URL/KEY)
+- **Coach Challenge Builder**:
+  - Template-driven interface for creating custom challenges
+  - Challenge categories: Strength, Flexibility, Speed, Skill, Endurance, Custom
+  - Difficulty levels: Beginner, Intermediate, Advanced (with XP scaling)
+  - Measurement types: Count, Seconds, Score, Reps, Distance
+  - Optional video demonstration links (YouTube)
+  - Weekly Challenge toggle with expiration date
+  - "Coach Picks" category displays active challenges in Parent Portal Arena
+  - Full CRUD operations with toggle active/inactive
 
 ## Previous Changes (November 30, 2025)
 - Configured Vite to work with Replit proxy (host: 0.0.0.0, port: 5000)
@@ -81,8 +90,10 @@ The project has been successfully configured to run on Replit. The development s
 ├── components/         # React components
 │   ├── wizard/        # Setup wizard steps
 │   ├── icons/         # Icon components
-│   ├── ChallengeToast.tsx  # Real-time challenge notification
-│   └── ParentPortal.tsx    # Parent/student portal (with Dojang Rivals)
+│   ├── ChallengeBuilder.tsx  # Coach challenge creation interface
+│   ├── ChallengeToast.tsx    # Real-time challenge notification
+│   ├── CoachDashboard.tsx    # Coach management dashboard
+│   └── ParentPortal.tsx      # Parent/student portal (with Dojang Rivals)
 ├── hooks/             # Custom React hooks
 │   └── useChallengeRealtime.ts  # Real-time challenge state management
 ├── pages/             # Page components
