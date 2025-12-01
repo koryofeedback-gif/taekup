@@ -12,6 +12,7 @@ import { LandingPage } from './pages/Landing';
 import { PricingPage } from './pages/PricingPage';
 import { AccountLockedPage } from './pages/AccountLockedPage';
 import { TrialBanner } from './components/TrialBanner';
+import { DemoMode, RoleSwitcher, DEMO_WIZARD_DATA } from './components/DemoMode';
 import {
     sendCoachWelcomeEmail,
     sendParentWelcomeEmail,
@@ -46,6 +47,7 @@ const App: React.FC = () => {
     const [loggedInUserName, setLoggedInUserName] = useState<string | null>(null);
     const [parentStudentId, setParentStudentId] = useState<string | null>(null);
     const [showPricing, setShowPricing] = useState(false);
+    const [isDemoMode, setIsDemoMode] = useState(false);
 
     const setSignupData = useCallback((data: SignupData | null) => {
         setSignupDataState(data);
@@ -153,6 +155,29 @@ const App: React.FC = () => {
         setLoggedInUserType(null);
         setLoggedInUserName(null);
         setParentStudentId(null);
+        setIsDemoMode(false);
+    }, []);
+
+    const handleEnterDemo = useCallback((role: 'owner' | 'coach' | 'parent', studentId?: string) => {
+        setFinalWizardDataState(DEMO_WIZARD_DATA);
+        setIsDemoMode(true);
+        setLoggedInUserType(role);
+        setLoggedInUserName(role === 'owner' ? 'Demo Admin' : role === 'coach' ? 'Demo Coach' : 'Demo Parent');
+        if (studentId) {
+            setParentStudentId(studentId);
+        } else if (role === 'parent') {
+            setParentStudentId(DEMO_WIZARD_DATA.students[0]?.id || null);
+        }
+        const demoSubscription = initSubscription(new Date().toISOString());
+        setSubscription(demoSubscription);
+    }, []);
+
+    const handleSwitchDemoRole = useCallback((role: 'owner' | 'coach' | 'parent', studentId?: string) => {
+        setLoggedInUserType(role);
+        setLoggedInUserName(role === 'owner' ? 'Demo Admin' : role === 'coach' ? 'Demo Coach' : 'Demo Parent');
+        if (studentId) {
+            setParentStudentId(studentId);
+        }
     }, []);
 
     return (
@@ -177,6 +202,9 @@ const App: React.FC = () => {
                 onSelectPlan={handleSelectPlan}
                 onShowPricing={() => setShowPricing(true)}
                 onHidePricing={() => setShowPricing(false)}
+                isDemoMode={isDemoMode}
+                onEnterDemo={handleEnterDemo}
+                onSwitchDemoRole={handleSwitchDemoRole}
             />
         </BrowserRouter>
     );
@@ -202,6 +230,9 @@ interface AppContentProps {
     onSelectPlan: (planId: SubscriptionPlanId) => void;
     onShowPricing: () => void;
     onHidePricing: () => void;
+    isDemoMode: boolean;
+    onEnterDemo: (role: 'owner' | 'coach' | 'parent', studentId?: string) => void;
+    onSwitchDemoRole: (role: 'owner' | 'coach' | 'parent', studentId?: string) => void;
 }
 
 const AppContent: React.FC<AppContentProps> = ({
@@ -224,6 +255,9 @@ const AppContent: React.FC<AppContentProps> = ({
     onSelectPlan,
     onShowPricing,
     onHidePricing,
+    isDemoMode,
+    onEnterDemo,
+    onSwitchDemoRole,
 }) => {
     const location = useLocation();
     const isAppSubdomain = window.location.hostname.startsWith('app.');
@@ -302,6 +336,25 @@ const AppContent: React.FC<AppContentProps> = ({
                                 finalWizardData={finalWizardData}
                                 onLoginSuccess={onLoginSuccess}
                             />
+                        }
+                    />
+
+                    {/* Demo Mode */}
+                    <Route
+                        path="/demo"
+                        element={
+                            isDemoMode && finalWizardData && loggedInUserType ? (
+                                <Navigate to={
+                                    loggedInUserType === 'owner' ? '/app/admin' :
+                                    loggedInUserType === 'coach' ? '/app/coach' :
+                                    `/app/parent/${parentStudentId || finalWizardData.students[0]?.id}`
+                                } replace />
+                            ) : (
+                                <>
+                                    <SEO title="Demo Mode | TaekUp" />
+                                    <DemoMode onEnterDemo={onEnterDemo} />
+                                </>
+                            )
                         }
                     />
 
@@ -409,6 +462,14 @@ const AppContent: React.FC<AppContentProps> = ({
             </main>
             {!isDojangTV && <Footer />}
             {!isDojangTV && <TaekBot />}
+            {isDemoMode && finalWizardData && loggedInUserType && !isDojangTV && (
+                <RoleSwitcher
+                    currentRole={loggedInUserType}
+                    onSwitchRole={onSwitchDemoRole}
+                    students={finalWizardData.students}
+                    currentStudentId={parentStudentId || undefined}
+                />
+            )}
         </div>
     );
 };

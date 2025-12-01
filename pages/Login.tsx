@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import type { SignupData, WizardData } from '../types';
 
@@ -123,11 +123,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                         Log In
                     </button>
                 </form>
-                <div className="mt-6 text-center text-xs text-gray-500 border-t border-gray-700 pt-4">
-                    <p className="mb-1">Demo Credentials:</p>
-                    <p>Owner: (Use Signup Email & Password)</p>
-                    <p>Coach: (Use Email & Password from Step 5)</p>
-                    <p>Parent: (Use Parent Email, Password: <span className="font-mono text-gray-300">1234</span>)</p>
+                
+                <div className="mt-6 pt-6 border-t border-gray-700">
+                    <p className="text-center text-gray-400 text-sm mb-4">No account yet?</p>
+                    <Link
+                        to="/demo"
+                        className="w-full block text-center bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold py-3 rounded-lg transition-colors"
+                    >
+                        Try Demo Mode
+                    </Link>
+                    <p className="text-center text-gray-500 text-xs mt-3">Instant access - no registration required</p>
                 </div>
             </div>
         </div>
