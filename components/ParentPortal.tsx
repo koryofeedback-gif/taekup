@@ -27,7 +27,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [challengeResult, setChallengeResult] = useState<'pending' | 'win' | 'loss' | null>(null);
     const [isSimulatingChallenge, setIsSimulatingChallenge] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState<string>('');
-    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly'>('arena');
+    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly' | 'inbox'>('arena');
     const [challengeHistory, setChallengeHistory] = useState<Array<{
         id: string;
         opponent: string;
@@ -41,6 +41,35 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         { id: '3', opponent: 'Mike Park', challenge: 'High Kicks', result: 'win', date: '5 days ago', xpEarned: 75 },
     ]);
     const [rivalStats, setRivalStats] = useState({ wins: 12, losses: 5, streak: 3, xp: 850 });
+    
+    // Challenge Inbox State
+    interface PendingChallenge {
+        id: string;
+        fromId: string;
+        fromName: string;
+        toId: string;
+        toName: string;
+        challengeId: string;
+        challengeName: string;
+        challengeXp: number;
+        status: 'pending' | 'accepted' | 'declined' | 'completed';
+        myScore?: number;
+        theirScore?: number;
+        createdAt: string;
+        expiresIn: string;
+    }
+    const [pendingChallenges, setPendingChallenges] = useState<PendingChallenge[]>([
+        { id: 'pc1', fromId: 's2', fromName: 'Alex Kim', toId: student.id, toName: student.name, challengeId: 'pushups', challengeName: 'Pushups', challengeXp: 50, status: 'pending', createdAt: '2 hours ago', expiresIn: '22 hours' },
+        { id: 'pc2', fromId: 's3', fromName: 'Sarah Chen', toId: student.id, toName: student.name, challengeId: 'plank', challengeName: 'Plank Hold', challengeXp: 75, status: 'pending', createdAt: '5 hours ago', expiresIn: '19 hours' },
+    ]);
+    const [sentChallenges, setSentChallenges] = useState<PendingChallenge[]>([
+        { id: 'sc1', fromId: student.id, fromName: student.name, toId: 's4', toName: 'Mike Park', challengeId: 'kicks30', challengeName: '30-Second Kicks', challengeXp: 60, status: 'pending', createdAt: '1 day ago', expiresIn: '12 hours' },
+    ]);
+    const [activeChallenge, setActiveChallenge] = useState<PendingChallenge | null>(null);
+    const [myScore, setMyScore] = useState<string>('');
+    const [showScoreSubmit, setShowScoreSubmit] = useState(false);
+    const [inboxTab, setInboxTab] = useState<'received' | 'sent'>('received');
+    const [challengeSent, setChallengeSent] = useState(false);
 
     // Home Dojo State
     const [homeDojoChecks, setHomeDojoChecks] = useState<Record<string, boolean>>({});
@@ -987,38 +1016,84 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             { id: 'champion', name: 'Champion', icon: '👑', description: 'Reach #1 on leaderboard', earned: false },
         ];
 
-        const handleStartChallenge = () => {
+        const handleSendChallenge = () => {
             if (!selectedRival || !selectedChallenge) return;
+            
+            const challenge = challengeCategories.flatMap(c => c.challenges).find(c => c.id === selectedChallenge);
+            const opponent = classmates.find(c => c.id === selectedRival);
+            
+            const newChallenge: PendingChallenge = {
+                id: `sent-${Date.now()}`,
+                fromId: student.id,
+                fromName: student.name,
+                toId: selectedRival,
+                toName: opponent?.name || 'Unknown',
+                challengeId: selectedChallenge,
+                challengeName: challenge?.name || selectedChallenge,
+                challengeXp: challenge?.xp || 50,
+                status: 'pending',
+                createdAt: 'Just now',
+                expiresIn: '24 hours'
+            };
+            
+            setSentChallenges(prev => [newChallenge, ...prev]);
+            setChallengeSent(true);
+            setSelectedRival('');
+            setSelectedChallenge('');
+            
+            setTimeout(() => setChallengeSent(false), 3000);
+        };
+
+        const handleAcceptChallenge = (challenge: PendingChallenge) => {
+            setActiveChallenge(challenge);
+            setShowScoreSubmit(true);
+            setMyScore('');
+        };
+
+        const handleDeclineChallenge = (challengeId: string) => {
+            setPendingChallenges(prev => prev.filter(c => c.id !== challengeId));
+        };
+
+        const handleSubmitScore = () => {
+            if (!activeChallenge || !myScore) return;
+            
+            const score = parseInt(myScore);
+            const opponentScore = Math.floor(Math.random() * 100); // Simulated opponent score
+            const won = score > opponentScore;
+            
+            const xpEarned = won ? activeChallenge.challengeXp : 10;
+            
+            if (won) {
+                setRivalStats(prev => ({ 
+                    ...prev, 
+                    wins: prev.wins + 1, 
+                    streak: prev.streak + 1,
+                    xp: prev.xp + xpEarned
+                }));
+            } else {
+                setRivalStats(prev => ({ ...prev, losses: prev.losses + 1, streak: 0, xp: prev.xp + 10 }));
+            }
+            
+            setChallengeHistory(prev => [{
+                id: Date.now().toString(),
+                opponent: activeChallenge.fromName,
+                challenge: activeChallenge.challengeName,
+                result: won ? 'win' : 'loss',
+                date: 'Just now',
+                xpEarned
+            }, ...prev]);
+            
+            setPendingChallenges(prev => prev.filter(c => c.id !== activeChallenge.id));
+            setShowScoreSubmit(false);
+            setActiveChallenge(null);
+            setMyScore('');
+            setChallengeResult(won ? 'win' : 'loss');
             setIsSimulatingChallenge(true);
-            setChallengeResult('pending');
             
             setTimeout(() => {
-                const won = Math.random() > 0.4;
-                setChallengeResult(won ? 'win' : 'loss');
-                
-                const challenge = challengeCategories.flatMap(c => c.challenges).find(c => c.id === selectedChallenge);
-                const opponent = classmates.find(c => c.id === selectedRival);
-                
-                if (won) {
-                    setRivalStats(prev => ({ 
-                        ...prev, 
-                        wins: prev.wins + 1, 
-                        streak: prev.streak + 1,
-                        xp: prev.xp + (challenge?.xp || 50)
-                    }));
-                } else {
-                    setRivalStats(prev => ({ ...prev, losses: prev.losses + 1, streak: 0, xp: prev.xp + 10 }));
-                }
-                
-                setChallengeHistory(prev => [{
-                    id: Date.now().toString(),
-                    opponent: opponent?.name || 'Unknown',
-                    challenge: challenge?.name || selectedChallenge,
-                    result: won ? 'win' : 'loss',
-                    date: 'Just now',
-                    xpEarned: won ? (challenge?.xp || 50) : 10
-                }, ...prev]);
-            }, 2500);
+                setIsSimulatingChallenge(false);
+                setChallengeResult(null);
+            }, 3000);
         };
 
         return (
@@ -1054,15 +1129,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {/* Navigation Tabs */}
                     <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
                         {[
-                            { id: 'arena', label: 'Arena', icon: '⚔️' },
-                            { id: 'weekly', label: 'Weekly', icon: '🎯' },
-                            { id: 'leaderboard', label: 'Ranks', icon: '🏆' },
-                            { id: 'history', label: 'History', icon: '📜' },
+                            { id: 'arena', label: 'Arena', icon: '⚔️', badge: 0 },
+                            { id: 'inbox', label: 'Inbox', icon: '📬', badge: pendingChallenges.filter(c => c.status === 'pending').length },
+                            { id: 'weekly', label: 'Weekly', icon: '🎯', badge: 0 },
+                            { id: 'leaderboard', label: 'Ranks', icon: '🏆', badge: 0 },
+                            { id: 'history', label: 'History', icon: '📜', badge: 0 },
                         ].map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setRivalsView(tab.id as typeof rivalsView)}
-                                className={`flex-1 py-2 px-2 rounded-md text-xs font-bold transition-all ${
+                                className={`flex-1 py-2 px-2 rounded-md text-xs font-bold transition-all relative ${
                                     rivalsView === tab.id 
                                         ? 'bg-red-600 text-white' 
                                         : 'text-gray-400 hover:text-white'
@@ -1070,6 +1146,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             >
                                 <span className="mr-1">{tab.icon}</span>
                                 {tab.label}
+                                {tab.badge > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                                        {tab.badge}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>
@@ -1143,14 +1224,199 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         ))}
                                     </div>
 
-                                    {/* Fight Button */}
+                                    {/* Send Challenge Button */}
                                     <button 
-                                        onClick={handleStartChallenge}
+                                        onClick={handleSendChallenge}
                                         disabled={!selectedRival || !selectedChallenge}
                                         className="w-full bg-red-600 hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl shadow-lg transform active:scale-95 transition-all text-lg uppercase tracking-wider"
                                     >
-                                        {!selectedRival ? 'SELECT OPPONENT' : !selectedChallenge ? 'SELECT CHALLENGE' : '⚔️ FIGHT!'}
+                                        {!selectedRival ? 'SELECT OPPONENT' : !selectedChallenge ? 'SELECT CHALLENGE' : '📨 SEND CHALLENGE'}
                                     </button>
+                                    
+                                    {/* Challenge Sent Confirmation */}
+                                    {challengeSent && (
+                                        <div className="bg-green-900/50 border border-green-500 p-4 rounded-xl text-center animate-pulse">
+                                            <span className="text-2xl">✅</span>
+                                            <p className="text-green-400 font-bold mt-2">Challenge Sent!</p>
+                                            <p className="text-gray-400 text-xs">They have 24 hours to respond</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* INBOX VIEW */}
+                            {rivalsView === 'inbox' && (
+                                <div className="space-y-4">
+                                    {/* Score Submit Modal */}
+                                    {showScoreSubmit && activeChallenge && (
+                                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                                            <div className="bg-gray-900 rounded-2xl p-6 max-w-sm w-full border border-red-500">
+                                                <h3 className="text-xl font-black text-white text-center mb-4">Submit Your Score</h3>
+                                                <div className="text-center mb-6">
+                                                    <div className="text-4xl mb-2">🎯</div>
+                                                    <p className="text-gray-400 text-sm">{activeChallenge.challengeName}</p>
+                                                    <p className="text-xs text-gray-500">vs {activeChallenge.fromName}</p>
+                                                </div>
+                                                <div className="mb-4">
+                                                    <label className="text-gray-400 text-xs block mb-2">Your Score (reps, seconds, etc.)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={myScore}
+                                                        onChange={(e) => setMyScore(e.target.value)}
+                                                        placeholder="Enter your score..."
+                                                        className="w-full bg-gray-800 text-white text-2xl font-bold text-center p-4 rounded-xl border border-gray-600 focus:border-red-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setShowScoreSubmit(false);
+                                                            setActiveChallenge(null);
+                                                        }}
+                                                        className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button 
+                                                        onClick={handleSubmitScore}
+                                                        disabled={!myScore}
+                                                        className="flex-1 bg-red-600 hover:bg-red-500 disabled:bg-gray-600 text-white font-bold py-3 rounded-xl"
+                                                    >
+                                                        Submit
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Inbox Header */}
+                                    <div className="bg-gradient-to-r from-orange-900/50 to-red-900/50 p-4 rounded-xl border border-orange-500/30">
+                                        <h4 className="font-bold text-white flex items-center">
+                                            <span className="mr-2">📬</span> Challenge Inbox
+                                        </h4>
+                                        <p className="text-xs text-gray-400">Accept challenges to compete!</p>
+                                    </div>
+
+                                    {/* Inbox Tabs */}
+                                    <div className="flex bg-gray-800 rounded-lg p-1">
+                                        <button
+                                            onClick={() => setInboxTab('received')}
+                                            className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${
+                                                inboxTab === 'received' ? 'bg-orange-600 text-white' : 'text-gray-400'
+                                            }`}
+                                        >
+                                            Received ({pendingChallenges.filter(c => c.status === 'pending').length})
+                                        </button>
+                                        <button
+                                            onClick={() => setInboxTab('sent')}
+                                            className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${
+                                                inboxTab === 'sent' ? 'bg-orange-600 text-white' : 'text-gray-400'
+                                            }`}
+                                        >
+                                            Sent ({sentChallenges.length})
+                                        </button>
+                                    </div>
+
+                                    {/* Received Challenges */}
+                                    {inboxTab === 'received' && (
+                                        <div className="space-y-3">
+                                            {pendingChallenges.filter(c => c.status === 'pending').length === 0 ? (
+                                                <div className="text-center py-12">
+                                                    <div className="text-5xl mb-4">📭</div>
+                                                    <p className="text-gray-500 font-bold">No pending challenges</p>
+                                                    <p className="text-gray-600 text-xs">When someone challenges you, it'll appear here!</p>
+                                                </div>
+                                            ) : (
+                                                pendingChallenges.filter(c => c.status === 'pending').map(challenge => (
+                                                    <div key={challenge.id} className="bg-gray-800 rounded-xl border border-orange-500/30 overflow-hidden">
+                                                        <div className="p-4">
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <div className="flex items-center">
+                                                                    <div className="w-10 h-10 bg-red-900/50 rounded-full flex items-center justify-center text-lg mr-3">
+                                                                        ⚔️
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-bold text-white text-sm">{challenge.fromName}</p>
+                                                                        <p className="text-xs text-gray-500">{challenge.createdAt}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <span className="text-[10px] text-orange-400 font-bold bg-orange-900/30 px-2 py-1 rounded-full">
+                                                                    ⏰ {challenge.expiresIn}
+                                                                </span>
+                                                            </div>
+                                                            
+                                                            <div className="bg-gray-900/50 rounded-lg p-3 mb-3">
+                                                                <p className="text-xs text-gray-400 mb-1">Challenge:</p>
+                                                                <p className="text-white font-bold">{challenge.challengeName}</p>
+                                                                <p className="text-yellow-500 text-xs mt-1">+{challenge.challengeXp} XP if you win</p>
+                                                            </div>
+                                                            
+                                                            <div className="flex gap-2">
+                                                                <button 
+                                                                    onClick={() => handleDeclineChallenge(challenge.id)}
+                                                                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-2.5 rounded-lg text-sm transition-colors"
+                                                                >
+                                                                    Decline
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleAcceptChallenge(challenge)}
+                                                                    className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-lg text-sm transition-colors"
+                                                                >
+                                                                    Accept & Submit Score
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Sent Challenges */}
+                                    {inboxTab === 'sent' && (
+                                        <div className="space-y-3">
+                                            {sentChallenges.length === 0 ? (
+                                                <div className="text-center py-12">
+                                                    <div className="text-5xl mb-4">📤</div>
+                                                    <p className="text-gray-500 font-bold">No challenges sent</p>
+                                                    <p className="text-gray-600 text-xs">Go to Arena to challenge a rival!</p>
+                                                </div>
+                                            ) : (
+                                                sentChallenges.map(challenge => (
+                                                    <div key={challenge.id} className="bg-gray-800 rounded-xl border border-blue-500/30 p-4">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center">
+                                                                <div className="w-10 h-10 bg-blue-900/50 rounded-full flex items-center justify-center text-lg mr-3">
+                                                                    📨
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-gray-400 text-xs">Challenged:</p>
+                                                                    <p className="font-bold text-white text-sm">{challenge.toName}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                                                                    challenge.status === 'pending' 
+                                                                        ? 'bg-yellow-900/30 text-yellow-400' 
+                                                                        : challenge.status === 'accepted'
+                                                                        ? 'bg-green-900/30 text-green-400'
+                                                                        : 'bg-red-900/30 text-red-400'
+                                                                }`}>
+                                                                    {challenge.status === 'pending' ? '⏳ Waiting' : 
+                                                                     challenge.status === 'accepted' ? '✅ Accepted' : '❌ Declined'}
+                                                                </span>
+                                                                <p className="text-[10px] text-gray-500 mt-1">{challenge.createdAt}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="bg-gray-900/50 rounded-lg p-2 mt-2">
+                                                            <p className="text-white font-bold text-sm">{challenge.challengeName}</p>
+                                                            <p className="text-gray-500 text-xs">Expires in {challenge.expiresIn}</p>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
