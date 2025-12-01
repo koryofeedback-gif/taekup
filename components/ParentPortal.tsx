@@ -32,6 +32,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
     const [customHabitList, setCustomHabitList] = useState<Habit[]>(student.customHabits || []);
+    // Custom habit creation state
+    const [showCustomForm, setShowCustomForm] = useState(false);
+    const [customHabitQuestion, setCustomHabitQuestion] = useState('');
+    const [customHabitIcon, setCustomHabitIcon] = useState('');
+    const [customHabitCategory, setCustomHabitCategory] = useState<Habit['category']>('Custom');
 
     // Time Machine State
     const [simulatedAttendance, setSimulatedAttendance] = useState(2); // Default 2x week
@@ -1068,7 +1073,126 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <h4 className="font-bold text-white mb-4 flex items-center">
                                 <span className="text-xl mr-2">⚙️</span> Habit Builder
                             </h4>
-                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                            
+                            {/* Custom Habit Creation */}
+                            <div className="mb-4">
+                                {!showCustomForm ? (
+                                    <button 
+                                        onClick={() => setShowCustomForm(true)}
+                                        className="w-full p-3 border-2 border-dashed border-cyan-500/50 rounded-xl text-cyan-400 hover:bg-cyan-900/20 transition-colors flex items-center justify-center space-x-2"
+                                    >
+                                        <span className="text-xl">+</span>
+                                        <span className="font-bold">Create Custom Habit</span>
+                                    </button>
+                                ) : (
+                                    <div className="bg-gray-900 p-4 rounded-xl border border-cyan-500/30 space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <h5 className="font-bold text-cyan-400 text-sm">New Custom Habit</h5>
+                                            <button onClick={() => setShowCustomForm(false)} className="text-gray-500 hover:text-white">✕</button>
+                                        </div>
+                                        
+                                        {/* Icon Picker */}
+                                        <div>
+                                            <label className="text-xs text-gray-400 mb-1 block">Choose an Icon</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['🎯', '💪', '📖', '🧘', '🏃', '💤', '🙏', '🎨', '🎵', '🧹', '💧', '🍎'].map(emoji => (
+                                                    <button
+                                                        key={emoji}
+                                                        onClick={() => setCustomHabitIcon(emoji)}
+                                                        className={`text-2xl p-2 rounded-lg transition-all ${customHabitIcon === emoji ? 'bg-cyan-600 scale-110' : 'bg-gray-800 hover:bg-gray-700'}`}
+                                                    >
+                                                        {emoji}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Question Input */}
+                                        <div>
+                                            <label className="text-xs text-gray-400 mb-1 block">Habit Question</label>
+                                            <input
+                                                type="text"
+                                                value={customHabitQuestion}
+                                                onChange={(e) => setCustomHabitQuestion(e.target.value)}
+                                                placeholder="Did they practice 10 minutes of forms?"
+                                                className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        
+                                        {/* Category Selector */}
+                                        <div>
+                                            <label className="text-xs text-gray-400 mb-1 block">Category</label>
+                                            <select
+                                                value={customHabitCategory}
+                                                onChange={(e) => setCustomHabitCategory(e.target.value as Habit['category'])}
+                                                className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                                            >
+                                                <option value="Custom">Custom</option>
+                                                <option value="Martial Arts">Martial Arts</option>
+                                                <option value="Health">Health</option>
+                                                <option value="School">School</option>
+                                                <option value="Character">Character</option>
+                                                <option value="Family">Family</option>
+                                            </select>
+                                        </div>
+                                        
+                                        {/* Add Button */}
+                                        <button
+                                            onClick={() => {
+                                                if (customHabitQuestion.trim() && customHabitIcon) {
+                                                    const newHabit: Habit = {
+                                                        id: `custom-${Date.now()}`,
+                                                        question: customHabitQuestion.trim(),
+                                                        icon: customHabitIcon,
+                                                        category: customHabitCategory,
+                                                        isActive: true,
+                                                        isCustom: true
+                                                    };
+                                                    setCustomHabitList(prev => [...prev, newHabit]);
+                                                    setCustomHabitQuestion('');
+                                                    setCustomHabitIcon('');
+                                                    setCustomHabitCategory('Custom');
+                                                    setShowCustomForm(false);
+                                                }
+                                            }}
+                                            disabled={!customHabitQuestion.trim() || !customHabitIcon}
+                                            className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-2 rounded-lg transition-colors"
+                                        >
+                                            Add Custom Habit
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Existing Custom Habits */}
+                            {customHabitList.filter(h => h.isCustom).length > 0 && (
+                                <div className="mb-4">
+                                    <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Your Custom Habits</h5>
+                                    <div className="space-y-2">
+                                        {customHabitList.filter(h => h.isCustom).map(habit => (
+                                            <div key={habit.id} className="flex items-center justify-between p-3 bg-cyan-900/20 rounded border border-cyan-500/30">
+                                                <div className="flex items-center space-x-3">
+                                                    <span className="text-2xl">{habit.icon}</span>
+                                                    <div>
+                                                        <span className="text-sm text-white block">{habit.question}</span>
+                                                        <span className="text-[10px] text-cyan-400">{habit.category}</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => setCustomHabitList(prev => prev.filter(h => h.id !== habit.id))}
+                                                    className="px-3 py-1 rounded text-xs font-bold bg-red-900/50 text-red-400 border border-red-900 hover:bg-red-900/80 transition-colors"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Preset Habits */}
+                            <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Preset Habits</h5>
+                            <div className="space-y-2 max-h-[250px] overflow-y-auto">
                                 {PRESET_HABITS.map(preset => {
                                     const isActive = customHabitList.some(h => h.question === preset.question);
                                     return (

@@ -28,6 +28,12 @@ The project has been successfully configured to run on Replit. The development s
   - Fixed navigation from Admin Dashboard
   - Full-screen lobby mode at /app/tv
   - Auto-rotating slides (welcome, leaderboard, birthdays, events)
+- **Custom Habits in Home Dojo**:
+  - Parents can now create custom habits (Premium feature)
+  - Icon picker with 12 emoji options
+  - Category selector (Custom, Martial Arts, Health, School, Character, Family)
+  - Custom habits shown separately from presets
+  - Easy add/remove functionality
 
 ## Previous Changes (November 30, 2025)
 - Configured Vite to work with Replit proxy (host: 0.0.0.0, port: 5000)

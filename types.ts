@@ -122,9 +122,10 @@ export interface LifeSkill {
 export interface Habit {
     id: string;
     question: string; // "Did Hami make his bed?"
-    category: 'Character' | 'Chores' | 'School' | 'Health';
+    category: 'Character' | 'Chores' | 'School' | 'Health' | 'Custom' | 'Martial Arts' | 'Family';
     icon: string;
     isActive: boolean;
+    isCustom?: boolean; // True if created by parent
 }
 
 export interface Student {
