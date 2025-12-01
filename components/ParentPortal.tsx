@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory, RivalsStats } from '../types';
+import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory, RivalsStats, HolidayScheduleType } from '../types';
+import { HOLIDAY_PRESETS } from '../types';
 import { BeltIcon, CalendarIcon } from './icons/FeatureIcons';
 import { generateParentingAdvice } from '../services/geminiService';
 import { LANGUAGES } from '../constants';
@@ -348,14 +349,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
         const velocityPerClass = calculatePointsPerClass();
         
+        // 4. Holiday Adjustment - Critical for accuracy!
+        const holidayType = data.holidaySchedule || 'minimal';
+        const weeksClosedPerYear = holidayType === 'custom' 
+            ? (data.customHolidayWeeks || 4)
+            : HOLIDAY_PRESETS[holidayType]?.weeksClosedPerYear || 2;
+        
+        // Effective training weeks per year (52 weeks - holidays)
+        const effectiveWeeksPerYear = 52 - weeksClosedPerYear;
+        const holidayAdjustmentFactor = effectiveWeeksPerYear / 52;
+        
         const calculateDate = (attendancePerWeek: number) => {
             if (pointsRemaining <= 0) return new Date(); // Already there
             
-            const pointsPerWeek = attendancePerWeek * velocityPerClass;
+            // Apply holiday adjustment to weekly points
+            const adjustedPointsPerWeek = attendancePerWeek * velocityPerClass * holidayAdjustmentFactor;
+            
             // Avoid divide by zero
-            if (pointsPerWeek <= 0) return new Date(new Date().setFullYear(new Date().getFullYear() + 10));
+            if (adjustedPointsPerWeek <= 0) return new Date(new Date().setFullYear(new Date().getFullYear() + 10));
 
-            const weeksNeeded = pointsRemaining / pointsPerWeek;
+            const weeksNeeded = pointsRemaining / adjustedPointsPerWeek;
             const targetDate = new Date();
             targetDate.setDate(targetDate.getDate() + (weeksNeeded * 7));
             return targetDate;
@@ -372,6 +385,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const percentComplete = totalLifetimePointsNeeded > 0 
             ? (currentLifetimePoints / totalLifetimePointsNeeded) * 100 
             : 100;
+        
+        // Calculate confidence based on factors
+        // Base: 70%, +10% for known holiday schedule, +5% for attendance history
+        let confidenceScore = 70;
+        if (data.holidaySchedule) confidenceScore += 10;
+        if (student.attendanceCount && student.attendanceCount > 10) confidenceScore += 5;
+        // Deduct for longer timeframes (more uncertainty)
+        const yearsToGoal = (estimatedDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 365);
+        if (yearsToGoal > 3) confidenceScore -= 5;
+        if (yearsToGoal > 5) confidenceScore -= 5;
+        confidenceScore = Math.max(50, Math.min(90, confidenceScore));
 
         return {
             totalPointsNeeded: totalLifetimePointsNeeded,
@@ -379,7 +403,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             estimatedDate,
             yearsSaved,
             targetBeltName,
-            percentComplete: Math.min(100, Math.max(0, percentComplete))
+            percentComplete: Math.min(100, Math.max(0, percentComplete)),
+            weeksClosedPerYear,
+            holidayType,
+            confidenceScore
         };
     }, [data, student.totalPoints, student.beltId, simulatedAttendance]);
 
@@ -747,72 +774,81 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
         return (
             <div className="relative h-full min-h-[500px]">
-                {!hasPremiumAccess && renderPremiumLock("Belt Journey", "See a visual timeline of your child's entire martial arts career. Relive every promotion and milestone.")}
-                
-                <div className={`space-y-6 pb-20 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none overflow-hidden h-[500px]' : ''}`}>
+                {/* TIME MACHINE WIDGET - Available to ALL users (not premium-gated) */}
+                <div className="bg-gradient-to-br from-gray-900 to-black p-6 rounded-2xl border border-gray-700 shadow-2xl relative overflow-hidden mb-6">
+                    {/* Glowing Effect */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-2 bg-gradient-to-r from-transparent via-blue-500 to-transparent blur-sm"></div>
                     
-                    {/* TIME MACHINE WIDGET (New!) */}
-                    <div className="bg-gradient-to-br from-gray-900 to-black p-6 rounded-2xl border border-gray-700 shadow-2xl relative overflow-hidden">
-                        {/* Glowing Effect */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-2 bg-gradient-to-r from-transparent via-blue-500 to-transparent blur-sm"></div>
-                        
-                        <h3 className="text-center text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Black Belt Time Machine</h3>
-                        
-                        <div className="text-center mb-6">
-                            <p className="text-sm text-gray-500">Estimated Achievement Date</p>
-                            <h2 className="text-3xl md:text-4xl font-black text-white mt-1 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-                                {blackBeltPrediction.estimatedDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-                            </h2>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-1">
+                    <h3 className="text-center text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Black Belt Time Machine</h3>
+                    
+                    <div className="text-center mb-6">
+                        <p className="text-sm text-gray-500">Estimated Achievement Date</p>
+                        <h2 className="text-3xl md:text-4xl font-black text-white mt-1 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+                            {blackBeltPrediction.estimatedDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                        </h2>
+                        <div className="flex items-center justify-center gap-2 mt-1">
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">
                                 Target: {blackBeltPrediction.targetBeltName}
                             </p>
-                            {simulatedAttendance > 1 && Number(blackBeltPrediction.yearsSaved) > 0 && (
-                                <p className="text-green-400 text-xs font-bold mt-2 animate-pulse">
-                                    ⚡ You save {blackBeltPrediction.yearsSaved} years by training {simulatedAttendance}x/week!
-                                </p>
-                            )}
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-600/30 to-purple-600/30 border border-blue-500/30 text-blue-300">
+                                ~{blackBeltPrediction.confidenceScore}% confidence
+                            </span>
                         </div>
+                        {simulatedAttendance > 1 && Number(blackBeltPrediction.yearsSaved) > 0 && (
+                            <p className="text-green-400 text-xs font-bold mt-2 animate-pulse">
+                                ⚡ You save {blackBeltPrediction.yearsSaved} years by training {simulatedAttendance}x/week!
+                            </p>
+                        )}
+                        <p className="text-[9px] text-gray-600 mt-2">
+                            Accounts for {blackBeltPrediction.weeksClosedPerYear} weeks/year holidays
+                        </p>
+                    </div>
 
-                        {/* Slider */}
-                        <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-4">
-                            <div className="flex justify-between text-xs text-gray-300 mb-2">
-                                <span>Training Frequency</span>
-                                <span className="font-bold text-sky-300">{simulatedAttendance} Classes / Week</span>
-                            </div>
-                            <input 
-                                type="range" 
-                                min="1" max="6" step="1"
-                                value={simulatedAttendance} 
-                                onChange={(e) => setSimulatedAttendance(parseInt(e.target.value))}
-                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                            />
-                            <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                                <span>Relaxed (1x)</span>
-                                <span>Dedicated (3x)</span>
-                                <span>Elite (6x)</span>
-                            </div>
+                    {/* Slider */}
+                    <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-4">
+                        <div className="flex justify-between text-xs text-gray-300 mb-2">
+                            <span>Training Frequency</span>
+                            <span className="font-bold text-sky-300">{simulatedAttendance} Classes / Week</span>
                         </div>
+                        <input 
+                            type="range" 
+                            min="1" max="6" step="1"
+                            value={simulatedAttendance} 
+                            onChange={(e) => setSimulatedAttendance(parseInt(e.target.value))}
+                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                        />
+                        <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                            <span>Relaxed (1x)</span>
+                            <span>Dedicated (3x)</span>
+                            <span>Elite (6x)</span>
+                        </div>
+                    </div>
 
-                        {/* Road to Black Belt Progress */}
-                        <div>
-                            <div className="flex justify-between text-xs text-gray-400 mb-1">
-                                <span>Road to Black Belt</span>
-                                <span>{Math.round(blackBeltPrediction.percentComplete)}%</span>
-                            </div>
-                            <div className="w-full bg-gray-800 rounded-full h-3 border border-gray-700">
-                                <div 
-                                    className="h-full bg-gradient-to-r from-blue-600 via-purple-600 to-black rounded-full transition-all duration-1000 relative" 
-                                    style={{ width: `${blackBeltPrediction.percentComplete}%` }}
-                                >
-                                    <div className="absolute right-0 -top-1 w-5 h-5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)] flex items-center justify-center">
-                                        <span className="text-[10px]">🥋</span>
-                                    </div>
+                    {/* Road to Black Belt Progress */}
+                    <div>
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>Road to Black Belt</span>
+                            <span>{Math.round(blackBeltPrediction.percentComplete)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-800 rounded-full h-3 border border-gray-700">
+                            <div 
+                                className="h-full bg-gradient-to-r from-blue-600 via-purple-600 to-black rounded-full transition-all duration-1000 relative" 
+                                style={{ width: `${blackBeltPrediction.percentComplete}%` }}
+                            >
+                                <div className="absolute right-0 -top-1 w-5 h-5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)] flex items-center justify-center">
+                                    <span className="text-[10px]">🥋</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div className="text-center py-6">
+                {/* JOURNEY TIMELINE - Premium Feature */}
+                <div className="relative">
+                    {!hasPremiumAccess && renderPremiumLock("Belt Journey Timeline", "See a visual timeline of your child's entire martial arts career. Relive every promotion and milestone.")}
+                    
+                    <div className={`space-y-6 pb-20 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none overflow-hidden h-[400px]' : ''}`}>
+                        <div className="text-center py-6">
                         <div className="w-24 h-24 bg-sky-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-sky-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
                             <span className="text-4xl">🚀</span>
                         </div>

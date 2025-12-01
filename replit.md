@@ -78,6 +78,12 @@ The project has been successfully configured to run on Replit. The development s
   - XP badges appear next to student names in Coach Dashboard (🏆/⚔️/⭐/🔥)
   - Stats sync automatically from Parent Portal to student record
   - Coaches can see: Total XP, Wins, Day Streak, Win Rate, Team/Family/Mystery stats
+- **Improved Black Belt Time Machine Accuracy**:
+  - Holiday Schedule Setting in Admin Dashboard (Settings > General)
+  - 4 presets: Minimal (~2 weeks), School Calendar (~8 weeks), Extended (~12 weeks), Custom
+  - Calculation now factors in weeks closed per year for accurate predictions
+  - Confidence score displayed (70-90% based on data availability)
+  - Parents see: estimated date, confidence %, and holiday adjustment info
 
 ## Previous Changes (November 30, 2025)
 - Configured Vite to work with Replit proxy (host: 0.0.0.0, port: 5000)

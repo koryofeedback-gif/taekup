@@ -473,6 +473,47 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             <span className="text-gray-300">{data.primaryColor}</span>
                         </div>
                     </div>
+                    
+                    {/* Holiday Schedule Setting - Improves Black Belt Time Machine accuracy */}
+                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                        <label className="block text-sm text-gray-400 mb-1">Holiday Schedule</label>
+                        <p className="text-xs text-gray-500 mb-3">This affects the accuracy of the Black Belt Time Machine prediction for parents.</p>
+                        <select 
+                            value={data.holidaySchedule || 'minimal'} 
+                            onChange={e => onUpdateData({ holidaySchedule: e.target.value as any })}
+                            className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white mb-3"
+                        >
+                            <option value="minimal">Minimal - Only major holidays (~2 weeks/year)</option>
+                            <option value="school_holidays">School Calendar - Summer, winter, spring breaks (~8 weeks/year)</option>
+                            <option value="extended">Extended - All public holidays + long breaks (~12 weeks/year)</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        
+                        {data.holidaySchedule === 'custom' && (
+                            <div className="flex items-center gap-3">
+                                <label className="text-sm text-gray-400">Weeks closed per year:</label>
+                                <input 
+                                    type="number" 
+                                    min="0" 
+                                    max="20" 
+                                    value={data.customHolidayWeeks || 4}
+                                    onChange={e => onUpdateData({ customHolidayWeeks: parseInt(e.target.value) || 4 })}
+                                    className="w-20 bg-gray-700 border border-gray-600 rounded p-2 text-white text-center"
+                                />
+                            </div>
+                        )}
+                        
+                        <div className="mt-3 text-xs text-gray-500 flex items-center gap-2">
+                            <span className="text-blue-400">i</span>
+                            <span>
+                                {data.holidaySchedule === 'minimal' && 'Your school operates year-round with minimal closures.'}
+                                {data.holidaySchedule === 'school_holidays' && 'Your school follows the academic calendar with standard breaks.'}
+                                {data.holidaySchedule === 'extended' && 'Your school takes extended breaks throughout the year.'}
+                                {data.holidaySchedule === 'custom' && `Your school closes for ${data.customHolidayWeeks || 4} weeks per year.`}
+                                {!data.holidaySchedule && 'Your school operates year-round with minimal closures.'}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             )}
 

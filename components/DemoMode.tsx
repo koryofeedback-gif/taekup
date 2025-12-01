@@ -218,6 +218,8 @@ export const DEMO_WIZARD_DATA: WizardData = {
     clubSponsoredPremium: false,
     challenges: [],
     customChallenges: DEMO_CUSTOM_CHALLENGES,
+    holidaySchedule: 'minimal',
+    customHolidayWeeks: 4,
 };
 
 interface DemoModeProps {

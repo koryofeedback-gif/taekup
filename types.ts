@@ -193,6 +193,39 @@ export interface Student {
   rivalsStats?: RivalsStats; // Dojang Rivals engagement data
 }
 
+// Holiday Schedule Types for Black Belt Time Machine accuracy
+export type HolidayScheduleType = 'minimal' | 'school_holidays' | 'extended' | 'custom';
+
+export interface HolidaySchedule {
+  type: HolidayScheduleType;
+  weeksClosedPerYear: number; // Total weeks closed annually
+  description: string;
+}
+
+// Preset holiday schedules
+export const HOLIDAY_PRESETS: Record<HolidayScheduleType, HolidaySchedule> = {
+  minimal: {
+    type: 'minimal',
+    weeksClosedPerYear: 2,
+    description: 'Only major holidays (Christmas, New Year)'
+  },
+  school_holidays: {
+    type: 'school_holidays',
+    weeksClosedPerYear: 8,
+    description: 'Follows school calendar (summer, winter, spring breaks)'
+  },
+  extended: {
+    type: 'extended',
+    weeksClosedPerYear: 12,
+    description: 'Extended breaks + all public holidays'
+  },
+  custom: {
+    type: 'custom',
+    weeksClosedPerYear: 4,
+    description: 'Custom schedule'
+  }
+};
+
 // Subscription Plan Types - 5-Tier "Ladder of Success"
 export type SubscriptionPlanId = 'starter' | 'pro' | 'standard' | 'growth' | 'empire';
 
@@ -263,4 +296,7 @@ export interface WizardData {
   clubSponsoredPremium: boolean; // New: Club pays for parents
   challenges: Challenge[]; // New: Store active challenges
   customChallenges: CustomChallenge[]; // Coach-created custom challenges
+  // Holiday Schedule for Time Machine accuracy
+  holidaySchedule: HolidayScheduleType;
+  customHolidayWeeks?: number; // Only used when holidaySchedule is 'custom'
 }

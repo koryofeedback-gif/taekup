@@ -71,6 +71,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
         clubSponsoredPremium: false,
         challenges: [],
         customChallenges: [],
+        holidaySchedule: 'minimal',
+        customHolidayWeeks: 4,
       };
 
       if (savedData) {
@@ -185,6 +187,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
             clubSponsoredPremium: false,
             challenges: [],
             customChallenges: [],
+            holidaySchedule: 'minimal',
+            customHolidayWeeks: 4,
           });
           setCurrentStep(1);
           setFormKey(prev => prev + 1); // Force re-mount of all step components
