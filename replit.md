@@ -4,9 +4,30 @@
 TaekUp is a comprehensive martial arts club management platform built with React, TypeScript, and Vite. It provides tools for managing students, coaches, parents, and club operations with AI-powered features.
 
 ## Current State
-The project has been successfully configured to run on Replit. The development server is running on port 5000 and the frontend is accessible via the webview.
+The project has been successfully configured to run on Replit with a two-server architecture:
+- **Frontend**: Vite dev server on port 5000
+- **Backend**: Express API server on port 3001 (proxied via Vite)
 
-## Recent Changes (December 1, 2025 - Performance Optimized)
+## Recent Changes (December 1, 2025 - Stripe & Security)
+- **Full Stripe Payment Integration**:
+  - Express backend with stripe-replit-sync for webhook management
+  - 5 subscription products seeded (Starter, Pro, Standard, Growth, Empire)
+  - PricingPage redirects to Stripe Checkout for plan selection
+  - Checkout success/cancel redirect URLs configured
+  - Customer portal session endpoint ready
+- **API Security Improvements**:
+  - All AI API keys moved to backend server (OpenAI, Gemini)
+  - Frontend services now call backend proxy endpoints (/api/ai/*)
+  - No client-side API key exposure
+  - Backend handles: TaekBot chat, class plan generation, welcome emails
+- **Architecture**:
+  - server/index.ts - Express server entry point
+  - server/routes.ts - API endpoints (AI proxy, Stripe checkout)
+  - server/aiService.ts - OpenAI/Gemini integration with secure keys
+  - server/stripeClient.ts - Stripe client configuration
+  - services/apiClient.ts - Frontend API client for backend calls
+
+## Previous Changes (December 1, 2025 - Performance Optimized)
 - **Performance Optimization for 100+ Clubs Scale** ✅:
   - Database indexes active on challenges table (from_student_id, to_student_id, created_at, status)
   - API queries using parallel loading with `Promise.all()` for 50% faster data fetching
@@ -102,11 +123,13 @@ The project has been successfully configured to run on Replit. The development s
 
 ### Technology Stack
 - **Frontend**: React 18 with TypeScript
+- **Backend**: Express.js with TypeScript
 - **Build Tool**: Vite 5
 - **Routing**: React Router v7
 - **Styling**: Tailwind CSS (via CDN)
-- **AI Integration**: Google Gemini API (@google/generative-ai)
-- **Database**: Supabase (optional, works in demo mode without it)
+- **Payments**: Stripe (stripe-replit-sync for webhook management)
+- **AI Integration**: OpenAI GPT-4o + Google Gemini (server-side only)
+- **Database**: PostgreSQL with Drizzle ORM
 
 ### Key Features
 1. **Setup Wizard**: Multi-step onboarding for new clubs
@@ -120,26 +143,33 @@ The project has been successfully configured to run on Replit. The development s
 ### Directory Structure
 ```
 /
-├── components/         # React components
-│   ├── wizard/        # Setup wizard steps
-│   ├── icons/         # Icon components
-│   ├── ChallengeBuilder.tsx  # Coach challenge creation interface
-│   ├── ChallengeToast.tsx    # Real-time challenge notification
-│   ├── CoachDashboard.tsx    # Coach management dashboard
-│   └── ParentPortal.tsx      # Parent/student portal (with Dojang Rivals)
+├── server/            # Backend Express server
+│   ├── index.ts      # Server entry point
+│   ├── routes.ts     # API endpoints
+│   ├── aiService.ts  # AI provider integration
+│   ├── stripeClient.ts    # Stripe client setup
+│   ├── stripeService.ts   # Stripe checkout/portal
+│   ├── storage.ts    # Database storage layer
+│   └── seed-products.ts   # Stripe product seeding
+├── components/        # React components
+│   ├── wizard/       # Setup wizard steps
+│   ├── icons/        # Icon components
+│   ├── ChallengeBuilder.tsx  # Coach challenge creation
+│   ├── ChallengeToast.tsx    # Real-time notifications
+│   ├── CoachDashboard.tsx    # Coach management
+│   └── ParentPortal.tsx      # Parent/student portal
 ├── hooks/             # Custom React hooks
-│   └── useChallengeRealtime.ts  # Real-time challenge state management
 ├── pages/             # Page components
-├── services/          # Service layer
-│   ├── geminiService.ts         # AI integrations (GPT-4o + Gemini)
-│   ├── openaiService.ts         # GPT-4o for TaekBot & Class Planner
-│   ├── supabaseClient.ts        # Supabase database client
-│   └── challengeRealtimeService.ts  # Real-time challenge notifications
+│   └── PricingPage.tsx  # Stripe Checkout integration
+├── services/          # Frontend services
+│   ├── apiClient.ts  # Backend API client
+│   ├── geminiService.ts     # AI via backend proxy
+│   ├── openaiService.ts     # AI via backend proxy
+│   └── subscriptionService.ts  # Subscription plans
 ├── App.tsx            # Main app component
 ├── index.tsx          # Entry point
-├── types.ts           # TypeScript type definitions
-├── constants.ts       # App constants
-└── vite.config.ts     # Vite configuration
+├── types.ts           # TypeScript definitions
+└── vite.config.ts     # Vite + proxy configuration
 ```
 
 ## Environment Variables
