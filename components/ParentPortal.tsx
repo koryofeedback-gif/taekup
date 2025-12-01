@@ -874,6 +874,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
         );
     }
