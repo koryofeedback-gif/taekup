@@ -991,8 +991,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const renderRivals = () => {
         const classmates = data.students.filter(s => s.id !== student.id);
         
+        const activeCustomChallenges = (data.customChallenges || []).filter(c => c.isActive);
+        
         // Challenge Categories with exercises
         const challengeCategories = [
+            ...(activeCustomChallenges.length > 0 ? [{
+                name: 'Coach Picks',
+                icon: '🏆',
+                color: 'cyan',
+                challenges: activeCustomChallenges.map(c => ({
+                    id: c.id,
+                    name: c.name,
+                    icon: c.icon,
+                    xp: c.xp,
+                    isCoachChallenge: true,
+                    videoUrl: c.videoUrl,
+                    description: c.description,
+                    weeklyChallenge: c.weeklyChallenge
+                }))
+            }] : []),
             {
                 name: 'Strength',
                 icon: '💪',

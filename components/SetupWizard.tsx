@@ -70,6 +70,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
         privateSlots: [],
         clubSponsoredPremium: false,
         challenges: [],
+        customChallenges: [],
       };
 
       if (savedData) {
@@ -183,6 +184,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
             privateSlots: [],
             clubSponsoredPremium: false,
             challenges: [],
+            customChallenges: [],
           });
           setCurrentStep(1);
           setFormKey(prev => prev + 1); // Force re-mount of all step components
