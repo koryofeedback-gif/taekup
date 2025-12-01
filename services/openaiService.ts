@@ -1,8 +1,9 @@
 import type { Message } from '../types';
+import { OpenAI } from 'openai';
 
-let openaiInstance: any = null;
+let openaiInstance: OpenAI | null = null;
 
-const getOpenAIInstance = async () => {
+const getOpenAIInstance = () => {
   if (openaiInstance) return openaiInstance;
   
   const apiKey = (import.meta.env as any).VITE_OPENAI_API_KEY;
@@ -13,7 +14,6 @@ const getOpenAIInstance = async () => {
   }
   
   try {
-    const { OpenAI } = await import('openai');
     openaiInstance = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
     return openaiInstance;
   } catch (e) {
@@ -26,7 +26,7 @@ export const getTaekBotResponseGPT = async (query: string, history: Message[]): 
   const fallback = "I'm sorry, I'm having a little trouble connecting right now. Please try again in a moment.";
   
   try {
-    const client = await getOpenAIInstance();
+    const client = getOpenAIInstance();
     if (!client) return fallback;
 
     const systemPrompt = `You are TaekBot, the AI assistant for MyTaek and TaekUp. 
@@ -76,7 +76,7 @@ export const sendWelcomeEmailGPT = async (clubName: string): Promise<string> => 
   const fallback = `Welcome to TaekUp, Master ${clubName}! We're excited to have you. Your journey starts here.`;
   
   try {
-    const client = await getOpenAIInstance();
+    const client = getOpenAIInstance();
     if (!client) return fallback;
 
     const response = await client.chat.completions.create({
@@ -110,7 +110,7 @@ export const generateSloganGPT = async (clubName: string): Promise<string> => {
   const fallback = "Discipline. Focus. Spirit.";
   
   try {
-    const client = await getOpenAIInstance();
+    const client = getOpenAIInstance();
     if (!client) return fallback;
 
     const response = await client.chat.completions.create({
@@ -134,7 +134,7 @@ export const generateSloganGPT = async (clubName: string): Promise<string> => {
 
 export const sendCoachWelcomeEmailGPT = async (coachName: string, clubName: string): Promise<void> => {
   try {
-    const client = await getOpenAIInstance();
+    const client = getOpenAIInstance();
     if (!client) {
       console.log(`Welcome, Coach ${coachName}! You're now part of ${clubName}'s TaekUp system.`);
       return;
