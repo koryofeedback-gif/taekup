@@ -21,8 +21,13 @@ The project has been successfully configured to run on Replit. The development s
   - Stripe integration for payment processing
 - **Dual AI System**:
   - TaekBot powered by GPT-4o for higher accuracy
+  - AI Class Planner upgraded to GPT-4o with detailed prompts
   - Gemini API available for routine tasks
   - Both services with fallback responses
+- **TV Lobby Display**:
+  - Fixed navigation from Admin Dashboard
+  - Full-screen lobby mode at /app/tv
+  - Auto-rotating slides (welcome, leaderboard, birthdays, events)
 
 ## Previous Changes (November 30, 2025)
 - Configured Vite to work with Replit proxy (host: 0.0.0.0, port: 5000)

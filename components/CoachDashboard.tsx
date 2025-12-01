@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { WizardData, Student, PerformanceRecord, FeedbackRecord, CalendarEvent } from '../types';
 import { generateParentFeedback, generatePromotionMessage, generateLessonPlan } from '../services/geminiService';
+import { generateLessonPlanGPT } from '../services/openaiService';
 import { StudentProfile } from './StudentProfile';
 
 // --- TYPE DEFINITIONS ---
@@ -530,10 +531,32 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
     const handleGenerate = async () => {
         if (!focus) return;
         setIsGenerating(true);
-        const result = await generateLessonPlan(ageGroup, beltLevel, focus, duration, data.language);
+        
+        // Try GPT-4o first for higher accuracy, fallback to Gemini
+        let result = await generateLessonPlanGPT(ageGroup, beltLevel, focus, duration, data.language);
+        
+        // If GPT fails (returns fallback), try Gemini
+        if (result.includes('Basic form practice')) {
+            result = await generateLessonPlan(ageGroup, beltLevel, focus, duration, data.language);
+        }
+        
         setPlan(result);
         setIsGenerating(false);
     }
+
+    // Common focus topics for quick selection
+    const focusSuggestions = [
+        'Front Kick (Ap Chagi)',
+        'Roundhouse Kick (Dollyo Chagi)',
+        'Side Kick (Yeop Chagi)',
+        'Back Kick (Dwi Chagi)',
+        'Sparring Combinations',
+        'Poomsae / Forms',
+        'Self-Defense Techniques',
+        'Board Breaking',
+        'Flexibility & Stretching',
+        'Competition Prep'
+    ];
 
     return (
         <div className="p-6 min-h-[600px] space-y-8 bg-gray-800 rounded-b-lg border-x border-b border-gray-700">
@@ -541,12 +564,12 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
                 <div className="flex items-center mb-4">
                     <span className="text-3xl mr-4">🧠</span>
                     <div>
-                        <h2 className="text-xl font-bold text-white">AI Class Planner</h2>
-                        <p className="text-gray-400 text-sm">Pedagogy, not just administration. Generate a perfect class in seconds.</p>
+                        <h2 className="text-xl font-bold text-white">AI Class Planner <span className="text-xs bg-green-600 px-2 py-0.5 rounded ml-2">GPT-4o Powered</span></h2>
+                        <p className="text-gray-400 text-sm">Professional lesson plans with exact timing, Korean terminology, and age-appropriate activities.</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
                     <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)} className="bg-gray-800 border border-gray-600 rounded p-2 text-white">
                         <option>Little Tigers (4-6)</option>
                         <option>Kids (7-9)</option>
@@ -556,30 +579,60 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
                     <select value={beltLevel} onChange={e => setBeltLevel(e.target.value)} className="bg-gray-800 border border-gray-600 rounded p-2 text-white">
                         {data.belts.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                     </select>
+                    <select value={duration} onChange={e => setDuration(e.target.value)} className="bg-gray-800 border border-gray-600 rounded p-2 text-white">
+                        <option value="30">30 min class</option>
+                        <option value="45">45 min class</option>
+                        <option value="60">60 min class</option>
+                        <option value="90">90 min class</option>
+                    </select>
                     <input 
                         type="text" 
-                        placeholder="Focus (e.g. Roundhouse Kick, Sparring)" 
+                        placeholder="Focus (e.g. Roundhouse Kick)" 
                         value={focus} 
                         onChange={e => setFocus(e.target.value)}
                         className="bg-gray-800 border border-gray-600 rounded p-2 text-white"
+                        list="focus-suggestions"
                     />
+                    <datalist id="focus-suggestions">
+                        {focusSuggestions.map((s, i) => <option key={i} value={s} />)}
+                    </datalist>
                     <button 
                         onClick={handleGenerate} 
                         disabled={isGenerating || !focus}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center py-2"
                     >
-                        {isGenerating ? 'Thinking...' : '✨ Generate Plan'}
+                        {isGenerating ? '🧠 Thinking...' : '✨ Generate Plan'}
                     </button>
+                </div>
+                
+                {/* Quick Focus Buttons */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                    <span className="text-gray-500 text-xs uppercase mr-2 self-center">Quick:</span>
+                    {focusSuggestions.slice(0, 5).map((suggestion, i) => (
+                        <button 
+                            key={i}
+                            onClick={() => setFocus(suggestion)}
+                            className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded-full transition-colors"
+                        >
+                            {suggestion.split(' (')[0]}
+                        </button>
+                    ))}
                 </div>
             </div>
 
             {plan && (
                 <div className="bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-2xl animate-fade-in">
                     <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-4">
-                        <h3 className="text-lg font-bold text-white">Lesson Plan: {focus}</h3>
-                        <button onClick={() => window.print()} className="text-gray-400 hover:text-white text-sm">🖨️ Print</button>
+                        <div>
+                            <h3 className="text-lg font-bold text-white">Lesson Plan: {focus}</h3>
+                            <p className="text-xs text-gray-500">{ageGroup} | {beltLevel} | {duration} min</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => navigator.clipboard.writeText(plan)} className="text-gray-400 hover:text-white text-sm bg-gray-800 px-3 py-1 rounded">📋 Copy</button>
+                            <button onClick={() => window.print()} className="text-gray-400 hover:text-white text-sm bg-gray-800 px-3 py-1 rounded">🖨️ Print</button>
+                        </div>
                     </div>
-                    <div className="prose prose-invert max-w-none whitespace-pre-line text-gray-300">
+                    <div className="prose prose-invert max-w-none whitespace-pre-line text-gray-300 leading-relaxed">
                         {plan}
                     </div>
                 </div>

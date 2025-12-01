@@ -160,3 +160,90 @@ export const sendCoachWelcomeEmailGPT = async (coachName: string, clubName: stri
     console.log(`Welcome, Coach ${coachName}! You're now part of ${clubName}'s TaekUp system.`);
   }
 };
+
+export const generateLessonPlanGPT = async (
+  ageGroup: string,
+  beltLevel: string,
+  focusTopic: string,
+  duration: string = "45",
+  language: string = 'English'
+): Promise<string> => {
+  const fallback = `**1. Warm-up (5 min):**
+Jumping jacks, high knees, arm circles
+
+**2. Technical Drill (15 min):**
+${focusTopic} - Basic form practice
+
+**3. Application / Partner Work (15 min):**
+Partner drills focusing on ${focusTopic}
+
+**4. Mat Chat (5 min):**
+Discussion about respect and discipline`;
+
+  try {
+    const client = getOpenAIInstance();
+    if (!client) return fallback;
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an elite Martial Arts Master Instructor with 30+ years of experience teaching Taekwondo, Karate, and MMA to all ages. You specialize in creating engaging, age-appropriate, and pedagogically sound lesson plans.
+
+Your lesson plans are known for:
+- Specific technique names (Korean/Japanese terms when appropriate)
+- Exact repetitions, sets, and timing
+- Safety considerations
+- Progressive skill building
+- Fun, engaging activities that reinforce learning
+- Age-appropriate language and challenges`
+        },
+        {
+          role: 'user',
+          content: `Create a detailed, professional ${duration}-minute martial arts lesson plan.
+
+**CLASS DETAILS:**
+- Age Group: ${ageGroup}
+- Belt Level: ${beltLevel}
+- Primary Focus: ${focusTopic}
+- Duration: ${duration} minutes
+
+**REQUIRED FORMAT:**
+
+**1. Warm-up (5-8 minutes):**
+[List 3-4 specific activities with exact duration and reps. Include dynamic stretches appropriate for the age group. Make it fun for kids.]
+
+**2. Technical Drill - ${focusTopic} (15-20 minutes):**
+[Break down the technique step-by-step. Include:
+- Stance and positioning
+- 3-4 progressive drills from basic to advanced
+- Exact repetitions (e.g., "10 reps each side")
+- Common mistakes to correct
+- Korean/Japanese terminology if applicable]
+
+**3. Application / Partner Work (10-15 minutes):**
+[Describe 2-3 partner drills or controlled sparring exercises that apply the focus technique. Include safety rules and variations for different skill levels.]
+
+**4. Cool-down & Mat Chat (5 minutes):**
+[Include specific stretches and a meaningful life lesson connected to today's training. For kids, make the mat chat interactive with questions.]
+
+**IMPORTANT RULES:**
+- Be SPECIFIC with technique names, counts, and timing
+- ${ageGroup === 'Little Tigers (4-6)' ? 'Use simple language, games, and animal names for moves. Keep attention span in mind.' : ''}
+- ${ageGroup === 'Kids (7-9)' ? 'Balance fun with discipline. Use games that reinforce techniques.' : ''}
+- ${ageGroup === 'Juniors (10-13)' ? 'Challenge them more. Include competition-style drills.' : ''}
+- ${ageGroup === 'Teens/Adults' ? 'Focus on precision, power, and real-world application. More conditioning.' : ''}
+- Write the response in: ${language}`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
+    });
+
+    return response.choices[0]?.message?.content || fallback;
+  } catch (error) {
+    console.error("Error generating lesson plan with GPT:", error);
+    return fallback;
+  }
+};

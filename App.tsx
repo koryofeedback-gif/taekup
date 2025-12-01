@@ -359,16 +359,11 @@ const AppContent: React.FC<AppContentProps> = ({
                         path="/app/admin"
                         element={
                             finalWizardData && loggedInUserType === 'owner' ? (
-                                <>
-                                    <SEO title="Admin Command Center | TaekUp" />
-                                    <AdminDashboard
-                                        data={finalWizardData}
-                                        onBack={() => window.history.back()}
-                                        onUpdateData={onWizardDataUpdate}
-                                        onNavigate={() => {}}
-                                        onViewStudentPortal={onViewStudentPortal}
-                                    />
-                                </>
+                                <AdminDashboardWrapper
+                                    data={finalWizardData}
+                                    onUpdateData={onWizardDataUpdate}
+                                    onViewStudentPortal={onViewStudentPortal}
+                                />
                             ) : (
                                 <Navigate to="/login" replace />
                             )
@@ -451,6 +446,51 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
                 student={studentToShow}
                 data={data}
                 onBack={loggedInUserType === 'owner' ? () => window.history.back() : onLogout}
+            />
+        </>
+    );
+};
+
+// Admin Dashboard Wrapper with Navigation
+interface AdminDashboardWrapperProps {
+    data: WizardData;
+    onUpdateData: (updates: Partial<WizardData>) => void;
+    onViewStudentPortal: (studentId: string) => void;
+}
+
+const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
+    data,
+    onUpdateData,
+    onViewStudentPortal,
+}) => {
+    const navigate = useNavigate();
+    
+    const handleNavigate = (view: 'coach-dashboard' | 'admin-dashboard' | 'parent-portal' | 'dojang-tv') => {
+        switch (view) {
+            case 'coach-dashboard':
+                navigate('/app/coach');
+                break;
+            case 'admin-dashboard':
+                navigate('/app/admin');
+                break;
+            case 'parent-portal':
+                navigate(`/app/parent/${data.students[0]?.id || ''}`);
+                break;
+            case 'dojang-tv':
+                navigate('/app/tv');
+                break;
+        }
+    };
+    
+    return (
+        <>
+            <SEO title="Admin Command Center | TaekUp" />
+            <AdminDashboard
+                data={data}
+                onBack={() => navigate('/app')}
+                onUpdateData={onUpdateData}
+                onNavigate={handleNavigate}
+                onViewStudentPortal={onViewStudentPortal}
             />
         </>
     );
