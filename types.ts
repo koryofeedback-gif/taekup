@@ -112,6 +112,28 @@ export interface Challenge {
     date: string;
 }
 
+export type ChallengeCategory = 'Strength' | 'Flexibility' | 'Speed' | 'Skill' | 'Endurance' | 'Custom';
+
+export interface CustomChallenge {
+    id: string;
+    name: string;
+    description: string;
+    category: ChallengeCategory;
+    icon: string;
+    xp: number;
+    videoUrl?: string;
+    difficulty: 'Easy' | 'Medium' | 'Hard' | 'Expert';
+    measurementType: 'count' | 'time' | 'distance' | 'score';
+    measurementUnit: string;
+    createdBy: string;
+    createdByName: string;
+    createdAt: string;
+    isActive: boolean;
+    targetAudience: 'all' | 'beginners' | 'intermediate' | 'advanced';
+    weeklyChallenge?: boolean;
+    expiresAt?: string;
+}
+
 export interface LifeSkill {
     id: string;
     name: string;
@@ -226,4 +248,5 @@ export interface WizardData {
   // Billing Features
   clubSponsoredPremium: boolean; // New: Club pays for parents
   challenges: Challenge[]; // New: Store active challenges
+  customChallenges: CustomChallenge[]; // Coach-created custom challenges
 }
