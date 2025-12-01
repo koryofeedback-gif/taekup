@@ -3,6 +3,9 @@ import type { Student, WizardData, PerformanceRecord, Belt, Habit } from '../typ
 import { BeltIcon, CalendarIcon } from './icons/FeatureIcons';
 import { generateParentingAdvice } from '../services/geminiService';
 import { LANGUAGES } from '../constants';
+import { useChallengeRealtime } from '../hooks/useChallengeRealtime';
+import { ChallengeToast } from './ChallengeToast';
+import { isSupabaseConfigured } from '../services/supabaseClient';
 
 interface ParentPortalProps {
     student: Student;
@@ -70,6 +73,61 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [showScoreSubmit, setShowScoreSubmit] = useState(false);
     const [inboxTab, setInboxTab] = useState<'received' | 'sent'>('received');
     const [challengeSent, setChallengeSent] = useState(false);
+
+    // Real-time Challenge Hook
+    const {
+        receivedChallenges: realtimeReceived,
+        sentChallenges: realtimeSent,
+        pendingCount: realtimePendingCount,
+        sendChallenge: realtimeSendChallenge,
+        acceptChallenge: realtimeAcceptChallenge,
+        declineChallenge: realtimeDeclineChallenge,
+        newChallengeAlert,
+        clearNewChallengeAlert
+    } = useChallengeRealtime(student.id);
+
+    // Merge real-time challenges with demo data for display
+    const mergedReceivedChallenges = useMemo(() => {
+        const realtimeFormatted = realtimeReceived.map(c => ({
+            id: c.id,
+            fromId: c.from_student_id,
+            fromName: c.from_student_name,
+            toId: c.to_student_id,
+            toName: c.to_student_name,
+            challengeId: c.challenge_id,
+            challengeName: c.challenge_name,
+            challengeXp: c.challenge_xp,
+            status: c.status as PendingChallenge['status'],
+            createdAt: new Date(c.created_at).toLocaleString(),
+            expiresIn: Math.max(0, Math.floor((new Date(c.expires_at).getTime() - Date.now()) / (1000 * 60 * 60))) + ' hours'
+        }));
+        const existingIds = new Set(realtimeFormatted.map(c => c.id));
+        const demoData = pendingChallenges.filter(c => !existingIds.has(c.id));
+        return [...realtimeFormatted, ...demoData];
+    }, [realtimeReceived, pendingChallenges]);
+
+    const mergedSentChallenges = useMemo(() => {
+        const realtimeFormatted = realtimeSent.map(c => ({
+            id: c.id,
+            fromId: c.from_student_id,
+            fromName: c.from_student_name,
+            toId: c.to_student_id,
+            toName: c.to_student_name,
+            challengeId: c.challenge_id,
+            challengeName: c.challenge_name,
+            challengeXp: c.challenge_xp,
+            status: c.status as PendingChallenge['status'],
+            createdAt: new Date(c.created_at).toLocaleString(),
+            expiresIn: Math.max(0, Math.floor((new Date(c.expires_at).getTime() - Date.now()) / (1000 * 60 * 60))) + ' hours'
+        }));
+        const existingIds = new Set(realtimeFormatted.map(c => c.id));
+        const demoData = sentChallenges.filter(c => !existingIds.has(c.id));
+        return [...realtimeFormatted, ...demoData];
+    }, [realtimeSent, sentChallenges]);
+
+    const totalPendingCount = useMemo(() => {
+        return mergedReceivedChallenges.filter(c => c.status === 'pending').length;
+    }, [mergedReceivedChallenges]);
 
     // Home Dojo State
     const [homeDojoChecks, setHomeDojoChecks] = useState<Record<string, boolean>>({});
@@ -1016,27 +1074,39 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             { id: 'champion', name: 'Champion', icon: '👑', description: 'Reach #1 on leaderboard', earned: false },
         ];
 
-        const handleSendChallenge = () => {
+        const handleSendChallenge = async () => {
             if (!selectedRival || !selectedChallenge) return;
             
             const challenge = challengeCategories.flatMap(c => c.challenges).find(c => c.id === selectedChallenge);
             const opponent = classmates.find(c => c.id === selectedRival);
             
-            const newChallenge: PendingChallenge = {
-                id: `sent-${Date.now()}`,
-                fromId: student.id,
-                fromName: student.name,
-                toId: selectedRival,
-                toName: opponent?.name || 'Unknown',
+            const result = await realtimeSendChallenge({
+                toStudentId: selectedRival,
+                toStudentName: opponent?.name || 'Unknown',
+                fromStudentId: student.id,
+                fromStudentName: student.name,
                 challengeId: selectedChallenge,
                 challengeName: challenge?.name || selectedChallenge,
-                challengeXp: challenge?.xp || 50,
-                status: 'pending',
-                createdAt: 'Just now',
-                expiresIn: '24 hours'
-            };
+                challengeXp: challenge?.xp || 50
+            });
             
-            setSentChallenges(prev => [newChallenge, ...prev]);
+            if (result) {
+                const newChallenge: PendingChallenge = {
+                    id: result.id,
+                    fromId: student.id,
+                    fromName: student.name,
+                    toId: selectedRival,
+                    toName: opponent?.name || 'Unknown',
+                    challengeId: selectedChallenge,
+                    challengeName: challenge?.name || selectedChallenge,
+                    challengeXp: challenge?.xp || 50,
+                    status: 'pending',
+                    createdAt: 'Just now',
+                    expiresIn: '24 hours'
+                };
+                setSentChallenges(prev => [newChallenge, ...prev]);
+            }
+            
             setChallengeSent(true);
             setSelectedRival('');
             setSelectedChallenge('');
@@ -1050,44 +1120,49 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             setMyScore('');
         };
 
-        const handleDeclineChallenge = (challengeId: string) => {
+        const handleDeclineChallengeAction = async (challengeId: string) => {
+            await realtimeDeclineChallenge(challengeId);
             setPendingChallenges(prev => prev.filter(c => c.id !== challengeId));
         };
 
-        const handleSubmitScore = () => {
+        const handleSubmitScore = async () => {
             if (!activeChallenge || !myScore) return;
             
             const score = parseInt(myScore);
-            const opponentScore = Math.floor(Math.random() * 100); // Simulated opponent score
-            const won = score > opponentScore;
             
-            const xpEarned = won ? activeChallenge.challengeXp : 10;
+            const result = await realtimeAcceptChallenge(activeChallenge.id, score);
             
-            if (won) {
-                setRivalStats(prev => ({ 
-                    ...prev, 
-                    wins: prev.wins + 1, 
-                    streak: prev.streak + 1,
-                    xp: prev.xp + xpEarned
-                }));
-            } else {
-                setRivalStats(prev => ({ ...prev, losses: prev.losses + 1, streak: 0, xp: prev.xp + 10 }));
+            if (result) {
+                const xpEarned = result.xpEarned;
+                const won = result.won;
+                
+                if (won) {
+                    setRivalStats(prev => ({ 
+                        ...prev, 
+                        wins: prev.wins + 1, 
+                        streak: prev.streak + 1,
+                        xp: prev.xp + xpEarned
+                    }));
+                } else {
+                    setRivalStats(prev => ({ ...prev, losses: prev.losses + 1, streak: 0, xp: prev.xp + 10 }));
+                }
+                
+                setChallengeHistory(prev => [{
+                    id: Date.now().toString(),
+                    opponent: activeChallenge.fromName,
+                    challenge: activeChallenge.challengeName,
+                    result: won ? 'win' : 'loss',
+                    date: 'Just now',
+                    xpEarned
+                }, ...prev]);
+                
+                setChallengeResult(won ? 'win' : 'loss');
             }
-            
-            setChallengeHistory(prev => [{
-                id: Date.now().toString(),
-                opponent: activeChallenge.fromName,
-                challenge: activeChallenge.challengeName,
-                result: won ? 'win' : 'loss',
-                date: 'Just now',
-                xpEarned
-            }, ...prev]);
             
             setPendingChallenges(prev => prev.filter(c => c.id !== activeChallenge.id));
             setShowScoreSubmit(false);
             setActiveChallenge(null);
             setMyScore('');
-            setChallengeResult(won ? 'win' : 'loss');
             setIsSimulatingChallenge(true);
             
             setTimeout(() => {
@@ -1102,6 +1177,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {/* Header */}
                     <div className="bg-gradient-to-r from-red-900 to-black p-4 rounded-xl border border-red-600/50 text-center relative overflow-hidden">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                        
+                        {/* Connection Status */}
+                        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
+                            <div className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`}></div>
+                            <span className="text-[8px] text-gray-400 uppercase">{isSupabaseConfigured ? 'Live' : 'Demo'}</span>
+                        </div>
+                        
                         <h3 className="text-2xl font-black text-white italic tracking-tighter relative z-10">DOJANG RIVALS</h3>
                         <p className="text-red-400 font-bold uppercase tracking-widest text-[10px] relative z-10">Challenge. Compete. Win.</p>
                         
@@ -1130,7 +1212,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
                         {[
                             { id: 'arena', label: 'Arena', icon: '⚔️', badge: 0 },
-                            { id: 'inbox', label: 'Inbox', icon: '📬', badge: pendingChallenges.filter(c => c.status === 'pending').length },
+                            { id: 'inbox', label: 'Inbox', icon: '📬', badge: totalPendingCount },
                             { id: 'weekly', label: 'Weekly', icon: '🎯', badge: 0 },
                             { id: 'leaderboard', label: 'Ranks', icon: '🏆', badge: 0 },
                             { id: 'history', label: 'History', icon: '📜', badge: 0 },
@@ -1305,7 +1387,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 inboxTab === 'received' ? 'bg-orange-600 text-white' : 'text-gray-400'
                                             }`}
                                         >
-                                            Received ({pendingChallenges.filter(c => c.status === 'pending').length})
+                                            Received ({mergedReceivedChallenges.filter(c => c.status === 'pending').length})
                                         </button>
                                         <button
                                             onClick={() => setInboxTab('sent')}
@@ -1313,21 +1395,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 inboxTab === 'sent' ? 'bg-orange-600 text-white' : 'text-gray-400'
                                             }`}
                                         >
-                                            Sent ({sentChallenges.length})
+                                            Sent ({mergedSentChallenges.length})
                                         </button>
                                     </div>
 
                                     {/* Received Challenges */}
                                     {inboxTab === 'received' && (
                                         <div className="space-y-3">
-                                            {pendingChallenges.filter(c => c.status === 'pending').length === 0 ? (
+                                            {mergedReceivedChallenges.filter(c => c.status === 'pending').length === 0 ? (
                                                 <div className="text-center py-12">
                                                     <div className="text-5xl mb-4">📭</div>
                                                     <p className="text-gray-500 font-bold">No pending challenges</p>
                                                     <p className="text-gray-600 text-xs">When someone challenges you, it'll appear here!</p>
                                                 </div>
                                             ) : (
-                                                pendingChallenges.filter(c => c.status === 'pending').map(challenge => (
+                                                mergedReceivedChallenges.filter(c => c.status === 'pending').map(challenge => (
                                                     <div key={challenge.id} className="bg-gray-800 rounded-xl border border-orange-500/30 overflow-hidden">
                                                         <div className="p-4">
                                                             <div className="flex items-center justify-between mb-3">
@@ -1353,7 +1435,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             
                                                             <div className="flex gap-2">
                                                                 <button 
-                                                                    onClick={() => handleDeclineChallenge(challenge.id)}
+                                                                    onClick={() => handleDeclineChallengeAction(challenge.id)}
                                                                     className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-2.5 rounded-lg text-sm transition-colors"
                                                                 >
                                                                     Decline
@@ -1375,14 +1457,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     {/* Sent Challenges */}
                                     {inboxTab === 'sent' && (
                                         <div className="space-y-3">
-                                            {sentChallenges.length === 0 ? (
+                                            {mergedSentChallenges.length === 0 ? (
                                                 <div className="text-center py-12">
                                                     <div className="text-5xl mb-4">📤</div>
                                                     <p className="text-gray-500 font-bold">No challenges sent</p>
                                                     <p className="text-gray-600 text-xs">Go to Arena to challenge a rival!</p>
                                                 </div>
                                             ) : (
-                                                sentChallenges.map(challenge => (
+                                                mergedSentChallenges.map(challenge => (
                                                     <div key={challenge.id} className="bg-gray-800 rounded-xl border border-blue-500/30 p-4">
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center">
@@ -1829,6 +1911,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     return (
         <div className="min-h-screen bg-gray-900 pb-20 max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-gray-800">
+            {/* Real-time Challenge Toast Notification */}
+            <ChallengeToast 
+                challenge={newChallengeAlert ? {
+                    from_student_name: newChallengeAlert.from_student_name,
+                    challenge_name: newChallengeAlert.challenge_name,
+                    challenge_xp: newChallengeAlert.challenge_xp
+                } : null}
+                onClose={clearNewChallengeAlert}
+                onViewInbox={() => {
+                    setActiveTab('rivals');
+                    setRivalsView('inbox');
+                }}
+            />
+
              {/* Preview Header for Owner */}
             <div className="bg-yellow-600 text-white text-xs font-bold text-center py-2 sticky top-0 z-50 shadow-md flex justify-between px-4 items-center">
                 <span>PREVIEW MODE</span>

@@ -42,6 +42,15 @@ The project has been successfully configured to run on Replit. The development s
   - Battle History with win/loss tracking
   - Stats tracking: Wins, Losses, Streak, Total XP
   - Badge/Achievement system (Iron Fist, Lightning, Warrior Spirit, etc.)
+- **Real-Time Challenge Notifications**:
+  - Challenge Inbox with Received/Sent tabs and notification badges
+  - Send challenges to classmates from the Arena
+  - Accept/Decline incoming challenges with score submission
+  - Toast notifications for new challenges
+  - Connection status indicator (Live/Demo mode)
+  - PostgreSQL challenges table for persistence
+  - BroadcastChannel API for cross-tab notifications in demo mode
+  - Supabase real-time subscriptions ready (configure VITE_SUPABASE_URL/KEY)
 
 ## Previous Changes (November 30, 2025)
 - Configured Vite to work with Replit proxy (host: 0.0.0.0, port: 5000)
@@ -71,11 +80,17 @@ The project has been successfully configured to run on Replit. The development s
 /
 ├── components/         # React components
 │   ├── wizard/        # Setup wizard steps
-│   └── icons/         # Icon components
+│   ├── icons/         # Icon components
+│   ├── ChallengeToast.tsx  # Real-time challenge notification
+│   └── ParentPortal.tsx    # Parent/student portal (with Dojang Rivals)
+├── hooks/             # Custom React hooks
+│   └── useChallengeRealtime.ts  # Real-time challenge state management
 ├── pages/             # Page components
 ├── services/          # Service layer
-│   ├── geminiService.ts    # AI integrations
-│   └── supabaseClient.ts   # Database client
+│   ├── geminiService.ts         # AI integrations (GPT-4o + Gemini)
+│   ├── openaiService.ts         # GPT-4o for TaekBot & Class Planner
+│   ├── supabaseClient.ts        # Supabase database client
+│   └── challengeRealtimeService.ts  # Real-time challenge notifications
 ├── App.tsx            # Main app component
 ├── index.tsx          # Entry point
 ├── types.ts           # TypeScript type definitions
