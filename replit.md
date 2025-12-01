@@ -34,6 +34,14 @@ The project has been successfully configured to run on Replit. The development s
   - Category selector (Custom, Martial Arts, Health, School, Character, Family)
   - Custom habits shown separately from presets
   - Easy add/remove functionality
+- **Expanded Dojang Rivals System**:
+  - 5 Challenge Categories: Strength, Flexibility, Speed, Skill, Endurance
+  - 17 unique challenges with XP rewards (50-150 XP each)
+  - Weekly Challenges with special rewards and progress tracking
+  - Leaderboard showing top warriors in the dojo
+  - Battle History with win/loss tracking
+  - Stats tracking: Wins, Losses, Streak, Total XP
+  - Badge/Achievement system (Iron Fist, Lightning, Warrior Spirit, etc.)
 
 ## Previous Changes (November 30, 2025)
 - Configured Vite to work with Replit proxy (host: 0.0.0.0, port: 5000)

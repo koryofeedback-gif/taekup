@@ -110,19 +110,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         setIsGeneratingAdvice(false);
     }
 
-    const handleSendChallenge = () => {
-        if (!selectedRival) return;
-        setIsSimulatingChallenge(true);
-        setChallengeResult('pending');
-        
-        // Simulate response time
-        setTimeout(() => {
-            const win = Math.random() > 0.4; // 60% chance to win for fun
-            setChallengeResult(win ? 'win' : 'loss');
-            setIsSimulatingChallenge(false);
-        }, 3000);
-    }
-
     // Home Dojo Helpers
     const toggleHabitCheck = (habitId: string) => {
         setHomeDojoChecks(prev => {
