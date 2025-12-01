@@ -60,6 +60,13 @@ The project has been successfully configured to run on Replit. The development s
   - Weekly Challenge toggle with expiration date
   - "Coach Picks" category displays active challenges in Parent Portal Arena
   - Full CRUD operations with toggle active/inactive
+- **Instant Demo Mode**:
+  - "Try Demo" button on Login page for quick platform preview
+  - Role selection: Admin, Coach, or Parent perspectives
+  - Pre-populated sample data (club, 5 students, 2 coaches, 3 custom challenges)
+  - Floating role switcher for instant view changes during demo
+  - Isolated demo state - doesn't affect real user data
+  - Easy exit to return to normal login flow
 
 ## Previous Changes (November 30, 2025)
 - Configured Vite to work with Replit proxy (host: 0.0.0.0, port: 5000)
