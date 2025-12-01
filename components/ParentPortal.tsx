@@ -26,6 +26,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [selectedRival, setSelectedRival] = useState<string>('');
     const [challengeResult, setChallengeResult] = useState<'pending' | 'win' | 'loss' | null>(null);
     const [isSimulatingChallenge, setIsSimulatingChallenge] = useState(false);
+    const [selectedChallenge, setSelectedChallenge] = useState<string>('');
+    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly'>('arena');
+    const [challengeHistory, setChallengeHistory] = useState<Array<{
+        id: string;
+        opponent: string;
+        challenge: string;
+        result: 'win' | 'loss';
+        date: string;
+        xpEarned: number;
+    }>>([
+        { id: '1', opponent: 'Alex Kim', challenge: 'Pushups', result: 'win', date: '2 days ago', xpEarned: 50 },
+        { id: '2', opponent: 'Sarah Chen', challenge: 'Plank Hold', result: 'loss', date: '3 days ago', xpEarned: 10 },
+        { id: '3', opponent: 'Mike Park', challenge: 'High Kicks', result: 'win', date: '5 days ago', xpEarned: 75 },
+    ]);
+    const [rivalStats, setRivalStats] = useState({ wins: 12, losses: 5, streak: 3, xp: 850 });
 
     // Home Dojo State
     const [homeDojoChecks, setHomeDojoChecks] = useState<Record<string, boolean>>({});
@@ -900,89 +915,429 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }
 
     const renderRivals = () => {
-        // Mock classmates to challenge
         const classmates = data.students.filter(s => s.id !== student.id);
+        
+        // Challenge Categories with exercises
+        const challengeCategories = [
+            {
+                name: 'Strength',
+                icon: '💪',
+                color: 'red',
+                challenges: [
+                    { id: 'pushups', name: 'Pushups', icon: '💪', xp: 50 },
+                    { id: 'squats', name: 'Squats', icon: '🦵', xp: 50 },
+                    { id: 'plank', name: 'Plank Hold', icon: '🧱', xp: 75 },
+                    { id: 'burpees', name: 'Burpees', icon: '🔥', xp: 100 },
+                ]
+            },
+            {
+                name: 'Flexibility',
+                icon: '🧘',
+                color: 'purple',
+                challenges: [
+                    { id: 'splits', name: 'Splits Challenge', icon: '🤸', xp: 75 },
+                    { id: 'highkick', name: 'High Kick Height', icon: '🦶', xp: 60 },
+                    { id: 'bridge', name: 'Back Bridge', icon: '🌉', xp: 80 },
+                ]
+            },
+            {
+                name: 'Speed',
+                icon: '⚡',
+                color: 'yellow',
+                challenges: [
+                    { id: 'kicks30', name: '30-Second Kicks', icon: '🦵', xp: 60 },
+                    { id: 'punches30', name: '30-Second Punches', icon: '👊', xp: 60 },
+                    { id: 'jumprope', name: 'Jump Rope Speed', icon: '🪢', xp: 50 },
+                ]
+            },
+            {
+                name: 'Skill',
+                icon: '🎯',
+                color: 'blue',
+                challenges: [
+                    { id: 'forms', name: 'Forms Accuracy', icon: '🥋', xp: 100 },
+                    { id: 'combo', name: 'Combo Challenge', icon: '💥', xp: 80 },
+                    { id: 'balance', name: 'One-Leg Balance', icon: '🦩', xp: 70 },
+                    { id: 'breaking', name: 'Board Breaking', icon: '🪵', xp: 150 },
+                ]
+            },
+            {
+                name: 'Endurance',
+                icon: '🏃',
+                color: 'green',
+                challenges: [
+                    { id: 'running', name: '1-Mile Run', icon: '🏃', xp: 100 },
+                    { id: 'kicks100', name: '100 Kicks', icon: '💯', xp: 80 },
+                    { id: 'wallsit', name: 'Wall Sit', icon: '🧱', xp: 60 },
+                ]
+            }
+        ];
+
+        // Weekly Challenges
+        const weeklyChallenges = [
+            { id: 'w1', name: 'Iron Fist Week', description: 'Win 5 Strength challenges', icon: '🥊', reward: '500 XP + Iron Fist Badge', progress: 3, total: 5, endsIn: '3 days' },
+            { id: 'w2', name: 'Speed Demon', description: 'Complete 3 Speed challenges', icon: '⚡', reward: '300 XP + Lightning Badge', progress: 1, total: 3, endsIn: '3 days' },
+            { id: 'w3', name: 'Perfect Form', description: 'Win Forms Accuracy with 90%+', icon: '🎯', reward: '200 XP + Master Badge', progress: 0, total: 1, endsIn: '3 days' },
+        ];
+
+        // Leaderboard Data
+        const leaderboard = [
+            { rank: 1, name: 'Alex Kim', xp: 2450, wins: 28, badge: '🥇' },
+            { rank: 2, name: 'Sarah Chen', xp: 2100, wins: 24, badge: '🥈' },
+            { rank: 3, name: 'Mike Park', xp: 1850, wins: 21, badge: '🥉' },
+            { rank: 4, name: student.name, xp: rivalStats.xp, wins: rivalStats.wins, badge: '⭐', isYou: true },
+            { rank: 5, name: 'Emma Lee', xp: 720, wins: 9, badge: '' },
+            { rank: 6, name: 'James Wong', xp: 580, wins: 7, badge: '' },
+        ].sort((a, b) => b.xp - a.xp).map((p, i) => ({ ...p, rank: i + 1 }));
+
+        // Available Badges
+        const allBadges = [
+            { id: 'iron_fist', name: 'Iron Fist', icon: '🥊', description: 'Win 10 Strength challenges', earned: rivalStats.wins >= 10 },
+            { id: 'lightning', name: 'Lightning', icon: '⚡', description: 'Win 5 Speed challenges', earned: false },
+            { id: 'flexible', name: 'Flex Master', icon: '🧘', description: 'Win 5 Flexibility challenges', earned: true },
+            { id: 'warrior', name: 'Warrior Spirit', icon: '⚔️', description: 'Win 20 total challenges', earned: rivalStats.wins >= 12 },
+            { id: 'streak5', name: 'On Fire', icon: '🔥', description: '5 win streak', earned: rivalStats.streak >= 5 },
+            { id: 'champion', name: 'Champion', icon: '👑', description: 'Reach #1 on leaderboard', earned: false },
+        ];
+
+        const handleStartChallenge = () => {
+            if (!selectedRival || !selectedChallenge) return;
+            setIsSimulatingChallenge(true);
+            setChallengeResult('pending');
+            
+            setTimeout(() => {
+                const won = Math.random() > 0.4;
+                setChallengeResult(won ? 'win' : 'loss');
+                
+                const challenge = challengeCategories.flatMap(c => c.challenges).find(c => c.id === selectedChallenge);
+                const opponent = classmates.find(c => c.id === selectedRival);
+                
+                if (won) {
+                    setRivalStats(prev => ({ 
+                        ...prev, 
+                        wins: prev.wins + 1, 
+                        streak: prev.streak + 1,
+                        xp: prev.xp + (challenge?.xp || 50)
+                    }));
+                } else {
+                    setRivalStats(prev => ({ ...prev, losses: prev.losses + 1, streak: 0, xp: prev.xp + 10 }));
+                }
+                
+                setChallengeHistory(prev => [{
+                    id: Date.now().toString(),
+                    opponent: opponent?.name || 'Unknown',
+                    challenge: challenge?.name || selectedChallenge,
+                    result: won ? 'win' : 'loss',
+                    date: 'Just now',
+                    xpEarned: won ? (challenge?.xp || 50) : 10
+                }, ...prev]);
+            }, 2500);
+        };
 
         return (
             <div className="relative h-full min-h-[500px]">
-                <div className="space-y-6 pb-20">
-                    <div className="bg-gradient-to-r from-red-900 to-black p-6 rounded-xl border border-red-600/50 text-center relative overflow-hidden">
+                <div className="space-y-4 pb-20">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-red-900 to-black p-4 rounded-xl border border-red-600/50 text-center relative overflow-hidden">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
-                        <h3 className="text-3xl font-black text-white italic tracking-tighter relative z-10">DOJANG RIVALS</h3>
-                        <p className="text-red-400 font-bold uppercase tracking-widest text-xs relative z-10">Challenge. Compete. Win.</p>
+                        <h3 className="text-2xl font-black text-white italic tracking-tighter relative z-10">DOJANG RIVALS</h3>
+                        <p className="text-red-400 font-bold uppercase tracking-widest text-[10px] relative z-10">Challenge. Compete. Win.</p>
+                        
+                        {/* Stats Bar */}
+                        <div className="flex justify-center gap-4 mt-3 relative z-10">
+                            <div className="text-center">
+                                <div className="text-xl font-black text-green-400">{rivalStats.wins}</div>
+                                <div className="text-[10px] text-gray-400 uppercase">Wins</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-xl font-black text-red-400">{rivalStats.losses}</div>
+                                <div className="text-[10px] text-gray-400 uppercase">Losses</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-xl font-black text-yellow-400">{rivalStats.streak}🔥</div>
+                                <div className="text-[10px] text-gray-400 uppercase">Streak</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-xl font-black text-purple-400">{rivalStats.xp}</div>
+                                <div className="text-[10px] text-gray-400 uppercase">XP</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Navigation Tabs */}
+                    <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
+                        {[
+                            { id: 'arena', label: 'Arena', icon: '⚔️' },
+                            { id: 'weekly', label: 'Weekly', icon: '🎯' },
+                            { id: 'leaderboard', label: 'Ranks', icon: '🏆' },
+                            { id: 'history', label: 'History', icon: '📜' },
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setRivalsView(tab.id as typeof rivalsView)}
+                                className={`flex-1 py-2 px-2 rounded-md text-xs font-bold transition-all ${
+                                    rivalsView === tab.id 
+                                        ? 'bg-red-600 text-white' 
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                <span className="mr-1">{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
 
                     {!isSimulatingChallenge ? (
                         <>
-                            {/* Current Badges */}
-                            <div className="flex space-x-2 overflow-x-auto pb-2">
-                                {(student.badges || []).map((badge, i) => (
-                                    <div key={i} className="bg-gray-800 px-3 py-1 rounded-full border border-gray-700 text-xs font-bold text-yellow-400 flex items-center">
-                                        <span className="mr-1">🏆</span> {badge}
+                            {/* ARENA VIEW */}
+                            {rivalsView === 'arena' && (
+                                <div className="space-y-4">
+                                    {/* Badges Display */}
+                                    <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                                        {allBadges.filter(b => b.earned).map((badge, i) => (
+                                            <div key={i} className="bg-gray-800 px-3 py-1.5 rounded-full border border-yellow-600/50 text-xs font-bold text-yellow-400 flex items-center whitespace-nowrap">
+                                                <span className="mr-1">{badge.icon}</span> {badge.name}
+                                            </div>
+                                        ))}
+                                        {allBadges.filter(b => b.earned).length === 0 && (
+                                            <p className="text-gray-500 text-xs italic">Win challenges to earn badges!</p>
+                                        )}
                                     </div>
-                                ))}
-                                {(student.badges || []).length === 0 && <p className="text-gray-500 text-xs italic">Win challenges to earn badges!</p>}
-                            </div>
 
-                            {/* Challenge UI */}
-                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-                                <h4 className="font-bold text-white mb-4">Start a Duel</h4>
-                                <select 
-                                    value={selectedRival} 
-                                    onChange={e => setSelectedRival(e.target.value)}
-                                    className="w-full bg-gray-700 text-white p-3 rounded-lg mb-4 border border-gray-600"
-                                >
-                                    <option value="">Select Opponent...</option>
-                                    {classmates.map(c => <option key={c.id} value={c.id}>{c.name} ({data.belts.find(b => b.id === c.beltId)?.name})</option>)}
-                                </select>
-                                
-                                <div className="grid grid-cols-2 gap-3 mb-6">
-                                    <button className="bg-gray-700 hover:bg-red-900/50 hover:border-red-500 border border-transparent p-3 rounded-lg text-center transition-all group">
-                                        <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">💪</div>
-                                        <div className="text-xs font-bold text-gray-300">Pushups</div>
-                                    </button>
-                                    <button className="bg-gray-700 hover:bg-red-900/50 hover:border-red-500 border border-transparent p-3 rounded-lg text-center transition-all group">
-                                        <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">🦵</div>
-                                        <div className="text-xs font-bold text-gray-300">Squats</div>
+                                    {/* Select Opponent */}
+                                    <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                                        <h4 className="font-bold text-white mb-3 flex items-center">
+                                            <span className="mr-2">👤</span> Choose Opponent
+                                        </h4>
+                                        <select 
+                                            value={selectedRival} 
+                                            onChange={e => setSelectedRival(e.target.value)}
+                                            className="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 text-sm"
+                                        >
+                                            <option value="">Select Opponent...</option>
+                                            {classmates.map(c => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.name} ({data.belts.find(b => b.id === c.beltId)?.name})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Challenge Categories */}
+                                    <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                                        <h4 className="font-bold text-white mb-3 flex items-center">
+                                            <span className="mr-2">🎮</span> Select Challenge
+                                        </h4>
+                                        
+                                        {challengeCategories.map(category => (
+                                            <div key={category.name} className="mb-4">
+                                                <div className="flex items-center mb-2">
+                                                    <span className="text-lg mr-2">{category.icon}</span>
+                                                    <span className="text-xs font-bold text-gray-400 uppercase">{category.name}</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {category.challenges.map(challenge => (
+                                                        <button
+                                                            key={challenge.id}
+                                                            onClick={() => setSelectedChallenge(challenge.id)}
+                                                            className={`p-3 rounded-lg text-center transition-all border ${
+                                                                selectedChallenge === challenge.id
+                                                                    ? 'bg-red-900/50 border-red-500 scale-105'
+                                                                    : 'bg-gray-700 border-transparent hover:border-gray-500'
+                                                            }`}
+                                                        >
+                                                            <div className="text-xl mb-1">{challenge.icon}</div>
+                                                            <div className="text-[10px] font-bold text-gray-300">{challenge.name}</div>
+                                                            <div className="text-[9px] text-yellow-500">+{challenge.xp} XP</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Fight Button */}
+                                    <button 
+                                        onClick={handleStartChallenge}
+                                        disabled={!selectedRival || !selectedChallenge}
+                                        className="w-full bg-red-600 hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl shadow-lg transform active:scale-95 transition-all text-lg uppercase tracking-wider"
+                                    >
+                                        {!selectedRival ? 'SELECT OPPONENT' : !selectedChallenge ? 'SELECT CHALLENGE' : '⚔️ FIGHT!'}
                                     </button>
                                 </div>
+                            )}
 
-                                <button 
-                                    onClick={handleSendChallenge}
-                                    disabled={!selectedRival}
-                                    className="w-full bg-red-600 hover:bg-red-500 disabled:bg-gray-600 text-white font-black py-4 rounded-xl shadow-lg transform active:scale-95 transition-all text-lg uppercase tracking-wider"
-                                >
-                                    FIGHT!
-                                </button>
-                            </div>
+                            {/* WEEKLY CHALLENGES VIEW */}
+                            {rivalsView === 'weekly' && (
+                                <div className="space-y-3">
+                                    <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 rounded-xl border border-purple-500/30">
+                                        <h4 className="font-bold text-white flex items-center mb-1">
+                                            <span className="mr-2">🎯</span> Weekly Challenges
+                                        </h4>
+                                        <p className="text-xs text-gray-400">Complete special challenges for bonus rewards!</p>
+                                    </div>
+                                    
+                                    {weeklyChallenges.map(challenge => (
+                                        <div key={challenge.id} className="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex items-center">
+                                                    <span className="text-2xl mr-3">{challenge.icon}</span>
+                                                    <div>
+                                                        <h5 className="font-bold text-white text-sm">{challenge.name}</h5>
+                                                        <p className="text-xs text-gray-400">{challenge.description}</p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-[10px] text-red-400 font-bold">{challenge.endsIn}</span>
+                                            </div>
+                                            
+                                            {/* Progress Bar */}
+                                            <div className="mt-3">
+                                                <div className="flex justify-between text-xs mb-1">
+                                                    <span className="text-gray-400">{challenge.progress}/{challenge.total}</span>
+                                                    <span className="text-yellow-400">{challenge.reward}</span>
+                                                </div>
+                                                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
+                                                        style={{ width: `${(challenge.progress / challenge.total) * 100}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* LEADERBOARD VIEW */}
+                            {rivalsView === 'leaderboard' && (
+                                <div className="space-y-2">
+                                    <div className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 p-4 rounded-xl border border-yellow-500/30 mb-4">
+                                        <h4 className="font-bold text-white flex items-center">
+                                            <span className="mr-2">🏆</span> Dojang Leaderboard
+                                        </h4>
+                                        <p className="text-xs text-gray-400">Top warriors in your dojo</p>
+                                    </div>
+                                    
+                                    {leaderboard.map((player, i) => (
+                                        <div 
+                                            key={i} 
+                                            className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                                player.isYou 
+                                                    ? 'bg-cyan-900/30 border-cyan-500/50' 
+                                                    : 'bg-gray-800 border-gray-700'
+                                            }`}
+                                        >
+                                            <div className="flex items-center">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mr-3 ${
+                                                    player.rank === 1 ? 'bg-yellow-500 text-black' :
+                                                    player.rank === 2 ? 'bg-gray-400 text-black' :
+                                                    player.rank === 3 ? 'bg-orange-600 text-white' :
+                                                    'bg-gray-700 text-gray-400'
+                                                }`}>
+                                                    {player.rank <= 3 ? player.badge : player.rank}
+                                                </div>
+                                                <div>
+                                                    <p className={`font-bold text-sm ${player.isYou ? 'text-cyan-400' : 'text-white'}`}>
+                                                        {player.name} {player.isYou && '(You)'}
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-500">{player.wins} wins</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-bold text-purple-400">{player.xp} XP</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* HISTORY VIEW */}
+                            {rivalsView === 'history' && (
+                                <div className="space-y-2">
+                                    <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 rounded-xl border border-gray-700 mb-4">
+                                        <h4 className="font-bold text-white flex items-center">
+                                            <span className="mr-2">📜</span> Battle History
+                                        </h4>
+                                        <p className="text-xs text-gray-400">Your recent challenges</p>
+                                    </div>
+                                    
+                                    {challengeHistory.length === 0 ? (
+                                        <p className="text-gray-500 text-center py-8 italic">No challenges yet. Start your first duel!</p>
+                                    ) : (
+                                        challengeHistory.map(battle => (
+                                            <div 
+                                                key={battle.id} 
+                                                className={`flex items-center justify-between p-3 rounded-xl border ${
+                                                    battle.result === 'win' 
+                                                        ? 'bg-green-900/20 border-green-500/30' 
+                                                        : 'bg-red-900/20 border-red-500/30'
+                                                }`}
+                                            >
+                                                <div className="flex items-center">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl mr-3 ${
+                                                        battle.result === 'win' ? 'bg-green-900/50' : 'bg-red-900/50'
+                                                    }`}>
+                                                        {battle.result === 'win' ? '👑' : '💀'}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-white text-sm">vs {battle.opponent}</p>
+                                                        <p className="text-[10px] text-gray-400">{battle.challenge} • {battle.date}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className={`font-bold text-sm ${battle.result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
+                                                        {battle.result === 'win' ? 'VICTORY' : 'DEFEAT'}
+                                                    </p>
+                                                    <p className="text-[10px] text-yellow-500">+{battle.xpEarned} XP</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </>
                     ) : (
-                        // Simulation Screen
-                        <div className="bg-black rounded-xl border-2 border-red-600 p-8 text-center min-h-[300px] flex flex-col items-center justify-center relative overflow-hidden">
-                            {/* VS Animation */}
+                        // Battle Simulation Screen
+                        <div className="bg-black rounded-xl border-2 border-red-600 p-8 text-center min-h-[350px] flex flex-col items-center justify-center relative overflow-hidden">
                             <div className="absolute inset-0 bg-red-900/20 animate-pulse"></div>
                             
                             {challengeResult === 'pending' ? (
                                 <>
-                                    <div className="text-6xl mb-4 animate-bounce">⚔️</div>
-                                    <h3 className="text-2xl font-black text-white italic">WAITING FOR OPPONENT...</h3>
+                                    <div className="text-7xl mb-6 animate-bounce">⚔️</div>
+                                    <h3 className="text-2xl font-black text-white italic mb-2">BATTLE IN PROGRESS...</h3>
+                                    <p className="text-gray-400 text-sm">
+                                        {challengeCategories.flatMap(c => c.challenges).find(c => c.id === selectedChallenge)?.name || 'Challenge'}
+                                    </p>
+                                    <div className="mt-6 flex gap-2">
+                                        {[...Array(3)].map((_, i) => (
+                                            <div key={i} className="w-3 h-3 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: `${i * 0.2}s` }}></div>
+                                        ))}
+                                    </div>
                                 </>
                             ) : (
                                 <>
-                                    <div className="text-6xl mb-4">{challengeResult === 'win' ? '👑' : '💀'}</div>
+                                    <div className="text-7xl mb-4">{challengeResult === 'win' ? '👑' : '💀'}</div>
                                     <h3 className={`text-4xl font-black italic mb-2 ${challengeResult === 'win' ? 'text-yellow-400' : 'text-gray-500'}`}>
-                                        {challengeResult === 'win' ? 'YOU WON!' : 'DEFEAT'}
+                                        {challengeResult === 'win' ? 'VICTORY!' : 'DEFEAT'}
                                     </h3>
-                                    {challengeResult === 'win' && (
-                                        <p className="text-green-400 font-bold animate-pulse">+1 Golden Fist Earned</p>
+                                    {challengeResult === 'win' ? (
+                                        <div className="space-y-2">
+                                            <p className="text-green-400 font-bold animate-pulse">
+                                                +{challengeCategories.flatMap(c => c.challenges).find(c => c.id === selectedChallenge)?.xp || 50} XP Earned!
+                                            </p>
+                                            <p className="text-yellow-400 text-sm">🔥 Streak: {rivalStats.streak}</p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400 text-sm">+10 XP for trying. Keep training!</p>
                                     )}
                                     <button 
                                         onClick={() => {
                                             setIsSimulatingChallenge(false);
                                             setChallengeResult(null);
                                             setSelectedRival('');
+                                            setSelectedChallenge('');
                                         }}
-                                        className="mt-8 text-gray-400 underline text-sm"
+                                        className="mt-8 bg-gray-800 hover:bg-gray-700 text-white font-bold px-6 py-2 rounded-lg transition-colors"
                                     >
                                         Back to Arena
                                     </button>
