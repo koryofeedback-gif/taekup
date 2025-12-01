@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { Message } from '../types';
-import { getTaekBotResponse } from '../services/geminiService';
+import { getTaekBotResponseGPT } from '../services/openaiService';
 
 export const TaekBot: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -27,7 +27,7 @@ export const TaekBot: React.FC = () => {
         setInputValue('');
         setIsLoading(true);
 
-        const response = await getTaekBotResponse(inputValue, messages);
+        const response = await getTaekBotResponseGPT(inputValue, messages);
 
         const botMessage: Message = { sender: 'bot', text: response };
         setMessages(prev => [...prev, botMessage]);
