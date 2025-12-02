@@ -8,7 +8,16 @@ The project has been successfully configured to run on Replit with a two-server 
 - **Frontend**: Vite dev server on port 5000
 - **Backend**: Express API server on port 3001 (proxied via Vite)
 
-## Recent Changes (December 1, 2025 - Stripe & Security)
+## Recent Changes (December 2, 2025 - Bug Fixes)
+- **Stripe Products API Fix**:
+  - Added fallback to fetch products directly from Stripe API when database sync fails
+  - 5-minute in-memory caching to avoid excessive API calls
+  - Products endpoint now reliably returns all 5 subscription tiers
+- **Chatbot API Verified Working**:
+  - TaekBot API endpoint (/api/ai/taekbot) confirmed functional
+  - Backend proxy correctly forwards requests to OpenAI
+
+## Previous Changes (December 1, 2025 - Stripe & Security)
 - **Full Stripe Payment Integration**:
   - Express backend with stripe-replit-sync for webhook management
   - 5 subscription products seeded (Starter, Pro, Standard, Growth, Empire)

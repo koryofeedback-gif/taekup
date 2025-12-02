@@ -1,8 +1,12 @@
 import express, { type Express, type Request, type Response } from 'express';
 import { storage } from './storage';
 import { stripeService } from './stripeService';
-import { getStripePublishableKey } from './stripeClient';
+import { getStripePublishableKey, getUncachableStripeClient } from './stripeClient';
 import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail } from './aiService';
+
+let cachedProducts: any[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 export function registerRoutes(app: Express) {
   app.post('/api/ai/taekbot', async (req: Request, res: Response) => {
@@ -87,31 +91,72 @@ export function registerRoutes(app: Express) {
     try {
       const rows = await storage.listProductsWithPrices();
 
-      const productsMap = new Map();
-      for (const row of rows as any[]) {
-        if (!productsMap.has(row.product_id)) {
-          productsMap.set(row.product_id, {
-            id: row.product_id,
-            name: row.product_name,
-            description: row.product_description,
-            active: row.product_active,
-            metadata: row.product_metadata,
-            prices: []
+      if (rows && (rows as any[]).length > 0) {
+        const productsMap = new Map();
+        for (const row of rows as any[]) {
+          if (!productsMap.has(row.product_id)) {
+            productsMap.set(row.product_id, {
+              id: row.product_id,
+              name: row.product_name,
+              description: row.product_description,
+              active: row.product_active,
+              metadata: row.product_metadata,
+              prices: []
+            });
+          }
+          if (row.price_id) {
+            productsMap.get(row.product_id).prices.push({
+              id: row.price_id,
+              unit_amount: row.unit_amount,
+              currency: row.currency,
+              recurring: row.recurring,
+              active: row.price_active,
+              metadata: row.price_metadata,
+            });
+          }
+        }
+        res.json({ data: Array.from(productsMap.values()) });
+      } else {
+        const now = Date.now();
+        if (cachedProducts && (now - cacheTimestamp) < CACHE_TTL_MS) {
+          res.json({ data: cachedProducts });
+          return;
+        }
+        
+        const stripe = await getUncachableStripeClient();
+        const products = await stripe.products.list({ active: true, limit: 20 });
+        const prices = await stripe.prices.list({ active: true, limit: 100 });
+        
+        const pricesByProduct = new Map<string, any[]>();
+        for (const price of prices.data) {
+          const productId = typeof price.product === 'string' ? price.product : price.product.id;
+          if (!pricesByProduct.has(productId)) {
+            pricesByProduct.set(productId, []);
+          }
+          pricesByProduct.get(productId)!.push({
+            id: price.id,
+            unit_amount: price.unit_amount,
+            currency: price.currency,
+            recurring: price.recurring,
+            active: price.active,
+            metadata: price.metadata,
           });
         }
-        if (row.price_id) {
-          productsMap.get(row.product_id).prices.push({
-            id: row.price_id,
-            unit_amount: row.unit_amount,
-            currency: row.currency,
-            recurring: row.recurring,
-            active: row.price_active,
-            metadata: row.price_metadata,
-          });
-        }
+        
+        const result = products.data.map(product => ({
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          active: product.active,
+          metadata: product.metadata,
+          prices: pricesByProduct.get(product.id) || [],
+        }));
+        
+        cachedProducts = result;
+        cacheTimestamp = now;
+        
+        res.json({ data: result });
       }
-
-      res.json({ data: Array.from(productsMap.values()) });
     } catch (error: any) {
       console.error('Error listing products with prices:', error);
       res.status(500).json({ error: 'Failed to list products' });
