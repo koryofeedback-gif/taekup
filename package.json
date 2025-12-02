@@ -17,6 +17,7 @@
     "@supabase/supabase-js": "^2.39.3",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@vercel/node": "^5.5.13",
     "cors": "^2.8.5",
     "drizzle-orm": "^0.44.7",
     "esbuild": "^0.27.0",
