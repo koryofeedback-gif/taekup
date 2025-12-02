@@ -2,7 +2,28 @@ import { sql } from 'drizzle-orm';
 import { db } from './db';
 
 export class Storage {
+  private stripeSchemaAvailable: boolean | null = null;
+
+  private async checkStripeSchema(): Promise<boolean> {
+    if (this.stripeSchemaAvailable !== null) {
+      return this.stripeSchemaAvailable;
+    }
+    
+    try {
+      await db.execute(sql`SELECT 1 FROM stripe.products LIMIT 1`);
+      this.stripeSchemaAvailable = true;
+    } catch (error) {
+      this.stripeSchemaAvailable = false;
+    }
+    
+    return this.stripeSchemaAvailable;
+  }
+
   async getProduct(productId: string) {
+    if (!(await this.checkStripeSchema())) {
+      return null;
+    }
+    
     const result = await db.execute(
       sql`SELECT * FROM stripe.products WHERE id = ${productId}`
     );
@@ -10,6 +31,10 @@ export class Storage {
   }
 
   async listProducts(active = true, limit = 20, offset = 0) {
+    if (!(await this.checkStripeSchema())) {
+      return [];
+    }
+    
     const result = await db.execute(
       sql`SELECT * FROM stripe.products WHERE active = ${active} LIMIT ${limit} OFFSET ${offset}`
     );
@@ -17,6 +42,10 @@ export class Storage {
   }
 
   async listProductsWithPrices(active = true, limit = 20, offset = 0) {
+    if (!(await this.checkStripeSchema())) {
+      return [];
+    }
+    
     const result = await db.execute(
       sql`
         WITH paginated_products AS (
@@ -47,6 +76,10 @@ export class Storage {
   }
 
   async getPrice(priceId: string) {
+    if (!(await this.checkStripeSchema())) {
+      return null;
+    }
+    
     const result = await db.execute(
       sql`SELECT * FROM stripe.prices WHERE id = ${priceId}`
     );
@@ -54,6 +87,10 @@ export class Storage {
   }
 
   async listPrices(active = true, limit = 20, offset = 0) {
+    if (!(await this.checkStripeSchema())) {
+      return [];
+    }
+    
     const result = await db.execute(
       sql`SELECT * FROM stripe.prices WHERE active = ${active} LIMIT ${limit} OFFSET ${offset}`
     );
@@ -61,6 +98,10 @@ export class Storage {
   }
 
   async getPricesForProduct(productId: string) {
+    if (!(await this.checkStripeSchema())) {
+      return [];
+    }
+    
     const result = await db.execute(
       sql`SELECT * FROM stripe.prices WHERE product = ${productId} AND active = true`
     );
@@ -68,6 +109,10 @@ export class Storage {
   }
 
   async getSubscription(subscriptionId: string) {
+    if (!(await this.checkStripeSchema())) {
+      return null;
+    }
+    
     const result = await db.execute(
       sql`SELECT * FROM stripe.subscriptions WHERE id = ${subscriptionId}`
     );

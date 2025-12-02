@@ -8,7 +8,22 @@ The project has been successfully configured to run on Replit with a two-server 
 - **Frontend**: Vite dev server on port 5000
 - **Backend**: Express API server on port 3001 (proxied via Vite)
 
-## Recent Changes (December 2, 2025 - Yearly Pricing Complete & Public Pricing Page)
+## Recent Changes (December 2, 2025 - Vercel Production Setup)
+- **Vercel Deployment Compatibility** ✅:
+  - Modified stripeClient.ts to work with standard env vars (STRIPE_SECRET_KEY, VITE_STRIPE_PUBLISHABLE_KEY)
+  - Falls back to Replit connector system when env vars not set
+  - Storage layer gracefully handles missing Stripe schema (for Vercel)
+  - Code works on both Replit and Vercel deployments
+- **Database Scripts for Neon**:
+  - scripts/init-db.sql - SQL script for manual database setup
+  - scripts/init-neon-db.ts - Node.js script (npm run db:init)
+  - Creates challenges table with proper indexes
+- **Deployment Architecture**:
+  - Development: Replit (with Stripe connector + postgres)
+  - Production: Vercel + Neon + direct Stripe API
+  - GitHub as deployment bridge (Replit → GitHub → Vercel)
+
+## Previous Changes (December 2, 2025 - Yearly Pricing Complete & Public Pricing Page)
 - **Yearly Billing with 2 Months Free** ✅:
   - All 5 tiers now have yearly pricing in Stripe (created via seed-products.ts)
   - Yearly = 10 months payment (save 2 months)
