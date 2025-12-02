@@ -9,14 +9,16 @@ export const getTaekBotResponseGPT = async (
   const fallback = "I'm sorry, I'm having a little trouble connecting right now. Please try again in a moment.";
   
   try {
+    console.log('[TaekBot] Sending request:', { query, context });
     const response = await aiAPI.taekbotResponse(query, {
       clubName: context?.clubName || 'TaekUp',
       artType: context?.artType || 'martial arts',
       language: context?.language || 'English',
     });
+    console.log('[TaekBot] Got response:', response);
     return response || fallback;
   } catch (error) {
-    console.error("Error getting TaekBot response:", error);
+    console.error("[TaekBot] Error getting response:", error);
     return fallback;
   }
 };

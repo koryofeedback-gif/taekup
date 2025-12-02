@@ -18,6 +18,7 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
 
 export const aiAPI = {
   async taekbotResponse(message: string, context: { clubName?: string; artType?: string; language?: string }) {
+    console.log('[apiClient] Calling /api/ai/taekbot with:', { message, context });
     const result = await fetchAPI('/ai/taekbot', {
       method: 'POST',
       body: JSON.stringify({
@@ -27,6 +28,7 @@ export const aiAPI = {
         language: context.language,
       }),
     });
+    console.log('[apiClient] Result from /api/ai/taekbot:', result);
     return result.response;
   },
 
