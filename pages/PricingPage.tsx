@@ -16,6 +16,11 @@ interface StripePriceMap {
   [key: string]: string;
 }
 
+interface StripePricesWithPeriod {
+  monthly: StripePriceMap;
+  yearly: StripePriceMap;
+}
+
 export const PricingPage: React.FC<PricingPageProps> = ({
   students,
   currentPlanId,
@@ -24,7 +29,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   clubId,
   email
 }) => {
-  const [stripePrices, setStripePrices] = useState<StripePriceMap>({});
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [stripePrices, setStripePrices] = useState<StripePricesWithPeriod>({ monthly: {}, yearly: {} });
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +41,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({
     const loadStripePrices = async () => {
       try {
         const products = await stripeAPI.getProductsWithPrices();
-        const priceMap: StripePriceMap = {};
+        const monthlyMap: StripePriceMap = {};
+        const yearlyMap: StripePriceMap = {};
         
         for (const product of products) {
           const metadata = product.metadata || {};
@@ -47,12 +54,20 @@ export const PricingPage: React.FC<PricingPageProps> = ({
           ).toLowerCase().trim();
           
           if (planId && product.prices && product.prices.length > 0) {
-            priceMap[planId] = product.prices[0].id;
+            for (const price of product.prices) {
+              if (price.recurring?.interval === 'year' || price.metadata?.billing_period === 'yearly') {
+                yearlyMap[planId] = price.id;
+              } else if (price.recurring?.interval === 'month' || price.metadata?.billing_period === 'monthly') {
+                monthlyMap[planId] = price.id;
+              } else if (!monthlyMap[planId]) {
+                monthlyMap[planId] = price.id;
+              }
+            }
           }
         }
         
-        console.log('Loaded Stripe prices:', priceMap);
-        setStripePrices(priceMap);
+        console.log('Loaded Stripe prices:', { monthly: monthlyMap, yearly: yearlyMap });
+        setStripePrices({ monthly: monthlyMap, yearly: yearlyMap });
       } catch (err) {
         console.warn('Could not load Stripe prices, using demo mode:', err);
       }
@@ -62,7 +77,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   }, []);
 
   const handleSelectPlan = async (plan: SubscriptionPlan) => {
-    const priceId = stripePrices[plan.id] || stripePrices[plan.name.toLowerCase()];
+    const prices = billingPeriod === 'yearly' ? stripePrices.yearly : stripePrices.monthly;
+    const priceId = prices[plan.id] || prices[plan.name.toLowerCase()];
     
     if (!priceId) {
       onSelectPlan(plan.id);
@@ -123,6 +139,35 @@ export const PricingPage: React.FC<PricingPageProps> = ({
               ? `You have ${studentCount} student${studentCount === 1 ? '' : 's'}. Select a plan that fits your dojo.`
               : 'Select a plan that fits your dojo. No limits during your 14-day trial!'}
           </p>
+          
+          <div className="flex justify-center gap-4 mt-8 mb-6">
+            <button
+              onClick={() => setBillingPeriod('monthly')}
+              className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
+                billingPeriod === 'monthly'
+                  ? 'bg-sky-500 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingPeriod('yearly')}
+              className={`px-6 py-2 rounded-lg font-semibold transition-colors relative ${
+                billingPeriod === 'yearly'
+                  ? 'bg-sky-500 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              Yearly
+              {billingPeriod === 'yearly' && (
+                <span className="ml-2 inline-block bg-green-500 text-white text-xs px-2 py-1 rounded">
+                  Save 2 Months!
+                </span>
+              )}
+            </button>
+          </div>
+
           {error && (
             <p className="mt-4 text-red-400 text-sm">{error}</p>
           )}
@@ -166,8 +211,18 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 </div>
 
                 <div className="text-center mb-6">
-                  <span className="text-3xl font-bold text-white">{formatPrice(plan.price)}</span>
-                  <span className="text-gray-400">/mo</span>
+                  {billingPeriod === 'yearly' ? (
+                    <>
+                      <span className="text-3xl font-bold text-white">${(plan.price * 10).toFixed(2)}</span>
+                      <span className="text-gray-400">/year</span>
+                      <div className="text-green-400 text-sm font-semibold mt-2">Save 2 months!</div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-3xl font-bold text-white">{formatPrice(plan.price)}</span>
+                      <span className="text-gray-400">/mo</span>
+                    </>
+                  )}
                 </div>
 
                 <ul className="space-y-2 mb-6 flex-1">

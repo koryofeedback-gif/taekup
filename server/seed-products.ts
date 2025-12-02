@@ -65,7 +65,34 @@ async function seedProducts() {
       });
 
       if (existingProducts.data.length > 0) {
-        console.log(`Product "${tier.name}" already exists, skipping...`);
+        console.log(`Product "${tier.name}" already exists, checking for yearly price...`);
+        const product = existingProducts.data[0];
+        
+        // Check if yearly price exists
+        const existingPrices = await stripe.prices.list({
+          product: product.id,
+          active: true,
+        });
+        
+        const hasYearlyPrice = existingPrices.data.some(p => 
+          p.recurring?.interval === 'year' || 
+          p.metadata?.billing_period === 'yearly'
+        );
+        
+        if (!hasYearlyPrice) {
+          console.log(`  Adding yearly price for ${tier.name}...`);
+          const yearlyPrice = tier.price * 10; // 10 months = 2 months free
+          await stripe.prices.create({
+            product: product.id,
+            unit_amount: yearlyPrice,
+            currency: 'usd',
+            recurring: { interval: 'year' },
+            metadata: { tier: tier.metadata.tier, billing_period: 'yearly' },
+          });
+          console.log(`  Created yearly price: $${yearlyPrice / 100}/year (2 months free!)`);
+        } else {
+          console.log(`  Yearly price already exists for ${tier.name}`);
+        }
         continue;
       }
 
@@ -77,15 +104,26 @@ async function seedProducts() {
         metadata: tier.metadata,
       });
 
-      const price = await stripe.prices.create({
+      const monthlyPrice = await stripe.prices.create({
         product: product.id,
         unit_amount: tier.price,
         currency: 'usd',
         recurring: { interval: 'month' },
-        metadata: { tier: tier.metadata.tier },
+        metadata: { tier: tier.metadata.tier, billing_period: 'monthly' },
       });
 
-      console.log(`  Created: ${product.id} with price ${price.id} ($${tier.price / 100}/mo)`);
+      const yearlyPrice = tier.price * 10; // 10 months = 2 months free
+      const annualPrice = await stripe.prices.create({
+        product: product.id,
+        unit_amount: yearlyPrice,
+        currency: 'usd',
+        recurring: { interval: 'year' },
+        metadata: { tier: tier.metadata.tier, billing_period: 'yearly' },
+      });
+
+      console.log(`  Created: ${product.id}`);
+      console.log(`    Monthly: ${monthlyPrice.id} ($${tier.price / 100}/mo)`);
+      console.log(`    Yearly: ${annualPrice.id} ($${yearlyPrice / 100}/year - 2 months free!)`);
     } catch (error: any) {
       console.error(`  Error creating ${tier.name}:`, error.message);
     }

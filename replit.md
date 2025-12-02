@@ -8,14 +8,25 @@ The project has been successfully configured to run on Replit with a two-server 
 - **Frontend**: Vite dev server on port 5000
 - **Backend**: Express API server on port 3001 (proxied via Vite)
 
-## Recent Changes (December 2, 2025 - Bug Fixes)
-- **Stripe Products API Fix**:
-  - Added fallback to fetch products directly from Stripe API when database sync fails
-  - 5-minute in-memory caching to avoid excessive API calls
-  - Products endpoint now reliably returns all 5 subscription tiers
-- **Chatbot API Verified Working**:
-  - TaekBot API endpoint (/api/ai/taekbot) confirmed functional
-  - Backend proxy correctly forwards requests to OpenAI
+## Recent Changes (December 2, 2025 - Bug Fixes & Yearly Pricing)
+- **Chatbot Fix for Production**:
+  - Added CORS support to API server
+  - Configured Express server to serve frontend + API on single port
+  - Backend now included in production deployment (fixes live website chatbot)
+- **Yearly Billing with 2 Months Free**:
+  - Added yearly pricing option to all 5 subscription tiers
+  - Yearly = 10 months payment (save 2 months)
+  - Example: Pro $39.99/mo → $399.90/year
+  - UI toggle allows customers to choose monthly or yearly
+  - "Save 2 months!" badge on yearly option
+  - Mentally better than "20% off" - emphasizes value
+- **Stripe Integration Improvements**:
+  - Yearly prices synced to Stripe
+  - seed-products.ts now creates both monthly and yearly variants
+  - PricingPage loads both price types and displays correctly
+- **Production Ready**:
+  - Deployment configured to build and run on port 5000
+  - Frontend and backend together for seamless API access
 
 ## Previous Changes (December 1, 2025 - Stripe & Security)
 - **Full Stripe Payment Integration**:
