@@ -51,17 +51,16 @@ localPort = 3001
 externalPort = 3001
 
 [[ports]]
-localPort = 5001
-externalPort = 3000
+localPort = 5000
+externalPort = 80
 
 [[ports]]
-localPort = 42321
-externalPort = 80
+localPort = 5001
+externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-publicDir = "dist"
 run = ["npm", "run", "start"]
 
 [userenv]
