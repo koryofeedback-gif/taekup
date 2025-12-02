@@ -1,19 +1,26 @@
 const API_BASE = '/api';
 
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    });
 
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+    if (!response.ok) {
+      const text = await response.text();
+      console.error(`[fetchAPI] Error ${response.status}:`, text);
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`[fetchAPI] Request to ${endpoint} failed:`, error);
+    throw error;
   }
-
-  return response.json();
 }
 
 export const aiAPI = {
