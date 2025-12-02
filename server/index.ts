@@ -1,10 +1,15 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { registerRoutes } from './routes';
 import { WebhookHandlers } from './webhookHandlers';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '5000', 10);
 
 app.use(cors());
 
@@ -100,9 +105,22 @@ app.get('/api/health', (req, res) => {
 
 registerRoutes(app);
 
+// Serve static files in production
+const distPath = path.join(__dirname, '..', 'dist');
+app.use(express.static(distPath));
+
+// SPA fallback - serve index.html for all non-API routes
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.includes('.')) {
+    res.sendFile(path.join(distPath, 'index.html'));
+  } else {
+    next();
+  }
+});
+
 async function startServer() {
-  app.listen(PORT, () => {
-    console.log(`API Server running on port ${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
   });
   
   initStripe().catch(err => {
