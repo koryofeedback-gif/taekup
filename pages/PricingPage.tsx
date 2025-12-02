@@ -80,7 +80,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({
     const prices = billingPeriod === 'yearly' ? stripePrices.yearly : stripePrices.monthly;
     const priceId = prices[plan.id] || prices[plan.name.toLowerCase()];
     
+    console.log(`[PricingPage] Selecting plan: ${plan.name}, billing: ${billingPeriod}, priceId: ${priceId}`);
+    console.log(`[PricingPage] Available prices:`, prices);
+    
     if (!priceId) {
+      console.warn(`[PricingPage] No priceId found for plan ${plan.name}`);
       onSelectPlan(plan.id);
       return;
     }
@@ -89,18 +93,18 @@ export const PricingPage: React.FC<PricingPageProps> = ({
     setError(null);
 
     try {
+      console.log(`[PricingPage] Creating checkout session with priceId: ${priceId}`);
       const checkoutUrl = await stripeAPI.createCheckoutSession(priceId, { clubId, email });
       
+      console.log(`[PricingPage] Checkout URL received:`, checkoutUrl);
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
       } else {
         throw new Error('No checkout URL returned');
       }
     } catch (err: any) {
-      console.error('Checkout error:', err);
-      setError('Unable to start checkout. Please try again.');
-      onSelectPlan(plan.id);
-    } finally {
+      console.error('[PricingPage] Checkout error:', err);
+      setError(`Checkout error: ${err.message || 'Please try again'}`);
       setIsLoading(null);
     }
   };

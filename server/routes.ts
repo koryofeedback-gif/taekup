@@ -177,13 +177,18 @@ export function registerRoutes(app: Express) {
     try {
       const { priceId, clubId, email } = req.body;
 
+      console.log(`[/api/checkout] Received request:`, { priceId, clubId, email });
+
       if (!priceId) {
+        console.error('[/api/checkout] Missing priceId');
         return res.status(400).json({ error: 'priceId is required' });
       }
 
       const host = req.headers.host || 'localhost:5000';
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       const baseUrl = `${protocol}://${host}`;
+
+      console.log(`[/api/checkout] Creating session with:`, { priceId, baseUrl });
 
       const session = await stripeService.createCheckoutSession(
         priceId,
@@ -193,10 +198,11 @@ export function registerRoutes(app: Express) {
         { clubId: clubId || '', email: email || '' }
       );
 
+      console.log(`[/api/checkout] Session created:`, { sessionId: session.id, url: session.url });
       res.json({ url: session.url });
     } catch (error: any) {
-      console.error('Error creating checkout session:', error);
-      res.status(500).json({ error: 'Failed to create checkout session' });
+      console.error('[/api/checkout] Error creating checkout session:', error);
+      res.status(500).json({ error: error.message || 'Failed to create checkout session' });
     }
   });
 
