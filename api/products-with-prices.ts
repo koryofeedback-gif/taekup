@@ -7,14 +7,6 @@ function getStripeClient(): Stripe | null {
   return new Stripe(secretKey);
 }
 
-function getEnvDebug() {
-  return {
-    hasStripeSecretKey: !!process.env.STRIPE_SECRET_KEY,
-    hasSandboxStripeKey: !!process.env.SANDBOX_STRIPE_KEY,
-    keyPrefix: process.env.SANDBOX_STRIPE_KEY?.substring(0, 7) || 'none',
-  };
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -31,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const stripe = getStripeClient();
     if (!stripe) {
-      return res.status(500).json({ error: 'Stripe not configured', debug: getEnvDebug() });
+      return res.status(500).json({ error: 'Stripe not configured' });
     }
 
     const products = await stripe.products.list({ active: true, limit: 20 });
