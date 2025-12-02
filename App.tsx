@@ -268,6 +268,7 @@ const AppContent: React.FC<AppContentProps> = ({
     onEnterDemo,
     onSwitchDemoRole,
 }) => {
+    const navigate = useNavigate();
     const location = useLocation();
     const isAppSubdomain = window.location.hostname.startsWith('app.');
     const isDojangTV = location.pathname === '/app/tv';
@@ -334,6 +335,20 @@ const AppContent: React.FC<AppContentProps> = ({
                     <Route
                         path="/landing"
                         element={<LandingPage onSignupSuccess={onSignupSuccess} />}
+                    />
+
+                    {/* Public Pricing Page */}
+                    <Route
+                        path="/pricing"
+                        element={
+                            <>
+                                <SEO title="Pricing | TaekUp" />
+                                <PricingPage
+                                    students={[]}
+                                    onSelectPlan={() => navigate('/login')}
+                                />
+                            </>
+                        }
                     />
 
                     {/* Login Page */}
@@ -713,6 +728,12 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
                             >
                                 Features
                             </a>
+                            <Link
+                                to="/pricing"
+                                className="text-gray-300 hover:text-white transition-colors text-xs md:text-sm font-medium"
+                            >
+                                Pricing
+                            </Link>
                             <Link
                                 to="/login"
                                 className="text-white hover:text-sky-400 font-bold text-xs md:text-sm transition-colors"

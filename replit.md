@@ -8,25 +8,23 @@ The project has been successfully configured to run on Replit with a two-server 
 - **Frontend**: Vite dev server on port 5000
 - **Backend**: Express API server on port 3001 (proxied via Vite)
 
-## Recent Changes (December 2, 2025 - Bug Fixes & Yearly Pricing)
-- **Chatbot Fix for Production**:
-  - Added CORS support to API server
-  - Configured Express server to serve frontend + API on single port
-  - Backend now included in production deployment (fixes live website chatbot)
-- **Yearly Billing with 2 Months Free**:
-  - Added yearly pricing option to all 5 subscription tiers
+## Recent Changes (December 2, 2025 - Yearly Pricing Complete & Public Pricing Page)
+- **Yearly Billing with 2 Months Free** ✅:
+  - All 5 tiers now have yearly pricing in Stripe (created via seed-products.ts)
   - Yearly = 10 months payment (save 2 months)
   - Example: Pro $39.99/mo → $399.90/year
-  - UI toggle allows customers to choose monthly or yearly
-  - "Save 2 months!" badge on yearly option
-  - Mentally better than "20% off" - emphasizes value
-- **Stripe Integration Improvements**:
-  - Yearly prices synced to Stripe
-  - seed-products.ts now creates both monthly and yearly variants
-  - PricingPage loads both price types and displays correctly
-- **Production Ready**:
-  - Deployment configured to build and run on port 5000
-  - Frontend and backend together for seamless API access
+  - PricingPage toggle: Monthly vs Yearly buttons
+  - Dynamic price display with "Save 2 months!" badge
+  - Stripe checkout properly routes to yearly or monthly prices
+- **Public Pricing Page** ✅:
+  - New `/pricing` route accessible without login
+  - Added "Pricing" link to header navigation
+  - Customers can view all 5 tiers with toggle before signing up
+  - Selecting a plan redirects to login
+- **Backend & Production** ✅:
+  - CORS enabled for live website API calls (chatbot, etc.)
+  - Single Express server on port 5000 serves frontend + API
+  - Deployment includes backend for seamless functionality
 
 ## Previous Changes (December 1, 2025 - Stripe & Security)
 - **Full Stripe Payment Integration**:
