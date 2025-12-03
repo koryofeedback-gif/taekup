@@ -3,7 +3,31 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Message } from '../types';
 import { getTaekBotResponseGPT } from '../services/openaiService';
 
-export const TaekBot: React.FC = () => {
+export type TaekBotColorScheme = 'cyan' | 'red';
+
+interface TaekBotProps {
+    colorScheme?: TaekBotColorScheme;
+}
+
+const colorSchemes = {
+    cyan: {
+        button: 'bg-sky-500 hover:bg-sky-600',
+        ring: 'focus:ring-sky-500',
+        userMessage: 'bg-sky-500',
+        sendButton: 'text-sky-300 hover:text-sky-200',
+        accent: 'sky',
+    },
+    red: {
+        button: 'bg-red-600 hover:bg-red-700',
+        ring: 'focus:ring-red-600',
+        userMessage: 'bg-red-600',
+        sendButton: 'text-red-400 hover:text-red-300',
+        accent: 'red',
+    },
+};
+
+export const TaekBot: React.FC<TaekBotProps> = ({ colorScheme = 'cyan' }) => {
+    const colors = colorSchemes[colorScheme];
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
         { sender: 'bot', text: "Hello! I'm TaekBot. How can I help you learn about TaekUp?" }
@@ -39,7 +63,7 @@ export const TaekBot: React.FC = () => {
             <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${isOpen ? 'opacity-0 scale-90' : 'opacity-100 scale-100'}`}>
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="bg-sky-500 text-white rounded-full p-4 shadow-lg hover:bg-sky-600 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                    className={`${colors.button} text-white rounded-full p-4 shadow-lg transition-colors focus:outline-none focus:ring-2 ${colors.ring} focus:ring-offset-2 focus:ring-offset-gray-900`}
                     aria-label="Open Chat"
                 >
                     <ChatIcon />
@@ -57,7 +81,7 @@ export const TaekBot: React.FC = () => {
                     <div className="space-y-4">
                         {messages.map((msg, index) => (
                             <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-xs md:max-w-sm rounded-lg px-4 py-2 ${msg.sender === 'user' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-200'}`}>
+                                <div className={`max-w-xs md:max-w-sm rounded-lg px-4 py-2 ${msg.sender === 'user' ? `${colors.userMessage} text-white` : 'bg-gray-700 text-gray-200'}`}>
                                     <p className="text-sm" dangerouslySetInnerHTML={{__html: msg.text.replace(/\n/g, '<br />')}}></p>
                                 </div>
                             </div>
@@ -85,7 +109,7 @@ export const TaekBot: React.FC = () => {
                             placeholder="Ask a question..."
                             className="flex-1 bg-transparent px-4 py-2 text-white placeholder-gray-400 focus:outline-none"
                         />
-                        <button type="submit" className="text-sky-300 p-2 hover:text-blue-300 disabled:text-gray-500" disabled={isLoading || !inputValue.trim()}>
+                        <button type="submit" className={`${colors.sendButton} p-2 disabled:text-gray-500`} disabled={isLoading || !inputValue.trim()}>
                             <SendIcon />
                         </button>
                     </div>

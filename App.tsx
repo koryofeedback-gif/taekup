@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { SetupWizard } from './components/SetupWizard';
-import { TaekBot } from './components/TaekBot';
+import { TaekBot, TaekBotColorScheme } from './components/TaekBot';
 import { CoachDashboard } from './components/CoachDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ParentPortal } from './components/ParentPortal';
@@ -273,6 +273,8 @@ const AppContent: React.FC<AppContentProps> = ({
     const isAppSubdomain = window.location.hostname.startsWith('app.');
     const isDojangTV = location.pathname === '/app/tv';
     const isMyTaekHome = location.pathname === '/';
+    const isMyTaekPage = location.pathname === '/' || location.pathname === '/landing';
+    const taekBotColorScheme: TaekBotColorScheme = isMyTaekPage ? 'red' : 'cyan';
     
     const accountStatus = finalWizardData && subscription 
         ? checkAccountStatus(finalWizardData.students, subscription)
@@ -486,7 +488,7 @@ const AppContent: React.FC<AppContentProps> = ({
                 </Routes>
             </main>
             {!isDojangTV && <Footer />}
-            {!isDojangTV && <TaekBot />}
+            {!isDojangTV && <TaekBot colorScheme={taekBotColorScheme} />}
             {isDemoMode && finalWizardData && loggedInUserType && !isDojangTV && (
                 <RoleSwitcher
                     currentRole={loggedInUserType}
