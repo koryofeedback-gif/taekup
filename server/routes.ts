@@ -9,6 +9,22 @@ let cacheTimestamp: number = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 export function registerRoutes(app: Express) {
+  app.post('/api/verify-password', (req: Request, res: Response) => {
+    const sitePassword = process.env.SITE_PASSWORD;
+    
+    if (!sitePassword) {
+      return res.json({ valid: true });
+    }
+
+    const { password } = req.body || {};
+
+    if (password === sitePassword) {
+      return res.json({ valid: true });
+    }
+
+    return res.status(401).json({ valid: false, error: 'Incorrect password' });
+  });
+
   app.post('/api/ai/taekbot', async (req: Request, res: Response) => {
     try {
       const { message, clubName, artType, language } = req.body;
