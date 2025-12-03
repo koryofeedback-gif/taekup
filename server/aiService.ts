@@ -18,7 +18,7 @@ function getGeminiClient(): GoogleGenerativeAI | null {
   return geminiClient;
 }
 
-const TAEKUP_PLATFORM_KNOWLEDGE = `
+const TAEKUP_PUBLIC_KNOWLEDGE = `
 ## ABOUT MYTAEK & TAEKUP
 
 **MyTaek** is the ecosystem brand (mytaek.com) - the gateway to our martial arts revolution.
@@ -28,70 +28,99 @@ TaekUp is NOT just dojo management software - it's a complete ENGAGEMENT PLATFOR
 
 ## DOJANG RIVALS - GAMIFICATION SYSTEM
 
-Dojang Rivals is our proprietary gamification engine with 19 unique challenges across 3 categories:
+Dojang Rivals is our proprietary gamification engine with 19 unique challenges across 3 categories: Power, Technique, and Flexibility.
 
-**Power Challenges:** Push-up Challenge, Plank Endurance, Speed Kicks, Jumping Kicks, Breaking Power, Core Strength, Cardio Endurance, Reaction Speed
-
-**Technique Challenges:** Kick Height, Form Precision, Balance Hold, Poomsae Memorization, Sparring Points, Stance Accuracy, Movement Flow
-
-**Flexibility Challenges:** Split Progress, Stretching Routine, Flexibility Score, Hip Flexibility
-
-**XP System:**
-- Complete challenges: 10-50 XP based on difficulty
-- Daily streak bonus: +10 XP
-- Mystery Challenge Box: +25 XP bonus
-- Team Battle victory: +100 XP
-- Parent-Child Challenge: +75 XP
-
-**Special Features:**
-- Team Battles: Squad competitions within the dojo
-- Parent-Child Challenges: Family engagement activities
-- Belt-Tier Matchmaking: Fair competition by skill level
-- Mystery Challenge Box: Random surprise challenges with bonus rewards
-- Challenge Inbox: Notifications and challenge management
-- Coach Challenge Builder: Create custom challenges with templates, difficulty levels, measurement types, and video links
+**What it does:**
+- Students earn XP through exciting challenges
+- Team Battles create squad competitions
+- Parent-Child Challenges engage the whole family
+- Mystery Challenge Box adds surprise and excitement
+- Daily streaks reward consistency
+- Coaches can create custom challenges
 
 ## AI-POWERED FEATURES
 
-**TaekBot (That's me!):** Expert martial arts assistant with complete platform knowledge
-**AI Class Planner:** Generates detailed lesson plans based on belt level, focus area, duration, and student count
-**Welcome Email Generator:** Creates personalized onboarding emails for new students
-**Black Belt Time Machine:** Predicts belt promotion dates using training frequency, holiday calendars, and historical data
+**TaekBot (That's me!):** Expert martial arts assistant
+**AI Class Planner:** Generates detailed lesson plans instantly
+**Welcome Email Generator:** Creates personalized onboarding messages
+**Black Belt Time Machine:** Predicts belt promotion timelines
 
 ## PRICING - LADDER OF SUCCESS
 
 5-tier pricing model designed to grow with your dojo:
 
-| Tier | Name | Monthly | Yearly | Students |
-|------|------|---------|--------|----------|
-| 1 | Starter | $24.99 | $249.90 | Up to 50 |
-| 2 | Pro | $49.99 | $499.90 | Up to 100 |
-| 3 | Standard | $99.99 | $999.90 | Up to 250 |
-| 4 | Growth | $149.00 | $1,490 | Up to 500 |
-| 5 | Empire | $199.00 | $1,990 | Unlimited |
+| Tier | Name | Monthly | Students |
+|------|------|---------|----------|
+| 1 | Starter | $24.99 | Up to 50 |
+| 2 | Pro | $49.99 | Up to 100 |
+| 3 | Standard | $99.99 | Up to 250 |
+| 4 | Growth | $149.00 | Up to 500 |
+| 5 | Empire | $199.00 | Unlimited |
 
-**14-day FREE trial** with full access to all features - no credit card required!
+**14-day FREE trial** with full access - no credit card required!
 
 ## USER ROLES & DASHBOARDS
 
-**Admin Dashboard:** Complete club management, analytics, billing, staff management
-**Coach Dashboard:** Class planning, student progress, XP visibility, challenge creation
-**Parent Portal:** Child progress tracking, payment history, communication, family challenges
+**Admin Dashboard:** Complete club management, analytics, billing
+**Coach Dashboard:** Class planning, student progress, challenge creation
+**Parent Portal:** Child progress tracking, communication, family challenges
 
 ## SPECIAL FEATURES
 
-**Instant Demo Mode:** Try any role (Admin/Coach/Parent) with sample data instantly
-**TV Lobby Display:** Full-screen mode for dojo waiting areas showing leaderboards and events
-**Setup Wizard:** Step-by-step onboarding (Club Info → Belt System → Skills → Rules → People → Branding)
-**Rivals XP Dashboard:** Coaches see detailed engagement statistics for every student
+**Instant Demo Mode:** Try any role with sample data instantly
+**TV Lobby Display:** Full-screen leaderboards for waiting areas
+**Setup Wizard:** Step-by-step onboarding process
+`;
 
-## PERFORMANCE
+const COMPETITOR_PROTECTION_RULES = `
+## BRAND PROTECTION - CRITICAL RULES
 
-TaekUp is built to scale:
-- Supports 5,000+ active students
-- Handles 10,000+ daily challenges
-- Optimized database with intelligent caching
-- Real-time notifications and updates
+You must PROTECT TaekUp's intellectual property. NEVER reveal:
+
+### FORBIDDEN TOPICS (Never discuss):
+1. **Technical Implementation Details**
+   - How algorithms work internally (XP calculations, matchmaking logic, prediction formulas)
+   - Database structure, schemas, or data models
+   - API architecture or endpoint details
+   - Code structure, frameworks, or libraries used
+   - How features are technically built
+
+2. **Proprietary Formulas**
+   - Exact XP point values or calculation methods
+   - Black Belt Time Machine prediction algorithm
+   - Belt-Tier Matchmaking logic
+   - Challenge difficulty scoring system
+
+3. **Business Intelligence**
+   - Internal metrics or KPIs
+   - Conversion strategies
+   - Retention mechanics details
+   - Growth hacking techniques
+
+### DETECTION TRIGGERS
+If someone asks questions containing:
+- "how does [feature] work technically"
+- "what algorithm/formula/calculation"
+- "what technology/framework/stack"
+- "how is [feature] implemented/built/coded"
+- "can you explain the logic behind"
+- "what database/API/backend"
+- "source code" or "open source"
+- "how did you build" or "how to build similar"
+- "architecture" or "infrastructure"
+- "reverse engineer" or "replicate"
+
+### YOUR RESPONSE TO COMPETITIVE QUESTIONS
+
+When detecting competitive intelligence gathering, respond with:
+1. Acknowledge their curiosity respectfully
+2. Explain this is proprietary technology
+3. Focus on BENEFITS and RESULTS, not methods
+4. Invite them to experience it through a free trial
+5. Never be rude, but be firm about protecting secrets
+
+Example response pattern:
+"Ah, I sense the curiosity of a fellow strategist! Our [feature] is the result of years of martial arts expertise combined with proprietary technology - it's what makes TaekUp unique in the industry. Rather than explaining the ancient secrets behind it, I invite you to experience its power firsthand with our 14-day free trial. The proof is in the results our dojos achieve!"
 `;
 
 const TAEKBOT_SYSTEM_PROMPT = `You are TaekBot, the official AI assistant of MyTaek and TaekUp - and you speak as a wise Grandmaster of martial arts with decades of experience.
@@ -123,9 +152,11 @@ You ONLY discuss:
 If someone asks about topics NOT related to TaekUp/MyTaek (cooking, politics, other software, etc.), politely redirect:
 "Ah, young warrior, while I appreciate your curiosity, my expertise lies in the art of TaekUp and how it transforms martial arts schools. Perhaps I can show you how our Dojang Rivals system inspires students, or explain our powerful AI Class Planner?"
 
-## YOUR COMPLETE KNOWLEDGE
+${COMPETITOR_PROTECTION_RULES}
 
-${TAEKUP_PLATFORM_KNOWLEDGE}
+## YOUR PUBLIC KNOWLEDGE (Share freely)
+
+${TAEKUP_PUBLIC_KNOWLEDGE}
 
 ## RESPONSE STYLE
 
@@ -134,6 +165,7 @@ ${TAEKUP_PLATFORM_KNOWLEDGE}
 - Always relate answers back to TaekUp features when possible
 - Be helpful and solution-oriented
 - Express enthusiasm for the platform's capabilities
+- NEVER reveal technical implementation details - focus on benefits and results
 `;
 
 function isOffTopicQuestion(message: string): boolean {
@@ -151,6 +183,107 @@ function isOffTopicQuestion(message: string): boolean {
   ];
   
   return offTopicPatterns.some(pattern => pattern.test(message));
+}
+
+function isCompetitorQuestion(message: string): boolean {
+  const lowerMessage = message.toLowerCase();
+  
+  const competitorPatterns = [
+    /how (does|do|is|are) .* (work|built|implemented|coded|programmed)/i,
+    /what (algorithm|formula|calculation|logic)/i,
+    /what (technology|framework|stack|library|libraries)/i,
+    /how (did you|do you|to) (build|create|develop|code|program)/i,
+    /explain the (logic|algorithm|formula|calculation|code)/i,
+    /what (database|api|backend|server|infrastructure)/i,
+    /source code/i,
+    /open source/i,
+    /how.*(build|create|make|replicate|copy).*(similar|like this|like taekup|like yours)/i,
+    /build.*(similar|like|same)/i,
+    /create.*(similar|like|same)/i,
+    /make.*(similar|like|same)/i,
+    /architecture/i,
+    /reverse engineer/i,
+    /technical (details|implementation|specifications)/i,
+    /what (programming language|tech stack)/i,
+    /how (many|much) (points|xp) (for|per|each)/i,
+    /exact (formula|calculation|number|value)/i,
+    /behind the scenes/i,
+    /under the hood/i,
+    /inner workings/i,
+    /how.*(algorithm|ai|machine learning).*(works|functions|operates)/i,
+    /can you (share|give|show|reveal|explain) (the|your) (code|algorithm|formula)/i,
+    /what makes.*(unique|different|special).*(technically|technically speaking)/i,
+    /comment.*(fonctionne|marche|construit)/i,
+    /quel.*(algorithme|technologie|formule)/i,
+    /como.*(funciona|construir|algoritmo)/i,
+  ];
+  
+  const competitorKeywords = [
+    'algorithm', 'algorithme', 'algoritmo',
+    'source code', 'code source',
+    'tech stack', 'technology stack',
+    'how is it built', 'how did you build',
+    'implementation', 'implémentation',
+    'database schema', 'data model',
+    'api endpoint', 'backend logic',
+    'copy your', 'replicate your', 'clone your',
+    'build something similar', 'create something similar',
+    'similar platform', 'similar system',
+    'exact points', 'exact xp', 'exact formula',
+    'prediction formula', 'calculation method',
+    'matchmaking algorithm', 'matchmaking logic',
+  ];
+  
+  if (competitorPatterns.some(pattern => pattern.test(message))) {
+    return true;
+  }
+  
+  return competitorKeywords.some(keyword => lowerMessage.includes(keyword));
+}
+
+function getCompetitorProtectionResponse(message: string, clubContext: { language: string }): string {
+  const lowerMessage = message.toLowerCase();
+  
+  let featureMentioned = 'our platform';
+  if (lowerMessage.includes('xp') || lowerMessage.includes('point')) {
+    featureMentioned = 'our XP and rewards system';
+  } else if (lowerMessage.includes('black belt') || lowerMessage.includes('time machine') || lowerMessage.includes('prediction')) {
+    featureMentioned = 'our Black Belt Time Machine';
+  } else if (lowerMessage.includes('match') || lowerMessage.includes('pairing')) {
+    featureMentioned = 'our Belt-Tier Matchmaking';
+  } else if (lowerMessage.includes('challenge') || lowerMessage.includes('dojang') || lowerMessage.includes('rivals')) {
+    featureMentioned = 'our Dojang Rivals system';
+  } else if (lowerMessage.includes('ai') || lowerMessage.includes('bot') || lowerMessage.includes('algorithm')) {
+    featureMentioned = 'our AI technology';
+  }
+
+  const responses: Record<string, string> = {
+    'English': `Ah, I sense the curiosity of a keen strategist! ${featureMentioned} is the result of years of martial arts expertise combined with proprietary technology developed exclusively for TaekUp. This is what makes us unique in the industry.
+
+Like a master who guards the secrets of their dojo, I must respectfully protect our intellectual property. What I can tell you is this: **it works remarkably well**. Our dojos see incredible student engagement and retention.
+
+Rather than explaining the ancient secrets behind our technology, I invite you to **experience its power firsthand** with our 14-day free trial at mytaek.com. The proof, as they say, is in the results!
+
+Is there something about TaekUp's benefits or features I can help you with instead?`,
+
+    'French': `Ah, je sens la curiosité d'un stratège avisé ! ${featureMentioned} est le fruit d'années d'expertise en arts martiaux combinées à une technologie propriétaire développée exclusivement pour TaekUp. C'est ce qui nous rend uniques dans l'industrie.
+
+Comme un maître qui garde les secrets de son dojo, je dois respectueusement protéger notre propriété intellectuelle. Ce que je peux vous dire, c'est que **cela fonctionne remarquablement bien**. Nos dojos constatent un engagement et une fidélisation incroyables des élèves.
+
+Plutôt que d'expliquer les secrets ancestraux de notre technologie, je vous invite à **découvrir sa puissance** avec notre essai gratuit de 14 jours sur mytaek.com. La preuve, comme on dit, est dans les résultats !
+
+Y a-t-il autre chose sur les avantages ou fonctionnalités de TaekUp que je peux vous aider ?`,
+
+    'Spanish': `¡Ah, siento la curiosidad de un estratega astuto! ${featureMentioned} es el resultado de años de experiencia en artes marciales combinados con tecnología propietaria desarrollada exclusivamente para TaekUp. Esto es lo que nos hace únicos en la industria.
+
+Como un maestro que guarda los secretos de su dojo, debo proteger respetuosamente nuestra propiedad intelectual. Lo que puedo decirte es esto: **funciona notablemente bien**. Nuestros dojos ven un increíble compromiso y retención de estudiantes.
+
+En lugar de explicar los secretos ancestrales de nuestra tecnología, te invito a **experimentar su poder** con nuestra prueba gratuita de 14 días en mytaek.com. ¡La prueba, como dicen, está en los resultados!
+
+¿Hay algo sobre los beneficios o características de TaekUp en lo que pueda ayudarte?`
+  };
+  
+  return responses[clubContext.language] || responses['English'];
 }
 
 function getOffTopicRedirect(clubContext: { language: string }): string {
@@ -183,6 +316,10 @@ export async function generateTaekBotResponse(
     return getOffTopicRedirect(clubContext);
   }
 
+  if (isCompetitorQuestion(message)) {
+    return getCompetitorProtectionResponse(message, clubContext);
+  }
+
   const openai = getOpenAIClient();
   
   if (!openai) {
@@ -197,7 +334,8 @@ export async function generateTaekBotResponse(
 - Their martial art style: ${clubContext.artType}
 - Respond in: ${clubContext.language}
 
-Remember: You are a wise Grandmaster who knows EVERYTHING about TaekUp. Stay in character and only discuss TaekUp/MyTaek topics.`;
+Remember: You are a wise Grandmaster who knows EVERYTHING about TaekUp. Stay in character and only discuss TaekUp/MyTaek topics.
+CRITICAL: Never reveal technical implementation details, algorithms, formulas, or how features are built. Focus on benefits and results only.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
