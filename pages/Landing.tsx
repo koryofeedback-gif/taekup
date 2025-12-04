@@ -186,7 +186,7 @@ const ProfitEngineSection: React.FC<ProfitEngineSectionProps> = ({ onStartTrial 
                     <span className="text-yellow-500">Let Software Pay You.</span>
                 </h2>
                 <p className="text-lg text-gray-300 max-w-3xl mx-auto mb-10 leading-relaxed">
-                    Every other platform is a monthly expense. TaekUp is an asset. Our proprietary <span className="font-bold text-white">Club Revenue Engine™</span> shares 70% of parent subscription revenue directly with you.
+                    Every other platform is a monthly expense. TaekUp is an asset. Our proprietary <span className="font-bold text-white">Club Revenue Engine™</span> shares 70% of the revenue directly with you.
                 </p>
 
                 <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-10">
