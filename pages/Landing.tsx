@@ -235,7 +235,7 @@ const TrustSection: React.FC = () => (
     <div className="bg-gray-900 py-16">
         <div className="container mx-auto px-6 text-center">
             <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-6">
-                Your Martial Arts Companion
+                The Martial Arts Revolution
             </p>
             <div className="flex justify-center items-center opacity-60">
                 <span className="text-2xl font-bold text-white tracking-wider">MYTAEK</span>
