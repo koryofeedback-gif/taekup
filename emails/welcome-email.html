@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="x-apple-disable-message-reformatting">
-    <title>Welcome to TaekUp™</title>
+    <title>Welcome to TaekUp</title>
     <!--[if mso]>
     <noscript>
         <xml>
@@ -22,27 +22,45 @@
         img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
         a { text-decoration: none; }
         .email-container { max-width: 600px; margin: 0 auto; }
-        @media screen and (max-width: 600px) {
+        
+        @media screen and (max-width: 480px) {
             .email-container { width: 100% !important; }
-            .mobile-padding { padding-left: 20px !important; padding-right: 20px !important; }
-            .feature-icon { width: 50px !important; height: 50px !important; }
+            .mobile-padding { padding-left: 16px !important; padding-right: 16px !important; }
+            .mobile-padding-header { padding: 24px 16px 16px 16px !important; }
+            .mobile-hero-padding { padding: 30px 16px 20px 16px !important; }
+            .mobile-logo { font-size: 26px !important; }
+            .mobile-tagline { font-size: 10px !important; letter-spacing: 2px !important; }
+            .mobile-title { font-size: 26px !important; }
+            .mobile-subtitle { font-size: 16px !important; }
+            .mobile-body { font-size: 15px !important; }
+            .mobile-feature-title { font-size: 16px !important; }
+            .mobile-feature-text { font-size: 13px !important; }
+            .mobile-section-title { font-size: 12px !important; }
+            .mobile-cta { padding: 16px 30px !important; font-size: 14px !important; }
+            .mobile-trial-number { font-size: 20px !important; }
+            .mobile-trial-text { font-size: 13px !important; }
+            .mobile-footer-logo { font-size: 16px !important; }
+            .mobile-footer-text { font-size: 12px !important; }
+            .mobile-copyright { font-size: 11px !important; }
+            .feature-box { padding: 18px !important; }
+            .feature-icon-cell { width: 50px !important; }
+            .feature-icon { width: 40px !important; height: 40px !important; line-height: 40px !important; font-size: 20px !important; }
+            .mobile-full-width { width: 100% !important; }
         }
     </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0b1220;">
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0b1220;">
         <tr>
-            <td align="center" style="padding: 40px 20px;">
+            <td align="center" style="padding: 20px 10px;">
                 
-                <!-- Email Container -->
                 <table role="presentation" cellpadding="0" cellspacing="0" width="600" class="email-container" style="background-color: #111827; border-radius: 16px; overflow: hidden;">
                     
-                    <!-- Header with Logo -->
                     <tr>
-                        <td align="center" style="padding: 40px 40px 20px 40px; background: linear-gradient(135deg, #0891b2 0%, #0ea5e9 100%);">
+                        <td align="center" class="mobile-padding-header" style="padding: 30px 30px 16px 30px; background: linear-gradient(135deg, #0891b2 0%, #0ea5e9 100%);">
                             <table role="presentation" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td style="font-family: 'Arial Black', Arial, sans-serif; font-size: 32px; font-weight: 900; color: #ffffff; letter-spacing: -1px;">
+                                    <td class="mobile-logo" style="font-family: 'Arial Black', Arial, sans-serif; font-size: 28px; font-weight: 900; color: #ffffff; letter-spacing: -1px;">
                                         TAEK<span style="color: #22d3ee;">UP</span>
                                     </td>
                                 </tr>
@@ -50,22 +68,21 @@
                         </td>
                     </tr>
                     
-                    <!-- Hero Section -->
                     <tr>
-                        <td align="center" style="padding: 50px 40px 30px 40px;" class="mobile-padding">
+                        <td align="center" class="mobile-hero-padding" style="padding: 40px 30px 24px 30px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                 <tr>
-                                    <td style="font-family: 'Trebuchet MS', Arial, sans-serif; font-size: 11px; font-weight: bold; color: #06b6d4; letter-spacing: 3px; text-transform: uppercase; text-align: center; padding-bottom: 15px;">
+                                    <td class="mobile-tagline" style="font-family: 'Trebuchet MS', Arial, sans-serif; font-size: 11px; font-weight: bold; color: #06b6d4; letter-spacing: 3px; text-transform: uppercase; text-align: center; padding-bottom: 12px;">
                                         EVERY STEP TAKES YOU UP
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="font-family: 'Arial Black', Arial, sans-serif; font-size: 36px; font-weight: 900; color: #ffffff; text-align: center; line-height: 1.2; padding-bottom: 10px;">
-                                        Welcome to TaekUp™
+                                    <td class="mobile-title" style="font-family: 'Arial Black', Arial, sans-serif; font-size: 32px; font-weight: 900; color: #ffffff; text-align: center; line-height: 1.2; padding-bottom: 8px;">
+                                        Welcome to TaekUp
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="font-family: Arial, sans-serif; font-size: 18px; color: #22d3ee; text-align: center; font-weight: bold;">
+                                    <td class="mobile-subtitle" style="font-family: Arial, sans-serif; font-size: 18px; color: #22d3ee; text-align: center; font-weight: bold;">
                                         {{clubName}}
                                     </td>
                                 </tr>
@@ -73,23 +90,21 @@
                         </td>
                     </tr>
                     
-                    <!-- Welcome Message -->
                     <tr>
-                        <td align="center" style="padding: 0 40px 40px 40px;" class="mobile-padding">
+                        <td align="center" class="mobile-padding" style="padding: 0 30px 30px 30px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                 <tr>
-                                    <td style="font-family: Arial, sans-serif; font-size: 16px; color: #9ca3af; text-align: center; line-height: 1.7;">
+                                    <td class="mobile-body" style="font-family: Arial, sans-serif; font-size: 16px; color: #9ca3af; text-align: center; line-height: 1.6;">
                                         Hi {{ownerName}},<br><br>
-                                        Your 14-day free trial has started! You now have access to the complete TaekUp™ Growth Engine — everything you need to boost retention, engage students, and grow your martial arts business.
+                                        Your 14-day free trial has started! You now have full access to the TaekUp Growth Engine.
                                     </td>
                                 </tr>
                             </table>
                         </td>
                     </tr>
                     
-                    <!-- Divider -->
                     <tr>
-                        <td align="center" style="padding: 0 40px;" class="mobile-padding">
+                        <td align="center" class="mobile-padding" style="padding: 0 30px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                 <tr>
                                     <td style="border-top: 1px solid #374151;"></td>
@@ -98,12 +113,11 @@
                         </td>
                     </tr>
                     
-                    <!-- Features Section -->
                     <tr>
-                        <td align="center" style="padding: 40px 40px 20px 40px;" class="mobile-padding">
+                        <td align="center" class="mobile-padding" style="padding: 30px 30px 20px 30px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                 <tr>
-                                    <td style="font-family: 'Arial Black', Arial, sans-serif; font-size: 14px; font-weight: bold; color: #06b6d4; letter-spacing: 2px; text-transform: uppercase; text-align: center; padding-bottom: 30px;">
+                                    <td class="mobile-section-title" style="font-family: 'Arial Black', Arial, sans-serif; font-size: 13px; font-weight: bold; color: #06b6d4; letter-spacing: 2px; text-transform: uppercase; text-align: center; padding-bottom: 20px;">
                                         WHAT'S INCLUDED
                                     </td>
                                 </tr>
@@ -111,25 +125,24 @@
                         </td>
                     </tr>
                     
-                    <!-- Feature 1: Dojang Rivals -->
                     <tr>
-                        <td align="center" style="padding: 0 40px 25px 40px;" class="mobile-padding">
+                        <td align="center" class="mobile-padding" style="padding: 0 30px 16px 30px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1f2937; border-radius: 12px; border-left: 4px solid #06b6d4;">
                                 <tr>
-                                    <td style="padding: 25px;">
+                                    <td class="feature-box" style="padding: 20px;">
                                         <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                             <tr>
-                                                <td width="60" valign="top">
-                                                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #06b6d4, #0ea5e9); border-radius: 12px; text-align: center; line-height: 50px; font-size: 24px;" class="feature-icon">
+                                                <td class="feature-icon-cell" width="55" valign="top">
+                                                    <div class="feature-icon" style="width: 45px; height: 45px; background: linear-gradient(135deg, #06b6d4, #0ea5e9); border-radius: 10px; text-align: center; line-height: 45px; font-size: 22px;">
                                                         🥋
                                                     </div>
                                                 </td>
-                                                <td valign="top" style="padding-left: 15px;">
-                                                    <div style="font-family: 'Arial Black', Arial, sans-serif; font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 8px;">
-                                                        Dojang Rivals™
+                                                <td valign="top" style="padding-left: 12px;">
+                                                    <div class="mobile-feature-title" style="font-family: 'Arial Black', Arial, sans-serif; font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 6px;">
+                                                        Dojang Rivals
                                                     </div>
-                                                    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #9ca3af; line-height: 1.5;">
-                                                        Gamified challenges that keep students engaged and coming back. XP system, leaderboards, and team battles.
+                                                    <div class="mobile-feature-text" style="font-family: Arial, sans-serif; font-size: 14px; color: #9ca3af; line-height: 1.4;">
+                                                        Gamified challenges with XP, leaderboards, and team battles.
                                                     </div>
                                                 </td>
                                             </tr>
@@ -140,25 +153,24 @@
                         </td>
                     </tr>
                     
-                    <!-- Feature 2: Black Belt Time Machine -->
                     <tr>
-                        <td align="center" style="padding: 0 40px 25px 40px;" class="mobile-padding">
+                        <td align="center" class="mobile-padding" style="padding: 0 30px 16px 30px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1f2937; border-radius: 12px; border-left: 4px solid #8b5cf6;">
                                 <tr>
-                                    <td style="padding: 25px;">
+                                    <td class="feature-box" style="padding: 20px;">
                                         <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                             <tr>
-                                                <td width="60" valign="top">
-                                                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #8b5cf6, #a78bfa); border-radius: 12px; text-align: center; line-height: 50px; font-size: 24px;" class="feature-icon">
+                                                <td class="feature-icon-cell" width="55" valign="top">
+                                                    <div class="feature-icon" style="width: 45px; height: 45px; background: linear-gradient(135deg, #8b5cf6, #a78bfa); border-radius: 10px; text-align: center; line-height: 45px; font-size: 22px;">
                                                         ⏰
                                                     </div>
                                                 </td>
-                                                <td valign="top" style="padding-left: 15px;">
-                                                    <div style="font-family: 'Arial Black', Arial, sans-serif; font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 8px;">
-                                                        Black Belt Time Machine™
+                                                <td valign="top" style="padding-left: 12px;">
+                                                    <div class="mobile-feature-title" style="font-family: 'Arial Black', Arial, sans-serif; font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 6px;">
+                                                        Black Belt Time Machine
                                                     </div>
-                                                    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #9ca3af; line-height: 1.5;">
-                                                        AI-powered belt promotion predictions. Know exactly when each student will be ready for their next grading.
+                                                    <div class="mobile-feature-text" style="font-family: Arial, sans-serif; font-size: 14px; color: #9ca3af; line-height: 1.4;">
+                                                        AI-powered belt promotion predictions.
                                                     </div>
                                                 </td>
                                             </tr>
@@ -169,25 +181,24 @@
                         </td>
                     </tr>
                     
-                    <!-- Feature 3: Club Revenue Engine -->
                     <tr>
-                        <td align="center" style="padding: 0 40px 40px 40px;" class="mobile-padding">
+                        <td align="center" class="mobile-padding" style="padding: 0 30px 30px 30px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1f2937; border-radius: 12px; border-left: 4px solid #10b981;">
                                 <tr>
-                                    <td style="padding: 25px;">
+                                    <td class="feature-box" style="padding: 20px;">
                                         <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                             <tr>
-                                                <td width="60" valign="top">
-                                                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #10b981, #34d399); border-radius: 12px; text-align: center; line-height: 50px; font-size: 24px;" class="feature-icon">
+                                                <td class="feature-icon-cell" width="55" valign="top">
+                                                    <div class="feature-icon" style="width: 45px; height: 45px; background: linear-gradient(135deg, #10b981, #34d399); border-radius: 10px; text-align: center; line-height: 45px; font-size: 22px;">
                                                         💰
                                                     </div>
                                                 </td>
-                                                <td valign="top" style="padding-left: 15px;">
-                                                    <div style="font-family: 'Arial Black', Arial, sans-serif; font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 8px;">
-                                                        Club Revenue Engine™
+                                                <td valign="top" style="padding-left: 12px;">
+                                                    <div class="mobile-feature-title" style="font-family: 'Arial Black', Arial, sans-serif; font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 6px;">
+                                                        Club Revenue Engine
                                                     </div>
-                                                    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #9ca3af; line-height: 1.5;">
-                                                        Upload home practice content, parents upgrade to Premium, and you earn a share of every subscription. Your TaekUp™ pays for itself.
+                                                    <div class="mobile-feature-text" style="font-family: Arial, sans-serif; font-size: 14px; color: #9ca3af; line-height: 1.4;">
+                                                        Earn a share when parents subscribe to Premium.
                                                     </div>
                                                 </td>
                                             </tr>
@@ -198,14 +209,13 @@
                         </td>
                     </tr>
                     
-                    <!-- CTA Button -->
                     <tr>
-                        <td align="center" style="padding: 0 40px 50px 40px;" class="mobile-padding">
-                            <table role="presentation" cellpadding="0" cellspacing="0">
+                        <td align="center" class="mobile-padding" style="padding: 0 30px 40px 30px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" class="mobile-full-width" style="width: auto;">
                                 <tr>
                                     <td align="center" style="background: linear-gradient(135deg, #06b6d4, #0ea5e9); border-radius: 12px;">
-                                        <a href="{{ctaUrl}}" target="_blank" style="display: inline-block; padding: 18px 50px; font-family: 'Arial Black', Arial, sans-serif; font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none; letter-spacing: 0.5px;">
-                                            COMPLETE YOUR SETUP →
+                                        <a href="{{ctaUrl}}" target="_blank" class="mobile-cta" style="display: inline-block; padding: 16px 40px; font-family: 'Arial Black', Arial, sans-serif; font-size: 15px; font-weight: bold; color: #ffffff; text-decoration: none; letter-spacing: 0.5px;">
+                                            COMPLETE SETUP →
                                         </a>
                                     </td>
                                 </tr>
@@ -213,17 +223,16 @@
                         </td>
                     </tr>
                     
-                    <!-- Trial Reminder -->
                     <tr>
-                        <td align="center" style="padding: 0 40px 40px 40px;" class="mobile-padding">
+                        <td align="center" class="mobile-padding" style="padding: 0 30px 30px 30px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1e3a5f; border-radius: 12px; border: 1px solid #0ea5e9;">
                                 <tr>
-                                    <td style="padding: 25px; text-align: center;">
-                                        <div style="font-family: 'Arial Black', Arial, sans-serif; font-size: 24px; font-weight: bold; color: #22d3ee; margin-bottom: 8px;">
+                                    <td style="padding: 20px; text-align: center;">
+                                        <div class="mobile-trial-number" style="font-family: 'Arial Black', Arial, sans-serif; font-size: 22px; font-weight: bold; color: #22d3ee; margin-bottom: 6px;">
                                             14 DAYS FREE
                                         </div>
-                                        <div style="font-family: Arial, sans-serif; font-size: 14px; color: #9ca3af;">
-                                            No credit card required. Full access to all features.
+                                        <div class="mobile-trial-text" style="font-family: Arial, sans-serif; font-size: 14px; color: #9ca3af;">
+                                            No credit card required. Full access.
                                         </div>
                                     </td>
                                 </tr>
@@ -231,9 +240,8 @@
                         </td>
                     </tr>
                     
-                    <!-- Divider -->
                     <tr>
-                        <td align="center" style="padding: 0 40px;" class="mobile-padding">
+                        <td align="center" class="mobile-padding" style="padding: 0 30px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                 <tr>
                                     <td style="border-top: 1px solid #374151;"></td>
@@ -242,29 +250,28 @@
                         </td>
                     </tr>
                     
-                    <!-- Footer -->
                     <tr>
-                        <td align="center" style="padding: 40px; background-color: #0f172a;">
+                        <td align="center" style="padding: 30px 20px; background-color: #0f172a;">
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                 <tr>
-                                    <td style="font-family: 'Arial Black', Arial, sans-serif; font-size: 20px; font-weight: 900; color: #ffffff; text-align: center; padding-bottom: 5px;">
+                                    <td class="mobile-footer-logo" style="font-family: 'Arial Black', Arial, sans-serif; font-size: 18px; font-weight: 900; color: #ffffff; text-align: center; padding-bottom: 4px;">
                                         TAEK<span style="color: #22d3ee;">UP</span>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="font-family: Arial, sans-serif; font-size: 11px; color: #6b7280; text-align: center; letter-spacing: 1px; padding-bottom: 20px;">
+                                    <td style="font-family: Arial, sans-serif; font-size: 10px; color: #6b7280; text-align: center; letter-spacing: 1px; padding-bottom: 16px;">
                                         EVERY STEP TAKES YOU UP
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="font-family: Arial, sans-serif; font-size: 13px; color: #9ca3af; text-align: center; line-height: 1.8;">
+                                    <td class="mobile-footer-text" style="font-family: Arial, sans-serif; font-size: 13px; color: #9ca3af; text-align: center; line-height: 1.8;">
                                         Need help? <a href="mailto:support@mytaek.com" style="color: #22d3ee;">support@mytaek.com</a><br>
-                                        <a href="{{unsubscribeUrl}}" style="color: #6b7280;">Unsubscribe</a> · <a href="{{privacyUrl}}" style="color: #6b7280;">Privacy Policy</a>
+                                        <a href="{{unsubscribeUrl}}" style="color: #6b7280;">Unsubscribe</a> · <a href="{{privacyUrl}}" style="color: #6b7280;">Privacy</a>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="font-family: Arial, sans-serif; font-size: 12px; color: #4b5563; text-align: center; padding-top: 20px;">
-                                        © 2025 TaekUp™ · Part of the MyTaek™ Ecosystem
+                                    <td class="mobile-copyright" style="font-family: Arial, sans-serif; font-size: 11px; color: #4b5563; text-align: center; padding-top: 16px;">
+                                        © 2025 TaekUp · Part of the MyTaek Ecosystem
                                     </td>
                                 </tr>
                             </table>
@@ -272,7 +279,6 @@
                     </tr>
                     
                 </table>
-                <!-- End Email Container -->
                 
             </td>
         </tr>
