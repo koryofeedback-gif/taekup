@@ -56,6 +56,19 @@ export const EMAIL_TEMPLATES = {
   BIRTHDAY_WISH: 'd-0b160e2e188c4e8a91837369bed3e352',
 };
 
+type SenderType = 'engagement' | 'transactional';
+
+const SENDER_EMAILS = {
+  engagement: {
+    email: 'hello@mytaek.com',
+    name: 'TaekUp'
+  },
+  transactional: {
+    email: 'noreply@mytaek.com',
+    name: 'TaekUp'
+  }
+};
+
 const BASE_URL = process.env.APP_URL || 'https://app.mytaek.com';
 
 const commonLinks = {
@@ -77,16 +90,18 @@ async function sendEmail(
   to: string,
   templateId: string,
   dynamicData: Record<string, any>,
-  subject?: string
+  subject?: string,
+  senderType: SenderType = 'engagement'
 ): Promise<EmailResult> {
   try {
-    const { client, fromEmail } = await getUncachableSendGridClient();
+    const { client } = await getUncachableSendGridClient();
+    const sender = SENDER_EMAILS[senderType];
     
     const msg: any = {
       to,
       from: {
-        email: fromEmail,
-        name: 'TaekUp'
+        email: sender.email,
+        name: sender.name
       },
       templateId,
       dynamicTemplateData: {
@@ -169,7 +184,8 @@ export async function sendCoachInviteEmail(
   }
 ): Promise<EmailResult> {
   return sendEmail(to, EMAIL_TEMPLATES.COACH_INVITE, data, 
-    `${data.ownerName} invited you to join ${data.clubName} as a Coach`);
+    `${data.ownerName} invited you to join ${data.clubName} as a Coach`,
+    'transactional');
 }
 
 export async function sendResetPasswordEmail(
@@ -179,7 +195,8 @@ export async function sendResetPasswordEmail(
   return sendEmail(to, EMAIL_TEMPLATES.RESET_PASSWORD, {
     ...data,
     resetUrl: `${BASE_URL}/reset-password?token=${data.resetToken}`,
-  }, `Reset Your TaekUp Password`);
+  }, `Reset Your TaekUp Password`,
+    'transactional');
 }
 
 export async function sendNewStudentAddedEmail(
@@ -196,7 +213,8 @@ export async function sendNewStudentAddedEmail(
   return sendEmail(to, EMAIL_TEMPLATES.NEW_STUDENT_ADDED, {
     ...data,
     studentProfileUrl: `${BASE_URL}/student/${data.studentId}`,
-  }, `New Student Added: ${data.studentName}`);
+  }, `New Student Added: ${data.studentName}`,
+    'transactional');
 }
 
 export async function sendMonthlyRevenueReportEmail(

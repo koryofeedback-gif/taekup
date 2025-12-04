@@ -2,7 +2,12 @@
 
 All emails use the **TaekUp** brand with cyan theme (#06b6d4) and the slogan **"EVERY STEP TAKES YOU UP"**.
 
-**From Email:** `noreply@mytaek.com` (configured via SendGrid connection)
+## Sender Email Strategy
+
+| Type | From Address | Used For |
+|------|--------------|----------|
+| **Engagement** | `hello@mytaek.com` | Relationship-building emails (welcome, feedback, promotions, alerts) |
+| **Transactional** | `noreply@mytaek.com` | System notifications (password reset, coach invite, new student) |
 
 ---
 
