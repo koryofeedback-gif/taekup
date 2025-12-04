@@ -2,72 +2,103 @@
 
 All emails use the **TaekUp** brand with cyan theme (#06b6d4) and the slogan **"EVERY STEP TAKES YOU UP"**.
 
+**From Email:** `noreply@mytaek.com` (configured via SendGrid connection)
+
+---
+
+## 🚀 Quick Start - How to Use
+
+### Step 1: Create Dynamic Templates in SendGrid
+1. Go to SendGrid Dashboard → Email API → Dynamic Templates
+2. Click "Create a Dynamic Template"
+3. Name it (e.g., "Welcome Email")
+4. Click "Add Version" → "Code Editor"
+5. Paste the HTML from the corresponding email file
+6. Copy the Template ID (starts with `d-`)
+
+### Step 2: Update Template IDs
+Open `server/services/emailService.ts` and replace the template IDs:
+
+```typescript
+export const EMAIL_TEMPLATES = {
+  WELCOME: 'd-abc123yourtemplateid',
+  DAY_3_CHECKIN: 'd-abc123yourtemplateid',
+  // ... update all template IDs
+};
+```
+
+### Step 3: Send Emails from Your Code
+
+```typescript
+import emailService from './services/emailService';
+
+// Send welcome email when club signs up
+await emailService.sendWelcomeEmail('owner@email.com', {
+  ownerName: 'Master Hamed',
+  clubName: 'Elite Taekwondo Academy'
+});
+
+// Send class feedback after class
+await emailService.sendClassFeedbackEmail('parent@email.com', {
+  parentName: 'John',
+  studentName: 'Sarah',
+  clubName: 'Elite Taekwondo',
+  className: 'Little Tigers',
+  classDate: 'Dec 4, 2025',
+  feedbackText: 'Sarah showed excellent focus today and nailed her turning kick!',
+  coachName: 'Coach Kim',
+  highlights: '✨ Perfect form on front kicks<br>✨ Helped younger students<br>✨ Earned 50 XP',
+  studentId: 'stu_123',
+  feedbackId: 'fb_456'
+});
+```
+
 ---
 
 ## 📧 Owner/Club Trial Emails
 
 ### 1. Welcome Email
 **File:** `welcome-email.html`  
+**Template Key:** `EMAIL_TEMPLATES.WELCOME`  
 **Subject:** `Welcome to TaekUp - Your 14-Day Trial Has Started!`  
 **Trigger:** When club owner signs up  
-**Variables:**
-- `{{ownerName}}` - Owner's name
-- `{{clubName}}` - Club name
-- `{{ctaUrl}}` - Link to dashboard/setup wizard
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendWelcomeEmail(to, { ownerName, clubName })`
 
 ---
 
 ### 2. Day 3 Check-in
 **File:** `day-3-checkin.html`  
+**Template Key:** `EMAIL_TEMPLATES.DAY_3_CHECKIN`  
 **Subject:** `How's it going? Upload your student list yet?`  
 **Trigger:** 3 days after signup  
-**Variables:**
-- `{{ownerName}}` - Owner's name
-- `{{dashboardUrl}}` - Link to dashboard (Students → Import)
-- `{{helpUrl}}` - Link to help center/quick start guide
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendDay3CheckinEmail(to, { ownerName })`
 
 ---
 
 ### 3. Day 7 Mid-Trial
 **File:** `day-7-mid-trial.html`  
+**Template Key:** `EMAIL_TEMPLATES.DAY_7_MID_TRIAL`  
 **Subject:** `7 Days Left - Have You Tried AI Feedback?`  
 **Trigger:** 7 days after signup  
-**Variables:**
-- `{{ownerName}}` - Owner's name
-- `{{aiFeedbackUrl}}` - Link to AI feedback feature
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendDay7MidTrialEmail(to, { ownerName })`
 
 ---
 
 ### 4. Trial Ending Soon (3 Days Left)
 **File:** `trial-ending-soon.html`  
+**Template Key:** `EMAIL_TEMPLATES.TRIAL_ENDING_SOON`  
 **Subject:** `⏰ Only {{daysLeft}} Days Left on Your Trial`  
 **Trigger:** 3 days before trial ends  
-**Variables:**
-- `{{ownerName}}` - Owner's name
-- `{{clubName}}` - Club name
-- `{{daysLeft}}` - Days remaining (e.g., "3")
-- `{{upgradeUrl}}` - Link to pricing/upgrade page
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendTrialEndingSoonEmail(to, { ownerName, clubName, daysLeft })`
 
 ---
 
 ### 5. Trial Expired (Lockout)
 **File:** `day-14-trial-expired.html`  
+**Template Key:** `EMAIL_TEMPLATES.TRIAL_EXPIRED`  
 **Subject:** `Your Trial Has Ended - Upgrade to Keep Access`  
 **Trigger:** Trial expiration date  
-**Variables:**
-- `{{ownerName}}` - Owner's name
-- `{{clubName}}` - Club name
-- `{{upgradeUrl}}` - Link to pricing/upgrade page
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendTrialExpiredEmail(to, { ownerName, clubName })`
 
 ---
 
@@ -75,56 +106,37 @@ All emails use the **TaekUp** brand with cyan theme (#06b6d4) and the slogan **"
 
 ### 6. Coach Invite
 **File:** `coach-invite.html`  
+**Template Key:** `EMAIL_TEMPLATES.COACH_INVITE`  
 **Subject:** `{{ownerName}} invited you to join {{clubName}} as a Coach`  
 **Trigger:** When owner adds a new coach  
-**Variables:**
-- `{{coachName}}` - Coach's name
-- `{{coachEmail}}` - Coach's email address
-- `{{ownerName}}` - Owner's name (who sent invite)
-- `{{clubName}}` - Club name
-- `{{tempPassword}}` - Temporary password
-- `{{loginUrl}}` - Link to login page
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendCoachInviteEmail(to, { coachName, coachEmail, ownerName, clubName, tempPassword })`
 
 ---
 
 ### 7. Reset Password
 **File:** `reset-password.html`  
+**Template Key:** `EMAIL_TEMPLATES.RESET_PASSWORD`  
 **Subject:** `Reset Your TaekUp Password`  
 **Trigger:** When user requests password reset  
-**Variables:**
-- `{{userName}}` - User's name
-- `{{resetUrl}}` - Password reset link (expires in 1 hour)
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendResetPasswordEmail(to, { userName, resetToken })`
 
 ---
 
 ### 8. New Student Added
 **File:** `new-student-added.html`  
+**Template Key:** `EMAIL_TEMPLATES.NEW_STUDENT_ADDED`  
 **Subject:** `New Student Added: {{studentName}}`  
 **Trigger:** When a new student is added to the system  
-**Variables:**
-- `{{studentName}}` - Student's name
-- `{{clubName}}` - Club name
-- `{{beltLevel}}` - Current belt level
-- `{{studentAge}}` - Student's age
-- `{{parentName}}` - Parent's name
-- `{{studentProfileUrl}}` - Link to student profile
+**Function:** `sendNewStudentAddedEmail(to, { studentName, clubName, beltLevel, studentAge, parentName, studentId })`
 
 ---
 
 ### 9. Monthly Revenue Report
 **File:** `monthly-revenue-report.html`  
+**Template Key:** `EMAIL_TEMPLATES.MONTHLY_REVENUE_REPORT`  
 **Subject:** `💰 Your {{monthName}} Earnings Report - ${{totalEarnings}}`  
 **Trigger:** 1st of each month  
-**Variables:**
-- `{{monthName}}` - Month name (e.g., "November")
-- `{{totalEarnings}}` - Total earnings (e.g., "350")
-- `{{premiumParents}}` - Number of Premium parent subscribers
-- `{{newThisMonth}}` - New Premium subscribers this month
-- `{{dashboardUrl}}` - Link to full revenue dashboard
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendMonthlyRevenueReportEmail(to, { monthName, totalEarnings, premiumParents, newThisMonth })`
 
 ---
 
@@ -132,139 +144,94 @@ All emails use the **TaekUp** brand with cyan theme (#06b6d4) and the slogan **"
 
 ### 10. Parent Welcome
 **File:** `parent-welcome.html`  
+**Template Key:** `EMAIL_TEMPLATES.PARENT_WELCOME`  
 **Subject:** `Track {{studentName}}'s Progress on TaekUp`  
 **Trigger:** When parent account is created  
-**Variables:**
-- `{{parentName}}` - Parent's name
-- `{{studentName}}` - Student's name
-- `{{clubName}}` - Club name
-- `{{parentPortalUrl}}` - Link to parent portal
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendParentWelcomeEmail(to, { parentName, studentName, clubName, studentId })`
 
 ---
 
 ### 11. Class Feedback (The "Wow" Email)
 **File:** `class-feedback.html`  
+**Template Key:** `EMAIL_TEMPLATES.CLASS_FEEDBACK`  
 **Subject:** `⭐ {{studentName}} Did Great Today!`  
 **Trigger:** After class (sent by coach)  
-**Variables:**
-- `{{parentName}}` - Parent's name
-- `{{studentName}}` - Student's name
-- `{{clubName}}` - Club name
-- `{{className}}` - Class name (e.g., "Little Tigers")
-- `{{classDate}}` - Date of class (e.g., "Dec 4, 2025")
-- `{{feedbackText}}` - Coach's feedback message
-- `{{coachName}}` - Coach's name
-- `{{highlights}}` - Bullet points of highlights
-- `{{studentProfileUrl}}` - Link to student profile
-- `{{shareUrl}}` - Social media share link
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendClassFeedbackEmail(to, { parentName, studentName, clubName, className, classDate, feedbackText, coachName, highlights, studentId, feedbackId })`
 
 ---
 
 ### 12. Belt Promotion
 **File:** `belt-promotion.html`  
+**Template Key:** `EMAIL_TEMPLATES.BELT_PROMOTION`  
 **Subject:** `🎊 Congratulations! {{studentName}} Earned a New Belt!`  
 **Trigger:** When belt promotion is recorded  
-**Variables:**
-- `{{studentName}}` - Student's name
-- `{{beltColor}}` - New belt color (e.g., "YELLOW")
-- `{{clubName}}` - Club name
-- `{{promotionDate}}` - Date of promotion
-- `{{totalXp}}` - Total XP earned
-- `{{classesAttended}}` - Number of classes attended
-- `{{monthsTrained}}` - Months of training
-- `{{certificateUrl}}` - Link to download certificate
-- `{{shareUrl}}` - Social media share link
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendBeltPromotionEmail(to, { studentName, beltColor, clubName, promotionDate, totalXp, classesAttended, monthsTrained, promotionId })`
 
 ---
 
 ### 13. Attendance Alert (Retention Radar)
 **File:** `attendance-alert.html`  
+**Template Key:** `EMAIL_TEMPLATES.ATTENDANCE_ALERT`  
 **Subject:** `We Miss {{studentName}}! Is Everything Okay?`  
 **Trigger:** 14+ days since last class  
-**Variables:**
-- `{{parentName}}` - Parent's name
-- `{{studentName}}` - Student's name
-- `{{clubName}}` - Club name
-- `{{daysSinceLastClass}}` - Number of days (e.g., "14")
-- `{{scheduleUrl}}` - Link to class schedule
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendAttendanceAlertEmail(to, { parentName, studentName, clubName, daysSinceLastClass })`
 
 ---
 
 ### 14. Birthday Wish
 **File:** `birthday-wish.html`  
+**Template Key:** `EMAIL_TEMPLATES.BIRTHDAY_WISH`  
 **Subject:** `🎂 Happy Birthday, {{studentName}}!`  
 **Trigger:** On student's birthday  
-**Variables:**
-- `{{studentName}}` - Student's name
-- `{{clubName}}` - Club name
-- `{{unsubscribeUrl}}` - Unsubscribe link
-- `{{privacyUrl}}` - Privacy policy link
+**Function:** `sendBirthdayWishEmail(to, { studentName, clubName })`
 
 ---
 
-## 🔗 Common Link Variables
+## 🔗 Auto-Injected Link Variables
 
-| Variable | Description | Example URL |
-|----------|-------------|-------------|
-| `{{dashboardUrl}}` | Admin dashboard | `https://app.mytaek.com/dashboard` |
-| `{{loginUrl}}` | Login page | `https://app.mytaek.com/login` |
-| `{{upgradeUrl}}` | Pricing/upgrade page | `https://app.mytaek.com/pricing` |
-| `{{parentPortalUrl}}` | Parent portal | `https://app.mytaek.com/parent` |
-| `{{studentProfileUrl}}` | Student profile | `https://app.mytaek.com/student/{{studentId}}` |
-| `{{scheduleUrl}}` | Class schedule | `https://app.mytaek.com/schedule` |
-| `{{helpUrl}}` | Help center | `https://help.mytaek.com` |
-| `{{resetUrl}}` | Password reset (tokenized) | `https://app.mytaek.com/reset?token={{token}}` |
-| `{{certificateUrl}}` | Certificate download | `https://app.mytaek.com/certificate/{{id}}` |
-| `{{shareUrl}}` | Social share page | `https://app.mytaek.com/share/{{id}}` |
-| `{{unsubscribeUrl}}` | Email preferences | `https://app.mytaek.com/email-preferences` |
-| `{{privacyUrl}}` | Privacy policy | `https://mytaek.com/privacy` |
+These links are automatically added to every email:
+
+| Variable | Description | Value |
+|----------|-------------|-------|
+| `{{unsubscribeUrl}}` | Email preferences | `{APP_URL}/email-preferences` |
+| `{{privacyUrl}}` | Privacy policy | `{APP_URL}/privacy` |
+| `{{dashboardUrl}}` | Admin dashboard | `{APP_URL}/dashboard` |
+| `{{loginUrl}}` | Login page | `{APP_URL}/login` |
+| `{{upgradeUrl}}` | Pricing page | `{APP_URL}/pricing` |
+| `{{helpUrl}}` | Help center | `{APP_URL}/help` |
+
+Set `APP_URL` environment variable to your domain (e.g., `https://app.mytaek.com`)
 
 ---
 
-## 📨 SendGrid Integration
+## 📨 SendGrid Setup Summary
 
-### Recommended Email Categories
+### Template IDs to Create
 
-| Category | Emails |
-|----------|--------|
-| **Trial Sequence** | welcome, day-3, day-7, trial-ending, trial-expired |
-| **Transactional** | reset-password, coach-invite, new-student-added |
-| **Engagement** | class-feedback, belt-promotion, birthday-wish |
-| **Retention** | attendance-alert, monthly-revenue-report |
-| **Marketing** | parent-welcome (can include Premium upsell) |
-
-### SendGrid Dynamic Templates
-Upload each HTML file to SendGrid as a Dynamic Template, then use the template ID in your code:
-
-```javascript
-const msg = {
-  to: 'parent@email.com',
-  from: 'hello@mytaek.com',
-  templateId: 'd-xxxxxxxxxxxxx', // Your SendGrid template ID
-  dynamicTemplateData: {
-    parentName: 'John',
-    studentName: 'Sarah',
-    clubName: 'Elite Taekwondo',
-    // ... other variables
-  }
-};
-```
+| Email Type | Template Name |
+|------------|---------------|
+| `WELCOME` | Welcome Email |
+| `DAY_3_CHECKIN` | Day 3 Check-in |
+| `DAY_7_MID_TRIAL` | Day 7 Mid-Trial |
+| `TRIAL_ENDING_SOON` | Trial Ending Soon |
+| `TRIAL_EXPIRED` | Trial Expired |
+| `COACH_INVITE` | Coach Invite |
+| `RESET_PASSWORD` | Reset Password |
+| `NEW_STUDENT_ADDED` | New Student Added |
+| `MONTHLY_REVENUE_REPORT` | Monthly Revenue Report |
+| `PARENT_WELCOME` | Parent Welcome |
+| `CLASS_FEEDBACK` | Class Feedback |
+| `BELT_PROMOTION` | Belt Promotion |
+| `ATTENDANCE_ALERT` | Attendance Alert |
+| `BIRTHDAY_WISH` | Birthday Wish |
 
 ---
 
-## ✅ Checklist
+## ✅ Setup Checklist
 
-- [ ] Upload all templates to SendGrid
-- [ ] Create dynamic template IDs
-- [ ] Set up email triggers in backend
-- [ ] Test mobile responsiveness
-- [ ] Verify all links work correctly
-- [ ] Set up unsubscribe handling
+- [ ] Create all 14 Dynamic Templates in SendGrid
+- [ ] Copy each HTML template content to SendGrid
+- [ ] Update `EMAIL_TEMPLATES` object with template IDs
+- [ ] Set `APP_URL` environment variable
+- [ ] Test each email type
+- [ ] Set up cron jobs for scheduled emails (day-3, day-7, trial-ending, monthly-report, birthday)
