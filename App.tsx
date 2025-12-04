@@ -273,7 +273,7 @@ const AppContent: React.FC<AppContentProps> = ({
     const isAppSubdomain = window.location.hostname.startsWith('app.');
     const isDojangTV = location.pathname === '/app/tv';
     const isMyTaekHome = location.pathname === '/';
-    const isMyTaekPage = location.pathname === '/' || location.pathname === '/landing';
+    const isMyTaekPage = location.pathname === '/';
     const taekBotColorScheme: TaekBotColorScheme = isMyTaekPage ? 'red' : 'cyan';
     
     const accountStatus = finalWizardData && subscription 
