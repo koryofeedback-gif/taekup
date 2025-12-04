@@ -52,16 +52,19 @@ const SecretPreview: React.FC<SecretPreviewProps> = ({
     
     if (providedKey !== PREVIEW_KEY) {
         return (
-            <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-                <div className="text-center">
-                    <div className="text-6xl mb-4">🔒</div>
-                    <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-                    <p className="text-gray-400">This page requires a valid access key.</p>
-                    <Link to="/" className="mt-6 inline-block text-cyan-400 hover:text-cyan-300">
-                        Return to Home
-                    </Link>
+            <>
+                <SEO title="Access Denied | TaekUp" noindex={true} />
+                <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+                    <div className="text-center">
+                        <div className="text-6xl mb-4">🔒</div>
+                        <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
+                        <p className="text-gray-400">This page requires a valid access key.</p>
+                        <Link to="/" className="mt-6 inline-block text-cyan-400 hover:text-cyan-300">
+                            Return to Home
+                        </Link>
+                    </div>
                 </div>
-            </div>
+            </>
         );
     }
     
@@ -74,7 +77,7 @@ const SecretPreview: React.FC<SecretPreviewProps> = ({
     
     return (
         <>
-            <SEO title="Preview Mode | TaekUp" />
+            <SEO title="Preview Mode | TaekUp" noindex={true} />
             <DemoMode onEnterDemo={onEnterDemo} />
         </>
     );
