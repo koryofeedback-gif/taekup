@@ -3,6 +3,7 @@ import { storage } from './storage';
 import { stripeService } from './stripeService';
 import { getStripePublishableKey, getUncachableStripeClient } from './stripeClient';
 import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail } from './aiService';
+import emailService from './services/emailService';
 
 let cachedProducts: any[] | null = null;
 let cacheTimestamp: number = 0;
@@ -244,5 +245,145 @@ export function registerRoutes(app: Express) {
       console.error('Error creating portal session:', error);
       res.status(500).json({ error: 'Failed to create portal session' });
     }
+  });
+
+  app.post('/api/test-email', async (req: Request, res: Response) => {
+    try {
+      const { emailType, to } = req.body;
+
+      if (!to) {
+        return res.status(400).json({ error: 'Email address (to) is required' });
+      }
+
+      if (!emailType) {
+        return res.status(400).json({ error: 'Email type is required' });
+      }
+
+      const testData = {
+        ownerName: 'Master Hamed',
+        clubName: 'Elite Taekwondo Academy',
+        coachName: 'Coach Kim',
+        coachEmail: to,
+        tempPassword: 'TempPass123!',
+        userName: 'Test User',
+        resetToken: 'test-token-12345',
+        studentName: 'Sarah Johnson',
+        beltLevel: 'Yellow Belt',
+        studentAge: '10',
+        parentName: 'John Johnson',
+        studentId: 'stu_test123',
+        daysLeft: 3,
+        monthName: 'December',
+        totalEarnings: '350',
+        premiumParents: 25,
+        newThisMonth: 5,
+        className: 'Little Tigers',
+        classDate: 'Dec 4, 2025',
+        feedbackText: 'Sarah showed excellent focus today and nailed her turning kick! Her dedication is really paying off.',
+        highlights: '✨ Perfect form on front kicks<br>✨ Helped younger students<br>✨ Earned 50 XP',
+        feedbackId: 'fb_test456',
+        beltColor: 'YELLOW',
+        promotionDate: 'December 4, 2025',
+        totalXp: '2,500',
+        classesAttended: 48,
+        monthsTrained: 6,
+        promotionId: 'promo_test789',
+        daysSinceLastClass: 14,
+      };
+
+      let result;
+      
+      switch (emailType) {
+        case 'welcome':
+          result = await emailService.sendWelcomeEmail(to, testData);
+          break;
+        case 'day3':
+          result = await emailService.sendDay3CheckinEmail(to, testData);
+          break;
+        case 'day7':
+          result = await emailService.sendDay7MidTrialEmail(to, testData);
+          break;
+        case 'trial-ending':
+          result = await emailService.sendTrialEndingSoonEmail(to, testData);
+          break;
+        case 'trial-expired':
+          result = await emailService.sendTrialExpiredEmail(to, testData);
+          break;
+        case 'coach-invite':
+          result = await emailService.sendCoachInviteEmail(to, testData);
+          break;
+        case 'reset-password':
+          result = await emailService.sendResetPasswordEmail(to, testData);
+          break;
+        case 'new-student':
+          result = await emailService.sendNewStudentAddedEmail(to, testData);
+          break;
+        case 'revenue-report':
+          result = await emailService.sendMonthlyRevenueReportEmail(to, testData);
+          break;
+        case 'parent-welcome':
+          result = await emailService.sendParentWelcomeEmail(to, testData);
+          break;
+        case 'class-feedback':
+          result = await emailService.sendClassFeedbackEmail(to, testData);
+          break;
+        case 'belt-promotion':
+          result = await emailService.sendBeltPromotionEmail(to, testData);
+          break;
+        case 'attendance-alert':
+          result = await emailService.sendAttendanceAlertEmail(to, testData);
+          break;
+        case 'birthday':
+          result = await emailService.sendBirthdayWishEmail(to, testData);
+          break;
+        default:
+          return res.status(400).json({ 
+            error: 'Invalid email type',
+            validTypes: [
+              'welcome', 'day3', 'day7', 'trial-ending', 'trial-expired',
+              'coach-invite', 'reset-password', 'new-student', 'revenue-report',
+              'parent-welcome', 'class-feedback', 'belt-promotion', 
+              'attendance-alert', 'birthday'
+            ]
+          });
+      }
+
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: `Test email "${emailType}" sent to ${to}`,
+          messageId: result.messageId 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          error: result.error 
+        });
+      }
+    } catch (error: any) {
+      console.error('Test email error:', error);
+      res.status(500).json({ error: error.message || 'Failed to send test email' });
+    }
+  });
+
+  app.get('/api/test-email/types', (req: Request, res: Response) => {
+    res.json({
+      types: [
+        { id: 'welcome', name: 'Welcome Email', from: 'hello@mytaek.com' },
+        { id: 'day3', name: 'Day 3 Check-in', from: 'hello@mytaek.com' },
+        { id: 'day7', name: 'Day 7 Mid-Trial', from: 'hello@mytaek.com' },
+        { id: 'trial-ending', name: 'Trial Ending Soon', from: 'hello@mytaek.com' },
+        { id: 'trial-expired', name: 'Trial Expired', from: 'hello@mytaek.com' },
+        { id: 'coach-invite', name: 'Coach Invite', from: 'noreply@mytaek.com' },
+        { id: 'reset-password', name: 'Reset Password', from: 'noreply@mytaek.com' },
+        { id: 'new-student', name: 'New Student Added', from: 'noreply@mytaek.com' },
+        { id: 'revenue-report', name: 'Monthly Revenue Report', from: 'hello@mytaek.com' },
+        { id: 'parent-welcome', name: 'Parent Welcome', from: 'hello@mytaek.com' },
+        { id: 'class-feedback', name: 'Class Feedback', from: 'hello@mytaek.com' },
+        { id: 'belt-promotion', name: 'Belt Promotion', from: 'hello@mytaek.com' },
+        { id: 'attendance-alert', name: 'Attendance Alert', from: 'hello@mytaek.com' },
+        { id: 'birthday', name: 'Birthday Wish', from: 'hello@mytaek.com' },
+      ]
+    });
   });
 }
