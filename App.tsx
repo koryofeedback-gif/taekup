@@ -28,6 +28,58 @@ import {
 import { SEO } from './components/SEO';
 import type { SignupData, WizardData, Student, SubscriptionStatus, SubscriptionPlanId } from './types';
 
+// Secret Preview Component - Checks for secret key before showing preview mode
+interface SecretPreviewProps {
+    isDemoMode: boolean;
+    finalWizardData: WizardData | null;
+    loggedInUserType: 'owner' | 'coach' | 'parent' | null;
+    parentStudentId: string | null;
+    onEnterDemo: (role: 'owner' | 'coach' | 'parent', studentId?: string) => void;
+}
+
+const SecretPreview: React.FC<SecretPreviewProps> = ({
+    isDemoMode,
+    finalWizardData,
+    loggedInUserType,
+    parentStudentId,
+    onEnterDemo,
+}) => {
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+    const providedKey = searchParams.get('key');
+    
+    const PREVIEW_KEY = import.meta.env.VITE_PREVIEW_KEY || 'mytaek-preview-2024';
+    
+    if (providedKey !== PREVIEW_KEY) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+                <div className="text-center">
+                    <div className="text-6xl mb-4">🔒</div>
+                    <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
+                    <p className="text-gray-400">This page requires a valid access key.</p>
+                    <Link to="/" className="mt-6 inline-block text-cyan-400 hover:text-cyan-300">
+                        Return to Home
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+    
+    if (isDemoMode && finalWizardData && loggedInUserType) {
+        const redirectPath = loggedInUserType === 'owner' ? '/app/admin' :
+            loggedInUserType === 'coach' ? '/app/coach' :
+            `/app/parent/${parentStudentId || finalWizardData.students[0]?.id}`;
+        return <Navigate to={redirectPath} replace />;
+    }
+    
+    return (
+        <>
+            <SEO title="Preview Mode | TaekUp" />
+            <DemoMode onEnterDemo={onEnterDemo} />
+        </>
+    );
+};
+
 // Main App Component with Router
 const App: React.FC = () => {
     const [signupData, setSignupDataState] = useState<SignupData | null>(() => {
@@ -365,22 +417,17 @@ const AppContent: React.FC<AppContentProps> = ({
                         }
                     />
 
-                    {/* Demo Mode */}
+                    {/* Secret Preview Mode - Only accessible with secret key */}
                     <Route
-                        path="/demo"
+                        path="/preview"
                         element={
-                            isDemoMode && finalWizardData && loggedInUserType ? (
-                                <Navigate to={
-                                    loggedInUserType === 'owner' ? '/app/admin' :
-                                    loggedInUserType === 'coach' ? '/app/coach' :
-                                    `/app/parent/${parentStudentId || finalWizardData.students[0]?.id}`
-                                } replace />
-                            ) : (
-                                <>
-                                    <SEO title="Demo Mode | TaekUp" />
-                                    <DemoMode onEnterDemo={onEnterDemo} />
-                                </>
-                            )
+                            <SecretPreview
+                                isDemoMode={isDemoMode}
+                                finalWizardData={finalWizardData}
+                                loggedInUserType={loggedInUserType}
+                                parentStudentId={parentStudentId}
+                                onEnterDemo={onEnterDemo}
+                            />
                         }
                     />
 
