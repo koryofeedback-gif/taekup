@@ -115,7 +115,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         <h2 className="text-2xl font-bold mb-2 text-white">Revenue Engine</h2>
                         <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Software That Pays You</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
-                            Turn your curriculum into a paid video library. We share 70% of the revenue with you. The software pays for itself.
+                            Upload home practice content, parents upgrade to Premium, and you earn 70% of every subscription. Your software pays for itself.
                         </p>
                     </div>
 
@@ -189,7 +189,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                             <span className="text-yellow-500">LET SOFTWARE PAY YOU.</span>
                         </h2>
                         <p className="text-xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-                            Every other platform is a monthly expense. TaekUp™ is an asset. Our proprietary <span className="font-bold text-white">Club Revenue Engine™</span> shares 70% of the revenue directly with you.
+                            Every other platform is a monthly expense. TaekUp™ is an asset. When parents upgrade to Premium, you earn 70% with our <span className="font-bold text-white">Club Revenue Engine™</span>.
                         </p>
 
                         <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-12">
