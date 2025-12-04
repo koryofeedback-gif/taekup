@@ -255,8 +255,8 @@ export const DemoMode: React.FC<DemoModeProps> = ({ onEnterDemo }) => {
             icon: '👨‍👩‍👧',
             color: 'from-green-600 to-green-800',
             borderColor: 'border-green-500',
-            description: 'View student progress, track achievements, compete in Dojang Rivals, and manage Home Dojo habits.',
-            features: ['Progress Tracking', 'Dojang Rivals Arena', 'Home Dojo Habits', 'Achievement Badges'],
+            description: 'View student progress, track achievements, compete in Dojang Rivals™, and manage Home Dojo habits.',
+            features: ['Progress Tracking', 'Dojang Rivals™ Arena', 'Home Dojo Habits', 'Achievement Badges'],
         },
     ];
 

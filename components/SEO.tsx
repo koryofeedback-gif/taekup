@@ -11,7 +11,7 @@ interface SEOProps {
 }
 
 export const SEO: React.FC<SEOProps> = ({ 
-  title = "TaekUp - Every Step Takes You Up", 
+  title = "TaekUp™ - Every Step Takes You Up", 
   description = "The ultimate management platform for Martial Arts schools. Gamified tracking, AI assistants, and a revenue engine that pays you.", 
   image = "https://taekup.com/og-image.jpg",
   url = "https://taekup.com",

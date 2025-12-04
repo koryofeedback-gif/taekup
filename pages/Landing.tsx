@@ -54,7 +54,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                 <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-700">YOU UP.</span>
                             </h1>
                             <p className="text-xl md:text-2xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed font-light">
-                                TaekUp isn't just management software. It's a <span className="text-white font-medium">Growth Engine</span> that gamifies retention, automates pedagogy, and turns your roster into revenue.
+                                TaekUp™ isn't just management software. It's a <span className="text-white font-medium">Growth Engine</span> that gamifies retention, automates pedagogy, and turns your roster into revenue.
                             </p>
 
                             <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
@@ -72,7 +72,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                 </button>
                             </div>
                             <p className="mt-8 text-zinc-600 text-xs font-semibold tracking-widest uppercase">
-                                Powered by MyTaek
+                                Powered by MyTaek™
                             </p>
                         </>
                     )}
@@ -103,7 +103,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         <h2 className="text-2xl font-bold mb-2 text-white">Gamified Retention</h2>
                         <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Addictive Progress</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
-                            Dojang Rivals, Fighter Cards, and a Black Belt Time Machine. We make kids addicted to progress.
+                            Dojang Rivals™, Fighter Cards, and a Black Belt Time Machine™. We make kids addicted to progress.
                         </p>
                     </div>
 
@@ -127,7 +127,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         <h2 className="text-2xl font-bold mb-2 text-white">The Ecosystem</h2>
                         <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">One Connected World</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
-                            Manage the club with TaekUp. Teach kids with TaekFunDo. Train athletes with TikTaek. One connected world.
+                            Manage the club with TaekUp™. Teach kids with TaekFunDo™. Train athletes with TikTaek™. One connected world.
                         </p>
                     </div>
 
@@ -189,7 +189,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                             <span className="text-yellow-500">LET SOFTWARE PAY YOU.</span>
                         </h2>
                         <p className="text-xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-                            Every other platform is a monthly expense. TaekUp is an asset. Our proprietary <span className="font-bold text-white">Club Revenue Engine™</span> shares 70% of the revenue directly with you.
+                            Every other platform is a monthly expense. TaekUp™ is an asset. Our proprietary <span className="font-bold text-white">Club Revenue Engine™</span> shares 70% of the revenue directly with you.
                         </p>
 
                         <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-12">
@@ -200,7 +200,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                             </div>
                             <div className="text-zinc-600 font-black text-4xl">VS</div>
                             <div className="bg-zinc-900 p-8 rounded-xl border-2 border-yellow-500/60 w-full md:w-auto min-w-[260px] shadow-[0_0_40px_rgba(234,179,8,0.2)] scale-105">
-                                <p className="text-yellow-500 text-xs uppercase font-bold tracking-wider mb-2">TaekUp Way</p>
+                                <p className="text-yellow-500 text-xs uppercase font-bold tracking-wider mb-2">TaekUp™ Way</p>
                                 <p className="text-green-400 text-4xl font-black">+$450/mo</p>
                                 <p className="text-green-400/70 text-sm mt-2">Net Profit</p>
                             </div>

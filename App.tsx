@@ -813,7 +813,7 @@ const Footer: React.FC = () => (
     <footer className="bg-gray-900 border-t border-gray-800">
         <div className="container mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center">
             <div className="text-gray-500 text-sm mb-4 md:mb-0">
-                &copy; {new Date().getFullYear()} MyTaek. All rights reserved. The Martial Arts Revolution.
+                &copy; {new Date().getFullYear()} MyTaek™. All rights reserved. The Martial Arts Revolution.
             </div>
             <div className="flex items-center space-x-6">
                 <div className="flex space-x-4 mr-6 border-r border-gray-700 pr-6">

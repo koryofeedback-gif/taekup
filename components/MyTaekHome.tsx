@@ -80,7 +80,7 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                         <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-800 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:rotate-6 transition-transform">
                             🚀
                         </div>
-                        <h2 className="text-3xl font-bold mb-2 text-white">TaekUp</h2>
+                        <h2 className="text-3xl font-bold mb-2 text-white">TaekUp™</h2>
                         <p className="text-red-500 font-mono text-xs mb-6 uppercase tracking-widest font-bold">Growth & Revenue</p>
                         <p className="text-zinc-400 mb-8 leading-relaxed text-sm min-h-[80px]">
                             The operating system for your club. Manage students, automate feedback, and turn your curriculum into passive income.
@@ -101,7 +101,7 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                         <div className="w-16 h-16 bg-gradient-to-br from-zinc-700 to-zinc-900 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:-rotate-6 transition-transform border border-zinc-600">
                             🐯
                         </div>
-                        <h2 className="text-3xl font-bold mb-2 text-white">TaekFunDo</h2>
+                        <h2 className="text-3xl font-bold mb-2 text-white">TaekFunDo™</h2>
                         <p className="text-zinc-500 font-mono text-xs mb-6 uppercase tracking-widest font-bold">Kids Curriculum</p>
                         <p className="text-zinc-400 mb-8 leading-relaxed text-sm min-h-[80px]">
                             Scientifically designed pedagogy for ages 3-7. We turn play into discipline using story-based learning.
@@ -119,7 +119,7 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                         <div className="w-16 h-16 bg-gradient-to-br from-zinc-700 to-zinc-900 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:scale-110 transition-transform border border-zinc-600">
                             🎵
                         </div>
-                        <h2 className="text-3xl font-bold mb-2 text-white">TikTaek</h2>
+                        <h2 className="text-3xl font-bold mb-2 text-white">TikTaek™</h2>
                         <p className="text-zinc-500 font-mono text-xs mb-6 uppercase tracking-widest font-bold">Rhythm & Performance</p>
                         <p className="text-zinc-400 mb-8 leading-relaxed text-sm min-h-[80px]">
                             Agility training synchronized with music. Build speed, coordination, and rhythm in a way that feels like a game.
@@ -167,7 +167,7 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                                 <div className="text-zinc-700 font-black text-4xl mr-6 mt-[-8px] leading-none">03.</div>
                                 <div>
                                     <h4 className="text-xl font-bold text-white mb-2">The Complete Ecosystem</h4>
-                                    <p className="text-zinc-500 leading-relaxed">TaekUp manages the club. TaekFunDo engages the kids. TikTaek trains the athletes. One brand, one vision, one login.</p>
+                                    <p className="text-zinc-500 leading-relaxed">TaekUp™ manages the club. TaekFunDo™ engages the kids. TikTaek™ trains the athletes. One brand, one vision, one login.</p>
                                 </div>
                             </div>
                         </div>

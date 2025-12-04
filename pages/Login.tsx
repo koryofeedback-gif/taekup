@@ -81,7 +81,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
 
     return (
         <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-            <SEO title="Login | TaekUp" description="Log in to your TaekUp Dashboard." />
+            <SEO title="Login | TaekUp™" description="Log in to your TaekUp™ Dashboard." />
             <div className="max-w-md w-full bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 relative">
                 <button
                     onClick={handleCancel}
@@ -92,7 +92,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                 </button>
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
-                    <p className="text-gray-400">Log in to TaekUp</p>
+                    <p className="text-gray-400">Log in to TaekUp™</p>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
