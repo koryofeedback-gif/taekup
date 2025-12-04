@@ -20,226 +20,214 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
     };
 
     return (
-        <>
+        <div className="bg-black min-h-screen font-sans text-white selection:bg-cyan-600 selection:text-white">
             <SEO
                 title="TaekUp - The Growth Engine for Martial Arts | MyTaek"
                 description="TaekUp isn't just management software. It's a Growth Engine that gamifies retention, automates pedagogy, and turns your roster into revenue."
             />
-            <HeroSection
-                showSignup={showSignup}
-                onStartTrial={() => setShowSignup(true)}
-                onSignupSuccess={handleSignupSuccess}
-            />
-            <TransformationSection />
-            <UnlimitedSection />
-            <ProfitEngineSection onStartTrial={() => setShowSignup(true)} />
-            <TrustSection />
-        </>
-    );
-};
+            
+            {/* --- HERO SECTION --- */}
+            <div className="relative pt-32 pb-24 px-6 overflow-hidden border-b border-zinc-800">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black opacity-80"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
-interface HeroSectionProps {
-    showSignup: boolean;
-    onStartTrial: () => void;
-    onSignupSuccess: (data: SignupData) => void;
-}
+                <div className="relative z-10 max-w-6xl mx-auto text-center flex flex-col items-center">
+                    {showSignup ? (
+                        <>
+                            <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight text-white tracking-tighter">
+                                START YOUR <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-700">FREE TRIAL.</span>
+                            </h1>
+                            <p className="text-xl text-zinc-400 mb-10">
+                                No credit card required. Unlock your dojang's full potential today.
+                            </p>
+                            <div className="w-full max-w-md">
+                                <SignupForm onSignupSuccess={handleSignupSuccess} />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-cyan-400 font-mono text-xs uppercase tracking-widest font-bold mb-6">
+                                The Future of Martial Arts Business
+                            </p>
+                            <h1 className="text-5xl md:text-8xl font-black mb-8 leading-tight text-white tracking-tighter">
+                                EVERY STEP TAKES<br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-700">YOU UP.</span>
+                            </h1>
+                            <p className="text-xl md:text-2xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed font-light">
+                                TaekUp isn't just management software. It's a <span className="text-white font-medium">Growth Engine</span> that gamifies retention, automates pedagogy, and turns your roster into revenue.
+                            </p>
 
-const HeroSection: React.FC<HeroSectionProps> = ({ showSignup, onStartTrial, onSignupSuccess }) => (
-    <div className="relative text-center py-20 md:py-32 px-6 bg-dots-pattern">
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-900/80 to-gray-900"></div>
-        <div className="relative z-10 max-w-4xl mx-auto">
-            {showSignup ? (
-                <>
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
-                        Start Your <span className="text-sky-300">14-Day</span> Free Trial
-                    </h1>
-                    <p className="text-lg text-gray-300 mb-8">
-                        No credit card required. Unlock your dojang's full potential today.
-                    </p>
-                    <SignupForm onSignupSuccess={onSignupSuccess} />
-                </>
-            ) : (
-                <>
-                    <p className="text-sky-400 font-semibold uppercase tracking-widest text-sm mb-4">
-                        The Future of Martial Arts Business
-                    </p>
-                    <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight">
-                        Every Step Takes You Up.
-                    </h1>
-                    <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-                        TaekUp isn't just management software. It's a <span className="text-sky-300 font-semibold">Growth Engine</span> that gamifies retention, automates pedagogy, and turns your roster into revenue.
-                    </p>
-                    <div className="flex flex-col items-center">
-                        <button
-                            onClick={onStartTrial}
-                            className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-full text-lg transition-transform transform hover:scale-105 shadow-lg shadow-blue-600/30"
-                        >
-                            Start Free Trial
-                        </button>
-                        <div className="mt-6 text-xs text-gray-500 font-semibold tracking-widest uppercase opacity-70">
-                            Powered by MyTaek
+                            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
+                                <button
+                                    onClick={() => setShowSignup(true)}
+                                    className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-4 px-10 rounded-full transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(6,182,212,0.3)] text-lg"
+                                >
+                                    Start Free Trial
+                                </button>
+                                <button
+                                    onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                                    className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold py-4 px-10 rounded-full transition-all text-lg"
+                                >
+                                    See Features
+                                </button>
+                            </div>
+                            <p className="mt-8 text-zinc-600 text-xs font-semibold tracking-widest uppercase">
+                                Powered by MyTaek
+                            </p>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {/* --- FEATURES TRIFECTA --- */}
+            <div id="features" className="container mx-auto px-6 -mt-12 relative z-20 pb-32">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <div className="group bg-zinc-900 rounded-xl border border-zinc-800 p-8 hover:bg-zinc-800 hover:border-cyan-500 transition-all duration-500 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl font-black text-white group-hover:text-cyan-500 transition-colors">01</div>
+                        <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:rotate-6 transition-transform">
+                            🥋
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2 text-white">Pedagogy First</h2>
+                        <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">AI-Powered Teaching</p>
+                        <p className="text-zinc-400 leading-relaxed text-sm">
+                            AI Lesson Planners, 30-Second Grading, and automated feedback that sounds like YOU. We help you teach better.
+                        </p>
+                    </div>
+
+                    <div className="group bg-zinc-900 rounded-xl border border-zinc-800 p-8 hover:bg-zinc-800 hover:border-cyan-500 transition-all duration-500 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl font-black text-white group-hover:text-cyan-500 transition-colors">02</div>
+                        <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:-rotate-6 transition-transform">
+                            🎮
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2 text-white">Gamified Retention</h2>
+                        <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Addictive Progress</p>
+                        <p className="text-zinc-400 leading-relaxed text-sm">
+                            Dojang Rivals, Fighter Cards, and a Black Belt Time Machine. We make kids addicted to progress.
+                        </p>
+                    </div>
+
+                    <div className="group bg-zinc-900 rounded-xl border border-zinc-800 p-8 hover:bg-zinc-800 hover:border-cyan-500 transition-all duration-500 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl font-black text-white group-hover:text-cyan-500 transition-colors">03</div>
+                        <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:scale-110 transition-transform">
+                            💰
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2 text-white">Revenue Engine</h2>
+                        <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Software That Pays You</p>
+                        <p className="text-zinc-400 leading-relaxed text-sm">
+                            Turn your curriculum into a paid video library. We share 70% of the revenue with you. The software pays for itself.
+                        </p>
+                    </div>
+
+                    <div className="group bg-zinc-900 rounded-xl border border-zinc-800 p-8 hover:bg-zinc-800 hover:border-cyan-500 transition-all duration-500 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl font-black text-white group-hover:text-cyan-500 transition-colors">04</div>
+                        <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:rotate-12 transition-transform">
+                            🌐
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2 text-white">The Ecosystem</h2>
+                        <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">One Connected World</p>
+                        <p className="text-zinc-400 leading-relaxed text-sm">
+                            Manage the club with TaekUp. Teach kids with TaekFunDo. Train athletes with TikTaek. One connected world.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            {/* --- UNLIMITED SECTION --- */}
+            <div className="bg-black py-32 relative overflow-hidden border-t border-zinc-900">
+                <div className="container mx-auto px-6 relative z-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                        <div>
+                            <h2 className="text-5xl font-black text-white mb-6 tracking-tighter leading-tight">
+                                GROW YOUR EMPIRE,<br /><span className="text-cyan-500">NOT YOUR BILLS.</span>
+                            </h2>
+                            <p className="text-xl text-zinc-400 leading-relaxed max-w-md">
+                                Competitors punish you for succeeding. They charge extra for every new location, every new staff member, and every new feature. <span className="text-white font-medium">We don't.</span>
+                            </p>
+                        </div>
+
+                        <div className="space-y-10">
+                            <div className="flex items-start">
+                                <div className="text-cyan-500 font-black text-4xl mr-6 mt-[-8px] leading-none">01.</div>
+                                <div>
+                                    <h4 className="text-xl font-bold text-white mb-2">Unlimited Locations</h4>
+                                    <p className="text-zinc-500 leading-relaxed">Open 10 new branches? No extra fee. Manage your entire franchise from one screen without paying a "Location Tax."</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start">
+                                <div className="text-white font-black text-4xl mr-6 mt-[-8px] leading-none">02.</div>
+                                <div>
+                                    <h4 className="text-xl font-bold text-white mb-2">Unlimited Staff</h4>
+                                    <p className="text-zinc-500 leading-relaxed">Add as many coaches, admins, and assistants as you need. We believe your team should grow with you, free of charge.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start">
+                                <div className="text-zinc-700 font-black text-4xl mr-6 mt-[-8px] leading-none">03.</div>
+                                <div>
+                                    <h4 className="text-xl font-bold text-white mb-2">Unlimited Classes</h4>
+                                    <p className="text-zinc-500 leading-relaxed">Run 100 classes a week? Great. Schedule as much as you want without limits. Your schedule is yours to control.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </>
-            )}
-        </div>
-    </div>
-);
-
-const TransformationSection: React.FC = () => (
-    <div id="features" className="py-24 bg-gray-900">
-        <div className="container mx-auto px-6">
-            <div className="text-center mb-16">
-                <p className="text-sky-400 font-semibold uppercase tracking-widest text-sm mb-3">
-                    Not Just "Management."
-                </p>
-                <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4">Transformation.</h2>
-                <p className="text-gray-400 mt-4 text-lg max-w-2xl mx-auto">
-                    We don't just track attendance. We engineer growth through gamification and AI.
-                </p>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <FeatureCard
-                    icon="🥋"
-                    title="Pedagogy First"
-                    description="AI Lesson Planners, 30-Second Grading, and automated feedback that sounds like YOU. We help you teach better."
-                />
-                <FeatureCard
-                    icon="🎮"
-                    title="Gamified Retention"
-                    description="Dojang Rivals, Fighter Cards, and a Black Belt Time Machine. We make kids addicted to progress."
-                />
-                <FeatureCard
-                    icon="💰"
-                    title="Revenue Engine"
-                    description="Turn your curriculum into a paid video library. We share 70% of the revenue with you. The software pays for itself."
-                />
-                <FeatureCard
-                    icon="🌐"
-                    title="The Ecosystem"
-                    description="Manage the club with TaekUp. Teach kids with TaekFunDo. Train athletes with TikTaek. One connected world."
-                />
-            </div>
-        </div>
-    </div>
-);
-
-const UnlimitedSection: React.FC = () => (
-    <div className="py-24 bg-gray-800 border-y border-gray-700 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none"></div>
-        <div className="container mx-auto px-6 text-center relative z-10">
-            <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-6">
-                Grow Your Empire, Not Your Bills.
-            </h2>
-            <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-12">
-                Competitors punish you for succeeding. They charge extra for every new location, every new staff member, and every new feature.
-                <br />
-                <span className="text-white font-semibold">We don't.</span>
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                <div className="bg-gray-900/50 p-8 rounded-2xl border border-gray-700 transform hover:scale-105 transition-transform duration-300">
-                    <div className="text-5xl mb-4">🌍</div>
-                    <h3 className="text-2xl font-bold text-white mb-3">Unlimited Locations</h3>
-                    <p className="text-gray-400">
-                        Open 10 new branches? No extra fee. Manage your entire franchise from one screen without paying a "Location Tax."
-                    </p>
-                </div>
-                <div className="bg-gray-900/50 p-8 rounded-2xl border-2 border-sky-500/50 transform hover:scale-105 transition-transform duration-300 relative">
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-sky-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                        Best Value
-                    </div>
-                    <div className="text-5xl mb-4">🥋</div>
-                    <h3 className="text-2xl font-bold text-white mb-3">Unlimited Staff</h3>
-                    <p className="text-gray-400">
-                        Add as many coaches, admins, and assistants as you need. We believe your team should grow with you, free of charge.
-                    </p>
-                </div>
-                <div className="bg-gray-900/50 p-8 rounded-2xl border border-gray-700 transform hover:scale-105 transition-transform duration-300">
-                    <div className="text-5xl mb-4">⏰</div>
-                    <h3 className="text-2xl font-bold text-white mb-3">Unlimited Classes</h3>
-                    <p className="text-gray-400">
-                        Run 100 classes a week? Great. Schedule as much as you want without limits. Your schedule is yours to control.
-                    </p>
                 </div>
             </div>
-        </div>
-    </div>
-);
 
-interface ProfitEngineSectionProps {
-    onStartTrial: () => void;
-}
+            {/* --- PROFIT ENGINE SECTION --- */}
+            <div className="py-32 relative overflow-hidden border-t border-zinc-900">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[800px] h-[400px] bg-yellow-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-const ProfitEngineSection: React.FC<ProfitEngineSectionProps> = ({ onStartTrial }) => (
-    <div className="py-24 bg-gradient-to-b from-gray-900 to-black relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[800px] h-[400px] bg-yellow-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+                <div className="container mx-auto px-6 relative z-10">
+                    <div className="max-w-4xl mx-auto text-center">
+                        <div className="inline-block mb-6 p-4 bg-yellow-500/10 rounded-full border border-yellow-500/50">
+                            <span className="text-4xl">💸</span>
+                        </div>
 
-        <div className="container mx-auto px-6 relative z-10">
-            <div className="max-w-4xl mx-auto text-center border border-yellow-600/30 bg-gray-800/40 backdrop-blur-sm rounded-3xl p-8 md:p-12 shadow-2xl">
-                <div className="inline-block mb-4 p-3 bg-yellow-500/10 rounded-full border border-yellow-500/50">
-                    <span className="text-3xl">💸</span>
-                </div>
+                        <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter leading-tight">
+                            STOP PAYING FOR SOFTWARE.<br />
+                            <span className="text-yellow-500">LET SOFTWARE PAY YOU.</span>
+                        </h2>
+                        <p className="text-xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed">
+                            Every other platform is a monthly expense. TaekUp is an asset. Our proprietary <span className="font-bold text-white">Club Revenue Engine™</span> shares 70% of the revenue directly with you.
+                        </p>
 
-                <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-                    Stop Paying for Software.<br />
-                    <span className="text-yellow-500">Let Software Pay You.</span>
-                </h2>
-                <p className="text-lg text-gray-300 max-w-3xl mx-auto mb-10 leading-relaxed">
-                    Every other platform is a monthly expense. TaekUp is an asset. Our proprietary <span className="font-bold text-white">Club Revenue Engine™</span> shares 70% of the revenue directly with you.
-                </p>
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-12">
+                            <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 w-full md:w-auto min-w-[240px] opacity-70">
+                                <p className="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-2">The Old Way</p>
+                                <p className="text-red-400 text-4xl font-black">-$199/mo</p>
+                                <p className="text-zinc-600 text-sm mt-2">Pure Expense</p>
+                            </div>
+                            <div className="text-zinc-600 font-black text-4xl">VS</div>
+                            <div className="bg-zinc-900 p-8 rounded-xl border-2 border-yellow-500/60 w-full md:w-auto min-w-[260px] shadow-[0_0_40px_rgba(234,179,8,0.2)] scale-105">
+                                <p className="text-yellow-500 text-xs uppercase font-bold tracking-wider mb-2">TaekUp Way</p>
+                                <p className="text-green-400 text-4xl font-black">+$450/mo</p>
+                                <p className="text-green-400/70 text-sm mt-2">Net Profit</p>
+                            </div>
+                        </div>
 
-                <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-10">
-                    <div className="bg-gray-900 p-6 rounded-xl border border-gray-700 w-full md:w-auto min-w-[220px] opacity-70">
-                        <p className="text-gray-500 text-xs uppercase font-bold tracking-wider mb-2">The Old Way</p>
-                        <p className="text-red-400 text-3xl font-bold">-$199/mo</p>
-                        <p className="text-gray-500 text-sm mt-1">Pure Expense</p>
-                    </div>
-                    <div className="text-gray-600 font-bold text-3xl">VS</div>
-                    <div className="bg-gray-900 p-6 rounded-xl border-2 border-yellow-500/60 w-full md:w-auto min-w-[240px] shadow-[0_0_30px_rgba(234,179,8,0.2)] scale-105">
-                        <p className="text-yellow-500 text-xs uppercase font-bold tracking-wider mb-2">TaekUp Way</p>
-                        <p className="text-green-400 text-3xl font-bold">+$450/mo</p>
-                        <p className="text-green-400/80 text-sm mt-1">Net Profit</p>
+                        <button 
+                            onClick={() => setShowSignup(true)}
+                            className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-bold py-4 px-12 rounded-full shadow-lg transform hover:scale-105 transition-all text-lg"
+                        >
+                            Start Trial to See the Math
+                        </button>
+                        <p className="text-zinc-600 text-sm mt-6">Based on a standard club with 150 students.</p>
                     </div>
                 </div>
+            </div>
 
-                <div className="mt-8">
-                    <button 
-                        onClick={onStartTrial}
-                        className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-bold py-4 px-10 rounded-full shadow-lg transform hover:scale-105 transition-all text-lg"
-                    >
-                        Start Trial to See the Math
-                    </button>
-                    <p className="text-gray-500 text-sm mt-4">Based on a standard club with 150 students.</p>
+            {/* --- CTA SECTION --- */}
+            <div className="py-24 text-center bg-gradient-to-t from-zinc-900 to-black relative border-t border-zinc-800">
+                <div className="max-w-3xl mx-auto px-6">
+                    <p className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-6">
+                        The Martial Arts Revolution
+                    </p>
+                    <div className="flex justify-center items-center opacity-60">
+                        <span className="text-2xl font-bold text-white tracking-wider">MYTAEK</span>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-);
-
-interface FeatureCardProps {
-    icon: React.ReactNode;
-    title: string;
-    description: string;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
-    <div className="bg-gray-800 p-8 rounded-xl border border-gray-700/50 shadow-lg hover:border-sky-500/50 hover:-translate-y-1 transition-all duration-300">
-        <div className="text-4xl mb-5">{icon}</div>
-        <h3 className="text-xl font-bold text-white mb-3">{title}</h3>
-        <p className="text-gray-400 leading-relaxed">{description}</p>
-    </div>
-);
-
-const TrustSection: React.FC = () => (
-    <div className="bg-gray-900 py-16">
-        <div className="container mx-auto px-6 text-center">
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-6">
-                The Martial Arts Revolution
-            </p>
-            <div className="flex justify-center items-center opacity-60">
-                <span className="text-2xl font-bold text-white tracking-wider">MYTAEK</span>
-            </div>
-        </div>
-    </div>
-);
+    );
+};
