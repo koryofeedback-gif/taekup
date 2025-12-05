@@ -21,6 +21,39 @@ function setCorsHeaders(res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 }
 
+// Simple signed token functions (no database needed for verification)
+const TOKEN_SECRET = process.env.SUPER_ADMIN_PASSWORD || 'fallback-secret';
+
+function createSignedToken(email: string, expiresAt: Date): string {
+  const payload = JSON.stringify({ email, exp: expiresAt.getTime() });
+  const payloadB64 = Buffer.from(payload).toString('base64url');
+  const signature = crypto.createHmac('sha256', TOKEN_SECRET).update(payloadB64).digest('base64url');
+  return `${payloadB64}.${signature}`;
+}
+
+function verifySignedToken(token: string): { valid: boolean; email?: string; error?: string } {
+  try {
+    const [payloadB64, signature] = token.split('.');
+    if (!payloadB64 || !signature) {
+      return { valid: false, error: 'Invalid token format' };
+    }
+    
+    const expectedSig = crypto.createHmac('sha256', TOKEN_SECRET).update(payloadB64).digest('base64url');
+    if (signature !== expectedSig) {
+      return { valid: false, error: 'Invalid token signature' };
+    }
+    
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
+    if (payload.exp < Date.now()) {
+      return { valid: false, error: 'Token expired' };
+    }
+    
+    return { valid: true, email: payload.email };
+  } catch (err) {
+    return { valid: false, error: 'Token verification failed' };
+  }
+}
+
 async function verifySuperAdminToken(req: VercelRequest): Promise<{ valid: boolean; email?: string; error?: string }> {
   const authHeader = req.headers.authorization;
   
@@ -30,6 +63,13 @@ async function verifySuperAdminToken(req: VercelRequest): Promise<{ valid: boole
   
   const token = authHeader.substring(7);
   
+  // First try signed token verification (no database needed)
+  const signedResult = verifySignedToken(token);
+  if (signedResult.valid) {
+    return signedResult;
+  }
+  
+  // Fallback to database lookup for old tokens
   try {
     const db = getDb();
     const result = await db`
@@ -87,21 +127,9 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    const token = generateToken();
     const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
-    
-    // Try to save session to database, but don't fail login if it doesn't work
-    try {
-      const db = getDb();
-      await db`
-        INSERT INTO super_admin_sessions (token, email, expires_at)
-        VALUES (${token}, ${userEmail}, ${expiresAt.toISOString()}::timestamp)
-        ON CONFLICT (token) DO UPDATE SET expires_at = ${expiresAt.toISOString()}::timestamp
-      `;
-      console.log('[SA Login] Session saved to database');
-    } catch (dbError: any) {
-      console.error('[SA Login] DB error (continuing anyway):', dbError.message);
-    }
+    // Use signed token - no database needed for verification
+    const token = createSignedToken(userEmail, expiresAt);
     
     console.log('[SA Login] Success for:', userEmail);
     
