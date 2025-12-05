@@ -25,8 +25,8 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
       // Add cache-busting timestamp
       const ts = Date.now();
       
-      // Step 1: Initialize login session via API server
-      const initUrl = `/api/sa-init?_t=${ts}`;
+      // Step 1: Initialize login session via API server (using .json extension)
+      const initUrl = `/api/auth/init.json?_t=${ts}`;
       console.log('Fetching:', initUrl);
       
       const initRes = await fetch(initUrl, { 
@@ -49,10 +49,10 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
       const { sessionId } = JSON.parse(initText);
       console.log('Session initialized:', sessionId);
       
-      // Step 2: Encode and submit credentials via GET to API server
+      // Step 2: Encode and submit credentials via GET to API server (using .json extension)
       const encoded = btoa(JSON.stringify({ email, password }));
-      const submitUrl = `/api/sa-submit?s=${sessionId}&d=${encodeURIComponent(encoded)}&_t=${ts + 1}`;
-      console.log('Submitting to:', submitUrl.substring(0, 50) + '...');
+      const submitUrl = `/api/auth/verify.json?d=${encodeURIComponent(encoded)}&_t=${ts + 1}`;
+      console.log('Submitting to:', submitUrl.substring(0, 60) + '...');
       
       const submitRes = await fetch(submitUrl, { 
         cache: 'no-store',

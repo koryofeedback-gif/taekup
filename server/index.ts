@@ -27,6 +27,7 @@ app.use(cors({
 }));
 
 // Super Admin GET-based authentication (workaround for POST blocking)
+// Using unique paths to avoid edge caching
 app.get('/api/sa-init', (req, res) => {
   const sessionId = crypto.randomBytes(16).toString('hex');
   console.log('[SA Init API] Created session:', sessionId);
@@ -72,6 +73,56 @@ app.get('/api/sa-submit', (req, res) => {
   } catch (err) {
     console.error('[SA Submit API] Error:', err);
     return res.status(400).json({ error: 'Invalid data format' });
+  }
+});
+
+// Alternative auth endpoints with .json extension to force JSON response
+app.get('/api/auth/init.json', (req, res) => {
+  const sessionId = crypto.randomBytes(16).toString('hex');
+  console.log('[SA Init JSON] Created session:', sessionId);
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.send(JSON.stringify({ sessionId }));
+});
+
+app.get('/api/auth/verify.json', (req, res) => {
+  const encoded = req.query.d as string;
+  
+  console.log('[SA Verify JSON] Request received');
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  
+  if (!encoded) {
+    return res.status(400).send(JSON.stringify({ error: 'Missing parameters' }));
+  }
+  
+  try {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+    const { email, password } = JSON.parse(decoded);
+    
+    console.log('[SA Verify JSON] Login attempt from:', email);
+    
+    if (!email || !password) {
+      return res.status(400).send(JSON.stringify({ error: 'Email and password required' }));
+    }
+    
+    if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
+      const token = crypto.randomBytes(32).toString('hex');
+      console.log('[SA Verify JSON] SUCCESS for:', email);
+      
+      return res.send(JSON.stringify({
+        success: true,
+        token,
+        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+        email
+      }));
+    } else {
+      console.log('[SA Verify JSON] Invalid credentials for:', email);
+      return res.status(401).send(JSON.stringify({ error: 'Invalid credentials' }));
+    }
+  } catch (err) {
+    console.error('[SA Verify JSON] Error:', err);
+    return res.status(400).send(JSON.stringify({ error: 'Invalid data format' }));
   }
 });
 
