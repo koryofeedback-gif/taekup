@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { registerRoutes } from './routes';
 import { WebhookHandlers } from './webhookHandlers';
@@ -12,6 +13,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
+// Super Admin credentials
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@mytaek.com';
+const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
+
 app.use(cors({
   origin: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -20,6 +25,55 @@ app.use(cors({
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
+
+// Super Admin GET-based authentication (workaround for POST blocking)
+app.get('/api/sa-init', (req, res) => {
+  const sessionId = crypto.randomBytes(16).toString('hex');
+  console.log('[SA Init API] Created session:', sessionId);
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.json({ sessionId });
+});
+
+app.get('/api/sa-submit', (req, res) => {
+  const sessionId = req.query.s as string;
+  const encoded = req.query.d as string;
+  
+  console.log('[SA Submit API] Request received');
+  
+  if (!sessionId || !encoded) {
+    return res.status(400).json({ error: 'Missing parameters' });
+  }
+  
+  try {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+    const { email, password } = JSON.parse(decoded);
+    
+    console.log('[SA Submit API] Login attempt from:', email);
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+    
+    if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
+      const token = crypto.randomBytes(32).toString('hex');
+      console.log('[SA Submit API] SUCCESS for:', email);
+      
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res.json({
+        success: true,
+        token,
+        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+        email
+      });
+    } else {
+      console.log('[SA Submit API] Invalid credentials for:', email);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+  } catch (err) {
+    console.error('[SA Submit API] Error:', err);
+    return res.status(400).json({ error: 'Invalid data format' });
+  }
+});
 
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/super-admin')) {

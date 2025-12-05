@@ -20,19 +20,19 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     setIsLoading(true);
 
     try {
-      console.log('Starting secure GET-based login...');
+      console.log('Starting secure GET-based login via API...');
       
-      // Step 1: Initialize login session
-      const initRes = await fetch('/sa-init', { cache: 'no-store' });
+      // Step 1: Initialize login session via API server
+      const initRes = await fetch('/api/sa-init', { cache: 'no-store' });
       if (!initRes.ok) {
         throw new Error('Failed to initialize login');
       }
       const { sessionId } = await initRes.json();
-      console.log('Session initialized');
+      console.log('Session initialized:', sessionId);
       
-      // Step 2: Encode and submit credentials via GET
+      // Step 2: Encode and submit credentials via GET to API server
       const encoded = btoa(JSON.stringify({ email, password }));
-      const submitRes = await fetch(`/sa-submit?s=${sessionId}&d=${encodeURIComponent(encoded)}`, {
+      const submitRes = await fetch(`/api/sa-submit?s=${sessionId}&d=${encodeURIComponent(encoded)}`, {
         cache: 'no-store'
       });
       
