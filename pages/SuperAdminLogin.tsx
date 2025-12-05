@@ -20,28 +20,14 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     setIsLoading(true);
 
     try {
-      console.log('Attempting Super Admin login...');
+      console.log('Attempting Super Admin login via direct endpoint...');
       
-      // Use XMLHttpRequest as fallback to bypass potential fetch issues
-      const loginPromise = new Promise<Response>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/super-admin/login', true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.onload = function() {
-          const response = new Response(xhr.responseText, {
-            status: xhr.status,
-            statusText: xhr.statusText,
-            headers: { 'Content-Type': xhr.getResponseHeader('Content-Type') || 'application/json' }
-          });
-          resolve(response);
-        };
-        xhr.onerror = function() {
-          reject(new Error('Network error'));
-        };
-        xhr.send(JSON.stringify({ email, password }));
+      const response = await fetch('/direct-sa-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       });
       
-      const response = await loginPromise;
       console.log('Response status:', response.status);
       
       if (!response.ok && response.status !== 401) {
