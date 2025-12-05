@@ -1,20 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { sql } from 'drizzle-orm';
 import postgres from 'postgres';
 import crypto from 'crypto';
 
-let db: ReturnType<typeof drizzle> | null = null;
+let sql: ReturnType<typeof postgres> | null = null;
 
 function getDb() {
-  if (!db) {
+  if (!sql) {
     if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL not configured');
     }
-    const client = postgres(process.env.DATABASE_URL);
-    db = drizzle(client);
+    sql = postgres(process.env.DATABASE_URL, { ssl: 'require' });
   }
-  return db;
+  return sql;
 }
 
 function setCorsHeaders(res: VercelResponse) {
@@ -35,19 +32,17 @@ async function verifySuperAdminToken(req: VercelRequest): Promise<{ valid: boole
   
   try {
     const db = getDb();
-    const result = await db.execute(sql`
+    const result = await db`
       SELECT email, expires_at FROM super_admin_sessions 
       WHERE token = ${token} AND expires_at > NOW()
       LIMIT 1
-    `);
+    `;
     
-    const session = (result as any[])[0];
-    
-    if (!session) {
+    if (!result || result.length === 0) {
       return { valid: false, error: 'Invalid or expired token' };
     }
     
-    return { valid: true, email: session.email };
+    return { valid: true, email: result[0].email };
   } catch (err) {
     console.error('[SuperAdmin] Session verify error:', err);
     return { valid: false, error: 'Session check failed' };
@@ -96,11 +91,13 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
     
     const db = getDb();
-    await db.execute(sql`
+    await db`
       INSERT INTO super_admin_sessions (token, email, expires_at)
       VALUES (${token}, ${userEmail}, ${expiresAt.toISOString()}::timestamp)
       ON CONFLICT (token) DO UPDATE SET expires_at = ${expiresAt.toISOString()}::timestamp
-    `);
+    `;
+    
+    console.log('[SA Login] Success for:', userEmail);
     
     return res.json({
       success: true,
@@ -110,7 +107,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     console.error('[SA Login] Error:', error);
-    return res.status(500).json({ error: 'Login failed' });
+    return res.status(500).json({ error: 'Login failed: ' + error.message });
   }
 }
 
@@ -141,40 +138,40 @@ async function handleOverview(req: VercelRequest, res: VercelResponse) {
       totalStudentsResult,
       premiumParentsResult,
       recentSignupsResult,
-      expiringTrialsResult
+      expiringTrialsResult,
+      mrrResult
     ] = await Promise.all([
-      db.execute(sql`SELECT COUNT(*) as count FROM clubs`),
-      db.execute(sql`SELECT COUNT(*) as count FROM clubs WHERE trial_status = 'active'`),
-      db.execute(sql`SELECT COUNT(*) as count FROM clubs WHERE status = 'active' AND trial_status = 'converted'`),
-      db.execute(sql`SELECT COUNT(*) as count FROM clubs WHERE status = 'churned'`),
-      db.execute(sql`SELECT COUNT(*) as count FROM students`),
-      db.execute(sql`SELECT COUNT(*) as count FROM students WHERE premium_status != 'none'`),
-      db.execute(sql`SELECT * FROM clubs ORDER BY created_at DESC LIMIT 5`),
-      db.execute(sql`
+      db`SELECT COUNT(*) as count FROM clubs`,
+      db`SELECT COUNT(*) as count FROM clubs WHERE trial_status = 'active'`,
+      db`SELECT COUNT(*) as count FROM clubs WHERE status = 'active' AND trial_status = 'converted'`,
+      db`SELECT COUNT(*) as count FROM clubs WHERE status = 'churned'`,
+      db`SELECT COUNT(*) as count FROM students`,
+      db`SELECT COUNT(*) as count FROM students WHERE premium_status != 'none'`,
+      db`SELECT * FROM clubs ORDER BY created_at DESC LIMIT 5`,
+      db`
         SELECT * FROM clubs 
         WHERE trial_status = 'active' 
         AND trial_end IS NOT NULL 
         AND trial_end <= NOW() + INTERVAL '3 days'
         ORDER BY trial_end ASC
         LIMIT 10
-      `)
+      `,
+      db`
+        SELECT COALESCE(SUM(monthly_amount), 0) as mrr 
+        FROM subscriptions 
+        WHERE status = 'active'
+      `
     ]);
-
-    const mrrResult = await db.execute(sql`
-      SELECT COALESCE(SUM(monthly_amount), 0) as mrr 
-      FROM subscriptions 
-      WHERE status = 'active'
-    `);
 
     return res.json({
       stats: {
-        totalClubs: Number((totalClubsResult as any[])[0]?.count || 0),
-        trialClubs: Number((trialClubsResult as any[])[0]?.count || 0),
-        activeClubs: Number((activeClubsResult as any[])[0]?.count || 0),
-        churnedClubs: Number((churnedClubsResult as any[])[0]?.count || 0),
-        totalStudents: Number((totalStudentsResult as any[])[0]?.count || 0),
-        premiumParents: Number((premiumParentsResult as any[])[0]?.count || 0),
-        mrr: Number((mrrResult as any[])[0]?.mrr || 0) / 100,
+        totalClubs: Number(totalClubsResult[0]?.count || 0),
+        trialClubs: Number(trialClubsResult[0]?.count || 0),
+        activeClubs: Number(activeClubsResult[0]?.count || 0),
+        churnedClubs: Number(churnedClubsResult[0]?.count || 0),
+        totalStudents: Number(totalStudentsResult[0]?.count || 0),
+        premiumParents: Number(premiumParentsResult[0]?.count || 0),
+        mrr: Number(mrrResult[0]?.mrr || 0) / 100,
       },
       recentSignups: recentSignupsResult,
       expiringTrials: expiringTrialsResult,
@@ -193,9 +190,10 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
   
   try {
     const db = getDb();
-    const { status, trial_status, search, limit = '50', offset = '0' } = req.query;
+    const limit = Number(req.query.limit) || 50;
+    const offset = Number(req.query.offset) || 0;
     
-    let query = sql`
+    const clubs = await db`
       SELECT 
         c.*,
         (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
@@ -205,29 +203,17 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
         s.monthly_amount
       FROM clubs c
       LEFT JOIN subscriptions s ON s.club_id = c.id
-      WHERE 1=1
+      ORDER BY c.created_at DESC 
+      LIMIT ${limit} OFFSET ${offset}
     `;
     
-    if (status) {
-      query = sql`${query} AND c.status = ${status as string}`;
-    }
-    if (trial_status) {
-      query = sql`${query} AND c.trial_status = ${trial_status as string}`;
-    }
-    if (search) {
-      query = sql`${query} AND (c.name ILIKE ${'%' + search + '%'} OR c.owner_email ILIKE ${'%' + search + '%'})`;
-    }
-    
-    query = sql`${query} ORDER BY c.created_at DESC LIMIT ${Number(limit)} OFFSET ${Number(offset)}`;
-    
-    const clubs = await db.execute(query);
-    const countResult = await db.execute(sql`SELECT COUNT(*) as total FROM clubs`);
+    const countResult = await db`SELECT COUNT(*) as total FROM clubs`;
     
     return res.json({
       clubs,
-      total: Number((countResult as any[])[0]?.total || 0),
-      limit: Number(limit),
-      offset: Number(offset)
+      total: Number(countResult[0]?.total || 0),
+      limit,
+      offset
     });
   } catch (error: any) {
     console.error('Clubs list error:', error);
@@ -243,9 +229,10 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
   
   try {
     const db = getDb();
-    const { premium_only, at_risk, search, limit = '50', offset = '0' } = req.query;
+    const limit = Number(req.query.limit) || 50;
+    const offset = Number(req.query.offset) || 0;
     
-    let query = sql`
+    const parents = await db`
       SELECT 
         s.id,
         s.name as student_name,
@@ -262,26 +249,14 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
       FROM students s
       JOIN clubs c ON s.club_id = c.id
       WHERE s.parent_email IS NOT NULL
+      ORDER BY s.last_class_at DESC NULLS LAST 
+      LIMIT ${limit} OFFSET ${offset}
     `;
-    
-    if (premium_only === 'true') {
-      query = sql`${query} AND s.premium_status != 'none'`;
-    }
-    if (at_risk === 'true') {
-      query = sql`${query} AND s.last_class_at IS NOT NULL AND s.last_class_at < NOW() - INTERVAL '14 days'`;
-    }
-    if (search) {
-      query = sql`${query} AND (s.parent_name ILIKE ${'%' + search + '%'} OR s.parent_email ILIKE ${'%' + search + '%'} OR s.name ILIKE ${'%' + search + '%'})`;
-    }
-    
-    query = sql`${query} ORDER BY s.last_class_at DESC NULLS LAST LIMIT ${Number(limit)} OFFSET ${Number(offset)}`;
-    
-    const parents = await db.execute(query);
     
     return res.json({
       parents,
-      limit: Number(limit),
-      offset: Number(offset)
+      limit,
+      offset
     });
   } catch (error: any) {
     console.error('Parents list error:', error);
@@ -308,19 +283,20 @@ async function handleImpersonate(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'clubId or userId required' });
     }
     
-    const superAdminResult = await db.execute(
-      sql`SELECT id FROM users WHERE email = ${auth.email} AND role = 'super_admin' LIMIT 1`
-    );
+    const adminEmail = auth.email || '';
+    const superAdminResult = await db`
+      SELECT id FROM users WHERE email = ${adminEmail} AND role = 'super_admin' LIMIT 1
+    `;
     
-    let superAdminId = (superAdminResult as any[])[0]?.id;
+    let superAdminId = superAdminResult[0]?.id;
     
     if (!superAdminId) {
-      const insertResult = await db.execute(sql`
+      const insertResult = await db`
         INSERT INTO users (email, name, role, is_active)
-        VALUES (${auth.email}, 'Super Admin', 'super_admin', true)
+        VALUES (${adminEmail}, 'Super Admin', 'super_admin', true)
         RETURNING id
-      `);
-      superAdminId = (insertResult as any[])[0]?.id;
+      `;
+      superAdminId = insertResult[0]?.id;
     }
     
     const token = generateToken();
@@ -328,17 +304,17 @@ async function handleImpersonate(req: VercelRequest, res: VercelResponse) {
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
     
-    await db.execute(sql`
+    await db`
       INSERT INTO support_sessions 
         (super_admin_id, target_user_id, target_club_id, reason, token, expires_at, ip, user_agent)
       VALUES 
         (${superAdminId}, ${userId || null}, ${clubId || null}, ${reason || 'Support access'}, ${token}, ${expiresAt}, ${ip}, ${userAgent})
-    `);
+    `;
     
     let targetClub = null;
     if (clubId) {
-      const clubResult = await db.execute(sql`SELECT * FROM clubs WHERE id = ${clubId}`);
-      targetClub = (clubResult as any[])[0];
+      const clubResult = await db`SELECT * FROM clubs WHERE id = ${clubId}`;
+      targetClub = clubResult[0];
     }
     
     return res.json({
@@ -393,6 +369,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(404).json({ error: 'Route not found', path });
   } catch (error: any) {
     console.error('[SuperAdmin API] Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error: ' + error.message });
   }
 }
