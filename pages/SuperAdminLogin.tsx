@@ -22,8 +22,8 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     try {
       console.log('Attempting login...');
       
-      const apiUrl = '/api/super-admin/login';
-      console.log('Using API URL:', apiUrl);
+      const apiUrl = '/api/super-admin/auth';
+      console.log('Login request to:', apiUrl);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
