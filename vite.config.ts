@@ -1,6 +1,7 @@
 import { defineConfig, Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import crypto from 'crypto'
+import { WebSocketServer, WebSocket } from 'ws'
 
 function superAdminLoginPlugin(): Plugin {
   const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@mytaek.com';
@@ -9,49 +10,63 @@ function superAdminLoginPlugin(): Plugin {
   return {
     name: 'super-admin-login',
     configureServer(server) {
-      server.middlewares.use('/direct-sa-login', (req, res, next) => {
-        if (req.method !== 'POST') {
-          return next();
-        }
+      // Create WebSocket server for secure authentication
+      const wss = new WebSocketServer({ noServer: true });
+      
+      wss.on('connection', (ws: WebSocket) => {
+        console.log('[SA WS] Client connected');
         
-        let body = '';
-        req.on('data', chunk => { body += chunk; });
-        req.on('end', () => {
+        ws.on('message', (data: Buffer) => {
           try {
-            const { email, password } = JSON.parse(body);
-            console.log('[Direct SA Login] Attempt from:', email);
+            const message = JSON.parse(data.toString());
             
-            if (!email || !password) {
-              res.statusCode = 400;
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ error: 'Email and password required' }));
-              return;
-            }
-            
-            if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
-              const token = crypto.randomBytes(32).toString('hex');
-              console.log('[Direct SA Login] Success for:', email);
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({
-                success: true,
-                token,
-                expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
-                email
-              }));
-            } else {
-              console.log('[Direct SA Login] Invalid credentials for:', email);
-              res.statusCode = 401;
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ error: 'Invalid credentials' }));
+            if (message.type === 'login') {
+              const { email, password } = message;
+              console.log('[SA WS] Login attempt from:', email);
+              
+              if (!email || !password) {
+                ws.send(JSON.stringify({ type: 'error', error: 'Email and password required' }));
+                return;
+              }
+              
+              if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
+                const token = crypto.randomBytes(32).toString('hex');
+                console.log('[SA WS] Login SUCCESS for:', email);
+                
+                ws.send(JSON.stringify({
+                  type: 'success',
+                  token,
+                  expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+                  email
+                }));
+              } else {
+                console.log('[SA WS] Invalid credentials for:', email);
+                ws.send(JSON.stringify({ type: 'error', error: 'Invalid credentials' }));
+              }
             }
           } catch (err) {
-            console.error('[Direct SA Login] Error:', err);
-            res.statusCode = 500;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ error: 'Login failed' }));
+            console.error('[SA WS] Error:', err);
+            ws.send(JSON.stringify({ type: 'error', error: 'Invalid message format' }));
           }
         });
+        
+        ws.on('close', () => {
+          console.log('[SA WS] Client disconnected');
+        });
       });
+      
+      // Handle WebSocket upgrade for /sa-auth path
+      server.httpServer?.on('upgrade', (request, socket, head) => {
+        const url = new URL(request.url || '', `http://${request.headers.host}`);
+        
+        if (url.pathname === '/sa-auth') {
+          wss.handleUpgrade(request, socket, head, (ws) => {
+            wss.emit('connection', ws, request);
+          });
+        }
+      });
+      
+      console.log('[SA Auth] WebSocket endpoint ready at /sa-auth');
     }
   };
 }
