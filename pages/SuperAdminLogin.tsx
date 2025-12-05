@@ -22,18 +22,44 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     try {
       console.log('Starting secure GET-based login via API...');
       
+      // Add cache-busting timestamp
+      const ts = Date.now();
+      
       // Step 1: Initialize login session via API server
-      const initRes = await fetch('/api/sa-init', { cache: 'no-store' });
-      if (!initRes.ok) {
-        throw new Error('Failed to initialize login');
+      const initUrl = `/api/sa-init?_t=${ts}`;
+      console.log('Fetching:', initUrl);
+      
+      const initRes = await fetch(initUrl, { 
+        cache: 'no-store',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      console.log('Init response status:', initRes.status, 'content-type:', initRes.headers.get('content-type'));
+      
+      const initText = await initRes.text();
+      console.log('Init response (first 100 chars):', initText.substring(0, 100));
+      
+      if (!initRes.ok || !initText.startsWith('{')) {
+        throw new Error('Failed to initialize login - received non-JSON response');
       }
-      const { sessionId } = await initRes.json();
+      
+      const { sessionId } = JSON.parse(initText);
       console.log('Session initialized:', sessionId);
       
       // Step 2: Encode and submit credentials via GET to API server
       const encoded = btoa(JSON.stringify({ email, password }));
-      const submitRes = await fetch(`/api/sa-submit?s=${sessionId}&d=${encodeURIComponent(encoded)}`, {
-        cache: 'no-store'
+      const submitUrl = `/api/sa-submit?s=${sessionId}&d=${encodeURIComponent(encoded)}&_t=${ts + 1}`;
+      console.log('Submitting to:', submitUrl.substring(0, 50) + '...');
+      
+      const submitRes = await fetch(submitUrl, { 
+        cache: 'no-store',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
       });
       
       const data = await submitRes.json();
