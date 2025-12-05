@@ -81,6 +81,17 @@
             display: none;
         }
         .error.show { display: block; }
+        .success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.5);
+            color: #86efac;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        .success.show { display: block; }
         .footer {
             text-align: center;
             margin-top: 24px;
@@ -96,6 +107,18 @@
             font-size: 12px;
             margin-bottom: 8px;
         }
+        .debug { 
+            background: #1f2937; 
+            border: 1px solid #374151; 
+            padding: 10px; 
+            margin-top: 20px; 
+            border-radius: 8px;
+            font-size: 11px;
+            color: #9ca3af;
+            display: none;
+        }
+        .debug.show { display: block; }
+        .debug pre { white-space: pre-wrap; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -111,6 +134,7 @@
         </div>
 
         <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
 
         <form id="loginForm">
             <div class="form-group">
@@ -124,6 +148,8 @@
             <button type="submit" id="submitBtn">Sign In</button>
         </form>
 
+        <div class="debug" id="debug"></div>
+
         <div class="footer">
             <div class="secure-badge">
                 <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
@@ -136,13 +162,25 @@
     </div>
 
     <script>
+        const API_BASE = 'https://85433350-3f60-4c48-ab92-23995d8db06b-00-k4fbhycchsen.riker.replit.dev';
+        
         const form = document.getElementById('loginForm');
         const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
         const submitBtn = document.getElementById('submitBtn');
+        const debugDiv = document.getElementById('debug');
+
+        function showDebug(msg) {
+            debugDiv.innerHTML += '<pre>' + msg + '</pre>';
+            debugDiv.classList.add('show');
+        }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+            debugDiv.innerHTML = '';
+            debugDiv.classList.remove('show');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Signing in...';
 
@@ -152,16 +190,23 @@
             try {
                 const encoded = btoa(JSON.stringify({ email, password }));
                 const ts = Date.now();
+                const url = `${API_BASE}/api/auth/verify.json?d=${encodeURIComponent(encoded)}&_t=${ts}`;
                 
-                const response = await fetch(`/api/auth/verify.json?d=${encodeURIComponent(encoded)}&_t=${ts}`, {
+                showDebug('Calling: ' + url);
+                
+                const response = await fetch(url, {
                     cache: 'no-store',
                     headers: { 'Accept': 'application/json' }
                 });
 
+                showDebug('Status: ' + response.status);
+                showDebug('Content-Type: ' + response.headers.get('content-type'));
+
                 const text = await response.text();
+                showDebug('Response (first 200 chars): ' + text.substring(0, 200));
                 
                 if (!text.startsWith('{')) {
-                    throw new Error('Server returned invalid response. Please try opening this page in a new browser tab.');
+                    throw new Error('Server returned HTML instead of JSON. The API is being intercepted.');
                 }
 
                 const data = JSON.parse(text);
@@ -173,7 +218,12 @@
                 localStorage.setItem('superAdminToken', data.token);
                 localStorage.setItem('superAdminEmail', data.email);
                 
-                window.location.href = '/super-admin/dashboard';
+                successDiv.textContent = 'Login successful! Redirecting...';
+                successDiv.classList.add('show');
+                
+                setTimeout(() => {
+                    window.location.href = '/super-admin/dashboard';
+                }, 1000);
             } catch (err) {
                 errorDiv.textContent = err.message;
                 errorDiv.classList.add('show');
