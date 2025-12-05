@@ -35,7 +35,7 @@ app.get('/api/sa-init', (req, res) => {
   res.json({ sessionId });
 });
 
-app.get('/api/sa-submit', (req, res) => {
+app.get('/api/sa-submit', async (req, res) => {
   const sessionId = req.query.s as string;
   const encoded = req.query.d as string;
   
@@ -59,8 +59,8 @@ app.get('/api/sa-submit', (req, res) => {
       const token = crypto.randomBytes(32).toString('hex');
       console.log('[SA Submit API] SUCCESS for:', email);
       
-      // Register session for token validation
-      addSuperAdminSession(token, email);
+      // Register session for token validation (database-backed for serverless)
+      await addSuperAdminSession(token, email);
       
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       return res.json({
@@ -88,7 +88,7 @@ app.get('/api/auth/init.json', (req, res) => {
   res.send(JSON.stringify({ sessionId }));
 });
 
-app.get('/api/auth/verify.json', (req, res) => {
+app.get('/api/auth/verify.json', async (req, res) => {
   const encoded = req.query.d as string;
   
   console.log('[SA Verify JSON] Request received');
@@ -113,8 +113,8 @@ app.get('/api/auth/verify.json', (req, res) => {
       const token = crypto.randomBytes(32).toString('hex');
       console.log('[SA Verify JSON] SUCCESS for:', email);
       
-      // Register session for token validation
-      addSuperAdminSession(token, email);
+      // Register session for token validation (database-backed for serverless)
+      await addSuperAdminSession(token, email);
       
       return res.send(JSON.stringify({
         success: true,

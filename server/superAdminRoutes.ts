@@ -9,23 +9,23 @@ const router = Router();
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@mytaek.com';
 const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
 
-interface SuperAdminSession {
-  token: string;
-  email: string;
-  expiresAt: Date;
-}
-
-const activeSessions: Map<string, SuperAdminSession> = new Map();
-
 function generateToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
-// Export function to add sessions from other modules
-export function addSuperAdminSession(token: string, email: string): void {
-  const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
-  activeSessions.set(token, { token, email, expiresAt });
-  console.log('[SuperAdmin] Session added for:', email, 'token:', token.substring(0, 8) + '...');
+// Database-backed session storage for Vercel serverless compatibility
+export async function addSuperAdminSession(token: string, email: string): Promise<void> {
+  const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+  try {
+    await db.execute(sql`
+      INSERT INTO super_admin_sessions (token, email, expires_at)
+      VALUES (${token}, ${email}, ${expiresAt}::timestamp)
+      ON CONFLICT (token) DO UPDATE SET expires_at = ${expiresAt}::timestamp
+    `);
+    console.log('[SuperAdmin] Session added for:', email, 'token:', token.substring(0, 8) + '...');
+  } catch (err) {
+    console.error('[SuperAdmin] Failed to save session:', err);
+  }
 }
 
 async function verifySuperAdmin(req: Request, res: Response, next: NextFunction) {
@@ -36,15 +36,26 @@ async function verifySuperAdmin(req: Request, res: Response, next: NextFunction)
   }
   
   const token = authHeader.substring(7);
-  const session = activeSessions.get(token);
   
-  if (!session || session.expiresAt < new Date()) {
-    activeSessions.delete(token);
-    return res.status(401).json({ error: 'Unauthorized - Invalid or expired token' });
+  try {
+    const result = await db.execute(sql`
+      SELECT email, expires_at FROM super_admin_sessions 
+      WHERE token = ${token} AND expires_at > NOW()
+      LIMIT 1
+    `);
+    
+    const session = (result as any[])[0];
+    
+    if (!session) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid or expired token' });
+    }
+    
+    (req as any).superAdmin = { email: session.email };
+    next();
+  } catch (err) {
+    console.error('[SuperAdmin] Session verify error:', err);
+    return res.status(401).json({ error: 'Unauthorized - Session check failed' });
   }
-  
-  (req as any).superAdmin = { email: session.email };
-  next();
 }
 
 router.post('/login', async (req: Request, res: Response) => {
@@ -80,11 +91,8 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = generateToken();
     const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
     
-    activeSessions.set(token, {
-      token,
-      email: userEmail,
-      expiresAt
-    });
+    // Store session in database for serverless compatibility
+    await addSuperAdminSession(token, userEmail);
     
     res.json({
       success: true,
@@ -98,11 +106,15 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/logout', verifySuperAdmin, (req: Request, res: Response) => {
+router.post('/logout', verifySuperAdmin, async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   if (authHeader) {
     const token = authHeader.substring(7);
-    activeSessions.delete(token);
+    try {
+      await db.execute(sql`DELETE FROM super_admin_sessions WHERE token = ${token}`);
+    } catch (err) {
+      console.error('[SuperAdmin] Failed to delete session:', err);
+    }
   }
   res.json({ success: true });
 });
