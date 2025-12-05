@@ -162,7 +162,7 @@
     </div>
 
     <script>
-        const API_BASE = 'https://85433350-3f60-4c48-ab92-23995d8db06b-00-k4fbhycchsen.riker.replit.dev';
+        const API_BASE = window.location.origin;
         
         const form = document.getElementById('loginForm');
         const errorDiv = document.getElementById('error');
@@ -188,15 +188,18 @@
             const password = document.getElementById('password').value;
 
             try {
-                const encoded = btoa(JSON.stringify({ email, password }));
-                const ts = Date.now();
-                const url = `${API_BASE}/api/auth/verify.json?d=${encodeURIComponent(encoded)}&_t=${ts}`;
+                const url = `${API_BASE}/api/super-admin/login`;
                 
                 showDebug('Calling: ' + url);
                 
                 const response = await fetch(url, {
+                    method: 'POST',
                     cache: 'no-store',
-                    headers: { 'Accept': 'application/json' }
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json' 
+                    },
+                    body: JSON.stringify({ email, password })
                 });
 
                 showDebug('Status: ' + response.status);
