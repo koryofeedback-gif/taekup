@@ -21,6 +21,13 @@ function generateToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
+// Export function to add sessions from other modules
+export function addSuperAdminSession(token: string, email: string): void {
+  const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  activeSessions.set(token, { token, email, expiresAt });
+  console.log('[SuperAdmin] Session added for:', email, 'token:', token.substring(0, 8) + '...');
+}
+
 async function verifySuperAdmin(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   

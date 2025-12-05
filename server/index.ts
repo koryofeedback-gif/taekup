@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { registerRoutes } from './routes';
 import { WebhookHandlers } from './webhookHandlers';
-import { superAdminRouter } from './superAdminRoutes';
+import { superAdminRouter, addSuperAdminSession } from './superAdminRoutes';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,6 +59,9 @@ app.get('/api/sa-submit', (req, res) => {
       const token = crypto.randomBytes(32).toString('hex');
       console.log('[SA Submit API] SUCCESS for:', email);
       
+      // Register session for token validation
+      addSuperAdminSession(token, email);
+      
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       return res.json({
         success: true,
@@ -109,6 +112,9 @@ app.get('/api/auth/verify.json', (req, res) => {
     if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
       const token = crypto.randomBytes(32).toString('hex');
       console.log('[SA Verify JSON] SUCCESS for:', email);
+      
+      // Register session for token validation
+      addSuperAdminSession(token, email);
       
       return res.send(JSON.stringify({
         success: true,
