@@ -11,6 +11,10 @@ import { LoginPage } from './pages/Login';
 import { LandingPage } from './pages/Landing';
 import { PricingPage } from './pages/PricingPage';
 import { AccountLockedPage } from './pages/AccountLockedPage';
+import { SuperAdminLogin } from './pages/SuperAdminLogin';
+import { SuperAdminDashboard } from './pages/SuperAdminDashboard';
+import { SuperAdminClubs } from './pages/SuperAdminClubs';
+import { SuperAdminParents } from './pages/SuperAdminParents';
 import { TrialBanner } from './components/TrialBanner';
 import { DemoMode, RoleSwitcher, DEMO_WIZARD_DATA } from './components/DemoMode';
 import {
@@ -27,6 +31,42 @@ import {
 } from './services/subscriptionService';
 import { SEO } from './components/SEO';
 import type { SignupData, WizardData, Student, SubscriptionStatus, SubscriptionPlanId } from './types';
+
+// Super Admin Route Guard - Checks for valid token before showing super admin pages
+const SuperAdminRouteGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const token = localStorage.getItem('superAdminToken');
+    const [isValid, setIsValid] = React.useState<boolean | null>(null);
+    
+    React.useEffect(() => {
+        if (!token) {
+            setIsValid(false);
+            return;
+        }
+        
+        fetch('/api/super-admin/verify', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => res.ok ? setIsValid(true) : setIsValid(false))
+            .catch(() => setIsValid(false));
+    }, [token]);
+    
+    if (isValid === null) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-400">Verifying access...</p>
+                </div>
+            </div>
+        );
+    }
+    
+    if (!isValid) {
+        return <Navigate to="/super-admin/login" replace />;
+    }
+    
+    return <>{children}</>;
+};
 
 // Secret Preview Component - Checks for secret key before showing preview mode
 interface SecretPreviewProps {
@@ -531,6 +571,71 @@ const AppContent: React.FC<AppContentProps> = ({
                                 <Navigate to="/login" replace />
                             )
                         }
+                    />
+
+                    {/* Super Admin Routes */}
+                    <Route
+                        path="/super-admin/login"
+                        element={
+                            <SuperAdminLogin
+                                onLoginSuccess={(token) => {
+                                    localStorage.setItem('superAdminToken', token);
+                                    window.location.href = '/super-admin/dashboard';
+                                }}
+                            />
+                        }
+                    />
+                    <Route
+                        path="/super-admin/dashboard"
+                        element={
+                            <SuperAdminRouteGuard>
+                                <SuperAdminDashboard
+                                    token={localStorage.getItem('superAdminToken') || ''}
+                                    onLogout={() => {
+                                        localStorage.removeItem('superAdminToken');
+                                        localStorage.removeItem('superAdminEmail');
+                                        window.location.href = '/super-admin/login';
+                                    }}
+                                />
+                            </SuperAdminRouteGuard>
+                        }
+                    />
+                    <Route
+                        path="/super-admin/clubs"
+                        element={
+                            <SuperAdminRouteGuard>
+                                <SuperAdminClubs
+                                    token={localStorage.getItem('superAdminToken') || ''}
+                                    onLogout={() => {
+                                        localStorage.removeItem('superAdminToken');
+                                        localStorage.removeItem('superAdminEmail');
+                                        window.location.href = '/super-admin/login';
+                                    }}
+                                    onImpersonate={(clubId) => {
+                                        console.log('Impersonating club:', clubId);
+                                    }}
+                                />
+                            </SuperAdminRouteGuard>
+                        }
+                    />
+                    <Route
+                        path="/super-admin/parents"
+                        element={
+                            <SuperAdminRouteGuard>
+                                <SuperAdminParents
+                                    token={localStorage.getItem('superAdminToken') || ''}
+                                    onLogout={() => {
+                                        localStorage.removeItem('superAdminToken');
+                                        localStorage.removeItem('superAdminEmail');
+                                        window.location.href = '/super-admin/login';
+                                    }}
+                                />
+                            </SuperAdminRouteGuard>
+                        }
+                    />
+                    <Route
+                        path="/super-admin"
+                        element={<Navigate to="/super-admin/login" replace />}
                     />
 
                     {/* Catch-all redirect */}

@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { registerRoutes } from './routes';
 import { WebhookHandlers } from './webhookHandlers';
+import { superAdminRouter } from './superAdminRoutes';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -102,6 +103,8 @@ app.use(express.urlencoded({ extended: false }));
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', stripeInitialized });
 });
+
+app.use('/api/super-admin', superAdminRouter);
 
 registerRoutes(app);
 
