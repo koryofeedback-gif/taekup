@@ -90,12 +90,18 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     const token = generateToken();
     const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
     
-    const db = getDb();
-    await db`
-      INSERT INTO super_admin_sessions (token, email, expires_at)
-      VALUES (${token}, ${userEmail}, ${expiresAt.toISOString()}::timestamp)
-      ON CONFLICT (token) DO UPDATE SET expires_at = ${expiresAt.toISOString()}::timestamp
-    `;
+    // Try to save session to database, but don't fail login if it doesn't work
+    try {
+      const db = getDb();
+      await db`
+        INSERT INTO super_admin_sessions (token, email, expires_at)
+        VALUES (${token}, ${userEmail}, ${expiresAt.toISOString()}::timestamp)
+        ON CONFLICT (token) DO UPDATE SET expires_at = ${expiresAt.toISOString()}::timestamp
+      `;
+      console.log('[SA Login] Session saved to database');
+    } catch (dbError: any) {
+      console.error('[SA Login] DB error (continuing anyway):', dbError.message);
+    }
     
     console.log('[SA Login] Success for:', userEmail);
     
@@ -342,6 +348,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('[SuperAdmin API] Path:', path, 'Method:', req.method);
   
   try {
+    // Health check endpoint
+    if (path === '/health' || path === '/health/') {
+      return res.json({ 
+        ok: true, 
+        timestamp: new Date().toISOString(),
+        env: {
+          hasDbUrl: !!process.env.DATABASE_URL,
+          hasPassword: !!process.env.SUPER_ADMIN_PASSWORD,
+          email: process.env.SUPER_ADMIN_EMAIL || 'admin@mytaek.com'
+        }
+      });
+    }
+    
     if (path === '/login' || path === '/login/') {
       return handleLogin(req, res);
     }
