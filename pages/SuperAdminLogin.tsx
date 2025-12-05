@@ -22,17 +22,21 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     try {
       console.log('Attempting login...');
       
-      const apiUrl = '/api/super-admin/auth';
+      const timestamp = Date.now();
+      const apiUrl = `/sa-login?_t=${timestamp}`;
       console.log('Login request to:', apiUrl);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         },
         body: JSON.stringify({ email, password }),
-        credentials: 'same-origin'
+        credentials: 'same-origin',
+        cache: 'no-store'
       });
 
       console.log('Response received:', response.status, response.statusText);

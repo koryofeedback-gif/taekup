@@ -25,6 +25,16 @@ export default defineConfig({
             console.error('[Vite Proxy Error]', err.message);
           });
         }
+      },
+      '/sa-login': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            console.log(`[Vite Proxy SA] ${req.method} ${req.url} -> ${proxyReq.path}`);
+          });
+        }
       }
     },
     strictPort: true

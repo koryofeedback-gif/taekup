@@ -120,6 +120,39 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/super-admin', superAdminRouter);
 
+// Direct login endpoint (bypasses any /api caching issues)
+app.post('/sa-login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@mytaek.com';
+    const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
+    
+    console.log('[SA-Login] Attempt from:', email);
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+    
+    if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
+      const crypto = await import('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      console.log('[SA-Login] Success for:', email);
+      return res.json({
+        success: true,
+        token,
+        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+        email
+      });
+    }
+    
+    console.log('[SA-Login] Invalid credentials for:', email);
+    return res.status(401).json({ error: 'Invalid credentials' });
+  } catch (error: any) {
+    console.error('[SA-Login] Error:', error);
+    return res.status(500).json({ error: 'Login failed' });
+  }
+});
+
 registerRoutes(app);
 
 // Serve static files in production
