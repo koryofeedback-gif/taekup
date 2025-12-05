@@ -36,3 +36,26 @@ The project utilizes a two-server architecture during development (Vite dev serv
 -   **Vercel**: Production deployment platform for serverless functions and frontend.
 -   **GitHub**: Version control and deployment bridge.
 -   **Supabase (Optional)**: For real-time subscriptions, if configured.
+-   **SendGrid**: Email delivery service for transactional and engagement emails.
+
+## Super Admin Dashboard
+
+### Overview
+The Super Admin dashboard is a platform-wide control center for monitoring clubs, parents, and business metrics. It's accessible via a standalone login page that bypasses the main app authentication.
+
+### Access
+- **Login URL**: `/super-admin-login.html` (standalone page)
+- **Dashboard URL**: `/super-admin/dashboard`
+- **Credentials**: Configured via `SUPER_ADMIN_PASSWORD` environment variable
+- **Email**: `admin@mytaek.com` (default)
+
+### Features
+1. **Dashboard Overview**: Real-time metrics for trials, conversions, MRR, and churn
+2. **Clubs Management**: List all clubs with filtering by status and trial state
+3. **Parents Management**: Monitor premium parent subscriptions
+4. **Impersonation (View As)**: Access any club as support with full audit logging
+
+### Technical Notes
+- Uses in-memory session storage with 8-hour expiration
+- All impersonation sessions logged to `support_sessions` table
+- Due to Replit webview caching, use external URL for reliable access
