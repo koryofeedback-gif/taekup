@@ -20,34 +20,48 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/super-admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      console.log('Attempting login to /api/super-admin/login');
+      let response;
+      try {
+        response = await fetch('/api/super-admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+      } catch (networkErr) {
+        console.error('Network error:', networkErr);
+        throw new Error('Network error. Please check your connection and try again.');
+      }
 
+      console.log('Response status:', response.status, response.statusText);
+      
       const text = await response.text();
+      console.log('Response text length:', text.length, 'chars');
+      
       if (!text) {
-        throw new Error('Server returned empty response');
+        throw new Error('Server returned empty response. Please check if the API server is running.');
       }
 
       let data;
       try {
         data = JSON.parse(text);
-      } catch {
-        throw new Error('Invalid server response');
+      } catch (parseErr) {
+        console.error('JSON parse error:', parseErr, 'Raw text:', text.substring(0, 200));
+        throw new Error('Invalid server response format');
       }
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
       }
 
+      console.log('Login successful, storing token');
       localStorage.setItem('superAdminToken', data.token);
       localStorage.setItem('superAdminEmail', data.email);
       onLoginSuccess(data.token);
       navigate('/super-admin/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
