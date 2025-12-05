@@ -26,7 +26,17 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
         body: JSON.stringify({ email, password })
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      if (!text) {
+        throw new Error('Server returned empty response');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error('Invalid server response');
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');

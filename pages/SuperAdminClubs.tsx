@@ -54,7 +54,20 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
         return;
       }
 
-      const data = await response.json();
+      const text = await response.text();
+      if (!text) {
+        console.error('Server returned empty response');
+        return;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error('Invalid server response');
+        return;
+      }
+
       setClubs(data.clubs || []);
       setTotal(data.total || 0);
     } catch (err) {
@@ -95,7 +108,20 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
         body: JSON.stringify({ clubId, reason: 'Support access' })
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      if (!text) {
+        console.error('Server returned empty response');
+        return;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error('Invalid server response');
+        return;
+      }
+
       if (data.success) {
         localStorage.setItem('impersonationToken', data.token);
         localStorage.setItem('impersonationClubId', clubId);

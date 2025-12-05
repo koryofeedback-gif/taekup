@@ -51,7 +51,20 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
         return;
       }
 
-      const data = await response.json();
+      const text = await response.text();
+      if (!text) {
+        console.error('Server returned empty response');
+        return;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error('Invalid server response');
+        return;
+      }
+
       setParents(data.parents || []);
     } catch (err) {
       console.error('Failed to fetch parents:', err);
