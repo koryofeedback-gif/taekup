@@ -1,72 +1,84 @@
 import { defineConfig, Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import crypto from 'crypto'
-import { WebSocketServer, WebSocket } from 'ws'
 
 function superAdminLoginPlugin(): Plugin {
   const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@mytaek.com';
   const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
   
+  // Pending login requests (for SSE-based auth)
+  const pendingLogins = new Map<string, { email: string; password: string; resolve: (data: any) => void }>();
+  
   return {
     name: 'super-admin-login',
     configureServer(server) {
-      // Create WebSocket server for secure authentication
-      const wss = new WebSocketServer({ noServer: true });
-      
-      wss.on('connection', (ws: WebSocket) => {
-        console.log('[SA WS] Client connected');
+      // Step 1: Client initiates login via GET (creates a pending login session)
+      server.middlewares.use('/sa-init', (req, res, next) => {
+        if (req.method !== 'GET') return next();
         
-        ws.on('message', (data: Buffer) => {
-          try {
-            const message = JSON.parse(data.toString());
-            
-            if (message.type === 'login') {
-              const { email, password } = message;
-              console.log('[SA WS] Login attempt from:', email);
-              
-              if (!email || !password) {
-                ws.send(JSON.stringify({ type: 'error', error: 'Email and password required' }));
-                return;
-              }
-              
-              if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
-                const token = crypto.randomBytes(32).toString('hex');
-                console.log('[SA WS] Login SUCCESS for:', email);
-                
-                ws.send(JSON.stringify({
-                  type: 'success',
-                  token,
-                  expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
-                  email
-                }));
-              } else {
-                console.log('[SA WS] Invalid credentials for:', email);
-                ws.send(JSON.stringify({ type: 'error', error: 'Invalid credentials' }));
-              }
-            }
-          } catch (err) {
-            console.error('[SA WS] Error:', err);
-            ws.send(JSON.stringify({ type: 'error', error: 'Invalid message format' }));
-          }
-        });
+        const sessionId = crypto.randomBytes(16).toString('hex');
+        console.log('[SA Init] Created session:', sessionId);
         
-        ws.on('close', () => {
-          console.log('[SA WS] Client disconnected');
-        });
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-cache, no-store');
+        res.end(JSON.stringify({ sessionId }));
       });
       
-      // Handle WebSocket upgrade for /sa-auth path
-      server.httpServer?.on('upgrade', (request, socket, head) => {
-        const url = new URL(request.url || '', `http://${request.headers.host}`);
+      // Step 2: Client sends credentials via query params (base64 encoded for obfuscation)
+      server.middlewares.use('/sa-submit', (req, res, next) => {
+        if (req.method !== 'GET') return next();
         
-        if (url.pathname === '/sa-auth') {
-          wss.handleUpgrade(request, socket, head, (ws) => {
-            wss.emit('connection', ws, request);
-          });
+        const url = new URL(req.url || '', `http://${req.headers.host}`);
+        const sessionId = url.searchParams.get('s');
+        const encoded = url.searchParams.get('d');
+        
+        if (!sessionId || !encoded) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: 'Missing parameters' }));
+          return;
+        }
+        
+        try {
+          const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+          const { email, password } = JSON.parse(decoded);
+          
+          console.log('[SA Submit] Login attempt from:', email);
+          
+          if (!email || !password) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Email and password required' }));
+            return;
+          }
+          
+          if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
+            const token = crypto.randomBytes(32).toString('hex');
+            console.log('[SA Submit] SUCCESS for:', email);
+            
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Cache-Control', 'no-cache, no-store');
+            res.end(JSON.stringify({
+              success: true,
+              token,
+              expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+              email
+            }));
+          } else {
+            console.log('[SA Submit] Invalid credentials for:', email);
+            res.statusCode = 401;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Invalid credentials' }));
+          }
+        } catch (err) {
+          console.error('[SA Submit] Error:', err);
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: 'Invalid data format' }));
         }
       });
       
-      console.log('[SA Auth] WebSocket endpoint ready at /sa-auth');
+      console.log('[SA Auth] Endpoints ready at /sa-init and /sa-submit');
     }
   };
 }

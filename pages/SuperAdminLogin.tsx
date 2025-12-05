@@ -20,52 +20,30 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     setIsLoading(true);
 
     try {
-      console.log('Starting WebSocket-based secure login...');
+      console.log('Starting secure GET-based login...');
       
-      // Use WebSocket for secure authentication (bypasses POST blocking)
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}/sa-auth`;
+      // Step 1: Initialize login session
+      const initRes = await fetch('/sa-init', { cache: 'no-store' });
+      if (!initRes.ok) {
+        throw new Error('Failed to initialize login');
+      }
+      const { sessionId } = await initRes.json();
+      console.log('Session initialized');
       
-      const loginPromise = new Promise<{ token: string; email: string; expiresAt: string }>((resolve, reject) => {
-        const ws = new WebSocket(wsUrl);
-        
-        const timeout = setTimeout(() => {
-          ws.close();
-          reject(new Error('Connection timeout'));
-        }, 10000);
-        
-        ws.onopen = () => {
-          console.log('WebSocket connected, sending credentials...');
-          ws.send(JSON.stringify({ type: 'login', email, password }));
-        };
-        
-        ws.onmessage = (event) => {
-          clearTimeout(timeout);
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'success') {
-              resolve({ token: data.token, email: data.email, expiresAt: data.expiresAt });
-            } else {
-              reject(new Error(data.error || 'Login failed'));
-            }
-          } catch (err) {
-            reject(new Error('Invalid response'));
-          }
-          ws.close();
-        };
-        
-        ws.onerror = (err) => {
-          clearTimeout(timeout);
-          console.error('WebSocket error:', err);
-          reject(new Error('Connection error'));
-        };
-        
-        ws.onclose = () => {
-          clearTimeout(timeout);
-        };
+      // Step 2: Encode and submit credentials via GET
+      const encoded = btoa(JSON.stringify({ email, password }));
+      const submitRes = await fetch(`/sa-submit?s=${sessionId}&d=${encodeURIComponent(encoded)}`, {
+        cache: 'no-store'
       });
       
-      const { token, email: userEmail } = await loginPromise;
+      const data = await submitRes.json();
+      
+      if (!submitRes.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+      
+      console.log('Login successful');
+      const { token, email: userEmail } = data;
       localStorage.setItem('superAdminToken', token);
       localStorage.setItem('superAdminEmail', userEmail);
       onLoginSuccess(token);
