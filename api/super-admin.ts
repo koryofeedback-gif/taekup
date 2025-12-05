@@ -9,7 +9,13 @@ function getDb() {
     if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL not configured');
     }
-    sql = postgres(process.env.DATABASE_URL, { ssl: 'require' });
+    // Use SSL with rejectUnauthorized false for Neon/serverless compatibility
+    sql = postgres(process.env.DATABASE_URL, { 
+      ssl: { rejectUnauthorized: false },
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10
+    });
   }
   return sql;
 }
@@ -212,7 +218,7 @@ async function handleOverview(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     console.error('Overview error:', error);
-    return res.status(500).json({ error: 'Failed to fetch overview' });
+    return res.status(500).json({ error: 'Failed to fetch overview: ' + error.message });
   }
 }
 
