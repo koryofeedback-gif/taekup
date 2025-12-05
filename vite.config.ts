@@ -17,6 +17,14 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            console.log(`[Vite Proxy] ${req.method} ${req.url} -> ${proxyReq.path}`);
+          });
+          proxy.on('error', (err, req, res) => {
+            console.error('[Vite Proxy Error]', err.message);
+          });
+        }
       }
     },
     strictPort: true
