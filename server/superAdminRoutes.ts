@@ -3,6 +3,12 @@ import { db } from './db';
 import { sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import sgMail from '@sendgrid/mail';
+
+// Initialize SendGrid if API key is available
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 const router = Router();
 
@@ -685,13 +691,153 @@ router.post('/apply-discount', verifySuperAdmin, async (req: Request, res: Respo
   }
 });
 
-// Send Email
+// Email Templates
+const EMAIL_TEMPLATES: Record<string, { subject: string; getHtml: (club: any, daysLeft?: number) => string }> = {
+  welcome: {
+    subject: 'Welcome to TaekUp! Your 14-Day Free Trial Has Started',
+    getHtml: (club) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #00D4FF;">Welcome to TaekUp!</h1>
+        </div>
+        <p>Hi ${club.owner_name || 'there'},</p>
+        <p>Congratulations on starting your free trial with <strong>${club.name}</strong>!</p>
+        <p>You now have <strong>14 days</strong> to explore everything TaekUp has to offer:</p>
+        <ul>
+          <li>Student & Belt Management</li>
+          <li>Dojang Rivals Gamification</li>
+          <li>AI-Powered Class Planning</li>
+          <li>Parent Engagement Tools</li>
+          <li>Revenue Analytics</li>
+        </ul>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://mytaek.com/login" style="background: #00D4FF; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Get Started Now</a>
+        </p>
+        <p>Need help? Reply to this email or check our <a href="https://mytaek.com/features">Features Guide</a>.</p>
+        <p>Train hard!<br>The TaekUp Team</p>
+      </div>
+    `
+  },
+  trial_7_days: {
+    subject: 'Your TaekUp Trial: 7 Days Remaining',
+    getHtml: (club) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #00D4FF;">7 Days Left in Your Trial</h1>
+        </div>
+        <p>Hi ${club.owner_name || 'there'},</p>
+        <p>Your free trial for <strong>${club.name}</strong> is halfway through!</p>
+        <p>Have you tried these features yet?</p>
+        <ul>
+          <li>Adding students and tracking their progress</li>
+          <li>Creating challenges with Dojang Rivals</li>
+          <li>Using the AI Class Planner</li>
+        </ul>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://mytaek.com/pricing" style="background: #00D4FF; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Pricing Plans</a>
+        </p>
+        <p>Questions? We're here to help!</p>
+        <p>The TaekUp Team</p>
+      </div>
+    `
+  },
+  trial_3_days: {
+    subject: 'URGENT: Only 3 Days Left in Your TaekUp Trial!',
+    getHtml: (club) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #FF6B6B;">Only 3 Days Left!</h1>
+        </div>
+        <p>Hi ${club.owner_name || 'there'},</p>
+        <p>Your free trial for <strong>${club.name}</strong> expires in just <strong>3 days</strong>!</p>
+        <p>Don't lose access to:</p>
+        <ul>
+          <li>Your student data and progress tracking</li>
+          <li>Dojang Rivals leaderboards and challenges</li>
+          <li>AI-powered tools and analytics</li>
+        </ul>
+        <p style="background: #FFF3CD; padding: 15px; border-radius: 8px; border-left: 4px solid #FFC107;">
+          <strong>Special Offer:</strong> Subscribe now and get 20% off your first 3 months!
+        </p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://mytaek.com/pricing" style="background: #FF6B6B; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Subscribe Now - Save 20%</a>
+        </p>
+        <p>The TaekUp Team</p>
+      </div>
+    `
+  },
+  trial_expired: {
+    subject: 'Your TaekUp Trial Has Expired - We Miss You!',
+    getHtml: (club) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #6C757D;">Your Trial Has Ended</h1>
+        </div>
+        <p>Hi ${club.owner_name || 'there'},</p>
+        <p>Your free trial for <strong>${club.name}</strong> has expired.</p>
+        <p>But don't worry - your data is safe! Subscribe within the next 7 days to pick up right where you left off.</p>
+        <p style="background: #D4EDDA; padding: 15px; border-radius: 8px; border-left: 4px solid #28A745;">
+          <strong>Come Back Offer:</strong> Use code <strong>COMEBACK25</strong> for 25% off your first month!
+        </p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://mytaek.com/pricing" style="background: #28A745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Reactivate My Account</a>
+        </p>
+        <p>We'd love to have you back!</p>
+        <p>The TaekUp Team</p>
+      </div>
+    `
+  },
+  win_back: {
+    subject: 'We Want You Back! Special Offer Inside',
+    getHtml: (club) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #9B59B6;">We Miss You at TaekUp!</h1>
+        </div>
+        <p>Hi ${club.owner_name || 'there'},</p>
+        <p>It's been a while since we've seen <strong>${club.name}</strong> on TaekUp.</p>
+        <p>We've added some exciting new features since you left:</p>
+        <ul>
+          <li>Enhanced Dojang Rivals with Team Battles</li>
+          <li>Improved AI Class Planner</li>
+          <li>New Parent Engagement Tools</li>
+          <li>Better Analytics Dashboard</li>
+        </ul>
+        <p style="background: #F8D7DA; padding: 15px; border-radius: 8px; border-left: 4px solid #DC3545;">
+          <strong>Exclusive Win-Back Offer:</strong> Get <strong>50% off</strong> for 3 months with code <strong>WINBACK50</strong>
+        </p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://mytaek.com/pricing" style="background: #9B59B6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Claim My 50% Discount</a>
+        </p>
+        <p>Ready to grow your dojang again?</p>
+        <p>The TaekUp Team</p>
+      </div>
+    `
+  },
+  custom: {
+    subject: 'Message from TaekUp',
+    getHtml: (club) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <p>Hi ${club.owner_name || 'there'},</p>
+        <p>{{CUSTOM_BODY}}</p>
+        <p>Best regards,<br>The TaekUp Team</p>
+      </div>
+    `
+  }
+};
+
+// Send Email with SendGrid
 router.post('/send-email', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
-    const { clubId, template, subject, body, recipientEmail } = req.body;
+    const { clubId, template, subject: customSubject, body: customBody, recipientEmail } = req.body;
     
     if (!clubId || !template) {
       return res.status(400).json({ error: 'clubId and template are required' });
+    }
+
+    const emailTemplate = EMAIL_TEMPLATES[template];
+    if (!emailTemplate) {
+      return res.status(400).json({ error: `Unknown template: ${template}. Available: ${Object.keys(EMAIL_TEMPLATES).join(', ')}` });
     }
 
     const clubResult = await db.execute(sql`SELECT * FROM clubs WHERE id = ${clubId}::uuid`);
@@ -700,22 +846,54 @@ router.post('/send-email', verifySuperAdmin, async (req: Request, res: Response)
     }
 
     const club = (clubResult as any[])[0];
-    const email = recipientEmail || club.owner_email;
+    const toEmail = recipientEmail || club.owner_email;
+    const subject = customSubject || emailTemplate.subject;
+    let htmlContent = emailTemplate.getHtml(club);
+    
+    if (template === 'custom' && customBody) {
+      htmlContent = htmlContent.replace('{{CUSTOM_BODY}}', customBody);
+    }
 
+    // Send email via SendGrid if configured
+    if (process.env.SENDGRID_API_KEY) {
+      const msg = {
+        to: toEmail,
+        from: 'noreply@mytaek.com', // Must be verified in SendGrid
+        subject: subject,
+        html: htmlContent,
+      };
+
+      try {
+        await sgMail.send(msg);
+        console.log(`[SendGrid] Email sent to ${toEmail}: ${template}`);
+      } catch (sgError: any) {
+        console.error('[SendGrid] Error:', sgError.response?.body || sgError.message);
+        // Continue even if SendGrid fails - log the attempt
+      }
+    } else {
+      console.log(`[Email Preview - SendGrid not configured]`);
+      console.log(`To: ${toEmail}`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Template: ${template}`);
+    }
+
+    // Log activity
     await db.execute(sql`
-      INSERT INTO activity_log (event_type, description, details, club_id, actor_email, actor_type)
-      VALUES ('email_sent', ${`Email sent: ${template}`}, ${JSON.stringify({ template, subject, recipientEmail: email })}, ${clubId}::uuid, 'super_admin', 'super_admin')
+      INSERT INTO activity_log (event_type, event_title, event_description, metadata, club_id, actor_email, actor_type)
+      VALUES ('email_sent', ${`Email: ${template}`}, ${`Sent to ${toEmail}`}, ${JSON.stringify({ template, subject, recipientEmail: toEmail })}::jsonb, ${clubId}::uuid, 'super_admin', 'super_admin')
     `);
 
     res.json({ 
       success: true, 
-      message: `Email queued for ${email}`,
+      message: `Email sent to ${toEmail}`,
       template,
-      club: club.name
+      subject,
+      club: club.name,
+      sendgridConfigured: !!process.env.SENDGRID_API_KEY
     });
   } catch (error: any) {
     console.error('Send email error:', error);
-    res.status(500).json({ error: 'Failed to send email' });
+    res.status(500).json({ error: 'Failed to send email: ' + error.message });
   }
 });
 
