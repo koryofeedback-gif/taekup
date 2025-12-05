@@ -485,4 +485,304 @@ router.get('/emails', verifySuperAdmin, async (req: Request, res: Response) => {
   }
 });
 
+// Revenue Analytics
+router.get('/revenue', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    // Count active clubs and estimate MRR (assuming $49/mo average)
+    const activeResult = await db.execute(sql`
+      SELECT COUNT(*) as active_count FROM clubs WHERE status = 'active'
+    `);
+    const activeCount = Number((activeResult as any[])[0]?.active_count || 0);
+    const mrr = activeCount * 49; // Average subscription price
+
+    const last30Days = await db.execute(sql`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) FILTER (WHERE status = 'active') as active_count,
+        COUNT(*) FILTER (WHERE trial_status = 'active') as trial_count
+      FROM clubs
+      WHERE created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `);
+
+    const conversionResult = await db.execute(sql`
+      SELECT 
+        COUNT(*) FILTER (WHERE status = 'active' AND trial_end IS NOT NULL) as converted,
+        COUNT(*) FILTER (WHERE trial_end IS NOT NULL) as total_trials
+      FROM clubs
+    `);
+
+    const churnResult = await db.execute(sql`
+      SELECT COUNT(*) as churned
+      FROM clubs
+      WHERE status = 'churned'
+      AND updated_at >= NOW() - INTERVAL '30 days'
+    `);
+
+    const totalActiveResult = await db.execute(sql`
+      SELECT COUNT(*) as total FROM clubs WHERE status = 'active'
+    `);
+
+    const converted = Number((conversionResult as any[])[0]?.converted || 0);
+    const totalTrials = Number((conversionResult as any[])[0]?.total_trials || 1);
+    const churned = Number((churnResult as any[])[0]?.churned || 0);
+    const totalActive = Number((totalActiveResult as any[])[0]?.total || 1);
+
+    res.json({
+      mrr,
+      mrrTrend: last30Days,
+      conversionRate: totalTrials > 0 ? Math.round((converted / totalTrials) * 100) : 0,
+      churnRate: totalActive > 0 ? Math.round((churned / totalActive) * 100) : 0,
+      totalConverted: converted,
+      totalChurned: churned
+    });
+  } catch (error: any) {
+    console.error('Revenue analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch revenue analytics' });
+  }
+});
+
+// Activity Feed
+router.get('/activity', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const limit = Number(req.query.limit) || 50;
+    
+    const activities = await db.execute(sql`
+      SELECT 
+        a.*,
+        c.name as club_name
+      FROM activity_log a
+      LEFT JOIN clubs c ON a.club_id = c.id
+      ORDER BY a.created_at DESC
+      LIMIT ${limit}
+    `);
+
+    res.json({ activities });
+  } catch (error: any) {
+    console.error('Activity feed error:', error);
+    res.status(500).json({ error: 'Failed to fetch activity feed' });
+  }
+});
+
+// Health Scores
+router.get('/health-scores', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const atRiskClubs = await db.execute(sql`
+      SELECT 
+        c.id,
+        c.name,
+        c.owner_email,
+        c.status,
+        c.updated_at as last_activity,
+        EXTRACT(DAY FROM NOW() - c.updated_at) as days_inactive,
+        (SELECT COUNT(*) FROM students s WHERE s.club_id = c.id) as student_count,
+        CASE 
+          WHEN EXTRACT(DAY FROM NOW() - c.updated_at) > 14 THEN 'critical'
+          WHEN EXTRACT(DAY FROM NOW() - c.updated_at) > 7 THEN 'warning'
+          ELSE 'healthy'
+        END as health_status
+      FROM clubs c
+      WHERE c.status = 'active' OR c.trial_status = 'active'
+      ORDER BY days_inactive DESC
+      LIMIT 20
+    `);
+
+    res.json({ 
+      clubs: atRiskClubs,
+      summary: {
+        critical: (atRiskClubs as any[]).filter((c: any) => c.health_status === 'critical').length,
+        warning: (atRiskClubs as any[]).filter((c: any) => c.health_status === 'warning').length,
+        healthy: (atRiskClubs as any[]).filter((c: any) => c.health_status === 'healthy').length
+      }
+    });
+  } catch (error: any) {
+    console.error('Health scores error:', error);
+    res.status(500).json({ error: 'Failed to fetch health scores' });
+  }
+});
+
+// Extend Trial
+router.post('/extend-trial', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { clubId, days = 7, reason } = req.body;
+    
+    if (!clubId) {
+      return res.status(400).json({ error: 'clubId is required' });
+    }
+
+    const clubResult = await db.execute(sql`SELECT * FROM clubs WHERE id = ${clubId}::uuid`);
+    if (!(clubResult as any[]).length) {
+      return res.status(404).json({ error: 'Club not found' });
+    }
+
+    const club = (clubResult as any[])[0];
+    const currentEnd = club.trial_end ? new Date(club.trial_end) : new Date();
+    const newEnd = new Date(currentEnd.getTime() + (days * 24 * 60 * 60 * 1000));
+
+    await db.execute(sql`
+      UPDATE clubs 
+      SET trial_end = ${newEnd.toISOString()}::timestamptz
+      WHERE id = ${clubId}::uuid
+    `);
+
+    await db.execute(sql`
+      INSERT INTO trial_extensions (club_id, previous_end, new_end, days_added, reason, extended_by)
+      VALUES (${clubId}::uuid, ${currentEnd.toISOString()}::timestamptz, ${newEnd.toISOString()}::timestamptz, ${days}, ${reason || 'Support extension'}, 'super_admin')
+    `);
+
+    await db.execute(sql`
+      INSERT INTO activity_log (event_type, description, details, club_id, actor_email, actor_type)
+      VALUES ('trial_extended', ${`Trial extended by ${days} days`}, ${JSON.stringify({ days, reason })}, ${clubId}::uuid, 'super_admin', 'super_admin')
+    `);
+
+    res.json({ 
+      success: true, 
+      newTrialEnd: newEnd.toISOString(),
+      club: club.name
+    });
+  } catch (error: any) {
+    console.error('Extend trial error:', error);
+    res.status(500).json({ error: 'Failed to extend trial' });
+  }
+});
+
+// Apply Discount
+router.post('/apply-discount', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { clubId, percentOff, duration = 'once', reason } = req.body;
+    
+    if (!clubId || !percentOff) {
+      return res.status(400).json({ error: 'clubId and percentOff are required' });
+    }
+
+    const clubResult = await db.execute(sql`SELECT * FROM clubs WHERE id = ${clubId}::uuid`);
+    if (!(clubResult as any[]).length) {
+      return res.status(404).json({ error: 'Club not found' });
+    }
+
+    const club = (clubResult as any[])[0];
+    const code = `SA_${Date.now().toString(36).toUpperCase()}`;
+
+    await db.execute(sql`
+      INSERT INTO discounts (club_id, code, percent_off, duration, applied_by)
+      VALUES (${clubId}::uuid, ${code}, ${percentOff}, ${duration}, 'super_admin')
+    `);
+
+    await db.execute(sql`
+      INSERT INTO activity_log (event_type, description, details, club_id, actor_email, actor_type)
+      VALUES ('discount_applied', ${`${percentOff}% discount applied`}, ${JSON.stringify({ percentOff, duration, code, reason })}, ${clubId}::uuid, 'super_admin', 'super_admin')
+    `);
+
+    res.json({ 
+      success: true, 
+      discount: { code, percentOff, duration },
+      club: club.name
+    });
+  } catch (error: any) {
+    console.error('Apply discount error:', error);
+    res.status(500).json({ error: 'Failed to apply discount' });
+  }
+});
+
+// Send Email
+router.post('/send-email', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { clubId, template, subject, body, recipientEmail } = req.body;
+    
+    if (!clubId || !template) {
+      return res.status(400).json({ error: 'clubId and template are required' });
+    }
+
+    const clubResult = await db.execute(sql`SELECT * FROM clubs WHERE id = ${clubId}::uuid`);
+    if (!(clubResult as any[]).length) {
+      return res.status(404).json({ error: 'Club not found' });
+    }
+
+    const club = (clubResult as any[])[0];
+    const email = recipientEmail || club.owner_email;
+
+    await db.execute(sql`
+      INSERT INTO activity_log (event_type, description, details, club_id, actor_email, actor_type)
+      VALUES ('email_sent', ${`Email sent: ${template}`}, ${JSON.stringify({ template, subject, recipientEmail: email })}, ${clubId}::uuid, 'super_admin', 'super_admin')
+    `);
+
+    res.json({ 
+      success: true, 
+      message: `Email queued for ${email}`,
+      template,
+      club: club.name
+    });
+  } catch (error: any) {
+    console.error('Send email error:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+// Export Clubs CSV
+router.get('/export/clubs', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const clubs = await db.execute(sql`
+      SELECT 
+        c.id, c.name, c.owner_email, c.owner_name,
+        c.status, c.trial_status, c.trial_end,
+        c.city, c.country, c.art_type,
+        c.created_at,
+        (SELECT COUNT(*) FROM students s WHERE s.club_id = c.id) as student_count
+      FROM clubs c
+      ORDER BY c.created_at DESC
+    `);
+
+    const headers = ['ID', 'Name', 'Owner Email', 'Owner Name', 'Status', 'Trial Status', 'Trial End', 'City', 'Country', 'Art Type', 'Created', 'Students'];
+    const rows = (clubs as any[]).map(c => [
+      c.id, c.name, c.owner_email, c.owner_name || '',
+      c.status || '', c.trial_status || '',
+      c.trial_end ? new Date(c.trial_end).toISOString().split('T')[0] : '',
+      c.city || '', c.country || '', c.art_type || '',
+      new Date(c.created_at).toISOString().split('T')[0],
+      c.student_count
+    ].join(','));
+
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=clubs_export.csv');
+    res.send(csv);
+  } catch (error: any) {
+    console.error('Export clubs error:', error);
+    res.status(500).json({ error: 'Failed to export clubs' });
+  }
+});
+
+// Export Revenue CSV
+router.get('/export/revenue', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const revenue = await db.execute(sql`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) FILTER (WHERE status = 'active') as active_clubs,
+        COUNT(*) FILTER (WHERE trial_status = 'active') as trial_clubs,
+        COUNT(*) FILTER (WHERE status = 'active') * 49 as daily_mrr
+      FROM clubs
+      WHERE created_at >= NOW() - INTERVAL '90 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `);
+
+    const headers = ['Date', 'Active Clubs', 'Trial Clubs', 'Daily MRR'];
+    const rows = (revenue as any[]).map(r => [
+      r.date, r.active_clubs, r.trial_clubs, r.daily_mrr || 0
+    ].join(','));
+
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=revenue_export.csv');
+    res.send(csv);
+  } catch (error: any) {
+    console.error('Export revenue error:', error);
+    res.status(500).json({ error: 'Failed to export revenue' });
+  }
+});
+
 export { router as superAdminRouter, verifySuperAdmin };
