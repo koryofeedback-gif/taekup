@@ -12,70 +12,89 @@ function superAdminLoginPlugin(): Plugin {
   return {
     name: 'super-admin-login',
     configureServer(server) {
-      // Step 1: Client initiates login via GET (creates a pending login session)
-      server.middlewares.use('/sa-init', (req, res, next) => {
-        if (req.method !== 'GET') return next();
+      // Universal middleware to catch all SA auth requests
+      server.middlewares.use((req, res, next) => {
+        const url = req.url || '';
         
-        const sessionId = crypto.randomBytes(16).toString('hex');
-        console.log('[SA Init] Created session:', sessionId);
-        
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'no-cache, no-store');
-        res.end(JSON.stringify({ sessionId }));
-      });
-      
-      // Step 2: Client sends credentials via query params (base64 encoded for obfuscation)
-      server.middlewares.use('/sa-submit', (req, res, next) => {
-        if (req.method !== 'GET') return next();
-        
-        const url = new URL(req.url || '', `http://${req.headers.host}`);
-        const sessionId = url.searchParams.get('s');
-        const encoded = url.searchParams.get('d');
-        
-        if (!sessionId || !encoded) {
-          res.statusCode = 400;
+        // Step 1: Client initiates login via GET
+        if (url.startsWith('/sa-init')) {
+          console.log('[SA Init] Request received:', req.method, url);
+          
+          if (req.method !== 'GET') {
+            return next();
+          }
+          
+          const sessionId = crypto.randomBytes(16).toString('hex');
+          console.log('[SA Init] Created session:', sessionId);
+          
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: 'Missing parameters' }));
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+          res.end(JSON.stringify({ sessionId }));
           return;
         }
         
-        try {
-          const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
-          const { email, password } = JSON.parse(decoded);
+        // Step 2: Client sends credentials
+        if (url.startsWith('/sa-submit')) {
+          console.log('[SA Submit] Request received:', req.method, url);
           
-          console.log('[SA Submit] Login attempt from:', email);
+          if (req.method !== 'GET') {
+            return next();
+          }
           
-          if (!email || !password) {
+          const parsedUrl = new URL(url, `http://${req.headers.host}`);
+          const sessionId = parsedUrl.searchParams.get('s');
+          const encoded = parsedUrl.searchParams.get('d');
+          
+          if (!sessionId || !encoded) {
             res.statusCode = 400;
             res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ error: 'Email and password required' }));
+            res.end(JSON.stringify({ error: 'Missing parameters' }));
             return;
           }
           
-          if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
-            const token = crypto.randomBytes(32).toString('hex');
-            console.log('[SA Submit] SUCCESS for:', email);
+          try {
+            const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+            const { email, password } = JSON.parse(decoded);
             
+            console.log('[SA Submit] Login attempt from:', email);
+            
+            if (!email || !password) {
+              res.statusCode = 400;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: 'Email and password required' }));
+              return;
+            }
+            
+            if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
+              const token = crypto.randomBytes(32).toString('hex');
+              console.log('[SA Submit] SUCCESS for:', email);
+              
+              res.setHeader('Content-Type', 'application/json');
+              res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+              res.end(JSON.stringify({
+                success: true,
+                token,
+                expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+                email
+              }));
+            } else {
+              console.log('[SA Submit] Invalid credentials for:', email);
+              res.statusCode = 401;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: 'Invalid credentials' }));
+            }
+          } catch (err) {
+            console.error('[SA Submit] Error:', err);
+            res.statusCode = 400;
             res.setHeader('Content-Type', 'application/json');
-            res.setHeader('Cache-Control', 'no-cache, no-store');
-            res.end(JSON.stringify({
-              success: true,
-              token,
-              expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
-              email
-            }));
-          } else {
-            console.log('[SA Submit] Invalid credentials for:', email);
-            res.statusCode = 401;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ error: 'Invalid credentials' }));
+            res.end(JSON.stringify({ error: 'Invalid data format' }));
           }
-        } catch (err) {
-          console.error('[SA Submit] Error:', err);
-          res.statusCode = 400;
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: 'Invalid data format' }));
+          return;
         }
+        
+        next();
       });
       
       console.log('[SA Auth] Endpoints ready at /sa-init and /sa-submit');
