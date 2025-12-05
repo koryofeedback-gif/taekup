@@ -20,48 +20,62 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     setIsLoading(true);
 
     try {
-      console.log('Attempting login to /api/super-admin/login');
-      let response;
-      try {
-        response = await fetch('/api/super-admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-      } catch (networkErr) {
-        console.error('Network error:', networkErr);
-        throw new Error('Network error. Please check your connection and try again.');
+      console.log('Attempting login...');
+      
+      const apiUrl = '/api/super-admin/login';
+      console.log('Using API URL:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'same-origin'
+      });
+
+      console.log('Response received:', response.status, response.statusText);
+      console.log('Response headers:', response.headers.get('content-type'));
+      
+      if (!response.ok && response.status !== 401) {
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        throw new Error(`Server error: ${response.status}`);
       }
 
-      console.log('Response status:', response.status, response.statusText);
-      
       const text = await response.text();
-      console.log('Response text length:', text.length, 'chars');
+      console.log('Response body length:', text.length);
       
-      if (!text) {
-        throw new Error('Server returned empty response. Please check if the API server is running.');
+      if (!text || text.length === 0) {
+        console.error('Empty response received');
+        throw new Error('Empty response from server. Please refresh and try again.');
       }
 
       let data;
       try {
         data = JSON.parse(text);
       } catch (parseErr) {
-        console.error('JSON parse error:', parseErr, 'Raw text:', text.substring(0, 200));
-        throw new Error('Invalid server response format');
+        console.error('Parse error. Raw response:', text.substring(0, 500));
+        throw new Error('Invalid response format');
       }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        throw new Error(data.error || 'Invalid credentials');
       }
 
-      console.log('Login successful, storing token');
+      console.log('Login successful');
       localStorage.setItem('superAdminToken', data.token);
       localStorage.setItem('superAdminEmail', data.email);
       onLoginSuccess(data.token);
       navigate('/super-admin/dashboard');
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
+      console.error('Login failed:', err);
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError('Connection error. Please check your internet connection.');
+      } else {
+        setError(err.message || 'Login failed');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -14,6 +14,13 @@ const PORT = parseInt(process.env.PORT || '5000', 10);
 
 app.use(cors());
 
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/super-admin')) {
+    console.log(`[SuperAdmin] ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  }
+  next();
+});
+
 let stripeInitialized = false;
 
 async function initStripe() {
