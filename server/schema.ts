@@ -177,6 +177,41 @@ export const supportSessions = pgTable('support_sessions', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+export const activityLog = pgTable('activity_log', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'set null' }),
+  eventType: varchar('event_type', { length: 100 }).notNull(),
+  eventTitle: varchar('event_title', { length: 255 }).notNull(),
+  eventDescription: text('event_description'),
+  metadata: jsonb('metadata'),
+  actorEmail: varchar('actor_email', { length: 255 }),
+  actorType: varchar('actor_type', { length: 50 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const trialExtensions = pgTable('trial_extensions', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  daysAdded: integer('days_added').notNull().default(7),
+  reason: text('reason'),
+  extendedBy: varchar('extended_by', { length: 255 }),
+  previousTrialEnd: timestamp('previous_trial_end', { withTimezone: true }),
+  newTrialEnd: timestamp('new_trial_end', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const discounts = pgTable('discounts', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  code: varchar('code', { length: 100 }),
+  percentOff: integer('percent_off').notNull(),
+  duration: varchar('duration', { length: 50 }).default('once'),
+  stripeCouponId: varchar('stripe_coupon_id', { length: 255 }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  appliedBy: varchar('applied_by', { length: 255 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 export type Club = typeof clubs.$inferSelect;
 export type NewClub = typeof clubs.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -189,3 +224,9 @@ export type Coach = typeof coaches.$inferSelect;
 export type NewCoach = typeof coaches.$inferInsert;
 export type EmailLogEntry = typeof emailLog.$inferSelect;
 export type SupportSession = typeof supportSessions.$inferSelect;
+export type ActivityLog = typeof activityLog.$inferSelect;
+export type NewActivityLog = typeof activityLog.$inferInsert;
+export type TrialExtension = typeof trialExtensions.$inferSelect;
+export type NewTrialExtension = typeof trialExtensions.$inferInsert;
+export type Discount = typeof discounts.$inferSelect;
+export type NewDiscount = typeof discounts.$inferInsert;
