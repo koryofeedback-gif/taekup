@@ -71,6 +71,9 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     const email = body?.email;
     const password = body?.password;
     
+    console.log('[SA Login] Attempt for:', email);
+    console.log('[SA Login] ENV password configured:', !!SUPER_ADMIN_PASSWORD);
+    
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
@@ -81,9 +84,11 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
       isValid = true;
       userEmail = SUPER_ADMIN_EMAIL;
+      console.log('[SA Login] Matched env credentials');
     }
     
     if (!isValid) {
+      console.log('[SA Login] Invalid credentials for:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
