@@ -122,6 +122,7 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
             <Link to="/super-admin/dashboard" className="text-gray-400 hover:text-white">Dashboard</Link>
             <Link to="/super-admin/clubs" className="text-gray-400 hover:text-white">Clubs</Link>
             <Link to="/super-admin/parents" className="text-purple-400 font-medium">Parents</Link>
+            <Link to="/super-admin/payments" className="text-gray-400 hover:text-white">Payments</Link>
             <button
               onClick={onLogout}
               className="flex items-center gap-2 text-gray-400 hover:text-white"

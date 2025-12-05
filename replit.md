@@ -41,7 +41,7 @@ The project utilizes a two-server architecture during development (Vite dev serv
 ## Super Admin Dashboard
 
 ### Overview
-The Super Admin dashboard is a platform-wide control center for monitoring clubs, parents, and business metrics. It's accessible via a standalone login page that bypasses the main app authentication.
+The Super Admin dashboard is a comprehensive platform-wide control center for monitoring clubs, parents, revenue, and business metrics. It's accessible via a standalone login page that bypasses the main app authentication.
 
 ### Access
 - **Login URL**: `/super-admin-login.html` (standalone page)
@@ -50,12 +50,30 @@ The Super Admin dashboard is a platform-wide control center for monitoring clubs
 - **Email**: `admin@mytaek.com` (default)
 
 ### Features
-1. **Dashboard Overview**: Real-time metrics for trials, conversions, MRR, and churn
-2. **Clubs Management**: List all clubs with filtering by status and trial state
-3. **Parents Management**: Monitor premium parent subscriptions
-4. **Impersonation (View As)**: Access any club as support with full audit logging
+1. **Dashboard Overview**: Real-time KPI metrics with trend charts for MRR, trials, conversions, and churn rate
+2. **Clubs Management**: List all clubs with filtering, search, and quick actions (extend trial, apply discount, send emails)
+3. **Parents Management**: Monitor premium parent subscriptions with at-risk flagging
+4. **Payment History**: View all Stripe transactions, failed payments, and refunds
+5. **Impersonation (View As)**: Access any club as support with full audit logging
+6. **Revenue Analytics**: MRR trend over time, churn rate calculation, trial-to-paid conversion metrics
+7. **Activity Feed**: Real-time log of signups, conversions, payment failures, and admin actions
+8. **Health Scores**: Flag at-risk clubs based on usage patterns (login frequency, student additions)
+9. **Email Tools**: Send targeted emails to trial users about to expire or win-back churned clubs (via SendGrid)
+10. **CSV Exports**: Download clubs and revenue data for external analysis
+
+### Quick Actions
+- **Extend Trial**: Add 7+ days to a club's trial period with audit logging
+- **Apply Discount**: Create Stripe coupons (%, duration) and apply to subscriptions
+- **Send Email**: Templates for "trial expiring", "we miss you", and custom messages
+
+### Database Tables
+- `activity_log`: Event tracking with actor, action, and metadata
+- `trial_extensions`: Audit trail for trial modifications
+- `discounts`: Coupon and discount tracking with Stripe integration
 
 ### Technical Notes
 - Uses in-memory session storage with 8-hour expiration
 - All impersonation sessions logged to `support_sessions` table
+- Stripe and SendGrid integrations are gracefully guarded (work without API keys)
+- API endpoints consolidated in `api/super-admin.ts` for Vercel serverless deployment
 - Due to Replit webview caching, use external URL for reliable access
