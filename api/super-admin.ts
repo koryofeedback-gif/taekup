@@ -342,17 +342,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
   
+  // Get the path from multiple sources (Vercel rewrites can put it in different places)
   const url = req.url || '';
-  const path = url.split('?')[0].replace('/api/super-admin', '');
+  const queryPath = req.query.path as string | string[] | undefined;
   
-  console.log('[SuperAdmin API] Path:', path, 'Method:', req.method);
+  // Build path from query.path (set by Vercel rewrite) or from URL
+  let path = '';
+  if (queryPath) {
+    path = '/' + (Array.isArray(queryPath) ? queryPath.join('/') : queryPath);
+  } else {
+    path = url.split('?')[0].replace('/api/super-admin', '');
+  }
+  
+  console.log('[SuperAdmin API] URL:', url, 'QueryPath:', queryPath, 'Path:', path, 'Method:', req.method);
   
   try {
     // Health check endpoint
-    if (path === '/health' || path === '/health/') {
+    if (path === '' || path === '/' || path === '/health' || path === '/health/') {
       return res.json({ 
         ok: true, 
         timestamp: new Date().toISOString(),
+        path: path,
+        url: url,
+        queryPath: queryPath,
         env: {
           hasDbUrl: !!process.env.DATABASE_URL,
           hasPassword: !!process.env.SUPER_ADMIN_PASSWORD,
@@ -361,31 +373,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
     
-    if (path === '/login' || path === '/login/') {
+    if (path === '/login' || path === '/login/' || path === 'login') {
       return handleLogin(req, res);
     }
     
-    if (path === '/verify' || path === '/verify/') {
+    if (path === '/verify' || path === '/verify/' || path === 'verify') {
       return handleVerify(req, res);
     }
     
-    if (path === '/overview' || path === '/overview/') {
+    if (path === '/overview' || path === '/overview/' || path === 'overview') {
       return handleOverview(req, res);
     }
     
-    if (path === '/clubs' || path === '/clubs/') {
+    if (path === '/clubs' || path === '/clubs/' || path === 'clubs') {
       return handleClubs(req, res);
     }
     
-    if (path === '/parents' || path === '/parents/') {
+    if (path === '/parents' || path === '/parents/' || path === 'parents') {
       return handleParents(req, res);
     }
     
-    if (path === '/impersonate' || path === '/impersonate/') {
+    if (path === '/impersonate' || path === '/impersonate/' || path === 'impersonate') {
       return handleImpersonate(req, res);
     }
     
-    return res.status(404).json({ error: 'Route not found', path });
+    return res.status(404).json({ error: 'Route not found', path, url, queryPath });
   } catch (error: any) {
     console.error('[SuperAdmin API] Error:', error);
     return res.status(500).json({ error: 'Internal server error: ' + error.message });
