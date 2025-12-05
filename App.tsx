@@ -14,6 +14,7 @@ import { AccountLockedPage } from './pages/AccountLockedPage';
 import { SuperAdminLogin } from './pages/SuperAdminLogin';
 import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute } from './components/SuperAdminRoutes';
 import { TrialBanner } from './components/TrialBanner';
+import { ImpersonationBanner } from './components/ImpersonationBanner';
 import { DemoMode, RoleSwitcher, DEMO_WIZARD_DATA } from './components/DemoMode';
 import {
     sendCoachWelcomeEmail,
@@ -364,6 +365,7 @@ const AppContent: React.FC<AppContentProps> = ({
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 font-sans">
+            <ImpersonationBanner />
             {subscription && loggedInUserType === 'owner' && !isDojangTV && !isMyTaekHome && (
                 <TrialBanner 
                     subscription={subscription} 

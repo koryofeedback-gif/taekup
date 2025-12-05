@@ -81,11 +81,18 @@ export const SuperAdminClubsRoute: React.FC = () => {
         window.location.href = '/super-admin/login';
     };
     
+    const handleImpersonate = (clubId: string) => {
+        const impersonationToken = localStorage.getItem('impersonationToken');
+        if (impersonationToken) {
+            window.location.href = `/?impersonate=${impersonationToken}`;
+        }
+    };
+    
     return (
         <SuperAdminClubs 
             token={token || ''} 
             onLogout={handleLogout} 
-            onImpersonate={(clubId) => console.log('Impersonating club:', clubId)} 
+            onImpersonate={handleImpersonate} 
         />
     );
 };

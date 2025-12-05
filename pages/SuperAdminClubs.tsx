@@ -110,7 +110,7 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
 
       const text = await response.text();
       if (!text) {
-        console.error('Server returned empty response');
+        alert('Failed to start impersonation session. Please try again.');
         return;
       }
 
@@ -118,17 +118,20 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
       try {
         data = JSON.parse(text);
       } catch {
-        console.error('Invalid server response');
+        alert('Failed to start impersonation session. Invalid response.');
         return;
       }
 
-      if (data.success) {
+      if (data.success && data.token) {
         localStorage.setItem('impersonationToken', data.token);
         localStorage.setItem('impersonationClubId', clubId);
         onImpersonate(clubId);
+      } else {
+        alert(data.error || 'Failed to start impersonation session');
       }
     } catch (err) {
       console.error('Failed to impersonate:', err);
+      alert('Failed to start impersonation session. Network error.');
     }
   };
 
