@@ -6,7 +6,7 @@ import type { SignupData, WizardData } from '../types';
 interface LoginPageProps {
     signupData: SignupData | null;
     finalWizardData: WizardData | null;
-    onLoginSuccess: (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string) => void;
+    onLoginSuccess: (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string, userData?: any) => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardData, onLoginSuccess }) => {
@@ -14,65 +14,53 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || !password) {
             setError('Please enter both email and password.');
             return;
         }
 
-        if (!finalWizardData && !signupData) {
-            setError("No club data found. Please sign up first.");
-            return;
-        }
+        setError('');
+        setIsLoading(true);
 
-        const normalizedEmail = email.toLowerCase().trim();
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
 
-        // 1. Owner Check
-        if (signupData && normalizedEmail === signupData.email.toLowerCase()) {
-            if (password === signupData.password) {
-                const userName = finalWizardData ? finalWizardData.ownerName : signupData.clubName;
-                onLoginSuccess('owner', userName);
-                if (!finalWizardData) {
-                    navigate('/wizard');
-                } else {
-                    navigate('/app');
-                }
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.error || 'Invalid email or password.');
+                setIsLoading(false);
                 return;
             }
-        }
 
-        if (!finalWizardData) {
-            setError("Invalid credentials or account not fully set up.");
-            return;
-        }
-
-        // 2. Coach Check
-        const coach = finalWizardData.coaches.find(c => c.email.toLowerCase() === normalizedEmail);
-        if (coach) {
-            if (coach.password && password === coach.password) {
-                onLoginSuccess('coach', coach.name);
+            const user = data.user;
+            const userType = user.role === 'owner' ? 'owner' : user.role === 'coach' ? 'coach' : 'parent';
+            
+            onLoginSuccess(userType, user.name || user.clubName, undefined, user);
+            
+            if (userType === 'owner') {
+                navigate('/app');
+            } else if (userType === 'coach') {
                 navigate('/app/coach');
-                return;
+            } else {
+                navigate('/app/parent');
             }
-            if (!coach.password) {
-                setError("Security Error: This coach account has no password set.");
-                return;
-            }
-        }
 
-        // 3. Parent Check
-        const student = finalWizardData.students.find(s => s.parentEmail.toLowerCase() === normalizedEmail);
-        if (student) {
-            if (password === '1234') {
-                onLoginSuccess('parent', '', student.id);
-                navigate(`/app/parent/${student.id}`);
-                return;
-            }
+        } catch (err: any) {
+            console.error('Login error:', err);
+            setError('Network error. Please check your connection and try again.');
+            setIsLoading(false);
         }
-
-        setError("Invalid email or password. Please try again.");
     };
 
     const handleCancel = () => {
@@ -103,6 +91,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                             onChange={e => setEmail(e.target.value)}
                             className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-sky-500 outline-none"
                             placeholder="user@example.com"
+                            disabled={isLoading}
                         />
                     </div>
                     <div>
@@ -113,16 +102,35 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                             onChange={e => setPassword(e.target.value)}
                             className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-sky-500 outline-none"
                             placeholder="••••••••"
+                            disabled={isLoading}
                         />
                     </div>
                     {error && <p className="text-red-400 text-sm">{error}</p>}
                     <button
                         type="submit"
-                        className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-3 rounded-lg transition-colors"
+                        disabled={isLoading}
+                        className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-3 rounded-lg transition-colors disabled:bg-sky-800 disabled:cursor-not-allowed"
                     >
-                        Log In
+                        {isLoading ? (
+                            <span className="flex items-center justify-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Logging in...
+                            </span>
+                        ) : 'Log In'}
                     </button>
                 </form>
+                
+                <div className="mt-4 text-center">
+                    <Link
+                        to="/forgot-password"
+                        className="text-sm text-sky-400 hover:text-sky-300"
+                    >
+                        Forgot your password?
+                    </Link>
+                </div>
                 
                 <div className="mt-6 pt-6 border-t border-gray-700">
                     <p className="text-center text-gray-400 text-sm mb-4">No account yet?</p>

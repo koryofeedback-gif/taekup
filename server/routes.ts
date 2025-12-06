@@ -104,6 +104,69 @@ export function registerRoutes(app: Express) {
     return res.status(401).json({ valid: false, error: 'Incorrect password' });
   });
 
+  app.post('/api/login', async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const userResult = await db.execute(
+        sql`SELECT u.id, u.email, u.password_hash, u.role, u.name, u.club_id, u.is_active,
+                   c.name as club_name, c.owner_email, c.status as club_status, c.trial_status, c.trial_end
+            FROM users u
+            LEFT JOIN clubs c ON u.club_id = c.id
+            WHERE LOWER(u.email) = ${normalizedEmail} AND u.is_active = true
+            LIMIT 1`
+      );
+
+      const user = (userResult as any[])[0];
+
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid email or password' });
+      }
+
+      if (!user.password_hash) {
+        return res.status(401).json({ error: 'Please set up your password first. Check your email for an invitation link.' });
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+      if (!passwordMatch) {
+        return res.status(401).json({ error: 'Invalid email or password' });
+      }
+
+      console.log('[Login] User authenticated:', user.email, 'Role:', user.role);
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+        VALUES ('user_login', 'User Login', ${'User logged in: ' + user.email}, ${user.club_id}::uuid, ${JSON.stringify({ email: user.email, role: user.role })}::jsonb, NOW())
+      `);
+
+      return res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name || user.club_name,
+          role: user.role,
+          clubId: user.club_id,
+          clubName: user.club_name,
+          clubStatus: user.club_status,
+          trialStatus: user.trial_status,
+          trialEnd: user.trial_end
+        }
+      });
+
+    } catch (error: any) {
+      console.error('[Login] Error:', error.message);
+      return res.status(500).json({ error: 'Login failed. Please try again.' });
+    }
+  });
+
   app.post('/api/ai/taekbot', async (req: Request, res: Response) => {
     try {
       const { message, clubName, artType, language } = req.body;
