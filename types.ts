@@ -8,8 +8,9 @@ export interface SignupData {
   clubName: string;
   email: string;
   country: string;
-  password?: string; // Added password field for security
-  trialStartDate?: string; // ISO date when trial started
+  password?: string;
+  trialStartDate?: string;
+  clubId?: string;
 }
 
 export interface Belt {

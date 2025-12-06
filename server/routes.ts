@@ -1,15 +1,90 @@
 import express, { type Express, type Request, type Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { storage } from './storage';
 import { stripeService } from './stripeService';
 import { getStripePublishableKey, getUncachableStripeClient } from './stripeClient';
 import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail } from './aiService';
 import emailService from './services/emailService';
+import { db } from './db';
+import { sql } from 'drizzle-orm';
 
 let cachedProducts: any[] | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 export function registerRoutes(app: Express) {
+  app.post('/api/signup', async (req: Request, res: Response) => {
+    try {
+      const { clubName, email, password, country } = req.body;
+
+      if (!clubName || !email || !password) {
+        return res.status(400).json({ error: 'Club name, email, and password are required' });
+      }
+
+      const existingClub = await db.execute(
+        sql`SELECT id FROM clubs WHERE owner_email = ${email}`
+      );
+
+      if ((existingClub as any[]).length > 0) {
+        return res.status(409).json({ error: 'An account with this email already exists' });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      const trialEnd = new Date();
+      trialEnd.setDate(trialEnd.getDate() + 14);
+
+      const clubResult = await db.execute(sql`
+        INSERT INTO clubs (name, owner_email, country, trial_start, trial_end, trial_status, status, created_at)
+        VALUES (${clubName}, ${email}, ${country || 'United States'}, NOW(), ${trialEnd}, 'active', 'active', NOW())
+        RETURNING id, name, owner_email, trial_start, trial_end
+      `);
+
+      const club = (clubResult as any[])[0];
+
+      await db.execute(sql`
+        INSERT INTO users (email, password_hash, role, club_id, is_active, created_at)
+        VALUES (${email}, ${passwordHash}, 'owner', ${club.id}, true, NOW())
+        ON CONFLICT (email) DO UPDATE SET password_hash = ${passwordHash}, club_id = ${club.id}
+      `);
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, description, metadata, created_at)
+        VALUES ('club_signup', ${'New club signup: ' + clubName}, ${JSON.stringify({ clubId: club.id, email, country })}, NOW())
+      `);
+
+      const emailResult = await emailService.sendWelcomeEmail(email, {
+        ownerName: clubName,
+        clubName: clubName
+      });
+
+      if (emailResult.success) {
+        console.log('[Signup] Welcome email sent to:', email);
+        await db.execute(sql`
+          INSERT INTO email_log (club_id, recipient, email_type, subject, status, sent_at)
+          VALUES (${club.id}, ${email}, 'welcome', 'Welcome to TaekUp', 'sent', NOW())
+        `);
+      }
+
+      console.log('[Signup] New club created:', club.id, clubName);
+
+      return res.status(201).json({
+        success: true,
+        club: {
+          id: club.id,
+          name: club.name,
+          email: club.owner_email,
+          trialStart: club.trial_start,
+          trialEnd: club.trial_end
+        }
+      });
+
+    } catch (error: any) {
+      console.error('[Signup] Error:', error.message);
+      return res.status(500).json({ error: 'Failed to create account. Please try again.' });
+    }
+  });
+
   app.post('/api/verify-password', (req: Request, res: Response) => {
     const sitePassword = process.env.SITE_PASSWORD;
     

@@ -29,11 +29,29 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSignupSuccess }) => {
     setError('');
     setIsLoading(true);
 
-    // Simulate network request
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Pass password to the system for the login simulation
-    onSignupSuccess({ clubName, email, country, password });
+    try {
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ clubName, email, password, country }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Signup failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      onSignupSuccess({ clubName, email, country, password, clubId: data.club?.id });
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError('Network error. Please check your connection and try again.');
+      setIsLoading(false);
+    }
   };
 
   return (
