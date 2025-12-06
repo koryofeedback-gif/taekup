@@ -82,7 +82,9 @@ export function registerRoutes(app: Express) {
 
     } catch (error: any) {
       console.error('[Signup] Error:', error.message);
-      return res.status(500).json({ error: 'Failed to create account. Please try again.' });
+      console.error('[Signup] Full error:', error);
+      console.error('[Signup] Request body:', req.body);
+      return res.status(500).json({ error: 'Failed to create account. Please try again.', details: error.message });
     }
   });
 
