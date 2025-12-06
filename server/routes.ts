@@ -37,7 +37,7 @@ export function registerRoutes(app: Express) {
 
       const clubResult = await db.execute(sql`
         INSERT INTO clubs (name, owner_email, country, trial_start, trial_end, trial_status, status, created_at)
-        VALUES (${clubName}, ${email}, ${country || 'United States'}, NOW(), ${trialEnd.toISOString()}::timestamptz, 'active', 'active', NOW())
+        VALUES (${clubName}, ${email}, ${country || 'US'}, NOW(), ${trialEnd.toISOString()}::timestamptz, 'active', 'active', NOW())
         RETURNING id, name, owner_email, trial_start, trial_end
       `);
 
