@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "python-3.11", "postgresql-16"]
+modules = ["nodejs-20", "web"]
 [agent]
 expertMode = true
 integrations = ["stripe:1.0.0", "sendgrid:1.0.0"]
@@ -65,6 +65,10 @@ externalPort = 3003
 [[ports]]
 localPort = 40837
 externalPort = 3002
+
+[[ports]]
+localPort = 41885
+externalPort = 4200
 
 [deployment]
 deploymentTarget = "autoscale"
