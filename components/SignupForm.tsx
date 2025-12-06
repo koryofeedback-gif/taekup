@@ -11,7 +11,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSignupSuccess }) => {
   const [clubName, setClubName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [country, setCountry] = useState('US');
+  const [country, setCountry] = useState('United States');
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +68,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSignupSuccess }) => {
             onChange={e => setCountry(e.target.value)}
             className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm text-white"
           >
-            {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+            {COUNTRIES.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
           </select>
         </div>
         <div className="flex items-center">
