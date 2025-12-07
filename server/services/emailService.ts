@@ -1,6 +1,7 @@
 import sgMail from '@sendgrid/mail';
 
 let connectionSettings: any;
+let cachedClient: { client: typeof sgMail; fromEmail: string } | null = null;
 
 async function getCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
@@ -10,24 +11,39 @@ async function getCredentials() {
     ? 'depl ' + process.env.WEB_REPL_RENEWAL 
     : null;
 
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
-  }
+  if (xReplitToken && hostname) {
+    try {
+      connectionSettings = await fetch(
+        'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
+        {
+          headers: {
+            'Accept': 'application/json',
+            'X_REPLIT_TOKEN': xReplitToken
+          }
+        }
+      ).then(res => res.json()).then(data => data.items?.[0]);
 
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
+      if (connectionSettings?.settings?.api_key) {
+        console.log('[SendGrid] Using Replit connector');
+        return { 
+          apiKey: connectionSettings.settings.api_key, 
+          email: connectionSettings.settings.from_email || 'hello@mytaek.com' 
+        };
       }
+    } catch (err) {
+      console.log('[SendGrid] Replit connector not available, checking fallback');
     }
-  ).then(res => res.json()).then(data => data.items?.[0]);
-
-  if (!connectionSettings || (!connectionSettings.settings.api_key || !connectionSettings.settings.from_email)) {
-    throw new Error('SendGrid not connected');
   }
-  return { apiKey: connectionSettings.settings.api_key, email: connectionSettings.settings.from_email };
+
+  if (process.env.SENDGRID_API_KEY) {
+    console.log('[SendGrid] Using direct SENDGRID_API_KEY');
+    return { 
+      apiKey: process.env.SENDGRID_API_KEY, 
+      email: 'hello@mytaek.com' 
+    };
+  }
+
+  throw new Error('SendGrid not configured - need either Replit connector or SENDGRID_API_KEY');
 }
 
 async function getUncachableSendGridClient() {
