@@ -901,70 +901,55 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
     const club = clubResult[0];
     const toEmail = club.owner_email;
     
-    // Define email templates
-    const templates: Record<string, { subject: string; html: string }> = {
+    // SendGrid Dynamic Template IDs
+    const DYNAMIC_TEMPLATE_IDS = {
+      TRIAL_ENDING_SOON: 'd-ee5cb8ea6f114804a356adda535f05ec',
+      WIN_BACK: 'd-189dede22ae74ea697199ccbd9629bdb',
+      CHURN_RISK: 'd-f9a587c97a9d4ed18c87212a140f9c53',
+    };
+    
+    // Define email templates with dynamic template support
+    interface EmailTemplateConfig {
+      subject: string;
+      dynamicTemplateId?: string;
+      getDynamicData?: () => Record<string, any>;
+      html?: string;
+    }
+    
+    const templates: Record<string, EmailTemplateConfig> = {
       'trial-ending': {
-        subject: `Your TaekUp trial ends soon, ${club.owner_name || club.name}!`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #22d3ee;">Your Trial is Almost Over!</h2>
-            <p>Hi ${club.owner_name || 'there'},</p>
-            <p>Your TaekUp trial for <strong>${club.name}</strong> is ending soon. Don't lose access to all the features that help you run your martial arts club more efficiently!</p>
-            <p>Upgrade today to continue enjoying:</p>
-            <ul>
-              <li>Student management & tracking</li>
-              <li>AI-powered class planning</li>
-              <li>Parent engagement tools</li>
-              <li>Dojang Rivals gamification</li>
-            </ul>
-            <p style="margin-top: 20px;">
-              <a href="https://mytaek.com" style="background: #22d3ee; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                Upgrade Now
-              </a>
-            </p>
-            <p style="margin-top: 20px; color: #666;">The TaekUp Team</p>
-          </div>
-        `
+        subject: `Your TaekUp trial ends soon!`,
+        dynamicTemplateId: DYNAMIC_TEMPLATE_IDS.TRIAL_ENDING_SOON,
+        getDynamicData: () => ({
+          ownerName: club.owner_name || 'there',
+          clubName: club.name,
+          daysLeft: 3,
+          ctaUrl: 'https://mytaek.com/pricing',
+        }),
       },
-      'winback': {
-        subject: `We miss you at TaekUp, ${club.owner_name || club.name}!`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #22d3ee;">We'd Love to Have You Back!</h2>
-            <p>Hi ${club.owner_name || 'there'},</p>
-            <p>We noticed you haven't been using TaekUp lately. We've made a lot of improvements and would love to show you what's new!</p>
-            <p>Here's a special offer just for you: <strong>Get 20% off your first 3 months</strong> when you reactivate your account.</p>
-            <p style="margin-top: 20px;">
-              <a href="https://mytaek.com" style="background: #22d3ee; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                Come Back to TaekUp
-              </a>
-            </p>
-            <p style="margin-top: 20px; color: #666;">The TaekUp Team</p>
-          </div>
-        `
+      'win_back': {
+        subject: 'We Want You Back! 25% Off for 3 Months',
+        dynamicTemplateId: DYNAMIC_TEMPLATE_IDS.WIN_BACK,
+        getDynamicData: () => ({
+          ownerName: club.owner_name || 'there',
+          clubName: club.name,
+          discountCode: 'WINBACK25',
+          ctaUrl: 'https://mytaek.com/pricing',
+          unsubscribeUrl: 'https://mytaek.com/email-preferences',
+          privacyUrl: 'https://mytaek.com/privacy',
+        }),
       },
       'churn-risk': {
-        subject: `Need help with TaekUp, ${club.owner_name || club.name}?`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #22d3ee;">How Can We Help?</h2>
-            <p>Hi ${club.owner_name || 'there'},</p>
-            <p>We noticed you haven't logged into TaekUp recently. Is there anything we can help you with?</p>
-            <p>Our team is here to assist you in getting the most out of the platform. Whether you need:</p>
-            <ul>
-              <li>A quick walkthrough of features</li>
-              <li>Help setting up your club</li>
-              <li>Tips for engaging students and parents</li>
-            </ul>
-            <p>Just reply to this email and we'll be happy to help!</p>
-            <p style="margin-top: 20px;">
-              <a href="https://mytaek.com" style="background: #22d3ee; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                Log In to TaekUp
-              </a>
-            </p>
-            <p style="margin-top: 20px; color: #666;">The TaekUp Team</p>
-          </div>
-        `
+        subject: 'Need Help Getting Started? We\'re Here for You!',
+        dynamicTemplateId: DYNAMIC_TEMPLATE_IDS.CHURN_RISK,
+        getDynamicData: () => ({
+          ownerName: club.owner_name || 'there',
+          clubName: club.name,
+          ctaUrl: 'https://mytaek.com/wizard',
+          helpUrl: 'https://mytaek.com/help',
+          unsubscribeUrl: 'https://mytaek.com/email-preferences',
+          privacyUrl: 'https://mytaek.com/privacy',
+        }),
       },
       'custom': {
         subject: customSubject || 'Message from TaekUp',
@@ -981,7 +966,7 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
     
     const emailTemplate = templates[template];
     if (!emailTemplate) {
-      return res.status(400).json({ error: 'Invalid template' });
+      return res.status(400).json({ error: `Invalid template: ${template}. Available: ${Object.keys(templates).join(', ')}` });
     }
     
     let sendStatus = 'failed';
@@ -992,18 +977,45 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
     const sendgrid = await getUncachableSendGridClient();
     if (sendgrid) {
       try {
-        const result = await sendgrid.client.send({
-          to: toEmail,
-          from: {
-            email: sendgrid.fromEmail,
-            name: 'TaekUp'
-          },
-          subject: emailTemplate.subject,
-          html: emailTemplate.html,
-        });
-        sendStatus = 'sent';
-        sendError = null;
-        messageId = result[0]?.headers?.['x-message-id'] || null;
+        // Check if template has a dynamic template ID
+        if (emailTemplate.dynamicTemplateId && emailTemplate.getDynamicData) {
+          const dynamicData = emailTemplate.getDynamicData();
+          const msg: any = {
+            to: toEmail,
+            from: {
+              email: sendgrid.fromEmail,
+              name: 'TaekUp'
+            },
+            templateId: emailTemplate.dynamicTemplateId,
+            dynamicTemplateData: {
+              ...dynamicData,
+              unsubscribeUrl: 'https://mytaek.com/email-preferences',
+              privacyUrl: 'https://mytaek.com/privacy',
+            },
+          };
+          
+          const result = await sendgrid.client.send(msg);
+          sendStatus = 'sent';
+          sendError = null;
+          messageId = result[0]?.headers?.['x-message-id'] || null;
+          console.log(`[SendGrid] Dynamic template email sent: ${template} (${emailTemplate.dynamicTemplateId})`);
+        } else if (emailTemplate.html) {
+          // Fallback to HTML
+          const result = await sendgrid.client.send({
+            to: toEmail,
+            from: {
+              email: sendgrid.fromEmail,
+              name: 'TaekUp'
+            },
+            subject: emailTemplate.subject,
+            html: emailTemplate.html,
+          });
+          sendStatus = 'sent';
+          sendError = null;
+          messageId = result[0]?.headers?.['x-message-id'] || null;
+        } else {
+          sendError = 'Template has no content';
+        }
       } catch (sgErr: any) {
         sendStatus = 'failed';
         sendError = sgErr.message;
