@@ -33,7 +33,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE email_status AS ENUM ('sent', 'delivered', 'bounced', 'failed');
+    CREATE TYPE email_status AS ENUM ('pending', 'sent', 'delivered', 'bounced', 'failed', 'skipped');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 

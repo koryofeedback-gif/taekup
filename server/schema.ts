@@ -7,7 +7,7 @@ export const userRoleEnum = pgEnum('user_role', ['owner', 'coach', 'parent', 'su
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['trialing', 'active', 'past_due', 'canceled', 'incomplete']);
 export const paymentStatusEnum = pgEnum('payment_status', ['paid', 'open', 'unpaid', 'void', 'failed']);
 export const premiumStatusEnum = pgEnum('premium_status', ['none', 'club_sponsored', 'parent_paid']);
-export const emailStatusEnum = pgEnum('email_status', ['sent', 'delivered', 'bounced', 'failed']);
+export const emailStatusEnum = pgEnum('email_status', ['pending', 'sent', 'delivered', 'bounced', 'failed', 'skipped']);
 
 export const clubs = pgTable('clubs', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
