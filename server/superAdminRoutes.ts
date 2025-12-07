@@ -743,6 +743,33 @@ router.post('/apply-discount', verifySuperAdmin, async (req: Request, res: Respo
 
 // Email Templates
 const EMAIL_TEMPLATES: Record<string, { subject: string; getHtml: (club: any, daysLeft?: number) => string }> = {
+  'trial-ending': {
+    subject: 'Your TaekUp Trial is Ending Soon!',
+    getHtml: (club) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #FF6B6B;">Your Trial is Ending Soon!</h1>
+        </div>
+        <p>Hi ${club.owner_name || 'there'},</p>
+        <p>Your free trial for <strong>${club.name}</strong> is ending soon!</p>
+        <p>Don't lose access to all the great features you've been using:</p>
+        <ul>
+          <li>Student & Belt Management</li>
+          <li>Dojang Rivals Gamification</li>
+          <li>AI-Powered Class Planning</li>
+          <li>Parent Engagement Tools</li>
+        </ul>
+        <p style="background: #FFF3CD; padding: 15px; border-radius: 8px; border-left: 4px solid #FFC107;">
+          <strong>Special Offer:</strong> Subscribe now and get 20% off your first 3 months!
+        </p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://mytaek.com/pricing" style="background: #00D4FF; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Subscribe Now</a>
+        </p>
+        <p>Questions? We're here to help!</p>
+        <p>The TaekUp Team</p>
+      </div>
+    `
+  },
   welcome: {
     subject: 'Welcome to TaekUp! Your 14-Day Free Trial Has Started',
     getHtml: (club) => `
