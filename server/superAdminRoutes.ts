@@ -5,9 +5,48 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
 
-// Initialize SendGrid if API key is available
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// SendGrid client getter - tries Replit connector first, then env var
+async function getSendGridClient() {
+  // First try Replit connector
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+
+  if (xReplitToken && hostname) {
+    try {
+      const connectionSettings = await fetch(
+        'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
+        {
+          headers: {
+            'Accept': 'application/json',
+            'X_REPLIT_TOKEN': xReplitToken
+          }
+        }
+      ).then(res => res.json()).then(data => data.items?.[0]);
+
+      if (connectionSettings?.settings?.api_key) {
+        sgMail.setApiKey(connectionSettings.settings.api_key);
+        return {
+          client: sgMail,
+          fromEmail: connectionSettings.settings.from_email || 'hello@mytaek.com',
+          configured: true
+        };
+      }
+    } catch (err) {
+      console.error('Failed to get SendGrid via Replit connector:', err);
+    }
+  }
+
+  // Fallback to environment variable
+  if (process.env.SENDGRID_API_KEY) {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    return { client: sgMail, fromEmail: 'hello@mytaek.com', configured: true };
+  }
+  
+  return { client: null, fromEmail: null, configured: false };
 }
 
 const router = Router();
@@ -855,42 +894,55 @@ router.post('/send-email', verifySuperAdmin, async (req: Request, res: Response)
     }
 
     // Send email via SendGrid if configured
-    if (process.env.SENDGRID_API_KEY) {
+    const sendgrid = await getSendGridClient();
+    let emailSent = false;
+    let emailError = null;
+    
+    if (sendgrid.configured && sendgrid.client) {
       const msg = {
         to: toEmail,
-        from: 'noreply@mytaek.com', // Must be verified in SendGrid
+        from: sendgrid.fromEmail || 'hello@mytaek.com',
         subject: subject,
         html: htmlContent,
       };
 
       try {
-        await sgMail.send(msg);
+        await sendgrid.client.send(msg);
         console.log(`[SendGrid] Email sent to ${toEmail}: ${template}`);
+        emailSent = true;
       } catch (sgError: any) {
         console.error('[SendGrid] Error:', sgError.response?.body || sgError.message);
-        // Continue even if SendGrid fails - log the attempt
+        emailError = sgError.response?.body?.errors?.[0]?.message || sgError.message;
       }
     } else {
       console.log(`[Email Preview - SendGrid not configured]`);
       console.log(`To: ${toEmail}`);
       console.log(`Subject: ${subject}`);
       console.log(`Template: ${template}`);
+      emailError = 'SendGrid not configured';
     }
 
     // Log activity
     await db.execute(sql`
       INSERT INTO activity_log (event_type, event_title, event_description, metadata, club_id, actor_email, actor_type)
-      VALUES ('email_sent', ${`Email: ${template}`}, ${`Sent to ${toEmail}`}, ${JSON.stringify({ template, subject, recipientEmail: toEmail })}::jsonb, ${clubId}::uuid, 'super_admin', 'super_admin')
+      VALUES ('email_sent', ${`Email: ${template}`}, ${`Sent to ${toEmail}`}, ${JSON.stringify({ template, subject, recipientEmail: toEmail, sent: emailSent, error: emailError })}::jsonb, ${clubId}::uuid, 'super_admin', 'super_admin')
     `);
 
-    res.json({ 
-      success: true, 
-      message: `Email sent to ${toEmail}`,
-      template,
-      subject,
-      club: club.name,
-      sendgridConfigured: !!process.env.SENDGRID_API_KEY
-    });
+    if (emailSent) {
+      res.json({ 
+        success: true, 
+        message: `Email sent to ${toEmail}`,
+        template,
+        subject,
+        club: club.name
+      });
+    } else {
+      res.status(500).json({ 
+        error: emailError || 'Failed to send email',
+        template,
+        recipient: toEmail
+      });
+    }
   } catch (error: any) {
     console.error('Send email error:', error);
     res.status(500).json({ error: 'Failed to send email: ' + error.message });
