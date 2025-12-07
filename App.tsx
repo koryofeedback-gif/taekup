@@ -11,6 +11,7 @@ import { LoginPage } from './pages/Login';
 import { LandingPage } from './pages/Landing';
 import { PricingPage } from './pages/PricingPage';
 import { AccountLockedPage } from './pages/AccountLockedPage';
+import { SubscriptionSuccess } from './pages/SubscriptionSuccess';
 import { SuperAdminLogin } from './pages/SuperAdminLogin';
 import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute, SuperAdminPaymentsRoute } from './components/SuperAdminRoutes';
 import { TrialBanner } from './components/TrialBanner';
@@ -423,6 +424,12 @@ const AppContent: React.FC<AppContentProps> = ({
                                 />
                             </>
                         }
+                    />
+
+                    {/* Subscription Success Page (after Stripe checkout) */}
+                    <Route
+                        path="/subscription-success"
+                        element={<SubscriptionSuccess />}
                     />
 
                     {/* Login Page */}

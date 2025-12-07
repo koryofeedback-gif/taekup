@@ -340,8 +340,8 @@ export function registerRoutes(app: Express) {
 
       const session = await stripeService.createCheckoutSession(
         priceId,
-        `${baseUrl}/app/admin?subscription=success`,
-        `${baseUrl}/app/pricing?subscription=cancelled`,
+        `${baseUrl}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+        `${baseUrl}/pricing?subscription=cancelled`,
         undefined,
         { clubId: clubId || '', email: email || '' }
       );
@@ -351,6 +351,30 @@ export function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error('[/api/checkout] Error creating checkout session:', error);
       res.status(500).json({ error: error.message || 'Failed to create checkout session' });
+    }
+  });
+
+  app.get('/api/verify-checkout-session', async (req: Request, res: Response) => {
+    try {
+      const { session_id } = req.query;
+      
+      if (!session_id || typeof session_id !== 'string') {
+        return res.status(400).json({ error: 'session_id is required' });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      
+      res.json({
+        success: session.payment_status === 'paid',
+        email: session.customer_email || session.customer_details?.email,
+        planName: session.metadata?.planName || 'Premium Plan',
+        customerId: session.customer,
+        subscriptionId: session.subscription,
+      });
+    } catch (error: any) {
+      console.error('Error verifying checkout session:', error);
+      res.status(500).json({ error: 'Failed to verify session' });
     }
   });
 
