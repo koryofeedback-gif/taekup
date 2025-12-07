@@ -351,6 +351,135 @@ async function handleWelcomeEmail(req: VercelRequest, res: VercelResponse) {
   return res.json({ email: result.response.text() });
 }
 
+async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { clubId, name, parentEmail, parentName, parentPhone, belt, birthdate } = parseBody(req);
+
+  if (!clubId || !name) {
+    return res.status(400).json({ error: 'Club ID and student name are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const clubResult = await client.query(
+      'SELECT id, name, owner_email FROM clubs WHERE id = $1::uuid',
+      [clubId]
+    );
+    const club = clubResult.rows[0];
+    if (!club) return res.status(404).json({ error: 'Club not found' });
+
+    const studentResult = await client.query(
+      `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, created_at)
+       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, NOW())
+       RETURNING id, name, parent_email, parent_name, belt`,
+      [clubId, name, parentEmail || null, parentName || null, parentPhone || null, belt || 'White', birthdate ? birthdate + 'T00:00:00Z' : null]
+    );
+    const student = studentResult.rows[0];
+
+    const age = birthdate ? Math.floor((Date.now() - new Date(birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+
+    const notifySent = await sendTemplateEmail(club.owner_email, EMAIL_TEMPLATES.WELCOME, {
+      ownerName: club.name,
+      clubName: club.name,
+      studentName: name,
+      beltLevel: belt || 'White',
+      studentAge: age ? `${age} years old` : 'Not specified',
+      parentName: parentName || 'Not specified',
+    });
+    console.log(`[AddStudent] Owner notification email ${notifySent ? 'sent' : 'failed'} to:`, club.owner_email);
+
+    if (parentEmail) {
+      const parentSent = await sendTemplateEmail(parentEmail, EMAIL_TEMPLATES.PARENT_WELCOME, {
+        parentName: parentName || 'Parent',
+        studentName: name,
+        clubName: club.name,
+      });
+      await logAutomatedEmail(client, 'parent_welcome', parentEmail, EMAIL_TEMPLATES.PARENT_WELCOME, parentSent ? 'sent' : 'failed', clubId);
+      console.log(`[AddStudent] Parent welcome email ${parentSent ? 'sent' : 'failed'} to:`, parentEmail);
+    }
+
+    await client.query(
+      `INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+       VALUES ('student_added', 'New Student Added', $1, $2::uuid, $3::jsonb, NOW())`,
+      ['New student added: ' + name, clubId, JSON.stringify({ studentId: student.id, studentName: name, parentEmail })]
+    );
+
+    return res.status(201).json({
+      success: true,
+      student: {
+        id: student.id,
+        name: student.name,
+        parentEmail: student.parent_email,
+        parentName: student.parent_name,
+        belt: student.belt
+      }
+    });
+  } catch (error: any) {
+    console.error('[AddStudent] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to add student' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleLinkParent(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
+  const { parentEmail, parentName, parentPhone } = parseBody(req);
+
+  if (!parentEmail) {
+    return res.status(400).json({ error: 'Parent email is required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const studentResult = await client.query(
+      `SELECT s.id, s.name, s.parent_email, c.id as club_id, c.name as club_name 
+       FROM students s
+       JOIN clubs c ON s.club_id = c.id
+       WHERE s.id = $1::uuid
+       LIMIT 1`,
+      [studentId]
+    );
+    const student = studentResult.rows[0];
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+
+    const hadParentBefore = !!student.parent_email;
+
+    await client.query(
+      `UPDATE students 
+       SET parent_email = $1, parent_name = $2, parent_phone = $3, updated_at = NOW()
+       WHERE id = $4::uuid`,
+      [parentEmail, parentName || null, parentPhone || null, studentId]
+    );
+
+    if (!hadParentBefore) {
+      const parentSent = await sendTemplateEmail(parentEmail, EMAIL_TEMPLATES.PARENT_WELCOME, {
+        parentName: parentName || 'Parent',
+        studentName: student.name,
+        clubName: student.club_name,
+      });
+      await logAutomatedEmail(client, 'parent_welcome', parentEmail, EMAIL_TEMPLATES.PARENT_WELCOME, parentSent ? 'sent' : 'failed', student.club_id);
+      console.log(`[LinkParent] Parent welcome email ${parentSent ? 'sent' : 'failed'} to:`, parentEmail);
+    }
+
+    await client.query(
+      `INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+       VALUES ('parent_linked', 'Parent Linked', $1, $2::uuid, $3::jsonb, NOW())`,
+      ['Parent linked to student: ' + student.name, student.club_id, JSON.stringify({ studentId, parentEmail })]
+    );
+
+    return res.json({ 
+      success: true, 
+      message: hadParentBefore ? 'Parent information updated' : 'Parent linked and welcome email sent'
+    });
+  } catch (error: any) {
+    console.error('[LinkParent] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to link parent to student' });
+  } finally {
+    client.release();
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -371,6 +500,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/ai/taekbot' || path === '/ai/taekbot/') return await handleTaekBot(req, res);
     if (path === '/ai/class-plan' || path === '/ai/class-plan/') return await handleClassPlan(req, res);
     if (path === '/ai/welcome-email' || path === '/ai/welcome-email/') return await handleWelcomeEmail(req, res);
+    if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
+    
+    const linkParentMatch = path.match(/^\/students\/([^/]+)\/link-parent\/?$/);
+    if (linkParentMatch) return await handleLinkParent(req, res, linkParentMatch[1]);
 
     return res.status(404).json({ error: 'Not found', path });
   } catch (error: any) {
