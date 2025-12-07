@@ -154,6 +154,33 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ token,
     }
   };
 
+  const handleExport = async (type: 'clubs' | 'revenue') => {
+    try {
+      const response = await fetch(`/api/super-admin/export/${type}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || 'Export failed');
+        return;
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${type}-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Export failed. Please try again.');
+    }
+  };
+
   const getEventIcon = (eventType: string) => {
     switch (eventType) {
       case 'trial_extended': return <Clock className="w-4 h-4 text-blue-400" />;
@@ -240,20 +267,20 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ token,
             <p className="text-gray-400 text-sm mt-1">Real-time business metrics and insights</p>
           </div>
           <div className="flex items-center gap-3">
-            <a
-              href="/api/super-admin/export/clubs"
+            <button
+              onClick={() => handleExport('clubs')}
               className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
               Export Clubs
-            </a>
-            <a
-              href="/api/super-admin/export/revenue"
+            </button>
+            <button
+              onClick={() => handleExport('revenue')}
               className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
               Export Revenue
-            </a>
+            </button>
             <button
               onClick={fetchData}
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"

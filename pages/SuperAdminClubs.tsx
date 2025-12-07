@@ -268,6 +268,33 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/super-admin/export/clubs', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || 'Export failed');
+        return;
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clubs-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Export failed. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900">
       <header className="bg-gray-800 border-b border-gray-700">
@@ -305,13 +332,13 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
             <p className="text-gray-400">{total} total clubs</p>
           </div>
           <div className="flex items-center gap-3">
-            <a
-              href="/api/super-admin/export/clubs"
+            <button
+              onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
               Export CSV
-            </a>
+            </button>
             <button
               onClick={() => setShowHealthScores(!showHealthScores)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
