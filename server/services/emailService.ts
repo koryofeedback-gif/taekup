@@ -64,7 +64,7 @@ const SENDER_EMAILS = {
     name: 'TaekUp'
   },
   transactional: {
-    email: 'noreply@mytaek.com',
+    email: 'hello@mytaek.com',
     name: 'TaekUp'
   }
 };
