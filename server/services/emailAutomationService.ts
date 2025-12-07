@@ -32,25 +32,47 @@ async function hasAlreadySent(
   withinDays?: number
 ): Promise<boolean> {
   try {
-    let query = sql`
-      SELECT id FROM automated_email_logs 
-      WHERE trigger_type = ${triggerType}
-      AND recipient = ${recipient}
-      AND status = 'sent'
-    `;
+    let result: any[];
     
-    if (entityId) {
-      query = sql`${query} AND (club_id = ${entityId}::uuid OR student_id = ${entityId}::uuid OR user_id = ${entityId}::uuid)`;
+    if (entityId && withinDays) {
+      result = await db.execute(sql`
+        SELECT id FROM automated_email_logs 
+        WHERE trigger_type = ${triggerType}
+        AND recipient = ${recipient}
+        AND status = 'sent'
+        AND (club_id = ${entityId}::uuid OR student_id = ${entityId}::uuid OR user_id = ${entityId}::uuid)
+        AND sent_at > NOW() - INTERVAL '1 day' * ${withinDays}
+        LIMIT 1
+      `) as any[];
+    } else if (entityId) {
+      result = await db.execute(sql`
+        SELECT id FROM automated_email_logs 
+        WHERE trigger_type = ${triggerType}
+        AND recipient = ${recipient}
+        AND status = 'sent'
+        AND (club_id = ${entityId}::uuid OR student_id = ${entityId}::uuid OR user_id = ${entityId}::uuid)
+        LIMIT 1
+      `) as any[];
+    } else if (withinDays) {
+      result = await db.execute(sql`
+        SELECT id FROM automated_email_logs 
+        WHERE trigger_type = ${triggerType}
+        AND recipient = ${recipient}
+        AND status = 'sent'
+        AND sent_at > NOW() - INTERVAL '1 day' * ${withinDays}
+        LIMIT 1
+      `) as any[];
+    } else {
+      result = await db.execute(sql`
+        SELECT id FROM automated_email_logs 
+        WHERE trigger_type = ${triggerType}
+        AND recipient = ${recipient}
+        AND status = 'sent'
+        LIMIT 1
+      `) as any[];
     }
     
-    if (withinDays) {
-      query = sql`${query} AND sent_at > NOW() - INTERVAL '${sql.raw(withinDays.toString())} days'`;
-    }
-    
-    query = sql`${query} LIMIT 1`;
-    
-    const result = await db.execute(query);
-    return (result as any[]).length > 0;
+    return result.length > 0;
   } catch (error) {
     console.error('[EmailAutomation] Error checking if email was sent:', error);
     return false;
@@ -70,18 +92,49 @@ async function logEmail(
   userId?: string
 ): Promise<void> {
   try {
-    await db.execute(sql`
-      INSERT INTO automated_email_logs (
-        trigger_type, recipient, template_id, status, message_id, error, metadata,
-        club_id, student_id, user_id
-      ) VALUES (
-        ${triggerType}, ${recipient}, ${templateId}, ${status}::email_status, 
-        ${messageId || null}, ${error || null}, ${JSON.stringify(metadata || {})}::jsonb,
-        ${clubId ? sql`${clubId}::uuid` : null}, 
-        ${studentId ? sql`${studentId}::uuid` : null}, 
-        ${userId ? sql`${userId}::uuid` : null}
-      )
-    `);
+    const metadataJson = JSON.stringify(metadata || {});
+    
+    if (clubId && studentId && userId) {
+      await db.execute(sql`
+        INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, message_id, error, metadata, club_id, student_id, user_id)
+        VALUES (${triggerType}, ${recipient}, ${templateId}, ${status}::email_status, ${messageId || null}, ${error || null}, ${metadataJson}::jsonb, ${clubId}::uuid, ${studentId}::uuid, ${userId}::uuid)
+      `);
+    } else if (clubId && studentId) {
+      await db.execute(sql`
+        INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, message_id, error, metadata, club_id, student_id)
+        VALUES (${triggerType}, ${recipient}, ${templateId}, ${status}::email_status, ${messageId || null}, ${error || null}, ${metadataJson}::jsonb, ${clubId}::uuid, ${studentId}::uuid)
+      `);
+    } else if (clubId && userId) {
+      await db.execute(sql`
+        INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, message_id, error, metadata, club_id, user_id)
+        VALUES (${triggerType}, ${recipient}, ${templateId}, ${status}::email_status, ${messageId || null}, ${error || null}, ${metadataJson}::jsonb, ${clubId}::uuid, ${userId}::uuid)
+      `);
+    } else if (studentId && userId) {
+      await db.execute(sql`
+        INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, message_id, error, metadata, student_id, user_id)
+        VALUES (${triggerType}, ${recipient}, ${templateId}, ${status}::email_status, ${messageId || null}, ${error || null}, ${metadataJson}::jsonb, ${studentId}::uuid, ${userId}::uuid)
+      `);
+    } else if (clubId) {
+      await db.execute(sql`
+        INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, message_id, error, metadata, club_id)
+        VALUES (${triggerType}, ${recipient}, ${templateId}, ${status}::email_status, ${messageId || null}, ${error || null}, ${metadataJson}::jsonb, ${clubId}::uuid)
+      `);
+    } else if (studentId) {
+      await db.execute(sql`
+        INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, message_id, error, metadata, student_id)
+        VALUES (${triggerType}, ${recipient}, ${templateId}, ${status}::email_status, ${messageId || null}, ${error || null}, ${metadataJson}::jsonb, ${studentId}::uuid)
+      `);
+    } else if (userId) {
+      await db.execute(sql`
+        INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, message_id, error, metadata, user_id)
+        VALUES (${triggerType}, ${recipient}, ${templateId}, ${status}::email_status, ${messageId || null}, ${error || null}, ${metadataJson}::jsonb, ${userId}::uuid)
+      `);
+    } else {
+      await db.execute(sql`
+        INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, message_id, error, metadata)
+        VALUES (${triggerType}, ${recipient}, ${templateId}, ${status}::email_status, ${messageId || null}, ${error || null}, ${metadataJson}::jsonb)
+      `);
+    }
   } catch (err) {
     console.error('[EmailAutomation] Failed to log email:', err);
   }
