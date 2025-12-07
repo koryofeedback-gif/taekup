@@ -985,8 +985,8 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Invalid template' });
     }
     
-    let sendStatus = 'pending';
-    let sendError = null;
+    let sendStatus = 'failed';
+    let sendError: string | null = 'Not attempted';
     let messageId = null;
     
     // Send via SendGrid (using Replit connector or legacy env var)
@@ -1003,6 +1003,7 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
           html: emailTemplate.html,
         });
         sendStatus = 'sent';
+        sendError = null;
         messageId = result[0]?.headers?.['x-message-id'] || null;
       } catch (sgErr: any) {
         sendStatus = 'failed';
@@ -1010,7 +1011,7 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
         console.error('SendGrid error:', sgErr);
       }
     } else {
-      sendStatus = 'skipped';
+      sendStatus = 'failed';
       sendError = 'SendGrid not configured';
     }
     
