@@ -208,16 +208,20 @@ const App: React.FC = () => {
                 setParentStudentId(studentId);
             }
             if (userData?.clubId) {
-                setSignupData(prev => ({
-                    clubName: prev?.clubName || userData.clubName || '',
-                    email: prev?.email || userData.email || '',
-                    country: prev?.country || 'US',
-                    clubId: userData.clubId,
-                    trialStartDate: prev?.trialStartDate
-                }));
+                setSignupDataState(prev => {
+                    const newData = {
+                        clubName: prev?.clubName || userData.clubName || '',
+                        email: prev?.email || userData.email || '',
+                        country: prev?.country || 'US',
+                        clubId: userData.clubId,
+                        trialStartDate: prev?.trialStartDate
+                    };
+                    localStorage.setItem('taekup_signup_data', JSON.stringify(newData));
+                    return newData;
+                });
             }
         },
-        [setSignupData]
+        []
     );
 
     const handleLogout = useCallback(() => {

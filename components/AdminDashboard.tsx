@@ -922,8 +922,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
         const pointsPerStripe = data.pointsPerBelt[belt?.id || ''] || data.pointsPerStripe || 64;
         const initialPoints = (tempStudent.stripes || 0) * pointsPerStripe;
 
+        console.log('[AdminDashboard] handleAddStudent called with clubId:', clubId, 'parentEmail:', tempStudent.parentEmail);
+        
         if (clubId && tempStudent.parentEmail) {
             try {
+                console.log('[AdminDashboard] Sending students API request...');
                 const response = await fetch('/api/students', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -937,12 +940,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         birthdate: tempStudent.birthday
                     })
                 });
+                const result = await response.json();
                 if (response.ok) {
-                    console.log('[AdminDashboard] Student added via API, emails triggered');
+                    console.log('[AdminDashboard] Student added successfully:', result);
+                    alert(`Welcome email sent to parent at ${tempStudent.parentEmail}!`);
+                } else {
+                    console.error('[AdminDashboard] Student API error:', result);
+                    alert(`Failed to send welcome email: ${result.error || 'Unknown error'}. Student added locally.`);
                 }
             } catch (error) {
                 console.error('[AdminDashboard] API call failed, continuing with local update:', error);
+                alert('Failed to send welcome email. Student added locally.');
             }
+        } else if (!clubId) {
+            console.warn('[AdminDashboard] No clubId available - skipping API call');
+        } else if (!tempStudent.parentEmail) {
+            console.log('[AdminDashboard] No parent email provided - skipping welcome email');
         }
 
         const newStudent: Student = {
@@ -982,8 +995,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const handleAddCoach = async () => {
         if(!tempCoach.name || !tempCoach.email) return;
         
+        console.log('[AdminDashboard] handleAddCoach called with clubId:', clubId);
+        
         if (clubId) {
             try {
+                console.log('[AdminDashboard] Sending invite-coach API request...');
                 const response = await fetch('/api/invite-coach', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -995,12 +1011,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         assignedClasses: []
                     })
                 });
+                const result = await response.json();
                 if (response.ok) {
-                    console.log('[AdminDashboard] Coach invited via API, email triggered');
+                    console.log('[AdminDashboard] Coach invited successfully:', result);
+                    alert(`Invitation email sent to ${tempCoach.email}!`);
+                } else {
+                    console.error('[AdminDashboard] Coach invite API error:', result);
+                    alert(`Failed to send invitation: ${result.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('[AdminDashboard] Coach invite API failed:', error);
+                alert('Failed to send invitation email. Coach added locally.');
             }
+        } else {
+            console.warn('[AdminDashboard] No clubId available - skipping API call');
         }
 
         const newCoach: Coach = {
