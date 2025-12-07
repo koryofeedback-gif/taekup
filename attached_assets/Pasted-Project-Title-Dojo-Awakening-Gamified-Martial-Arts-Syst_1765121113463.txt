@@ -1,0 +1,57 @@
+Project Title: Dojo Awakening (Gamified Martial Arts System)
+1. Executive Summary
+We are developing a martial arts management platform that integrates Gen Alpha gaming trends (like Roblox, Sol’s RNG, and Gacha games) with traditional discipline. The goal is to boost student retention and motivation by making "practice" addictive in a healthy way.
+
+Unlike traditional gamification (which uses boring leaderboards), this system uses RNG (Random Number Generation) and Collection Mechanics to keep students engaged.
+
+2. Core Mechanics
+A. The "Summoning" System (XP as Currency)
+Instead of a linear level-up system, we use a "Gacha" mechanic popular in modern games.
+
+How it works: Students earn XP through home practice, good behavior, and challenges.
+
+The Hook: XP is used to "Summon" or "Roll" for Spirit Items.
+
+RNG Logic:
+
+50% Chance: Common Item (e.g., Training Gloves)
+
+30% Chance: Rare Item (e.g., Speed Aura)
+
+15% Chance: Epic Item (e.g., Shadow Tiger Spirit)
+
+0.1% Chance: Legendary Item (e.g., Neon Dragon)
+
+Why it works: The thrill of "opening a loot box" motivates students to practice more than a simple progress bar ever could.
+
+B. The "Limit Breaker" System (Real-World Integration)
+To solve the conflict between "Game Levels" and "Real Belts," we treat real-world belts as Level Caps.
+
+The Constraint: A student might have 1,000,000 XP and Legendary items, but their "Power Level" is capped based on their Real Belt.
+
+Example: A White Belt is capped at Level 10. To reach Level 11 and use their full power, they must pass their Yellow Belt exam in the dojo.
+
+The Result: The game drives the student to seek real-world advancement. The game says: "You are strong spiritually, but your physical rank is holding you back."
+
+C. Visual Flexing (Auras vs. Animations)
+Since the app is web-based (Vercel/Replit), we focus on lightweight Visual Effects (VFX) rather than heavy 3D animations.
+
+Auras: Rare items grant glowing "Auras" around the avatar (Fire, Lightning, Glitch effects).
+
+Status: In the leaderboard, students show off their "Combat Power" and their rare Auras, creating a healthy social competition.
+
+3. Technical Feasibility & Scalability
+Stack: Next.js (Frontend on Vercel) + Node.js (Backend on Replit).
+
+Performance: By using SVG avatars and CSS/Lottie animations instead of 3D models, the app remains lightweight and mobile-friendly.
+
+White-Label Potential: The system is designed to be sold to other disciplines (Judo, Karate).
+
+We simply swap the Asset Pack (Card images, Spirit Animals) to match the specific martial art. The core code remains the same.
+
+4. Why This Wins?
+Adopts Current Trends: It speaks the language of kids playing Blox Fruits and Pet Simulator.
+
+Respects Tradition: It doesn't replace the belt system; it enforces it.
+
+High Retention: The desire to collect "Legendary" items keeps students logging in daily, even on non-training days.
