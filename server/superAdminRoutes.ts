@@ -7,6 +7,11 @@ import sgMail from '@sendgrid/mail';
 
 // SendGrid client getter - tries Replit connector first, then env var
 async function getSendGridClient() {
+  console.log('[SendGrid] Checking configuration...');
+  console.log('[SendGrid] REPLIT_CONNECTORS_HOSTNAME:', !!process.env.REPLIT_CONNECTORS_HOSTNAME);
+  console.log('[SendGrid] REPL_IDENTITY:', !!process.env.REPL_IDENTITY);
+  console.log('[SendGrid] SENDGRID_API_KEY:', !!process.env.SENDGRID_API_KEY);
+  
   // First try Replit connector
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY 
@@ -17,6 +22,7 @@ async function getSendGridClient() {
 
   if (xReplitToken && hostname) {
     try {
+      console.log('[SendGrid] Trying Replit connector...');
       const connectionSettings = await fetch(
         'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
         {
@@ -28,24 +34,29 @@ async function getSendGridClient() {
       ).then(res => res.json()).then(data => data.items?.[0]);
 
       if (connectionSettings?.settings?.api_key) {
+        console.log('[SendGrid] Got API key from Replit connector');
         sgMail.setApiKey(connectionSettings.settings.api_key);
         return {
           client: sgMail,
           fromEmail: connectionSettings.settings.from_email || 'hello@mytaek.com',
           configured: true
         };
+      } else {
+        console.log('[SendGrid] Connector returned no api_key');
       }
     } catch (err) {
-      console.error('Failed to get SendGrid via Replit connector:', err);
+      console.error('[SendGrid] Failed to get via Replit connector:', err);
     }
   }
 
   // Fallback to environment variable
   if (process.env.SENDGRID_API_KEY) {
+    console.log('[SendGrid] Using SENDGRID_API_KEY env var');
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     return { client: sgMail, fromEmail: 'hello@mytaek.com', configured: true };
   }
   
+  console.log('[SendGrid] No configuration found');
   return { client: null, fromEmail: null, configured: false };
 }
 
