@@ -214,6 +214,38 @@ export const discounts = pgTable('discounts', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+export const automatedEmailTriggerEnum = pgEnum('automated_email_trigger', [
+  'welcome',
+  'day_3_checkin',
+  'day_7_mid_trial',
+  'trial_ending_soon',
+  'trial_expired',
+  'win_back',
+  'churn_risk',
+  'parent_welcome',
+  'birthday_wish',
+  'belt_promotion',
+  'attendance_alert',
+  'coach_invite',
+  'new_student_added'
+]);
+
+export const automatedEmailLogs = pgTable('automated_email_logs', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'set null' }),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'set null' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  triggerType: automatedEmailTriggerEnum('trigger_type').notNull(),
+  recipient: varchar('recipient', { length: 255 }).notNull(),
+  templateId: varchar('template_id', { length: 255 }),
+  status: emailStatusEnum('status').default('sent'),
+  messageId: varchar('message_id', { length: 255 }),
+  error: text('error'),
+  metadata: jsonb('metadata'),
+  sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 export type Club = typeof clubs.$inferSelect;
 export type NewClub = typeof clubs.$inferInsert;
 export type User = typeof users.$inferSelect;
