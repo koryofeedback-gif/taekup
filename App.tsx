@@ -8,6 +8,8 @@ import { ParentPortal } from './components/ParentPortal';
 import { LobbyDisplay } from './components/LobbyDisplay';
 import { MyTaekHome } from './components/MyTaekHome';
 import { LoginPage } from './pages/Login';
+import { ForgotPasswordPage } from './pages/ForgotPassword';
+import { ResetPasswordPage } from './pages/ResetPassword';
 import { LandingPage } from './pages/Landing';
 import { PricingPage } from './pages/PricingPage';
 import { AccountLockedPage } from './pages/AccountLockedPage';
@@ -442,6 +444,18 @@ const AppContent: React.FC<AppContentProps> = ({
                                 onLoginSuccess={onLoginSuccess}
                             />
                         }
+                    />
+
+                    {/* Forgot Password Page */}
+                    <Route
+                        path="/forgot-password"
+                        element={<ForgotPasswordPage />}
+                    />
+
+                    {/* Reset Password Page */}
+                    <Route
+                        path="/reset-password"
+                        element={<ResetPasswordPage />}
                     />
 
                     {/* Secret Preview Mode - Only accessible with secret key */}
