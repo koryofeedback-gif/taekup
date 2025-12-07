@@ -10,10 +10,19 @@ const pool = new Pool({
 });
 
 const EMAIL_TEMPLATES = {
-  WELCOME: 'd-c75234cb326144f68395a66668081ee8',
+  PAYMENT_CONFIRMATION: 'd-PLACEHOLDER_PAYMENT_CONFIRMATION',
 };
 
-async function sendWelcomeEmail(to: string, data: { ownerName: string; clubName: string }) {
+async function sendPaymentConfirmationEmail(
+  to: string, 
+  data: { 
+    ownerName: string; 
+    clubName: string; 
+    planName: string;
+    amount: string;
+    billingPeriod: string;
+  }
+) {
   if (!process.env.SENDGRID_API_KEY) {
     console.log('[Webhook] SendGrid API key not configured, skipping email');
     return { success: false, error: 'SendGrid not configured' };
@@ -25,21 +34,21 @@ async function sendWelcomeEmail(to: string, data: { ownerName: string; clubName:
     const msg = {
       to,
       from: {
-        email: 'hello@mytaek.com',
+        email: 'noreply@mytaek.com',
         name: 'TaekUp'
       },
-      templateId: EMAIL_TEMPLATES.WELCOME,
+      templateId: EMAIL_TEMPLATES.PAYMENT_CONFIRMATION,
       dynamicTemplateData: {
         ...data,
-        ctaUrl: 'https://mytaek.com/setup',
+        ctaUrl: 'https://mytaek.com/wizard',
+        manageSubscriptionUrl: 'https://mytaek.com/app/admin?tab=billing',
         unsubscribeUrl: 'https://mytaek.com/email-preferences',
         privacyUrl: 'https://mytaek.com/privacy',
         dashboardUrl: 'https://mytaek.com/dashboard',
         loginUrl: 'https://mytaek.com/login',
-        upgradeUrl: 'https://mytaek.com/pricing',
         helpUrl: 'https://mytaek.com/help',
       },
-      subject: 'Welcome to TaekUp - Your 14-Day Trial Has Started!'
+      subject: `Payment Confirmed - Let's Set Up Your Club!`
     };
 
     await sgMail.send(msg);
@@ -50,7 +59,7 @@ async function sendWelcomeEmail(to: string, data: { ownerName: string; clubName:
   }
 }
 
-async function handleCheckoutCompleted(session: any) {
+async function handleCheckoutCompleted(session: any, stripe: Stripe) {
   const client = await pool.connect();
   try {
     console.log('[Webhook] Checkout completed:', session.id);
@@ -70,32 +79,63 @@ async function handleCheckoutCompleted(session: any) {
     const club = clubResult.rows[0];
     
     if (club) {
-      console.log('[Webhook] Found club for welcome email:', club.name);
+      console.log('[Webhook] Found club for payment confirmation:', club.name);
       
       const alreadySent = await client.query(
         'SELECT id FROM email_log WHERE club_id = $1 AND email_type = $2 LIMIT 1',
-        [club.id, 'welcome']
+        [club.id, 'payment_confirmation']
       );
       
       if (alreadySent.rows.length === 0) {
-        const result = await sendWelcomeEmail(customerEmail, {
+        let planName = 'TaekUp Plan';
+        let amount = '';
+        let billingPeriod = 'monthly';
+        
+        if (session.line_items?.data?.[0]) {
+          const item = session.line_items.data[0];
+          planName = item.description || planName;
+          amount = `$${(item.amount_total / 100).toFixed(2)}`;
+        } else if (session.amount_total) {
+          amount = `$${(session.amount_total / 100).toFixed(2)}`;
+        }
+        
+        if (session.subscription) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+            if (subscription.items?.data?.[0]?.price) {
+              const price = subscription.items.data[0].price;
+              billingPeriod = price.recurring?.interval === 'year' ? 'yearly' : 'monthly';
+              if (price.product) {
+                const product = await stripe.products.retrieve(price.product as string);
+                planName = product.name || planName;
+              }
+            }
+          } catch (err) {
+            console.log('[Webhook] Could not fetch subscription details');
+          }
+        }
+
+        const result = await sendPaymentConfirmationEmail(customerEmail, {
           ownerName: club.owner_name || 'Club Owner',
-          clubName: club.name
+          clubName: club.name,
+          planName,
+          amount,
+          billingPeriod
         });
         
         if (result.success) {
-          console.log('[Webhook] Welcome email sent to:', customerEmail);
+          console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
           
           await client.query(
             `INSERT INTO email_log (club_id, recipient, email_type, subject, status, sent_at)
              VALUES ($1, $2, $3, $4, $5, NOW())`,
-            [club.id, customerEmail, 'welcome', 'Welcome to TaekUp', 'sent']
+            [club.id, customerEmail, 'payment_confirmation', 'Payment Confirmed', 'sent']
           );
         } else {
           await client.query(
             `INSERT INTO email_log (club_id, recipient, email_type, subject, status, error)
              VALUES ($1, $2, $3, $4, $5, $6)`,
-            [club.id, customerEmail, 'welcome', 'Welcome to TaekUp', 'failed', result.error || 'Unknown error']
+            [club.id, customerEmail, 'payment_confirmation', 'Payment Confirmed', 'failed', result.error || 'Unknown error']
           );
         }
       }
@@ -131,37 +171,6 @@ async function handleSubscriptionCreated(subscription: any, stripe: Stripe) {
       return;
     }
 
-    const clubResult = await client.query(
-      'SELECT id, name, owner_email, owner_name FROM clubs WHERE owner_email = $1 LIMIT 1',
-      [customerEmail]
-    );
-    
-    const club = clubResult.rows[0];
-    
-    if (club) {
-      const alreadySent = await client.query(
-        'SELECT id FROM email_log WHERE club_id = $1 AND email_type = $2 LIMIT 1',
-        [club.id, 'welcome']
-      );
-      
-      if (alreadySent.rows.length === 0) {
-        const result = await sendWelcomeEmail(customerEmail, {
-          ownerName: club.owner_name || 'Club Owner',
-          clubName: club.name
-        });
-        
-        if (result.success) {
-          console.log('[Webhook] Welcome email sent via subscription event');
-          
-          await client.query(
-            `INSERT INTO email_log (club_id, recipient, email_type, subject, status, sent_at)
-             VALUES ($1, $2, $3, $4, $5, NOW())`,
-            [club.id, customerEmail, 'welcome', 'Welcome to TaekUp', 'sent']
-          );
-        }
-      }
-    }
-    
     await client.query(
       `INSERT INTO activity_log (event_type, description, metadata, created_at)
        VALUES ($1, $2, $3, NOW())`,
@@ -192,7 +201,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing stripe-signature' });
   }
 
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   
   if (!stripeSecretKey) {
@@ -231,7 +240,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object);
+        await handleCheckoutCompleted(event.data.object, stripe);
         break;
       case 'customer.subscription.created':
         await handleSubscriptionCreated(event.data.object, stripe);

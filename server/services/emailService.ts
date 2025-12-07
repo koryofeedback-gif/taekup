@@ -59,6 +59,7 @@ async function getUncachableSendGridClient() {
 
 export const EMAIL_TEMPLATES = {
   WELCOME: 'd-c75234cb326144f68395a66668081ee8',
+  PAYMENT_CONFIRMATION: 'd-PLACEHOLDER_PAYMENT_CONFIRMATION',
   DAY_3_CHECKIN: 'd-3f86fd2d84494f20b9c97496852716db',
   DAY_7_MID_TRIAL: 'd-9c9f8338b86d4d7e84b7b9d4eceaf7f6',
   TRIAL_ENDING_SOON: 'd-ee5cb8ea6f114804a356adda535f05ec',
@@ -155,6 +156,23 @@ export async function sendWelcomeEmail(
     ...data,
     ctaUrl: `${BASE_URL}/setup`,
   }, `Welcome to TaekUp - Your 14-Day Trial Has Started!`);
+}
+
+export async function sendPaymentConfirmationEmail(
+  to: string,
+  data: { 
+    ownerName: string; 
+    clubName: string; 
+    planName: string;
+    amount: string;
+    billingPeriod: string;
+  }
+): Promise<EmailResult> {
+  return sendEmail(to, EMAIL_TEMPLATES.PAYMENT_CONFIRMATION, {
+    ...data,
+    ctaUrl: `${BASE_URL}/wizard`,
+    manageSubscriptionUrl: `${BASE_URL}/app/admin?tab=billing`,
+  }, `Payment Confirmed - Let's Set Up Your Club!`, 'transactional');
 }
 
 export async function sendDay3CheckinEmail(
