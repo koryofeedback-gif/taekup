@@ -33,6 +33,12 @@ export class WebhookHandlers {
       case 'customer.subscription.created':
         await WebhookHandlers.handleSubscriptionCreated(event.data.object);
         break;
+      case 'invoice.payment_succeeded':
+        await WebhookHandlers.handlePaymentSucceeded(event.data.object);
+        break;
+      case 'invoice.payment_failed':
+        await WebhookHandlers.handlePaymentFailed(event.data.object);
+        break;
       default:
         break;
     }
@@ -156,6 +162,164 @@ export class WebhookHandlers {
       
     } catch (error: any) {
       console.error('[Webhook] Error handling subscription created:', error.message);
+    }
+  }
+
+  static async handlePaymentSucceeded(invoice: any): Promise<void> {
+    try {
+      console.log('[Webhook] Payment succeeded:', invoice.id);
+      
+      const stripe = await getUncachableStripeClient();
+      const customer = await stripe.customers.retrieve(invoice.customer);
+      
+      if (!customer || customer.deleted) {
+        console.log('[Webhook] Customer not found or deleted');
+        return;
+      }
+
+      const customerEmail = (customer as any).email;
+      const amount = invoice.amount_paid || 0;
+      const currency = invoice.currency || 'usd';
+      
+      let clubId = null;
+      let club = null;
+      
+      if (customerEmail) {
+        const clubResult = await db.execute(
+          sql`SELECT id, name, owner_email, owner_name FROM clubs WHERE owner_email = ${customerEmail} LIMIT 1`
+        );
+        club = (clubResult as any[])[0];
+        clubId = club?.id || null;
+      }
+
+      await db.execute(sql`
+        INSERT INTO payments (
+          club_id, 
+          stripe_invoice_id, 
+          stripe_payment_intent_id, 
+          amount, 
+          currency, 
+          status, 
+          paid_at,
+          period_start,
+          period_end,
+          created_at
+        )
+        VALUES (
+          ${clubId}::uuid, 
+          ${invoice.id}, 
+          ${invoice.payment_intent || null}, 
+          ${amount}, 
+          ${currency}, 
+          'succeeded', 
+          ${invoice.status_transitions?.paid_at ? new Date(invoice.status_transitions.paid_at * 1000).toISOString() : new Date().toISOString()}::timestamp,
+          ${invoice.period_start ? new Date(invoice.period_start * 1000).toISOString() : null}::timestamp,
+          ${invoice.period_end ? new Date(invoice.period_end * 1000).toISOString() : null}::timestamp,
+          NOW()
+        )
+      `);
+
+      console.log('[Webhook] Payment saved to database:', invoice.id, 'Amount:', amount);
+
+      if (club && customerEmail) {
+        const planName = invoice.lines?.data?.[0]?.description || 'TaekUp Plan';
+        const billingPeriod = invoice.lines?.data?.[0]?.period ? 
+          (invoice.lines.data[0].period.end - invoice.lines.data[0].period.start > 60 * 60 * 24 * 35 ? 'Annual' : 'Monthly') 
+          : 'Monthly';
+        
+        const result = await emailService.sendPaymentConfirmationEmail(customerEmail, {
+          ownerName: club.owner_name || 'Club Owner',
+          clubName: club.name,
+          planName: planName,
+          amount: '$' + (amount / 100).toFixed(2),
+          billingPeriod: billingPeriod
+        });
+
+        if (result.success) {
+          console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
+        }
+      }
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+        VALUES (
+          'payment_succeeded', 
+          'Payment Received', 
+          ${'Payment of $' + (amount / 100).toFixed(2) + ' received from ' + (customerEmail || 'unknown')}, 
+          ${clubId}::uuid,
+          ${JSON.stringify({ invoiceId: invoice.id, amount, currency, email: customerEmail })}, 
+          NOW()
+        )
+      `);
+      
+    } catch (error: any) {
+      console.error('[Webhook] Error handling payment succeeded:', error.message);
+    }
+  }
+
+  static async handlePaymentFailed(invoice: any): Promise<void> {
+    try {
+      console.log('[Webhook] Payment failed:', invoice.id);
+      
+      const stripe = await getUncachableStripeClient();
+      const customer = await stripe.customers.retrieve(invoice.customer);
+      
+      if (!customer || customer.deleted) {
+        console.log('[Webhook] Customer not found or deleted');
+        return;
+      }
+
+      const customerEmail = (customer as any).email;
+      const amount = invoice.amount_due || 0;
+      const currency = invoice.currency || 'usd';
+      
+      let clubId = null;
+      
+      if (customerEmail) {
+        const clubResult = await db.execute(
+          sql`SELECT id FROM clubs WHERE owner_email = ${customerEmail} LIMIT 1`
+        );
+        const club = (clubResult as any[])[0];
+        clubId = club?.id || null;
+      }
+
+      await db.execute(sql`
+        INSERT INTO payments (
+          club_id, 
+          stripe_invoice_id, 
+          stripe_payment_intent_id, 
+          amount, 
+          currency, 
+          status, 
+          created_at
+        )
+        VALUES (
+          ${clubId}::uuid, 
+          ${invoice.id}, 
+          ${invoice.payment_intent || null}, 
+          ${amount}, 
+          ${currency}, 
+          'failed', 
+          NOW()
+        )
+      `);
+
+      console.log('[Webhook] Failed payment saved to database:', invoice.id);
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+        VALUES (
+          'payment_failed', 
+          'Payment Failed', 
+          ${'Payment of $' + (amount / 100).toFixed(2) + ' failed for ' + (customerEmail || 'unknown')}, 
+          ${clubId}::uuid,
+          ${JSON.stringify({ invoiceId: invoice.id, amount, currency, email: customerEmail })}, 
+          NOW()
+        )
+      `);
+      
+    } catch (error: any) {
+      console.error('[Webhook] Error handling payment failed:', error.message);
     }
   }
 }

@@ -10,7 +10,7 @@ const pool = new Pool({
 });
 
 const EMAIL_TEMPLATES = {
-  PAYMENT_CONFIRMATION: 'd-PLACEHOLDER_PAYMENT_CONFIRMATION',
+  PAYMENT_CONFIRMATION: 'd-50996268ba834a5b92150d29935fd2a8',
 };
 
 async function sendPaymentConfirmationEmail(
@@ -184,6 +184,153 @@ async function handleSubscriptionCreated(subscription: any, stripe: Stripe) {
   }
 }
 
+async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
+  const client = await pool.connect();
+  try {
+    console.log('[Webhook] Payment succeeded:', invoice.id);
+    
+    const customer = await stripe.customers.retrieve(invoice.customer);
+    
+    if (!customer || (customer as any).deleted) {
+      console.log('[Webhook] Customer not found or deleted');
+      return;
+    }
+
+    const customerEmail = (customer as any).email;
+    const amount = invoice.amount_paid || 0;
+    const currency = invoice.currency || 'usd';
+    
+    let clubId = null;
+    let club = null;
+    
+    if (customerEmail) {
+      const clubResult = await client.query(
+        'SELECT id, name, owner_email, owner_name FROM clubs WHERE owner_email = $1 LIMIT 1',
+        [customerEmail]
+      );
+      club = clubResult.rows[0];
+      clubId = club?.id || null;
+    }
+
+    await client.query(
+      `INSERT INTO payments (
+        club_id, stripe_invoice_id, stripe_payment_intent_id, 
+        amount, currency, status, paid_at, period_start, period_end, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
+      [
+        clubId,
+        invoice.id,
+        invoice.payment_intent || null,
+        amount,
+        currency,
+        'succeeded',
+        invoice.status_transitions?.paid_at ? new Date(invoice.status_transitions.paid_at * 1000) : new Date(),
+        invoice.period_start ? new Date(invoice.period_start * 1000) : null,
+        invoice.period_end ? new Date(invoice.period_end * 1000) : null
+      ]
+    );
+
+    console.log('[Webhook] Payment saved to database:', invoice.id, 'Amount:', amount);
+
+    if (club && customerEmail) {
+      const planName = invoice.lines?.data?.[0]?.description || 'TaekUp Plan';
+      const billingPeriod = invoice.lines?.data?.[0]?.period ? 
+        (invoice.lines.data[0].period.end - invoice.lines.data[0].period.start > 60 * 60 * 24 * 35 ? 'Annual' : 'Monthly') 
+        : 'Monthly';
+      
+      const result = await sendPaymentConfirmationEmail(customerEmail, {
+        ownerName: club.owner_name || 'Club Owner',
+        clubName: club.name,
+        planName: planName,
+        amount: '$' + (amount / 100).toFixed(2),
+        billingPeriod: billingPeriod
+      });
+
+      if (result.success) {
+        console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
+      }
+    }
+
+    await client.query(
+      `INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [
+        'payment_succeeded',
+        'Payment Received',
+        `Payment of $${(amount / 100).toFixed(2)} received from ${customerEmail || 'unknown'}`,
+        clubId,
+        JSON.stringify({ invoiceId: invoice.id, amount, currency, email: customerEmail })
+      ]
+    );
+    
+  } catch (error: any) {
+    console.error('[Webhook] Error handling payment succeeded:', error.message);
+  } finally {
+    client.release();
+  }
+}
+
+async function handlePaymentFailed(invoice: any, stripe: Stripe) {
+  const client = await pool.connect();
+  try {
+    console.log('[Webhook] Payment failed:', invoice.id);
+    
+    const customer = await stripe.customers.retrieve(invoice.customer);
+    
+    if (!customer || (customer as any).deleted) {
+      return;
+    }
+
+    const customerEmail = (customer as any).email;
+    const amount = invoice.amount_due || 0;
+    const currency = invoice.currency || 'usd';
+    
+    let clubId = null;
+    
+    if (customerEmail) {
+      const clubResult = await client.query(
+        'SELECT id FROM clubs WHERE owner_email = $1 LIMIT 1',
+        [customerEmail]
+      );
+      clubId = clubResult.rows[0]?.id || null;
+    }
+
+    await client.query(
+      `INSERT INTO payments (
+        club_id, stripe_invoice_id, stripe_payment_intent_id, 
+        amount, currency, status, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      [
+        clubId,
+        invoice.id,
+        invoice.payment_intent || null,
+        amount,
+        currency,
+        'failed'
+      ]
+    );
+
+    console.log('[Webhook] Failed payment saved to database:', invoice.id);
+
+    await client.query(
+      `INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [
+        'payment_failed',
+        'Payment Failed',
+        `Payment of $${(amount / 100).toFixed(2)} failed for ${customerEmail || 'unknown'}`,
+        clubId,
+        JSON.stringify({ invoiceId: invoice.id, amount, currency, email: customerEmail })
+      ]
+    );
+    
+  } catch (error: any) {
+    console.error('[Webhook] Error handling payment failed:', error.message);
+  } finally {
+    client.release();
+  }
+}
+
 export const config = {
   api: {
     bodyParser: false,
@@ -244,6 +391,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         break;
       case 'customer.subscription.created':
         await handleSubscriptionCreated(event.data.object, stripe);
+        break;
+      case 'invoice.payment_succeeded':
+        await handlePaymentSucceeded(event.data.object, stripe);
+        break;
+      case 'invoice.payment_failed':
+        await handlePaymentFailed(event.data.object, stripe);
         break;
       default:
         console.log('[Webhook] Unhandled event type:', event.type);

@@ -351,6 +351,7 @@ export async function sendBirthdayWishEmail(
 
 export default {
   sendWelcomeEmail,
+  sendPaymentConfirmationEmail,
   sendDay3CheckinEmail,
   sendDay7MidTrialEmail,
   sendTrialEndingSoonEmail,
