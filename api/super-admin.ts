@@ -13,8 +13,9 @@ if (STRIPE_KEY) {
   });
 }
 
-// SendGrid integration via Replit connector
+// SendGrid integration via Replit connector or environment variable
 async function getUncachableSendGridClient() {
+  // First try Replit connector
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY 
     ? 'repl ' + process.env.REPL_IDENTITY 
@@ -22,39 +23,37 @@ async function getUncachableSendGridClient() {
     ? 'depl ' + process.env.WEB_REPL_RENEWAL 
     : null;
 
-  if (!xReplitToken || !hostname) {
-    // Fallback to legacy env var
-    if (process.env.SENDGRID_API_KEY) {
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      return { client: sgMail, fromEmail: 'hello@mytaek.com' };
-    }
-    return null;
-  }
-
-  try {
-    const connectionSettings = await fetch(
-      'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
-      {
-        headers: {
-          'Accept': 'application/json',
-          'X_REPLIT_TOKEN': xReplitToken
+  if (xReplitToken && hostname) {
+    try {
+      const connectionSettings = await fetch(
+        'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
+        {
+          headers: {
+            'Accept': 'application/json',
+            'X_REPLIT_TOKEN': xReplitToken
+          }
         }
-      }
-    ).then(res => res.json()).then(data => data.items?.[0]);
+      ).then(res => res.json()).then(data => data.items?.[0]);
 
-    if (!connectionSettings || !connectionSettings.settings?.api_key) {
-      return null;
+      if (connectionSettings?.settings?.api_key) {
+        sgMail.setApiKey(connectionSettings.settings.api_key);
+        return {
+          client: sgMail,
+          fromEmail: connectionSettings.settings.from_email || 'hello@mytaek.com'
+        };
+      }
+    } catch (err) {
+      console.error('Failed to get SendGrid via Replit connector:', err);
     }
-    
-    sgMail.setApiKey(connectionSettings.settings.api_key);
-    return {
-      client: sgMail,
-      fromEmail: connectionSettings.settings.from_email || 'hello@mytaek.com'
-    };
-  } catch (err) {
-    console.error('Failed to get SendGrid credentials:', err);
-    return null;
   }
+
+  // Fallback to environment variable
+  if (process.env.SENDGRID_API_KEY) {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    return { client: sgMail, fromEmail: 'hello@mytaek.com' };
+  }
+  
+  return null;
 }
 
 let sql: ReturnType<typeof postgres> | null = null;
