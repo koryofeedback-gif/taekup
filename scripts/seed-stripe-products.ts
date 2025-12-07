@@ -1,16 +1,4 @@
-import Stripe from 'stripe';
-
-const STRIPE_KEY = process.env.SANDBOX_STRIPE_KEY || process.argv[2];
-
-if (!STRIPE_KEY) {
-  console.error('Please provide your Stripe sandbox key:');
-  console.error('  SANDBOX_STRIPE_KEY=sk_test_xxx npx tsx scripts/seed-stripe-products.ts');
-  console.error('  OR');
-  console.error('  npx tsx scripts/seed-stripe-products.ts sk_test_xxx');
-  process.exit(1);
-}
-
-const stripe = new Stripe(STRIPE_KEY);
+import { getUncachableStripeClient } from '../server/stripeClient';
 
 const SUBSCRIPTION_TIERS = [
   {
@@ -72,7 +60,9 @@ const SUBSCRIPTION_TIERS = [
 
 async function seedProducts() {
   console.log('🥋 TaekUp - Seeding Stripe Products...\n');
-  console.log(`Using Stripe key: ${STRIPE_KEY.substring(0, 12)}...${STRIPE_KEY.substring(STRIPE_KEY.length - 4)}\n`);
+  
+  const stripe = await getUncachableStripeClient();
+  console.log('Connected to Stripe via Replit connector\n');
 
   for (const tier of SUBSCRIPTION_TIERS) {
     try {
@@ -80,7 +70,7 @@ async function seedProducts() {
         query: `name:'${tier.name}'`,
       });
 
-      let product: Stripe.Product;
+      let product: any;
 
       if (existingProducts.data.length > 0) {
         product = existingProducts.data[0];
@@ -105,8 +95,8 @@ async function seedProducts() {
         active: true,
       });
 
-      const hasMonthly = existingPrices.data.some(p => p.recurring?.interval === 'month');
-      const hasYearly = existingPrices.data.some(p => p.recurring?.interval === 'year');
+      const hasMonthly = existingPrices.data.some((p: any) => p.recurring?.interval === 'month');
+      const hasYearly = existingPrices.data.some((p: any) => p.recurring?.interval === 'year');
 
       if (!hasMonthly) {
         const monthlyPrice = await stripe.prices.create({

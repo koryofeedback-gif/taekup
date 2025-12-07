@@ -1,0 +1,34 @@
+curred in the <MRRChart> component:
+
+    at MRRChart (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/pages/SuperAdminDashboard.tsx:159:220)
+    at div
+    at main
+    at div
+    at SuperAdminDashboard (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/pages/SuperAdminDashboard.tsx:40:39)
+    at SuperAdminDashboardRoute (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/components/SuperAdminRoutes.tsx:26:39)
+    at RenderedRoute (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=cc8e41f7:6111:26)
+    at Routes (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=cc8e41f7:6905:3)
+    at main
+    at div
+    at AppContent (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/App.tsx:316:3)
+    at Router (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=cc8e41f7:6848:13)
+    at BrowserRouter (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=cc8e41f7:9968:3)
+    at App (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/App.tsx:135:44)
+    at PasswordGate (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/components/PasswordGate.tsx:20:32)
+    at _a (https://c4f4181e-e8df-40a0-b256-c05cc7745b6c-00-3sftbxvtn6jsl.picard.replit.dev/node_modules/.vite/deps/react-helmet-async.js?v=cc8e41f7:624:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WRD5HZVH.js?v=cc8e41f7:14032Understand this error
+chunk-WRD5HZVH.js?v=cc8e41f7:19413 Uncaught TypeError: Cannot read properties of undefined (reading 'toFixed')
+    at SuperAdminDashboard.tsx:182:38
+    at Array.map (<anonymous>)
+    at MRRChart (SuperAdminDashboard.tsx:175:40)
+    at renderWithHooks (chunk-WRD5HZVH.js?v=cc8e41f7:11548:26)
+    at mountIndeterminateComponent (chunk-WRD5HZVH.js?v=cc8e41f7:14926:21)
+    at beginWork (chunk-WRD5HZVH.js?v=cc8e41f7:15914:22)
+    at beginWork$1 (chunk-WRD5HZVH.js?v=cc8e41f7:19753:22)
+    at performUnitOfWork (chunk-WRD5HZVH.js?v=cc8e41f7:19198:20)
+    at workLoopSync (chunk-WRD5HZVH.js?v=cc8e41f7:19137:13)
+    at renderRootSync (chunk-WRD5HZVH.js?v=cc8e41f7:19116:15)Understand this error
+/api/super-admin/health:1  Failed to load resource: the server responded with a status of 404 (Not Found)

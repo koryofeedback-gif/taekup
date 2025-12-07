@@ -13,10 +13,47 @@ if (STRIPE_KEY) {
   });
 }
 
-// Initialize SendGrid only if API key is available
-const SENDGRID_KEY = process.env.SENDGRID_API_KEY;
-if (SENDGRID_KEY) {
-  sgMail.setApiKey(SENDGRID_KEY);
+// SendGrid integration via Replit connector or environment variable
+async function getUncachableSendGridClient() {
+  // First try Replit connector
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+
+  if (xReplitToken && hostname) {
+    try {
+      const connectionSettings = await fetch(
+        'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
+        {
+          headers: {
+            'Accept': 'application/json',
+            'X_REPLIT_TOKEN': xReplitToken
+          }
+        }
+      ).then(res => res.json()).then(data => data.items?.[0]);
+
+      if (connectionSettings?.settings?.api_key) {
+        sgMail.setApiKey(connectionSettings.settings.api_key);
+        return {
+          client: sgMail,
+          fromEmail: connectionSettings.settings.from_email || 'hello@mytaek.com'
+        };
+      }
+    } catch (err) {
+      console.error('Failed to get SendGrid via Replit connector:', err);
+    }
+  }
+
+  // Fallback to environment variable
+  if (process.env.SENDGRID_API_KEY) {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    return { client: sgMail, fromEmail: 'hello@mytaek.com' };
+  }
+  
+  return null;
 }
 
 let sql: ReturnType<typeof postgres> | null = null;
@@ -947,23 +984,25 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Invalid template' });
     }
     
-    let sendStatus = 'pending';
-    let sendError = null;
+    let sendStatus = 'failed';
+    let sendError: string | null = 'Not attempted';
     let messageId = null;
     
-    // Send via SendGrid
-    if (process.env.SENDGRID_API_KEY) {
+    // Send via SendGrid (using Replit connector or legacy env var)
+    const sendgrid = await getUncachableSendGridClient();
+    if (sendgrid) {
       try {
-        const result = await sgMail.send({
+        const result = await sendgrid.client.send({
           to: toEmail,
           from: {
-            email: 'hello@mytaek.com',
+            email: sendgrid.fromEmail,
             name: 'TaekUp'
           },
           subject: emailTemplate.subject,
           html: emailTemplate.html,
         });
         sendStatus = 'sent';
+        sendError = null;
         messageId = result[0]?.headers?.['x-message-id'] || null;
       } catch (sgErr: any) {
         sendStatus = 'failed';
@@ -971,7 +1010,7 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
         console.error('SendGrid error:', sgErr);
       }
     } else {
-      sendStatus = 'skipped';
+      sendStatus = 'failed';
       sendError = 'SendGrid not configured';
     }
     

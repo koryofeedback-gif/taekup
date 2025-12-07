@@ -7,7 +7,7 @@ export const userRoleEnum = pgEnum('user_role', ['owner', 'coach', 'parent', 'su
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['trialing', 'active', 'past_due', 'canceled', 'incomplete']);
 export const paymentStatusEnum = pgEnum('payment_status', ['paid', 'open', 'unpaid', 'void', 'failed']);
 export const premiumStatusEnum = pgEnum('premium_status', ['none', 'club_sponsored', 'parent_paid']);
-export const emailStatusEnum = pgEnum('email_status', ['sent', 'delivered', 'bounced', 'failed']);
+export const emailStatusEnum = pgEnum('email_status', ['pending', 'sent', 'delivered', 'bounced', 'failed', 'skipped']);
 
 export const clubs = pgTable('clubs', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -30,12 +30,14 @@ export const clubs = pgTable('clubs', {
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }),
-  email: varchar('email', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
   name: varchar('name', { length: 255 }),
   role: userRoleEnum('role').notNull().default('owner'),
   passwordHash: varchar('password_hash', { length: 255 }),
   tempPassword: varchar('temp_password', { length: 255 }),
   mfaSecret: varchar('mfa_secret', { length: 255 }),
+  resetToken: varchar('reset_token', { length: 255 }),
+  resetTokenExpiresAt: timestamp('reset_token_expires_at', { withTimezone: true }),
   isActive: boolean('is_active').default(true),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -209,6 +211,38 @@ export const discounts = pgTable('discounts', {
   stripeCouponId: varchar('stripe_coupon_id', { length: 255 }),
   expiresAt: timestamp('expires_at', { withTimezone: true }),
   appliedBy: varchar('applied_by', { length: 255 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const automatedEmailTriggerEnum = pgEnum('automated_email_trigger', [
+  'welcome',
+  'day_3_checkin',
+  'day_7_mid_trial',
+  'trial_ending_soon',
+  'trial_expired',
+  'win_back',
+  'churn_risk',
+  'parent_welcome',
+  'birthday_wish',
+  'belt_promotion',
+  'attendance_alert',
+  'coach_invite',
+  'new_student_added'
+]);
+
+export const automatedEmailLogs = pgTable('automated_email_logs', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'set null' }),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'set null' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  triggerType: automatedEmailTriggerEnum('trigger_type').notNull(),
+  recipient: varchar('recipient', { length: 255 }).notNull(),
+  templateId: varchar('template_id', { length: 255 }),
+  status: emailStatusEnum('status').default('sent'),
+  messageId: varchar('message_id', { length: 255 }),
+  error: text('error'),
+  metadata: jsonb('metadata'),
+  sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 

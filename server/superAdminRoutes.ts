@@ -4,10 +4,63 @@ import { sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
+import { EMAIL_TEMPLATES as DYNAMIC_TEMPLATES } from './services/emailService';
 
-// Initialize SendGrid if API key is available
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// SendGrid client getter - tries Replit connector first, then env var
+async function getSendGridClient() {
+  console.log('[SendGrid] Checking configuration...');
+  console.log('[SendGrid] REPLIT_CONNECTORS_HOSTNAME:', !!process.env.REPLIT_CONNECTORS_HOSTNAME);
+  console.log('[SendGrid] REPL_IDENTITY:', !!process.env.REPL_IDENTITY);
+  console.log('[SendGrid] SENDGRID_API_KEY:', !!process.env.SENDGRID_API_KEY);
+  
+  // First try Replit connector
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+
+  if (xReplitToken && hostname) {
+    try {
+      console.log('[SendGrid] Trying Replit connector...');
+      const connectionSettings = await fetch(
+        'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
+        {
+          headers: {
+            'Accept': 'application/json',
+            'X_REPLIT_TOKEN': xReplitToken
+          }
+        }
+      ).then(res => res.json()).then(data => data.items?.[0]);
+
+      if (connectionSettings?.settings?.api_key) {
+        const fromEmail = connectionSettings.settings.from_email || 'hello@mytaek.com';
+        console.log('[SendGrid] Got API key from Replit connector');
+        console.log('[SendGrid] Using from_email:', fromEmail);
+        sgMail.setApiKey(connectionSettings.settings.api_key);
+        return {
+          client: sgMail,
+          fromEmail: fromEmail,
+          configured: true
+        };
+      } else {
+        console.log('[SendGrid] Connector returned no api_key');
+      }
+    } catch (err) {
+      console.error('[SendGrid] Failed to get via Replit connector:', err);
+    }
+  }
+
+  // Fallback to environment variable
+  if (process.env.SENDGRID_API_KEY) {
+    console.log('[SendGrid] Using SENDGRID_API_KEY env var');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    return { client: sgMail, fromEmail: 'hello@mytaek.com', configured: true };
+  }
+  
+  console.log('[SendGrid] No configuration found');
+  return { client: null, fromEmail: null, configured: false };
 }
 
 const router = Router();
@@ -691,101 +744,61 @@ router.post('/apply-discount', verifySuperAdmin, async (req: Request, res: Respo
   }
 });
 
-// Email Templates
-const EMAIL_TEMPLATES: Record<string, { subject: string; getHtml: (club: any, daysLeft?: number) => string }> = {
+// Email Templates - Map super admin template names to SendGrid dynamic template IDs
+// Templates with dynamic IDs use SendGrid's dynamic template system
+// Templates marked as 'html' fall back to inline HTML
+interface SuperAdminEmailTemplate {
+  subject: string;
+  dynamicTemplateId?: string;
+  getHtml?: (club: any) => string;
+  getDynamicData?: (club: any) => Record<string, any>;
+}
+
+const EMAIL_TEMPLATES: Record<string, SuperAdminEmailTemplate> = {
+  'trial-ending': {
+    subject: 'Your TaekUp Trial is Ending Soon!',
+    dynamicTemplateId: DYNAMIC_TEMPLATES.TRIAL_ENDING_SOON,
+    getDynamicData: (club) => ({
+      ownerName: club.owner_name || 'there',
+      clubName: club.name,
+      daysLeft: 3,
+      ctaUrl: 'https://mytaek.com/pricing',
+    }),
+  },
   welcome: {
     subject: 'Welcome to TaekUp! Your 14-Day Free Trial Has Started',
-    getHtml: (club) => `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #00D4FF;">Welcome to TaekUp!</h1>
-        </div>
-        <p>Hi ${club.owner_name || 'there'},</p>
-        <p>Congratulations on starting your free trial with <strong>${club.name}</strong>!</p>
-        <p>You now have <strong>14 days</strong> to explore everything TaekUp has to offer:</p>
-        <ul>
-          <li>Student & Belt Management</li>
-          <li>Dojang Rivals Gamification</li>
-          <li>AI-Powered Class Planning</li>
-          <li>Parent Engagement Tools</li>
-          <li>Revenue Analytics</li>
-        </ul>
-        <p style="text-align: center; margin: 30px 0;">
-          <a href="https://mytaek.com/login" style="background: #00D4FF; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Get Started Now</a>
-        </p>
-        <p>Need help? Reply to this email or check our <a href="https://mytaek.com/features">Features Guide</a>.</p>
-        <p>Train hard!<br>The TaekUp Team</p>
-      </div>
-    `
+    dynamicTemplateId: DYNAMIC_TEMPLATES.WELCOME,
+    getDynamicData: (club) => ({
+      ownerName: club.owner_name || 'there',
+      clubName: club.name,
+      ctaUrl: 'https://mytaek.com/setup',
+    }),
   },
   trial_7_days: {
     subject: 'Your TaekUp Trial: 7 Days Remaining',
-    getHtml: (club) => `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #00D4FF;">7 Days Left in Your Trial</h1>
-        </div>
-        <p>Hi ${club.owner_name || 'there'},</p>
-        <p>Your free trial for <strong>${club.name}</strong> is halfway through!</p>
-        <p>Have you tried these features yet?</p>
-        <ul>
-          <li>Adding students and tracking their progress</li>
-          <li>Creating challenges with Dojang Rivals</li>
-          <li>Using the AI Class Planner</li>
-        </ul>
-        <p style="text-align: center; margin: 30px 0;">
-          <a href="https://mytaek.com/pricing" style="background: #00D4FF; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Pricing Plans</a>
-        </p>
-        <p>Questions? We're here to help!</p>
-        <p>The TaekUp Team</p>
-      </div>
-    `
+    dynamicTemplateId: DYNAMIC_TEMPLATES.DAY_7_MID_TRIAL,
+    getDynamicData: (club) => ({
+      ownerName: club.owner_name || 'there',
+      clubName: club.name,
+      aiFeedbackUrl: 'https://mytaek.com/ai-feedback',
+    }),
   },
   trial_3_days: {
     subject: 'URGENT: Only 3 Days Left in Your TaekUp Trial!',
-    getHtml: (club) => `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #FF6B6B;">Only 3 Days Left!</h1>
-        </div>
-        <p>Hi ${club.owner_name || 'there'},</p>
-        <p>Your free trial for <strong>${club.name}</strong> expires in just <strong>3 days</strong>!</p>
-        <p>Don't lose access to:</p>
-        <ul>
-          <li>Your student data and progress tracking</li>
-          <li>Dojang Rivals leaderboards and challenges</li>
-          <li>AI-powered tools and analytics</li>
-        </ul>
-        <p style="background: #FFF3CD; padding: 15px; border-radius: 8px; border-left: 4px solid #FFC107;">
-          <strong>Special Offer:</strong> Subscribe now and get 20% off your first 3 months!
-        </p>
-        <p style="text-align: center; margin: 30px 0;">
-          <a href="https://mytaek.com/pricing" style="background: #FF6B6B; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Subscribe Now - Save 20%</a>
-        </p>
-        <p>The TaekUp Team</p>
-      </div>
-    `
+    dynamicTemplateId: DYNAMIC_TEMPLATES.DAY_3_CHECKIN,
+    getDynamicData: (club) => ({
+      ownerName: club.owner_name || 'there',
+      clubName: club.name,
+    }),
   },
   trial_expired: {
     subject: 'Your TaekUp Trial Has Expired - We Miss You!',
-    getHtml: (club) => `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #6C757D;">Your Trial Has Ended</h1>
-        </div>
-        <p>Hi ${club.owner_name || 'there'},</p>
-        <p>Your free trial for <strong>${club.name}</strong> has expired.</p>
-        <p>But don't worry - your data is safe! Subscribe within the next 7 days to pick up right where you left off.</p>
-        <p style="background: #D4EDDA; padding: 15px; border-radius: 8px; border-left: 4px solid #28A745;">
-          <strong>Come Back Offer:</strong> Use code <strong>COMEBACK25</strong> for 25% off your first month!
-        </p>
-        <p style="text-align: center; margin: 30px 0;">
-          <a href="https://mytaek.com/pricing" style="background: #28A745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Reactivate My Account</a>
-        </p>
-        <p>We'd love to have you back!</p>
-        <p>The TaekUp Team</p>
-      </div>
-    `
+    dynamicTemplateId: DYNAMIC_TEMPLATES.TRIAL_EXPIRED,
+    getDynamicData: (club) => ({
+      ownerName: club.owner_name || 'there',
+      clubName: club.name,
+      ctaUrl: 'https://mytaek.com/pricing',
+    }),
   },
   win_back: {
     subject: 'We Want You Back! Special Offer Inside',
@@ -812,7 +825,33 @@ const EMAIL_TEMPLATES: Record<string, { subject: string; getHtml: (club: any, da
         <p>Ready to grow your dojang again?</p>
         <p>The TaekUp Team</p>
       </div>
-    `
+    `,
+  },
+  'churn-risk': {
+    subject: 'Need Help Getting Started? We\'re Here for You!',
+    getHtml: (club) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #3498DB;">We're Here to Help!</h1>
+        </div>
+        <p>Hi ${club.owner_name || 'there'},</p>
+        <p>We noticed you haven't been using <strong>${club.name}</strong> on TaekUp lately, and we wanted to check in.</p>
+        <p>Is there anything we can help you with?</p>
+        <ul>
+          <li>Need help setting up your student roster?</li>
+          <li>Questions about Dojang Rivals or gamification?</li>
+          <li>Want a personalized demo of our features?</li>
+        </ul>
+        <p style="background: #E8F4FD; padding: 15px; border-radius: 8px; border-left: 4px solid #3498DB;">
+          <strong>Free Support Session:</strong> Reply to this email and we'll schedule a 15-minute call to help you get the most out of TaekUp!
+        </p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://mytaek.com/help" style="background: #3498DB; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Get Help Now</a>
+        </p>
+        <p>We're committed to your success!</p>
+        <p>The TaekUp Team</p>
+      </div>
+    `,
   },
   custom: {
     subject: 'Message from TaekUp',
@@ -822,11 +861,11 @@ const EMAIL_TEMPLATES: Record<string, { subject: string; getHtml: (club: any, da
         <p>{{CUSTOM_BODY}}</p>
         <p>Best regards,<br>The TaekUp Team</p>
       </div>
-    `
-  }
+    `,
+  },
 };
 
-// Send Email with SendGrid
+// Send Email with SendGrid - supports both dynamic templates and HTML fallback
 router.post('/send-email', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
     const { clubId, template, subject: customSubject, body: customBody, recipientEmail } = req.body;
@@ -848,49 +887,113 @@ router.post('/send-email', verifySuperAdmin, async (req: Request, res: Response)
     const club = (clubResult as any[])[0];
     const toEmail = recipientEmail || club.owner_email;
     const subject = customSubject || emailTemplate.subject;
-    let htmlContent = emailTemplate.getHtml(club);
-    
-    if (template === 'custom' && customBody) {
-      htmlContent = htmlContent.replace('{{CUSTOM_BODY}}', customBody);
-    }
 
     // Send email via SendGrid if configured
-    if (process.env.SENDGRID_API_KEY) {
-      const msg = {
-        to: toEmail,
-        from: 'noreply@mytaek.com', // Must be verified in SendGrid
-        subject: subject,
-        html: htmlContent,
-      };
-
+    const sendgrid = await getSendGridClient();
+    let emailSent = false;
+    let emailError = null;
+    let usedDynamicTemplate = false;
+    
+    if (sendgrid.configured && sendgrid.client) {
       try {
-        await sgMail.send(msg);
-        console.log(`[SendGrid] Email sent to ${toEmail}: ${template}`);
+        // Check if template has a dynamic template ID
+        if (emailTemplate.dynamicTemplateId && emailTemplate.getDynamicData) {
+          // Use SendGrid dynamic template
+          const dynamicData = emailTemplate.getDynamicData(club);
+          const msg: any = {
+            to: toEmail,
+            from: {
+              email: sendgrid.fromEmail || 'hello@mytaek.com',
+              name: 'TaekUp'
+            },
+            templateId: emailTemplate.dynamicTemplateId,
+            dynamicTemplateData: {
+              ...dynamicData,
+              unsubscribeUrl: 'https://mytaek.com/email-preferences',
+              privacyUrl: 'https://mytaek.com/privacy',
+              dashboardUrl: 'https://mytaek.com/dashboard',
+              loginUrl: 'https://mytaek.com/login',
+              upgradeUrl: 'https://mytaek.com/pricing',
+              helpUrl: 'https://mytaek.com/help',
+            },
+          };
+
+          if (customSubject) {
+            msg.subject = customSubject;
+          }
+
+          await sendgrid.client.send(msg);
+          console.log(`[SendGrid] Dynamic template email sent to ${toEmail}: ${template} (${emailTemplate.dynamicTemplateId})`);
+          emailSent = true;
+          usedDynamicTemplate = true;
+        } else if (emailTemplate.getHtml) {
+          // Fallback to HTML template
+          let htmlContent = emailTemplate.getHtml(club);
+          
+          if (template === 'custom' && customBody) {
+            htmlContent = htmlContent.replace('{{CUSTOM_BODY}}', customBody);
+          }
+
+          const msg = {
+            to: toEmail,
+            from: {
+              email: sendgrid.fromEmail || 'hello@mytaek.com',
+              name: 'TaekUp'
+            },
+            subject: subject,
+            html: htmlContent,
+          };
+
+          await sendgrid.client.send(msg);
+          console.log(`[SendGrid] HTML email sent to ${toEmail}: ${template}`);
+          emailSent = true;
+        } else {
+          emailError = 'Template has no content defined';
+        }
       } catch (sgError: any) {
         console.error('[SendGrid] Error:', sgError.response?.body || sgError.message);
-        // Continue even if SendGrid fails - log the attempt
+        emailError = sgError.response?.body?.errors?.[0]?.message || sgError.message;
       }
     } else {
       console.log(`[Email Preview - SendGrid not configured]`);
       console.log(`To: ${toEmail}`);
       console.log(`Subject: ${subject}`);
       console.log(`Template: ${template}`);
+      console.log(`Dynamic Template ID: ${emailTemplate.dynamicTemplateId || 'N/A'}`);
+      emailError = 'SendGrid not configured';
     }
 
     // Log activity
     await db.execute(sql`
       INSERT INTO activity_log (event_type, event_title, event_description, metadata, club_id, actor_email, actor_type)
-      VALUES ('email_sent', ${`Email: ${template}`}, ${`Sent to ${toEmail}`}, ${JSON.stringify({ template, subject, recipientEmail: toEmail })}::jsonb, ${clubId}::uuid, 'super_admin', 'super_admin')
+      VALUES ('email_sent', ${`Email: ${template}`}, ${`Sent to ${toEmail}`}, ${JSON.stringify({ 
+        template, 
+        subject, 
+        recipientEmail: toEmail, 
+        sent: emailSent, 
+        error: emailError,
+        usedDynamicTemplate,
+        dynamicTemplateId: emailTemplate.dynamicTemplateId || null
+      })}::jsonb, ${clubId}::uuid, 'super_admin', 'super_admin')
     `);
 
-    res.json({ 
-      success: true, 
-      message: `Email sent to ${toEmail}`,
-      template,
-      subject,
-      club: club.name,
-      sendgridConfigured: !!process.env.SENDGRID_API_KEY
-    });
+    if (emailSent) {
+      res.json({ 
+        success: true, 
+        message: `Email sent to ${toEmail}`,
+        recipient: toEmail,
+        template,
+        subject,
+        club: club.name,
+        usedDynamicTemplate
+      });
+    } else {
+      res.status(500).json({ 
+        error: emailError || 'Failed to send email',
+        template,
+        recipient: toEmail
+      });
+    }
   } catch (error: any) {
     console.error('Send email error:', error);
     res.status(500).json({ error: 'Failed to send email: ' + error.message });

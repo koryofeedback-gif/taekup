@@ -121,7 +121,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
         <div>
           <label htmlFor="country" className="block text-sm font-medium text-gray-300">Country</label>
           <select id="country" value={data.country} onChange={handleCountryChange} className="mt-1 wizard-input">
-            {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+            {COUNTRIES.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
           </select>
         </div>
 

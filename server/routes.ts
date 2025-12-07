@@ -1,10 +1,12 @@
 import express, { type Express, type Request, type Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { storage } from './storage';
 import { stripeService } from './stripeService';
 import { getStripePublishableKey, getUncachableStripeClient } from './stripeClient';
 import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail } from './aiService';
 import emailService from './services/emailService';
+import * as emailAutomation from './services/emailAutomationService';
 import { db } from './db';
 import { sql } from 'drizzle-orm';
 
@@ -36,7 +38,7 @@ export function registerRoutes(app: Express) {
 
       const clubResult = await db.execute(sql`
         INSERT INTO clubs (name, owner_email, country, trial_start, trial_end, trial_status, status, created_at)
-        VALUES (${clubName}, ${email}, ${country || 'United States'}, NOW(), ${trialEnd}, 'active', 'active', NOW())
+        VALUES (${clubName}, ${email}, ${country || 'US'}, NOW(), ${trialEnd.toISOString()}::timestamptz, 'active', 'active', NOW())
         RETURNING id, name, owner_email, trial_start, trial_end
       `);
 
@@ -49,22 +51,11 @@ export function registerRoutes(app: Express) {
       `);
 
       await db.execute(sql`
-        INSERT INTO activity_log (event_type, description, metadata, created_at)
-        VALUES ('club_signup', ${'New club signup: ' + clubName}, ${JSON.stringify({ clubId: club.id, email, country })}, NOW())
+        INSERT INTO activity_log (event_type, event_title, event_description, metadata, created_at)
+        VALUES ('club_signup', 'New Club Signup', ${'New club signup: ' + clubName}, ${JSON.stringify({ clubId: club.id, email, country })}::jsonb, NOW())
       `);
 
-      const emailResult = await emailService.sendWelcomeEmail(email, {
-        ownerName: clubName,
-        clubName: clubName
-      });
-
-      if (emailResult.success) {
-        console.log('[Signup] Welcome email sent to:', email);
-        await db.execute(sql`
-          INSERT INTO email_log (club_id, recipient, email_type, subject, status, sent_at)
-          VALUES (${club.id}, ${email}, 'welcome', 'Welcome to TaekUp', 'sent', NOW())
-        `);
-      }
+      await emailAutomation.sendWelcomeEmailAuto(club.id, email, clubName, clubName);
 
       console.log('[Signup] New club created:', club.id, clubName);
 
@@ -81,7 +72,9 @@ export function registerRoutes(app: Express) {
 
     } catch (error: any) {
       console.error('[Signup] Error:', error.message);
-      return res.status(500).json({ error: 'Failed to create account. Please try again.' });
+      console.error('[Signup] Full error:', error);
+      console.error('[Signup] Request body:', req.body);
+      return res.status(500).json({ error: 'Failed to create account. Please try again.', details: error.message });
     }
   });
 
@@ -99,6 +92,69 @@ export function registerRoutes(app: Express) {
     }
 
     return res.status(401).json({ valid: false, error: 'Incorrect password' });
+  });
+
+  app.post('/api/login', async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const userResult = await db.execute(
+        sql`SELECT u.id, u.email, u.password_hash, u.role, u.name, u.club_id, u.is_active,
+                   c.name as club_name, c.owner_email, c.status as club_status, c.trial_status, c.trial_end
+            FROM users u
+            LEFT JOIN clubs c ON u.club_id = c.id
+            WHERE LOWER(u.email) = ${normalizedEmail} AND u.is_active = true
+            LIMIT 1`
+      );
+
+      const user = (userResult as any[])[0];
+
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid email or password' });
+      }
+
+      if (!user.password_hash) {
+        return res.status(401).json({ error: 'Please set up your password first. Check your email for an invitation link.' });
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+      if (!passwordMatch) {
+        return res.status(401).json({ error: 'Invalid email or password' });
+      }
+
+      console.log('[Login] User authenticated:', user.email, 'Role:', user.role);
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+        VALUES ('user_login', 'User Login', ${'User logged in: ' + user.email}, ${user.club_id}::uuid, ${JSON.stringify({ email: user.email, role: user.role })}::jsonb, NOW())
+      `);
+
+      return res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name || user.club_name,
+          role: user.role,
+          clubId: user.club_id,
+          clubName: user.club_name,
+          clubStatus: user.club_status,
+          trialStatus: user.trial_status,
+          trialEnd: user.trial_end
+        }
+      });
+
+    } catch (error: any) {
+      console.error('[Login] Error:', error.message);
+      return res.status(500).json({ error: 'Login failed. Please try again.' });
+    }
   });
 
   app.post('/api/ai/taekbot', async (req: Request, res: Response) => {
@@ -276,8 +332,10 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'priceId is required' });
       }
 
-      // Use APP_URL for production, fallback to request host for development
+      // Use APP_URL for production, fallback to Replit domain or request host
       const baseUrl = process.env.APP_URL || (() => {
+        const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0];
+        if (replitDomain) return `https://${replitDomain}`;
         const host = req.headers.host || 'localhost:5000';
         const protocol = req.headers['x-forwarded-proto'] || 'https';
         return `${protocol}://${host}`;
@@ -301,6 +359,30 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.get('/api/verify-checkout-session', async (req: Request, res: Response) => {
+    try {
+      const { session_id } = req.query;
+      
+      if (!session_id || typeof session_id !== 'string') {
+        return res.status(400).json({ error: 'session_id is required' });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      
+      res.json({
+        success: session.payment_status === 'paid',
+        email: session.customer_email || session.customer_details?.email,
+        planName: session.metadata?.planName || 'Premium Plan',
+        customerId: session.customer,
+        subscriptionId: session.subscription,
+      });
+    } catch (error: any) {
+      console.error('Error verifying checkout session:', error);
+      res.status(500).json({ error: 'Failed to verify session' });
+    }
+  });
+
   app.post('/api/customer-portal', async (req: Request, res: Response) => {
     try {
       const { customerId } = req.body;
@@ -309,8 +391,10 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'customerId is required' });
       }
 
-      // Use APP_URL for production, fallback to request host for development
+      // Use APP_URL for production, fallback to Replit domain or request host
       const baseUrl = process.env.APP_URL || (() => {
+        const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0];
+        if (replitDomain) return `https://${replitDomain}`;
         const host = req.headers.host || 'localhost:5000';
         const protocol = req.headers['x-forwarded-proto'] || 'https';
         return `${protocol}://${host}`;
@@ -466,5 +550,291 @@ export function registerRoutes(app: Express) {
         { id: 'birthday', name: 'Birthday Wish', from: 'hello@mytaek.com' },
       ]
     });
+  });
+
+  app.post('/api/forgot-password', async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+
+      const userResult = await db.execute(
+        sql`SELECT id, email, name FROM users WHERE email = ${email} AND is_active = true LIMIT 1`
+      );
+      
+      const user = (userResult as any[])[0];
+      
+      if (!user) {
+        return res.json({ 
+          success: true, 
+          message: 'If an account exists with this email, a password reset link has been sent.' 
+        });
+      }
+
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+      await db.execute(sql`
+        UPDATE users 
+        SET reset_token = ${resetToken}, reset_token_expires_at = ${expiresAt.toISOString()}::timestamptz
+        WHERE id = ${user.id}
+      `);
+
+      const emailResult = await emailService.sendResetPasswordEmail(user.email, {
+        userName: user.name || 'User',
+        resetToken: resetToken
+      });
+
+      if (emailResult.success) {
+        console.log('[Password Reset] Email sent to:', email);
+        
+        await db.execute(sql`
+          INSERT INTO activity_log (event_type, event_title, event_description, metadata, created_at)
+          VALUES ('password_reset_requested', 'Password Reset Requested', ${'Password reset requested for ' + email}, ${JSON.stringify({ email })}::jsonb, NOW())
+        `);
+      } else {
+        console.error('[Password Reset] Failed to send email:', emailResult.error);
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'If an account exists with this email, a password reset link has been sent.' 
+      });
+    } catch (error: any) {
+      console.error('[Forgot Password] Error:', error.message);
+      res.status(500).json({ error: 'Failed to process password reset request' });
+    }
+  });
+
+  app.post('/api/reset-password', async (req: Request, res: Response) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ error: 'Token and new password are required' });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters' });
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+
+      const updateResult = await db.execute(sql`
+        UPDATE users 
+        SET password_hash = ${passwordHash}, reset_token = NULL, reset_token_expires_at = NULL, updated_at = NOW()
+        WHERE reset_token = ${token} 
+        AND reset_token_expires_at > NOW()
+        AND is_active = true
+        RETURNING id, email, name
+      `);
+      
+      const user = (updateResult as any[])[0];
+      
+      if (!user) {
+        return res.status(400).json({ error: 'Invalid or expired reset token' });
+      }
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, event_title, event_description, metadata, created_at)
+        VALUES ('password_reset_completed', 'Password Reset Completed', ${'Password reset completed for ' + user.email}, ${JSON.stringify({ email: user.email })}::jsonb, NOW())
+      `);
+
+      console.log('[Password Reset] Password updated for:', user.email);
+
+      res.json({ success: true, message: 'Password has been reset successfully' });
+    } catch (error: any) {
+      console.error('[Reset Password] Error:', error.message);
+      res.status(500).json({ error: 'Failed to reset password' });
+    }
+  });
+
+  app.post('/api/students', async (req: Request, res: Response) => {
+    try {
+      const { clubId, name, parentEmail, parentName, parentPhone, belt, birthdate } = req.body;
+      
+      if (!clubId || !name) {
+        return res.status(400).json({ error: 'Club ID and student name are required' });
+      }
+
+      const clubResult = await db.execute(
+        sql`SELECT id, name, owner_email, owner_name FROM clubs WHERE id = ${clubId}::uuid`
+      );
+      
+      const club = (clubResult as any[])[0];
+      
+      if (!club) {
+        return res.status(404).json({ error: 'Club not found' });
+      }
+
+      const studentResult = await db.execute(sql`
+        INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, created_at)
+        VALUES (${clubId}::uuid, ${name}, ${parentEmail || null}, ${parentName || null}, ${parentPhone || null}, ${belt || 'White'}, ${birthdate ? birthdate + 'T00:00:00Z' : null}::timestamptz, NOW())
+        RETURNING id, name, parent_email, parent_name, belt
+      `);
+      
+      const student = (studentResult as any[])[0];
+
+      const age = birthdate ? Math.floor((Date.now() - new Date(birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+
+      const notifyEmailResult = await emailService.sendNewStudentAddedEmail(club.owner_email, {
+        studentName: name,
+        clubName: club.name,
+        beltLevel: belt || 'White',
+        studentAge: age ? `${age} years old` : 'Not specified',
+        parentName: parentName || 'Not specified',
+        studentId: student.id
+      });
+
+      if (notifyEmailResult.success) {
+        console.log('[New Student] Notification email sent to club owner:', club.owner_email);
+      }
+
+      if (parentEmail) {
+        await emailAutomation.sendParentWelcomeEmailAuto(
+          clubId,
+          student.id,
+          parentEmail,
+          parentName || 'Parent',
+          name,
+          club.name
+        );
+      }
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+        VALUES ('student_added', 'New Student Added', ${'New student added: ' + name}, ${clubId}::uuid, ${JSON.stringify({ studentId: student.id, studentName: name, parentEmail })}::jsonb, NOW())
+      `);
+
+      res.status(201).json({
+        success: true,
+        student: {
+          id: student.id,
+          name: student.name,
+          parentEmail: student.parent_email,
+          parentName: student.parent_name,
+          belt: student.belt
+        }
+      });
+    } catch (error: any) {
+      console.error('[Add Student] Error:', error.message);
+      res.status(500).json({ error: 'Failed to add student' });
+    }
+  });
+
+  app.post('/api/invite-coach', async (req: Request, res: Response) => {
+    try {
+      const { clubId, name, email, location, assignedClasses } = req.body;
+      
+      if (!clubId || !name || !email) {
+        return res.status(400).json({ error: 'Club ID, coach name, and email are required' });
+      }
+
+      const clubResult = await db.execute(sql`
+        SELECT id, name, owner_email FROM clubs WHERE id = ${clubId}::uuid
+      `);
+      
+      const club = (clubResult as any[])[0];
+      
+      if (!club) {
+        return res.status(404).json({ error: 'Club not found' });
+      }
+
+      const tempPassword = crypto.randomBytes(8).toString('hex');
+      const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+      await db.execute(sql`
+        INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
+        VALUES (${email}, ${passwordHash}, ${name}, 'coach', ${clubId}::uuid, true, NOW())
+        ON CONFLICT (email) DO UPDATE SET name = ${name}, club_id = ${clubId}::uuid, role = 'coach', is_active = true
+      `);
+
+      await emailService.sendCoachInviteEmail(email, {
+        coachName: name,
+        clubName: club.name,
+        coachEmail: email,
+        tempPassword: tempPassword,
+        ownerName: club.name
+      });
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+        VALUES ('coach_invited', 'Coach Invited', ${'Coach invited: ' + name}, ${clubId}::uuid, ${JSON.stringify({ coachEmail: email, coachName: name })}::jsonb, NOW())
+      `);
+
+      console.log('[Invite Coach] Coach invited:', email, 'to club:', club.name);
+
+      res.status(201).json({
+        success: true,
+        coach: {
+          email: email,
+          name: name,
+          location: location,
+          assignedClasses: assignedClasses
+        }
+      });
+    } catch (error: any) {
+      console.error('[Invite Coach] Error:', error.message);
+      res.status(500).json({ error: 'Failed to invite coach' });
+    }
+  });
+
+  app.put('/api/students/:id/link-parent', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { parentEmail, parentName, parentPhone } = req.body;
+      
+      if (!parentEmail) {
+        return res.status(400).json({ error: 'Parent email is required' });
+      }
+
+      const studentResult = await db.execute(sql`
+        SELECT s.id, s.name, s.parent_email, c.id as club_id, c.name as club_name 
+        FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE s.id = ${id}::uuid
+        LIMIT 1
+      `);
+      
+      const student = (studentResult as any[])[0];
+      
+      if (!student) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+
+      const hadParentBefore = !!student.parent_email;
+
+      await db.execute(sql`
+        UPDATE students 
+        SET parent_email = ${parentEmail}, parent_name = ${parentName || null}, parent_phone = ${parentPhone || null}, updated_at = NOW()
+        WHERE id = ${id}::uuid
+      `);
+
+      if (!hadParentBefore) {
+        await emailAutomation.sendParentWelcomeEmailAuto(
+          student.club_id,
+          student.id,
+          parentEmail,
+          parentName || 'Parent',
+          student.name,
+          student.club_name
+        );
+      }
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+        VALUES ('parent_linked', 'Parent Linked', ${'Parent linked to student: ' + student.name}, ${student.club_id}::uuid, ${JSON.stringify({ studentId: id, parentEmail })}::jsonb, NOW())
+      `);
+
+      res.json({ 
+        success: true, 
+        message: hadParentBefore ? 'Parent information updated' : 'Parent linked and welcome email sent'
+      });
+    } catch (error: any) {
+      console.error('[Link Parent] Error:', error.message);
+      res.status(500).json({ error: 'Failed to link parent to student' });
+    }
   });
 }

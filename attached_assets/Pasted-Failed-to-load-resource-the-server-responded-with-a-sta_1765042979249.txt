@@ -1,0 +1,44 @@
+Failed to load resource: the server responded with a status of 401 ()Understand this error
+api/login:1  Failed to load resource: the server responded with a status of 401 ()Understand this error
+api/login:1  Failed to load resource: the server responded with a status of 401 ()Understand this error
+api/ai/welcome-email:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-Bnk9Jg7v.js:53 [fetchAPI] Error 500: {"error":"[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent: [404 Not Found] models/gemini-pro is not found for API version v1, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods."}
+Qs @ index-Bnk9Jg7v.js:53Understand this error
+index-Bnk9Jg7v.js:53 [fetchAPI] Request to /ai/welcome-email failed: Error: API error: 500
+    at Qs (index-Bnk9Jg7v.js:53:7791)
+    at async Object.generateWelcomeEmail (index-Bnk9Jg7v.js:53:8391)
+    at async cj (index-Bnk9Jg7v.js:53:9059)
+    at async a (index-Bnk9Jg7v.js:210:17691)
+Qs @ index-Bnk9Jg7v.js:53Understand this error
+index-Bnk9Jg7v.js:53 Error generating welcome email: Error: API error: 500
+    at Qs (index-Bnk9Jg7v.js:53:7791)
+    at async Object.generateWelcomeEmail (index-Bnk9Jg7v.js:53:8391)
+    at async cj (index-Bnk9Jg7v.js:53:9059)
+    at async a (index-Bnk9Jg7v.js:210:17691)
+cj @ index-Bnk9Jg7v.js:53Understand this error
+148index-Bnk9Jg7v.js:40 Error: Minified React error #31; visit https://reactjs.org/docs/error-decoder.html?invariant=31&args[]=object%20with%20keys%20%7Bcode%2C%20name%7D for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Mi (index-Bnk9Jg7v.js:38:6314)
+    at y (index-Bnk9Jg7v.js:38:11380)
+    at yt (index-Bnk9Jg7v.js:40:1475)
+    at yp (index-Bnk9Jg7v.js:40:45668)
+    at pp (index-Bnk9Jg7v.js:40:39727)
+    at Hb (index-Bnk9Jg7v.js:40:39655)
+    at Kl (index-Bnk9Jg7v.js:40:39508)
+    at fd (index-Bnk9Jg7v.js:40:35875)
+    at hp (index-Bnk9Jg7v.js:40:34826)
+    at C (index-Bnk9Jg7v.js:25:1571)
+rd @ index-Bnk9Jg7v.js:40Understand this error
+index-Bnk9Jg7v.js:40 Uncaught Error: Minified React error #31; visit https://reactjs.org/docs/error-decoder.html?invariant=31&args[]=object%20with%20keys%20%7Bcode%2C%20name%7D for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Mi (index-Bnk9Jg7v.js:38:6314)
+    at y (index-Bnk9Jg7v.js:38:11380)
+    at yt (index-Bnk9Jg7v.js:40:1475)
+    at yp (index-Bnk9Jg7v.js:40:45668)
+    at pp (index-Bnk9Jg7v.js:40:39727)
+    at Hb (index-Bnk9Jg7v.js:40:39655)
+    at Kl (index-Bnk9Jg7v.js:40:39508)
+    at fd (index-Bnk9Jg7v.js:40:35875)
+    at hp (index-Bnk9Jg7v.js:40:34826)
+    at C (index-Bnk9Jg7v.js:25:1571)Understand this error
+wizard:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
+wizard:1 Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
+wizard:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received

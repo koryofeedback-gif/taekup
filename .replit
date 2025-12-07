@@ -59,7 +59,7 @@ localPort = 5001
 externalPort = 3000
 
 [[ports]]
-localPort = 40837
+localPort = 45033
 externalPort = 3002
 
 [deployment]
@@ -71,4 +71,3 @@ run = ["npm", "run", "start"]
 
 [userenv.shared]
 VITE_PREVIEW_KEY = "mytaek-owner-2024"
-APP_URL = "https://mytaek.com"

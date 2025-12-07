@@ -687,13 +687,13 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="trial-ending">Trial Ending Soon</option>
-                <option value="winback">We Miss You (Win-back)</option>
+                <option value="win_back">We Miss You (Win-back)</option>
                 <option value="churn-risk">Need Help? (Churn Risk)</option>
               </select>
               
               <p className="text-sm text-gray-500 mt-3">
                 {emailTemplate === 'trial-ending' && 'Reminds the user their trial is ending and encourages upgrade.'}
-                {emailTemplate === 'winback' && 'Offers 20% discount to churned or inactive users.'}
+                {emailTemplate === 'win_back' && 'Offers 20% discount to churned or inactive users.'}
                 {emailTemplate === 'churn-risk' && 'Offers help and support to at-risk users.'}
               </p>
             </div>
