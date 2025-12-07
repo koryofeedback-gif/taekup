@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { registerRoutes } from './routes';
 import { WebhookHandlers } from './webhookHandlers';
 import { superAdminRouter, addSuperAdminSession } from './superAdminRoutes';
+import * as emailAutomation from './services/emailAutomationService';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -287,6 +288,22 @@ async function startServer() {
   initStripe().catch(err => {
     console.error('Stripe init failed:', err.message);
   });
+
+  console.log('[EmailAutomation] Starting email scheduler...');
+  
+  setTimeout(() => {
+    console.log('[EmailAutomation] Running initial scheduled email tasks...');
+    emailAutomation.runScheduledEmailTasks().catch(err => {
+      console.error('[EmailAutomation] Initial run error:', err.message);
+    });
+  }, 10000);
+  
+  setInterval(() => {
+    console.log('[EmailAutomation] Running scheduled email tasks...');
+    emailAutomation.runScheduledEmailTasks().catch(err => {
+      console.error('[EmailAutomation] Scheduler error:', err.message);
+    });
+  }, 60 * 60 * 1000);
 }
 
 startServer();

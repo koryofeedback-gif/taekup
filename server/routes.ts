@@ -6,6 +6,7 @@ import { stripeService } from './stripeService';
 import { getStripePublishableKey, getUncachableStripeClient } from './stripeClient';
 import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail } from './aiService';
 import emailService from './services/emailService';
+import * as emailAutomation from './services/emailAutomationService';
 import { db } from './db';
 import { sql } from 'drizzle-orm';
 
@@ -54,18 +55,7 @@ export function registerRoutes(app: Express) {
         VALUES ('club_signup', 'New Club Signup', ${'New club signup: ' + clubName}, ${JSON.stringify({ clubId: club.id, email, country })}::jsonb, NOW())
       `);
 
-      const emailResult = await emailService.sendWelcomeEmail(email, {
-        ownerName: clubName,
-        clubName: clubName
-      });
-
-      if (emailResult.success) {
-        console.log('[Signup] Welcome email sent to:', email);
-        await db.execute(sql`
-          INSERT INTO email_log (club_id, recipient, email_type, subject, status, sent_at)
-          VALUES (${club.id}, ${email}, 'welcome', 'Welcome to TaekUp', 'sent', NOW())
-        `);
-      }
+      await emailAutomation.sendWelcomeEmailAuto(club.id, email, clubName, clubName);
 
       console.log('[Signup] New club created:', club.id, clubName);
 
@@ -669,16 +659,14 @@ export function registerRoutes(app: Express) {
       }
 
       if (parentEmail) {
-        const parentEmailResult = await emailService.sendParentWelcomeEmail(parentEmail, {
-          parentName: parentName || 'Parent',
-          studentName: name,
-          clubName: club.name,
-          studentId: student.id
-        });
-
-        if (parentEmailResult.success) {
-          console.log('[New Student] Parent welcome email sent to:', parentEmail);
-        }
+        await emailAutomation.sendParentWelcomeEmailAuto(
+          clubId,
+          student.id,
+          parentEmail,
+          parentName || 'Parent',
+          name,
+          club.name
+        );
       }
 
       await db.execute(sql`
@@ -734,21 +722,14 @@ export function registerRoutes(app: Express) {
       `);
 
       if (!hadParentBefore) {
-        const emailResult = await emailService.sendParentWelcomeEmail(parentEmail, {
-          parentName: parentName || 'Parent',
-          studentName: student.name,
-          clubName: student.club_name,
-          studentId: student.id
-        });
-
-        if (emailResult.success) {
-          console.log('[Link Parent] Welcome email sent to parent:', parentEmail);
-          
-          await db.execute(sql`
-            INSERT INTO email_log (club_id, recipient, email_type, subject, status, sent_at)
-            VALUES (${student.club_id}::uuid, ${parentEmail}, 'parent_welcome', ${'Track ' + student.name + "'s Progress on TaekUp"}, 'sent', NOW())
-          `);
-        }
+        await emailAutomation.sendParentWelcomeEmailAuto(
+          student.club_id,
+          student.id,
+          parentEmail,
+          parentName || 'Parent',
+          student.name,
+          student.club_name
+        );
       }
 
       await db.execute(sql`
