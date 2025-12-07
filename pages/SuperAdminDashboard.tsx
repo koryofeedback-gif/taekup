@@ -86,7 +86,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ token,
         fetch('/api/super-admin/overview', { headers }),
         fetch('/api/super-admin/revenue', { headers }),
         fetch('/api/super-admin/activity?limit=10', { headers }),
-        fetch('/api/super-admin/health', { headers })
+        fetch('/api/super-admin/health-scores', { headers })
       ]);
 
       if (overviewRes.status === 401) {
@@ -166,20 +166,24 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ token,
   const MRRChart = () => {
     if (!revenue?.mrrTrend?.length) return null;
     
-    const maxMrr = Math.max(...revenue.mrrTrend.map(d => d.mrr), 1);
+    const validTrend = revenue.mrrTrend.filter(d => d && typeof d.mrr === 'number');
+    if (!validTrend.length) return null;
+    
+    const maxMrr = Math.max(...validTrend.map(d => d.mrr || 0), 1);
     const chartHeight = 120;
     
     return (
       <div className="relative h-32">
         <div className="absolute inset-0 flex items-end justify-between gap-1">
-          {revenue.mrrTrend.slice(-30).map((point, i) => {
-            const height = (point.mrr / maxMrr) * chartHeight;
+          {validTrend.slice(-30).map((point, i) => {
+            const mrrValue = point.mrr || 0;
+            const height = (mrrValue / maxMrr) * chartHeight;
             return (
               <div
                 key={i}
                 className="flex-1 bg-gradient-to-t from-cyan-600 to-cyan-400 rounded-t opacity-80 hover:opacity-100 transition-opacity"
                 style={{ height: `${Math.max(height, 2)}px` }}
-                title={`$${point.mrr.toFixed(2)} on ${point.date}`}
+                title={`$${mrrValue.toFixed(2)} on ${point.date || 'N/A'}`}
               />
             );
           })}
