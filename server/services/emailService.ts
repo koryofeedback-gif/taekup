@@ -73,6 +73,8 @@ export const EMAIL_TEMPLATES = {
   BELT_PROMOTION: 'd-87a8531cb61d41e3acf8b35b3083db97',
   ATTENDANCE_ALERT: 'd-660102bfe6a1496b90d68fdd04b72f11',
   BIRTHDAY_WISH: 'd-0b160e2e188c4e8a91837369bed3e352',
+  WIN_BACK: 'd-189dede22ae74ea697199ccbd9629bdb',
+  CHURN_RISK: 'd-f9a587c97a9d4ed18c87212a140f9c53',
 };
 
 type SenderType = 'engagement' | 'transactional';
@@ -349,6 +351,35 @@ export async function sendBirthdayWishEmail(
     `🎂 Happy Birthday, ${data.studentName}!`);
 }
 
+export async function sendWinBackEmail(
+  to: string,
+  data: { 
+    ownerName: string; 
+    clubName: string;
+    discountCode?: string;
+  }
+): Promise<EmailResult> {
+  return sendEmail(to, EMAIL_TEMPLATES.WIN_BACK, {
+    ...data,
+    discountCode: data.discountCode || 'WINBACK25',
+    ctaUrl: `${BASE_URL}/pricing`,
+  }, `We Want You Back! 25% Off for 3 Months`);
+}
+
+export async function sendChurnRiskEmail(
+  to: string,
+  data: { 
+    ownerName: string; 
+    clubName: string;
+  }
+): Promise<EmailResult> {
+  return sendEmail(to, EMAIL_TEMPLATES.CHURN_RISK, {
+    ...data,
+    ctaUrl: `${BASE_URL}/wizard`,
+    helpUrl: `${BASE_URL}/help`,
+  }, `Need Help Getting Started? We're Here for You!`);
+}
+
 export default {
   sendWelcomeEmail,
   sendPaymentConfirmationEmail,
@@ -365,5 +396,7 @@ export default {
   sendBeltPromotionEmail,
   sendAttendanceAlertEmail,
   sendBirthdayWishEmail,
+  sendWinBackEmail,
+  sendChurnRiskEmail,
   EMAIL_TEMPLATES,
 };
