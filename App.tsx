@@ -201,14 +201,23 @@ const App: React.FC = () => {
     }, []);
 
     const handleLoginSuccess = useCallback(
-        (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string) => {
+        (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string, userData?: any) => {
             setLoggedInUserType(userType);
             setLoggedInUserName(userName);
             if (studentId) {
                 setParentStudentId(studentId);
             }
+            if (userData?.clubId) {
+                setSignupData(prev => ({
+                    clubName: prev?.clubName || userData.clubName || '',
+                    email: prev?.email || userData.email || '',
+                    country: prev?.country || 'US',
+                    clubId: userData.clubId,
+                    trialStartDate: prev?.trialStartDate
+                }));
+            }
         },
-        []
+        [setSignupData]
     );
 
     const handleLogout = useCallback(() => {
@@ -292,7 +301,7 @@ interface AppContentProps {
     onStudentDataUpdate: (students: Student[]) => void;
     onWizardDataUpdate: (updates: Partial<WizardData>) => void;
     onViewStudentPortal: (studentId: string) => void;
-    onLoginSuccess: (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string) => void;
+    onLoginSuccess: (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string, userData?: any) => void;
     onLogout: () => void;
     onSelectPlan: (planId: SubscriptionPlanId) => void;
     onShowPricing: () => void;
@@ -494,6 +503,7 @@ const AppContent: React.FC<AppContentProps> = ({
                             finalWizardData && loggedInUserType === 'owner' ? (
                                 <AdminDashboardWrapper
                                     data={finalWizardData}
+                                    clubId={signupData?.clubId}
                                     onUpdateData={onWizardDataUpdate}
                                     onViewStudentPortal={onViewStudentPortal}
                                 />
@@ -647,12 +657,14 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
 // Admin Dashboard Wrapper with Navigation
 interface AdminDashboardWrapperProps {
     data: WizardData;
+    clubId?: string;
     onUpdateData: (updates: Partial<WizardData>) => void;
     onViewStudentPortal: (studentId: string) => void;
 }
 
 const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
     data,
+    clubId,
     onUpdateData,
     onViewStudentPortal,
 }) => {
@@ -680,6 +692,7 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
             <SEO title="Admin Command Center | TaekUp" />
             <AdminDashboard
                 data={data}
+                clubId={clubId}
                 onBack={() => navigate('/app')}
                 onUpdateData={onUpdateData}
                 onNavigate={handleNavigate}

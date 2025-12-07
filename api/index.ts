@@ -422,6 +422,58 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { clubId, name, email, location, assignedClasses } = parseBody(req);
+
+  if (!clubId || !name || !email) {
+    return res.status(400).json({ error: 'Club ID, coach name, and email are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const clubResult = await client.query('SELECT id, name, owner_email FROM clubs WHERE id = $1::uuid', [clubId]);
+    const club = clubResult.rows[0];
+    if (!club) return res.status(404).json({ error: 'Club not found' });
+
+    const tempPassword = crypto.randomBytes(8).toString('hex');
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    await client.query(
+      `INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
+       VALUES ($1, $2, $3, 'coach', $4::uuid, true, NOW())
+       ON CONFLICT (email) DO UPDATE SET name = $3, club_id = $4::uuid, role = 'coach', is_active = true`,
+      [email, passwordHash, name, clubId]
+    );
+
+    const coachSent = await sendTemplateEmail(email, EMAIL_TEMPLATES.COACH_INVITE, {
+      coachName: name,
+      clubName: club.name,
+      coachEmail: email,
+      tempPassword: tempPassword,
+      ownerName: club.name,
+    });
+    await logAutomatedEmail(client, 'coach_invite', email, EMAIL_TEMPLATES.COACH_INVITE, coachSent ? 'sent' : 'failed', clubId);
+    console.log(`[InviteCoach] Coach invite email ${coachSent ? 'sent' : 'failed'} to:`, email);
+
+    await client.query(
+      `INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+       VALUES ('coach_invited', 'Coach Invited', $1, $2::uuid, $3::jsonb, NOW())`,
+      ['Coach invited: ' + name, clubId, JSON.stringify({ coachEmail: email, coachName: name })]
+    );
+
+    return res.status(201).json({
+      success: true,
+      coach: { email, name, location, assignedClasses }
+    });
+  } catch (error: any) {
+    console.error('[InviteCoach] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to invite coach' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleLinkParent(req: VercelRequest, res: VercelResponse, studentId: string) {
   if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
   const { parentEmail, parentName, parentPhone } = parseBody(req);
@@ -501,6 +553,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/ai/class-plan' || path === '/ai/class-plan/') return await handleClassPlan(req, res);
     if (path === '/ai/welcome-email' || path === '/ai/welcome-email/') return await handleWelcomeEmail(req, res);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
+    if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     
     const linkParentMatch = path.match(/^\/students\/([^/]+)\/link-parent\/?$/);
     if (linkParentMatch) return await handleLinkParent(req, res, linkParentMatch[1]);

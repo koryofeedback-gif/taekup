@@ -690,6 +690,63 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.post('/api/invite-coach', async (req: Request, res: Response) => {
+    try {
+      const { clubId, name, email, location, assignedClasses } = req.body;
+      
+      if (!clubId || !name || !email) {
+        return res.status(400).json({ error: 'Club ID, coach name, and email are required' });
+      }
+
+      const clubResult = await db.execute(sql`
+        SELECT id, name, owner_email FROM clubs WHERE id = ${clubId}::uuid
+      `);
+      
+      const club = (clubResult as any[])[0];
+      
+      if (!club) {
+        return res.status(404).json({ error: 'Club not found' });
+      }
+
+      const tempPassword = crypto.randomBytes(8).toString('hex');
+      const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+      await db.execute(sql`
+        INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
+        VALUES (${email}, ${passwordHash}, ${name}, 'coach', ${clubId}::uuid, true, NOW())
+        ON CONFLICT (email) DO UPDATE SET name = ${name}, club_id = ${clubId}::uuid, role = 'coach', is_active = true
+      `);
+
+      await emailService.sendCoachInviteEmail(email, {
+        coachName: name,
+        clubName: club.name,
+        coachEmail: email,
+        tempPassword: tempPassword,
+        ownerName: club.name
+      });
+
+      await db.execute(sql`
+        INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+        VALUES ('coach_invited', 'Coach Invited', ${'Coach invited: ' + name}, ${clubId}::uuid, ${JSON.stringify({ coachEmail: email, coachName: name })}::jsonb, NOW())
+      `);
+
+      console.log('[Invite Coach] Coach invited:', email, 'to club:', club.name);
+
+      res.status(201).json({
+        success: true,
+        coach: {
+          email: email,
+          name: name,
+          location: location,
+          assignedClasses: assignedClasses
+        }
+      });
+    } catch (error: any) {
+      console.error('[Invite Coach] Error:', error.message);
+      res.status(500).json({ error: 'Failed to invite coach' });
+    }
+  });
+
   app.put('/api/students/:id/link-parent', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;

@@ -5,6 +5,7 @@ import { generateParentingAdvice } from '../services/geminiService';
 
 interface AdminDashboardProps {
   data: WizardData;
+  clubId?: string;
   onBack: () => void;
   onUpdateData: (data: Partial<WizardData>) => void;
   onNavigate: (view: 'coach-dashboard' | 'admin-dashboard' | 'parent-portal' | 'dojang-tv') => void;
@@ -811,7 +812,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
 
 // --- MAIN COMPONENT ---
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, onUpdateData, onNavigate, onViewStudentPortal }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, onBack, onUpdateData, onNavigate, onViewStudentPortal }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'staff' | 'schedule' | 'creator' | 'settings' | 'billing'>('overview');
     
     // Modal State
@@ -906,7 +907,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
         setModalType(null);
     };
 
-    const handleAddStudent = () => {
+    const handleAddStudent = async () => {
         const totalStudents = data.students.length;
         const currentTier = PRICING_TIERS.find(t => totalStudents < t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
         
@@ -917,10 +918,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
 
         if(!tempStudent.name || !tempStudent.beltId) return;
         
-        // Calculate points
         const belt = data.belts.find(b => b.id === tempStudent.beltId);
         const pointsPerStripe = data.pointsPerBelt[belt?.id || ''] || data.pointsPerStripe || 64;
         const initialPoints = (tempStudent.stripes || 0) * pointsPerStripe;
+
+        if (clubId && tempStudent.parentEmail) {
+            try {
+                const response = await fetch('/api/students', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clubId,
+                        name: tempStudent.name,
+                        parentEmail: tempStudent.parentEmail,
+                        parentName: tempStudent.parentName,
+                        parentPhone: tempStudent.parentPhone,
+                        belt: belt?.name || 'White',
+                        birthdate: tempStudent.birthday
+                    })
+                });
+                if (response.ok) {
+                    console.log('[AdminDashboard] Student added via API, emails triggered');
+                }
+            } catch (error) {
+                console.error('[AdminDashboard] API call failed, continuing with local update:', error);
+            }
+        }
 
         const newStudent: Student = {
             id: `student-${Date.now()}`,
@@ -956,8 +979,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onBack, on
         setTempStudent({});
     };
 
-    const handleAddCoach = () => {
+    const handleAddCoach = async () => {
         if(!tempCoach.name || !tempCoach.email) return;
+        
+        if (clubId) {
+            try {
+                const response = await fetch('/api/invite-coach', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clubId,
+                        name: tempCoach.name,
+                        email: tempCoach.email,
+                        location: tempCoach.location || data.branchNames?.[0] || 'Main Location',
+                        assignedClasses: []
+                    })
+                });
+                if (response.ok) {
+                    console.log('[AdminDashboard] Coach invited via API, email triggered');
+                }
+            } catch (error) {
+                console.error('[AdminDashboard] Coach invite API failed:', error);
+            }
+        }
+
         const newCoach: Coach = {
             id: `coach-${Date.now()}`,
             name: tempCoach.name,
