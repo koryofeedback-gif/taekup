@@ -3,6 +3,14 @@ import Stripe from 'stripe';
 let connectionSettings: any;
 
 async function getCredentials() {
+  // Check for sandbox keys first (development/testing)
+  if (process.env.SANDBOX_STRIPE_KEY) {
+    return {
+      publishableKey: process.env.SANDBOX_STRIPE_PUBLISHABLE_KEY || '',
+      secretKey: process.env.SANDBOX_STRIPE_KEY,
+    };
+  }
+
   // Check if running on Vercel or with direct env vars
   if (process.env.STRIPE_SECRET_KEY) {
     return {
