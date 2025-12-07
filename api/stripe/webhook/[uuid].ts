@@ -223,7 +223,7 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
         invoice.payment_intent || null,
         amount,
         currency,
-        'succeeded',
+        'paid',
         invoice.status_transitions?.paid_at ? new Date(invoice.status_transitions.paid_at * 1000) : new Date(),
         invoice.period_start ? new Date(invoice.period_start * 1000) : null,
         invoice.period_end ? new Date(invoice.period_end * 1000) : null
