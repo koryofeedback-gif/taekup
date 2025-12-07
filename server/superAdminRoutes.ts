@@ -34,11 +34,13 @@ async function getSendGridClient() {
       ).then(res => res.json()).then(data => data.items?.[0]);
 
       if (connectionSettings?.settings?.api_key) {
+        const fromEmail = connectionSettings.settings.from_email || 'hello@mytaek.com';
         console.log('[SendGrid] Got API key from Replit connector');
+        console.log('[SendGrid] Using from_email:', fromEmail);
         sgMail.setApiKey(connectionSettings.settings.api_key);
         return {
           client: sgMail,
-          fromEmail: connectionSettings.settings.from_email || 'hello@mytaek.com',
+          fromEmail: fromEmail,
           configured: true
         };
       } else {
