@@ -893,6 +893,32 @@ const EMAIL_TEMPLATES: Record<string, { subject: string; getHtml: (club: any, da
       </div>
     `
   },
+  'churn-risk': {
+    subject: 'Need Help Getting Started? We\'re Here for You!',
+    getHtml: (club) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #3498DB;">We're Here to Help!</h1>
+        </div>
+        <p>Hi ${club.owner_name || 'there'},</p>
+        <p>We noticed you haven't been using <strong>${club.name}</strong> on TaekUp lately, and we wanted to check in.</p>
+        <p>Is there anything we can help you with?</p>
+        <ul>
+          <li>Need help setting up your student roster?</li>
+          <li>Questions about Dojang Rivals or gamification?</li>
+          <li>Want a personalized demo of our features?</li>
+        </ul>
+        <p style="background: #E8F4FD; padding: 15px; border-radius: 8px; border-left: 4px solid #3498DB;">
+          <strong>Free Support Session:</strong> Reply to this email and we'll schedule a 15-minute call to help you get the most out of TaekUp!
+        </p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://mytaek.com/help" style="background: #3498DB; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Get Help Now</a>
+        </p>
+        <p>We're committed to your success!</p>
+        <p>The TaekUp Team</p>
+      </div>
+    `
+  },
   custom: {
     subject: 'Message from TaekUp',
     getHtml: (club) => `
