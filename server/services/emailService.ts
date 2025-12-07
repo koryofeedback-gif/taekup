@@ -3,6 +3,15 @@ import sgMail from '@sendgrid/mail';
 let connectionSettings: any;
 
 async function getCredentials() {
+  // First, check for direct environment variables (works on Vercel and other platforms)
+  if (process.env.SENDGRID_API_KEY) {
+    return { 
+      apiKey: process.env.SENDGRID_API_KEY, 
+      email: process.env.SENDGRID_FROM_EMAIL || 'hello@mytaek.com' 
+    };
+  }
+
+  // Fallback to Replit connector system
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY 
     ? 'repl ' + process.env.REPL_IDENTITY 
@@ -11,7 +20,7 @@ async function getCredentials() {
     : null;
 
   if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+    throw new Error('SendGrid not configured: Set SENDGRID_API_KEY environment variable');
   }
 
   connectionSettings = await fetch(

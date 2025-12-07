@@ -276,9 +276,12 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'priceId is required' });
       }
 
-      const host = req.headers.host || 'localhost:5000';
-      const protocol = req.headers['x-forwarded-proto'] || 'https';
-      const baseUrl = `${protocol}://${host}`;
+      // Use APP_URL for production, fallback to request host for development
+      const baseUrl = process.env.APP_URL || (() => {
+        const host = req.headers.host || 'localhost:5000';
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        return `${protocol}://${host}`;
+      })();
 
       console.log(`[/api/checkout] Creating session with:`, { priceId, baseUrl });
 
@@ -306,9 +309,12 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'customerId is required' });
       }
 
-      const host = req.headers.host || 'localhost:5000';
-      const protocol = req.headers['x-forwarded-proto'] || 'https';
-      const baseUrl = `${protocol}://${host}`;
+      // Use APP_URL for production, fallback to request host for development
+      const baseUrl = process.env.APP_URL || (() => {
+        const host = req.headers.host || 'localhost:5000';
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        return `${protocol}://${host}`;
+      })();
 
       const session = await stripeService.createCustomerPortalSession(
         customerId,

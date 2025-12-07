@@ -36,9 +36,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Stripe not configured' });
     }
 
-    const host = req.headers.host || 'mytaek.com';
-    const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const baseUrl = `${protocol}://${host}`;
+    // Use APP_URL for production, fallback to request host
+    const baseUrl = process.env.APP_URL || (() => {
+      const host = req.headers.host || 'mytaek.com';
+      const protocol = req.headers['x-forwarded-proto'] || 'https';
+      return `${protocol}://${host}`;
+    })();
 
     console.log(`[/api/checkout] Creating session with:`, { priceId, baseUrl });
 
