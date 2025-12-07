@@ -329,13 +329,16 @@ Instant preview system for sales/marketing:
 
 ### Required
 - `DATABASE_URL` - PostgreSQL connection string
-- `STRIPE_SECRET_KEY` - Stripe API key
+- `STRIPE_SECRET_KEY` or `SANDBOX_STRIPE_KEY` - Stripe API key
+- `STRIPE_PUBLISHABLE_KEY` or `SANDBOX_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
 - `SUPER_ADMIN_PASSWORD` - Super Admin login
+- `APP_URL` - Production URL (e.g., `https://mytaek.com`)
+- `SENDGRID_API_KEY` - For email delivery (required for welcome emails)
 
 ### Optional
+- `SENDGRID_FROM_EMAIL` - Sender email (defaults to hello@mytaek.com)
 - `OPENAI_API_KEY` - For GPT-4o features
 - `GOOGLE_API_KEY` - For Gemini features
-- `SENDGRID_API_KEY` - For email delivery
 - `SUPABASE_URL` / `SUPABASE_ANON_KEY` - For realtime features
 
 ---
