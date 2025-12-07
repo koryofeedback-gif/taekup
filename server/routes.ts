@@ -287,8 +287,8 @@ export function registerRoutes(app: Express) {
 
       const session = await stripeService.createCheckoutSession(
         priceId,
-        `${baseUrl}/app/admin?subscription=success`,
-        `${baseUrl}/app/pricing?subscription=cancelled`,
+        `${baseUrl}/wizard?subscription=success`,
+        `${baseUrl}/pricing?subscription=cancelled`,
         undefined,
         { clubId: clubId || '', email: email || '' }
       );
