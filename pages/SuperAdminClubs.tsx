@@ -720,7 +720,7 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
               
               <p className="text-sm text-gray-500 mt-3">
                 {emailTemplate === 'trial-ending' && 'Reminds the user their trial is ending and encourages upgrade.'}
-                {emailTemplate === 'win_back' && 'Offers 20% discount to churned or inactive users.'}
+                {emailTemplate === 'win_back' && 'Offers 25% discount for 3 months to churned or inactive users.'}
                 {emailTemplate === 'churn-risk' && 'Offers help and support to at-risk users.'}
               </p>
             </div>
