@@ -952,10 +952,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 console.error('[AdminDashboard] API call failed, continuing with local update:', error);
                 alert('Failed to send welcome email. Student added locally.');
             }
-        } else if (!clubId) {
+        } else if (!clubId && tempStudent.parentEmail) {
             console.warn('[AdminDashboard] No clubId available - skipping API call');
-        } else if (!tempStudent.parentEmail) {
-            console.log('[AdminDashboard] No parent email provided - skipping welcome email');
+            alert('Unable to send welcome email. Please log out and log back in to enable email notifications.');
         }
 
         const newStudent: Student = {
@@ -1025,6 +1024,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             }
         } else {
             console.warn('[AdminDashboard] No clubId available - skipping API call');
+            alert('Unable to send invitation email. Please log out and log back in to enable email notifications.');
         }
 
         const newCoach: Coach = {
