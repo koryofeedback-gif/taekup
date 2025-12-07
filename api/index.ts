@@ -5,12 +5,59 @@ import crypto from 'crypto';
 import Stripe from 'stripe';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import sgMail from '@sendgrid/mail';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
   max: 5
 });
+
+const EMAIL_TEMPLATES = {
+  WELCOME: 'd-c75234cb326144f68395a66668081ee8',
+  PARENT_WELCOME: 'd-7747be090c32477e8589d8985608d055',
+  COACH_INVITE: 'd-60ecd12425c14aa3a7f5ef5fb2c374d5',
+  RESET_PASSWORD: 'd-ec4e0df3381549f6a3cfc6d202a62d8b',
+};
+
+async function sendTemplateEmail(to: string, templateId: string, dynamicData: Record<string, any>): Promise<boolean> {
+  if (!process.env.SENDGRID_API_KEY) {
+    console.log('[SendGrid] No API key configured, skipping email');
+    return false;
+  }
+  
+  try {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    await sgMail.send({
+      to,
+      from: { email: 'hello@mytaek.com', name: 'TaekUp' },
+      templateId,
+      dynamicTemplateData: {
+        ...dynamicData,
+        dashboardUrl: 'https://www.mytaek.com/app/admin',
+        loginUrl: 'https://www.mytaek.com/login',
+        upgradeUrl: 'https://www.mytaek.com/pricing',
+      },
+    });
+    console.log(`[SendGrid] Email sent to ${to} with template ${templateId}`);
+    return true;
+  } catch (error: any) {
+    console.error('[SendGrid] Failed to send email:', error.message);
+    return false;
+  }
+}
+
+async function logAutomatedEmail(client: any, triggerType: string, recipient: string, templateId: string, status: string, clubId?: string) {
+  try {
+    await client.query(
+      `INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, club_id)
+       VALUES ($1, $2, $3, $4::email_status, $5::uuid)`,
+      [triggerType, recipient, templateId, status, clubId]
+    );
+  } catch (err) {
+    console.error('[EmailLog] Failed to log:', err);
+  }
+}
 
 function getStripeClient(): Stripe | null {
   const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
@@ -108,6 +155,18 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
       [email, passwordHash, club.id]
     );
 
+    await client.query(
+      `INSERT INTO activity_log (event_type, event_title, event_description, metadata, created_at)
+       VALUES ('club_signup', 'New Club Signup', $1, $2, NOW())`,
+      ['New club signup: ' + clubName, JSON.stringify({ clubId: club.id, email, country })]
+    );
+
+    const emailSent = await sendTemplateEmail(email, EMAIL_TEMPLATES.WELCOME, {
+      ownerName: clubName,
+      clubName: clubName,
+    });
+    await logAutomatedEmail(client, 'welcome', email, EMAIL_TEMPLATES.WELCOME, emailSent ? 'sent' : 'failed', club.id);
+
     return res.status(201).json({ success: true, club: { id: club.id, name: club.name, email: club.owner_email, trialStart: club.trial_start, trialEnd: club.trial_end } });
   } finally { client.release(); }
 }
@@ -126,6 +185,12 @@ async function handleForgotPassword(req: VercelRequest, res: VercelResponse) {
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await client.query('UPDATE users SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3', [resetToken, expiresAt, user.id]);
+
+    await sendTemplateEmail(user.email, EMAIL_TEMPLATES.RESET_PASSWORD, {
+      userName: user.name || 'User',
+      resetToken: resetToken,
+      resetUrl: `https://www.mytaek.com/reset-password?token=${resetToken}`,
+    });
 
     return res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
   } finally { client.release(); }
