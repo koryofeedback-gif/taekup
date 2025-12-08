@@ -740,6 +740,11 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
                 break;
         }
     };
+
+    const handleViewStudentPortalWithNav = (studentId: string) => {
+        onViewStudentPortal(studentId);
+        navigate(`/app/parent/${studentId}`);
+    };
     
     return (
         <>
@@ -750,7 +755,7 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
                 onBack={() => navigate('/app')}
                 onUpdateData={onUpdateData}
                 onNavigate={handleNavigate}
-                onViewStudentPortal={onViewStudentPortal}
+                onViewStudentPortal={handleViewStudentPortalWithNav}
             />
         </>
     );
