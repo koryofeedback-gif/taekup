@@ -191,7 +191,7 @@ export const DEMO_WIZARD_DATA: WizardData = {
     useColorCodedStripes: true,
     stripeColors: ['#FFD700', '#C0C0C0', '#CD7F32', '#000000'],
     gradingRequirementEnabled: true,
-    gradingRequirementName: 'Poomsae',
+    gradingRequirementName: 'Forms',
     coaches: DEMO_COACHES,
     students: DEMO_STUDENTS,
     primaryColor: '#06B6D4',
