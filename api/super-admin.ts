@@ -1618,7 +1618,7 @@ async function handleChurnReasons(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST') {
       const { clubId, reason, feedback, wouldReturn } = req.body;
       await db`
-        INSERT INTO churn_reasons (club_id, reason, feedback, would_return)
+        INSERT INTO churn_reasons (club_id, category, additional_feedback, would_recommend)
         VALUES (${clubId}::uuid, ${reason}, ${feedback}, ${wouldReturn})
       `;
       return res.json({ success: true });
@@ -1627,17 +1627,23 @@ async function handleChurnReasons(req: VercelRequest, res: VercelResponse) {
     // GET - fetch churn reasons breakdown
     const breakdown = await db`
       SELECT 
-        reason,
+        category as reason,
         COUNT(*) as count,
         ROUND(COUNT(*) * 100.0 / NULLIF((SELECT COUNT(*) FROM churn_reasons), 0), 1) as percentage
       FROM churn_reasons
-      GROUP BY reason
+      GROUP BY category
       ORDER BY count DESC
     `;
 
     const recentFeedback = await db`
       SELECT 
-        cr.*,
+        cr.id,
+        cr.club_id,
+        cr.category as reason,
+        cr.additional_feedback as feedback,
+        cr.would_recommend as would_return,
+        cr.rating,
+        cr.created_at,
         c.name as club_name,
         c.owner_email
       FROM churn_reasons cr
@@ -1649,8 +1655,8 @@ async function handleChurnReasons(req: VercelRequest, res: VercelResponse) {
     const stats = await db`
       SELECT 
         COUNT(*) as total_churns,
-        COUNT(*) FILTER (WHERE would_return = true) as would_return_count,
-        ROUND(COUNT(*) FILTER (WHERE would_return = true) * 100.0 / NULLIF(COUNT(*), 0), 1) as would_return_pct
+        COUNT(*) FILTER (WHERE would_recommend = true) as would_return_count,
+        ROUND(COUNT(*) FILTER (WHERE would_recommend = true) * 100.0 / NULLIF(COUNT(*), 0), 1) as would_return_pct
       FROM churn_reasons
     `;
 

@@ -1366,54 +1366,32 @@ router.post('/churn-reasons', async (req: Request, res: Response) => {
 // Payment Recovery Dashboard
 router.get('/payment-recovery', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
-    // Get failed payments
+    // Get failed payments from failed_payments table
     const failedPayments = await db.execute(sql`
       SELECT 
-        p.*,
+        fp.*,
         c.name as club_name,
-        c.owner_email,
-        pra.attempt_number,
-        pra.email_sent,
-        pra.recovered
-      FROM payments p
-      JOIN clubs c ON c.id = p.club_id
-      LEFT JOIN payment_recovery_attempts pra ON pra.payment_id = p.id
-      WHERE p.status IN ('failed', 'unpaid', 'past_due')
-      ORDER BY p.created_at DESC
+        c.owner_email
+      FROM failed_payments fp
+      LEFT JOIN clubs c ON c.id = fp.club_id
+      ORDER BY fp.failed_at DESC
       LIMIT 50
     `);
 
     // Get recovery stats
     const stats = await db.execute(sql`
       SELECT 
-        COUNT(*) as total_attempts,
-        COUNT(*) FILTER (WHERE recovered = true) as recovered_count,
-        COALESCE(SUM(recovered_amount), 0) / 100 as recovered_amount,
-        CASE WHEN COUNT(*) > 0 
-          THEN ROUND((COUNT(*) FILTER (WHERE recovered = true)::numeric / COUNT(*)) * 100, 1)
-          ELSE 0
-        END as recovery_rate
-      FROM payment_recovery_attempts
-      WHERE created_at >= NOW() - INTERVAL '30 days'
-    `);
-
-    // Get monthly recovery trend
-    const trend = await db.execute(sql`
-      SELECT 
-        TO_CHAR(created_at, 'YYYY-MM') as month,
         COUNT(*) as total_failed,
-        COUNT(*) FILTER (WHERE recovered = true) as recovered,
-        COALESCE(SUM(recovered_amount), 0) / 100 as amount_recovered
-      FROM payment_recovery_attempts
-      WHERE created_at >= NOW() - INTERVAL '6 months'
-      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
-      ORDER BY month
+        COUNT(*) FILTER (WHERE recovered_at IS NOT NULL) as recovered,
+        COALESCE(SUM(amount) FILTER (WHERE recovered_at IS NULL), 0) as outstanding_amount,
+        COALESCE(SUM(amount) FILTER (WHERE recovered_at IS NOT NULL), 0) as recovered_amount,
+        ROUND(COUNT(*) FILTER (WHERE recovered_at IS NOT NULL) * 100.0 / NULLIF(COUNT(*), 0), 1) as recovery_rate
+      FROM failed_payments
     `);
 
     res.json({ 
       failedPayments, 
-      stats: (stats as any[])[0] || {},
-      trend 
+      stats: (stats as any[])[0] || {}
     });
   } catch (error: any) {
     console.error('Payment recovery error:', error);
