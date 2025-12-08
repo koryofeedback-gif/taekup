@@ -96,9 +96,9 @@ export default function SuperAdminAnalytics() {
   const [executions, setExecutions] = useState<any[]>([]);
 
   const fetchData = async (endpoint: string) => {
-    const token = sessionStorage.getItem('superAdminToken');
+    const token = localStorage.getItem('superAdminToken');
     const response = await fetch(`${API_BASE}/${endpoint}`, {
-      headers: { 'X-Super-Admin-Token': token || '' }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!response.ok) throw new Error(`Failed to fetch ${endpoint}`);
     return response.json();
@@ -188,12 +188,12 @@ export default function SuperAdminAnalytics() {
   }, [activeTab]);
 
   const toggleAutomation = async (id: string, field: 'isActive' | 'slackEnabled' | 'emailEnabled', value: boolean) => {
-    const token = sessionStorage.getItem('superAdminToken');
+    const token = localStorage.getItem('superAdminToken');
     await fetch(`${API_BASE}/automations/${id}`, {
       method: 'PATCH',
       headers: { 
         'Content-Type': 'application/json',
-        'X-Super-Admin-Token': token || '' 
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ [field]: value })
     });
@@ -202,12 +202,12 @@ export default function SuperAdminAnalytics() {
 
   const saveGoal = async () => {
     if (!newGoal.month || !newGoal.targetMrr) return;
-    const token = sessionStorage.getItem('superAdminToken');
+    const token = localStorage.getItem('superAdminToken');
     await fetch(`${API_BASE}/mrr-goals`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'X-Super-Admin-Token': token || '' 
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(newGoal)
     });
