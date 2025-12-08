@@ -192,6 +192,10 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
                   <ToggleSwitch checked={data.gradingRequirementEnabled} onChange={() => onUpdate({ gradingRequirementEnabled: !data.gradingRequirementEnabled })} />
               </div>
               
+              {!data.gradingRequirementEnabled && (
+                  <p className="text-xs text-gray-500 mt-2">Examples: Poomsae, Kata, Forms, Hyung, Patterns, Technique Test</p>
+              )}
+              
               {data.gradingRequirementEnabled && (
                   <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">Requirement Name</label>
