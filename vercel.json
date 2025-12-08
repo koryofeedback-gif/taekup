@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/super-admin/:path*",
-      "destination": "/api/super-admin"
+      "destination": "/api/super-admin?path=:path*"
     },
     {
       "source": "/api/stripe/webhook/:uuid",
