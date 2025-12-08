@@ -76,7 +76,7 @@ function getDb() {
 
 function setCorsHeaders(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 }
@@ -1486,6 +1486,342 @@ async function handleImpersonateVerify(req: VercelRequest, res: VercelResponse, 
   }
 }
 
+// =====================
+// ANALYTICS ENDPOINTS
+// =====================
+
+async function handleCohortAnalytics(req: VercelRequest, res: VercelResponse) {
+  const authResult = await verifySuperAdminToken(req);
+  if (!authResult.valid) {
+    return res.status(401).json({ error: authResult.error });
+  }
+
+  try {
+    const db = getDb();
+
+    // Get cohort data by signup month
+    const cohorts = await db`
+      SELECT 
+        TO_CHAR(created_at, 'YYYY-MM') as cohort_month,
+        COUNT(*) as total_signups,
+        COUNT(*) FILTER (WHERE subscription_status = 'active') as converted,
+        COUNT(*) FILTER (WHERE subscription_status = 'churned' OR subscription_status = 'canceled') as churned,
+        COUNT(*) FILTER (WHERE subscription_status = 'trialing' OR subscription_status IS NULL) as still_trial,
+        ROUND(COUNT(*) FILTER (WHERE subscription_status = 'active') * 100.0 / NULLIF(COUNT(*), 0), 1) as conversion_rate,
+        ROUND(COUNT(*) FILTER (WHERE subscription_status = 'churned' OR subscription_status = 'canceled') * 100.0 / NULLIF(COUNT(*) FILTER (WHERE subscription_status != 'trialing'), 0), 1) as churn_rate
+      FROM clubs
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+      ORDER BY cohort_month DESC
+      LIMIT 12
+    `;
+
+    // Get LTV by cohort
+    const ltvByCohort = await db`
+      SELECT 
+        TO_CHAR(c.created_at, 'YYYY-MM') as cohort_month,
+        COALESCE(SUM(s.amount), 0) as total_revenue,
+        COUNT(DISTINCT c.id) as club_count,
+        ROUND(COALESCE(SUM(s.amount), 0) / NULLIF(COUNT(DISTINCT c.id), 0) / 100.0, 2) as avg_ltv
+      FROM clubs c
+      LEFT JOIN subscriptions s ON c.id = s.club_id
+      GROUP BY TO_CHAR(c.created_at, 'YYYY-MM')
+      ORDER BY cohort_month DESC
+      LIMIT 12
+    `;
+
+    return res.json({ cohorts, ltvByCohort });
+  } catch (error: any) {
+    console.error('Cohort analytics error:', error);
+    return res.status(500).json({ error: 'Failed to fetch cohort analytics' });
+  }
+}
+
+async function handleOnboardingFunnel(req: VercelRequest, res: VercelResponse) {
+  const authResult = await verifySuperAdminToken(req);
+  if (!authResult.valid) {
+    return res.status(401).json({ error: authResult.error });
+  }
+
+  try {
+    const db = getDb();
+
+    // Get onboarding funnel data
+    const funnel = await db`
+      SELECT 
+        COUNT(*) as total_started,
+        COUNT(*) FILTER (WHERE step1_club_info = true) as step1_completed,
+        COUNT(*) FILTER (WHERE step2_belt_system = true) as step2_completed,
+        COUNT(*) FILTER (WHERE step3_skills = true) as step3_completed,
+        COUNT(*) FILTER (WHERE step4_scoring = true) as step4_completed,
+        COUNT(*) FILTER (WHERE step5_people = true) as step5_completed,
+        COUNT(*) FILTER (WHERE step6_branding = true) as step6_completed,
+        COUNT(*) FILTER (WHERE wizard_completed = true) as wizard_completed,
+        AVG(EXTRACT(EPOCH FROM (completed_at - started_at))) as avg_time_seconds
+      FROM onboarding_progress
+    `;
+
+    // Get clubs stuck at each step
+    const stuckClubs = await db`
+      SELECT 
+        op.last_active_step,
+        COUNT(*) as count,
+        MIN(c.name) as example_club,
+        MIN(c.owner_email) as example_email
+      FROM onboarding_progress op
+      JOIN clubs c ON c.id = op.club_id
+      WHERE op.wizard_completed = false
+      GROUP BY op.last_active_step
+      ORDER BY count DESC
+    `;
+
+    // Get incomplete onboarding list with details
+    const incomplete = await db`
+      SELECT 
+        c.id, c.name, c.owner_email, c.created_at,
+        op.last_active_step,
+        op.step1_club_info, op.step2_belt_system, op.step3_skills,
+        op.step4_scoring, op.step5_people, op.step6_branding
+      FROM clubs c
+      JOIN onboarding_progress op ON c.id = op.club_id
+      WHERE op.wizard_completed = false
+      ORDER BY c.created_at DESC
+      LIMIT 50
+    `;
+
+    return res.json({ 
+      funnel: funnel[0] || {}, 
+      stuckClubs, 
+      incomplete 
+    });
+  } catch (error: any) {
+    console.error('Onboarding funnel error:', error);
+    return res.status(500).json({ error: 'Failed to fetch onboarding data' });
+  }
+}
+
+async function handleChurnReasons(req: VercelRequest, res: VercelResponse) {
+  const authResult = await verifySuperAdminToken(req);
+  if (!authResult.valid) {
+    return res.status(401).json({ error: authResult.error });
+  }
+
+  try {
+    const db = getDb();
+
+    if (req.method === 'POST') {
+      const { clubId, reason, feedback, wouldReturn } = req.body;
+      await db`
+        INSERT INTO churn_reasons (club_id, reason, feedback, would_return)
+        VALUES (${clubId}::uuid, ${reason}, ${feedback}, ${wouldReturn})
+      `;
+      return res.json({ success: true });
+    }
+
+    // GET - fetch churn reasons breakdown
+    const breakdown = await db`
+      SELECT 
+        reason,
+        COUNT(*) as count,
+        ROUND(COUNT(*) * 100.0 / NULLIF((SELECT COUNT(*) FROM churn_reasons), 0), 1) as percentage
+      FROM churn_reasons
+      GROUP BY reason
+      ORDER BY count DESC
+    `;
+
+    const recentFeedback = await db`
+      SELECT 
+        cr.*,
+        c.name as club_name,
+        c.owner_email
+      FROM churn_reasons cr
+      LEFT JOIN clubs c ON c.id = cr.club_id
+      ORDER BY cr.created_at DESC
+      LIMIT 20
+    `;
+
+    const stats = await db`
+      SELECT 
+        COUNT(*) as total_churns,
+        COUNT(*) FILTER (WHERE would_return = true) as would_return_count,
+        ROUND(COUNT(*) FILTER (WHERE would_return = true) * 100.0 / NULLIF(COUNT(*), 0), 1) as would_return_pct
+      FROM churn_reasons
+    `;
+
+    return res.json({ 
+      breakdown, 
+      recentFeedback, 
+      stats: stats[0] || {} 
+    });
+  } catch (error: any) {
+    console.error('Churn reasons error:', error);
+    return res.status(500).json({ error: 'Failed to fetch churn reasons' });
+  }
+}
+
+async function handlePaymentRecovery(req: VercelRequest, res: VercelResponse) {
+  const authResult = await verifySuperAdminToken(req);
+  if (!authResult.valid) {
+    return res.status(401).json({ error: authResult.error });
+  }
+
+  try {
+    const db = getDb();
+
+    const failedPayments = await db`
+      SELECT 
+        fp.*,
+        c.name as club_name,
+        c.owner_email
+      FROM failed_payments fp
+      LEFT JOIN clubs c ON c.id = fp.club_id
+      ORDER BY fp.failed_at DESC
+      LIMIT 50
+    `;
+
+    const recoveryStats = await db`
+      SELECT 
+        COUNT(*) as total_failed,
+        COUNT(*) FILTER (WHERE recovered_at IS NOT NULL) as recovered,
+        COALESCE(SUM(amount) FILTER (WHERE recovered_at IS NULL), 0) as outstanding_amount,
+        COALESCE(SUM(amount) FILTER (WHERE recovered_at IS NOT NULL), 0) as recovered_amount,
+        ROUND(COUNT(*) FILTER (WHERE recovered_at IS NOT NULL) * 100.0 / NULLIF(COUNT(*), 0), 1) as recovery_rate
+      FROM failed_payments
+    `;
+
+    return res.json({ 
+      failedPayments, 
+      stats: recoveryStats[0] || {} 
+    });
+  } catch (error: any) {
+    console.error('Payment recovery error:', error);
+    return res.status(500).json({ error: 'Failed to fetch payment recovery data' });
+  }
+}
+
+async function handleMrrGoals(req: VercelRequest, res: VercelResponse) {
+  const authResult = await verifySuperAdminToken(req);
+  if (!authResult.valid) {
+    return res.status(401).json({ error: authResult.error });
+  }
+
+  try {
+    const db = getDb();
+
+    if (req.method === 'POST') {
+      const { month, targetMrr, notes } = req.body;
+      await db`
+        INSERT INTO mrr_goals (month, target_mrr, notes)
+        VALUES (${month}, ${targetMrr * 100}, ${notes || ''})
+        ON CONFLICT (month) DO UPDATE SET 
+          target_mrr = ${targetMrr * 100},
+          notes = ${notes || ''},
+          updated_at = NOW()
+      `;
+      return res.json({ success: true });
+    }
+
+    // GET
+    const goals = await db`
+      SELECT * FROM mrr_goals
+      ORDER BY month DESC
+      LIMIT 12
+    `;
+
+    // Calculate current MRR
+    const mrrResult = await db`
+      SELECT COALESCE(SUM(amount), 0) as current_mrr
+      FROM subscriptions
+      WHERE status = 'active'
+    `;
+
+    return res.json({ 
+      goals, 
+      currentMrr: Number(mrrResult[0]?.current_mrr || 0) / 100 
+    });
+  } catch (error: any) {
+    console.error('MRR goals error:', error);
+    return res.status(500).json({ error: 'Failed to fetch MRR goals' });
+  }
+}
+
+async function handleAutomations(req: VercelRequest, res: VercelResponse) {
+  const authResult = await verifySuperAdminToken(req);
+  if (!authResult.valid) {
+    return res.status(401).json({ error: authResult.error });
+  }
+
+  try {
+    const db = getDb();
+
+    const rules = await db`
+      SELECT * FROM automation_rules
+      ORDER BY created_at DESC
+    `;
+
+    const executions = await db`
+      SELECT 
+        ae.*,
+        ar.name as rule_name,
+        c.name as club_name
+      FROM automation_executions ae
+      JOIN automation_rules ar ON ar.id = ae.rule_id
+      LEFT JOIN clubs c ON c.id = ae.club_id
+      ORDER BY ae.executed_at DESC
+      LIMIT 50
+    `;
+
+    return res.json({ rules, executions });
+  } catch (error: any) {
+    console.error('Automations error:', error);
+    return res.status(500).json({ error: 'Failed to fetch automations' });
+  }
+}
+
+async function handleAutomationToggle(req: VercelRequest, res: VercelResponse, automationId: string) {
+  const authResult = await verifySuperAdminToken(req);
+  if (!authResult.valid) {
+    return res.status(401).json({ error: authResult.error });
+  }
+
+  if (req.method !== 'PATCH') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const db = getDb();
+    const { isActive, slackEnabled, emailEnabled } = req.body;
+
+    if (typeof isActive === 'boolean') {
+      await db`
+        UPDATE automation_rules
+        SET is_active = ${isActive}, updated_at = NOW()
+        WHERE id = ${automationId}::uuid
+      `;
+    }
+    
+    if (typeof slackEnabled === 'boolean') {
+      await db`
+        UPDATE automation_rules
+        SET slack_enabled = ${slackEnabled}, updated_at = NOW()
+        WHERE id = ${automationId}::uuid
+      `;
+    }
+    
+    if (typeof emailEnabled === 'boolean') {
+      await db`
+        UPDATE automation_rules
+        SET email_enabled = ${emailEnabled}, updated_at = NOW()
+        WHERE id = ${automationId}::uuid
+      `;
+    }
+
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('Update automation error:', error);
+    return res.status(500).json({ error: 'Failed to update automation' });
+  }
+}
+
 // Helper function to get default belts based on art type
 function getDefaultBelts(artType: string) {
   const beltSystems: Record<string, any[]> = {
@@ -1620,6 +1956,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     if (path === '/export/revenue' || path === '/export/revenue/' || path === 'export/revenue') {
       return handleExportRevenue(req, res);
+    }
+    
+    // Analytics endpoints
+    if (path === '/cohorts' || path === '/cohorts/' || path === 'cohorts') {
+      return handleCohortAnalytics(req, res);
+    }
+    
+    if (path === '/onboarding' || path === '/onboarding/' || path === 'onboarding') {
+      return handleOnboardingFunnel(req, res);
+    }
+    
+    if (path === '/churn-reasons' || path === '/churn-reasons/' || path === 'churn-reasons') {
+      return handleChurnReasons(req, res);
+    }
+    
+    if (path === '/payment-recovery' || path === '/payment-recovery/' || path === 'payment-recovery') {
+      return handlePaymentRecovery(req, res);
+    }
+    
+    if (path === '/mrr-goals' || path === '/mrr-goals/' || path === 'mrr-goals') {
+      return handleMrrGoals(req, res);
+    }
+    
+    if (path === '/automations' || path === '/automations/' || path === 'automations') {
+      return handleAutomations(req, res);
+    }
+    
+    // Handle /automations/:id for PATCH
+    if (path.startsWith('/automations/') || path.startsWith('automations/')) {
+      const automationId = path.replace('/automations/', '').replace('automations/', '').replace('/', '');
+      return handleAutomationToggle(req, res, automationId);
     }
     
     return res.status(404).json({ error: 'Route not found', path, url, queryPath });
