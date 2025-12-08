@@ -115,13 +115,20 @@ function verifySignedToken(token: string): { valid: boolean; email?: string; err
 }
 
 async function verifySuperAdminToken(req: VercelRequest): Promise<{ valid: boolean; email?: string; error?: string }> {
-  const authHeader = req.headers.authorization;
+  // Try multiple ways to get the authorization header (case-insensitive)
+  const authHeader = req.headers.authorization || req.headers.Authorization || req.headers['authorization'] || req.headers['Authorization'];
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  console.log('[SuperAdmin] Auth header check:', {
+    hasAuth: !!authHeader,
+    headerKeys: Object.keys(req.headers).filter(k => k.toLowerCase().includes('auth')),
+    allHeaders: Object.keys(req.headers)
+  });
+  
+  if (!authHeader || !String(authHeader).startsWith('Bearer ')) {
     return { valid: false, error: 'No token provided' };
   }
   
-  const token = authHeader.substring(7);
+  const token = String(authHeader).substring(7);
   
   // First try signed token verification (no database needed)
   const signedResult = verifySignedToken(token);
