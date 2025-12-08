@@ -286,22 +286,150 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
     const db = getDb();
     const limit = Number(req.query.limit) || 50;
     const offset = Number(req.query.offset) || 0;
+    const search = req.query.search as string | undefined;
+    const status = req.query.status as string | undefined;
+    const trial_status = req.query.trial_status as string | undefined;
     
-    const clubs = await db`
-      SELECT 
-        c.*,
-        (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
-        (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
-        s.status as subscription_status,
-        s.plan_name,
-        s.monthly_amount
-      FROM clubs c
-      LEFT JOIN subscriptions s ON s.club_id = c.id
-      ORDER BY c.created_at DESC 
-      LIMIT ${limit} OFFSET ${offset}
-    `;
+    // Build query with filters
+    let clubs;
+    let countResult;
     
-    const countResult = await db`SELECT COUNT(*) as total FROM clubs`;
+    if (search && status && trial_status) {
+      const searchPattern = `%${search}%`;
+      clubs = await db`
+        SELECT 
+          c.*,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
+          s.status as subscription_status,
+          s.plan_name,
+          s.monthly_amount
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        WHERE c.status = ${status} 
+          AND c.trial_status = ${trial_status}
+          AND (c.name ILIKE ${searchPattern} OR c.owner_email ILIKE ${searchPattern})
+        ORDER BY c.created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      countResult = await db`SELECT COUNT(*) as total FROM clubs WHERE status = ${status} AND trial_status = ${trial_status} AND (name ILIKE ${searchPattern} OR owner_email ILIKE ${searchPattern})`;
+    } else if (search && status) {
+      const searchPattern = `%${search}%`;
+      clubs = await db`
+        SELECT 
+          c.*,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
+          s.status as subscription_status,
+          s.plan_name,
+          s.monthly_amount
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        WHERE c.status = ${status} 
+          AND (c.name ILIKE ${searchPattern} OR c.owner_email ILIKE ${searchPattern})
+        ORDER BY c.created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      countResult = await db`SELECT COUNT(*) as total FROM clubs WHERE status = ${status} AND (name ILIKE ${searchPattern} OR owner_email ILIKE ${searchPattern})`;
+    } else if (search && trial_status) {
+      const searchPattern = `%${search}%`;
+      clubs = await db`
+        SELECT 
+          c.*,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
+          s.status as subscription_status,
+          s.plan_name,
+          s.monthly_amount
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        WHERE c.trial_status = ${trial_status}
+          AND (c.name ILIKE ${searchPattern} OR c.owner_email ILIKE ${searchPattern})
+        ORDER BY c.created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      countResult = await db`SELECT COUNT(*) as total FROM clubs WHERE trial_status = ${trial_status} AND (name ILIKE ${searchPattern} OR owner_email ILIKE ${searchPattern})`;
+    } else if (status && trial_status) {
+      clubs = await db`
+        SELECT 
+          c.*,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
+          s.status as subscription_status,
+          s.plan_name,
+          s.monthly_amount
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        WHERE c.status = ${status} AND c.trial_status = ${trial_status}
+        ORDER BY c.created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      countResult = await db`SELECT COUNT(*) as total FROM clubs WHERE status = ${status} AND trial_status = ${trial_status}`;
+    } else if (search) {
+      const searchPattern = `%${search}%`;
+      clubs = await db`
+        SELECT 
+          c.*,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
+          s.status as subscription_status,
+          s.plan_name,
+          s.monthly_amount
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        WHERE c.name ILIKE ${searchPattern} OR c.owner_email ILIKE ${searchPattern}
+        ORDER BY c.created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      countResult = await db`SELECT COUNT(*) as total FROM clubs WHERE name ILIKE ${searchPattern} OR owner_email ILIKE ${searchPattern}`;
+    } else if (status) {
+      clubs = await db`
+        SELECT 
+          c.*,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
+          s.status as subscription_status,
+          s.plan_name,
+          s.monthly_amount
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        WHERE c.status = ${status}
+        ORDER BY c.created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      countResult = await db`SELECT COUNT(*) as total FROM clubs WHERE status = ${status}`;
+    } else if (trial_status) {
+      clubs = await db`
+        SELECT 
+          c.*,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
+          s.status as subscription_status,
+          s.plan_name,
+          s.monthly_amount
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        WHERE c.trial_status = ${trial_status}
+        ORDER BY c.created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      countResult = await db`SELECT COUNT(*) as total FROM clubs WHERE trial_status = ${trial_status}`;
+    } else {
+      clubs = await db`
+        SELECT 
+          c.*,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
+          s.status as subscription_status,
+          s.plan_name,
+          s.monthly_amount
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        ORDER BY c.created_at DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      countResult = await db`SELECT COUNT(*) as total FROM clubs`;
+    }
     
     return res.json({
       clubs,
