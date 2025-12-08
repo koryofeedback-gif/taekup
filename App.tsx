@@ -457,6 +457,8 @@ const AppContent: React.FC<AppContentProps> = ({
                         element={
                             isAppSubdomain ? (
                                 <Navigate to="/login" replace />
+                            ) : loggedInUserType === 'owner' && !finalWizardData ? (
+                                <Navigate to="/wizard" replace />
                             ) : (
                                 <MyTaekHome onNavigate={() => {}} />
                             )
