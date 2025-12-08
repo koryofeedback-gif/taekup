@@ -264,3 +264,123 @@ export type TrialExtension = typeof trialExtensions.$inferSelect;
 export type NewTrialExtension = typeof trialExtensions.$inferInsert;
 export type Discount = typeof discounts.$inferSelect;
 export type NewDiscount = typeof discounts.$inferInsert;
+
+// Churn Reasons - capture why clubs cancel
+export const churnReasonCategoryEnum = pgEnum('churn_reason_category', [
+  'too_expensive',
+  'missing_features',
+  'switched_competitor',
+  'closed_business',
+  'not_enough_time',
+  'technical_issues',
+  'poor_support',
+  'other'
+]);
+
+export const churnReasons = pgTable('churn_reasons', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'set null' }),
+  subscriptionId: uuid('subscription_id').references(() => subscriptions.id, { onDelete: 'set null' }),
+  category: churnReasonCategoryEnum('category').notNull(),
+  additionalFeedback: text('additional_feedback'),
+  wouldRecommend: boolean('would_recommend'),
+  rating: integer('rating'), // 1-5 satisfaction rating
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+// Onboarding Progress - track wizard completion
+export const onboardingProgress = pgTable('onboarding_progress', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  step1ClubInfo: boolean('step1_club_info').default(false),
+  step1CompletedAt: timestamp('step1_completed_at', { withTimezone: true }),
+  step2BeltSystem: boolean('step2_belt_system').default(false),
+  step2CompletedAt: timestamp('step2_completed_at', { withTimezone: true }),
+  step3Skills: boolean('step3_skills').default(false),
+  step3CompletedAt: timestamp('step3_completed_at', { withTimezone: true }),
+  step4Scoring: boolean('step4_scoring').default(false),
+  step4CompletedAt: timestamp('step4_completed_at', { withTimezone: true }),
+  step5People: boolean('step5_people').default(false),
+  step5CompletedAt: timestamp('step5_completed_at', { withTimezone: true }),
+  step6Branding: boolean('step6_branding').default(false),
+  step6CompletedAt: timestamp('step6_completed_at', { withTimezone: true }),
+  wizardCompleted: boolean('wizard_completed').default(false),
+  wizardCompletedAt: timestamp('wizard_completed_at', { withTimezone: true }),
+  lastActiveStep: integer('last_active_step').default(1),
+  totalTimeSpentSeconds: integer('total_time_spent_seconds').default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+// MRR Goals - track monthly revenue targets
+export const mrrGoals = pgTable('mrr_goals', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  month: varchar('month', { length: 7 }).notNull(), // Format: YYYY-MM
+  targetMrr: integer('target_mrr').notNull(), // In cents
+  notes: text('notes'),
+  createdBy: varchar('created_by', { length: 255 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+// Automation Rules - configurable triggers for automated actions
+export const automationRuleTypeEnum = pgEnum('automation_rule_type', [
+  'health_score_email',
+  'trial_reminder',
+  'payment_dunning',
+  'churn_alert',
+  'conversion_alert',
+  'signup_alert'
+]);
+
+export const automationRules = pgTable('automation_rules', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  ruleType: automationRuleTypeEnum('rule_type').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  isActive: boolean('is_active').default(true),
+  conditions: jsonb('conditions'), // JSON object with trigger conditions
+  actions: jsonb('actions'), // JSON object with actions to take
+  emailTemplate: varchar('email_template', { length: 100 }),
+  slackEnabled: boolean('slack_enabled').default(false),
+  emailEnabled: boolean('email_enabled').default(true),
+  lastTriggeredAt: timestamp('last_triggered_at', { withTimezone: true }),
+  triggerCount: integer('trigger_count').default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+// Automation Execution Log - track when automations fire
+export const automationExecutions = pgTable('automation_executions', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  ruleId: uuid('rule_id').references(() => automationRules.id, { onDelete: 'cascade' }).notNull(),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'set null' }),
+  triggerData: jsonb('trigger_data'), // What caused the trigger
+  actionsTaken: jsonb('actions_taken'), // What actions were performed
+  success: boolean('success').default(true),
+  error: text('error'),
+  executedAt: timestamp('executed_at', { withTimezone: true }).defaultNow(),
+});
+
+// Failed Payment Recovery Tracking
+export const paymentRecoveryAttempts = pgTable('payment_recovery_attempts', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  paymentId: uuid('payment_id').references(() => payments.id, { onDelete: 'set null' }),
+  stripeInvoiceId: varchar('stripe_invoice_id', { length: 255 }),
+  attemptNumber: integer('attempt_number').default(1),
+  emailSent: boolean('email_sent').default(false),
+  emailSentAt: timestamp('email_sent_at', { withTimezone: true }),
+  recovered: boolean('recovered').default(false),
+  recoveredAt: timestamp('recovered_at', { withTimezone: true }),
+  recoveredAmount: integer('recovered_amount'), // In cents
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type ChurnReason = typeof churnReasons.$inferSelect;
+export type NewChurnReason = typeof churnReasons.$inferInsert;
+export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
+export type MrrGoal = typeof mrrGoals.$inferSelect;
+export type AutomationRule = typeof automationRules.$inferSelect;
+export type AutomationExecution = typeof automationExecutions.$inferSelect;
+export type PaymentRecoveryAttempt = typeof paymentRecoveryAttempts.$inferSelect;
