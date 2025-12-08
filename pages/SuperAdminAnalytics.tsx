@@ -723,39 +723,63 @@ export default function SuperAdminAnalytics() {
               <h2 className="text-xl font-semibold mb-4">Automation Rules</h2>
               <div className="space-y-4">
                 {automations.map((rule) => (
-                  <div key={rule.id} className="p-4 bg-gray-700/50 rounded-lg">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-medium text-lg">{rule.name}</h3>
+                  <div key={rule.id} className="p-5 bg-gray-700/50 rounded-lg border border-gray-600">
+                    <div className="flex flex-col lg:flex-row justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-lg">{rule.name}</h3>
+                          {rule.is_active ? (
+                            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">ON</span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-gray-500/20 text-gray-400 text-xs rounded-full">OFF</span>
+                          )}
+                        </div>
                         <p className="text-gray-400 text-sm">{rule.description}</p>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={rule.is_active}
-                            onChange={(e) => toggleAutomation(rule.id, 'isActive', e.target.checked)}
-                            className="w-4 h-4 rounded"
-                          />
-                          <span className="text-sm">Active</span>
+                      
+                      <div className="flex items-center gap-6 bg-gray-800 px-4 py-3 rounded-lg">
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={rule.is_active}
+                              onChange={(e) => toggleAutomation(rule.id, 'isActive', e.target.checked)}
+                              className="sr-only"
+                            />
+                            <div className={`w-11 h-6 rounded-full transition-colors ${rule.is_active ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${rule.is_active ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                          </div>
+                          <span className="text-sm font-medium">Active</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={rule.email_enabled}
-                            onChange={(e) => toggleAutomation(rule.id, 'emailEnabled', e.target.checked)}
-                            className="w-4 h-4 rounded"
-                          />
-                          <span className="text-sm">Email</span>
+                        
+                        <div className="w-px h-6 bg-gray-600"></div>
+                        
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={rule.email_enabled}
+                              onChange={(e) => toggleAutomation(rule.id, 'emailEnabled', e.target.checked)}
+                              className="sr-only"
+                            />
+                            <div className={`w-11 h-6 rounded-full transition-colors ${rule.email_enabled ? 'bg-cyan-500' : 'bg-gray-600'}`}></div>
+                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${rule.email_enabled ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                          </div>
+                          <span className="text-sm font-medium">Email</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={rule.slack_enabled}
-                            onChange={(e) => toggleAutomation(rule.id, 'slackEnabled', e.target.checked)}
-                            className="w-4 h-4 rounded"
-                          />
-                          <span className="text-sm">Slack</span>
+                        
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={rule.slack_enabled}
+                              onChange={(e) => toggleAutomation(rule.id, 'slackEnabled', e.target.checked)}
+                              className="sr-only"
+                            />
+                            <div className={`w-11 h-6 rounded-full transition-colors ${rule.slack_enabled ? 'bg-purple-500' : 'bg-gray-600'}`}></div>
+                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${rule.slack_enabled ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                          </div>
+                          <span className="text-sm font-medium">Slack</span>
                         </label>
                       </div>
                     </div>
