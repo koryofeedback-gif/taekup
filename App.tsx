@@ -103,7 +103,9 @@ const App: React.FC = () => {
     const [loggedInUserName, setLoggedInUserName] = useState<string | null>(() => {
         return localStorage.getItem('taekup_user_name');
     });
-    const [parentStudentId, setParentStudentId] = useState<string | null>(null);
+    const [parentStudentId, setParentStudentId] = useState<string | null>(() => {
+        return localStorage.getItem('taekup_student_id');
+    });
     const [showPricing, setShowPricing] = useState(false);
 
     const setSignupData = useCallback((data: SignupData | null) => {
@@ -200,6 +202,10 @@ const App: React.FC = () => {
         setIsProcessing(false);
         setLoggedInUserType('owner');
         setLoggedInUserName(data.ownerName);
+        
+        // Save login state to localStorage for persistence
+        localStorage.setItem('taekup_user_type', 'owner');
+        localStorage.setItem('taekup_user_name', data.ownerName);
     }, [signupData]);
 
     const handleStudentDataUpdate = useCallback((updatedStudents: Student[]) => {
@@ -237,8 +243,12 @@ const App: React.FC = () => {
         (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string, userData?: any) => {
             setLoggedInUserType(userType);
             setLoggedInUserName(userName);
+            // Save login state to localStorage
+            localStorage.setItem('taekup_user_type', userType);
+            localStorage.setItem('taekup_user_name', userName);
             if (studentId) {
                 setParentStudentId(studentId);
+                localStorage.setItem('taekup_student_id', studentId);
             }
             if (userData?.clubId) {
                 setSignupDataState(prev => {
@@ -261,6 +271,10 @@ const App: React.FC = () => {
         setLoggedInUserType(null);
         setLoggedInUserName(null);
         setParentStudentId(null);
+        // Clear login state from localStorage
+        localStorage.removeItem('taekup_user_type');
+        localStorage.removeItem('taekup_user_name');
+        localStorage.removeItem('taekup_student_id');
     }, []);
 
     return (

@@ -1,17 +1,18 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface SetupCompleteProps {
   onGoToDashboard: () => void;
 }
 
 export const SetupComplete: React.FC<SetupCompleteProps> = ({ onGoToDashboard }) => {
-  const handleClick = () => {
-    onGoToDashboard();
-    // Navigate to dashboard after a small delay to allow state updates
-    setTimeout(() => {
-      window.location.href = '/app/admin';
-    }, 200);
+  const navigate = useNavigate();
+  
+  const handleClick = async () => {
+    await onGoToDashboard();
+    // Use React Router navigation to preserve state
+    navigate('/app/admin');
   };
 
   return (
