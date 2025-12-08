@@ -25,52 +25,46 @@ export const ImpersonationBanner: React.FC = () => {
       const response = await fetch(`/api/super-admin/impersonate/verify/${token}`);
       if (response.ok) {
         const data = await response.json();
+        
+        // Store impersonation session info
+        localStorage.setItem('impersonationToken', token);
+        localStorage.setItem('impersonationClubId', data.clubId);
+        
+        // The API now returns complete wizardData with students, coaches, belts, etc.
+        const wizardData = data.wizardData;
+        
+        if (wizardData) {
+          // Store the complete club data so AdminDashboard can use it
+          localStorage.setItem('taekup_wizard_data', JSON.stringify(wizardData));
+          localStorage.setItem('taekup_club_id', data.clubId);
+          localStorage.setItem('taekup_user_type', 'owner');
+          localStorage.setItem('taekup_user_name', data.ownerName || data.clubName || 'Club Owner');
+          
+          // Force full page reload to ensure React state is initialized with new localStorage
+          const currentPath = window.location.pathname;
+          const targetPath = currentPath === '/' || currentPath === '' ? '/app/admin' : currentPath;
+          
+          // Remove impersonate param from URL
+          const url = new URL(window.location.href);
+          url.searchParams.delete('impersonate');
+          
+          // If we're not on the admin page, redirect there
+          if (currentPath !== '/app/admin') {
+            window.location.href = '/app/admin';
+            return;
+          }
+          
+          // If already on admin, force reload to pick up new state
+          window.location.reload();
+          return;
+        }
+        
+        // Set impersonation info for the banner
         setImpersonation({
           clubName: data.clubName || 'Unknown Club',
           clubId: data.clubId,
           expiresAt: data.expiresAt
         });
-        localStorage.setItem('impersonationToken', token);
-        localStorage.setItem('impersonationClubId', data.clubId);
-        
-        // Load club's wizard data into the app
-        // If club hasn't completed wizard, create minimal data for viewing
-        const wizardData = data.wizardData || {
-          clubInfo: {
-            clubName: data.clubName || 'Unknown Club',
-            ownerName: data.ownerName || 'Club Owner',
-            ownerEmail: data.ownerEmail || '',
-            martialArt: 'taekwondo',
-            language: 'en',
-          },
-          beltSystem: 'wt',
-          skills: ['Technique', 'Effort', 'Focus', 'Discipline'],
-          scoring: { pointsPerStripe: 100, stripesRequired: 4 },
-          coaches: [],
-          students: [],
-          branding: {
-            primaryColor: '#22d3ee',
-            logoUrl: '',
-            style: 'modern'
-          }
-        };
-        
-        // Store the club's data so AdminDashboard can use it
-        localStorage.setItem('taekup_wizard_data', JSON.stringify(wizardData));
-        localStorage.setItem('taekup_club_id', data.clubId);
-        localStorage.setItem('taekup_user_type', 'owner');
-        localStorage.setItem('taekup_user_name', data.ownerName || data.clubName || 'Club Owner');
-        
-        // Remove impersonate param and redirect to admin
-        const currentPath = window.location.pathname;
-        if (currentPath === '/' || currentPath === '') {
-          window.location.href = '/app/admin';
-          return;
-        }
-        
-        const url = new URL(window.location.href);
-        url.searchParams.delete('impersonate');
-        window.history.replaceState({}, '', url.pathname + url.search);
       } else {
         localStorage.removeItem('impersonationToken');
         localStorage.removeItem('impersonationClubId');

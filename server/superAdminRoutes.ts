@@ -473,7 +473,7 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
     const { token } = req.params;
     
     const sessionResult = await db.execute(sql`
-      SELECT ss.*, c.wizard_data, c.name as club_name, c.owner_email, c.owner_name
+      SELECT ss.*, c.wizard_data, c.name as club_name, c.owner_email, c.owner_name, c.art_type, c.city, c.country
       FROM support_sessions ss
       LEFT JOIN clubs c ON ss.target_club_id = c.id
       WHERE ss.token = ${token}
@@ -487,6 +487,104 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
     }
     
     const session = (sessionResult as any[])[0];
+    const clubId = session.target_club_id;
+    
+    // Fetch students and coaches from their tables
+    const [studentsResult, coachesResult] = await Promise.all([
+      db.execute(sql`SELECT * FROM students WHERE club_id = ${clubId} ORDER BY name`),
+      db.execute(sql`SELECT * FROM coaches WHERE club_id = ${clubId} ORDER BY name`)
+    ]);
+    
+    // Convert database students to WizardData format
+    const students = (studentsResult as any[]).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      beltId: s.belt || 'white',
+      stripes: s.stripes || 0,
+      totalPoints: s.total_points || 0,
+      parentEmail: s.parent_email || '',
+      parentName: s.parent_name || '',
+      parentPhone: s.parent_phone || '',
+      location: s.location || '',
+      classes: s.classes || [],
+      joinDate: s.join_date || s.created_at,
+      xp: s.xp || 0,
+      streakDays: s.streak_days || 0,
+      lastActivityAt: s.last_activity_at,
+      performanceHistory: s.performance_history || [],
+      feedbackHistory: s.feedback_history || []
+    }));
+    
+    // Convert database coaches to WizardData format
+    const coaches = (coachesResult as any[]).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      email: c.email || '',
+      phone: c.phone || '',
+      locations: c.locations || [],
+      classes: c.classes || [],
+      isActive: c.is_active !== false
+    }));
+    
+    // Helper function to get default belts
+    const getDefaultBelts = (artType: string) => {
+      const beltSystems: Record<string, any[]> = {
+        'Taekwondo': [
+          { id: 'white', name: 'White', color: '#FFFFFF' },
+          { id: 'yellow', name: 'Yellow', color: '#FFD700' },
+          { id: 'green', name: 'Green', color: '#228B22' },
+          { id: 'blue', name: 'Blue', color: '#0000FF' },
+          { id: 'red', name: 'Red', color: '#FF0000' },
+          { id: 'black', name: 'Black', color: '#000000' }
+        ],
+        'Karate': [
+          { id: 'white', name: 'White', color: '#FFFFFF' },
+          { id: 'yellow', name: 'Yellow', color: '#FFD700' },
+          { id: 'orange', name: 'Orange', color: '#FFA500' },
+          { id: 'green', name: 'Green', color: '#228B22' },
+          { id: 'blue', name: 'Blue', color: '#0000FF' },
+          { id: 'brown', name: 'Brown', color: '#8B4513' },
+          { id: 'black', name: 'Black', color: '#000000' }
+        ],
+        'BJJ': [
+          { id: 'white', name: 'White', color: '#FFFFFF' },
+          { id: 'blue', name: 'Blue', color: '#0000FF' },
+          { id: 'purple', name: 'Purple', color: '#800080' },
+          { id: 'brown', name: 'Brown', color: '#8B4513' },
+          { id: 'black', name: 'Black', color: '#000000' }
+        ]
+      };
+      return beltSystems[artType] || beltSystems['Taekwondo'];
+    };
+    
+    // Get base wizard data or create default
+    let wizardData = session.wizard_data || {};
+    
+    // Merge students and coaches from database
+    wizardData = {
+      ...wizardData,
+      clubName: session.club_name || wizardData.clubName || '',
+      ownerName: session.owner_name || wizardData.ownerName || '',
+      ownerEmail: session.owner_email || wizardData.ownerEmail || '',
+      artType: session.art_type || wizardData.artType || 'Taekwondo',
+      city: session.city || wizardData.city || '',
+      country: session.country || wizardData.country || '',
+      students: students,
+      coaches: coaches,
+      // Ensure required fields exist with defaults
+      belts: wizardData.belts || getDefaultBelts(session.art_type || 'Taekwondo'),
+      skills: wizardData.skills || ['Technique', 'Effort', 'Focus', 'Discipline'],
+      scoring: wizardData.scoring || { pointsPerStripe: 100, stripesRequired: 4 },
+      beltSystem: wizardData.beltSystem || 'wt',
+      branches: wizardData.branches || 1,
+      branchNames: wizardData.branchNames || ['Main'],
+      classNames: wizardData.classNames || ['Beginner', 'Intermediate', 'Advanced'],
+      branding: wizardData.branding || {
+        primaryColor: '#22d3ee',
+        logoUrl: '',
+        style: 'modern'
+      }
+    };
     
     await db.execute(sql`
       UPDATE support_sessions 
@@ -500,7 +598,7 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
       clubName: session.club_name,
       ownerEmail: session.owner_email,
       ownerName: session.owner_name,
-      wizardData: session.wizard_data,
+      wizardData: wizardData,
       expiresAt: session.expires_at
     });
   } catch (error: any) {
