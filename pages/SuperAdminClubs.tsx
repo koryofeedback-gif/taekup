@@ -440,24 +440,28 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-col gap-1">
-                          <span className={`text-xs px-2 py-1 rounded-full inline-block w-fit ${
-                            club.trial_status === 'active'
-                              ? 'bg-yellow-600/20 text-yellow-400'
-                              : club.trial_status === 'converted'
-                              ? 'bg-green-600/20 text-green-400'
-                              : 'bg-red-600/20 text-red-400'
-                          }`}>
-                            {club.trial_status}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full inline-block w-fit ${
-                            club.status === 'active'
-                              ? 'bg-blue-600/20 text-blue-400'
-                              : club.status === 'churned'
-                              ? 'bg-red-600/20 text-red-400'
-                              : 'bg-gray-600/20 text-gray-400'
-                          }`}>
-                            {club.status}
-                          </span>
+                          {club.trial_status === 'active' ? (
+                            <span className="text-xs px-2 py-1 rounded-full inline-block w-fit bg-yellow-600/20 text-yellow-400">
+                              In Trial
+                            </span>
+                          ) : club.trial_status === 'converted' ? (
+                            <span className="text-xs px-2 py-1 rounded-full inline-block w-fit bg-green-600/20 text-green-400">
+                              Paying
+                            </span>
+                          ) : club.trial_status === 'expired' ? (
+                            <span className="text-xs px-2 py-1 rounded-full inline-block w-fit bg-red-600/20 text-red-400">
+                              Expired
+                            </span>
+                          ) : (
+                            <span className="text-xs px-2 py-1 rounded-full inline-block w-fit bg-gray-600/20 text-gray-400">
+                              {club.trial_status || 'Unknown'}
+                            </span>
+                          )}
+                          {club.status === 'churned' && (
+                            <span className="text-xs px-2 py-1 rounded-full inline-block w-fit bg-red-600/20 text-red-400">
+                              Churned
+                            </span>
+                          )}
                         </div>
                       </td>
                       {showHealthScores && (
