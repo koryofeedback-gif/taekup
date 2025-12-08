@@ -8,7 +8,13 @@ interface Step5Props {
   onUpdate: (data: Partial<WizardData>) => void;
 }
 
-const initialCoachState = { name: '', email: '', password: '', location: '', assignedClasses: [] as string[] };
+const getInitialCoachState = (locations: string[]) => ({ 
+    name: '', 
+    email: '', 
+    password: '', 
+    location: locations[0] || '', 
+    assignedClasses: [] as string[] 
+});
 const initialStudentState: Omit<Student, 'id'> = {
     name: '',
     photo: null,
@@ -42,7 +48,9 @@ const initialStudentState: Omit<Student, 'id'> = {
 
 
 export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
-    const [newCoach, setNewCoach] = useState(initialCoachState);
+    const locations = data.branchNames && data.branchNames.length > 0 ? data.branchNames : ['Main Location'];
+    
+    const [newCoach, setNewCoach] = useState(() => getInitialCoachState(locations));
     const [newStudent, setNewStudent] = useState(initialStudentState);
     const [studentAddMode, setStudentAddMode] = useState<'manual' | 'bulk'>('manual');
     
@@ -56,8 +64,6 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [importMethod, setImportMethod] = useState<'file' | 'paste'>('file');
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const locations = data.branchNames && data.branchNames.length > 0 ? data.branchNames : ['Main Location'];
 
     // Get classes specific to the currently selected student location (Manual)
     const availableClassesForStudent = newStudent.location && data.locationClasses 
@@ -81,7 +87,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
         };
         onUpdate({ coaches: [...data.coaches, coachToAdd] });
         await sendCoachWelcomeEmail(coachToAdd.name, data.clubName);
-        setNewCoach(initialCoachState);
+        setNewCoach(getInitialCoachState(locations));
     };
     
     const handleRemoveCoach = (id: string) => {
