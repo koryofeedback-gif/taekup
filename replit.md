@@ -251,16 +251,6 @@ Full-screen display mode for lobby/waiting areas:
 
 ---
 
-## Demo Mode
-
-Instant preview system for sales/marketing:
-- Pre-populated sample data
-- Role switcher (Admin, Coach, Parent)
-- No signup required
-- Showcases all major features
-
----
-
 ## Technical Architecture
 
 ### Frontend
@@ -322,7 +312,6 @@ Instant preview system for sales/marketing:
 ### Public Pages
 - `/` - Landing page (MyTaek home)
 - `/pricing` - Subscription tiers
-- `/demo` - Instant demo mode
 
 ### Authenticated Pages
 - `/wizard` - Setup wizard (new signups)

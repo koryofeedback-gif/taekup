@@ -18,7 +18,6 @@ import { SuperAdminLogin } from './pages/SuperAdminLogin';
 import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute, SuperAdminPaymentsRoute, SuperAdminAnalyticsRoute } from './components/SuperAdminRoutes';
 import { TrialBanner } from './components/TrialBanner';
 import { ImpersonationBanner } from './components/ImpersonationBanner';
-import { DemoMode, RoleSwitcher, DEMO_WIZARD_DATA } from './components/DemoMode';
 import {
     sendCoachWelcomeEmail,
     sendParentWelcomeEmail,
@@ -80,61 +79,6 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
     return <Navigate to="/landing" replace />;
 };
 
-// Secret Preview Component - Checks for secret key before showing preview mode
-interface SecretPreviewProps {
-    isDemoMode: boolean;
-    finalWizardData: WizardData | null;
-    loggedInUserType: 'owner' | 'coach' | 'parent' | null;
-    parentStudentId: string | null;
-    onEnterDemo: (role: 'owner' | 'coach' | 'parent', studentId?: string) => void;
-}
-
-const SecretPreview: React.FC<SecretPreviewProps> = ({
-    isDemoMode,
-    finalWizardData,
-    loggedInUserType,
-    parentStudentId,
-    onEnterDemo,
-}) => {
-    const location = useLocation();
-    const searchParams = new URLSearchParams(location.search);
-    const providedKey = searchParams.get('key');
-    
-    const PREVIEW_KEY = import.meta.env.VITE_PREVIEW_KEY || 'mytaek-preview-2024';
-    
-    if (providedKey !== PREVIEW_KEY) {
-        return (
-            <>
-                <SEO title="Access Denied | TaekUp" noindex={true} />
-                <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-                    <div className="text-center">
-                        <div className="text-6xl mb-4">🔒</div>
-                        <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-                        <p className="text-gray-400">This page requires a valid access key.</p>
-                        <Link to="/" className="mt-6 inline-block text-cyan-400 hover:text-cyan-300">
-                            Return to Home
-                        </Link>
-                    </div>
-                </div>
-            </>
-        );
-    }
-    
-    if (isDemoMode && finalWizardData && loggedInUserType) {
-        const redirectPath = loggedInUserType === 'owner' ? '/app/admin' :
-            loggedInUserType === 'coach' ? '/app/coach' :
-            `/app/parent/${parentStudentId || finalWizardData.students[0]?.id}`;
-        return <Navigate to={redirectPath} replace />;
-    }
-    
-    return (
-        <>
-            <SEO title="Preview Mode | TaekUp" noindex={true} />
-            <DemoMode onEnterDemo={onEnterDemo} />
-        </>
-    );
-};
-
 // Main App Component with Router
 const App: React.FC = () => {
     const [signupData, setSignupDataState] = useState<SignupData | null>(() => {
@@ -163,9 +107,6 @@ const App: React.FC = () => {
     });
     const [parentStudentId, setParentStudentId] = useState<string | null>(null);
     const [showPricing, setShowPricing] = useState(false);
-    const [isDemoMode, setIsDemoMode] = useState(false);
-    const [demoWizardData, setDemoWizardData] = useState<WizardData | null>(null);
-    const [demoSubscription, setDemoSubscription] = useState<SubscriptionStatus | null>(null);
 
     const setSignupData = useCallback((data: SignupData | null) => {
         setSignupDataState(data);
@@ -286,44 +227,14 @@ const App: React.FC = () => {
         setLoggedInUserType(null);
         setLoggedInUserName(null);
         setParentStudentId(null);
-        if (isDemoMode) {
-            setIsDemoMode(false);
-            setDemoWizardData(null);
-            setDemoSubscription(null);
-        }
-    }, [isDemoMode]);
-
-    const handleEnterDemo = useCallback((role: 'owner' | 'coach' | 'parent', studentId?: string) => {
-        setDemoWizardData(DEMO_WIZARD_DATA);
-        const newDemoSubscription = initSubscription(new Date().toISOString());
-        setDemoSubscription(newDemoSubscription);
-        setIsDemoMode(true);
-        setLoggedInUserType(role);
-        setLoggedInUserName(role === 'owner' ? 'Demo Admin' : role === 'coach' ? 'Demo Coach' : 'Demo Parent');
-        if (studentId) {
-            setParentStudentId(studentId);
-        } else if (role === 'parent') {
-            setParentStudentId(DEMO_WIZARD_DATA.students[0]?.id || null);
-        }
     }, []);
-
-    const handleSwitchDemoRole = useCallback((role: 'owner' | 'coach' | 'parent', studentId?: string) => {
-        setLoggedInUserType(role);
-        setLoggedInUserName(role === 'owner' ? 'Demo Admin' : role === 'coach' ? 'Demo Coach' : 'Demo Parent');
-        if (studentId) {
-            setParentStudentId(studentId);
-        }
-    }, []);
-
-    const activeWizardData = isDemoMode ? demoWizardData : finalWizardData;
-    const activeSubscription = isDemoMode ? demoSubscription : subscription;
 
     return (
         <BrowserRouter>
             <AppContent
                 signupData={signupData}
-                finalWizardData={activeWizardData}
-                subscription={activeSubscription}
+                finalWizardData={finalWizardData}
+                subscription={subscription}
                 showPricing={showPricing}
                 onboardingMessage={onboardingMessage}
                 isProcessing={isProcessing}
@@ -340,9 +251,6 @@ const App: React.FC = () => {
                 onSelectPlan={handleSelectPlan}
                 onShowPricing={() => setShowPricing(true)}
                 onHidePricing={() => setShowPricing(false)}
-                isDemoMode={isDemoMode}
-                onEnterDemo={handleEnterDemo}
-                onSwitchDemoRole={handleSwitchDemoRole}
             />
         </BrowserRouter>
     );
@@ -368,9 +276,6 @@ interface AppContentProps {
     onSelectPlan: (planId: SubscriptionPlanId) => void;
     onShowPricing: () => void;
     onHidePricing: () => void;
-    isDemoMode: boolean;
-    onEnterDemo: (role: 'owner' | 'coach' | 'parent', studentId?: string) => void;
-    onSwitchDemoRole: (role: 'owner' | 'coach' | 'parent', studentId?: string) => void;
 }
 
 const AppContent: React.FC<AppContentProps> = ({
@@ -393,9 +298,6 @@ const AppContent: React.FC<AppContentProps> = ({
     onSelectPlan,
     onShowPricing,
     onHidePricing,
-    isDemoMode,
-    onEnterDemo,
-    onSwitchDemoRole,
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -513,20 +415,6 @@ const AppContent: React.FC<AppContentProps> = ({
                     <Route
                         path="/reset-password"
                         element={<ResetPasswordPage />}
-                    />
-
-                    {/* Secret Preview Mode - Only accessible with secret key */}
-                    <Route
-                        path="/preview"
-                        element={
-                            <SecretPreview
-                                isDemoMode={isDemoMode}
-                                finalWizardData={finalWizardData}
-                                loggedInUserType={loggedInUserType}
-                                parentStudentId={parentStudentId}
-                                onEnterDemo={onEnterDemo}
-                            />
-                        }
                     />
 
                     {/* Setup Wizard */}
@@ -679,14 +567,6 @@ const AppContent: React.FC<AppContentProps> = ({
             </main>
             {!isDojangTV && <Footer />}
             {!isDojangTV && <TaekBot colorScheme={taekBotColorScheme} />}
-            {isDemoMode && finalWizardData && loggedInUserType && !isDojangTV && (
-                <RoleSwitcher
-                    currentRole={loggedInUserType}
-                    onSwitchRole={onSwitchDemoRole}
-                    students={finalWizardData.students}
-                    currentStudentId={parentStudentId || undefined}
-                />
-            )}
         </div>
     );
 };
