@@ -1246,6 +1246,51 @@ async function handleImpersonate(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+async function handleImpersonateVerify(req: VercelRequest, res: VercelResponse, token: string) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  
+  try {
+    const db = getDb();
+    
+    const sessionResult = await db`
+      SELECT ss.*, c.wizard_data, c.name as club_name, c.owner_email, c.owner_name
+      FROM support_sessions ss
+      LEFT JOIN clubs c ON ss.target_club_id = c.id
+      WHERE ss.token = ${token}
+        AND ss.expires_at > NOW()
+        AND ss.ended_at IS NULL
+      LIMIT 1
+    `;
+    
+    if (sessionResult.length === 0) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
+    }
+    
+    const session = sessionResult[0];
+    
+    await db`
+      UPDATE support_sessions 
+      SET was_used = true 
+      WHERE id = ${session.id}
+    `;
+    
+    return res.json({
+      valid: true,
+      clubId: session.target_club_id,
+      clubName: session.club_name,
+      ownerEmail: session.owner_email,
+      ownerName: session.owner_name,
+      wizardData: session.wizard_data,
+      expiresAt: session.expires_at
+    });
+  } catch (error: any) {
+    console.error('Verify impersonation error:', error);
+    return res.status(500).json({ error: 'Failed to verify session' });
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   
@@ -1306,6 +1351,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     if (path === '/impersonate' || path === '/impersonate/' || path === 'impersonate') {
       return handleImpersonate(req, res);
+    }
+    
+    // Handle /impersonate/verify/:token
+    if (path.startsWith('/impersonate/verify/') || path.startsWith('impersonate/verify/')) {
+      const token = path.replace('/impersonate/verify/', '').replace('impersonate/verify/', '');
+      return handleImpersonateVerify(req, res, token);
     }
     
     // New endpoints for enhanced Super Admin dashboard

@@ -33,6 +33,41 @@ export const ImpersonationBanner: React.FC = () => {
         localStorage.setItem('impersonationToken', token);
         localStorage.setItem('impersonationClubId', data.clubId);
         
+        // Load club's wizard data into the app
+        // If club hasn't completed wizard, create minimal data for viewing
+        const wizardData = data.wizardData || {
+          clubInfo: {
+            clubName: data.clubName || 'Unknown Club',
+            ownerName: data.ownerName || 'Club Owner',
+            ownerEmail: data.ownerEmail || '',
+            martialArt: 'taekwondo',
+            language: 'en',
+          },
+          beltSystem: 'wt',
+          skills: ['Technique', 'Effort', 'Focus', 'Discipline'],
+          scoring: { pointsPerStripe: 100, stripesRequired: 4 },
+          coaches: [],
+          students: [],
+          branding: {
+            primaryColor: '#22d3ee',
+            logoUrl: '',
+            style: 'modern'
+          }
+        };
+        
+        // Store the club's data so AdminDashboard can use it
+        localStorage.setItem('taekup_wizard_data', JSON.stringify(wizardData));
+        localStorage.setItem('taekup_club_id', data.clubId);
+        localStorage.setItem('taekup_user_type', 'owner');
+        localStorage.setItem('taekup_user_name', data.ownerName || data.clubName || 'Club Owner');
+        
+        // Remove impersonate param and redirect to admin
+        const currentPath = window.location.pathname;
+        if (currentPath === '/' || currentPath === '') {
+          window.location.href = '/app/admin';
+          return;
+        }
+        
         const url = new URL(window.location.href);
         url.searchParams.delete('impersonate');
         window.history.replaceState({}, '', url.pathname + url.search);
