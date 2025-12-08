@@ -131,6 +131,15 @@ export function registerRoutes(app: Express) {
 
       console.log('[Login] User authenticated:', user.email, 'Role:', user.role);
 
+      let wizardCompleted = false;
+      if (user.club_id) {
+        const progressResult = await db.execute(
+          sql`SELECT wizard_completed FROM onboarding_progress WHERE club_id = ${user.club_id}::uuid LIMIT 1`
+        );
+        const progress = (progressResult as any[])[0];
+        wizardCompleted = progress?.wizard_completed || false;
+      }
+
       await db.execute(sql`
         INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
         VALUES ('user_login', 'User Login', ${'User logged in: ' + user.email}, ${user.club_id}::uuid, ${JSON.stringify({ email: user.email, role: user.role })}::jsonb, NOW())
@@ -147,7 +156,8 @@ export function registerRoutes(app: Express) {
           clubName: user.club_name,
           clubStatus: user.club_status,
           trialStatus: user.trial_status,
-          trialEnd: user.trial_end
+          trialEnd: user.trial_end,
+          wizardCompleted
         }
       });
 

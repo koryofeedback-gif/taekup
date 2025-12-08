@@ -48,8 +48,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             
             onLoginSuccess(userType, user.name || user.clubName, undefined, user);
             
-            if (userType === 'owner') {
-                navigate('/app');
+            if (userType === 'owner' && !user.wizardCompleted) {
+                navigate('/wizard');
+            } else if (userType === 'owner') {
+                navigate('/app/admin');
             } else if (userType === 'coach') {
                 navigate('/app/coach');
             } else {

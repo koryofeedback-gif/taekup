@@ -34,6 +34,52 @@ import {
 import { SEO } from './components/SEO';
 import type { SignupData, WizardData, Student, SubscriptionStatus, SubscriptionPlanId } from './types';
 
+// Wizard Route Component - Handles both fresh signups and returning owners
+interface WizardRouteProps {
+    signupData: SignupData | null;
+    loggedInUserType: 'owner' | 'coach' | 'parent' | null;
+    onSetupComplete: (data: WizardData) => void;
+}
+
+const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType, onSetupComplete }) => {
+    const [initialData, setInitialData] = useState<SignupData | null>(signupData);
+    
+    React.useEffect(() => {
+        if (!initialData && loggedInUserType === 'owner') {
+            const saved = localStorage.getItem('taekup_signup_data');
+            if (saved) {
+                try {
+                    setInitialData(JSON.parse(saved));
+                } catch (e) {
+                    console.error('Failed to parse saved signup data', e);
+                }
+            }
+        }
+    }, [initialData, loggedInUserType]);
+    
+    if (initialData) {
+        return (
+            <>
+                <SEO title="Setup | TaekUp" />
+                <SetupWizard initialData={initialData} onComplete={onSetupComplete} />
+            </>
+        );
+    }
+    
+    if (loggedInUserType === 'owner') {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+                <div className="text-center">
+                    <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading your setup...</p>
+                </div>
+            </div>
+        );
+    }
+    
+    return <Navigate to="/landing" replace />;
+};
+
 // Secret Preview Component - Checks for secret key before showing preview mode
 interface SecretPreviewProps {
     isDemoMode: boolean;
@@ -485,14 +531,11 @@ const AppContent: React.FC<AppContentProps> = ({
                     <Route
                         path="/wizard"
                         element={
-                            signupData ? (
-                                <>
-                                    <SEO title="Setup | TaekUp" />
-                                    <SetupWizard initialData={signupData} onComplete={onSetupComplete} />
-                                </>
-                            ) : (
-                                <Navigate to="/landing" replace />
-                            )
+                            <WizardRoute 
+                                signupData={signupData}
+                                loggedInUserType={loggedInUserType}
+                                onSetupComplete={onSetupComplete}
+                            />
                         }
                     />
 
