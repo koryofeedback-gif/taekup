@@ -13,14 +13,36 @@ export const ImpersonationBanner: React.FC = () => {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const impersonateToken = urlParams.get('impersonate') || localStorage.getItem('impersonationToken');
+    const urlToken = urlParams.get('impersonate');
+    const storedToken = localStorage.getItem('impersonationToken');
     
-    if (impersonateToken) {
-      verifyImpersonation(impersonateToken);
+    // If there's a NEW token in URL, verify and set up impersonation
+    if (urlToken) {
+      verifyAndSetupImpersonation(urlToken);
+      return;
+    }
+    
+    // If we already have impersonation data stored, just show the banner
+    if (storedToken) {
+      const storedClubId = localStorage.getItem('impersonationClubId');
+      const storedWizardData = localStorage.getItem('taekup_wizard_data');
+      
+      if (storedClubId && storedWizardData) {
+        try {
+          const wizardData = JSON.parse(storedWizardData);
+          setImpersonation({
+            clubName: wizardData.clubName || 'Club',
+            clubId: storedClubId,
+            expiresAt: ''
+          });
+        } catch (e) {
+          console.error('Failed to parse stored wizard data');
+        }
+      }
     }
   }, []);
 
-  const verifyImpersonation = async (token: string) => {
+  const verifyAndSetupImpersonation = async (token: string) => {
     try {
       const response = await fetch(`/api/super-admin/impersonate/verify/${token}`);
       if (response.ok) {
@@ -40,34 +62,23 @@ export const ImpersonationBanner: React.FC = () => {
           localStorage.setItem('taekup_user_type', 'owner');
           localStorage.setItem('taekup_user_name', data.ownerName || data.clubName || 'Club Owner');
           
-          // Force full page reload to ensure React state is initialized with new localStorage
-          const currentPath = window.location.pathname;
-          const targetPath = currentPath === '/' || currentPath === '' ? '/app/admin' : currentPath;
-          
-          // Remove impersonate param from URL
-          const url = new URL(window.location.href);
-          url.searchParams.delete('impersonate');
-          
-          // If we're not on the admin page, redirect there
-          if (currentPath !== '/app/admin') {
-            window.location.href = '/app/admin';
-            return;
-          }
-          
-          // If already on admin, force reload to pick up new state
-          window.location.reload();
+          // Remove impersonate param from URL and redirect to admin
+          // Use window.location.replace to avoid infinite loop
+          window.location.replace('/app/admin');
           return;
         }
         
-        // Set impersonation info for the banner
+        // Set impersonation info for the banner (fallback)
         setImpersonation({
           clubName: data.clubName || 'Unknown Club',
           clubId: data.clubId,
           expiresAt: data.expiresAt
         });
       } else {
+        // Token invalid - clean up
         localStorage.removeItem('impersonationToken');
         localStorage.removeItem('impersonationClubId');
+        // Remove param and stay on current page
         const url = new URL(window.location.href);
         url.searchParams.delete('impersonate');
         window.history.replaceState({}, '', url.pathname + url.search);
@@ -133,10 +144,12 @@ export const ImpersonationBanner: React.FC = () => {
         <button
           onClick={endImpersonation}
           disabled={isEnding}
-          className="flex items-center gap-2 bg-amber-800 hover:bg-amber-900 px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 bg-amber-700 hover:bg-amber-800 px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
         >
           <X className="w-4 h-4" />
-          {isEnding ? 'Ending...' : 'End Session'}
+          <span className="text-sm font-medium">
+            {isEnding ? 'Ending...' : 'End Session'}
+          </span>
         </button>
       </div>
     </div>
