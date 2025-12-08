@@ -15,7 +15,7 @@ import { PricingPage } from './pages/PricingPage';
 import { AccountLockedPage } from './pages/AccountLockedPage';
 import { SubscriptionSuccess } from './pages/SubscriptionSuccess';
 import { SuperAdminLogin } from './pages/SuperAdminLogin';
-import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute, SuperAdminPaymentsRoute } from './components/SuperAdminRoutes';
+import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute, SuperAdminPaymentsRoute, SuperAdminAnalyticsRoute } from './components/SuperAdminRoutes';
 import { TrialBanner } from './components/TrialBanner';
 import { ImpersonationBanner } from './components/ImpersonationBanner';
 import { DemoMode, RoleSwitcher, DEMO_WIZARD_DATA } from './components/DemoMode';
@@ -615,6 +615,12 @@ const AppContent: React.FC<AppContentProps> = ({
                         path="/super-admin/payments"
                         element={
                             <SuperAdminPaymentsRoute />
+                        }
+                    />
+                    <Route
+                        path="/super-admin/analytics"
+                        element={
+                            <SuperAdminAnalyticsRoute />
                         }
                     />
                     <Route
