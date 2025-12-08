@@ -15,6 +15,8 @@ interface CoachDashboardProps {
   onUpdateStudents: (students: Student[]) => void;
   onUpdateData?: (data: Partial<WizardData>) => void;
   onBack: () => void;
+  userType?: 'owner' | 'coach' | 'parent';
+  onGoToAdmin?: () => void;
 }
 
 // --- SPEECH RECOGNITION TYPES (Browser Native) ---
@@ -644,7 +646,7 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
 
 // --- MAIN DASHBOARD COMPONENT ---
 
-export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName, onUpdateStudents, onUpdateData, onBack }) => {
+export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName, onUpdateStudents, onUpdateData, onBack, userType, onGoToAdmin }) => {
     const [students, setStudents] = useState<Student[]>(() => data.students.map(s => ({ ...s, totalPoints: s.totalPoints || 0 })));
     const [sessionScores, setSessionScores] = useState<SessionScores>({});
     const [bonusPoints, setBonusPoints] = useState<Record<string, number>>({});
@@ -1209,6 +1211,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     🏆 Challenges
                                 </button>
+                                {userType === 'owner' && onGoToAdmin && (
+                                    <button onClick={onGoToAdmin} className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 text-sm rounded-md transition-colors">⬅️ Admin</button>
+                                )}
                                 <button onClick={onBack} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 text-sm rounded-md transition-colors">🚪 Logout</button>
                             </div>
                         </div>

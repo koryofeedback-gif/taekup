@@ -496,16 +496,14 @@ const AppContent: React.FC<AppContentProps> = ({
                         path="/app/coach"
                         element={
                             finalWizardData && loggedInUserType ? (
-                                <>
-                                    <SEO title="Coach Dashboard | TaekUp" />
-                                    <CoachDashboard
-                                        data={finalWizardData}
-                                        onUpdateStudents={onStudentDataUpdate}
-                                        onUpdateData={onWizardDataUpdate}
-                                        coachName={loggedInUserName || finalWizardData.ownerName}
-                                        onBack={onLogout}
-                                    />
-                                </>
+                                <CoachDashboardRoute
+                                    data={finalWizardData}
+                                    onUpdateStudents={onStudentDataUpdate}
+                                    onUpdateData={onWizardDataUpdate}
+                                    coachName={loggedInUserName || finalWizardData.ownerName}
+                                    onBack={onLogout}
+                                    userType={loggedInUserType}
+                                />
                             ) : (
                                 <Navigate to="/login" replace />
                             )
@@ -616,6 +614,46 @@ const AppContent: React.FC<AppContentProps> = ({
             {!isDojangTV && <Footer />}
             {!isDojangTV && <TaekBot colorScheme={taekBotColorScheme} />}
         </div>
+    );
+};
+
+// Coach Dashboard Route Component
+interface CoachDashboardRouteProps {
+    data: WizardData;
+    coachName: string;
+    onUpdateStudents: (students: Student[]) => void;
+    onUpdateData?: (data: Partial<WizardData>) => void;
+    onBack: () => void;
+    userType: 'owner' | 'coach' | 'parent';
+}
+
+const CoachDashboardRoute: React.FC<CoachDashboardRouteProps> = ({
+    data,
+    coachName,
+    onUpdateStudents,
+    onUpdateData,
+    onBack,
+    userType,
+}) => {
+    const navigate = useNavigate();
+    
+    const handleGoToAdmin = () => {
+        navigate('/app/admin');
+    };
+
+    return (
+        <>
+            <SEO title="Coach Dashboard | TaekUp" />
+            <CoachDashboard
+                data={data}
+                onUpdateStudents={onUpdateStudents}
+                onUpdateData={onUpdateData}
+                coachName={coachName}
+                onBack={onBack}
+                userType={userType}
+                onGoToAdmin={handleGoToAdmin}
+            />
+        </>
     );
 };
 
