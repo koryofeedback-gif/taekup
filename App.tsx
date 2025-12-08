@@ -19,7 +19,6 @@ import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute,
 import { TrialBanner } from './components/TrialBanner';
 import { ImpersonationBanner } from './components/ImpersonationBanner';
 import {
-    sendParentWelcomeEmail,
     getOnboardingMessage,
 } from './services/geminiService';
 import {
@@ -170,11 +169,28 @@ const App: React.FC = () => {
             await Promise.all(coachInvitePromises);
         }
 
-        // Send parent welcome emails (simulated for now)
-        const parentEmailPromises = data.students
-            .filter(student => student.parentEmail)
-            .map(student => sendParentWelcomeEmail(student.parentEmail, student.name, data.clubName));
-        await Promise.all(parentEmailPromises);
+        // Add students via backend API (sends real emails via SendGrid)
+        // - Notifies owner when student is added
+        // - Sends parent welcome email if parent email provided
+        if (clubId && data.students.length > 0) {
+            const studentAddPromises = data.students.map(student => {
+                const belt = data.belts.find(b => b.id === student.beltId);
+                return fetch('/api/students', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clubId,
+                        name: student.name,
+                        parentEmail: student.parentEmail || null,
+                        parentName: student.parentName || null,
+                        parentPhone: student.parentPhone || null,
+                        belt: belt?.name || 'White',
+                        birthdate: student.birthday || null
+                    })
+                }).catch(err => console.error('Failed to add student:', student.name, err));
+            });
+            await Promise.all(studentAddPromises);
+        }
 
         const message = await getOnboardingMessage();
         setOnboardingMessage(message);
