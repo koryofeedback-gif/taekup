@@ -105,8 +105,13 @@ export const ImpersonationBanner: React.FC = () => {
       }
     }
     
+    // Clean up all impersonation-related localStorage
     localStorage.removeItem('impersonationToken');
     localStorage.removeItem('impersonationClubId');
+    localStorage.removeItem('taekup_wizard_data');
+    localStorage.removeItem('taekup_user_type');
+    localStorage.removeItem('taekup_user_name');
+    localStorage.removeItem('taekup_club_id');
     window.location.href = '/super-admin/clubs';
   };
 

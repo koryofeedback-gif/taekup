@@ -104,8 +104,17 @@ const App: React.FC = () => {
     });
     const [onboardingMessage, setOnboardingMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [loggedInUserType, setLoggedInUserType] = useState<'owner' | 'coach' | 'parent' | null>(null);
-    const [loggedInUserName, setLoggedInUserName] = useState<string | null>(null);
+    const [loggedInUserType, setLoggedInUserType] = useState<'owner' | 'coach' | 'parent' | null>(() => {
+        // Check if there's an impersonation session or saved user type
+        const savedType = localStorage.getItem('taekup_user_type');
+        if (savedType === 'owner' || savedType === 'coach' || savedType === 'parent') {
+            return savedType;
+        }
+        return null;
+    });
+    const [loggedInUserName, setLoggedInUserName] = useState<string | null>(() => {
+        return localStorage.getItem('taekup_user_name');
+    });
     const [parentStudentId, setParentStudentId] = useState<string | null>(null);
     const [showPricing, setShowPricing] = useState(false);
     const [isDemoMode, setIsDemoMode] = useState(false);
