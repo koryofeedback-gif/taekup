@@ -930,7 +930,7 @@ const Footer: React.FC = () => (
                         </svg>
                     </a>
                     <a
-                        href="https://instagram.com/mytaek"
+                        href="https://instagram.com/mytaekofficial"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-gray-500 hover:text-pink-500 transition-colors"
