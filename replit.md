@@ -51,6 +51,13 @@ Platform-wide business management:
 - **Email Tools**: SendGrid integration for targeted emails
 - **CSV Exports**: Download clubs and revenue data
 - **Impersonation**: Support access to any club with audit logging
+- **Analytics Dashboard** (NEW): Advanced analytics with 6 feature tabs:
+  - **Cohort Analytics**: Signup month retention, LTV by cohort, conversion rates
+  - **Onboarding Funnel**: Track wizard step completion rates, identify drop-offs
+  - **Churn Analysis**: Churn reason breakdown, feedback collection, at-risk detection
+  - **Payment Recovery**: Failed payment tracking, dunning status, recovery rates
+  - **MRR Goals**: Set monthly targets, track progress, goal vs actual comparison
+  - **Automations**: Configure automated emails/alerts for health score triggers, trial reminders, payment recovery
 
 ---
 
@@ -299,6 +306,14 @@ Instant preview system for sales/marketing:
 | `trial_extensions` | Trial modification history |
 | `support_sessions` | Impersonation audit log |
 | `challenges` | Dojang Rivals challenge records |
+| `churn_reasons` | Cancellation feedback from clubs |
+| `onboarding_progress` | Wizard step completion tracking |
+| `onboarding_steps` | Step definitions for wizard funnel |
+| `mrr_goals` | Monthly revenue targets and actuals |
+| `automation_rules` | Configurable automation triggers |
+| `automation_executions` | Automation run logs |
+| `failed_payments` | Payment recovery tracking |
+| `payment_recovery_attempts` | Dunning email attempts |
 
 ---
 
@@ -322,6 +337,7 @@ Instant preview system for sales/marketing:
 - `/super-admin/clubs` - Club management
 - `/super-admin/parents` - Parent subscriptions
 - `/super-admin/payments` - Payment history
+- `/super-admin/analytics` - Advanced analytics dashboard
 
 ---
 
@@ -351,6 +367,15 @@ Instant preview system for sales/marketing:
 - Added webhook handlers for Stripe events
 - Updated email logging with correct schema
 - Added activity logging for all signups
+- **NEW: Super Admin Analytics Dashboard** with 6 feature tabs:
+  - Cohort Analytics: Track signup cohorts, conversion rates, LTV by month
+  - Onboarding Funnel: Monitor wizard step completion rates
+  - Churn Analysis: Collect and analyze cancellation reasons
+  - Payment Recovery: Track failed payments and dunning status
+  - MRR Goals: Set monthly revenue targets and track progress
+  - Automations: Configure health score triggers, trial reminders, alerts
+- Added 8 new database tables for analytics features
+- Created automation service for scheduled email triggers
 
 ---
 
@@ -368,4 +393,4 @@ None specified yet.
 
 ---
 
-*Last updated: December 7, 2025*
+*Last updated: December 8, 2025*
