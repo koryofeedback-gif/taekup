@@ -1209,7 +1209,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     🏆 Challenges
                                 </button>
-                                <button onClick={onBack} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 text-sm rounded-md transition-colors">Exit</button>
+                                <button onClick={onBack} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 text-sm rounded-md transition-colors">🚪 Logout</button>
                             </div>
                         </div>
                         
