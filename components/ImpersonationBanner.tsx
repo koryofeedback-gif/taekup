@@ -112,6 +112,8 @@ export const ImpersonationBanner: React.FC = () => {
     localStorage.removeItem('taekup_user_type');
     localStorage.removeItem('taekup_user_name');
     localStorage.removeItem('taekup_club_id');
+    localStorage.removeItem('taekup_subscription');
+    localStorage.removeItem('taekup_signup_data');
     window.location.href = '/super-admin/clubs';
   };
 

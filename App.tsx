@@ -704,6 +704,9 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
 }) => {
     const navigate = useNavigate();
     
+    // Use clubId from props, or fall back to localStorage (for impersonation)
+    const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
+    
     const handleNavigate = (view: 'coach-dashboard' | 'admin-dashboard' | 'parent-portal' | 'dojang-tv') => {
         switch (view) {
             case 'coach-dashboard':
@@ -726,7 +729,7 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
             <SEO title="Admin Command Center | TaekUp" />
             <AdminDashboard
                 data={data}
-                clubId={clubId}
+                clubId={effectiveClubId}
                 onBack={() => navigate('/app')}
                 onUpdateData={onUpdateData}
                 onNavigate={handleNavigate}
