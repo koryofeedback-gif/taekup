@@ -68,9 +68,7 @@ interface AutomationRule {
   trigger_count: number;
 }
 
-const API_BASE = import.meta.env.MODE === 'production' 
-  ? '/api/super-admin' 
-  : '/super-admin';
+const API_BASE = '/api/super-admin';
 
 export default function SuperAdminAnalytics() {
   const [activeTab, setActiveTab] = useState<'cohorts' | 'onboarding' | 'churn' | 'recovery' | 'goals' | 'automations'>('cohorts');
