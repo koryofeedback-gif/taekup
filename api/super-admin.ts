@@ -1502,15 +1502,15 @@ async function handleCohortAnalytics(req: VercelRequest, res: VercelResponse) {
     // Get cohort data by signup month
     const cohorts = await db`
       SELECT 
-        TO_CHAR(created_at, 'YYYY-MM') as cohort_month,
+        TO_CHAR(c.created_at, 'YYYY-MM') as cohort_month,
         COUNT(*) as total_signups,
-        COUNT(*) FILTER (WHERE subscription_status = 'active') as converted,
-        COUNT(*) FILTER (WHERE subscription_status = 'churned' OR subscription_status = 'canceled') as churned,
-        COUNT(*) FILTER (WHERE subscription_status = 'trialing' OR subscription_status IS NULL) as still_trial,
-        ROUND(COUNT(*) FILTER (WHERE subscription_status = 'active') * 100.0 / NULLIF(COUNT(*), 0), 1) as conversion_rate,
-        ROUND(COUNT(*) FILTER (WHERE subscription_status = 'churned' OR subscription_status = 'canceled') * 100.0 / NULLIF(COUNT(*) FILTER (WHERE subscription_status != 'trialing'), 0), 1) as churn_rate
-      FROM clubs
-      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+        COUNT(*) FILTER (WHERE c.trial_status = 'converted') as converted,
+        COUNT(*) FILTER (WHERE c.status = 'churned') as churned,
+        COUNT(*) FILTER (WHERE c.trial_status = 'active' OR c.trial_status IS NULL) as still_trial,
+        ROUND(COUNT(*) FILTER (WHERE c.trial_status = 'converted') * 100.0 / NULLIF(COUNT(*), 0), 1) as conversion_rate,
+        ROUND(COUNT(*) FILTER (WHERE c.status = 'churned') * 100.0 / NULLIF(COUNT(*) FILTER (WHERE c.trial_status != 'active'), 0), 1) as churn_rate
+      FROM clubs c
+      GROUP BY TO_CHAR(c.created_at, 'YYYY-MM')
       ORDER BY cohort_month DESC
       LIMIT 12
     `;
@@ -1519,9 +1519,9 @@ async function handleCohortAnalytics(req: VercelRequest, res: VercelResponse) {
     const ltvByCohort = await db`
       SELECT 
         TO_CHAR(c.created_at, 'YYYY-MM') as cohort_month,
-        COALESCE(SUM(s.amount), 0) as total_revenue,
+        COALESCE(SUM(s.monthly_amount), 0) as total_revenue,
         COUNT(DISTINCT c.id) as club_count,
-        ROUND(COALESCE(SUM(s.amount), 0) / NULLIF(COUNT(DISTINCT c.id), 0) / 100.0, 2) as avg_ltv
+        ROUND(COALESCE(SUM(s.monthly_amount), 0) / NULLIF(COUNT(DISTINCT c.id), 0) / 100.0, 2) as avg_ltv
       FROM clubs c
       LEFT JOIN subscriptions s ON c.id = s.club_id
       GROUP BY TO_CHAR(c.created_at, 'YYYY-MM')
@@ -1556,7 +1556,7 @@ async function handleOnboardingFunnel(req: VercelRequest, res: VercelResponse) {
         COUNT(*) FILTER (WHERE step5_people = true) as step5_completed,
         COUNT(*) FILTER (WHERE step6_branding = true) as step6_completed,
         COUNT(*) FILTER (WHERE wizard_completed = true) as wizard_completed,
-        AVG(EXTRACT(EPOCH FROM (completed_at - started_at))) as avg_time_seconds
+        AVG(total_time_spent_seconds) as avg_time_seconds
       FROM onboarding_progress
     `;
 
@@ -1729,7 +1729,7 @@ async function handleMrrGoals(req: VercelRequest, res: VercelResponse) {
 
     // Calculate current MRR
     const mrrResult = await db`
-      SELECT COALESCE(SUM(amount), 0) as current_mrr
+      SELECT COALESCE(SUM(monthly_amount), 0) as current_mrr
       FROM subscriptions
       WHERE status = 'active'
     `;

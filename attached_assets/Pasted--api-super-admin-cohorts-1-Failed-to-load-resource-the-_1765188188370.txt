@@ -1,0 +1,33 @@
+/api/super-admin/cohorts:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-CSWfqEnf.js:380 Error loading cohorts: Error: Failed to fetch cohorts
+    at se (index-CSWfqEnf.js:380:56743)
+    at async xe (index-CSWfqEnf.js:380:56825)
+xe @ index-CSWfqEnf.js:380Understand this error
+/api/super-admin/automations:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-CSWfqEnf.js:380 Error loading automations: Error: Failed to fetch automations
+    at se (index-CSWfqEnf.js:380:56743)
+    at async H (index-CSWfqEnf.js:380:57592)
+H @ index-CSWfqEnf.js:380Understand this error
+/api/super-admin/mrr-goals:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-CSWfqEnf.js:380 Error loading MRR goals: Error: Failed to fetch mrr-goals
+    at se (index-CSWfqEnf.js:380:56743)
+    at async V (index-CSWfqEnf.js:380:57446)
+V @ index-CSWfqEnf.js:380Understand this error
+/api/super-admin/payment-recovery:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-CSWfqEnf.js:380 Error loading payment recovery: Error: Failed to fetch payment-recovery
+    at se (index-CSWfqEnf.js:380:56743)
+    at async L (index-CSWfqEnf.js:380:57279)
+L @ index-CSWfqEnf.js:380Understand this error
+/api/super-admin/churn-reasons:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-CSWfqEnf.js:380 Error loading churn reasons: Error: Failed to fetch churn-reasons
+    at se (index-CSWfqEnf.js:380:56743)
+    at async U (index-CSWfqEnf.js:380:57124)
+U @ index-CSWfqEnf.js:380Understand this error
+/api/super-admin/onboarding:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-CSWfqEnf.js:380 Error loading onboarding: Error: Failed to fetch onboarding
+    at se (index-CSWfqEnf.js:380:56743)
+    at async Se (index-CSWfqEnf.js:380:56972)
+Se @ index-CSWfqEnf.js:380Understand this error
+/api/super-admin/automations:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-CSWfqEnf.js:380 Error loading automations: Error: Failed to fetch automations
+    at se (index-CSWfqEnf.js:380:56743)
