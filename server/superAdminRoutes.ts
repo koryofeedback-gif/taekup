@@ -1135,4 +1135,401 @@ router.get('/export/revenue', verifySuperAdmin, async (req: Request, res: Respon
   }
 });
 
+// ============= NEW ANALYTICS & AUTOMATION ENDPOINTS =============
+
+// Cohort Analytics - signup month retention, LTV by cohort
+router.get('/cohorts', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    // Get monthly cohorts with retention data
+    const cohorts = await db.execute(sql`
+      WITH monthly_cohorts AS (
+        SELECT 
+          TO_CHAR(created_at, 'YYYY-MM') as cohort_month,
+          COUNT(*) as total_signups,
+          COUNT(*) FILTER (WHERE trial_status = 'converted') as converted,
+          COUNT(*) FILTER (WHERE trial_status = 'expired') as churned,
+          COUNT(*) FILTER (WHERE trial_status = 'active') as still_trial
+        FROM clubs
+        WHERE created_at >= NOW() - INTERVAL '12 months'
+        GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+        ORDER BY cohort_month DESC
+      )
+      SELECT 
+        cohort_month,
+        total_signups,
+        converted,
+        churned,
+        still_trial,
+        CASE WHEN total_signups > 0 
+          THEN ROUND((converted::numeric / total_signups) * 100, 1) 
+          ELSE 0 
+        END as conversion_rate,
+        CASE WHEN (total_signups - still_trial) > 0 
+          THEN ROUND((churned::numeric / (total_signups - still_trial)) * 100, 1) 
+          ELSE 0 
+        END as churn_rate
+      FROM monthly_cohorts
+    `);
+
+    // Get LTV by cohort (estimated from subscription data)
+    const ltvByCohort = await db.execute(sql`
+      SELECT 
+        TO_CHAR(c.created_at, 'YYYY-MM') as cohort_month,
+        COALESCE(SUM(p.amount), 0) / 100 as total_revenue,
+        COUNT(DISTINCT c.id) as club_count,
+        CASE WHEN COUNT(DISTINCT c.id) > 0 
+          THEN ROUND(COALESCE(SUM(p.amount), 0)::numeric / 100 / COUNT(DISTINCT c.id), 2)
+          ELSE 0
+        END as avg_ltv
+      FROM clubs c
+      LEFT JOIN payments p ON p.club_id = c.id AND p.status = 'paid'
+      WHERE c.created_at >= NOW() - INTERVAL '12 months'
+      GROUP BY TO_CHAR(c.created_at, 'YYYY-MM')
+      ORDER BY cohort_month DESC
+    `);
+
+    res.json({ cohorts, ltvByCohort });
+  } catch (error: any) {
+    console.error('Cohort analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch cohort analytics' });
+  }
+});
+
+// Onboarding Progress - track wizard completion funnel
+router.get('/onboarding', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    // Get funnel data
+    const funnel = await db.execute(sql`
+      SELECT 
+        COUNT(*) as total_started,
+        COUNT(*) FILTER (WHERE step1_club_info = true) as step1_completed,
+        COUNT(*) FILTER (WHERE step2_belt_system = true) as step2_completed,
+        COUNT(*) FILTER (WHERE step3_skills = true) as step3_completed,
+        COUNT(*) FILTER (WHERE step4_scoring = true) as step4_completed,
+        COUNT(*) FILTER (WHERE step5_people = true) as step5_completed,
+        COUNT(*) FILTER (WHERE step6_branding = true) as step6_completed,
+        COUNT(*) FILTER (WHERE wizard_completed = true) as wizard_completed,
+        AVG(total_time_spent_seconds) as avg_time_seconds
+      FROM onboarding_progress
+    `);
+
+    // Get clubs stuck at each step
+    const stuckClubs = await db.execute(sql`
+      SELECT 
+        op.last_active_step,
+        COUNT(*) as count,
+        c.name as example_club,
+        c.owner_email as example_email
+      FROM onboarding_progress op
+      JOIN clubs c ON c.id = op.club_id
+      WHERE op.wizard_completed = false
+      GROUP BY op.last_active_step, c.name, c.owner_email
+      ORDER BY op.last_active_step
+    `);
+
+    // Get recent incomplete onboardings
+    const incomplete = await db.execute(sql`
+      SELECT 
+        c.id,
+        c.name,
+        c.owner_email,
+        c.created_at,
+        op.last_active_step,
+        op.step1_club_info,
+        op.step2_belt_system,
+        op.step3_skills,
+        op.step4_scoring,
+        op.step5_people,
+        op.step6_branding
+      FROM onboarding_progress op
+      JOIN clubs c ON c.id = op.club_id
+      WHERE op.wizard_completed = false
+      ORDER BY c.created_at DESC
+      LIMIT 20
+    `);
+
+    res.json({ 
+      funnel: (funnel as any[])[0] || {},
+      stuckClubs,
+      incomplete
+    });
+  } catch (error: any) {
+    console.error('Onboarding analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch onboarding analytics' });
+  }
+});
+
+// Update onboarding progress (called from wizard)
+router.post('/onboarding/update', async (req: Request, res: Response) => {
+  try {
+    const { clubId, step, completed, timeSpent } = req.body;
+    
+    const stepColumn = `step${step}_${['club_info', 'belt_system', 'skills', 'scoring', 'people', 'branding'][step - 1]}`;
+    const stepCompletedColumn = `step${step}_completed_at`;
+    
+    await db.execute(sql`
+      INSERT INTO onboarding_progress (club_id, last_active_step)
+      VALUES (${clubId}::uuid, ${step})
+      ON CONFLICT (club_id) DO UPDATE SET
+        last_active_step = ${step},
+        total_time_spent_seconds = onboarding_progress.total_time_spent_seconds + ${timeSpent || 0},
+        updated_at = NOW()
+    `);
+
+    if (completed) {
+      await db.execute(sql`
+        UPDATE onboarding_progress 
+        SET ${sql.raw(stepColumn)} = true, 
+            ${sql.raw(stepCompletedColumn)} = NOW()
+        WHERE club_id = ${clubId}::uuid
+      `);
+    }
+
+    // Check if wizard is complete
+    if (step === 6 && completed) {
+      await db.execute(sql`
+        UPDATE onboarding_progress 
+        SET wizard_completed = true, wizard_completed_at = NOW()
+        WHERE club_id = ${clubId}::uuid
+      `);
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Update onboarding error:', error);
+    res.status(500).json({ error: 'Failed to update onboarding progress' });
+  }
+});
+
+// Churn Reasons - get churn analytics
+router.get('/churn-reasons', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    // Get churn reasons breakdown
+    const breakdown = await db.execute(sql`
+      SELECT 
+        category,
+        COUNT(*) as count,
+        ROUND(AVG(rating), 1) as avg_rating,
+        COUNT(*) FILTER (WHERE would_recommend = true) as would_recommend
+      FROM churn_reasons
+      GROUP BY category
+      ORDER BY count DESC
+    `);
+
+    // Get recent churn feedback
+    const recent = await db.execute(sql`
+      SELECT 
+        cr.*,
+        c.name as club_name,
+        c.owner_email
+      FROM churn_reasons cr
+      LEFT JOIN clubs c ON c.id = cr.club_id
+      ORDER BY cr.created_at DESC
+      LIMIT 20
+    `);
+
+    // Get churn trend
+    const trend = await db.execute(sql`
+      SELECT 
+        TO_CHAR(created_at, 'YYYY-MM') as month,
+        COUNT(*) as churn_count
+      FROM churn_reasons
+      WHERE created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+      ORDER BY month
+    `);
+
+    res.json({ breakdown, recent, trend });
+  } catch (error: any) {
+    console.error('Churn reasons error:', error);
+    res.status(500).json({ error: 'Failed to fetch churn reasons' });
+  }
+});
+
+// Submit churn reason (called when subscription is cancelled)
+router.post('/churn-reasons', async (req: Request, res: Response) => {
+  try {
+    const { clubId, subscriptionId, category, additionalFeedback, wouldRecommend, rating } = req.body;
+
+    await db.execute(sql`
+      INSERT INTO churn_reasons (club_id, subscription_id, category, additional_feedback, would_recommend, rating)
+      VALUES (${clubId}::uuid, ${subscriptionId}::uuid, ${category}, ${additionalFeedback}, ${wouldRecommend}, ${rating})
+    `);
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Submit churn reason error:', error);
+    res.status(500).json({ error: 'Failed to submit churn reason' });
+  }
+});
+
+// Payment Recovery Dashboard
+router.get('/payment-recovery', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    // Get failed payments
+    const failedPayments = await db.execute(sql`
+      SELECT 
+        p.*,
+        c.name as club_name,
+        c.owner_email,
+        pra.attempt_number,
+        pra.email_sent,
+        pra.recovered
+      FROM payments p
+      JOIN clubs c ON c.id = p.club_id
+      LEFT JOIN payment_recovery_attempts pra ON pra.payment_id = p.id
+      WHERE p.status IN ('failed', 'unpaid', 'past_due')
+      ORDER BY p.created_at DESC
+      LIMIT 50
+    `);
+
+    // Get recovery stats
+    const stats = await db.execute(sql`
+      SELECT 
+        COUNT(*) as total_attempts,
+        COUNT(*) FILTER (WHERE recovered = true) as recovered_count,
+        COALESCE(SUM(recovered_amount), 0) / 100 as recovered_amount,
+        CASE WHEN COUNT(*) > 0 
+          THEN ROUND((COUNT(*) FILTER (WHERE recovered = true)::numeric / COUNT(*)) * 100, 1)
+          ELSE 0
+        END as recovery_rate
+      FROM payment_recovery_attempts
+      WHERE created_at >= NOW() - INTERVAL '30 days'
+    `);
+
+    // Get monthly recovery trend
+    const trend = await db.execute(sql`
+      SELECT 
+        TO_CHAR(created_at, 'YYYY-MM') as month,
+        COUNT(*) as total_failed,
+        COUNT(*) FILTER (WHERE recovered = true) as recovered,
+        COALESCE(SUM(recovered_amount), 0) / 100 as amount_recovered
+      FROM payment_recovery_attempts
+      WHERE created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+      ORDER BY month
+    `);
+
+    res.json({ 
+      failedPayments, 
+      stats: (stats as any[])[0] || {},
+      trend 
+    });
+  } catch (error: any) {
+    console.error('Payment recovery error:', error);
+    res.status(500).json({ error: 'Failed to fetch payment recovery data' });
+  }
+});
+
+// MRR Goals
+router.get('/mrr-goals', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const goals = await db.execute(sql`
+      SELECT * FROM mrr_goals
+      ORDER BY month DESC
+      LIMIT 12
+    `);
+
+    // Get actual MRR for each month
+    const actualMrr = await db.execute(sql`
+      SELECT 
+        TO_CHAR(created_at, 'YYYY-MM') as month,
+        SUM(monthly_amount) / 100 as mrr
+      FROM subscriptions
+      WHERE status = 'active'
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+      ORDER BY month DESC
+      LIMIT 12
+    `);
+
+    // Current MRR
+    const currentMrr = await db.execute(sql`
+      SELECT COALESCE(SUM(monthly_amount), 0) / 100 as mrr
+      FROM subscriptions
+      WHERE status = 'active'
+    `);
+
+    res.json({ 
+      goals, 
+      actualMrr,
+      currentMrr: (currentMrr as any[])[0]?.mrr || 0
+    });
+  } catch (error: any) {
+    console.error('MRR goals error:', error);
+    res.status(500).json({ error: 'Failed to fetch MRR goals' });
+  }
+});
+
+// Create/Update MRR Goal
+router.post('/mrr-goals', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { month, targetMrr, notes } = req.body;
+
+    await db.execute(sql`
+      INSERT INTO mrr_goals (month, target_mrr, notes, created_by)
+      VALUES (${month}, ${targetMrr * 100}, ${notes}, 'super_admin')
+      ON CONFLICT (month) DO UPDATE SET
+        target_mrr = ${targetMrr * 100},
+        notes = ${notes},
+        updated_at = NOW()
+    `);
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Create MRR goal error:', error);
+    res.status(500).json({ error: 'Failed to create MRR goal' });
+  }
+});
+
+// Automation Rules
+router.get('/automations', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const rules = await db.execute(sql`
+      SELECT * FROM automation_rules
+      ORDER BY created_at DESC
+    `);
+
+    // Recent executions
+    const executions = await db.execute(sql`
+      SELECT 
+        ae.*,
+        ar.name as rule_name,
+        c.name as club_name
+      FROM automation_executions ae
+      JOIN automation_rules ar ON ar.id = ae.rule_id
+      LEFT JOIN clubs c ON c.id = ae.club_id
+      ORDER BY ae.executed_at DESC
+      LIMIT 50
+    `);
+
+    res.json({ rules, executions });
+  } catch (error: any) {
+    console.error('Automations error:', error);
+    res.status(500).json({ error: 'Failed to fetch automations' });
+  }
+});
+
+// Toggle automation rule
+router.patch('/automations/:id', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isActive, slackEnabled, emailEnabled } = req.body;
+
+    await db.execute(sql`
+      UPDATE automation_rules
+      SET 
+        is_active = COALESCE(${isActive}, is_active),
+        slack_enabled = COALESCE(${slackEnabled}, slack_enabled),
+        email_enabled = COALESCE(${emailEnabled}, email_enabled),
+        updated_at = NOW()
+      WHERE id = ${id}::uuid
+    `);
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Update automation error:', error);
+    res.status(500).json({ error: 'Failed to update automation' });
+  }
+});
+
 export { router as superAdminRouter, verifySuperAdmin };
