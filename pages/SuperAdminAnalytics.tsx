@@ -720,7 +720,10 @@ export default function SuperAdminAnalytics() {
         {!loading && activeTab === 'automations' && (
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Automation Rules</h2>
+              <h2 className="text-xl font-semibold mb-4">Automation Rules ({automations.length})</h2>
+              {automations.length === 0 ? (
+                <p className="text-gray-400 text-center py-8">No automation rules found. Check if the database has automation_rules populated.</p>
+              ) : (
               <div className="space-y-4">
                 {automations.map((rule) => (
                   <div key={rule.id} className="p-5 bg-gray-700/50 rounded-lg border border-gray-600">
@@ -802,6 +805,7 @@ export default function SuperAdminAnalytics() {
                   </div>
                 ))}
               </div>
+              )}
             </div>
 
             <div className="bg-gray-800 rounded-xl p-6">
