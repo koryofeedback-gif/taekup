@@ -1,0 +1,123 @@
+This is the **Official Narrative Script & Lore** for *Dojo Awakening*.
+
+This story is designed to be **episodic** (like an anime or a Netflix series). It solves the retention problem by giving the student a "Hero’s Purpose." They aren't just doing push-ups; they are saving the universe.
+
+***
+
+# Story Title: The Legend of the Prism Belt
+**Genre:** Fantasy / Isekai / Martial Arts
+**Tone:** Epic, Mysterious, Inspiring (Think *Kung Fu Panda* meets *Avatar: The Last Airbender*)
+
+---
+
+## The Prologue: The Shattered Balance
+*(This plays as a cinematic video when the student first downloads the app)*
+
+> "Long ago, the world of **Taek** was held together by the **Prism Belt**—a mystical artifact worn by the Great Grandmaster. It balanced the energies of Earth, Water, Fire, and Spirit.
+>
+> But the **Shadow Legion**, born from laziness and undisciplined minds, shattered the Belt. The shards were scattered across dangerous realms.
+>
+> Without the Belt, the Spirit Beasts went into a deep sleep, and the world began to fade into grey.
+>
+> You are the **Awakened One**. You have been chosen to travel the realms, find the shards, wake the Spirit Beasts, and restore the Prism Belt. But be warned... your spirit is strong, but your physical vessel is weak. You must train."
+
+---
+
+## Chapter 1: The White Belt
+**Region:** *The Misty Bamboo Forest* 🎋
+**Theme:** Innocence & Potential
+
+* **The Awakening:** The student’s avatar wakes up in a foggy forest. They find a **"Dormant Spirit Egg"** pulsing with faint light.
+* **The Guide:** A hologram of the "Cyber-Sensei" (TaekBot) appears.
+    * *Dialogue:* "This egg contains a legendary guardian. It feeds on **XP** (Focus). But it cannot hatch because the forest is blocked by the **Fog of Confusion**."
+* **The Mission:** Complete daily habits to clear the fog.
+* **The Boss (The Limit Breaker):** At the end of the chapter (when XP is maxed), the student encounters the **Gatekeeper: The Stone Monkey**.
+    * *Conflict:* The student has found the "Golden Key" (Item), but the gate won't open.
+    * *System Message:* "Your Spirit is ready, but your Rank is too low. Pass the **Yellow Belt Exam** in the real world to open the Gate."
+
+---
+
+## Chapter 2: The Yellow Belt
+**Region:** *The Crystalline Caves* 🏔️
+**Theme:** Foundation & Earth
+
+* **The Evolution:** Upon entering the code for the Yellow Belt:
+    * **Cutscene:** The "Dormant Egg" cracks open. A **Baby Spirit Beast** (e.g., a Small Turtle or Cub) hatches. It is cute and follows the avatar.
+* **The Lore:** The student enters the caves where the ground shakes. The **Shadow Legion** has corrupted the Earth Element.
+* **The Gacha Pool:** The "Summon" button now drops items made of **Stone, Iron, and Topaz**.
+* **The Grind:** The student must equip their avatar with "Heavy Armor" to withstand the falling rocks of the cave.
+* **The Cliffhanger:** The student reaches the exit of the cave, but it is blocked by thick, thorny vines that stone weapons cannot cut. They need the sharpness of the Green element.
+
+---
+
+## Chapter 3: The Green Belt
+**Region:** *The Toxic Jungle* 🐍
+**Theme:** Growth & Adaptation
+
+* **The Evolution:** The Baby Spirit Beast grows legs and armor. It is now a **"Juvenile Beast."**
+* **The Lore:** The jungle is alive and dangerous. The Shadow Legion has poisoned the plants. The student needs to learn **"Technique"** (precision) to navigate the vines without getting hurt.
+* **The Gacha Pool:** Drops **Bio-Armor, Poison Daggers, and Emerald Auras**.
+* **The Limit Breaker:** The student finds the "Temple of the Wind," but the bridge is broken. They cannot jump across.
+    * *System Message:* "You lack the flow of water. Pass the **Blue Belt Exam** to gain the agility needed to cross."
+
+---
+
+## Chapter 4: The Blue Belt
+**Region:** *The Glacial Waterfall* ❄️
+**Theme:** Flow, Speed & Ice
+
+* **The Evolution:** The Spirit Beast evolves again. It grows **Wings** or **Fins**. It can now float/fly next to the avatar.
+* **The Lore:** The world is frozen. Everything is slippery. Speed is key. The student must collect the "Sapphire Shards."
+* **The Gacha Pool:** Drops **Ice Swords, Crystal Capes, and Frost Auras**.
+* **Visual Flex:** The student’s avatar now leaves a trail of snowflakes when walking in the lobby.
+* **The Conflict:** The ice begins to melt, revealing a path to a terrifying, burning mountain in the distance. The cold gear is useless there. They need fire protection.
+
+---
+
+## Chapter 5: The Red Belt
+**Region:** *The Volcanic Caldera* 🌋
+**Theme:** Power, Control & Fire
+
+* **The Evolution:** The Spirit Beast becomes an **"Adult Beast."** It looks fierce, breathes fire, and creates a sense of awe.
+* **The Lore:** This is the most dangerous region. The **Shadow General** lives here. The heat is intense (representing the intensity of pre-Black Belt training).
+* **The Gacha Pool:** Drops **Magma Armor, Phoenix Wings, and Ruby Weapons**.
+* **The Climax:** The student defeats the Shadow General in a "digital boss battle" (completed by earning a specific amount of XP).
+* **The Final Gate:** They stand before the **"Cosmic Portal."** Behind it lies the Prism Belt. But the portal requires the ultimate key: **The Black Belt.**
+
+---
+
+## Chapter 6: The Black Belt (The End Game)
+**Region:** *The Cosmic Void (Space)* 🌌
+**Theme:** Mastery & Infinity
+
+* **The Transformation:** Upon achieving Black Belt:
+    * **Cutscene:** The student steps into space. The gravity disappears.
+    * **Ultimate Evolution:** The Spirit Beast transforms into a **"Mythical God-Tier Guardian"** (e.g., A Neon-Cyber Dragon or a Celestial Tiger). It is huge and glows with all colors (Prism).
+* **The New Reality:** The story mode ends, but the **"Dojo Wars"** begin.
+    * The student is no longer fighting AI Shadows.
+    * They are now protecting the Prism Belt from **other players** (The PvP Leagues).
+* **The Loop:** Now, they summon for **"Cosmic Gear"** and compete for the top spot on the Global Leaderboard.
+
+---
+
+## Why This Story Works for Business?
+
+1.  **The "Egg" Hook (Tamagotchi Effect):**
+    * In the first month (White Belt), the child *cannot* leave the club because they want to see what is inside the egg. Curiosity drives retention.
+
+2.  **The "Cliffhangers" (Limit Breakers):**
+    * At the end of every belt, the story explicitly **stops**. The student is stuck at a gate. The *only* key is the instructor's approval (grading). This turns the instructor into the "Hero Maker."
+
+3.  **The Visual Progression:**
+    * A White Belt looks like a peasant (Cloth gear).
+    * A Red Belt looks like a Warlord (Fire gear).
+    * A Black Belt looks like a God (Cosmic gear).
+    * This visual hierarchy makes students desperate to upgrade their status.
+
+4.  **Flexible Lore:**
+    * This story works for **Taekwondo** (Kicks/Speed).
+    * It works for **BJJ** (Grappling/Control).
+    * It works for **Karate** (Strikes/Power).
+    * You just change the names of the "Regions," but the structure (Forest -> Mountain -> Fire -> Space) remains the same.
+
+This is the script. It provides the emotional context for every push-up, every grading fee, and every login.
