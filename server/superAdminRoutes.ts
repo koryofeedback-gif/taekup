@@ -1514,16 +1514,33 @@ router.patch('/automations/:id', verifySuperAdmin, async (req: Request, res: Res
   try {
     const { id } = req.params;
     const { isActive, slackEnabled, emailEnabled } = req.body;
+    
+    console.log('[SuperAdmin] Updating automation:', id, { isActive, slackEnabled, emailEnabled });
 
-    await db.execute(sql`
-      UPDATE automation_rules
-      SET 
-        is_active = COALESCE(${isActive}, is_active),
-        slack_enabled = COALESCE(${slackEnabled}, slack_enabled),
-        email_enabled = COALESCE(${emailEnabled}, email_enabled),
-        updated_at = NOW()
-      WHERE id = ${id}::uuid
-    `);
+    // Update each field individually if provided
+    if (typeof isActive === 'boolean') {
+      await db.execute(sql`
+        UPDATE automation_rules
+        SET is_active = ${isActive}, updated_at = NOW()
+        WHERE id = ${id}::uuid
+      `);
+    }
+    
+    if (typeof slackEnabled === 'boolean') {
+      await db.execute(sql`
+        UPDATE automation_rules
+        SET slack_enabled = ${slackEnabled}, updated_at = NOW()
+        WHERE id = ${id}::uuid
+      `);
+    }
+    
+    if (typeof emailEnabled === 'boolean') {
+      await db.execute(sql`
+        UPDATE automation_rules
+        SET email_enabled = ${emailEnabled}, updated_at = NOW()
+        WHERE id = ${id}::uuid
+      `);
+    }
 
     res.json({ success: true });
   } catch (error: any) {
