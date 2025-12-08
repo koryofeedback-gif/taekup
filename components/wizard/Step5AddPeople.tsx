@@ -1,7 +1,6 @@
 
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import type { WizardData, Coach, Student } from '../../types';
-import { sendCoachWelcomeEmail } from '../../services/geminiService';
 
 interface Step5Props {
   data: WizardData;
@@ -75,7 +74,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
         ? (data.locationClasses[newCoach.location] || [])
         : [];
 
-    const handleAddCoach = async () => {
+    const handleAddCoach = () => {
         if (!newCoach.name || !newCoach.email) return;
         const coachToAdd: Coach = {
             id: `coach-${Date.now()}`,
@@ -86,7 +85,6 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
             assignedClasses: newCoach.assignedClasses
         };
         onUpdate({ coaches: [...data.coaches, coachToAdd] });
-        await sendCoachWelcomeEmail(coachToAdd.name, data.clubName);
         setNewCoach(getInitialCoachState(locations));
     };
     

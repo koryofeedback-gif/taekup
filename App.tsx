@@ -19,7 +19,6 @@ import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute,
 import { TrialBanner } from './components/TrialBanner';
 import { ImpersonationBanner } from './components/ImpersonationBanner';
 import {
-    sendCoachWelcomeEmail,
     sendParentWelcomeEmail,
     getOnboardingMessage,
 } from './services/geminiService';
@@ -150,13 +149,32 @@ const App: React.FC = () => {
         setIsProcessing(true);
         setFinalWizardData(data);
 
-        const emailPromises = [
-            ...data.coaches.map(coach => sendCoachWelcomeEmail(coach.name, data.clubName)),
-            ...data.students
-                .filter(student => student.parentEmail)
-                .map(student => sendParentWelcomeEmail(student.parentEmail, student.name, data.clubName)),
-        ];
-        await Promise.all(emailPromises);
+        // Get clubId from signupData
+        const clubId = signupData?.clubId;
+
+        // Invite coaches via backend API (sends real emails via SendGrid)
+        if (clubId && data.coaches.length > 0) {
+            const coachInvitePromises = data.coaches.map(coach =>
+                fetch('/api/invite-coach', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clubId,
+                        name: coach.name,
+                        email: coach.email,
+                        location: coach.location,
+                        assignedClasses: coach.assignedClasses
+                    })
+                }).catch(err => console.error('Failed to invite coach:', coach.email, err))
+            );
+            await Promise.all(coachInvitePromises);
+        }
+
+        // Send parent welcome emails (simulated for now)
+        const parentEmailPromises = data.students
+            .filter(student => student.parentEmail)
+            .map(student => sendParentWelcomeEmail(student.parentEmail, student.name, data.clubName));
+        await Promise.all(parentEmailPromises);
 
         const message = await getOnboardingMessage();
         setOnboardingMessage(message);
@@ -166,7 +184,7 @@ const App: React.FC = () => {
         setIsProcessing(false);
         setLoggedInUserType('owner');
         setLoggedInUserName(data.ownerName);
-    }, []);
+    }, [signupData]);
 
     const handleStudentDataUpdate = useCallback((updatedStudents: Student[]) => {
         setFinalWizardDataState(prevData => {
