@@ -722,89 +722,77 @@ export default function SuperAdminAnalytics() {
             <div className="bg-gray-800 rounded-xl p-6">
               <h2 className="text-xl font-semibold mb-4">Automation Rules ({automations.length})</h2>
               {automations.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">No automation rules found. Check if the database has automation_rules populated.</p>
+                <p className="text-gray-400 text-center py-8">No automation rules found. Loading data...</p>
               ) : (
-              <div className="space-y-4">
-                {automations.map((rule) => (
-                  <div key={rule.id} className="p-5 bg-gray-700/50 rounded-lg border border-gray-600">
-                    <div className="flex flex-col lg:flex-row justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg">{rule.name}</h3>
-                          {rule.is_active ? (
-                            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">ON</span>
-                          ) : (
-                            <span className="px-2 py-0.5 bg-gray-500/20 text-gray-400 text-xs rounded-full">OFF</span>
+                <div className="space-y-4">
+                  {automations.map((rule) => (
+                    <div key={rule.id} className="p-5 bg-gray-700/50 rounded-lg border border-gray-600">
+                      <div className="flex flex-col gap-4">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">{rule.name}</h3>
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${rule.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                              {rule.is_active ? 'ON' : 'OFF'}
+                            </span>
+                          </div>
+                          <p className="text-gray-400 text-sm">{rule.description}</p>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-4 bg-gray-800/50 p-3 rounded-lg">
+                          <button
+                            onClick={() => toggleAutomation(rule.id, 'isActive', !rule.is_active)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              rule.is_active 
+                                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
+                            }`}
+                          >
+                            {rule.is_active ? 'Active' : 'Inactive'}
+                          </button>
+                          
+                          <button
+                            onClick={() => toggleAutomation(rule.id, 'emailEnabled', !rule.email_enabled)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              rule.email_enabled 
+                                ? 'bg-cyan-600 hover:bg-cyan-700 text-white' 
+                                : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
+                            }`}
+                          >
+                            Email {rule.email_enabled ? 'ON' : 'OFF'}
+                          </button>
+                          
+                          <button
+                            onClick={() => toggleAutomation(rule.id, 'slackEnabled', !rule.slack_enabled)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              rule.slack_enabled 
+                                ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                                : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
+                            }`}
+                          >
+                            Slack {rule.slack_enabled ? 'ON' : 'OFF'}
+                          </button>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-3 text-sm text-gray-400">
+                          <span className={`px-2 py-1 rounded ${
+                            rule.rule_type === 'health_score_email' ? 'bg-orange-500/20 text-orange-400' :
+                            rule.rule_type === 'trial_reminder' ? 'bg-blue-500/20 text-blue-400' :
+                            rule.rule_type === 'payment_dunning' ? 'bg-yellow-500/20 text-yellow-400' :
+                            rule.rule_type === 'churn_alert' ? 'bg-red-500/20 text-red-400' :
+                            rule.rule_type === 'conversion_alert' ? 'bg-green-500/20 text-green-400' :
+                            'bg-cyan-500/20 text-cyan-400'
+                          }`}>
+                            {rule.rule_type.replace(/_/g, ' ')}
+                          </span>
+                          <span>Triggered: {rule.trigger_count} times</span>
+                          {rule.last_triggered_at && (
+                            <span>Last: {new Date(rule.last_triggered_at).toLocaleDateString()}</span>
                           )}
                         </div>
-                        <p className="text-gray-400 text-sm">{rule.description}</p>
-                      </div>
-                      
-                      <div className="flex items-center gap-6 bg-gray-800 px-4 py-3 rounded-lg">
-                        <label className="flex items-center gap-3 cursor-pointer group">
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              checked={rule.is_active}
-                              onChange={(e) => toggleAutomation(rule.id, 'isActive', e.target.checked)}
-                              className="sr-only"
-                            />
-                            <div className={`w-11 h-6 rounded-full transition-colors ${rule.is_active ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${rule.is_active ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                          </div>
-                          <span className="text-sm font-medium">Active</span>
-                        </label>
-                        
-                        <div className="w-px h-6 bg-gray-600"></div>
-                        
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              checked={rule.email_enabled}
-                              onChange={(e) => toggleAutomation(rule.id, 'emailEnabled', e.target.checked)}
-                              className="sr-only"
-                            />
-                            <div className={`w-11 h-6 rounded-full transition-colors ${rule.email_enabled ? 'bg-cyan-500' : 'bg-gray-600'}`}></div>
-                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${rule.email_enabled ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                          </div>
-                          <span className="text-sm font-medium">Email</span>
-                        </label>
-                        
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              checked={rule.slack_enabled}
-                              onChange={(e) => toggleAutomation(rule.id, 'slackEnabled', e.target.checked)}
-                              className="sr-only"
-                            />
-                            <div className={`w-11 h-6 rounded-full transition-colors ${rule.slack_enabled ? 'bg-purple-500' : 'bg-gray-600'}`}></div>
-                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${rule.slack_enabled ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                          </div>
-                          <span className="text-sm font-medium">Slack</span>
-                        </label>
                       </div>
                     </div>
-                    <div className="flex gap-4 mt-3 text-sm text-gray-400">
-                      <span className={`px-2 py-1 rounded ${
-                        rule.rule_type === 'health_score_email' ? 'bg-orange-500/20 text-orange-400' :
-                        rule.rule_type === 'trial_reminder' ? 'bg-blue-500/20 text-blue-400' :
-                        rule.rule_type === 'payment_dunning' ? 'bg-yellow-500/20 text-yellow-400' :
-                        rule.rule_type === 'churn_alert' ? 'bg-red-500/20 text-red-400' :
-                        rule.rule_type === 'conversion_alert' ? 'bg-green-500/20 text-green-400' :
-                        'bg-cyan-500/20 text-cyan-400'
-                      }`}>
-                        {rule.rule_type.replace(/_/g, ' ')}
-                      </span>
-                      <span>Triggered: {rule.trigger_count} times</span>
-                      {rule.last_triggered_at && (
-                        <span>Last: {new Date(rule.last_triggered_at).toLocaleDateString()}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
               )}
             </div>
 
