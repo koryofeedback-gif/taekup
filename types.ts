@@ -289,6 +289,7 @@ export interface WizardData {
   welcomeBanner: string;
   // Content
   curriculum: CurriculumItem[]; // New field for custom videos
+  customVideoTags?: string[]; // Custom tags clubs can create for categorizing videos
   classes: string[]; // Flat list of all unique class names (legacy/fallback)
   locationClasses: Record<string, string[]>; // MAP: Location Name -> List of Class Names
   // Scheduling

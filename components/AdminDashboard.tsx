@@ -692,34 +692,41 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     );
 }
 
-const VIDEO_CATEGORIES = [
+const DEFAULT_VIDEO_TAGS = [
     { id: 'forms', name: 'Forms', icon: '🥋' },
-    { id: 'kicks', name: 'Kicks', icon: '🦵' },
-    { id: 'self-defense', name: 'Self-Defense', icon: '🛡️' },
     { id: 'sparring', name: 'Sparring', icon: '⚔️' },
-    { id: 'conditioning', name: 'Conditioning', icon: '💪' },
-    { id: 'breaking', name: 'Breaking', icon: '🧱' },
-    { id: 'basics', name: 'Basics', icon: '📚' },
-    { id: 'stretching', name: 'Stretching', icon: '🧘' },
+    { id: 'self-defense', name: 'Self-Defense', icon: '🛡️' },
 ];
 
 const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
-    const [newVideo, setNewVideo] = useState({ title: '', url: '', beltId: 'all', categories: ['forms'] as string[] });
+    const [newVideo, setNewVideo] = useState({ title: '', url: '', beltId: 'all', tags: [] as string[] });
     const [connectingBank, setConnectingBank] = useState(false);
+    const [newTagName, setNewTagName] = useState('');
+    const [showAddTag, setShowAddTag] = useState(false);
 
-    const toggleCategory = (categoryId: string) => {
-        if (categoryId === 'all') {
-            if (newVideo.categories.length === VIDEO_CATEGORIES.length) {
-                setNewVideo({...newVideo, categories: ['forms']});
-            } else {
-                setNewVideo({...newVideo, categories: VIDEO_CATEGORIES.map(c => c.id)});
-            }
-        } else {
-            const updated = newVideo.categories.includes(categoryId)
-                ? newVideo.categories.filter(c => c !== categoryId)
-                : [...newVideo.categories, categoryId];
-            setNewVideo({...newVideo, categories: updated.length > 0 ? updated : ['forms']});
+    const customTags = data.customVideoTags || [];
+    const allTags = [...DEFAULT_VIDEO_TAGS, ...customTags.map(t => ({ id: t, name: t, icon: '🏷️' }))];
+
+    const toggleTag = (tagId: string) => {
+        const updated = newVideo.tags.includes(tagId)
+            ? newVideo.tags.filter(t => t !== tagId)
+            : [...newVideo.tags, tagId];
+        setNewVideo({...newVideo, tags: updated});
+    };
+
+    const handleAddCustomTag = () => {
+        if (!newTagName.trim()) return;
+        const tagName = newTagName.trim();
+        if (!customTags.includes(tagName)) {
+            onUpdateData({ customVideoTags: [...customTags, tagName] });
         }
+        setNewTagName('');
+        setShowAddTag(false);
+    };
+
+    const handleRemoveCustomTag = (tagName: string) => {
+        onUpdateData({ customVideoTags: customTags.filter(t => t !== tagName) });
+        setNewVideo({...newVideo, tags: newVideo.tags.filter(t => t !== tagName)});
     };
 
     const handleAddVideo = () => {
@@ -729,12 +736,12 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             title: newVideo.title,
             url: newVideo.url,
             beltId: newVideo.beltId,
-            category: newVideo.categories.join(','),
+            category: newVideo.tags.join(','),
             description: 'Uploaded by Instructor',
             authorName: data.ownerName
         };
         onUpdateData({ curriculum: [...(data.curriculum || []), item] });
-        setNewVideo({ title: '', url: '', beltId: 'all', categories: ['forms'] });
+        setNewVideo({ title: '', url: '', beltId: 'all', tags: [] });
     };
 
     const handleConnectBank = async () => {
@@ -802,33 +809,51 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Categories (select multiple)</label>
+                                    <label className="block text-sm text-gray-400 mb-2">Tags (select multiple)</label>
                                     <div className="flex flex-wrap gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => toggleCategory('all')}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                                newVideo.categories.length === VIDEO_CATEGORIES.length
-                                                    ? 'bg-cyan-500 text-white'
-                                                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                            }`}
-                                        >
-                                            🎯 All
-                                        </button>
-                                        {VIDEO_CATEGORIES.map(c => (
+                                        {allTags.map(tag => (
                                             <button
-                                                key={c.id}
+                                                key={tag.id}
                                                 type="button"
-                                                onClick={() => toggleCategory(c.id)}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                                    newVideo.categories.includes(c.id)
+                                                onClick={() => toggleTag(tag.id)}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1 ${
+                                                    newVideo.tags.includes(tag.id)
                                                         ? 'bg-sky-500 text-white'
                                                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                                                 }`}
                                             >
-                                                {c.icon} {c.name}
+                                                {tag.icon} {tag.name}
+                                                {customTags.includes(tag.name) && (
+                                                    <span 
+                                                        onClick={(e) => { e.stopPropagation(); handleRemoveCustomTag(tag.name); }}
+                                                        className="ml-1 hover:text-red-300 cursor-pointer"
+                                                    >×</span>
+                                                )}
                                             </button>
                                         ))}
+                                        {showAddTag ? (
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    type="text"
+                                                    value={newTagName}
+                                                    onChange={e => setNewTagName(e.target.value)}
+                                                    onKeyDown={e => e.key === 'Enter' && handleAddCustomTag()}
+                                                    placeholder="Tag name..."
+                                                    className="bg-gray-700 border border-gray-600 rounded-full px-3 py-1 text-xs text-white w-24"
+                                                    autoFocus
+                                                />
+                                                <button onClick={handleAddCustomTag} className="text-green-400 hover:text-green-300 text-sm">✓</button>
+                                                <button onClick={() => { setShowAddTag(false); setNewTagName(''); }} className="text-red-400 hover:text-red-300 text-sm">×</button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAddTag(true)}
+                                                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 border border-dashed border-gray-500"
+                                            >
+                                                + Add Tag
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -844,14 +869,14 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                         <div className="space-y-2">
                             {(data.curriculum || []).length === 0 && <p className="text-gray-500 italic">No videos uploaded yet.</p>}
                             {(data.curriculum || []).map(vid => {
-                                const category = VIDEO_CATEGORIES.find(c => c.id === (vid as any).category);
+                                const tags = vid.category?.split(',') || [];
                                 return (
                                     <div key={vid.id} className="flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700">
                                         <div>
                                             <p className="font-bold text-white text-sm">{vid.title}</p>
                                             <p className="text-xs text-gray-500">
-                                                {data.belts.find(b => b.id === vid.beltId)?.name}
-                                                {category && <span className="ml-2">{category.icon} {category.name}</span>}
+                                                {vid.beltId === 'all' ? '🎯 All Belts' : data.belts.find(b => b.id === vid.beltId)?.name}
+                                                {tags.length > 0 && <span className="ml-2">{tags.map(t => allTags.find(at => at.id === t)?.name || t).join(', ')}</span>}
                                             </p>
                                         </div>
                                         <button onClick={() => onUpdateData({ curriculum: data.curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
