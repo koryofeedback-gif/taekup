@@ -86,12 +86,17 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
     const recommendedTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
     
     const [adoptionRate, setAdoptionRate] = useState(40);
+    
+    // Use the plan's student limit for simulation (not actual student count)
+    // This shows potential earnings at full capacity for each plan
+    const simulatedStudents = selectedTier.limit === Infinity ? 250 : selectedTier.limit;
+    
     const revenue = useMemo(() => {
-        const subscribers = Math.round(totalStudents * (adoptionRate / 100));
+        const subscribers = Math.round(simulatedStudents * (adoptionRate / 100));
         const net = subscribers * COMMISSION_PER_SUBSCRIBER;
         const profit = net - selectedTier.price;
-        return { subscribers, net, profit, commissionPerSub: COMMISSION_PER_SUBSCRIBER };
-    }, [totalStudents, adoptionRate, selectedTier, COMMISSION_PER_SUBSCRIBER]);
+        return { subscribers, net, profit, commissionPerSub: COMMISSION_PER_SUBSCRIBER, baseStudents: simulatedStudents };
+    }, [simulatedStudents, adoptionRate, selectedTier, COMMISSION_PER_SUBSCRIBER]);
 
     return (
         <div className="space-y-8">
@@ -150,7 +155,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                     <div className="grid md:grid-cols-2 gap-10">
                         <div>
                             <label className="block text-sm text-gray-300 mb-4">
-                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your {totalStudents} students subscribe to Premium on <span className="text-cyan-400 font-semibold">{selectedTier.name}</span>...
+                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> students subscribe to Premium on <span className="text-cyan-400 font-semibold">{selectedTier.name}</span>...
                             </label>
                             <input 
                                 type="range" 
