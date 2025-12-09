@@ -94,6 +94,119 @@ export function registerRoutes(app: Express) {
     return res.status(401).json({ valid: false, error: 'Incorrect password' });
   });
 
+  app.post('/api/club/save-wizard-data', async (req: Request, res: Response) => {
+    try {
+      const { clubId, wizardData } = req.body;
+      
+      if (!clubId || !wizardData) {
+        return res.status(400).json({ error: 'Club ID and wizard data are required' });
+      }
+
+      await db.execute(sql`
+        UPDATE clubs 
+        SET wizard_data = ${JSON.stringify(wizardData)}::jsonb,
+            updated_at = NOW()
+        WHERE id = ${clubId}::uuid
+      `);
+
+      await db.execute(sql`
+        INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
+        VALUES (${clubId}::uuid, true, NOW())
+        ON CONFLICT (club_id) DO UPDATE SET wizard_completed = true
+      `);
+
+      console.log('[Wizard] Saved wizard data for club:', clubId);
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Wizard] Save error:', error);
+      return res.status(500).json({ error: 'Failed to save wizard data' });
+    }
+  });
+
+  app.get('/api/club/:clubId/data', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      
+      if (!clubId) {
+        return res.status(400).json({ error: 'Club ID is required' });
+      }
+
+      const clubResult = await db.execute(sql`
+        SELECT id, name, owner_email, owner_name, country, city, art_type, 
+               wizard_data, trial_start, trial_end, trial_status, status
+        FROM clubs WHERE id = ${clubId}::uuid
+      `);
+      const club = (clubResult as any[])[0];
+
+      if (!club) {
+        return res.status(404).json({ error: 'Club not found' });
+      }
+
+      const studentsResult = await db.execute(sql`
+        SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
+               total_xp, current_streak, stripe_count
+        FROM students WHERE club_id = ${clubId}::uuid AND is_active = true
+      `);
+
+      const coachesResult = await db.execute(sql`
+        SELECT id, name, email, location, assigned_classes
+        FROM coaches WHERE club_id = ${clubId}::uuid AND is_active = true
+      `);
+
+      const savedWizardData = club.wizard_data || {};
+      
+      const students = (studentsResult as any[]).map(s => ({
+        id: s.id,
+        name: s.name,
+        parentEmail: s.parent_email,
+        parentName: s.parent_name,
+        parentPhone: s.parent_phone,
+        beltId: s.belt || (savedWizardData.belts?.[0]?.id || 'white'),
+        birthday: s.birthdate,
+        totalXP: s.total_xp || 0,
+        currentStreak: s.current_streak || 0,
+        stripeCount: s.stripe_count || 0,
+        performanceHistory: [],
+        homeDojo: { character: [], chores: [], school: [], health: [] }
+      }));
+
+      const coaches = (coachesResult as any[]).map(c => ({
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        location: c.location || '',
+        assignedClasses: c.assigned_classes || []
+      }));
+
+      const wizardData = {
+        ...savedWizardData,
+        students,
+        coaches,
+        clubName: savedWizardData.clubName || club.name,
+        ownerName: savedWizardData.ownerName || club.owner_name || '',
+        country: savedWizardData.country || club.country || 'US',
+      };
+
+      return res.json({
+        success: true,
+        club: {
+          id: club.id,
+          name: club.name,
+          ownerEmail: club.owner_email,
+          ownerName: club.owner_name,
+          trialStart: club.trial_start,
+          trialEnd: club.trial_end,
+          trialStatus: club.trial_status,
+          status: club.status
+        },
+        wizardData
+      });
+    } catch (error: any) {
+      console.error('[Club Data] Fetch error:', error);
+      return res.status(500).json({ error: 'Failed to fetch club data' });
+    }
+  });
+
   app.post('/api/login', async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;

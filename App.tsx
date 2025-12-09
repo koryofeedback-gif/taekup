@@ -194,6 +194,20 @@ const App: React.FC = () => {
             await Promise.all(studentAddPromises);
         }
 
+        // Save wizard data to database for persistence across logins
+        if (clubId) {
+            try {
+                await fetch('/api/club/save-wizard-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clubId, wizardData: data })
+                });
+                console.log('[Wizard] Saved wizard data to database');
+            } catch (err) {
+                console.error('Failed to save wizard data:', err);
+            }
+        }
+
         const message = await getOnboardingMessage();
         setOnboardingMessage(message);
 
@@ -206,6 +220,9 @@ const App: React.FC = () => {
         // Save login state to localStorage for persistence
         localStorage.setItem('taekup_user_type', 'owner');
         localStorage.setItem('taekup_user_name', data.ownerName);
+        if (clubId) {
+            localStorage.setItem('taekup_club_id', clubId);
+        }
     }, [signupData]);
 
     const handleStudentDataUpdate = useCallback((updatedStudents: Student[]) => {
@@ -229,6 +246,17 @@ const App: React.FC = () => {
                     ...updates,
                 };
                 localStorage.setItem('taekup_wizard_data', JSON.stringify(updated));
+                
+                // Also save to database for persistence across logins
+                const clubId = localStorage.getItem('taekup_club_id');
+                if (clubId) {
+                    fetch('/api/club/save-wizard-data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clubId, wizardData: updated })
+                    }).catch(err => console.error('Failed to save wizard data:', err));
+                }
+                
                 return updated;
             });
         },
@@ -240,7 +268,7 @@ const App: React.FC = () => {
     }, []);
 
     const handleLoginSuccess = useCallback(
-        (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string, userData?: any) => {
+        async (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string, userData?: any) => {
             setLoggedInUserType(userType);
             setLoggedInUserName(userName);
             // Save login state to localStorage
@@ -264,9 +292,23 @@ const App: React.FC = () => {
                     localStorage.setItem('taekup_signup_data', JSON.stringify(newData));
                     return newData;
                 });
+
+                // If wizard is completed, fetch saved data from database
+                if (userData.wizardCompleted && userType === 'owner') {
+                    try {
+                        const response = await fetch(`/api/club/${userData.clubId}/data`);
+                        const data = await response.json();
+                        if (data.success && data.wizardData) {
+                            setFinalWizardData(data.wizardData);
+                            console.log('[Login] Restored wizard data from database');
+                        }
+                    } catch (err) {
+                        console.error('[Login] Failed to fetch wizard data:', err);
+                    }
+                }
             }
         },
-        []
+        [setFinalWizardData]
     );
 
     const handleLogout = useCallback(() => {
