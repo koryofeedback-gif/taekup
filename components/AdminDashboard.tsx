@@ -1007,30 +1007,78 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                 <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 p-6 rounded-lg border border-indigo-500/30">
                     <div className="flex items-start space-x-4">
                         <div className="bg-indigo-600 p-3 rounded-lg text-2xl">💎</div>
-                        <div>
+                        <div className="flex-1">
                             <h3 className="text-xl font-bold text-white mb-1">Club-Sponsored Premium</h3>
                             <p className="text-sm text-gray-300 mb-4">
-                                Give ALL your parents the full Premium experience (Videos, Analytics, Journey) for free.
+                                Unlock Premium for ALL parents and turn it into a <span className="text-green-400 font-bold">new revenue stream</span>.
                             </p>
                             
-                            <div className="bg-indigo-950/50 p-3 rounded border border-indigo-500/30 mb-4 text-sm text-indigo-200">
-                                <p className="font-bold mb-1">✨ The Benefit:</p>
-                                Higher retention, happier parents, and you look like a hero.
-                                <br/><br/>
-                                <p className="font-bold mb-1">💰 The Cost:</p>
-                                We charge you a bulk rate of <span className="text-white font-bold">$1.99 / student</span> (instead of parents paying $4.99).
+                            <div className="bg-indigo-950/50 p-4 rounded border border-indigo-500/30 mb-4">
+                                <p className="font-bold text-green-400 mb-2 text-sm">💡 THE PROFIT PLAY:</p>
+                                <div className="text-sm text-indigo-100 space-y-1 mb-3">
+                                    <p>1. You pay us <span className="text-white font-bold">$1.99/student</span></p>
+                                    <p>2. Add a <span className="text-white font-bold">$5-10 "Tech Fee"</span> to your registration</p>
+                                    <p>3. <span className="text-green-400 font-bold">Keep the difference as profit!</span></p>
+                                </div>
+                                
+                                {totalStudents > 0 && (
+                                    <div className="bg-green-900/30 p-3 rounded border border-green-500/30 mt-3">
+                                        <p className="text-xs text-green-300 uppercase font-bold mb-2">Your Potential (with {totalStudents} students):</p>
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                            <div>
+                                                <p className="text-gray-400">You Pay TaekUp</p>
+                                                <p className="text-white font-bold">${(totalStudents * 1.99).toFixed(2)}/mo</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400">You Charge Parents ($7 fee)</p>
+                                                <p className="text-white font-bold">${(totalStudents * 7).toFixed(2)}/mo</p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 pt-2 border-t border-green-500/30">
+                                            <div className="flex justify-between">
+                                                <span className="text-green-300 font-bold">Your Monthly Profit</span>
+                                                <span className="text-green-400 font-extrabold text-lg">${(totalStudents * 5.01).toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {totalStudents === 0 && (
+                                    <div className="bg-gray-800/50 p-3 rounded border border-gray-600 mt-3">
+                                        <p className="text-xs text-gray-400 uppercase font-bold mb-2">Example with 50 students:</p>
+                                        <div className="grid grid-cols-3 gap-2 text-sm text-center">
+                                            <div>
+                                                <p className="text-gray-500 text-xs">Your Cost</p>
+                                                <p className="text-white font-bold">$99.50</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 text-xs">You Charge</p>
+                                                <p className="text-white font-bold">$350</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 text-xs">Your Profit</p>
+                                                <p className="text-green-400 font-bold">$250.50</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="flex items-center">
-                                <button 
-                                    onClick={() => onUpdateData({ clubSponsoredPremium: !data.clubSponsoredPremium })}
-                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${data.clubSponsoredPremium ? 'bg-indigo-500' : 'bg-gray-600'}`}
-                                >
-                                    <span className={`${data.clubSponsoredPremium ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
-                                </button>
-                                <span className="ml-3 text-sm font-medium text-white">
-                                    {data.clubSponsoredPremium ? 'Enabled' : 'Disabled'}
-                                </span>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <button 
+                                        onClick={() => onUpdateData({ clubSponsoredPremium: !data.clubSponsoredPremium })}
+                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${data.clubSponsoredPremium ? 'bg-green-500' : 'bg-gray-600'}`}
+                                    >
+                                        <span className={`${data.clubSponsoredPremium ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
+                                    </button>
+                                    <span className="ml-3 text-sm font-medium text-white">
+                                        {data.clubSponsoredPremium ? 'Enabled' : 'Disabled'}
+                                    </span>
+                                </div>
+                                {data.clubSponsoredPremium && (
+                                    <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">Profit Mode Active</span>
+                                )}
                             </div>
                         </div>
                     </div>
