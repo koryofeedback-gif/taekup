@@ -181,7 +181,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                 <span>100%</span>
                             </div>
                             <p className="text-xs text-gray-500 mt-3">
-                                {revenue.subscribers} subscriber{revenue.subscribers !== 1 ? 's' : ''} × ${PREMIUM_PRICE}/mo Premium = <span className="text-white font-semibold">${revenue.totalRevenue.toFixed(2)}</span> total revenue
+                                <span className="text-white font-semibold">{revenue.subscribers}</span> Premium subscriber{revenue.subscribers !== 1 ? 's' : ''}
                             </p>
                         </div>
 
@@ -196,7 +196,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                 {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)}
                             </p>
                             <p className="text-xs text-gray-500 mt-2">
-                                ({revenue.subscribers} × ${PREMIUM_PRICE}) - (${TAEKUP_FEE} × {revenue.subscribers} TaekUp fee) - ${selectedTier.price} {selectedTier.name}
+                                After revenue share & {selectedTier.name} cost
                             </p>
                         </div>
                     </div>
