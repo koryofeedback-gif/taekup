@@ -72,14 +72,17 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
     const totalStudents = data.students.length;
     const currentTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
     
-    // Revenue Simulator State
+    // Revenue Simulator State - Premium is $4.99, club owner gets 70%
+    const PREMIUM_PRICE = 4.99;
+    const CLUB_SHARE = 0.70;
+    const COMMISSION_PER_SUBSCRIBER = parseFloat((PREMIUM_PRICE * CLUB_SHARE).toFixed(2)); // $3.49
+    
     const [adoptionRate, setAdoptionRate] = useState(40);
     const revenue = useMemo(() => {
         const subscribers = Math.ceil(totalStudents * (adoptionRate / 100));
-        const gross = subscribers * 4.99;
-        const net = gross * 0.70; // 70% to club
+        const net = subscribers * COMMISSION_PER_SUBSCRIBER; // Use consistent rounded commission
         const profit = net - currentTier.price;
-        return { subscribers, net, profit };
+        return { subscribers, net, profit, commissionPerSub: COMMISSION_PER_SUBSCRIBER };
     }, [totalStudents, adoptionRate, currentTier]);
 
     return (
@@ -156,7 +159,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                 {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)}
                             </p>
                             <p className="text-xs text-gray-500 mt-2">
-                                ({revenue.subscribers} parents × $3.50 commission) - ${currentTier.price} cost
+                                ({revenue.subscribers} parents × ${revenue.commissionPerSub.toFixed(2)} commission) - ${currentTier.price} cost
                             </p>
                         </div>
                     </div>
