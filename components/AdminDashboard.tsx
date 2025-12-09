@@ -693,7 +693,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
 }
 
 const VIDEO_CATEGORIES = [
-    { id: 'forms', name: 'Forms / Poomsae', icon: '🥋' },
+    { id: 'forms', name: 'Forms', icon: '🥋' },
     { id: 'kicks', name: 'Kicks', icon: '🦵' },
     { id: 'self-defense', name: 'Self-Defense', icon: '🛡️' },
     { id: 'sparring', name: 'Sparring', icon: '⚔️' },
@@ -704,8 +704,23 @@ const VIDEO_CATEGORIES = [
 ];
 
 const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
-    const [newVideo, setNewVideo] = useState({ title: '', url: '', beltId: data.belts[0]?.id || '', category: 'forms' });
+    const [newVideo, setNewVideo] = useState({ title: '', url: '', beltId: 'all', categories: ['forms'] as string[] });
     const [connectingBank, setConnectingBank] = useState(false);
+
+    const toggleCategory = (categoryId: string) => {
+        if (categoryId === 'all') {
+            if (newVideo.categories.length === VIDEO_CATEGORIES.length) {
+                setNewVideo({...newVideo, categories: ['forms']});
+            } else {
+                setNewVideo({...newVideo, categories: VIDEO_CATEGORIES.map(c => c.id)});
+            }
+        } else {
+            const updated = newVideo.categories.includes(categoryId)
+                ? newVideo.categories.filter(c => c !== categoryId)
+                : [...newVideo.categories, categoryId];
+            setNewVideo({...newVideo, categories: updated.length > 0 ? updated : ['forms']});
+        }
+    };
 
     const handleAddVideo = () => {
         if(!newVideo.title || !newVideo.url) return;
@@ -714,12 +729,12 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             title: newVideo.title,
             url: newVideo.url,
             beltId: newVideo.beltId,
-            category: newVideo.category,
+            category: newVideo.categories.join(','),
             description: 'Uploaded by Instructor',
             authorName: data.ownerName
         };
         onUpdateData({ curriculum: [...(data.curriculum || []), item] });
-        setNewVideo({ title: '', url: '', beltId: data.belts[0]?.id || '', category: 'forms' });
+        setNewVideo({ title: '', url: '', beltId: 'all', categories: ['forms'] });
     };
 
     const handleConnectBank = async () => {
@@ -774,21 +789,48 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 onChange={e => setNewVideo({...newVideo, url: e.target.value})}
                                 className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
                             />
-                            <div className="grid grid-cols-2 gap-3">
-                                <select 
-                                    value={newVideo.beltId} 
-                                    onChange={e => setNewVideo({...newVideo, beltId: e.target.value})}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
-                                >
-                                    {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                </select>
-                                <select 
-                                    value={newVideo.category} 
-                                    onChange={e => setNewVideo({...newVideo, category: e.target.value})}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
-                                >
-                                    {VIDEO_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-                                </select>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-2">Belt Level</label>
+                                    <select 
+                                        value={newVideo.beltId} 
+                                        onChange={e => setNewVideo({...newVideo, beltId: e.target.value})}
+                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+                                    >
+                                        <option value="all">🎯 All Belts</option>
+                                        {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-2">Categories (select multiple)</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleCategory('all')}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                                newVideo.categories.length === VIDEO_CATEGORIES.length
+                                                    ? 'bg-cyan-500 text-white'
+                                                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                        >
+                                            🎯 All
+                                        </button>
+                                        {VIDEO_CATEGORIES.map(c => (
+                                            <button
+                                                key={c.id}
+                                                type="button"
+                                                onClick={() => toggleCategory(c.id)}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                                    newVideo.categories.includes(c.id)
+                                                        ? 'bg-sky-500 text-white'
+                                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                                }`}
+                                            >
+                                                {c.icon} {c.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                             <button onClick={handleAddVideo} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded">
                                 📤 Publish to App
