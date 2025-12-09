@@ -76,23 +76,22 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
     const CLUB_SHARE = 0.70;
     const COMMISSION_PER_SUBSCRIBER = parseFloat((PREMIUM_PRICE * CLUB_SHARE).toFixed(2)); // $3.49
     
-    // Plan selection for simulator - use saved plan or default to null (no plan)
-    const [selectedPlanIndex, setSelectedPlanIndex] = useState<number | null>(
-        data.selectedPlanIndex !== undefined ? data.selectedPlanIndex : null
+    // Plan selection for simulator - use saved plan or default to first plan (Starter)
+    const [selectedPlanIndex, setSelectedPlanIndex] = useState<number>(
+        data.selectedPlanIndex !== undefined ? data.selectedPlanIndex : 0
     );
-    const selectedTier = selectedPlanIndex !== null ? PRICING_TIERS[selectedPlanIndex] : null;
+    const selectedTier = PRICING_TIERS[selectedPlanIndex];
     
     // For display purposes, show recommended tier based on student count
     const recommendedTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
     
     const [adoptionRate, setAdoptionRate] = useState(40);
     const revenue = useMemo(() => {
-        if (!selectedTier) return { subscribers: 0, net: 0, profit: 0, commissionPerSub: COMMISSION_PER_SUBSCRIBER };
-        const subscribers = Math.ceil(totalStudents * (adoptionRate / 100));
-        const net = subscribers * COMMISSION_PER_SUBSCRIBER; // Use consistent rounded commission
+        const subscribers = Math.round(totalStudents * (adoptionRate / 100));
+        const net = subscribers * COMMISSION_PER_SUBSCRIBER;
         const profit = net - selectedTier.price;
         return { subscribers, net, profit, commissionPerSub: COMMISSION_PER_SUBSCRIBER };
-    }, [totalStudents, adoptionRate, selectedTier]);
+    }, [totalStudents, adoptionRate, selectedTier, COMMISSION_PER_SUBSCRIBER]);
 
     return (
         <div className="space-y-8">
@@ -135,11 +134,10 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                         <div className="bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
                             <span className="text-xs text-gray-500 uppercase block">Your Plan</span>
                             <select 
-                                value={selectedPlanIndex ?? ''} 
-                                onChange={(e) => setSelectedPlanIndex(e.target.value === '' ? null : parseInt(e.target.value))}
+                                value={selectedPlanIndex} 
+                                onChange={(e) => setSelectedPlanIndex(parseInt(e.target.value))}
                                 className="bg-transparent text-white font-bold cursor-pointer focus:outline-none"
                             >
-                                <option value="" className="bg-gray-800">Select Plan...</option>
                                 {PRICING_TIERS.map((tier, idx) => (
                                     <option key={tier.name} value={idx} className="bg-gray-800">
                                         {tier.name} - ${tier.price}/mo
@@ -149,47 +147,43 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                         </div>
                     </div>
 
-                    {selectedTier ? (
-                        <div className="grid md:grid-cols-2 gap-10">
-                            <div>
-                                <label className="block text-sm text-gray-300 mb-4">
-                                    If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your students subscribe to Premium...
-                                </label>
-                                <input 
-                                    type="range" 
-                                    min="0" max="100" 
-                                    value={adoptionRate} 
-                                    onChange={(e) => setAdoptionRate(parseInt(e.target.value))}
-                                    className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                                />
-                                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                                    <span>0%</span>
-                                    <span>50%</span>
-                                    <span>100%</span>
-                                </div>
+                    <div className="grid md:grid-cols-2 gap-10">
+                        <div>
+                            <label className="block text-sm text-gray-300 mb-4">
+                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your {totalStudents} students subscribe to Premium on <span className="text-cyan-400 font-semibold">{selectedTier.name}</span>...
+                            </label>
+                            <input 
+                                type="range" 
+                                min="0" max="100" 
+                                value={adoptionRate} 
+                                onChange={(e) => setAdoptionRate(parseInt(e.target.value))}
+                                className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-2">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
                             </div>
+                            <p className="text-xs text-gray-500 mt-3">
+                                {revenue.subscribers} subscriber{revenue.subscribers !== 1 ? 's' : ''} × ${PREMIUM_PRICE}/mo Premium = ${revenue.net.toFixed(2)} revenue
+                            </p>
+                        </div>
 
-                            <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700 text-center relative overflow-hidden">
-                                {revenue.profit > 0 && (
-                                    <div className="absolute top-0 right-0 bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-bl-lg shadow-lg">
-                                        SOFTWARE IS FREE
-                                    </div>
-                                )}
-                                <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Your Net Monthly Profit</p>
-                                <p className={`text-4xl font-extrabold ${revenue.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    ({revenue.subscribers} parents × ${revenue.commissionPerSub.toFixed(2)} commission) - ${selectedTier.price} cost
-                                </p>
-                            </div>
+                        <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700 text-center relative overflow-hidden">
+                            {revenue.profit > 0 && (
+                                <div className="absolute top-0 right-0 bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-bl-lg shadow-lg">
+                                    SOFTWARE IS FREE
+                                </div>
+                            )}
+                            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Your Net Monthly Profit</p>
+                            <p className={`text-4xl font-extrabold ${revenue.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-2">
+                                ({revenue.subscribers} parents × ${revenue.commissionPerSub.toFixed(2)} commission) - ${selectedTier.price} {selectedTier.name} cost
+                            </p>
                         </div>
-                    ) : (
-                        <div className="bg-gray-900/50 rounded-xl p-8 border border-dashed border-gray-600 text-center">
-                            <p className="text-gray-400 mb-2">Select a plan above to simulate your potential earnings</p>
-                            <p className="text-xs text-gray-500">Based on {totalStudents} students, we recommend the <span className="text-sky-400 font-bold">{recommendedTier.name}</span> plan (${recommendedTier.price}/mo)</p>
-                        </div>
-                    )}
+                    </div>
                 </div>
             )}
         </div>
