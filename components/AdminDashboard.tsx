@@ -460,6 +460,51 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             {activeSubTab === 'general' && (
                 <div className="space-y-6 max-w-2xl">
                     <div>
+                        <label className="block text-sm text-gray-400 mb-2">Club Logo</label>
+                        <div className="flex items-center space-x-4">
+                            {data.logo ? (
+                                <img 
+                                    src={typeof data.logo === 'string' ? data.logo : URL.createObjectURL(data.logo)} 
+                                    alt="Club Logo" 
+                                    className="w-20 h-20 rounded-lg object-cover border border-gray-600"
+                                />
+                            ) : (
+                                <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white font-bold text-2xl">
+                                    {data.clubName?.charAt(0) || 'C'}
+                                </div>
+                            )}
+                            <div className="flex flex-col space-y-2">
+                                <label className="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                                    Upload Logo
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    onUpdateData({ logo: reader.result as string });
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                                {data.logo && (
+                                    <button 
+                                        onClick={() => onUpdateData({ logo: null })}
+                                        className="text-red-400 hover:text-red-300 text-sm"
+                                    >
+                                        Remove Logo
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Recommended: Square image, at least 200x200 pixels</p>
+                    </div>
+                    <div>
                         <label className="block text-sm text-gray-400 mb-1">Club Name</label>
                         <input type="text" value={data.clubName} onChange={e => onUpdateData({ clubName: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white" />
                     </div>
@@ -1137,8 +1182,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             {/* SIDEBAR */}
             <div className="w-64 bg-gray-800 border-r border-gray-700 hidden md:flex flex-col">
                 <div className="p-6 border-b border-gray-700">
-                    <h2 className="text-xl font-black text-white tracking-tight">TAEKUP <span className="text-sky-400 text-xs align-top">ADMIN</span></h2>
-                    <p className="text-gray-500 text-xs mt-1 truncate">{data.clubName}</p>
+                    <div className="flex items-center space-x-3">
+                        {data.logo ? (
+                            <img 
+                                src={typeof data.logo === 'string' ? data.logo : URL.createObjectURL(data.logo)} 
+                                alt="Club Logo" 
+                                className="w-12 h-12 rounded-lg object-cover border border-gray-600"
+                            />
+                        ) : (
+                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white font-bold text-lg">
+                                {data.clubName?.charAt(0) || 'C'}
+                            </div>
+                        )}
+                        <div>
+                            <h2 className="text-lg font-bold text-white tracking-tight truncate max-w-[140px]">{data.clubName}</h2>
+                            <p className="text-sky-400 text-xs">Admin Dashboard</p>
+                        </div>
+                    </div>
                 </div>
                 <div className="flex-1 overflow-y-auto py-4 space-y-1">
                     <SidebarItem icon="📊" label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
