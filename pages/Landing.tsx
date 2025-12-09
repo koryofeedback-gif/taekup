@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SignupForm } from '../components/SignupForm';
 import { SEO } from '../components/SEO';
 import type { SignupData } from '../types';
@@ -11,7 +11,14 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [showSignup, setShowSignup] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('signup') === 'true') {
+            setShowSignup(true);
+        }
+    }, [searchParams]);
 
     const handleSignupSuccess = async (data: SignupData) => {
         await sendWelcomeEmail(data.clubName);
