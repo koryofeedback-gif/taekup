@@ -6,7 +6,7 @@ import type { SignupData, WizardData } from '../types';
 interface LoginPageProps {
     signupData: SignupData | null;
     finalWizardData: WizardData | null;
-    onLoginSuccess: (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string, userData?: any) => void;
+    onLoginSuccess: (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string, userData?: any) => Promise<void> | void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardData, onLoginSuccess }) => {
@@ -46,16 +46,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             const user = data.user;
             const userType = user.role === 'owner' ? 'owner' : user.role === 'coach' ? 'coach' : 'parent';
             
-            onLoginSuccess(userType, user.name || user.clubName, undefined, user);
+            // Wait for onLoginSuccess to complete (it fetches wizard data for returning owners)
+            await onLoginSuccess(userType, user.name || user.clubName, undefined, user);
             
+            // Navigate based on user type after data is loaded
             if (userType === 'owner' && !user.wizardCompleted) {
                 navigate('/wizard');
             } else if (userType === 'owner') {
                 navigate('/app/admin');
             } else if (userType === 'coach') {
                 navigate('/app/coach');
+            } else if (userType === 'parent' && user.studentId) {
+                navigate(`/app/parent/${user.studentId}`);
             } else {
-                navigate('/app/parent');
+                navigate('/app');
             }
 
         } catch (err: any) {
