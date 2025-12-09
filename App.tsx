@@ -107,6 +107,7 @@ const App: React.FC = () => {
         return localStorage.getItem('taekup_student_id');
     });
     const [showPricing, setShowPricing] = useState(false);
+    const [isLoadingData, setIsLoadingData] = useState(false);
 
     const setSignupData = useCallback((data: SignupData | null) => {
         setSignupDataState(data);
@@ -269,6 +270,7 @@ const App: React.FC = () => {
 
     const handleLoginSuccess = useCallback(
         async (userType: 'owner' | 'coach' | 'parent', userName: string, studentId?: string, userData?: any) => {
+            setIsLoadingData(true);
             setLoggedInUserType(userType);
             setLoggedInUserName(userName);
             // Save login state to localStorage
@@ -321,6 +323,7 @@ const App: React.FC = () => {
                     }
                 }
             }
+            setIsLoadingData(false);
         },
         [setFinalWizardData]
     );
@@ -360,6 +363,7 @@ const App: React.FC = () => {
                 onSelectPlan={handleSelectPlan}
                 onShowPricing={() => setShowPricing(true)}
                 onHidePricing={() => setShowPricing(false)}
+                isLoadingData={isLoadingData}
             />
         </BrowserRouter>
     );
@@ -385,6 +389,7 @@ interface AppContentProps {
     onSelectPlan: (planId: SubscriptionPlanId) => void;
     onShowPricing: () => void;
     onHidePricing: () => void;
+    isLoadingData: boolean;
 }
 
 const AppContent: React.FC<AppContentProps> = ({
@@ -407,6 +412,7 @@ const AppContent: React.FC<AppContentProps> = ({
     onSelectPlan,
     onShowPricing,
     onHidePricing,
+    isLoadingData,
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -582,6 +588,13 @@ const AppContent: React.FC<AppContentProps> = ({
                                     onUpdateData={onWizardDataUpdate}
                                     onViewStudentPortal={onViewStudentPortal}
                                 />
+                            ) : isLoadingData || loggedInUserType === 'owner' ? (
+                                <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+                                    <div className="text-center">
+                                        <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                        <p className="text-gray-400">Loading your dashboard...</p>
+                                    </div>
+                                </div>
                             ) : (
                                 <Navigate to="/login" replace />
                             )

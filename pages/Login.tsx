@@ -53,17 +53,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             const hasLocalWizardData = !!localStorage.getItem('taekup_wizard_data');
             const wizardCompleted = user.wizardCompleted || hasLocalWizardData;
             
-            // Navigate based on user type after data is loaded
+            // Use full page reload to ensure React reads fresh localStorage data
+            // This avoids race conditions with React state updates
             if (userType === 'owner' && !wizardCompleted) {
-                navigate('/wizard');
+                window.location.href = '/wizard';
             } else if (userType === 'owner') {
-                navigate('/app/admin');
+                window.location.href = '/app/admin';
             } else if (userType === 'coach') {
-                navigate('/app/coach');
+                window.location.href = '/app/coach';
             } else if (userType === 'parent' && user.studentId) {
-                navigate(`/app/parent/${user.studentId}`);
+                window.location.href = `/app/parent/${user.studentId}`;
             } else {
-                navigate('/app');
+                window.location.href = '/app';
             }
 
         } catch (err: any) {
