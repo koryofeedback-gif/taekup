@@ -293,19 +293,31 @@ const App: React.FC = () => {
                     return newData;
                 });
 
-                // If wizard is completed, fetch saved data from database
-                if (userData.wizardCompleted && userType === 'owner') {
+                // For owners, try to fetch wizard data from database OR use localStorage fallback
+                if (userType === 'owner') {
                     try {
                         const response = await fetch(`/api/club/${userData.clubId}/data`);
                         const data = await response.json();
                         if (data.success && data.wizardData) {
                             setFinalWizardData(data.wizardData);
-                            // Also cache to localStorage to prevent race conditions on navigation
                             localStorage.setItem('taekup_wizard_data', JSON.stringify(data.wizardData));
                             console.log('[Login] Restored wizard data from database');
+                        } else {
+                            // Fallback to localStorage if database doesn't have wizard data
+                            const localData = localStorage.getItem('taekup_wizard_data');
+                            if (localData) {
+                                setFinalWizardData(JSON.parse(localData));
+                                console.log('[Login] Using localStorage wizard data as fallback');
+                            }
                         }
                     } catch (err) {
                         console.error('[Login] Failed to fetch wizard data:', err);
+                        // Fallback to localStorage on error
+                        const localData = localStorage.getItem('taekup_wizard_data');
+                        if (localData) {
+                            setFinalWizardData(JSON.parse(localData));
+                            console.log('[Login] Using localStorage wizard data after fetch error');
+                        }
                     }
                 }
             }
