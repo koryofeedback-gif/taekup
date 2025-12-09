@@ -15,10 +15,11 @@ interface AdminDashboardProps {
 // --- PRICING CONSTANTS ---
 // STRATEGY: Undercut Kicksite ($49/$99/$149/$199) at every level
 const PRICING_TIERS = [
-    { name: 'Starter', limit: 25, price: 24.99 }, // Kicksite is $49
-    { name: 'Standard', limit: 75, price: 59.00 }, // Kicksite is $99 (for 50)
-    { name: 'Growth', limit: 150, price: 129.00 }, // Kicksite is $199 (for 101+)
-    { name: 'Empire', limit: Infinity, price: 199.00 }, // Kicksite requires demo/custom
+    { name: 'Starter', limit: 25, price: 24.99 },
+    { name: 'Pro', limit: 50, price: 39.99 },
+    { name: 'Standard', limit: 80, price: 69.00 },
+    { name: 'Growth', limit: 150, price: 129.00 },
+    { name: 'Empire', limit: Infinity, price: 199.00 },
 ];
 
 // --- HELPER COMPONENTS ---
@@ -71,10 +72,11 @@ const Modal: React.FC<{ children: React.ReactNode; onClose: () => void; title: s
 const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void, onOpenModal: (type: string) => void }> = ({ data, onNavigate, onOpenModal }) => {
     const totalStudents = data.students.length;
     
-    // Revenue Simulator State - Premium is $4.99, club owner gets 70%
+    // Revenue Simulator State - Premium is $4.99, club owner gets 70%, TaekUp gets 30%
     const PREMIUM_PRICE = 4.99;
     const CLUB_SHARE = 0.70;
-    const COMMISSION_PER_SUBSCRIBER = parseFloat((PREMIUM_PRICE * CLUB_SHARE).toFixed(2)); // $3.49
+    const TAEKUP_FEE = parseFloat((PREMIUM_PRICE * 0.30).toFixed(2)); // $1.50
+    const CLUB_COMMISSION = parseFloat((PREMIUM_PRICE * CLUB_SHARE).toFixed(2)); // $3.49
     
     // Plan selection for simulator - use saved plan or default to first plan (Starter)
     const [selectedPlanIndex, setSelectedPlanIndex] = useState<number>(
@@ -93,10 +95,19 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
     
     const revenue = useMemo(() => {
         const subscribers = Math.round(simulatedStudents * (adoptionRate / 100));
-        const net = subscribers * COMMISSION_PER_SUBSCRIBER;
-        const profit = net - selectedTier.price;
-        return { subscribers, net, profit, commissionPerSub: COMMISSION_PER_SUBSCRIBER, baseStudents: simulatedStudents };
-    }, [simulatedStudents, adoptionRate, selectedTier, COMMISSION_PER_SUBSCRIBER]);
+        const totalRevenue = subscribers * PREMIUM_PRICE; // Total collected from parents
+        const taekupCut = subscribers * TAEKUP_FEE; // TaekUp's 30% share
+        const clubRevenue = subscribers * CLUB_COMMISSION; // Club's 70% share
+        const profit = clubRevenue - selectedTier.price; // Net after plan cost
+        return { 
+            subscribers, 
+            totalRevenue, 
+            taekupCut, 
+            clubRevenue, 
+            profit,
+            baseStudents: simulatedStudents 
+        };
+    }, [simulatedStudents, adoptionRate, selectedTier, PREMIUM_PRICE, TAEKUP_FEE, CLUB_COMMISSION]);
 
     return (
         <div className="space-y-8">
@@ -170,7 +181,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                 <span>100%</span>
                             </div>
                             <p className="text-xs text-gray-500 mt-3">
-                                {revenue.subscribers} subscriber{revenue.subscribers !== 1 ? 's' : ''} × ${PREMIUM_PRICE}/mo Premium = ${revenue.net.toFixed(2)} revenue
+                                {revenue.subscribers} subscriber{revenue.subscribers !== 1 ? 's' : ''} × ${PREMIUM_PRICE}/mo Premium = <span className="text-white font-semibold">${revenue.totalRevenue.toFixed(2)}</span> total revenue
                             </p>
                         </div>
 
@@ -185,7 +196,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                 {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)}
                             </p>
                             <p className="text-xs text-gray-500 mt-2">
-                                ({revenue.subscribers} parents × ${revenue.commissionPerSub.toFixed(2)} commission) - ${selectedTier.price} {selectedTier.name} cost
+                                ({revenue.subscribers} × ${PREMIUM_PRICE}) - (${TAEKUP_FEE} × {revenue.subscribers} TaekUp fee) - ${selectedTier.price} {selectedTier.name}
                             </p>
                         </div>
                     </div>
