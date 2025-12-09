@@ -2472,6 +2472,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <button onClick={onBack} className="underline text-yellow-100 hover:text-white">Close</button>
             </div>
 
+            {/* Club Sponsored Premium Badge - Always Visible */}
+            {data.clubSponsoredPremium && (
+                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 text-white text-xs font-bold text-center py-2 px-4 flex items-center justify-center space-x-2 shadow-lg">
+                    <span className="text-base">💎</span>
+                    <span>Premium Included by <span className="font-extrabold">{data.clubName}</span></span>
+                    <span className="bg-white/20 text-[10px] px-2 py-0.5 rounded-full">FREE</span>
+                </div>
+            )}
+
             {/* Main Content */}
             <div className="p-4 overflow-y-auto h-[calc(100vh-60px)] no-scrollbar">
                 {activeTab === 'home' && renderHome()}

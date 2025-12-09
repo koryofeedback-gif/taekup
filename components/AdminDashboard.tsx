@@ -1009,8 +1009,11 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="bg-indigo-600 p-3 rounded-lg text-2xl">💎</div>
                         <div className="flex-1">
                             <h3 className="text-xl font-bold text-white mb-1">Club-Sponsored Premium</h3>
-                            <p className="text-sm text-gray-300 mb-4">
+                            <p className="text-sm text-gray-300 mb-2">
                                 Unlock Premium for ALL parents and turn it into a <span className="text-green-400 font-bold">new revenue stream</span>.
+                            </p>
+                            <p className="text-xs text-indigo-300 mb-4">
+                                Parents see: "💎 Premium Included by {data.clubName} - FREE"
                             </p>
                             
                             <div className="bg-indigo-950/50 p-4 rounded border border-indigo-500/30 mb-4">
