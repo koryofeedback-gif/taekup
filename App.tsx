@@ -442,6 +442,7 @@ const AppContent: React.FC<AppContentProps> = ({
             {!isDojangTV && !isMyTaekHome && (
                 <Header
                     isLoggedIn={!!loggedInUserType}
+                    userType={loggedInUserType}
                     onLogout={onLogout}
                 />
             )}
@@ -920,16 +921,25 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
 // Header Component
 interface HeaderProps {
     isLoggedIn: boolean;
+    userType?: 'owner' | 'coach' | 'parent' | null;
     onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ isLoggedIn, userType, onLogout }) => {
+    const getLogoDestination = () => {
+        if (!isLoggedIn) return '/login';
+        if (userType === 'owner') return '/app/admin';
+        if (userType === 'coach') return '/app/coach';
+        if (userType === 'parent') return '/app';
+        return '/app';
+    };
+
     return (
         <header className="bg-gray-900/80 backdrop-blur-sm sticky top-0 z-40 border-b border-gray-800">
             <div className="w-full px-6 py-3 flex justify-between items-center">
                 <div>
                     <Link
-                        to="/"
+                        to={getLogoDestination()}
                         className="flex hover:scale-105 transition-transform cursor-pointer"
                     >
                         <img src="/taekup-logo.png" alt="TaekUp" style={{ height: '70px' }} />
