@@ -22,6 +22,7 @@ export const clubs = pgTable('clubs', {
   trialStatus: trialStatusEnum('trial_status').default('active'),
   status: clubStatusEnum('status').default('active'),
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+  stripeConnectAccountId: varchar('stripe_connect_account_id', { length: 255 }),
   wizardData: jsonb('wizard_data'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),

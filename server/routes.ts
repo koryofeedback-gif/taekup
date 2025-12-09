@@ -235,6 +235,97 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.post('/api/stripe-connect/onboard', async (req: Request, res: Response) => {
+    try {
+      const { clubId, email, clubName } = req.body;
+      
+      if (!clubId) {
+        return res.status(400).json({ error: 'Club ID is required' });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const appUrl = process.env.APP_URL || 'https://mytaek.com';
+
+      const clubResult = await db.execute(sql`
+        SELECT stripe_connect_account_id, owner_email, name FROM clubs WHERE id = ${clubId}
+      `);
+      const club = (clubResult as any[])[0];
+      
+      if (!club) {
+        return res.status(404).json({ error: 'Club not found' });
+      }
+
+      const ownerEmail = email || club.owner_email;
+      const ownerClubName = clubName || club.name;
+      
+      if (!ownerEmail) {
+        return res.status(400).json({ error: 'Email is required for bank connection' });
+      }
+      
+      let accountId = club?.stripe_connect_account_id;
+
+      if (!accountId) {
+        const account = await stripe.accounts.create({
+          type: 'express',
+          email: ownerEmail,
+          business_profile: {
+            name: ownerClubName || 'Martial Arts Club',
+            product_description: 'Martial arts training and curriculum videos'
+          },
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+        });
+        accountId = account.id;
+
+        await db.execute(sql`
+          UPDATE clubs SET stripe_connect_account_id = ${accountId} WHERE id = ${clubId}
+        `);
+      }
+
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: `${appUrl}/app/admin?tab=creator&connect=refresh`,
+        return_url: `${appUrl}/app/admin?tab=creator&connect=success`,
+        type: 'account_onboarding',
+      });
+
+      res.json({ url: accountLink.url });
+    } catch (error: any) {
+      console.error('Stripe Connect onboarding error:', error);
+      res.status(500).json({ error: 'Failed to create bank connection link' });
+    }
+  });
+
+  app.get('/api/stripe-connect/status/:clubId', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      
+      const clubResult = await db.execute(sql`
+        SELECT stripe_connect_account_id FROM clubs WHERE id = ${clubId}
+      `);
+      const club = (clubResult as any[])[0];
+      
+      if (!club?.stripe_connect_account_id) {
+        return res.json({ connected: false, chargesEnabled: false, payoutsEnabled: false });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const account = await stripe.accounts.retrieve(club.stripe_connect_account_id);
+      
+      res.json({
+        connected: true,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted
+      });
+    } catch (error: any) {
+      console.error('Stripe Connect status error:', error);
+      res.status(500).json({ error: 'Failed to get connect status' });
+    }
+  });
+
   app.get('/api/products', async (req: Request, res: Response) => {
     try {
       const products = await storage.listProducts();

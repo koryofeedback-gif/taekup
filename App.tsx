@@ -251,6 +251,8 @@ const App: React.FC = () => {
                 localStorage.setItem('taekup_student_id', studentId);
             }
             if (userData?.clubId) {
+                // Store clubId directly for reliable access
+                localStorage.setItem('taekup_club_id', userData.clubId);
                 setSignupDataState(prev => {
                     const newData = {
                         clubName: prev?.clubName || userData.clubName || '',
@@ -723,6 +725,13 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
     
     // Use clubId from props, or fall back to localStorage (for impersonation)
     const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
+    
+    // Persist clubId to localStorage for use after page refresh
+    React.useEffect(() => {
+        if (effectiveClubId) {
+            localStorage.setItem('taekup_club_id', effectiveClubId);
+        }
+    }, [effectiveClubId]);
     
     const handleNavigate = (view: 'coach-dashboard' | 'admin-dashboard' | 'parent-portal' | 'dojang-tv') => {
         switch (view) {

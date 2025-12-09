@@ -58,6 +58,7 @@ export interface CurriculumItem {
     duration?: string;
     authorId?: string; // New: Track who created the content
     authorName?: string; // New: Display name of creator
+    category?: string; // Video category (forms, kicks, self-defense, etc.)
 }
 
 export interface ScheduleItem {
@@ -253,6 +254,7 @@ export interface SubscriptionStatus {
 export interface WizardData {
   clubName: string;
   ownerName: string;
+  ownerEmail?: string; // Owner's email for Stripe Connect etc.
   country: string;
   language: string; // New field for App/AI Language
   city: string;

@@ -607,8 +607,20 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     );
 }
 
-const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void }> = ({ data, onUpdateData }) => {
-    const [newVideo, setNewVideo] = useState({ title: '', url: '', beltId: data.belts[0]?.id || '' });
+const VIDEO_CATEGORIES = [
+    { id: 'forms', name: 'Forms / Poomsae', icon: '🥋' },
+    { id: 'kicks', name: 'Kicks', icon: '🦵' },
+    { id: 'self-defense', name: 'Self-Defense', icon: '🛡️' },
+    { id: 'sparring', name: 'Sparring', icon: '⚔️' },
+    { id: 'conditioning', name: 'Conditioning', icon: '💪' },
+    { id: 'breaking', name: 'Breaking', icon: '🧱' },
+    { id: 'basics', name: 'Basics', icon: '📚' },
+    { id: 'stretching', name: 'Stretching', icon: '🧘' },
+];
+
+const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
+    const [newVideo, setNewVideo] = useState({ title: '', url: '', beltId: data.belts[0]?.id || '', category: 'forms' });
+    const [connectingBank, setConnectingBank] = useState(false);
 
     const handleAddVideo = () => {
         if(!newVideo.title || !newVideo.url) return;
@@ -617,11 +629,40 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             title: newVideo.title,
             url: newVideo.url,
             beltId: newVideo.beltId,
+            category: newVideo.category,
             description: 'Uploaded by Instructor',
             authorName: data.ownerName
         };
         onUpdateData({ curriculum: [...(data.curriculum || []), item] });
-        setNewVideo({ title: '', url: '', beltId: data.belts[0]?.id || '' });
+        setNewVideo({ title: '', url: '', beltId: data.belts[0]?.id || '', category: 'forms' });
+    };
+
+    const handleConnectBank = async () => {
+        setConnectingBank(true);
+        try {
+            const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId');
+            if (!effectiveClubId) {
+                alert('Club not found. Please log in again.');
+                setConnectingBank(false);
+                return;
+            }
+            const response = await fetch('/api/stripe-connect/onboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId: effectiveClubId })
+            });
+            const result = await response.json();
+            if (result.url) {
+                window.location.href = result.url;
+            } else {
+                alert(result.error || 'Failed to create bank connection link. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error connecting bank:', error);
+            alert('Error connecting bank account. Please try again.');
+        } finally {
+            setConnectingBank(false);
+        }
     };
 
     return (
@@ -648,13 +689,22 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 onChange={e => setNewVideo({...newVideo, url: e.target.value})}
                                 className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
                             />
-                            <select 
-                                value={newVideo.beltId} 
-                                onChange={e => setNewVideo({...newVideo, beltId: e.target.value})}
-                                className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
-                            >
-                                {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
+                            <div className="grid grid-cols-2 gap-3">
+                                <select 
+                                    value={newVideo.beltId} 
+                                    onChange={e => setNewVideo({...newVideo, beltId: e.target.value})}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+                                >
+                                    {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                </select>
+                                <select 
+                                    value={newVideo.category} 
+                                    onChange={e => setNewVideo({...newVideo, category: e.target.value})}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+                                >
+                                    {VIDEO_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                                </select>
+                            </div>
                             <button onClick={handleAddVideo} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded">
                                 📤 Publish to App
                             </button>
@@ -666,15 +716,21 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                         <h3 className="font-bold text-white mb-4">Video Library</h3>
                         <div className="space-y-2">
                             {(data.curriculum || []).length === 0 && <p className="text-gray-500 italic">No videos uploaded yet.</p>}
-                            {(data.curriculum || []).map(vid => (
-                                <div key={vid.id} className="flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700">
-                                    <div>
-                                        <p className="font-bold text-white text-sm">{vid.title}</p>
-                                        <p className="text-xs text-gray-500">{data.belts.find(b => b.id === vid.beltId)?.name}</p>
+                            {(data.curriculum || []).map(vid => {
+                                const category = VIDEO_CATEGORIES.find(c => c.id === (vid as any).category);
+                                return (
+                                    <div key={vid.id} className="flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700">
+                                        <div>
+                                            <p className="font-bold text-white text-sm">{vid.title}</p>
+                                            <p className="text-xs text-gray-500">
+                                                {data.belts.find(b => b.id === vid.beltId)?.name}
+                                                {category && <span className="ml-2">{category.icon} {category.name}</span>}
+                                            </p>
+                                        </div>
+                                        <button onClick={() => onUpdateData({ curriculum: data.curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
                                     </div>
-                                    <button onClick={() => onUpdateData({ curriculum: data.curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -704,8 +760,12 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 </div>
                             </div>
 
-                            <button className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded text-sm">
-                                Connect Bank Account
+                            <button 
+                                onClick={handleConnectBank}
+                                disabled={connectingBank}
+                                className="w-full bg-sky-500 hover:bg-sky-400 disabled:bg-gray-600 text-white font-bold py-2 rounded text-sm"
+                            >
+                                {connectingBank ? 'Connecting...' : 'Connect Bank Account'}
                             </button>
                             <p className="text-[10px] text-gray-500 text-center">Secure payouts via Stripe Connect</p>
                         </div>
@@ -1110,7 +1170,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} />}
                     {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
                     {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
-                    {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} />}
+                    {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} />}
                     {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} />}
                 </div>
