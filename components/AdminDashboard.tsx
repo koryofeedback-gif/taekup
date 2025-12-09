@@ -899,6 +899,32 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const bulkCost = data.clubSponsoredPremium ? (totalStudents * 1.99) : 0;
     const totalBill = currentTier.price + bulkCost;
 
+    const getSubscriptionStatus = () => {
+        const savedSignup = localStorage.getItem('taekup_signup_data');
+        let trialStartDate: string | null = null;
+        if (savedSignup) {
+            try {
+                const parsed = JSON.parse(savedSignup);
+                trialStartDate = parsed.trialStartDate;
+            } catch (e) {}
+        }
+        
+        if (!trialStartDate) return { status: 'trial', label: 'Trial', color: 'bg-yellow-600 text-yellow-100', daysLeft: 14 };
+        
+        const trialStart = new Date(trialStartDate);
+        const now = new Date();
+        const trialEndDate = new Date(trialStart.getTime() + 14 * 24 * 60 * 60 * 1000);
+        const daysLeft = Math.ceil((trialEndDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+        
+        if (daysLeft > 0) {
+            return { status: 'trial', label: `Trial (${daysLeft} days left)`, color: 'bg-yellow-600 text-yellow-100', daysLeft };
+        } else {
+            return { status: 'expired', label: 'Trial Expired', color: 'bg-red-600 text-red-100', daysLeft: 0 };
+        }
+    };
+
+    const subscriptionStatus = getSubscriptionStatus();
+
     const handleConnectBank = async () => {
         setConnectingBank(true);
         try {
@@ -939,7 +965,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                             <p className="text-sm text-gray-400 uppercase">Current Plan</p>
                             <h3 className="text-2xl font-bold text-white">{currentTier.name}</h3>
                         </div>
-                        <span className="bg-blue-900 text-blue-200 px-3 py-1 rounded-full text-xs font-bold">Active</span>
+                        <span className={`${subscriptionStatus.color} px-3 py-1 rounded-full text-xs font-bold`}>{subscriptionStatus.label}</span>
                     </div>
                     
                     <div className="space-y-4 mb-6">
