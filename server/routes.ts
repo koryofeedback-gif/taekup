@@ -154,6 +154,16 @@ export function registerRoutes(app: Express) {
       `);
 
       const savedWizardData = club.wizard_data || {};
+      const savedBelts = savedWizardData.belts || [];
+      
+      const getBeltIdFromName = (beltName: string): string => {
+        if (!beltName) return savedBelts[0]?.id || 'white';
+        const matchedBelt = savedBelts.find((b: any) => 
+          b.name?.toLowerCase() === beltName.toLowerCase() ||
+          b.id?.toLowerCase() === beltName.toLowerCase()
+        );
+        return matchedBelt?.id || savedBelts[0]?.id || 'white';
+      };
       
       const students = (studentsResult as any[]).map(s => ({
         id: s.id,
@@ -161,7 +171,7 @@ export function registerRoutes(app: Express) {
         parentEmail: s.parent_email,
         parentName: s.parent_name,
         parentPhone: s.parent_phone,
-        beltId: s.belt || (savedWizardData.belts?.[0]?.id || 'white'),
+        beltId: getBeltIdFromName(s.belt),
         birthday: s.birthdate,
         totalXP: s.total_xp || 0,
         currentStreak: s.current_streak || 0,
