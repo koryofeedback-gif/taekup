@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import { SetupWizard } from './components/SetupWizard';
 import { TaekBot, TaekBotColorScheme } from './components/TaekBot';
 import { CoachDashboard } from './components/CoachDashboard';
@@ -739,10 +739,15 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     onLogout,
     onUpdateStudents,
 }) => {
+    const { studentId: urlStudentId } = useParams<{ studentId: string }>();
+    const navigate = useNavigate();
+    
     let studentToShow: Student | undefined;
 
-    if (parentStudentId) {
-        studentToShow = data.students.find(s => s.id === parentStudentId);
+    const effectiveStudentId = urlStudentId || parentStudentId;
+    
+    if (effectiveStudentId) {
+        studentToShow = data.students.find(s => s.id === effectiveStudentId);
     } else {
         studentToShow = data.students[0];
     }
@@ -758,13 +763,21 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
         onUpdateStudents(updatedStudents);
     };
 
+    const handleBack = () => {
+        if (loggedInUserType === 'owner') {
+            navigate('/app/admin');
+        } else {
+            onLogout();
+        }
+    };
+
     return (
         <>
             <SEO title={`Parent Portal - ${studentToShow.name} | TaekUp`} />
             <ParentPortal
                 student={studentToShow}
                 data={data}
-                onBack={loggedInUserType === 'owner' ? () => window.history.back() : onLogout}
+                onBack={handleBack}
                 onUpdateStudent={handleUpdateStudent}
             />
         </>
