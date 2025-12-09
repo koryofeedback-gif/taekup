@@ -364,6 +364,13 @@ Full-screen display mode for lobby/waiting areas:
   - MRR Goals: Set monthly revenue targets and track progress
   - Automations: Configure health score triggers, trial reminders, alerts
 - Added 8 new database tables for analytics features
+- **Wizard Data Persistence** (December 9, 2025):
+  - POST /api/club/save-wizard-data - saves full wizard data to database
+  - GET /api/club/:clubId/data - fetches club data with wizard config, students, coaches
+  - Automatic data restoration on login when wizardCompleted=true
+  - Belt ID translation for proper rehydration (belt name → belt ID lookup)
+- Added video category tags to Creator Hub (Forms, Sparring, Self-Defense, etc.)
+- Implemented Stripe Connect Express for Club Wallet bank account linking
 - Created automation service for scheduled email triggers
 
 ---
