@@ -300,6 +300,8 @@ const App: React.FC = () => {
                         const data = await response.json();
                         if (data.success && data.wizardData) {
                             setFinalWizardData(data.wizardData);
+                            // Also cache to localStorage to prevent race conditions on navigation
+                            localStorage.setItem('taekup_wizard_data', JSON.stringify(data.wizardData));
                             console.log('[Login] Restored wizard data from database');
                         }
                     } catch (err) {
@@ -315,10 +317,11 @@ const App: React.FC = () => {
         setLoggedInUserType(null);
         setLoggedInUserName(null);
         setParentStudentId(null);
-        // Clear login state from localStorage
+        // Clear login state from localStorage but keep wizard data for re-login
         localStorage.removeItem('taekup_user_type');
         localStorage.removeItem('taekup_user_name');
         localStorage.removeItem('taekup_student_id');
+        // Note: We keep taekup_wizard_data and taekup_signup_data so data persists across logout/login
         // Redirect to login page
         window.location.href = '/login';
     }, []);

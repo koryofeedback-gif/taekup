@@ -49,8 +49,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             // Wait for onLoginSuccess to complete (it fetches wizard data for returning owners)
             await onLoginSuccess(userType, user.name || user.clubName, undefined, user);
             
+            // Check if wizard data exists in localStorage as fallback
+            const hasLocalWizardData = !!localStorage.getItem('taekup_wizard_data');
+            const wizardCompleted = user.wizardCompleted || hasLocalWizardData;
+            
             // Navigate based on user type after data is loaded
-            if (userType === 'owner' && !user.wizardCompleted) {
+            if (userType === 'owner' && !wizardCompleted) {
                 navigate('/wizard');
             } else if (userType === 'owner') {
                 navigate('/app/admin');
