@@ -886,58 +886,50 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                         </div>
                     </div>
                 </div>
-
-                {/* Right: Wallet */}
-                <div>
-                    <div className="bg-gradient-to-b from-yellow-900/20 to-gray-800 p-6 rounded-xl border border-yellow-600/30 sticky top-6">
-                        <div className="flex items-center mb-4">
-                            <span className="text-3xl mr-2">💰</span>
-                            <h3 className="font-bold text-white text-lg">Club Wallet</h3>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
-                                <p className="text-xs text-gray-500 uppercase">Available Payout</p>
-                                <p className="text-3xl font-bold text-green-400">$0.00</p>
-                            </div>
-                            
-                            <div className="text-sm text-gray-300 space-y-2 border-t border-gray-700 pt-4">
-                                <div className="flex justify-between">
-                                    <span>Active Subscribers</span>
-                                    <span className="font-bold text-white">0</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Commission Rate</span>
-                                    <span className="font-bold text-green-400">70%</span>
-                                </div>
-                            </div>
-
-                            <button 
-                                onClick={handleConnectBank}
-                                disabled={connectingBank}
-                                className="w-full bg-sky-500 hover:bg-sky-400 disabled:bg-gray-600 text-white font-bold py-2 rounded text-sm"
-                            >
-                                {connectingBank ? 'Connecting...' : 'Connect Bank Account'}
-                            </button>
-                            <p className="text-[10px] text-gray-500 text-center">Secure payouts via Stripe Connect</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     );
 }
 
-const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void }> = ({ data, onUpdateData }) => {
+const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
     const totalStudents = data.students.length;
     const currentTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
+    const [connectingBank, setConnectingBank] = useState(false);
     
     const bulkCost = data.clubSponsoredPremium ? (totalStudents * 1.99) : 0;
     const totalBill = currentTier.price + bulkCost;
 
+    const handleConnectBank = async () => {
+        setConnectingBank(true);
+        try {
+            const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId');
+            if (!effectiveClubId) {
+                alert('Club not found. Please log in again.');
+                setConnectingBank(false);
+                return;
+            }
+            const response = await fetch('/api/stripe-connect/onboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId: effectiveClubId })
+            });
+            const result = await response.json();
+            if (result.url) {
+                window.location.href = result.url;
+            } else {
+                alert(result.error || 'Failed to create bank connection link. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error connecting bank:', error);
+            alert('Error connecting bank account. Please try again.');
+        } finally {
+            setConnectingBank(false);
+        }
+    };
+
     return (
         <div>
-            <SectionHeader title="Billing & Subscription" description="Manage your TaekUp plan and features." />
+            <SectionHeader title="Billing & Subscription" description="Manage your TaekUp plan and payouts." />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Current Plan Card */}
@@ -1014,6 +1006,50 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                     {data.clubSponsoredPremium ? 'Enabled' : 'Disabled'}
                                 </span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Club Wallet */}
+            <div className="mt-8">
+                <div className="bg-gradient-to-b from-yellow-900/20 to-gray-800 p-6 rounded-xl border border-yellow-600/30">
+                    <div className="flex items-center mb-4">
+                        <span className="text-3xl mr-2">💰</span>
+                        <div>
+                            <h3 className="font-bold text-white text-lg">Club Wallet</h3>
+                            <p className="text-sm text-gray-400">Your earnings from Premium parent subscriptions</p>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
+                            <p className="text-xs text-gray-500 uppercase">Available Payout</p>
+                            <p className="text-3xl font-bold text-green-400">$0.00</p>
+                        </div>
+                        
+                        <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                            <div className="text-sm text-gray-300 space-y-2">
+                                <div className="flex justify-between">
+                                    <span>Active Subscribers</span>
+                                    <span className="font-bold text-white">0</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Your Commission</span>
+                                    <span className="font-bold text-green-400">70%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col justify-center">
+                            <button 
+                                onClick={handleConnectBank}
+                                disabled={connectingBank}
+                                className="w-full bg-sky-500 hover:bg-sky-400 disabled:bg-gray-600 text-white font-bold py-3 rounded text-sm"
+                            >
+                                {connectingBank ? 'Connecting...' : 'Connect Bank Account'}
+                            </button>
+                            <p className="text-[10px] text-gray-500 text-center mt-2">Secure payouts via Stripe Connect</p>
                         </div>
                     </div>
                 </div>
@@ -1339,7 +1375,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
                     {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} />}
-                    {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} />}
+                    {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                 </div>
             </div>
 
