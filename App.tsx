@@ -319,6 +319,8 @@ const App: React.FC = () => {
         localStorage.removeItem('taekup_user_type');
         localStorage.removeItem('taekup_user_name');
         localStorage.removeItem('taekup_student_id');
+        // Redirect to login page
+        window.location.href = '/login';
     }, []);
 
     return (
