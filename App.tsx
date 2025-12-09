@@ -581,23 +581,14 @@ const AppContent: React.FC<AppContentProps> = ({
                     <Route
                         path="/app/admin"
                         element={
-                            finalWizardData && loggedInUserType === 'owner' ? (
-                                <AdminDashboardWrapper
-                                    data={finalWizardData}
-                                    clubId={signupData?.clubId}
-                                    onUpdateData={onWizardDataUpdate}
-                                    onViewStudentPortal={onViewStudentPortal}
-                                />
-                            ) : isLoadingData || loggedInUserType === 'owner' ? (
-                                <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-                                    <div className="text-center">
-                                        <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                                        <p className="text-gray-400">Loading your dashboard...</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <Navigate to="/login" replace />
-                            )
+                            <AdminRouteGuard
+                                finalWizardData={finalWizardData}
+                                loggedInUserType={loggedInUserType}
+                                isLoadingData={isLoadingData}
+                                signupData={signupData}
+                                onWizardDataUpdate={onWizardDataUpdate}
+                                onViewStudentPortal={onViewStudentPortal}
+                            />
                         }
                     />
 
@@ -778,6 +769,84 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
             />
         </>
     );
+};
+
+// Admin Route Guard - handles loading states and error cases
+interface AdminRouteGuardProps {
+    finalWizardData: WizardData | null;
+    loggedInUserType: 'owner' | 'coach' | 'parent' | null;
+    isLoadingData: boolean;
+    signupData: SignupData | null;
+    onWizardDataUpdate: (updates: Partial<WizardData>) => void;
+    onViewStudentPortal: (studentId: string) => void;
+}
+
+const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
+    finalWizardData,
+    loggedInUserType,
+    isLoadingData,
+    signupData,
+    onWizardDataUpdate,
+    onViewStudentPortal,
+}) => {
+    const [loadAttempted, setLoadAttempted] = React.useState(false);
+    const [localWizardData, setLocalWizardData] = React.useState<WizardData | null>(null);
+    
+    React.useEffect(() => {
+        if (!finalWizardData && loggedInUserType === 'owner' && !loadAttempted) {
+            setLoadAttempted(true);
+            const saved = localStorage.getItem('taekup_wizard_data');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    setLocalWizardData(parsed);
+                    console.log('[AdminRouteGuard] Loaded wizard data from localStorage');
+                } catch (e) {
+                    console.error('[AdminRouteGuard] Failed to parse localStorage data:', e);
+                }
+            }
+        }
+    }, [finalWizardData, loggedInUserType, loadAttempted]);
+    
+    const dataToUse = finalWizardData || localWizardData;
+    
+    if (dataToUse && loggedInUserType === 'owner') {
+        return (
+            <AdminDashboardWrapper
+                data={dataToUse}
+                clubId={signupData?.clubId}
+                onUpdateData={onWizardDataUpdate}
+                onViewStudentPortal={onViewStudentPortal}
+            />
+        );
+    }
+    
+    if (isLoadingData || (loggedInUserType === 'owner' && !loadAttempted)) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+                <div className="text-center">
+                    <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading your dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+    
+    if (loggedInUserType === 'owner' && loadAttempted && !dataToUse) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+                <div className="text-center max-w-md">
+                    <h2 className="text-xl font-bold text-white mb-4">Setup Required</h2>
+                    <p className="text-gray-400 mb-6">It looks like you haven't completed your club setup yet. Please complete the setup wizard to access your dashboard.</p>
+                    <a href="/wizard" className="inline-block px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors">
+                        Complete Setup
+                    </a>
+                </div>
+            </div>
+        );
+    }
+    
+    return <Navigate to="/login" replace />;
 };
 
 // Admin Dashboard Wrapper with Navigation
