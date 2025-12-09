@@ -932,6 +932,7 @@ interface DashboardViewProps {
 }
 
 const DashboardView: React.FC<DashboardViewProps> = ({ data, onboardingMessage }) => {
+    const navigate = useNavigate();
     const themeStyles = {
         modern: 'rounded-lg',
         classic: 'rounded-none',
@@ -946,6 +947,18 @@ const DashboardView: React.FC<DashboardViewProps> = ({ data, onboardingMessage }
                   backgroundPosition: 'center',
               }
             : {};
+
+    const hasStudents = data.students && data.students.length > 0;
+    const firstStudentId = hasStudents ? data.students[0].id : null;
+
+    const handleParentPortalClick = (e: React.MouseEvent) => {
+        if (!hasStudents) {
+            e.preventDefault();
+            alert('No students added yet. Add a student first to preview the Parent Portal.');
+            return;
+        }
+        navigate(`/app/parent/${firstStudentId}`);
+    };
 
     return (
         <div className="min-h-[80vh] relative" style={bgStyle}>
@@ -965,14 +978,29 @@ const DashboardView: React.FC<DashboardViewProps> = ({ data, onboardingMessage }
                         href="/app/coach"
                     />
 
-                    <DashboardCard
-                        title="Parent Portal"
-                        description="Automatically linked to each student. See what parents see with this preview."
-                        buttonText="Preview Portal"
-                        themeStyle={themeStyles[data.themeStyle]}
-                        primaryColor={data.primaryColor}
-                        href={`/app/parent/${data.students[0]?.id || ''}`}
-                    />
+                    <div 
+                        onClick={handleParentPortalClick}
+                        className={`bg-gray-800 border border-gray-700/50 shadow-lg flex flex-col p-8 transition-all duration-300 ${themeStyles[data.themeStyle]} text-left w-full
+                               hover:border-white/20 hover:-translate-y-1 cursor-pointer ${!hasStudents ? 'opacity-60' : ''}`}
+                    >
+                        <h2 className="text-2xl font-bold mb-4" style={{ color: data.primaryColor }}>
+                            Parent Portal
+                        </h2>
+                        <p className="text-gray-400 flex-grow mb-6">
+                            {hasStudents 
+                                ? "Automatically linked to each student. See what parents see with this preview."
+                                : "Add a student first to preview the Parent Portal."}
+                        </p>
+                        <div
+                            className="mt-auto text-center font-bold py-2 px-6 rounded-md text-white"
+                            style={{
+                                backgroundColor: data.primaryColor,
+                                boxShadow: `0 4px 14px 0 ${data.primaryColor}40`,
+                            }}
+                        >
+                            {hasStudents ? 'Preview Portal' : 'No Students Yet'}
+                        </div>
+                    </div>
 
                     <DashboardCard
                         title="Admin Dashboard"
