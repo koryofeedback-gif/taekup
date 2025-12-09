@@ -49,23 +49,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             // Wait for onLoginSuccess to complete (it fetches wizard data for returning owners)
             await onLoginSuccess(userType, user.name || user.clubName, undefined, user);
             
-            // Check if wizard data exists in localStorage as fallback
+            // Give time for localStorage writes to complete
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Verify localStorage has the data before navigating
             const hasLocalWizardData = !!localStorage.getItem('taekup_wizard_data');
+            const hasUserType = !!localStorage.getItem('taekup_user_type');
             const wizardCompleted = user.wizardCompleted || hasLocalWizardData;
             
-            // Use full page reload to ensure React reads fresh localStorage data
-            // This avoids race conditions with React state updates
+            console.log('[Login] Pre-navigation check:', { hasLocalWizardData, hasUserType, wizardCompleted, userType });
+            
+            // Determine target URL
+            let targetUrl = '/app';
             if (userType === 'owner' && !wizardCompleted) {
-                window.location.href = '/wizard';
+                targetUrl = '/wizard';
             } else if (userType === 'owner') {
-                window.location.href = '/app/admin';
+                targetUrl = '/app/admin';
             } else if (userType === 'coach') {
-                window.location.href = '/app/coach';
+                targetUrl = '/app/coach';
             } else if (userType === 'parent' && user.studentId) {
-                window.location.href = `/app/parent/${user.studentId}`;
-            } else {
-                window.location.href = '/app';
+                targetUrl = `/app/parent/${user.studentId}`;
             }
+            
+            // Use React Router navigation first, with fallback to full reload
+            navigate(targetUrl, { replace: true });
 
         } catch (err: any) {
             console.error('Login error:', err);
