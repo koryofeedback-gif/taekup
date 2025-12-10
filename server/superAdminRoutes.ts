@@ -560,7 +560,10 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
     // Get base wizard data or create default
     let wizardData = session.wizard_data || {};
     
-    // Merge students and coaches from database
+    // Merge students and coaches - prefer database if available, fallback to wizard_data
+    const mergedStudents = students.length > 0 ? students : (wizardData.students || []);
+    const mergedCoaches = coaches.length > 0 ? coaches : (wizardData.coaches || []);
+    
     wizardData = {
       ...wizardData,
       clubName: session.club_name || wizardData.clubName || '',
@@ -569,8 +572,8 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
       artType: session.art_type || wizardData.artType || 'Taekwondo',
       city: session.city || wizardData.city || '',
       country: session.country || wizardData.country || '',
-      students: students,
-      coaches: coaches,
+      students: mergedStudents,
+      coaches: mergedCoaches,
       // Ensure required fields exist with defaults
       belts: wizardData.belts || getDefaultBelts(session.art_type || 'Taekwondo'),
       skills: wizardData.skills || ['Technique', 'Effort', 'Focus', 'Discipline'],
@@ -579,6 +582,10 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
       branches: wizardData.branches || 1,
       branchNames: wizardData.branchNames || ['Main'],
       classNames: wizardData.classNames || ['Beginner', 'Intermediate', 'Advanced'],
+      // Preserve schedule and class data from wizard_data
+      schedule: wizardData.schedule || [],
+      classes: wizardData.classes || [],
+      locationClasses: wizardData.locationClasses || {},
       branding: wizardData.branding || {
         primaryColor: '#22d3ee',
         logoUrl: '',
