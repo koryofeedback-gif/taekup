@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
 
@@ -1150,23 +1151,111 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [tempEvent, setTempEvent] = useState<Partial<CalendarEvent>>({});
     
     // Bulk Import State
-    const [studentImportMethod, setStudentImportMethod] = useState<'single' | 'bulk'>('single');
+    const [studentImportMethod, setStudentImportMethod] = useState<'single' | 'bulk' | 'excel'>('single');
     const [bulkStudentData, setBulkStudentData] = useState('');
     const [parsedBulkStudents, setParsedBulkStudents] = useState<Student[]>([]);
     const [bulkError, setBulkError] = useState('');
     const [bulkLocation, setBulkLocation] = useState(data.branchNames?.[0] || 'Main Location');
     const [bulkClass, setBulkClass] = useState('');
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const excelFileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [uploadedFileName, setUploadedFileName] = useState('');
 
-    const handleFileUpload = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target?.result as string;
-            setBulkStudentData(text);
-            parseBulkStudents(text);
-        };
-        reader.readAsText(file);
+    const handleExcelUpload = (file: File) => {
+        setUploadedFileName(file.name);
+        setBulkError('');
+        
+        const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+        
+        if (isExcel) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = e.target?.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+                    
+                    // Convert to CSV format for parsing
+                    const csvText = jsonData.map(row => row.join(',')).join('\n');
+                    setBulkStudentData(csvText);
+                    parseExcelStudents(jsonData);
+                } catch (err) {
+                    setBulkError('Failed to parse Excel file. Please check the format.');
+                }
+            };
+            reader.readAsBinaryString(file);
+        } else {
+            // CSV file
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target?.result as string;
+                setBulkStudentData(text);
+                parseBulkStudents(text);
+            };
+            reader.readAsText(file);
+        }
+    };
+
+    const parseExcelStudents = (rows: string[][]) => {
+        const newStudents: Student[] = [];
+        
+        // Skip header row if it looks like headers
+        const startRow = rows[0]?.some(cell => 
+            typeof cell === 'string' && 
+            ['name', 'student', 'age', 'belt', 'parent'].some(h => cell.toLowerCase().includes(h))
+        ) ? 1 : 0;
+
+        for (let i = startRow; i < rows.length; i++) {
+            const cols = rows[i];
+            if (!cols || !cols[0]) continue;
+            
+            const name = String(cols[0] || '').trim();
+            if (!name) continue;
+
+            const beltName = String(cols[4] || '').trim();
+            let belt = data.belts.find(b => b.name.toLowerCase() === beltName?.toLowerCase());
+            if (!belt) {
+                const beltIdx = parseInt(beltName) - 1;
+                if (!isNaN(beltIdx) && data.belts[beltIdx]) belt = data.belts[beltIdx];
+            }
+
+            newStudents.push({
+                id: `student-${Date.now()}-${i}`,
+                name,
+                age: parseInt(String(cols[1])) || undefined,
+                birthday: String(cols[2] || ''),
+                gender: (['Male', 'Female', 'Other', 'Prefer not to say'].includes(String(cols[3])) ? String(cols[3]) : 'Male') as 'Male' | 'Female' | 'Other' | 'Prefer not to say',
+                beltId: belt?.id || data.belts[0]?.id || 'white',
+                stripes: parseInt(String(cols[5])) || 0,
+                parentName: String(cols[6] || ''),
+                parentEmail: String(cols[7] || ''),
+                parentPhone: String(cols[8] || ''),
+                location: bulkLocation,
+                assignedClass: bulkClass || 'General Class',
+                joinDate: new Date().toISOString().split('T')[0],
+                totalPoints: 0,
+                attendanceCount: 0,
+                lastPromotionDate: new Date().toISOString(),
+                isReadyForGrading: false,
+                performanceHistory: [],
+                feedbackHistory: [],
+                photo: null,
+                medicalInfo: '',
+                badges: [],
+                sparringStats: { matches: 0, wins: 0, draws: 0, headKicks: 0, bodyKicks: 0, punches: 0, takedowns: 0, defense: 0 },
+                lifeSkillsHistory: [],
+                customHabits: [
+                    { id: 'h1', question: 'Did they make their bed?', category: 'Chores', icon: '🛏️', isActive: true },
+                    { id: 'h2', question: 'Did they brush their teeth?', category: 'Health', icon: '🦷', isActive: true },
+                    { id: 'h3', question: 'Did they show respect to parents?', category: 'Character', icon: '🙇', isActive: true },
+                ]
+            });
+        }
+
+        setParsedBulkStudents(newStudents);
+        setBulkError(newStudents.length === 0 ? 'No valid student data found. Check column order.' : '');
     };
 
     const parseBulkStudents = (csv: string) => {
@@ -1461,7 +1550,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 <Modal title="Add Students" onClose={() => setModalType(null)}>
                     <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4">
                         <button onClick={() => setStudentImportMethod('single')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'single' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Single</button>
-                        <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Bulk Import</button>
+                        <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Paste CSV</button>
+                        <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Excel Upload</button>
                     </div>
 
                     {studentImportMethod === 'single' ? (
@@ -1492,12 +1582,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             </div>
                             {data.clubSponsoredPremium && (
                                 <p className="text-xs text-indigo-300 bg-indigo-900/20 p-2 rounded">
-                                    💰 Adds $1.99/mo to your bill (Sponsored Premium active).
+                                    Adds $1.99/mo to your bill (Sponsored Premium active).
                                 </p>
                             )}
                             <button onClick={handleAddStudent} className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded">Add Student</button>
                         </div>
-                    ) : (
+                    ) : studentImportMethod === 'bulk' ? (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -1525,12 +1615,84 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedBulkStudents.length}):</p>
                                     {parsedBulkStudents.map((s, i) => (
                                         <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800">
-                                            {s.name} - {data.belts.find(b => b.id === s.beltId)?.name || '❌'}
+                                            {s.name} - {data.belts.find(b => b.id === s.beltId)?.name || '?'}
                                         </div>
                                     ))}
                                 </div>
                             )}
                             <button onClick={confirmBulkImport} disabled={parsedBulkStudents.length === 0} className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded">Import {parsedBulkStudents.length} Students</button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
+                                    <select value={bulkLocation} onChange={e => setBulkLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                        {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
+                                    <select value={bulkClass} onChange={e => setBulkClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                        <option value="">Auto-assign</option>
+                                        {(data.locationClasses?.[bulkLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-gray-900/50 p-4 rounded border border-dashed border-gray-600 text-center">
+                                <input
+                                    type="file"
+                                    ref={excelFileInputRef}
+                                    accept=".xlsx,.xls,.csv"
+                                    onChange={(e) => e.target.files?.[0] && handleExcelUpload(e.target.files[0])}
+                                    className="hidden"
+                                />
+                                <div 
+                                    onClick={() => excelFileInputRef.current?.click()}
+                                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                    onDragLeave={() => setIsDragging(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setIsDragging(false);
+                                        if (e.dataTransfer.files?.[0]) handleExcelUpload(e.dataTransfer.files[0]);
+                                    }}
+                                    className={`cursor-pointer p-6 rounded transition-colors ${isDragging ? 'bg-sky-500/20 border-sky-500' : 'hover:bg-gray-800'}`}
+                                >
+                                    <div className="text-4xl mb-2">📊</div>
+                                    <p className="text-white font-medium mb-1">
+                                        {uploadedFileName || 'Click or drag Excel/CSV file'}
+                                    </p>
+                                    <p className="text-xs text-gray-500">Supports .xlsx, .xls, .csv</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
+                                <p className="text-xs text-gray-400 font-bold mb-1">Required Column Order:</p>
+                                <p className="text-xs text-gray-500">Name | Age | Birthday | Gender | Belt | Stripes | Parent Name | Email | Phone</p>
+                            </div>
+
+                            {bulkError && <p className="text-red-400 text-sm">{bulkError}</p>}
+                            
+                            {parsedBulkStudents.length > 0 && (
+                                <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
+                                    <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedBulkStudents.length} students):</p>
+                                    {parsedBulkStudents.map((s, i) => (
+                                        <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 flex justify-between">
+                                            <span>{s.name}</span>
+                                            <span className="text-gray-500">{data.belts.find(b => b.id === s.beltId)?.name || 'White Belt'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            <button 
+                                onClick={confirmBulkImport} 
+                                disabled={parsedBulkStudents.length === 0} 
+                                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded"
+                            >
+                                Import {parsedBulkStudents.length} Students
+                            </button>
                         </div>
                     )}
                 </Modal>

@@ -41,7 +41,8 @@
     "stripe": "^20.0.0",
     "stripe-replit-sync": "^1.0.0",
     "tsx": "^4.21.0",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
