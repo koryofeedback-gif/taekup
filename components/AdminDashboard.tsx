@@ -1447,16 +1447,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
     const handleAddClass = () => {
         if(!tempClass.className || !tempClass.day || !tempClass.time) return;
+        const location = tempClass.location || data.branchNames?.[0] || 'Main Location';
         const newClass: ScheduleItem = {
             id: `sched-${Date.now()}`,
             day: tempClass.day,
             time: tempClass.time,
             className: tempClass.className,
             instructor: tempClass.instructor || data.ownerName,
-            location: tempClass.location || data.branchNames?.[0] || 'Main Location',
+            location,
             beltRequirement: tempClass.beltRequirement || 'All'
         };
-        onUpdateData({ schedule: [...(data.schedule || []), newClass] });
+        
+        // Also add to locationClasses for dropdown population
+        const updatedLocationClasses = { ...(data.locationClasses || {}) };
+        if (!updatedLocationClasses[location]) {
+            updatedLocationClasses[location] = [];
+        }
+        if (!updatedLocationClasses[location].includes(tempClass.className)) {
+            updatedLocationClasses[location] = [...updatedLocationClasses[location], tempClass.className];
+        }
+        
+        // Also add to general classes list
+        const updatedClasses = [...(data.classes || [])];
+        if (!updatedClasses.includes(tempClass.className)) {
+            updatedClasses.push(tempClass.className);
+        }
+        
+        onUpdateData({ 
+            schedule: [...(data.schedule || []), newClass],
+            locationClasses: updatedLocationClasses,
+            classes: updatedClasses
+        });
         setModalType(null);
         setTempClass({});
     };
@@ -1556,14 +1577,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 <input type="number" placeholder="Stripes" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, stripes: parseInt(e.target.value)})} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, location: e.target.value})}>
+                                <select 
+                                    className="bg-gray-700 rounded p-2 text-white" 
+                                    value={tempStudent.location || data.branchNames?.[0] || ''}
+                                    onChange={e => setTempStudent({...tempStudent, location: e.target.value, assignedClass: ''})}
+                                >
                                     {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
                                 </select>
-                                <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, assignedClass: e.target.value})}>
+                                <select 
+                                    className="bg-gray-700 rounded p-2 text-white" 
+                                    value={tempStudent.assignedClass || ''}
+                                    onChange={e => setTempStudent({...tempStudent, assignedClass: e.target.value})}
+                                >
                                     <option value="">Select Class</option>
-                                    {((tempStudent.location ? data.locationClasses?.[tempStudent.location] : []) || data.classes || []).map(c => (
-                                        <option key={c} value={c}>{c}</option>
-                                    ))}
+                                    {(() => {
+                                        const loc = tempStudent.location || data.branchNames?.[0] || '';
+                                        const classes = data.locationClasses?.[loc] || data.classes || [];
+                                        return classes.map(c => <option key={c} value={c}>{c}</option>);
+                                    })()}
                                 </select>
                             </div>
                             <div className="border-t border-gray-600 pt-4">
