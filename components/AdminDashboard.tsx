@@ -697,6 +697,10 @@ const DEFAULT_VIDEO_TAGS = [
     { id: 'forms', name: 'Forms', icon: '🥋' },
     { id: 'sparring', name: 'Sparring', icon: '⚔️' },
     { id: 'self-defense', name: 'Self-Defense', icon: '🛡️' },
+    { id: 'beginner', name: 'Beginner', icon: '🟢' },
+    { id: 'intermediate', name: 'Intermediate', icon: '🟡' },
+    { id: 'advanced', name: 'Advanced', icon: '🔴' },
+    { id: 'black-belt', name: 'Black Belt', icon: '⬛' },
 ];
 
 const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
@@ -797,20 +801,8 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 onChange={e => setNewVideo({...newVideo, url: e.target.value})}
                                 className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
                             />
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Belt Level</label>
-                                    <select 
-                                        value={newVideo.beltId} 
-                                        onChange={e => setNewVideo({...newVideo, beltId: e.target.value})}
-                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
-                                    >
-                                        <option value="all">🎯 All Belts</option>
-                                        {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Tags (select multiple)</label>
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Tags (select multiple)</label>
                                     <div className="flex flex-wrap gap-2">
                                         {allTags.map(tag => (
                                             <button
@@ -856,7 +848,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                             </button>
                                         )}
                                     </div>
-                                </div>
                             </div>
                             <button onClick={handleAddVideo} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded">
                                 📤 Publish to App
