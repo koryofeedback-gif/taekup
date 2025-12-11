@@ -811,42 +811,27 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
     onWizardDataUpdate,
     onViewStudentPortal,
 }) => {
-    const [loadAttempted, setLoadAttempted] = React.useState(false);
-    const [localWizardData, setLocalWizardData] = React.useState<WizardData | null>(null);
-    const [isInitializing, setIsInitializing] = React.useState(true);
+    const [localWizardData, setLocalWizardData] = React.useState<WizardData | null>(() => {
+        // Load from localStorage immediately on mount
+        const saved = localStorage.getItem('taekup_wizard_data');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                return null;
+            }
+        }
+        return null;
+    });
     
     // Check localStorage for user type - handles race condition after login
     const localUserType = localStorage.getItem('taekup_user_type');
     const effectiveUserType = loggedInUserType || localUserType as 'owner' | 'coach' | 'parent' | null;
     
-    React.useEffect(() => {
-        // Give state time to hydrate from localStorage
-        const timer = setTimeout(() => {
-            setIsInitializing(false);
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
-    
-    React.useEffect(() => {
-        if (!finalWizardData && effectiveUserType === 'owner' && !loadAttempted) {
-            setLoadAttempted(true);
-            const saved = localStorage.getItem('taekup_wizard_data');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    setLocalWizardData(parsed);
-                    console.log('[AdminRouteGuard] Loaded wizard data from localStorage');
-                } catch (e) {
-                    console.error('[AdminRouteGuard] Failed to parse localStorage data:', e);
-                }
-            }
-        }
-    }, [finalWizardData, effectiveUserType, loadAttempted]);
-    
     const dataToUse = finalWizardData || localWizardData;
     
-    // Show loading during initialization or data loading
-    if (isInitializing || isLoadingData || (effectiveUserType === 'owner' && !loadAttempted)) {
+    // Show loading only when we're explicitly loading data from API
+    if (isLoadingData) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
                 <div className="text-center">
@@ -868,7 +853,7 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
         );
     }
     
-    if (effectiveUserType === 'owner' && loadAttempted && !dataToUse) {
+    if (effectiveUserType === 'owner' && !dataToUse) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
                 <div className="text-center max-w-md">
