@@ -273,6 +273,13 @@ const App: React.FC = () => {
             setIsLoadingData(true);
             setLoggedInUserType(userType);
             setLoggedInUserName(userName);
+            
+            // Clear any impersonation data on normal login
+            // This ensures the yellow banner only shows during Super Admin impersonation
+            localStorage.removeItem('impersonationToken');
+            localStorage.removeItem('impersonationClubId');
+            localStorage.removeItem('impersonationClubName');
+            
             // Save login state to localStorage
             localStorage.setItem('taekup_user_type', userType);
             localStorage.setItem('taekup_user_name', userName);
