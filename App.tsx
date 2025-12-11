@@ -811,27 +811,31 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
     onWizardDataUpdate,
     onViewStudentPortal,
 }) => {
-    const [localWizardData, setLocalWizardData] = React.useState<WizardData | null>(() => {
-        // Load from localStorage immediately on mount
-        const saved = localStorage.getItem('taekup_wizard_data');
-        if (saved) {
+    const [localWizardData, setLocalWizardData] = React.useState<WizardData | null>(null);
+    const [localUserType, setLocalUserType] = React.useState<string | null>(null);
+    const [isReady, setIsReady] = React.useState(false);
+    
+    // Re-read localStorage whenever component mounts or loggedInUserType changes
+    React.useEffect(() => {
+        const savedWizard = localStorage.getItem('taekup_wizard_data');
+        const savedUserType = localStorage.getItem('taekup_user_type');
+        
+        if (savedWizard) {
             try {
-                return JSON.parse(saved);
+                setLocalWizardData(JSON.parse(savedWizard));
             } catch (e) {
-                return null;
+                console.error('[AdminRouteGuard] Failed to parse wizard data:', e);
             }
         }
-        return null;
-    });
+        setLocalUserType(savedUserType);
+        setIsReady(true);
+    }, [loggedInUserType]);
     
-    // Check localStorage for user type - handles race condition after login
-    const localUserType = localStorage.getItem('taekup_user_type');
     const effectiveUserType = loggedInUserType || localUserType as 'owner' | 'coach' | 'parent' | null;
-    
     const dataToUse = finalWizardData || localWizardData;
     
-    // Show loading only when we're explicitly loading data from API
-    if (isLoadingData) {
+    // Show loading while checking localStorage or loading from API
+    if (!isReady || isLoadingData) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
                 <div className="text-center">

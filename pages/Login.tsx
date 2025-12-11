@@ -71,8 +71,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                 targetUrl = `/app/parent/${user.studentId}`;
             }
             
-            // Use React Router navigation first, with fallback to full reload
-            navigate(targetUrl, { replace: true });
+            // Use full page reload to ensure fresh state from localStorage
+            window.location.href = targetUrl;
 
         } catch (err: any) {
             console.error('Login error:', err);
