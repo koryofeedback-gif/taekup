@@ -17,7 +17,7 @@ import { SubscriptionSuccess } from './pages/SubscriptionSuccess';
 import { SuperAdminLogin } from './pages/SuperAdminLogin';
 import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute, SuperAdminPaymentsRoute, SuperAdminAnalyticsRoute } from './components/SuperAdminRoutes';
 import { TrialBanner } from './components/TrialBanner';
-import { ImpersonationBanner } from './components/ImpersonationBanner';
+import { ImpersonationBanner, isImpersonating } from './components/ImpersonationBanner';
 import {
     getOnboardingMessage,
 } from './services/geminiService';
@@ -451,8 +451,10 @@ const AppContent: React.FC<AppContentProps> = ({
         );
     }
 
+    const showImpersonationPadding = isImpersonating();
+    
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100 font-sans">
+        <div className={`min-h-screen bg-gray-900 text-gray-100 font-sans ${showImpersonationPadding ? 'pt-12' : ''}`}>
             <ImpersonationBanner />
             {subscription && loggedInUserType === 'owner' && !isDojangTV && !isMyTaekHome && (
                 <TrialBanner 

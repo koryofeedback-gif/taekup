@@ -7,6 +7,10 @@ interface ImpersonationInfo {
   expiresAt: string;
 }
 
+export const isImpersonating = (): boolean => {
+  return !!localStorage.getItem('impersonationToken');
+};
+
 export const ImpersonationBanner: React.FC = () => {
   const [impersonation, setImpersonation] = useState<ImpersonationInfo | null>(null);
   const [isEnding, setIsEnding] = useState(false);
@@ -25,19 +29,28 @@ export const ImpersonationBanner: React.FC = () => {
     // If we already have impersonation data stored, just show the banner
     if (storedToken) {
       const storedClubId = localStorage.getItem('impersonationClubId');
+      const storedClubName = localStorage.getItem('impersonationClubName');
       const storedWizardData = localStorage.getItem('taekup_wizard_data');
       
-      if (storedClubId && storedWizardData) {
+      // Try to get club name from multiple sources
+      let clubName = 'Club';
+      if (storedClubName) {
+        clubName = storedClubName;
+      } else if (storedWizardData) {
         try {
           const wizardData = JSON.parse(storedWizardData);
-          setImpersonation({
-            clubName: wizardData.clubName || 'Club',
-            clubId: storedClubId,
-            expiresAt: ''
-          });
+          clubName = wizardData.clubName || 'Club';
         } catch (e) {
           console.error('Failed to parse stored wizard data');
         }
+      }
+      
+      if (storedClubId) {
+        setImpersonation({
+          clubName,
+          clubId: storedClubId,
+          expiresAt: ''
+        });
       }
     }
   }, []);
@@ -51,6 +64,7 @@ export const ImpersonationBanner: React.FC = () => {
         // Store impersonation session info
         localStorage.setItem('impersonationToken', token);
         localStorage.setItem('impersonationClubId', data.clubId);
+        localStorage.setItem('impersonationClubName', data.clubName || 'Club');
         
         // The API now returns complete wizardData with students, coaches, belts, etc.
         const wizardData = data.wizardData;
@@ -78,6 +92,7 @@ export const ImpersonationBanner: React.FC = () => {
         // Token invalid - clean up
         localStorage.removeItem('impersonationToken');
         localStorage.removeItem('impersonationClubId');
+        localStorage.removeItem('impersonationClubName');
         // Remove param and stay on current page
         const url = new URL(window.location.href);
         url.searchParams.delete('impersonate');
@@ -87,6 +102,7 @@ export const ImpersonationBanner: React.FC = () => {
       console.error('Failed to verify impersonation:', err);
       localStorage.removeItem('impersonationToken');
       localStorage.removeItem('impersonationClubId');
+      localStorage.removeItem('impersonationClubName');
     }
   };
 
@@ -113,6 +129,7 @@ export const ImpersonationBanner: React.FC = () => {
     // Clean up all impersonation-related localStorage
     localStorage.removeItem('impersonationToken');
     localStorage.removeItem('impersonationClubId');
+    localStorage.removeItem('impersonationClubName');
     localStorage.removeItem('taekup_wizard_data');
     localStorage.removeItem('taekup_user_type');
     localStorage.removeItem('taekup_user_name');
