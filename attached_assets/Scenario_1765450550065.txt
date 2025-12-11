@@ -1,0 +1,70 @@
+​GAME DESIGN DOCUMENT (GDD)
+​Project Name: DOJO EVOLUTION
+Version: 1.0 (Master Plan)
+Platform: Mobile Web (React/PWA)
+Genre: 2D Gamified Pet Collection (Gacha RPG)
+​1. EXECUTIVE SUMMARY
+​Dojo Evolution is a 2D gamification layer integrated into an existing Martial Arts Management App (TaekUp). It motivates students (Ages 9–18) to train in real life by converting their physical effort into digital progression.
+• ​Core Concept: "Train IRL → Evolve your Spirit Pet → Build your Dojo."
+• ​Key Constraint: This is a Web App running inside a React environment. No heavy 3D engines.
+​2. ART STYLE & TARGET AUDIENCE
+• ​Target Audience: Kids & Teens (9 to 18 years old).
+• ​Visual Style: High-Quality "Shonen Anime" Style. 
+• ​Avoid: Childish, round, "Paw Patrol" style cartoons.
+• ​Prefer: Sharp lines, glowing effects, cool silhouettes (References: Solo Leveling, Demon Slayer, Pokémon/Digimon).
+• ​Goal: A 16-year-old Black Belt should feel the pet looks "cool," not "cringe."
+​3. THE ECONOMY (DUAL CURRENCY SYSTEM)
+​To prevent player anxiety (hoarding XP), the game uses two distinct resources:
+​A. XP (Evolution Energy)
+• ​Source: Earned strictly from real-world training/attendance.
+• ​Use: Automatically fills the "Evolution Bar" of the Pet and unlocks new Worlds.
+• ​Logic: Cannot be spent. It is a cumulative score of effort.
+​B. Spirit Tokens (Gacha Currency)
+• ​Source: Earned alongside XP (e.g., Get 1000 XP + 10 Spirit Tokens).
+• ​Use: Spent to spin the "Summon Wheel" (Gacha) to get items/decorations.
+• ​Logic: Players can spend these freely without slowing down their pet’s growth.
+​4. CORE GAMEPLAY LOOPS
+​Loop 1: The Pet System (Evolution & Interaction)
+​Every player starts with a Mystic Egg.
+• ​Evolution: As XP accumulates and "Real Life Belt" rank increases, the pet evolves: 
+• ​Stage 1: Egg
+• ​Stage 2: Baby Spirit (Cute)
+• ​Stage 3: Beast (Cool/Strong)
+• ​Stage 4: Master Entity (God-tier/Glowing/Epic)
+• ​Micro-Interactions (Juicy Clicks): 
+• ​Tapping the pet triggers animations (Roar, Sparkles, Backflip).
+• ​"Cleaning" or "Petting" action gives a small temporary visual boost.
+​Loop 2: The Mood System (Positive Reinforcement)
+​The pet’s mood reflects the student's training frequency.
+• ​Active (3+ days/week): "Hyper Mode" (Glowing, fast animations).
+• ​Inactive (Absent for 1 week): "Meditation Mode" (NOT Sad). 
+• ​The pet goes into a stone statue/sleep state to preserve energy.
+• ​The Hook: When the student returns and trains, a massive "Resurrection Animation" plays (breaking the stone shell), making the return feel heroic, not punishing.
+​Loop 3: The Gacha & Inventory
+• ​The Wheel: Players spend Spirit Tokens to spin.
+• ​Rewards: 
+• ​Decorations: Banners, Statues, Weapons for the Dojo wall.
+• ​Visual Effects: Aura colors for the pet.
+• ​Rarity: Common (Grey) → Rare (Blue) → Epic (Purple) → Legendary (Gold).
+​5. WORLD PROGRESSION (The Biomes)
+​Static but beautiful 2.5D backgrounds (Parallax effect) that unlock based on Total XP.
+• ​Forest of Beginnings (Bamboo forest, light rays).
+• ​Mountain Peak (Wind effects, rocks).
+• ​Frozen Lake (Ice sparkles, snow particles).
+• ​Volcanic Core (Heat distortion, embers).
+• ​Cosmic Void (Stars, galaxy background - for Black Belts).
+​Note: Players cannot enter a higher biome until their Real Life Belt matches the requirement in the database.
+​6. DOJO CUSTOMIZATION (MVP Version)
+​To keep technical complexity low for V1:
+• ​The user has a "Personal Dojo" background.
+• ​There are 5 Fixed Slots (Left Wall, Right Wall, Ceiling, Floor, Center).
+• ​User taps a slot → Selects an owned item from Inventory to display.
+• ​No free-form drag and drop.
+​7. TECHNICAL REQUIREMENTS (For Developer)
+• ​Tech Stack: React.js (Component-based). Must be easily importable into a Replit/Vercel project.
+• ​Responsiveness: Mobile-First design. Must look like a native app on a phone browser.
+• ​Data Sync: 
+• ​User_XP and User_Belt are read-only inputs from the main app API.
+• ​Inventory, Pet_Stage, and Spirit_Tokens are managed by the game database.
+• ​Performance: Use CSS animations, Lottie files, or Canvas. NO Unity WebGL (loading times are too high).
+• ​Deliverable: A clean GitHub repository or Replit Fork.

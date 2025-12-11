@@ -1,0 +1,138 @@
+⭐ Dojo Evolution — Game Summary
+
+Dojo Evolution is a mobile-first 2D web-based game that runs directly inside your martial arts app (React/Vercel).
+No Android or iOS app is required.
+
+The purpose of the game is to motivate students to train more by converting their real-world training performance → in-game rewards and progression.
+
+🎮 Core Gameplay
+
+Players begin with a Spirit Egg.
+Every time they train in real life, they earn XP through your existing API.
+
+This XP powers all progression inside the game.
+
+1️⃣ Gacha / Summon Wheel
+
+Players spend XP to:
+
+Spin a Summon Wheel
+
+Open Mystery Boxes
+
+They can receive:
+
+Items (Common → Legendary)
+
+Evolution materials
+
+Decorations for their personal dojo
+
+Special power-ups
+
+The excitement comes from random rewards, which is highly motivating for kids.
+
+2️⃣ Pet Evolution System
+
+The pet evolves through five stages:
+
+Egg → Baby → Advanced → Master → God Tier
+
+Evolution depends on:
+
+Real-world XP
+
+Items collected from gacha
+
+Real-world belt rank
+
+Kids love watching their pet evolve — this becomes a strong reward loop for training consistently.
+
+3️⃣ Dojo Worlds Progression
+
+There are 7 themed worlds:
+
+Forest
+
+Stone
+
+Water
+
+Flame
+
+Sky
+
+Space
+
+Each world includes:
+
+2.5D parallax backgrounds
+
+Smooth transitions
+
+Unlocks based on real-world belt progression
+
+This gives players a feeling of adventure and growth connected directly to their training.
+
+👜 Inventory System
+
+Players collect and manage items:
+
+Weapons
+
+Armor
+
+Evolution stones
+
+Materials
+
+Decorations
+
+Items support the evolution system and dojo customization.
+
+🏯 Personal Dojo Customization
+
+Players can customize their own dojo:
+
+Place decorations
+
+Change layout
+
+Save/load their design
+
+This adds creativity and personal identity to the game.
+
+📱 Technology Stack
+
+Phaser.js or Pixi.js (fast and optimized for mobile)
+
+Lightweight 2D with 2.5D effects
+
+Fully embedded inside React (Vercel-ready)
+
+Fast loading, touch-optimized, mobile-friendly
+
+No mobile app store publishing required.
+
+⭐ Purpose of the Game
+
+Dojo Evolution creates a powerful motivational loop:
+
+✔ Real-world training
+→ earns XP
+→ unlocks rewards
+→ evolves the pet
+→ opens new worlds
+→ encourages more training
+
+It increases:
+
+Student motivation
+
+Engagement
+
+Retention
+
+Fun inside the martial arts program
+
+This is something no other martial arts club in the world has.

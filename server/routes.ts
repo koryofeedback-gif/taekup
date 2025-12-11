@@ -229,7 +229,8 @@ export function registerRoutes(app: Express) {
 
       const userResult = await db.execute(
         sql`SELECT u.id, u.email, u.password_hash, u.role, u.name, u.club_id, u.is_active,
-                   c.name as club_name, c.owner_email, c.status as club_status, c.trial_status, c.trial_end
+                   c.name as club_name, c.owner_email, c.status as club_status, c.trial_status, c.trial_end,
+                   c.wizard_data IS NOT NULL as has_wizard_data
             FROM users u
             LEFT JOIN clubs c ON u.club_id = c.id
             WHERE LOWER(u.email) = ${normalizedEmail} AND u.is_active = true
@@ -260,7 +261,16 @@ export function registerRoutes(app: Express) {
           sql`SELECT wizard_completed FROM onboarding_progress WHERE club_id = ${user.club_id}::uuid LIMIT 1`
         );
         const progress = (progressResult as any[])[0];
-        wizardCompleted = progress?.wizard_completed || false;
+        wizardCompleted = progress?.wizard_completed || user.has_wizard_data || false;
+        
+        if (user.has_wizard_data && !progress?.wizard_completed) {
+          await db.execute(sql`
+            INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
+            VALUES (${user.club_id}::uuid, true, NOW())
+            ON CONFLICT (club_id) DO UPDATE SET wizard_completed = true
+          `);
+          console.log('[Login] Auto-recovered wizard_completed for club:', user.club_id);
+        }
       }
 
       await db.execute(sql`
