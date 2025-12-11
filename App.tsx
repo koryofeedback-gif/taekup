@@ -813,9 +813,22 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
 }) => {
     const [loadAttempted, setLoadAttempted] = React.useState(false);
     const [localWizardData, setLocalWizardData] = React.useState<WizardData | null>(null);
+    const [isInitializing, setIsInitializing] = React.useState(true);
+    
+    // Check localStorage for user type - handles race condition after login
+    const localUserType = localStorage.getItem('taekup_user_type');
+    const effectiveUserType = loggedInUserType || localUserType as 'owner' | 'coach' | 'parent' | null;
     
     React.useEffect(() => {
-        if (!finalWizardData && loggedInUserType === 'owner' && !loadAttempted) {
+        // Give state time to hydrate from localStorage
+        const timer = setTimeout(() => {
+            setIsInitializing(false);
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
+    
+    React.useEffect(() => {
+        if (!finalWizardData && effectiveUserType === 'owner' && !loadAttempted) {
             setLoadAttempted(true);
             const saved = localStorage.getItem('taekup_wizard_data');
             if (saved) {
@@ -828,22 +841,12 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
                 }
             }
         }
-    }, [finalWizardData, loggedInUserType, loadAttempted]);
+    }, [finalWizardData, effectiveUserType, loadAttempted]);
     
     const dataToUse = finalWizardData || localWizardData;
     
-    if (dataToUse && loggedInUserType === 'owner') {
-        return (
-            <AdminDashboardWrapper
-                data={dataToUse}
-                clubId={signupData?.clubId}
-                onUpdateData={onWizardDataUpdate}
-                onViewStudentPortal={onViewStudentPortal}
-            />
-        );
-    }
-    
-    if (isLoadingData || (loggedInUserType === 'owner' && !loadAttempted)) {
+    // Show loading during initialization or data loading
+    if (isInitializing || isLoadingData || (effectiveUserType === 'owner' && !loadAttempted)) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
                 <div className="text-center">
@@ -854,7 +857,18 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
         );
     }
     
-    if (loggedInUserType === 'owner' && loadAttempted && !dataToUse) {
+    if (dataToUse && effectiveUserType === 'owner') {
+        return (
+            <AdminDashboardWrapper
+                data={dataToUse}
+                clubId={signupData?.clubId}
+                onUpdateData={onWizardDataUpdate}
+                onViewStudentPortal={onViewStudentPortal}
+            />
+        );
+    }
+    
+    if (effectiveUserType === 'owner' && loadAttempted && !dataToUse) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
                 <div className="text-center max-w-md">
