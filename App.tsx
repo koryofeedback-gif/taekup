@@ -84,6 +84,13 @@ const App: React.FC = () => {
         return saved ? JSON.parse(saved) : null;
     });
     const [finalWizardData, setFinalWizardDataState] = useState<WizardData | null>(() => {
+        // Check sessionStorage first for impersonation mode (Super Admin "View As")
+        const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+        if (isImpersonating) {
+            const impersonationData = sessionStorage.getItem('impersonation_wizard_data');
+            return impersonationData ? JSON.parse(impersonationData) : null;
+        }
+        // Regular mode: use localStorage
         const saved = localStorage.getItem('taekup_wizard_data');
         return saved ? JSON.parse(saved) : null;
     });
@@ -93,7 +100,15 @@ const App: React.FC = () => {
     const [onboardingMessage, setOnboardingMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [loggedInUserType, setLoggedInUserType] = useState<'owner' | 'coach' | 'parent' | null>(() => {
-        // Check if there's an impersonation session or saved user type
+        // Check sessionStorage first for impersonation mode
+        const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+        if (isImpersonating) {
+            const impersonationType = sessionStorage.getItem('impersonation_user_type');
+            if (impersonationType === 'owner' || impersonationType === 'coach' || impersonationType === 'parent') {
+                return impersonationType;
+            }
+        }
+        // Regular mode: use localStorage
         const savedType = localStorage.getItem('taekup_user_type');
         if (savedType === 'owner' || savedType === 'coach' || savedType === 'parent') {
             return savedType;
@@ -101,6 +116,11 @@ const App: React.FC = () => {
         return null;
     });
     const [loggedInUserName, setLoggedInUserName] = useState<string | null>(() => {
+        // Check sessionStorage first for impersonation mode
+        const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+        if (isImpersonating) {
+            return sessionStorage.getItem('impersonation_user_name');
+        }
         return localStorage.getItem('taekup_user_name');
     });
     const [parentStudentId, setParentStudentId] = useState<string | null>(() => {
@@ -120,10 +140,19 @@ const App: React.FC = () => {
 
     const setFinalWizardData = useCallback((data: WizardData | null) => {
         setFinalWizardDataState(data);
+        const isImpersonating = !!sessionStorage.getItem('impersonationToken');
         if (data) {
-            localStorage.setItem('taekup_wizard_data', JSON.stringify(data));
+            if (isImpersonating) {
+                sessionStorage.setItem('impersonation_wizard_data', JSON.stringify(data));
+            } else {
+                localStorage.setItem('taekup_wizard_data', JSON.stringify(data));
+            }
         } else {
-            localStorage.removeItem('taekup_wizard_data');
+            if (isImpersonating) {
+                sessionStorage.removeItem('impersonation_wizard_data');
+            } else {
+                localStorage.removeItem('taekup_wizard_data');
+            }
         }
     }, []);
 
@@ -246,11 +275,20 @@ const App: React.FC = () => {
                     ...prevData,
                     ...updates,
                 };
-                localStorage.setItem('taekup_wizard_data', JSON.stringify(updated));
+                
+                // Check if in impersonation mode (Super Admin "View As")
+                const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+                if (isImpersonating) {
+                    sessionStorage.setItem('impersonation_wizard_data', JSON.stringify(updated));
+                } else {
+                    localStorage.setItem('taekup_wizard_data', JSON.stringify(updated));
+                }
                 
                 // Also save to database for persistence across logins
                 // Check both regular clubId and impersonation clubId (for Super Admin view-as mode)
-                const clubId = localStorage.getItem('taekup_club_id') || localStorage.getItem('impersonationClubId');
+                const clubId = isImpersonating 
+                    ? sessionStorage.getItem('impersonationClubId')
+                    : (localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId'));
                 if (clubId) {
                     fetch('/api/club/save-wizard-data', {
                         method: 'POST',
@@ -277,9 +315,13 @@ const App: React.FC = () => {
             
             // Clear any impersonation data on normal login
             // This ensures the yellow banner only shows during Super Admin impersonation
-            localStorage.removeItem('impersonationToken');
-            localStorage.removeItem('impersonationClubId');
-            localStorage.removeItem('impersonationClubName');
+            sessionStorage.removeItem('impersonationToken');
+            sessionStorage.removeItem('impersonationClubId');
+            sessionStorage.removeItem('impersonationClubName');
+            sessionStorage.removeItem('impersonation_wizard_data');
+            sessionStorage.removeItem('impersonation_user_type');
+            sessionStorage.removeItem('impersonation_user_name');
+            sessionStorage.removeItem('impersonation_club_id');
             
             // Save login state to localStorage
             localStorage.setItem('taekup_user_type', userType);
@@ -351,10 +393,14 @@ const App: React.FC = () => {
         localStorage.removeItem('taekup_user_name');
         localStorage.removeItem('taekup_student_id');
         
-        // Clear impersonation data
-        localStorage.removeItem('impersonationToken');
-        localStorage.removeItem('impersonationClubId');
-        localStorage.removeItem('impersonationClubName');
+        // Clear impersonation data (sessionStorage)
+        sessionStorage.removeItem('impersonationToken');
+        sessionStorage.removeItem('impersonationClubId');
+        sessionStorage.removeItem('impersonationClubName');
+        sessionStorage.removeItem('impersonation_wizard_data');
+        sessionStorage.removeItem('impersonation_user_type');
+        sessionStorage.removeItem('impersonation_user_name');
+        sessionStorage.removeItem('impersonation_club_id');
         
         // CRITICAL: Restore wizard data if it was accidentally cleared
         if (wizardDataBackup) {

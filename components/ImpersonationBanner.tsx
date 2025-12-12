@@ -8,7 +8,7 @@ interface ImpersonationInfo {
 }
 
 export const isImpersonating = (): boolean => {
-  return !!localStorage.getItem('impersonationToken');
+  return !!sessionStorage.getItem('impersonationToken');
 };
 
 export const ImpersonationBanner: React.FC = () => {
@@ -18,21 +18,18 @@ export const ImpersonationBanner: React.FC = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get('impersonate');
-    const storedToken = localStorage.getItem('impersonationToken');
+    const storedToken = sessionStorage.getItem('impersonationToken');
     
-    // If there's a NEW token in URL, verify and set up impersonation
     if (urlToken) {
       verifyAndSetupImpersonation(urlToken);
       return;
     }
     
-    // If we already have impersonation data stored, just show the banner
     if (storedToken) {
-      const storedClubId = localStorage.getItem('impersonationClubId');
-      const storedClubName = localStorage.getItem('impersonationClubName');
-      const storedWizardData = localStorage.getItem('taekup_wizard_data');
+      const storedClubId = sessionStorage.getItem('impersonationClubId');
+      const storedClubName = sessionStorage.getItem('impersonationClubName');
+      const storedWizardData = sessionStorage.getItem('impersonation_wizard_data');
       
-      // Try to get club name from multiple sources
       let clubName = 'Club';
       if (storedClubName) {
         clubName = storedClubName;
@@ -61,54 +58,46 @@ export const ImpersonationBanner: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         
-        // Store impersonation session info
-        localStorage.setItem('impersonationToken', token);
-        localStorage.setItem('impersonationClubId', data.clubId);
-        localStorage.setItem('impersonationClubName', data.clubName || 'Club');
+        sessionStorage.setItem('impersonationToken', token);
+        sessionStorage.setItem('impersonationClubId', data.clubId);
+        sessionStorage.setItem('impersonationClubName', data.clubName || 'Club');
         
-        // The API now returns complete wizardData with students, coaches, belts, etc.
         const wizardData = data.wizardData;
         
         if (wizardData) {
-          // Store the complete club data so AdminDashboard can use it
-          localStorage.setItem('taekup_wizard_data', JSON.stringify(wizardData));
-          localStorage.setItem('taekup_club_id', data.clubId);
-          localStorage.setItem('taekup_user_type', 'owner');
-          localStorage.setItem('taekup_user_name', data.ownerName || data.clubName || 'Club Owner');
+          sessionStorage.setItem('impersonation_wizard_data', JSON.stringify(wizardData));
+          sessionStorage.setItem('impersonation_club_id', data.clubId);
+          sessionStorage.setItem('impersonation_user_type', 'owner');
+          sessionStorage.setItem('impersonation_user_name', data.ownerName || data.clubName || 'Club Owner');
           
-          // Remove impersonate param from URL and redirect to admin
-          // Use window.location.replace to avoid infinite loop
           window.location.replace('/app/admin');
           return;
         }
         
-        // Set impersonation info for the banner (fallback)
         setImpersonation({
           clubName: data.clubName || 'Unknown Club',
           clubId: data.clubId,
           expiresAt: data.expiresAt
         });
       } else {
-        // Token invalid - clean up
-        localStorage.removeItem('impersonationToken');
-        localStorage.removeItem('impersonationClubId');
-        localStorage.removeItem('impersonationClubName');
-        // Remove param and stay on current page
+        sessionStorage.removeItem('impersonationToken');
+        sessionStorage.removeItem('impersonationClubId');
+        sessionStorage.removeItem('impersonationClubName');
         const url = new URL(window.location.href);
         url.searchParams.delete('impersonate');
         window.history.replaceState({}, '', url.pathname + url.search);
       }
     } catch (err) {
       console.error('Failed to verify impersonation:', err);
-      localStorage.removeItem('impersonationToken');
-      localStorage.removeItem('impersonationClubId');
-      localStorage.removeItem('impersonationClubName');
+      sessionStorage.removeItem('impersonationToken');
+      sessionStorage.removeItem('impersonationClubId');
+      sessionStorage.removeItem('impersonationClubName');
     }
   };
 
   const endImpersonation = async () => {
     setIsEnding(true);
-    const token = localStorage.getItem('impersonationToken');
+    const token = sessionStorage.getItem('impersonationToken');
     const superAdminToken = localStorage.getItem('superAdminToken');
     
     if (token && superAdminToken) {
@@ -126,16 +115,14 @@ export const ImpersonationBanner: React.FC = () => {
       }
     }
     
-    // Clean up all impersonation-related localStorage
-    localStorage.removeItem('impersonationToken');
-    localStorage.removeItem('impersonationClubId');
-    localStorage.removeItem('impersonationClubName');
-    localStorage.removeItem('taekup_wizard_data');
-    localStorage.removeItem('taekup_user_type');
-    localStorage.removeItem('taekup_user_name');
-    localStorage.removeItem('taekup_club_id');
-    localStorage.removeItem('taekup_subscription');
-    localStorage.removeItem('taekup_signup_data');
+    sessionStorage.removeItem('impersonationToken');
+    sessionStorage.removeItem('impersonationClubId');
+    sessionStorage.removeItem('impersonationClubName');
+    sessionStorage.removeItem('impersonation_wizard_data');
+    sessionStorage.removeItem('impersonation_user_type');
+    sessionStorage.removeItem('impersonation_user_name');
+    sessionStorage.removeItem('impersonation_club_id');
+    sessionStorage.removeItem('impersonation_subscription');
     window.location.href = '/super-admin/clubs';
   };
 

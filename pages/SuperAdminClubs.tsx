@@ -136,8 +136,8 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
       const data = await response.json();
 
       if (data.success && data.token) {
-        localStorage.setItem('impersonationToken', data.token);
-        localStorage.setItem('impersonationClubId', clubId);
+        sessionStorage.setItem('impersonationToken', data.token);
+        sessionStorage.setItem('impersonationClubId', clubId);
         onImpersonate(clubId);
       } else {
         alert(data.error || 'Failed to start impersonation session');

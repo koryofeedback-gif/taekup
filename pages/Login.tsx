@@ -56,10 +56,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                 localStorage.setItem('taekup_student_id', user.studentId);
             }
             
-            // Clear any stale impersonation data
-            localStorage.removeItem('impersonationToken');
-            localStorage.removeItem('impersonationClubId');
-            localStorage.removeItem('impersonationClubName');
+            // Clear any stale impersonation data (sessionStorage)
+            sessionStorage.removeItem('impersonationToken');
+            sessionStorage.removeItem('impersonationClubId');
+            sessionStorage.removeItem('impersonationClubName');
+            sessionStorage.removeItem('impersonation_wizard_data');
+            sessionStorage.removeItem('impersonation_user_type');
+            sessionStorage.removeItem('impersonation_user_name');
+            sessionStorage.removeItem('impersonation_club_id');
             
             // FIRST: Check if API returned wizardData directly (Vercel production path)
             if (data.wizardData && Object.keys(data.wizardData).length > 0) {

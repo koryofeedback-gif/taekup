@@ -84,7 +84,7 @@ export const SuperAdminClubsRoute: React.FC = () => {
     };
     
     const handleImpersonate = (clubId: string) => {
-        const impersonationToken = localStorage.getItem('impersonationToken');
+        const impersonationToken = sessionStorage.getItem('impersonationToken');
         if (impersonationToken) {
             window.location.href = `/?impersonate=${impersonationToken}`;
         }
