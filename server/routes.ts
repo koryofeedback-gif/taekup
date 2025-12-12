@@ -1006,11 +1006,22 @@ export function registerRoutes(app: Express) {
       const userId = (userResult as any[])[0]?.id;
 
       // Also insert into coaches table for data fetching
-      await db.execute(sql`
-        INSERT INTO coaches (id, club_id, user_id, name, email, is_active, invite_sent_at, created_at)
-        VALUES (gen_random_uuid(), ${clubId}::uuid, ${userId}::uuid, ${name}, ${email}, true, NOW(), NOW())
-        ON CONFLICT (email) DO UPDATE SET name = ${name}, club_id = ${clubId}::uuid, is_active = true, invite_sent_at = NOW()
+      // First check if coach already exists
+      const existingCoach = await db.execute(sql`
+        SELECT id FROM coaches WHERE email = ${email} LIMIT 1
       `);
+      
+      if ((existingCoach as any[]).length > 0) {
+        await db.execute(sql`
+          UPDATE coaches SET name = ${name}, club_id = ${clubId}::uuid, is_active = true, invite_sent_at = NOW()
+          WHERE email = ${email}
+        `);
+      } else {
+        await db.execute(sql`
+          INSERT INTO coaches (id, club_id, user_id, name, email, is_active, invite_sent_at, created_at)
+          VALUES (gen_random_uuid(), ${clubId}::uuid, ${userId}::uuid, ${name}, ${email}, true, NOW(), NOW())
+        `);
+      }
 
       await emailService.sendCoachInviteEmail(email, {
         coachName: name,

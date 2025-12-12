@@ -601,12 +601,25 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
     const userId = userResult.rows[0]?.id;
 
     // Also insert into coaches table for data fetching
-    await client.query(
-      `INSERT INTO coaches (id, club_id, user_id, name, email, is_active, invite_sent_at, created_at)
-       VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3, $4, true, NOW(), NOW())
-       ON CONFLICT (email) DO UPDATE SET name = $3, club_id = $1::uuid, is_active = true, invite_sent_at = NOW()`,
-      [clubId, userId, name, email]
+    // First check if coach already exists
+    const existingCoach = await client.query(
+      `SELECT id FROM coaches WHERE email = $1 LIMIT 1`,
+      [email]
     );
+    
+    if (existingCoach.rows.length > 0) {
+      await client.query(
+        `UPDATE coaches SET name = $1, club_id = $2::uuid, is_active = true, invite_sent_at = NOW()
+         WHERE email = $3`,
+        [name, clubId, email]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO coaches (id, club_id, user_id, name, email, is_active, invite_sent_at, created_at)
+         VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3, $4, true, NOW(), NOW())`,
+        [clubId, userId, name, email]
+      );
+    }
 
     const coachSent = await sendTemplateEmail(email, EMAIL_TEMPLATES.COACH_INVITE, {
       coachName: name,
