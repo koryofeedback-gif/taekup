@@ -267,18 +267,21 @@ app.post('/sa-login', async (req, res) => {
 
 registerRoutes(app);
 
-// Serve static files in production
-const distPath = path.join(__dirname, '..', 'dist');
-app.use(express.static(distPath));
+// Serve static files in production only
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction) {
+  const distPath = path.join(__dirname, '..', 'dist');
+  app.use(express.static(distPath));
 
-// SPA fallback - serve index.html for all non-API routes
-app.use((req, res, next) => {
-  if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.includes('.')) {
-    res.sendFile(path.join(distPath, 'index.html'));
-  } else {
-    next();
-  }
-});
+  // SPA fallback - serve index.html for all non-API routes
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.includes('.')) {
+      res.sendFile(path.join(distPath, 'index.html'));
+    } else {
+      next();
+    }
+  });
+}
 
 async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {

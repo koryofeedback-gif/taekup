@@ -811,31 +811,27 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
     onWizardDataUpdate,
     onViewStudentPortal,
 }) => {
-    const [localWizardData, setLocalWizardData] = React.useState<WizardData | null>(null);
-    const [localUserType, setLocalUserType] = React.useState<string | null>(null);
-    const [isReady, setIsReady] = React.useState(false);
-    
-    // Re-read localStorage whenever component mounts or loggedInUserType changes
-    React.useEffect(() => {
-        const savedWizard = localStorage.getItem('taekup_wizard_data');
-        const savedUserType = localStorage.getItem('taekup_user_type');
-        
-        if (savedWizard) {
-            try {
-                setLocalWizardData(JSON.parse(savedWizard));
-            } catch (e) {
-                console.error('[AdminRouteGuard] Failed to parse wizard data:', e);
-            }
-        }
-        setLocalUserType(savedUserType);
-        setIsReady(true);
-    }, [loggedInUserType]);
-    
+    // Read localStorage synchronously on every render for freshest data
+    const localUserType = localStorage.getItem('taekup_user_type');
     const effectiveUserType = loggedInUserType || localUserType as 'owner' | 'coach' | 'parent' | null;
-    const dataToUse = finalWizardData || localWizardData;
     
-    // Show loading while checking localStorage or loading from API
-    if (!isReady || isLoadingData) {
+    // Get wizard data from props or localStorage
+    let dataToUse = finalWizardData;
+    if (!dataToUse) {
+        try {
+            const saved = localStorage.getItem('taekup_wizard_data');
+            if (saved) {
+                dataToUse = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('[AdminRouteGuard] Parse error:', e);
+        }
+    }
+    
+    console.log('[AdminRouteGuard] Render:', { effectiveUserType, hasData: !!dataToUse, isLoadingData });
+    
+    // Show loading only when explicitly loading from API
+    if (isLoadingData) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
                 <div className="text-center">
@@ -846,6 +842,7 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
         );
     }
     
+    // Owner with data - show dashboard
     if (dataToUse && effectiveUserType === 'owner') {
         return (
             <AdminDashboardWrapper
@@ -857,6 +854,7 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
         );
     }
     
+    // Owner without data - show setup required
     if (effectiveUserType === 'owner' && !dataToUse) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
@@ -871,6 +869,7 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
         );
     }
     
+    // Not logged in or not owner - redirect to login
     return <Navigate to="/login" replace />;
 };
 
@@ -889,6 +888,12 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
     onViewStudentPortal,
 }) => {
     const navigate = useNavigate();
+    
+    console.log('[AdminDashboardWrapper] Rendering with data:', { 
+        hasData: !!data, 
+        clubName: data?.clubName,
+        studentCount: data?.students?.length 
+    });
     
     // Use clubId from props, or fall back to localStorage (for impersonation)
     const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
