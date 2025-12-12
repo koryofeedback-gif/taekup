@@ -51,14 +51,39 @@ export interface FeedbackRecord {
 
 export interface CurriculumItem {
     id: string;
-    beltId: string; // The belt this video belongs to
+    beltId: string;
     title: string;
-    url: string; // YouTube link or file URL
+    url: string;
     description: string;
     duration?: string;
-    authorId?: string; // New: Track who created the content
-    authorName?: string; // New: Display name of creator
-    category?: string; // Video category (forms, kicks, self-defense, etc.)
+    authorId?: string;
+    authorName?: string;
+    category?: string;
+    courseId?: string;
+    contentType?: 'video' | 'document' | 'quiz';
+    status?: 'draft' | 'live' | 'archived';
+    pricingType?: 'free' | 'premium' | 'course_only';
+    price?: number;
+    xpReward?: number;
+    orderIndex?: number;
+    viewCount?: number;
+    completionCount?: number;
+    thumbnailUrl?: string;
+}
+
+export interface CurriculumCourse {
+    id: string;
+    clubId?: string;
+    title: string;
+    description?: string;
+    coverImageUrl?: string;
+    beltId?: string;
+    price?: number;
+    status?: 'draft' | 'live' | 'archived';
+    orderIndex?: number;
+    xpReward?: number;
+    estimatedMinutes?: number;
+    items?: CurriculumItem[];
 }
 
 export interface ScheduleItem {

@@ -378,6 +378,100 @@ export const paymentRecoveryAttempts = pgTable('payment_recovery_attempts', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+// =====================================================
+// CREATOR HUB - Curriculum Content & Courses
+// =====================================================
+
+export const contentStatusEnum = pgEnum('content_status', ['draft', 'live', 'archived']);
+export const contentTypeEnum = pgEnum('content_type', ['video', 'document', 'quiz']);
+export const pricingTypeEnum = pgEnum('pricing_type', ['free', 'premium', 'course_only']);
+
+export const curriculumCourses = pgTable('curriculum_courses', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  coverImageUrl: varchar('cover_image_url', { length: 500 }),
+  beltId: varchar('belt_id', { length: 100 }),
+  price: integer('price').default(0),
+  status: contentStatusEnum('status').default('draft'),
+  orderIndex: integer('order_index').default(0),
+  xpReward: integer('xp_reward').default(50),
+  estimatedMinutes: integer('estimated_minutes').default(30),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const curriculumContent = pgTable('curriculum_content', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  courseId: uuid('course_id').references(() => curriculumCourses.id, { onDelete: 'set null' }),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  url: varchar('url', { length: 500 }),
+  thumbnailUrl: varchar('thumbnail_url', { length: 500 }),
+  contentType: contentTypeEnum('content_type').default('video'),
+  beltId: varchar('belt_id', { length: 100 }),
+  tags: jsonb('tags'),
+  duration: varchar('duration', { length: 20 }),
+  status: contentStatusEnum('status').default('draft'),
+  pricingType: pricingTypeEnum('pricing_type').default('free'),
+  price: integer('price').default(0),
+  xpReward: integer('xp_reward').default(10),
+  orderIndex: integer('order_index').default(0),
+  viewCount: integer('view_count').default(0),
+  completionCount: integer('completion_count').default(0),
+  authorName: varchar('author_name', { length: 255 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const contentViews = pgTable('content_views', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  contentId: uuid('content_id').references(() => curriculumContent.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'set null' }),
+  parentEmail: varchar('parent_email', { length: 255 }),
+  watchedSeconds: integer('watched_seconds').default(0),
+  completed: boolean('completed').default(false),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  xpAwarded: integer('xp_awarded').default(0),
+  viewedAt: timestamp('viewed_at', { withTimezone: true }).defaultNow(),
+});
+
+export const courseEnrollments = pgTable('course_enrollments', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  courseId: uuid('course_id').references(() => curriculumCourses.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  progress: integer('progress').default(0),
+  completedItems: jsonb('completed_items'),
+  startedAt: timestamp('started_at', { withTimezone: true }).defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  xpAwarded: integer('xp_awarded').default(0),
+});
+
+export const creatorEarnings = pgTable('creator_earnings', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  contentId: uuid('content_id').references(() => curriculumContent.id, { onDelete: 'set null' }),
+  courseId: uuid('course_id').references(() => curriculumCourses.id, { onDelete: 'set null' }),
+  amount: integer('amount').notNull(),
+  platformFee: integer('platform_fee').default(0),
+  netAmount: integer('net_amount').notNull(),
+  buyerEmail: varchar('buyer_email', { length: 255 }),
+  stripePaymentId: varchar('stripe_payment_id', { length: 255 }),
+  paidOut: boolean('paid_out').default(false),
+  paidOutAt: timestamp('paid_out_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type CurriculumCourse = typeof curriculumCourses.$inferSelect;
+export type NewCurriculumCourse = typeof curriculumCourses.$inferInsert;
+export type CurriculumContentItem = typeof curriculumContent.$inferSelect;
+export type NewCurriculumContent = typeof curriculumContent.$inferInsert;
+export type ContentView = typeof contentViews.$inferSelect;
+export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
+export type CreatorEarning = typeof creatorEarnings.$inferSelect;
+
 export type ChurnReason = typeof churnReasons.$inferSelect;
 export type NewChurnReason = typeof churnReasons.$inferInsert;
 export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
