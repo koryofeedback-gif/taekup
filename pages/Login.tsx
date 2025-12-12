@@ -61,8 +61,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             localStorage.removeItem('impersonationClubId');
             localStorage.removeItem('impersonationClubName');
             
-            // For owners, ALWAYS try to fetch wizard data from database
-            if (userType === 'owner' && user.clubId) {
+            // FIRST: Check if API returned wizardData directly (Vercel production path)
+            if (data.wizardData && Object.keys(data.wizardData).length > 0) {
+                localStorage.setItem('taekup_wizard_data', JSON.stringify(data.wizardData));
+                console.log('[Login] Saved wizard data from login API response');
+            }
+            // FALLBACK: For owners, try to fetch wizard data from database if not in login response
+            else if (userType === 'owner' && user.clubId && !user.wizardCompleted) {
                 try {
                     const wizardResponse = await fetch(`/api/club/${user.clubId}/data`);
                     const wizardResult = await wizardResponse.json();
@@ -74,7 +79,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                             localStorage.setItem('taekup_wizard_data', JSON.stringify(wizardResult.wizardData));
                             // Mark wizard as completed if there's real content
                             user.wizardCompleted = true;
-                            console.log('[Login] Saved wizard data to localStorage');
+                            console.log('[Login] Saved wizard data from /api/club/:id/data');
                         }
                     }
                 } catch (err) {

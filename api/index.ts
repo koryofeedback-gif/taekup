@@ -101,7 +101,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
   try {
     const userResult = await client.query(
       `SELECT u.id, u.email, u.password_hash, u.role, u.name, u.club_id, u.is_active,
-              c.name as club_name, c.status as club_status, c.trial_status, c.trial_end
+              c.name as club_name, c.status as club_status, c.trial_status, c.trial_end, c.wizard_data
        FROM users u LEFT JOIN clubs c ON u.club_id = c.id
        WHERE LOWER(u.email) = $1 AND u.is_active = true LIMIT 1`,
       [email.toLowerCase().trim()]
@@ -113,6 +113,21 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) return res.status(401).json({ error: 'Invalid email or password' });
 
+    // Check if wizard is completed (wizard_data exists in clubs table or onboarding_progress)
+    let wizardCompleted = false;
+    if (user.wizard_data && Object.keys(user.wizard_data).length > 0) {
+      wizardCompleted = true;
+    } else {
+      // Fallback: check onboarding_progress table
+      const onboardingResult = await client.query(
+        `SELECT wizard_completed FROM onboarding_progress WHERE club_id = $1::uuid LIMIT 1`,
+        [user.club_id]
+      );
+      if (onboardingResult.rows.length > 0 && onboardingResult.rows[0].wizard_completed) {
+        wizardCompleted = true;
+      }
+    }
+
     await client.query(
       `INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
        VALUES ('user_login', 'User Login', $1, $2, $3, NOW())`,
@@ -123,7 +138,8 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
       success: true,
       user: { id: user.id, email: user.email, name: user.name || user.club_name, role: user.role,
               clubId: user.club_id, clubName: user.club_name, clubStatus: user.club_status,
-              trialStatus: user.trial_status, trialEnd: user.trial_end }
+              trialStatus: user.trial_status, trialEnd: user.trial_end, wizardCompleted },
+      wizardData: user.wizard_data || null
     });
   } finally { client.release(); }
 }
