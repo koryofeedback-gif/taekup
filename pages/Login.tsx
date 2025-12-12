@@ -46,22 +46,46 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             const user = data.user;
             const userType = user.role === 'owner' ? 'owner' : user.role === 'coach' ? 'coach' : 'parent';
             
-            // Wait for onLoginSuccess to complete (it fetches wizard data for returning owners)
-            await onLoginSuccess(userType, user.name || user.clubName, undefined, user);
+            // CRITICAL: Save all login data to localStorage FIRST before any redirect
+            localStorage.setItem('taekup_user_type', userType);
+            localStorage.setItem('taekup_user_name', user.name || user.clubName || 'User');
+            if (user.clubId) {
+                localStorage.setItem('taekup_club_id', user.clubId);
+            }
+            if (user.studentId) {
+                localStorage.setItem('taekup_student_id', user.studentId);
+            }
             
-            // Give time for localStorage writes to complete
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Clear any stale impersonation data
+            localStorage.removeItem('impersonationToken');
+            localStorage.removeItem('impersonationClubId');
+            localStorage.removeItem('impersonationClubName');
             
-            // Verify localStorage has the data before navigating
-            const hasLocalWizardData = !!localStorage.getItem('taekup_wizard_data');
-            const hasUserType = !!localStorage.getItem('taekup_user_type');
-            const wizardCompleted = user.wizardCompleted || hasLocalWizardData;
+            // For owners with wizard data, fetch it and save to localStorage
+            if (userType === 'owner' && user.clubId && user.wizardCompleted) {
+                try {
+                    const wizardResponse = await fetch(`/api/club/${user.clubId}/data`);
+                    const wizardResult = await wizardResponse.json();
+                    if (wizardResult.success && wizardResult.wizardData) {
+                        localStorage.setItem('taekup_wizard_data', JSON.stringify(wizardResult.wizardData));
+                        console.log('[Login] Saved wizard data to localStorage');
+                    }
+                } catch (err) {
+                    console.error('[Login] Failed to fetch wizard data:', err);
+                }
+            }
             
-            console.log('[Login] Pre-navigation check:', { hasLocalWizardData, hasUserType, wizardCompleted, userType });
+            // Also call the original handler for React state updates
+            await onLoginSuccess(userType, user.name || user.clubName, user.studentId, user);
+            
+            // Verify localStorage before redirect
+            const savedUserType = localStorage.getItem('taekup_user_type');
+            const savedWizardData = localStorage.getItem('taekup_wizard_data');
+            console.log('[Login] Pre-redirect check:', { savedUserType, hasWizardData: !!savedWizardData });
             
             // Determine target URL
             let targetUrl = '/app';
-            if (userType === 'owner' && !wizardCompleted) {
+            if (userType === 'owner' && !user.wizardCompleted) {
                 targetUrl = '/wizard';
             } else if (userType === 'owner') {
                 targetUrl = '/app/admin';
