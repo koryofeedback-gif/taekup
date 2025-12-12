@@ -84,33 +84,40 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [dailyStreak, setDailyStreak] = useState(student.rivalsStats?.dailyStreak || 0);
     const [lastChallengeDate, setLastChallengeDate] = useState<string>(student.rivalsStats?.lastChallengeDate || new Date().toISOString().split('T')[0]);
     
-    // Refs to track latest values for atomic updates
-    const completedContentIdsRef = useRef<string[]>(student.completedContentIds || []);
-    const localTotalPointsRef = useRef<number>(student.totalPoints);
-    const rivalStatsXpRef = useRef<number>(student.rivalsStats?.xp || 0);
-    const studentIdRef = useRef<string>(student.id);
-    const isInitializedRef = useRef(false);
+    // Track completed content and points locally for atomic updates
+    const [localCompletedIds, setLocalCompletedIds] = useState<string[]>(student.completedContentIds || []);
+    const [localTotalPoints, setLocalTotalPoints] = useState<number>(student.totalPoints);
     
-    // Initialize refs only once on mount, reset only when student changes
+    // Track pending local changes to avoid prop overwrites during rapid updates
+    const pendingChangesRef = useRef<{ ids: string[], points: number, xp: number } | null>(null);
+    const lastSyncedStudentIdRef = useRef<string>(student.id);
+    
+    // Sync from props when student changes, but preserve local changes
     useEffect(() => {
-        if (!isInitializedRef.current || studentIdRef.current !== student.id) {
-            studentIdRef.current = student.id;
-            completedContentIdsRef.current = student.completedContentIds || [];
-            localTotalPointsRef.current = student.totalPoints;
-            rivalStatsXpRef.current = student.rivalsStats?.xp || 0;
-            isInitializedRef.current = true;
+        if (lastSyncedStudentIdRef.current !== student.id) {
+            // Different student - reset everything
+            lastSyncedStudentIdRef.current = student.id;
+            setLocalCompletedIds(student.completedContentIds || []);
+            setLocalTotalPoints(student.totalPoints);
+            pendingChangesRef.current = null;
+        } else if (pendingChangesRef.current === null) {
+            // Same student, no pending changes - accept prop updates
+            const propsIds = student.completedContentIds || [];
+            if (propsIds.length > localCompletedIds.length) {
+                setLocalCompletedIds(propsIds);
+            }
+            if (student.totalPoints > localTotalPoints) {
+                setLocalTotalPoints(student.totalPoints);
+            }
         }
-    }, [student.id]);
+    }, [student.id, student.completedContentIds, student.totalPoints, localCompletedIds.length, localTotalPoints]);
     
-    // State for UI reactivity (triggers re-renders when content is completed)
-    const [, forceUpdate] = useState(0);
-    
-    // Sync rivals stats to student record whenever they change (exclude curriculum completion - handled separately)
+    // Sync rivals stats to student record whenever they change
     const syncRivalsStats = useCallback(() => {
         if (!onUpdateStudent) return;
         
         const rivalsStatsToSync: RivalsStats = {
-            xp: rivalStatsXpRef.current,
+            xp: rivalStats.xp,
             wins: rivalStats.wins,
             losses: rivalStats.losses,
             streak: rivalStats.streak,
@@ -124,12 +131,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const updatedStudent = {
             ...student,
             rivalsStats: rivalsStatsToSync,
-            completedContentIds: completedContentIdsRef.current,
-            totalPoints: localTotalPointsRef.current
+            completedContentIds: localCompletedIds,
+            totalPoints: localTotalPoints
         };
         
+        // Clear pending changes after sync
+        pendingChangesRef.current = null;
+        
         onUpdateStudent(updatedStudent);
-    }, [rivalStats.wins, rivalStats.losses, rivalStats.streak, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted, student, onUpdateStudent]);
+    }, [rivalStats, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted, student, onUpdateStudent, localCompletedIds, localTotalPoints]);
     
     // Sync when non-curriculum stats change
     useEffect(() => {
@@ -725,24 +735,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 .filter(v => v.status === 'live' || !v.status)
                                 .filter(v => v.pricingType !== 'premium' || hasPremiumAccess)
                                 .map((video, idx) => {
-                                const isCompleted = completedContentIdsRef.current.includes(video.id);
+                                const isCompleted = localCompletedIds.includes(video.id);
                                 const xpReward = video.xpReward || 10;
                                 const isPremiumContent = video.pricingType === 'premium';
                                 
                                 const handleComplete = (e: React.MouseEvent) => {
                                     e.preventDefault();
-                                    const alreadyCompleted = completedContentIdsRef.current.includes(video.id);
-                                    if (!alreadyCompleted && onUpdateStudent) {
-                                        const newCompletedIds = [...completedContentIdsRef.current, video.id];
-                                        const newXp = rivalStatsXpRef.current + xpReward;
-                                        const newTotalPoints = localTotalPointsRef.current + xpReward;
+                                    if (!localCompletedIds.includes(video.id) && onUpdateStudent) {
+                                        const newCompletedIds = [...localCompletedIds, video.id];
+                                        const newXp = rivalStats.xp + xpReward;
+                                        const newTotalPoints = localTotalPoints + xpReward;
                                         
-                                        completedContentIdsRef.current = newCompletedIds;
-                                        localTotalPointsRef.current = newTotalPoints;
-                                        rivalStatsXpRef.current = newXp;
+                                        pendingChangesRef.current = { ids: newCompletedIds, points: newTotalPoints, xp: newXp };
                                         
+                                        setLocalCompletedIds(newCompletedIds);
+                                        setLocalTotalPoints(newTotalPoints);
                                         setRivalStats(prev => ({ ...prev, xp: newXp }));
-                                        forceUpdate(n => n + 1);
                                         
                                         onUpdateStudent({
                                             ...student,
@@ -753,6 +761,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 xp: newXp
                                             }
                                         });
+                                        
+                                        setTimeout(() => { pendingChangesRef.current = null; }, 1000);
                                     }
                                     window.open(video.url, '_blank');
                                 };

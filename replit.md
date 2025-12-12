@@ -27,8 +27,13 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
 
 ### Feature Specifications
 - **Club Owner (Admin Dashboard)**: Manages students, staff, schedule, content (Creator Hub), club settings, and billing.
+- **Creator Hub**: Enhanced content management system with:
+    - **Content Library**: Upload videos and documents, set belt levels, XP rewards, draft/live status, free/premium access
+    - **Courses**: Bundle content into structured courses with ordering, publish/unpublish workflow
+    - **Analytics**: Track views, completions, revenue metrics, content performance by belt level
+    - **Monetization**: Free vs premium content, XP rewards for completion (10-100 XP per item)
 - **Coach Dashboard**: Handles grading, attendance, AI lesson planning, sparring tracking, challenge building, and personal schedule.
-- **Parent Portal**: Tracks student journey, provides AI insights, practice curriculum, booking, gamification (Rivals), daily habits (Home Dojo), and digital student cards.
+- **Parent Portal**: Tracks student journey, provides AI insights, practice curriculum with XP completion tracking, booking, gamification (Rivals), daily habits (Home Dojo), and digital student cards.
 - **Super Admin Dashboard**: Platform-wide management, including KPIs, club/parent management, payment history, revenue analytics, activity feed, health scores, email tools, CSV exports, and impersonation. New advanced analytics dashboard with cohort analysis, onboarding funnel, churn analysis, payment recovery, MRR goals, and automations.
 - **Email System**: Integration with SendGrid for automated (welcome, trial reminders) and transactional emails (coach invites, password resets, promotions, attendance alerts, birthday wishes, revenue reports).
 
