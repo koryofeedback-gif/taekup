@@ -249,7 +249,8 @@ const App: React.FC = () => {
                 localStorage.setItem('taekup_wizard_data', JSON.stringify(updated));
                 
                 // Also save to database for persistence across logins
-                const clubId = localStorage.getItem('taekup_club_id');
+                // Check both regular clubId and impersonation clubId (for Super Admin view-as mode)
+                const clubId = localStorage.getItem('taekup_club_id') || localStorage.getItem('impersonationClubId');
                 if (clubId) {
                     fetch('/api/club/save-wizard-data', {
                         method: 'POST',
