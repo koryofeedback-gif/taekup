@@ -61,14 +61,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             localStorage.removeItem('impersonationClubId');
             localStorage.removeItem('impersonationClubName');
             
-            // For owners with wizard data, fetch it and save to localStorage
-            if (userType === 'owner' && user.clubId && user.wizardCompleted) {
+            // For owners, ALWAYS try to fetch wizard data from database
+            if (userType === 'owner' && user.clubId) {
                 try {
                     const wizardResponse = await fetch(`/api/club/${user.clubId}/data`);
                     const wizardResult = await wizardResponse.json();
                     if (wizardResult.success && wizardResult.wizardData) {
-                        localStorage.setItem('taekup_wizard_data', JSON.stringify(wizardResult.wizardData));
-                        console.log('[Login] Saved wizard data to localStorage');
+                        // Check if wizard data has actual content (not just defaults)
+                        const wd = wizardResult.wizardData;
+                        const hasContent = wd.clubName || (wd.students && wd.students.length > 0) || (wd.belts && wd.belts.length > 0);
+                        if (hasContent) {
+                            localStorage.setItem('taekup_wizard_data', JSON.stringify(wizardResult.wizardData));
+                            // Mark wizard as completed if there's real content
+                            user.wizardCompleted = true;
+                            console.log('[Login] Saved wizard data to localStorage');
+                        }
                     }
                 } catch (err) {
                     console.error('[Login] Failed to fetch wizard data:', err);
