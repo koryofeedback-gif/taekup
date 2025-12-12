@@ -411,6 +411,8 @@ export async function generateClassPlan(params: {
   classDuration: number;
   studentCount: number;
   language: string;
+  artType?: string;
+  ageGroup?: string;
 }): Promise<string> {
   const openai = getOpenAIClient();
   
@@ -418,28 +420,62 @@ export async function generateClassPlan(params: {
     return getClassPlanFallback(params);
   }
 
+  // Map belt system codes to full martial art names
+  const artTypeMap: Record<string, string> = {
+    'wt': 'World Taekwondo (WT)',
+    'itf': 'ITF Taekwondo',
+    'karate': 'Karate',
+    'bjj': 'Brazilian Jiu-Jitsu',
+    'judo': 'Judo',
+    'custom': 'Martial Arts'
+  };
+  
+  const martialArt = artTypeMap[params.artType || ''] || params.artType || 'Martial Arts';
+  const ageGroup = params.ageGroup || 'mixed ages';
+  
+  // Create an expert system prompt based on the martial art
+  const systemPrompt = `You are a master ${martialArt} instructor with 25+ years of experience in:
+- ${martialArt} techniques, forms, and competition
+- Age-appropriate teaching methods for ${ageGroup}
+- Sport-specific conditioning and flexibility training
+- Child development and motor skill progression
+- Korean/Japanese terminology (use authentic terms with translations)
+- Safety protocols and injury prevention
+
+You create professional, detailed lesson plans that coaches can follow minute-by-minute.`;
+
   try {
-    const prompt = `Create a detailed martial arts class plan:
+    const prompt = `Create a detailed ${martialArt} class plan for ${ageGroup} students:
+
+**Class Details:**
 - Belt Level: ${params.beltLevel}
-- Focus Area: ${params.focusArea}
+- Focus: ${params.focusArea}
 - Duration: ${params.classDuration} minutes
-- Students: ${params.studentCount}
+- Class Size: ~${params.studentCount} students
 
-Include:
-1. Warm-up activities (5-10 min)
-2. Technique drills (main focus)
-3. Partner work or combinations
-4. Cool-down and meditation
+**Required Sections (with exact timing):**
+1. **Warm-up** (${Math.round(params.classDuration * 0.15)} min) - Dynamic stretches, ${martialArt}-specific movements
+2. **Technical Drills** (${Math.round(params.classDuration * 0.35)} min) - Focus on ${params.focusArea} with progressions
+3. **Partner Work / Application** (${Math.round(params.classDuration * 0.30)} min) - Practical application drills
+4. **Conditioning** (${Math.round(params.classDuration * 0.10)} min) - ${martialArt}-specific fitness
+5. **Cool-down & Mat Chat** (${Math.round(params.classDuration * 0.10)} min) - Stretching + character development topic
 
-Format with clear sections and timing. Respond in ${params.language}.`;
+**Include:**
+- Authentic ${martialArt} terminology with English translations
+- Age-appropriate modifications for ${ageGroup}
+- Specific technique names and descriptions
+- Safety reminders where relevant
+- Fun elements to keep students engaged
+
+Format with clear headers, bullet points, and timing. Respond in ${params.language}.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: 'You are an experienced martial arts instructor creating detailed lesson plans.' },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 1000,
+      max_tokens: 1500,
       temperature: 0.7,
     });
 

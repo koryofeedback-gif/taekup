@@ -536,7 +536,8 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
         setIsGenerating(true);
         
         // Try GPT-4o first for higher accuracy, fallback to Gemini
-        let result = await generateLessonPlanGPT(ageGroup, beltLevel, focus, duration, data.language);
+        // Pass the martial art type for specialized lesson plans
+        let result = await generateLessonPlanGPT(ageGroup, beltLevel, focus, duration, data.language, data.beltSystemType);
         
         // If GPT fails (returns fallback), try Gemini
         if (result.includes('Basic form practice')) {
@@ -547,19 +548,83 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
         setIsGenerating(false);
     }
 
-    // Common focus topics for quick selection
-    const focusSuggestions = [
-        'Front Kick (Ap Chagi)',
-        'Roundhouse Kick (Dollyo Chagi)',
-        'Side Kick (Yeop Chagi)',
-        'Back Kick (Dwi Chagi)',
-        'Sparring Combinations',
-        'Poomsae / Forms',
-        'Self-Defense Techniques',
-        'Board Breaking',
-        'Flexibility & Stretching',
-        'Competition Prep'
-    ];
+    // Focus suggestions based on martial art type
+    const focusSuggestionsByArt: Record<string, string[]> = {
+        'wt': [
+            'Front Kick (Ap Chagi)',
+            'Roundhouse Kick (Dollyo Chagi)',
+            'Side Kick (Yeop Chagi)',
+            'Back Kick (Dwi Chagi)',
+            'Sparring Combinations',
+            'Poomsae / Forms',
+            'Self-Defense Techniques',
+            'Board Breaking',
+            'Flexibility & Stretching',
+            'Competition Prep'
+        ],
+        'itf': [
+            'Front Kick (Ap Chagi)',
+            'Turning Kick (Dollyo Chagi)',
+            'Side Piercing Kick (Yop Cha Jirugi)',
+            'Back Kick (Dwit Chagi)',
+            'Tul (Patterns)',
+            'Step Sparring',
+            'Self-Defense (Hosinsul)',
+            'Power Breaking',
+            'Conditioning',
+            'Theory & Terminology'
+        ],
+        'karate': [
+            'Front Kick (Mae Geri)',
+            'Roundhouse Kick (Mawashi Geri)',
+            'Side Kick (Yoko Geri)',
+            'Back Kick (Ushiro Geri)',
+            'Kata Practice',
+            'Kumite Combinations',
+            'Kihon (Basics)',
+            'Bunkai (Applications)',
+            'Board Breaking',
+            'Competition Prep'
+        ],
+        'bjj': [
+            'Guard Passing',
+            'Mount Escapes',
+            'Submissions from Guard',
+            'Side Control Techniques',
+            'Back Control & Chokes',
+            'Takedowns',
+            'Sweeps',
+            'Positional Drilling',
+            'Live Rolling Strategy',
+            'Competition Prep'
+        ],
+        'judo': [
+            'Osoto Gari (Major Outer Reap)',
+            'Seoi Nage (Shoulder Throw)',
+            'Ouchi Gari (Major Inner Reap)',
+            'Uchi Mata (Inner Thigh Throw)',
+            'Newaza (Ground Techniques)',
+            'Grip Fighting (Kumi-kata)',
+            'Randori Practice',
+            'Kata',
+            'Competition Prep',
+            'Ukemi (Breakfalls)'
+        ],
+        'custom': [
+            'Striking Combinations',
+            'Kicking Techniques',
+            'Forms / Kata',
+            'Sparring Drills',
+            'Self-Defense',
+            'Conditioning',
+            'Flexibility Training',
+            'Partner Drills',
+            'Competition Prep',
+            'Weapons Training'
+        ]
+    };
+
+    const focusSuggestions = focusSuggestionsByArt[data.beltSystemType] || focusSuggestionsByArt['wt'];
 
     return (
         <div className="p-6 min-h-[600px] space-y-8 bg-gray-800 rounded-b-lg border-x border-b border-gray-700">

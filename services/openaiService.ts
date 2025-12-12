@@ -73,7 +73,8 @@ export const generateLessonPlanGPT = async (
   beltLevel: string,
   focusTopic: string,
   duration: string = "45",
-  language: string = 'English'
+  language: string = 'English',
+  artType?: string
 ): Promise<string> => {
   const fallback = `**1. Warm-up (5 min):**
 Jumping jacks, high knees, arm circles
@@ -94,6 +95,8 @@ Discussion about respect and discipline`;
       classDuration: parseInt(duration) || 45,
       studentCount: 10,
       language,
+      artType,
+      ageGroup,
     });
     return plan || fallback;
   } catch (error) {

@@ -45,6 +45,8 @@ export const aiAPI = {
     classDuration: number;
     studentCount: number;
     language: string;
+    artType?: string;
+    ageGroup?: string;
   }) {
     const result = await fetchAPI('/ai/class-plan', {
       method: 'POST',
