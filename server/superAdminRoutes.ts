@@ -582,9 +582,11 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
       branches: wizardData.branches || 1,
       branchNames: wizardData.branchNames || ['Main'],
       classNames: wizardData.classNames || ['Beginner', 'Intermediate', 'Advanced'],
-      // Preserve schedule and class data from wizard_data
+      // Preserve schedule, events, and class data from wizard_data
       schedule: wizardData.schedule || [],
+      events: wizardData.events || [],
       classes: wizardData.classes || [],
+      curriculum: wizardData.curriculum || [],
       locationClasses: wizardData.locationClasses || {},
       branding: wizardData.branding || {
         primaryColor: '#22d3ee',

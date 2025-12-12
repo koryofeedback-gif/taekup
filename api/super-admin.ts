@@ -1469,7 +1469,13 @@ async function handleImpersonateVerify(req: VercelRequest, res: VercelResponse, 
         primaryColor: '#22d3ee',
         logoUrl: '',
         style: 'modern'
-      }
+      },
+      // Ensure schedule, events, classes, curriculum arrays exist
+      schedule: wizardData.schedule || [],
+      events: wizardData.events || [],
+      classes: wizardData.classes || [],
+      curriculum: wizardData.curriculum || [],
+      locationClasses: wizardData.locationClasses || {}
     };
     
     await db`
