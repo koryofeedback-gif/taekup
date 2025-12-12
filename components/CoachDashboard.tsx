@@ -551,27 +551,68 @@ const AddEventModal: React.FC<{ onClose: () => void, onAdd: (event: CalendarEven
     )
 }
 
-const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastCommand: string | null }> = ({ transcript, isActive, lastCommand }) => {
+const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastCommand: string | null, students: Student[], skills: {id: string, name: string}[] }> = ({ transcript, isActive, lastCommand, students, skills }) => {
     if (!isActive) return null;
+    
+    const exampleStudent = students[0]?.name || "Amin";
+    const exampleSkill = skills[0]?.name || "Kicks";
+    
     return (
         <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center pointer-events-none">
-            <div className="bg-gray-900/90 p-8 rounded-3xl border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.5)] text-center max-w-lg w-full relative overflow-hidden">
+            <div className="bg-gray-900/90 p-8 rounded-3xl border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.5)] text-center max-w-2xl w-full relative overflow-hidden">
                 {/* Animated Wave */}
                 <div className="absolute top-0 left-0 right-0 h-2 bg-cyan-500 animate-pulse"></div>
                 
-                <div className="text-6xl mb-6 animate-bounce text-cyan-400">🎙️</div>
+                <div className="text-5xl mb-4 animate-bounce text-cyan-400">🎙️</div>
                 <h3 className="text-2xl font-bold text-white mb-4 font-mono tracking-widest">SENSEI VOICE ACTIVE</h3>
                 
                 {/* Live Transcript */}
-                <div className="bg-black/50 p-4 rounded-xl min-h-[80px] flex items-center justify-center mb-4 border border-gray-700">
+                <div className="bg-black/50 p-4 rounded-xl min-h-[60px] flex items-center justify-center mb-4 border border-gray-700">
                     <p className="text-xl text-cyan-300 font-mono">
                         {transcript || "Listening..."}
                         <span className="animate-pulse">_</span>
                     </p>
                 </div>
 
+                {/* Command Guide */}
+                <div className="bg-gray-800/80 rounded-xl p-4 mb-4 text-left border border-gray-700">
+                    <h4 className="text-sm font-bold text-cyan-400 uppercase mb-3 text-center">Voice Command Structure</h4>
+                    <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                        <div className="bg-gray-700/50 rounded-lg p-2">
+                            <p className="text-xs text-gray-400 uppercase">Student</p>
+                            <p className="text-white font-bold">{exampleStudent}</p>
+                        </div>
+                        <div className="bg-gray-700/50 rounded-lg p-2">
+                            <p className="text-xs text-gray-400 uppercase">Skill</p>
+                            <p className="text-white font-bold">{exampleSkill}</p>
+                        </div>
+                        <div className="bg-gray-700/50 rounded-lg p-2">
+                            <p className="text-xs text-gray-400 uppercase">Score</p>
+                            <p className="text-white font-bold">Green</p>
+                        </div>
+                    </div>
+                    <div className="text-center mb-3">
+                        <p className="text-gray-400 text-xs mb-1">Example:</p>
+                        <p className="text-cyan-300 font-mono text-sm">"{exampleStudent} {exampleSkill} green"</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="text-center">
+                            <span className="text-green-400 font-bold">💚 Green</span>
+                            <p className="text-gray-500">"green" "good" "yes"</p>
+                        </div>
+                        <div className="text-center">
+                            <span className="text-yellow-400 font-bold">💛 Yellow</span>
+                            <p className="text-gray-500">"yellow" "okay" "half"</p>
+                        </div>
+                        <div className="text-center">
+                            <span className="text-red-400 font-bold">❤️ Red</span>
+                            <p className="text-gray-500">"red" "bad" "no"</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex justify-between text-xs text-gray-500 uppercase font-mono">
-                    <span>Command Mode</span>
+                    <span>🎤 Chrome Only</span>
                     <span>Say "Stop" to exit</span>
                 </div>
 
@@ -1350,7 +1391,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 </div>
             )}
             
-            <SenseiVoiceHUD transcript={voiceTranscript} isActive={isVoiceActive} lastCommand={lastVoiceCommand} />
+            <SenseiVoiceHUD transcript={voiceTranscript} isActive={isVoiceActive} lastCommand={lastVoiceCommand} students={students} skills={activeSkills} />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 
