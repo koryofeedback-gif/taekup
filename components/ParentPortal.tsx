@@ -828,7 +828,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {/* Glowing Effect */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-2 bg-gradient-to-r from-transparent via-blue-500 to-transparent blur-sm"></div>
                     
-                    <h3 className="text-center text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Black Belt Time Machine</h3>
+                    <h3 className="text-center text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{blackBeltPrediction.targetBeltName} Time Machine</h3>
                     
                     <div className="text-center mb-6">
                         <p className="text-sm text-gray-500">Estimated Achievement Date</p>
@@ -873,10 +873,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </div>
                     </div>
 
-                    {/* Road to Black Belt Progress */}
+                    {/* Road to Final Belt Progress */}
                     <div>
                         <div className="flex justify-between text-xs text-gray-400 mb-1">
-                            <span>Road to Black Belt</span>
+                            <span>Road to {blackBeltPrediction.targetBeltName}</span>
                             <span>{Math.round(blackBeltPrediction.percentComplete)}%</span>
                         </div>
                         <div className="w-full bg-gray-800 rounded-full h-3 border border-gray-700">
