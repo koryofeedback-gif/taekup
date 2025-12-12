@@ -395,6 +395,12 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
         }
     }
 
+    const handleRemovePrivateSlot = (id: string) => {
+        if(confirm('Remove this private lesson slot?')) {
+            onUpdateData({ privateSlots: (data.privateSlots || []).filter(s => s.id !== id) });
+        }
+    }
+
     return (
         <div className="space-y-8">
             {/* Weekly Schedule */}
@@ -433,6 +439,54 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             </div>
                         )
                     })}
+                </div>
+            </div>
+
+            {/* Private Lessons */}
+            <div>
+                <SectionHeader 
+                    title="Private Lesson Slots" 
+                    description="Create bookable private lesson slots for parents." 
+                    action={
+                        <button onClick={() => onOpenModal('private')} className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded shadow-lg">
+                            + Add Private Slot
+                        </button>
+                    }
+                />
+                <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                    <table className="w-full text-left text-sm text-gray-300">
+                        <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
+                            <tr>
+                                <th className="px-6 py-3">Date</th>
+                                <th className="px-6 py-3">Time</th>
+                                <th className="px-6 py-3">Coach</th>
+                                <th className="px-6 py-3">Price</th>
+                                <th className="px-6 py-3">Status</th>
+                                <th className="px-6 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-700">
+                            {(data.privateSlots || []).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(slot => (
+                                <tr key={slot.id} className="hover:bg-gray-700/50">
+                                    <td className="px-6 py-4 font-medium text-white">{new Date(slot.date).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4">{slot.time}</td>
+                                    <td className="px-6 py-4">{slot.coachName}</td>
+                                    <td className="px-6 py-4 text-green-400 font-bold">${slot.price}</td>
+                                    <td className="px-6 py-4">
+                                        {slot.isBooked ? (
+                                            <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">Booked</span>
+                                        ) : (
+                                            <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">Available</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">Remove</button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(data.privateSlots || []).length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">No private lesson slots. Add slots for parents to book.</td></tr>}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1960,6 +2014,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [tempCoach, setTempCoach] = useState<Partial<Coach>>({});
     const [tempClass, setTempClass] = useState<Partial<ScheduleItem>>({});
     const [tempEvent, setTempEvent] = useState<Partial<CalendarEvent>>({});
+    const [tempPrivate, setTempPrivate] = useState<{coachName: string, date: string, time: string, price: number}>({coachName: '', date: '', time: '', price: 50});
     
     // Bulk Import State
     const [studentImportMethod, setStudentImportMethod] = useState<'single' | 'bulk' | 'excel'>('single');
@@ -2318,6 +2373,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
         setTempEvent({});
     }
 
+    const handleAddPrivate = () => {
+        if(!tempPrivate.coachName || !tempPrivate.date || !tempPrivate.time) return;
+        const newSlot = {
+            id: `prv-${Date.now()}`,
+            coachName: tempPrivate.coachName,
+            date: tempPrivate.date,
+            time: tempPrivate.time,
+            price: tempPrivate.price || 50,
+            isBooked: false
+        };
+        onUpdateData({ privateSlots: [...(data.privateSlots || []), newSlot] });
+        setModalType(null);
+        setTempPrivate({coachName: '', date: '', time: '', price: 50});
+    }
+
     return (
         <div className="min-h-screen bg-gray-900 flex">
             {/* SIDEBAR */}
@@ -2611,6 +2681,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         </select>
                         <input type="text" placeholder="Location" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempEvent({...tempEvent, location: e.target.value})} />
                         <button onClick={handleAddEvent} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded">Save Event</button>
+                    </div>
+                </Modal>
+            )}
+
+            {modalType === 'private' && (
+                <Modal title="Add Private Lesson Slot" onClose={() => setModalType(null)}>
+                    <div className="space-y-4">
+                        <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempPrivate({...tempPrivate, coachName: e.target.value})}>
+                            <option value="">Select Coach</option>
+                            <option value={data.ownerName}>{data.ownerName} (Owner)</option>
+                            {data.coaches.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                        </select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <input type="date" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempPrivate({...tempPrivate, date: e.target.value})} />
+                            <input type="time" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempPrivate({...tempPrivate, time: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Price ($)</label>
+                            <input type="number" min="0" value={tempPrivate.price} className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempPrivate({...tempPrivate, price: parseInt(e.target.value) || 0})} />
+                        </div>
+                        <button onClick={handleAddPrivate} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2 rounded">Add Private Slot</button>
                     </div>
                 </Modal>
             )}
