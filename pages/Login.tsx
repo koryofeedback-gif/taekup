@@ -90,9 +90,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             const savedWizardData = localStorage.getItem('taekup_wizard_data');
             console.log('[Login] Pre-redirect check:', { savedUserType, hasWizardData: !!savedWizardData });
             
+            // Check if wizard is completed - either from API or from localStorage having wizard data
+            const hasLocalWizardData = !!savedWizardData;
+            const wizardIsCompleted = user.wizardCompleted || hasLocalWizardData;
+            
             // Determine target URL
             let targetUrl = '/app';
-            if (userType === 'owner' && !user.wizardCompleted) {
+            if (userType === 'owner' && !wizardIsCompleted) {
                 targetUrl = '/wizard';
             } else if (userType === 'owner') {
                 targetUrl = '/app/admin';
@@ -101,6 +105,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             } else if (userType === 'parent' && user.studentId) {
                 targetUrl = `/app/parent/${user.studentId}`;
             }
+            
+            console.log('[Login] Redirecting to:', targetUrl, { wizardIsCompleted, hasLocalWizardData });
             
             // Use full page reload to ensure fresh state from localStorage
             window.location.href = targetUrl;

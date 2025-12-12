@@ -336,14 +336,38 @@ const App: React.FC = () => {
     );
 
     const handleLogout = useCallback(() => {
+        // Save wizard data before clearing anything (backup)
+        const wizardDataBackup = localStorage.getItem('taekup_wizard_data');
+        const signupDataBackup = localStorage.getItem('taekup_signup_data');
+        const clubIdBackup = localStorage.getItem('taekup_club_id');
+        
         setLoggedInUserType(null);
         setLoggedInUserName(null);
         setParentStudentId(null);
-        // Clear login state from localStorage but keep wizard data for re-login
+        
+        // Clear ONLY login session state - NOT app data
         localStorage.removeItem('taekup_user_type');
         localStorage.removeItem('taekup_user_name');
         localStorage.removeItem('taekup_student_id');
-        // Note: We keep taekup_wizard_data and taekup_signup_data so data persists across logout/login
+        
+        // Clear impersonation data
+        localStorage.removeItem('impersonationToken');
+        localStorage.removeItem('impersonationClubId');
+        localStorage.removeItem('impersonationClubName');
+        
+        // CRITICAL: Restore wizard data if it was accidentally cleared
+        if (wizardDataBackup) {
+            localStorage.setItem('taekup_wizard_data', wizardDataBackup);
+        }
+        if (signupDataBackup) {
+            localStorage.setItem('taekup_signup_data', signupDataBackup);
+        }
+        if (clubIdBackup) {
+            localStorage.setItem('taekup_club_id', clubIdBackup);
+        }
+        
+        console.log('[Logout] Preserved wizard data:', !!wizardDataBackup);
+        
         // Redirect to login page
         window.location.href = '/login';
     }, []);
