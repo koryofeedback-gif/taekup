@@ -218,6 +218,7 @@ export interface Student {
   lifeSkillsHistory: LifeSkill[]; // Log of completed habits
   customHabits: Habit[]; // Personalized list of questions
   rivalsStats?: RivalsStats; // Dojang Rivals engagement data
+  completedContentIds?: string[]; // IDs of completed curriculum content for XP tracking
 }
 
 // Holiday Schedule Types for Black Belt Time Machine accuracy

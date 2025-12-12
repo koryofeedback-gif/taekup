@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory, RivalsStats, HolidayScheduleType } from '../types';
 import { HOLIDAY_PRESETS } from '../types';
 import { BeltIcon, CalendarIcon } from './icons/FeatureIcons';
@@ -84,12 +84,33 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [dailyStreak, setDailyStreak] = useState(student.rivalsStats?.dailyStreak || 0);
     const [lastChallengeDate, setLastChallengeDate] = useState<string>(student.rivalsStats?.lastChallengeDate || new Date().toISOString().split('T')[0]);
     
-    // Sync rivals stats to student record whenever they change
+    // Refs to track latest values for atomic updates
+    const completedContentIdsRef = useRef<string[]>(student.completedContentIds || []);
+    const localTotalPointsRef = useRef<number>(student.totalPoints);
+    const rivalStatsXpRef = useRef<number>(student.rivalsStats?.xp || 0);
+    const studentIdRef = useRef<string>(student.id);
+    const isInitializedRef = useRef(false);
+    
+    // Initialize refs only once on mount, reset only when student changes
+    useEffect(() => {
+        if (!isInitializedRef.current || studentIdRef.current !== student.id) {
+            studentIdRef.current = student.id;
+            completedContentIdsRef.current = student.completedContentIds || [];
+            localTotalPointsRef.current = student.totalPoints;
+            rivalStatsXpRef.current = student.rivalsStats?.xp || 0;
+            isInitializedRef.current = true;
+        }
+    }, [student.id]);
+    
+    // State for UI reactivity (triggers re-renders when content is completed)
+    const [, forceUpdate] = useState(0);
+    
+    // Sync rivals stats to student record whenever they change (exclude curriculum completion - handled separately)
     const syncRivalsStats = useCallback(() => {
         if (!onUpdateStudent) return;
         
         const rivalsStatsToSync: RivalsStats = {
-            xp: rivalStats.xp,
+            xp: rivalStatsXpRef.current,
             wins: rivalStats.wins,
             losses: rivalStats.losses,
             streak: rivalStats.streak,
@@ -102,21 +123,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         const updatedStudent = {
             ...student,
-            rivalsStats: rivalsStatsToSync
+            rivalsStats: rivalsStatsToSync,
+            completedContentIds: completedContentIdsRef.current,
+            totalPoints: localTotalPointsRef.current
         };
         
         onUpdateStudent(updatedStudent);
-    }, [rivalStats, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted, student, onUpdateStudent]);
+    }, [rivalStats.wins, rivalStats.losses, rivalStats.streak, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted, student, onUpdateStudent]);
     
-    // Sync when stats change
+    // Sync when non-curriculum stats change
     useEffect(() => {
-        // Debounce the sync to avoid too many updates
         const timeoutId = setTimeout(() => {
             syncRivalsStats();
         }, 500);
         
         return () => clearTimeout(timeoutId);
-    }, [rivalStats.xp, rivalStats.wins, rivalStats.losses, rivalStats.streak, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted]);
+    }, [rivalStats.wins, rivalStats.losses, rivalStats.streak, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted]);
     
     // Challenge Inbox State
     interface PendingChallenge {
@@ -699,22 +721,71 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </h4>
                         
                         {hasVideos ? (
-                            studentVideos.map((video, idx) => (
-                                <a key={idx} href={video.url} target="_blank" rel="noopener noreferrer" className="bg-gray-800 rounded-xl overflow-hidden shadow-lg border border-gray-700 flex group cursor-pointer hover:border-sky-500 transition-colors">
-                                    <div className="w-24 bg-gray-900 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-300">
-                                        🥋
-                                    </div>
-                                    <div className="p-4 flex-1">
-                                        <h4 className="font-bold text-white text-sm">{video.title}</h4>
-                                        <p className="text-xs text-gray-500 mt-1">Watch Video</p>
-                                    </div>
-                                    <div className="flex items-center px-4">
-                                        <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center group-hover:bg-sky-400 shadow-lg shadow-blue-600/30">
-                                            <span className="text-white text-xs">▶</span>
+                            studentVideos
+                                .filter(v => v.status === 'live' || !v.status)
+                                .filter(v => v.pricingType !== 'premium' || hasPremiumAccess)
+                                .map((video, idx) => {
+                                const isCompleted = completedContentIdsRef.current.includes(video.id);
+                                const xpReward = video.xpReward || 10;
+                                const isPremiumContent = video.pricingType === 'premium';
+                                
+                                const handleComplete = (e: React.MouseEvent) => {
+                                    e.preventDefault();
+                                    const alreadyCompleted = completedContentIdsRef.current.includes(video.id);
+                                    if (!alreadyCompleted && onUpdateStudent) {
+                                        const newCompletedIds = [...completedContentIdsRef.current, video.id];
+                                        const newXp = rivalStatsXpRef.current + xpReward;
+                                        const newTotalPoints = localTotalPointsRef.current + xpReward;
+                                        
+                                        completedContentIdsRef.current = newCompletedIds;
+                                        localTotalPointsRef.current = newTotalPoints;
+                                        rivalStatsXpRef.current = newXp;
+                                        
+                                        setRivalStats(prev => ({ ...prev, xp: newXp }));
+                                        forceUpdate(n => n + 1);
+                                        
+                                        onUpdateStudent({
+                                            ...student,
+                                            completedContentIds: newCompletedIds,
+                                            totalPoints: newTotalPoints,
+                                            rivalsStats: {
+                                                ...(student.rivalsStats || { wins: 0, losses: 0, streak: 0, xp: 0, dailyStreak: 0, teamBattlesWon: 0, familyChallengesCompleted: 0, mysteryBoxCompleted: 0 }),
+                                                xp: newXp
+                                            }
+                                        });
+                                    }
+                                    window.open(video.url, '_blank');
+                                };
+                                
+                                return (
+                                    <div 
+                                        key={idx} 
+                                        onClick={handleComplete}
+                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border flex group cursor-pointer transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : 'border-gray-700 hover:border-sky-500'}`}
+                                    >
+                                        <div className={`w-24 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-300 ${isCompleted ? 'bg-green-900/30' : 'bg-gray-900'}`}>
+                                            {isCompleted ? '✅' : (video.contentType === 'document' ? '📄' : '🥋')}
+                                        </div>
+                                        <div className="p-4 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <h4 className={`font-bold text-sm ${isCompleted ? 'text-green-400' : 'text-white'}`}>{video.title}</h4>
+                                                {isPremiumContent && <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">Premium</span>}
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <p className="text-xs text-gray-500">{isCompleted ? 'Completed!' : 'Watch to earn XP'}</p>
+                                                <span className={`text-xs font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                    {isCompleted ? `+${xpReward} XP earned` : `+${xpReward} XP`}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center px-4">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${isCompleted ? 'bg-green-500 shadow-green-600/30' : 'bg-sky-500 group-hover:bg-sky-400 shadow-blue-600/30'}`}>
+                                                <span className="text-white text-xs">{isCompleted ? '✓' : '▶'}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </a>
-                            ))
+                                );
+                            })
                         ) : (
                             // Fallback: Family Missions if no videos
                             <div className="space-y-3">
