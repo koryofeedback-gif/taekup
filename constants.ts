@@ -234,3 +234,57 @@ export const JUDO_BELTS: Belt[] = [
     { id: 'j-6', name: 'Brown', color1: '#A52A2A' },
     { id: 'j-7', name: 'Black', color1: '#000000' }
 ];
+
+export const HAPKIDO_BELTS: Belt[] = [
+    { id: 'hkd-1', name: 'White', color1: '#FFFFFF' },
+    { id: 'hkd-2', name: 'Yellow', color1: '#FFD700' },
+    { id: 'hkd-3', name: 'Orange', color1: '#FFA500' },
+    { id: 'hkd-4', name: 'Green', color1: '#008000' },
+    { id: 'hkd-5', name: 'Blue', color1: '#0000FF' },
+    { id: 'hkd-6', name: 'Brown', color1: '#A52A2A' },
+    { id: 'hkd-7', name: 'Red', color1: '#FF0000' },
+    { id: 'hkd-8', name: 'Black', color1: '#000000' }
+];
+
+export const TANGSOODO_BELTS: Belt[] = [
+    { id: 'tsd-1', name: 'White', color1: '#FFFFFF' },
+    { id: 'tsd-2', name: 'Orange', color1: '#FFA500' },
+    { id: 'tsd-3', name: 'Green', color1: '#008000' },
+    { id: 'tsd-4', name: 'Green (2 Stripes)', color1: '#008000' },
+    { id: 'tsd-5', name: 'Red', color1: '#FF0000' },
+    { id: 'tsd-6', name: 'Red (1 Stripe)', color1: '#FF0000' },
+    { id: 'tsd-7', name: 'Red (2 Stripes)', color1: '#FF0000' },
+    { id: 'tsd-8', name: 'Midnight Blue', color1: '#191970' }
+];
+
+export const AIKIDO_BELTS: Belt[] = [
+    { id: 'aik-1', name: 'White (6th Kyu)', color1: '#FFFFFF' },
+    { id: 'aik-2', name: 'Yellow (5th Kyu)', color1: '#FFD700' },
+    { id: 'aik-3', name: 'Orange (4th Kyu)', color1: '#FFA500' },
+    { id: 'aik-4', name: 'Green (3rd Kyu)', color1: '#008000' },
+    { id: 'aik-5', name: 'Blue (2nd Kyu)', color1: '#0000FF' },
+    { id: 'aik-6', name: 'Brown (1st Kyu)', color1: '#A52A2A' },
+    { id: 'aik-7', name: 'Black (Shodan)', color1: '#000000' }
+];
+
+export const KRAVMAGA_BELTS: Belt[] = [
+    { id: 'km-1', name: 'White (Practitioner 1)', color1: '#FFFFFF' },
+    { id: 'km-2', name: 'Yellow (Practitioner 2)', color1: '#FFD700' },
+    { id: 'km-3', name: 'Orange (Practitioner 3)', color1: '#FFA500' },
+    { id: 'km-4', name: 'Green (Graduate 1)', color1: '#008000' },
+    { id: 'km-5', name: 'Blue (Graduate 2)', color1: '#0000FF' },
+    { id: 'km-6', name: 'Brown (Graduate 3)', color1: '#A52A2A' },
+    { id: 'km-7', name: 'Black (Expert)', color1: '#000000' }
+];
+
+export const KUNGFU_BELTS: Belt[] = [
+    { id: 'kf-1', name: 'White Sash', color1: '#FFFFFF' },
+    { id: 'kf-2', name: 'Yellow Sash', color1: '#FFD700' },
+    { id: 'kf-3', name: 'Orange Sash', color1: '#FFA500' },
+    { id: 'kf-4', name: 'Green Sash', color1: '#008000' },
+    { id: 'kf-5', name: 'Blue Sash', color1: '#0000FF' },
+    { id: 'kf-6', name: 'Purple Sash', color1: '#800080' },
+    { id: 'kf-7', name: 'Brown Sash', color1: '#A52A2A' },
+    { id: 'kf-8', name: 'Red Sash', color1: '#FF0000' },
+    { id: 'kf-9', name: 'Black Sash', color1: '#000000' }
+];

@@ -264,7 +264,7 @@ export interface WizardData {
   logo?: File | string | null;
   slogan: string;
   // Step 2 fields
-  beltSystemType: 'wt' | 'itf' | 'karate' | 'bjj' | 'judo' | 'custom';
+  beltSystemType: 'wt' | 'itf' | 'karate' | 'bjj' | 'judo' | 'hapkido' | 'tangsoodo' | 'aikido' | 'kravmaga' | 'kungfu' | 'custom';
   belts: Belt[];
   stripesPerBelt: number;
   // Step 3 fields
