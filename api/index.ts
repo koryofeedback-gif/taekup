@@ -313,6 +313,141 @@ async function handleStripePublishableKey(req: VercelRequest, res: VercelRespons
   return res.json({ publishableKey: key });
 }
 
+async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  if (!clubId) {
+    return res.status(400).json({ error: 'Club ID is required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const clubResult = await client.query(
+      `SELECT id, name, owner_email, owner_name, country, city, art_type, 
+              wizard_data, trial_start, trial_end, trial_status, status
+       FROM clubs WHERE id = $1::uuid`,
+      [clubId]
+    );
+    const club = clubResult.rows[0];
+
+    if (!club) {
+      return res.status(404).json({ error: 'Club not found' });
+    }
+
+    const studentsResult = await client.query(
+      `SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
+              total_xp, current_streak, stripe_count
+       FROM students WHERE club_id = $1::uuid AND is_active = true`,
+      [clubId]
+    );
+
+    const coachesResult = await client.query(
+      `SELECT id, name, email, location, assigned_classes
+       FROM coaches WHERE club_id = $1::uuid AND is_active = true`,
+      [clubId]
+    );
+
+    const savedWizardData = club.wizard_data || {};
+    const savedBelts = savedWizardData.belts || [];
+    
+    const getBeltIdFromName = (beltName: string): string => {
+      if (!beltName) return savedBelts[0]?.id || 'white';
+      const matchedBelt = savedBelts.find((b: any) => 
+        b.name?.toLowerCase() === beltName.toLowerCase() ||
+        b.id?.toLowerCase() === beltName.toLowerCase()
+      );
+      return matchedBelt?.id || savedBelts[0]?.id || 'white';
+    };
+    
+    const students = studentsResult.rows.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      parentEmail: s.parent_email,
+      parentName: s.parent_name,
+      parentPhone: s.parent_phone,
+      beltId: getBeltIdFromName(s.belt),
+      birthday: s.birthdate,
+      totalXP: s.total_xp || 0,
+      currentStreak: s.current_streak || 0,
+      stripeCount: s.stripe_count || 0,
+      performanceHistory: [],
+      homeDojo: { character: [], chores: [], school: [], health: [] }
+    }));
+
+    const coaches = coachesResult.rows.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      location: c.location || '',
+      assignedClasses: c.assigned_classes || []
+    }));
+
+    const wizardData = {
+      ...savedWizardData,
+      students,
+      coaches,
+      clubName: savedWizardData.clubName || club.name,
+      ownerName: savedWizardData.ownerName || club.owner_name || '',
+      country: savedWizardData.country || club.country || 'US',
+    };
+
+    return res.json({
+      success: true,
+      club: {
+        id: club.id,
+        name: club.name,
+        ownerEmail: club.owner_email,
+        ownerName: club.owner_name,
+        trialStart: club.trial_start,
+        trialEnd: club.trial_end,
+        trialStatus: club.trial_status,
+        status: club.status
+      },
+      wizardData
+    });
+  } catch (error: any) {
+    console.error('[Club Data] Fetch error:', error);
+    return res.status(500).json({ error: 'Failed to fetch club data' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { clubId, wizardData } = parseBody(req);
+
+  if (!clubId || !wizardData) {
+    return res.status(400).json({ error: 'Club ID and wizard data are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE clubs 
+       SET wizard_data = $1::jsonb, updated_at = NOW()
+       WHERE id = $2::uuid`,
+      [JSON.stringify(wizardData), clubId]
+    );
+
+    await client.query(
+      `INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
+       VALUES ($1::uuid, true, NOW())
+       ON CONFLICT (club_id) DO UPDATE SET wizard_completed = true`,
+      [clubId]
+    );
+
+    console.log('[Wizard] Saved wizard data for club:', clubId);
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[Wizard] Save error:', error);
+    return res.status(500).json({ error: 'Failed to save wizard data' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleTaekBot(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { message, clubName, artType, language } = parseBody(req);
@@ -570,6 +705,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/ai/welcome-email' || path === '/ai/welcome-email/') return await handleWelcomeEmail(req, res);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
+    
+    // Club data routes
+    if (path === '/club/save-wizard-data' || path === '/club/save-wizard-data/') return await handleSaveWizardData(req, res);
+    
+    const clubDataMatch = path.match(/^\/club\/([^/]+)\/data\/?$/);
+    if (clubDataMatch) return await handleGetClubData(req, res, clubDataMatch[1]);
     
     const linkParentMatch = path.match(/^\/students\/([^/]+)\/link-parent\/?$/);
     if (linkParentMatch) return await handleLinkParent(req, res, linkParentMatch[1]);
