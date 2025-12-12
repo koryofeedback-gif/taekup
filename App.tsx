@@ -882,15 +882,22 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
     onWizardDataUpdate,
     onViewStudentPortal,
 }) => {
-    // Read localStorage synchronously on every render for freshest data
-    const localUserType = localStorage.getItem('taekup_user_type');
+    // Check if in impersonation mode (Super Admin "View As")
+    const isImpersonatingSession = !!sessionStorage.getItem('impersonationToken');
+    
+    // Read user type: check sessionStorage first for impersonation, then props/localStorage
+    const localUserType = isImpersonatingSession 
+        ? sessionStorage.getItem('impersonation_user_type')
+        : localStorage.getItem('taekup_user_type');
     const effectiveUserType = loggedInUserType || localUserType as 'owner' | 'coach' | 'parent' | null;
     
-    // Get wizard data from props or localStorage
+    // Get wizard data: check sessionStorage first for impersonation, then props/localStorage
     let dataToUse = finalWizardData;
     if (!dataToUse) {
         try {
-            const saved = localStorage.getItem('taekup_wizard_data');
+            const saved = isImpersonatingSession 
+                ? sessionStorage.getItem('impersonation_wizard_data')
+                : localStorage.getItem('taekup_wizard_data');
             if (saved) {
                 dataToUse = JSON.parse(saved);
             }
@@ -974,21 +981,32 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
 }) => {
     const navigate = useNavigate();
     
+    // Check if in impersonation mode (Super Admin "View As")
+    const isImpersonatingSession = !!sessionStorage.getItem('impersonationToken');
+    
     console.log('[AdminDashboardWrapper] Rendering with data:', { 
         hasData: !!data, 
         clubName: data?.clubName,
-        studentCount: data?.students?.length 
+        studentCount: data?.students?.length,
+        isImpersonating: isImpersonatingSession
     });
     
-    // Use clubId from props, or fall back to localStorage (for impersonation)
-    const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
+    // Use clubId from props, or fall back to sessionStorage/localStorage based on impersonation mode
+    const effectiveClubId = clubId 
+        || (isImpersonatingSession ? sessionStorage.getItem('impersonationClubId') : null)
+        || localStorage.getItem('taekup_club_id') 
+        || undefined;
     
-    // Persist clubId to localStorage for use after page refresh
+    // Persist clubId to appropriate storage for use after page refresh
     React.useEffect(() => {
         if (effectiveClubId) {
-            localStorage.setItem('taekup_club_id', effectiveClubId);
+            if (isImpersonatingSession) {
+                sessionStorage.setItem('impersonationClubId', effectiveClubId);
+            } else {
+                localStorage.setItem('taekup_club_id', effectiveClubId);
+            }
         }
-    }, [effectiveClubId]);
+    }, [effectiveClubId, isImpersonatingSession]);
     
     const handleNavigate = (view: 'coach-dashboard' | 'admin-dashboard' | 'parent-portal' | 'dojang-tv') => {
         switch (view) {
