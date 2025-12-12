@@ -180,6 +180,28 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
         )}
       </div>
 
+      {/* Bonus Point Sources */}
+      <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-3">Bonus Point Sources</h3>
+          <p className="text-sm text-gray-400 mb-4">Enable extra ways for students to earn points.</p>
+          <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                  <div>
+                      <p className="font-medium text-white">Coach Bonus</p>
+                      <p className="text-sm text-gray-400">Allow coaches to award bonus points during class.</p>
+                  </div>
+                  <ToggleSwitch checked={data.coachBonus} onChange={() => onUpdate({ coachBonus: !data.coachBonus })} />
+              </div>
+              <div className="flex items-center justify-between">
+                  <div>
+                      <p className="font-medium text-white">Homework</p>
+                      <p className="text-sm text-gray-400">Students earn points by completing homework assignments.</p>
+                  </div>
+                  <ToggleSwitch checked={data.homeworkBonus} onChange={() => onUpdate({ homeworkBonus: !data.homeworkBonus })} />
+              </div>
+          </div>
+      </div>
+
       {/* Optional Settings / Grading Requirement */}
       <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-3">Grading Requirement</h3>

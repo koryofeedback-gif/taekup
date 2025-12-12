@@ -479,8 +479,20 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     )
 }
 
+const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ checked, onChange }) => (
+    <button
+        type="button"
+        onClick={onChange}
+        className={`${checked ? 'bg-sky-500' : 'bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-800`}
+        role="switch"
+        aria-checked={checked}
+    >
+        <span className={`${checked ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}/>
+    </button>
+);
+
 const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void }> = ({ data, onUpdateData }) => {
-    const [activeSubTab, setActiveSubTab] = useState<'general' | 'belts' | 'locations'>('general');
+    const [activeSubTab, setActiveSubTab] = useState<'general' | 'belts' | 'locations' | 'rules'>('general');
 
     return (
         <div>
@@ -488,7 +500,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             
             {/* Sub-Nav */}
             <div className="flex space-x-4 border-b border-gray-700 mb-6">
-                {['general', 'belts', 'locations'].map(tab => (
+                {['general', 'belts', 'locations', 'rules'].map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveSubTab(tab as any)}
@@ -731,6 +743,211 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     >
                         + Add New Location
                     </button>
+                </div>
+            )}
+
+            {activeSubTab === 'rules' && (
+                <div className="space-y-6 max-w-2xl">
+                    {/* Promotion Pace */}
+                    <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                        <h3 className="font-bold text-white mb-4">Promotion Pace</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-1">Stripes per Belt</label>
+                                <input 
+                                    type="number" 
+                                    min="1" 
+                                    max="10"
+                                    value={data.stripesPerBelt} 
+                                    onChange={e => onUpdateData({ stripesPerBelt: parseInt(e.target.value, 10) || 4 })} 
+                                    className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white"
+                                />
+                            </div>
+                        </div>
+                        
+                        {/* Stripe Progress Rule */}
+                        <div className="bg-gray-700/30 p-4 rounded-md border border-gray-700">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+                                <label className="block text-sm font-medium text-gray-300">Stripe Progress Rule</label>
+                                <div className="flex space-x-4 text-sm mt-2 sm:mt-0">
+                                    <label className="flex items-center cursor-pointer">
+                                        <input 
+                                            type="radio" 
+                                            name="pointsRuleAdmin" 
+                                            checked={!data.useCustomPointsPerBelt} 
+                                            onChange={() => onUpdateData({ useCustomPointsPerBelt: false })}
+                                            className="form-radio text-sky-500 h-4 w-4"
+                                        />
+                                        <span className="ml-2 text-white">Simple (Same for all)</span>
+                                    </label>
+                                    <label className="flex items-center cursor-pointer">
+                                        <input 
+                                            type="radio" 
+                                            name="pointsRuleAdmin" 
+                                            checked={data.useCustomPointsPerBelt} 
+                                            onChange={() => {
+                                                if (!data.useCustomPointsPerBelt && Object.keys(data.pointsPerBelt || {}).length === 0) {
+                                                    const initialMap: Record<string, number> = {};
+                                                    let currentPoints = data.pointsPerStripe || 64;
+                                                    data.belts.forEach((belt) => {
+                                                        initialMap[belt.id] = currentPoints;
+                                                        currentPoints += 16;
+                                                    });
+                                                    onUpdateData({ useCustomPointsPerBelt: true, pointsPerBelt: initialMap });
+                                                } else {
+                                                    onUpdateData({ useCustomPointsPerBelt: true });
+                                                }
+                                            }}
+                                            className="form-radio text-sky-500 h-4 w-4"
+                                        />
+                                        <span className="ml-2 text-white">Advanced (Per Belt)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {!data.useCustomPointsPerBelt ? (
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">Points per Stripe</label>
+                                    <input 
+                                        type="number" 
+                                        min="1"
+                                        value={data.pointsPerStripe} 
+                                        onChange={e => onUpdateData({ pointsPerStripe: parseInt(e.target.value, 10) || 64 })} 
+                                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-2">Standard setting for most clubs.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left text-gray-300">
+                                        <thead className="text-xs text-gray-400 uppercase bg-gray-700">
+                                            <tr>
+                                                <th className="px-4 py-2">Belt</th>
+                                                <th className="px-4 py-2">Points per Stripe</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.belts.map(belt => (
+                                                <tr key={belt.id} className="border-b border-gray-700 bg-gray-800">
+                                                    <td className="px-4 py-2 flex items-center">
+                                                        <div className="w-4 h-4 rounded-sm mr-2" style={{ background: belt.color2 ? `linear-gradient(to right, ${belt.color1} 50%, ${belt.color2} 50%)` : belt.color1, border: belt.color1 === '#FFFFFF' ? '1px solid #666' : 'none' }}></div>
+                                                        {belt.name}
+                                                    </td>
+                                                    <td className="px-4 py-2">
+                                                        <input 
+                                                            type="number"
+                                                            value={data.pointsPerBelt?.[belt.id] || data.pointsPerStripe}
+                                                            onChange={e => {
+                                                                const newMap = { ...(data.pointsPerBelt || {}), [belt.id]: parseInt(e.target.value) || 0 };
+                                                                onUpdateData({ pointsPerBelt: newMap });
+                                                            }}
+                                                            className="w-24 bg-gray-900 border border-gray-600 rounded p-1 text-center text-white focus:ring-sky-500"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    <p className="text-xs text-gray-500 mt-2">Adjust difficulty as students advance.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Stripe Colors */}
+                    <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 className="font-bold text-white">Color-Coded Stripes</h3>
+                                <p className="text-sm text-gray-400">Add visual flair to stripe progression.</p>
+                            </div>
+                            <ToggleSwitch checked={data.useColorCodedStripes} onChange={() => onUpdateData({ useColorCodedStripes: !data.useColorCodedStripes })} />
+                        </div>
+                        {data.useColorCodedStripes && (
+                            <div className="flex flex-wrap gap-3 mt-4">
+                                {Array.from({ length: data.stripesPerBelt }).map((_, index) => {
+                                    const currentColor = data.stripeColors?.[index] || '#FFFFFF';
+                                    return (
+                                        <div key={index} className="flex flex-col items-center space-y-1">
+                                            <input
+                                                type="color"
+                                                value={currentColor}
+                                                onChange={(e) => {
+                                                    const newColors = [...(data.stripeColors || [])];
+                                                    for(let i = 0; i <= index; i++) {
+                                                        if(!newColors[i]) newColors[i] = '#FFFFFF';
+                                                    }
+                                                    newColors[index] = e.target.value;
+                                                    onUpdateData({ stripeColors: newColors });
+                                                }}
+                                                className="w-10 h-10 p-1 bg-gray-700 border border-gray-600 rounded-md cursor-pointer"
+                                            />
+                                            <span className="text-xs text-gray-500">#{index + 1}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Bonus Point Sources */}
+                    <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                        <h3 className="font-bold text-white mb-4">Bonus Point Sources</h3>
+                        <p className="text-sm text-gray-400 mb-4">Enable extra ways for students to earn points.</p>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-white">Coach Bonus</p>
+                                    <p className="text-sm text-gray-400">Allow coaches to award bonus points during class.</p>
+                                </div>
+                                <ToggleSwitch checked={data.coachBonus} onChange={() => onUpdateData({ coachBonus: !data.coachBonus })} />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-white">Homework</p>
+                                    <p className="text-sm text-gray-400">Students earn points by completing homework assignments.</p>
+                                </div>
+                                <ToggleSwitch checked={data.homeworkBonus} onChange={() => onUpdateData({ homeworkBonus: !data.homeworkBonus })} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Grading Requirement */}
+                    <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                        <h3 className="font-bold text-white mb-4">Grading Requirement</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-white">Require specific skill before promotion?</p>
+                                    <p className="text-sm text-gray-400">Students must pass this before the belt test.</p>
+                                </div>
+                                <ToggleSwitch checked={data.gradingRequirementEnabled} onChange={() => onUpdateData({ gradingRequirementEnabled: !data.gradingRequirementEnabled })} />
+                            </div>
+                            {data.gradingRequirementEnabled && (
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">Requirement Name</label>
+                                    <input 
+                                        type="text" 
+                                        value={data.gradingRequirementName || ''} 
+                                        onChange={e => onUpdateData({ gradingRequirementName: e.target.value })}
+                                        placeholder="e.g. Poomsae, Kata, Forms, Technique"
+                                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white"
+                                    />
+                                </div>
+                            )}
+                            {!data.gradingRequirementEnabled && (
+                                <p className="text-xs text-gray-500">Examples: Poomsae, Kata, Forms, Hyung, Patterns, Technique Test</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
+                        <p className="text-lg text-gray-300">
+                            <span className="font-bold text-white">Promotion Rule: </span>
+                            {data.stripesPerBelt} Stripes {data.gradingRequirementEnabled ? `+ ${data.gradingRequirementName || 'Requirement'} Ready ` : ''}= New Belt
+                        </p>
+                    </div>
                 </div>
             )}
         </div>
