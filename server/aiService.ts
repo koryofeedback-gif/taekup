@@ -427,6 +427,11 @@ export async function generateClassPlan(params: {
     'karate': 'Karate',
     'bjj': 'Brazilian Jiu-Jitsu',
     'judo': 'Judo',
+    'hapkido': 'Hapkido',
+    'tangsoodo': 'Tang Soo Do',
+    'aikido': 'Aikido',
+    'kravmaga': 'Krav Maga',
+    'kungfu': 'Kung Fu / Wushu',
     'custom': 'Martial Arts'
   };
   

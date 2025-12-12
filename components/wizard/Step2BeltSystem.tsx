@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import type { WizardData, Belt } from '../../types';
-import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS } from '../../constants';
+import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../../constants';
 
 interface Step2Props {
   data: WizardData;
@@ -31,7 +31,7 @@ export const Step2BeltSystem: React.FC<Step2Props> = ({ data, onUpdate }) => {
   const draggedItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
-  const handleSystemChange = (system: 'wt' | 'itf' | 'karate' | 'bjj' | 'judo' | 'custom') => {
+  const handleSystemChange = (system: 'wt' | 'itf' | 'karate' | 'bjj' | 'judo' | 'hapkido' | 'tangsoodo' | 'aikido' | 'kravmaga' | 'kungfu' | 'custom') => {
     let newBelts: Belt[] = [];
     switch (system) {
         case 'wt': newBelts = WT_BELTS; break;
@@ -39,6 +39,11 @@ export const Step2BeltSystem: React.FC<Step2Props> = ({ data, onUpdate }) => {
         case 'karate': newBelts = KARATE_BELTS; break;
         case 'bjj': newBelts = BJJ_BELTS; break;
         case 'judo': newBelts = JUDO_BELTS; break;
+        case 'hapkido': newBelts = HAPKIDO_BELTS; break;
+        case 'tangsoodo': newBelts = TANGSOODO_BELTS; break;
+        case 'aikido': newBelts = AIKIDO_BELTS; break;
+        case 'kravmaga': newBelts = KRAVMAGA_BELTS; break;
+        case 'kungfu': newBelts = KUNGFU_BELTS; break;
         default: newBelts = []; break;
     }
     
@@ -91,6 +96,11 @@ export const Step2BeltSystem: React.FC<Step2Props> = ({ data, onUpdate }) => {
           <PresetButton label="Karate" isActive={data.beltSystemType === 'karate'} onClick={() => handleSystemChange('karate')} />
           <PresetButton label="BJJ" isActive={data.beltSystemType === 'bjj'} onClick={() => handleSystemChange('bjj')} />
           <PresetButton label="Judo" isActive={data.beltSystemType === 'judo'} onClick={() => handleSystemChange('judo')} />
+          <PresetButton label="Hapkido" isActive={data.beltSystemType === 'hapkido'} onClick={() => handleSystemChange('hapkido')} />
+          <PresetButton label="Tang Soo Do" isActive={data.beltSystemType === 'tangsoodo'} onClick={() => handleSystemChange('tangsoodo')} />
+          <PresetButton label="Aikido" isActive={data.beltSystemType === 'aikido'} onClick={() => handleSystemChange('aikido')} />
+          <PresetButton label="Krav Maga" isActive={data.beltSystemType === 'kravmaga'} onClick={() => handleSystemChange('kravmaga')} />
+          <PresetButton label="Kung Fu" isActive={data.beltSystemType === 'kungfu'} onClick={() => handleSystemChange('kungfu')} />
           <PresetButton label="Custom" isActive={data.beltSystemType === 'custom'} onClick={() => handleSystemChange('custom')} />
         </div>
       </div>

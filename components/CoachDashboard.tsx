@@ -610,6 +610,66 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
             'Competition Prep',
             'Ukemi (Breakfalls)'
         ],
+        'hapkido': [
+            'Joint Locks (Kwan Jyel Sul)',
+            'Wrist Techniques',
+            'Falling & Rolling (Nakbop)',
+            'Roundhouse Kick (Dollyo Chagi)',
+            'Defensive Kicks',
+            'Throwing Techniques',
+            'Pressure Points',
+            'Weapons Defense',
+            'Self-Defense Scenarios',
+            'Forms (Hyung)'
+        ],
+        'tangsoodo': [
+            'Front Kick (Ap Chagi)',
+            'Roundhouse Kick (Dollyo Chagi)',
+            'Side Kick (Yop Chagi)',
+            'Spinning Heel Kick',
+            'Hyung (Forms)',
+            'Il Soo Sik (One-Step Sparring)',
+            'Ho Sin Sul (Self-Defense)',
+            'Breaking Techniques',
+            'Sparring Combinations',
+            'Conditioning'
+        ],
+        'aikido': [
+            'Ikkyo (First Teaching)',
+            'Nikyo (Second Teaching)',
+            'Shihonage (Four Directions)',
+            'Iriminage (Entering Throw)',
+            'Kotegaeshi (Wrist Turn)',
+            'Ukemi (Breakfalls)',
+            'Tai Sabaki (Body Movement)',
+            'Weapons (Jo/Bokken)',
+            'Randori Practice',
+            'Ki Development'
+        ],
+        'kravmaga': [
+            'Straight Punches',
+            'Palm Strikes',
+            'Front Kick (Groin)',
+            'Knee Strikes',
+            'Choke Defense',
+            'Bear Hug Defense',
+            'Ground Defense',
+            'Knife Defense',
+            'Gun Defense',
+            'Multiple Attacker Scenarios'
+        ],
+        'kungfu': [
+            'Horse Stance Training',
+            'Basic Punches & Blocks',
+            'Front Kick (Ti Tui)',
+            'Side Kick',
+            'Forms (Taolu)',
+            'Conditioning (Iron Body)',
+            'Speed & Power Drills',
+            'Weapons (Staff/Sword)',
+            'Partner Drills',
+            'Application (San Da)'
+        ],
         'custom': [
             'Striking Combinations',
             'Kicking Techniques',

@@ -3,6 +3,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
+import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
 
 interface AdminDashboardProps {
   data: WizardData;
@@ -607,7 +608,50 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             {activeSubTab === 'belts' && (
                 <div className="space-y-6">
                     <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                        <h3 className="font-bold text-white mb-4">Belt System</h3>
+                        <p className="text-xs text-gray-500 mb-3">Choose a preset or customize your own belt ranking system.</p>
+                        <select 
+                            value={data.beltSystemType}
+                            onChange={(e) => {
+                                const system = e.target.value as WizardData['beltSystemType'];
+                                let newBelts: Belt[] = data.belts;
+                                switch (system) {
+                                    case 'wt': newBelts = WT_BELTS; break;
+                                    case 'itf': newBelts = ITF_BELTS; break;
+                                    case 'karate': newBelts = KARATE_BELTS; break;
+                                    case 'bjj': newBelts = BJJ_BELTS; break;
+                                    case 'judo': newBelts = JUDO_BELTS; break;
+                                    case 'hapkido': newBelts = HAPKIDO_BELTS; break;
+                                    case 'tangsoodo': newBelts = TANGSOODO_BELTS; break;
+                                    case 'aikido': newBelts = AIKIDO_BELTS; break;
+                                    case 'kravmaga': newBelts = KRAVMAGA_BELTS; break;
+                                    case 'kungfu': newBelts = KUNGFU_BELTS; break;
+                                    case 'custom': break;
+                                }
+                                if (system !== 'custom') {
+                                    onUpdateData({ beltSystemType: system, belts: newBelts });
+                                } else {
+                                    onUpdateData({ beltSystemType: 'custom' });
+                                }
+                            }}
+                            className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white mb-4"
+                        >
+                            <option value="wt">Taekwondo (WT)</option>
+                            <option value="itf">Taekwondo (ITF)</option>
+                            <option value="karate">Karate</option>
+                            <option value="bjj">Brazilian Jiu-Jitsu</option>
+                            <option value="judo">Judo</option>
+                            <option value="hapkido">Hapkido</option>
+                            <option value="tangsoodo">Tang Soo Do</option>
+                            <option value="aikido">Aikido</option>
+                            <option value="kravmaga">Krav Maga</option>
+                            <option value="kungfu">Kung Fu</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
                         <h3 className="font-bold text-white mb-4">Edit Belt Ranks</h3>
+                        <p className="text-xs text-gray-500 mb-3">Customize belt names and colors. You can add custom belts at any time.</p>
                         <div className="space-y-2">
                             {data.belts.map((belt, idx) => (
                                 <div key={belt.id} className="flex items-center space-x-3 bg-gray-900/50 p-2 rounded">
