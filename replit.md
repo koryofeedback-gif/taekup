@@ -1,392 +1,48 @@
-# TaekUp Platform - Complete Feature Summary
+# TaekUp Platform
 
 ## Overview
-**TaekUp** is a comprehensive martial arts club management platform designed to streamline operations for martial arts schools. Built with modern web technologies, it offers tools for managing students, coaches, and parents while enhancing engagement through gamification and AI-powered features. The platform serves the dual brands **MyTaek** (ecosystem landing, red theme) and **TaekUp** (management app, cyan theme).
-
-**Live Production URL:** https://mytaek.com
-
----
-
-## User Roles & Dashboards
-
-### 1. Club Owner (Admin Dashboard)
-Full club management with access to:
-- **Overview Tab**: Student count, active coaches, upcoming events, revenue stats
-- **Students Tab**: Add/edit students, view progress, belt history, XP stats
-- **Staff Tab**: Manage coaches, assign classes, set permissions
-- **Schedule Tab**: Class schedule management, calendar view
-- **Creator Hub**: Curriculum videos, custom content
-- **Settings Tab**: Club branding, belt system configuration
-- **Billing Tab**: Subscription management, Stripe customer portal
-
-### 2. Coach Dashboard
-Class and student management:
-- **Grading View**: Score students on skills (Technique, Effort, Focus, Discipline)
-- **Attendance Tracking**: Mark student attendance per class
-- **Lesson Planner**: AI-powered class plan generation
-- **Sparring Tracker**: Track sparring matches and results
-- **Challenge Builder**: Create custom Dojang Rivals challenges
-- **Schedule View**: Personal teaching schedule
-
-### 3. Parent Portal
-Student progress tracking and engagement:
-- **Home Tab**: Quick overview, upcoming classes, recent achievements
-- **Journey Tab**: Belt progression timeline, promotion history
-- **Insights Tab**: AI-generated parenting advice, progress analysis
-- **Practice Tab**: Home training curriculum, video tutorials
-- **Booking Tab**: Book private lessons (if enabled)
-- **Rivals Tab**: Dojang Rivals gamification system
-- **Home Dojo Tab**: Daily habits tracking (Character, Chores, School, Health)
-- **Digital Card**: Shareable student achievement card
-
-### 4. Super Admin Dashboard
-Platform-wide business management:
-- **Dashboard Overview**: Real-time KPIs (MRR, trials, conversions, churn rate)
-- **Clubs Management**: All clubs with filtering, search, quick actions
-- **Parents Management**: Premium parent subscriptions, at-risk flagging
-- **Payment History**: Stripe transactions, failed payments, refunds
-- **Revenue Analytics**: MRR trends, churn calculation, conversion metrics
-- **Activity Feed**: Real-time log of signups, conversions, admin actions
-- **Health Scores**: At-risk club detection based on usage patterns
-- **Email Tools**: SendGrid integration for targeted emails
-- **CSV Exports**: Download clubs and revenue data
-- **Impersonation**: Support access to any club with audit logging
-- **Analytics Dashboard** (NEW): Advanced analytics with 6 feature tabs:
-  - **Cohort Analytics**: Signup month retention, LTV by cohort, conversion rates
-  - **Onboarding Funnel**: Track wizard step completion rates, identify drop-offs
-  - **Churn Analysis**: Churn reason breakdown, feedback collection, at-risk detection
-  - **Payment Recovery**: Failed payment tracking, dunning status, recovery rates
-  - **MRR Goals**: Set monthly targets, track progress, goal vs actual comparison
-  - **Automations**: Configure automated emails/alerts for health score triggers, trial reminders, payment recovery
-
----
-
-## Core Features
-
-### Setup Wizard (6-Step Onboarding)
-1. **Club Info**: Name, owner details, location, language
-2. **Belt System**: Choose WT, ITF, Karate, BJJ, Judo, or Custom belts
-3. **Skills Configuration**: Define grading criteria (default: Technique, Effort, Focus, Discipline)
-4. **Scoring Rules**: Points per stripe, grading requirements
-5. **Add People**: Import coaches and students
-6. **Branding**: Logo, colors, theme style, welcome banner
-
-### Belt Systems Supported
-- **World Taekwondo (WT)**: Standard colored belt progression
-- **ITF Taekwondo**: Traditional ITF ranking
-- **Karate**: Japanese color belt system
-- **Brazilian Jiu-Jitsu**: Adult and kids belt progressions
-- **Judo**: Kyu/Dan ranking system
-- **Custom**: Create your own belt system
-
-### Black Belt Time Machine
-AI-powered belt promotion predictor:
-- Calculates estimated date to reach black belt
-- Factors in current belt, training frequency, average promotion time
-- Accounts for holiday schedules (minimal, moderate, extensive)
-- Visual timeline with milestone markers
-
----
-
-## Dojang Rivals (Gamification System)
-
-### Challenge Categories
-| Category | Description | Example Challenges |
-|----------|-------------|-------------------|
-| **Power** | Strength & explosivity | Push-ups, Plank, Jumping kicks |
-| **Technique** | Precision & form | Kick height, Form accuracy, Poomsae |
-| **Flexibility** | Stretching & amplitude | Splits, Hip flexibility, Stretching routines |
-
-### 19 Original Challenges
-1. Push-up Challenge
-2. Kick Height Challenge
-3. Plank Endurance
-4. Form Precision
-5. Split Progress
-6. Speed Kicks
-7. Balance Hold
-8. Jumping Kicks
-9. Stretching Routine
-10. Breaking Power
-11. Poomsae Memorization
-12. Core Strength
-13. Flexibility Score
-14. Sparring Points
-15. Cardio Endurance
-16. Stance Accuracy
-17. Hip Flexibility
-18. Reaction Speed
-19. Movement Flow
-
-### XP System
-| Action | XP Reward |
-|--------|-----------|
-| Challenge completed | 10-50 XP |
-| Daily streak | +10 XP bonus |
-| Mystery Box challenge | +25 XP bonus |
-| Team Battle victory | +100 XP |
-| Parent-Child challenge | +75 XP |
-
-### Special Features
-- **Team Battles**: Squad-based competitions within the club
-- **Parent-Child Challenges**: Family engagement through joint challenges
-- **Belt-Tier Matchmaking**: Fair competition between similar skill levels
-- **Daily Streak Bonuses**: Rewards for consistent daily activity
-- **Mystery Challenge Box**: Random challenge discovery with bonus XP
-- **Challenge Inbox**: Real-time notifications for new challenges
-- **Leaderboards**: Club-wide and belt-tier rankings
-
----
-
-## AI-Powered Features
-
-### 1. TaekBot (AI Assistant)
-- Conversational AI specialized in martial arts
-- Context-aware (knows club name, art type, rules)
-- Multi-language support
-- Powered by GPT-4o
-
-### 2. AI Class Planner
-Generates structured lesson plans based on:
-- Belt level of participants
-- Focus area (technique, cardio, forms, sparring)
-- Class duration (30, 45, 60, 90 minutes)
-- Number of students
-- Output includes: warmup, drills, techniques, conditioning, cooldown
-
-### 3. AI Feedback Generator
-- Generates personalized parent feedback after classes
-- Creates promotion congratulation messages
-- Writes attendance concern follow-ups
-
-### 4. Welcome Email Generator
-- Automated welcome emails for new students/families
-- Personalized with club name, student name, parent name
-- Multi-language support
-
-### Dual AI Architecture
-| Task | Model | Reason |
-|------|-------|--------|
-| TaekBot conversations | GPT-4o | Superior quality |
-| Class planning | GPT-4o | Creative structure |
-| Routine tasks | Google Gemini | Cost optimization |
-
----
-
-## Subscription & Pricing
-
-### "Ladder of Success" Pricing Model
-
-| Tier | Name | Monthly | Annual | Student Limit |
-|------|------|---------|--------|---------------|
-| 1 | Starter | $24.99 | $249.90 | 50 students |
-| 2 | Pro | $49.99 | $499.90 | 100 students |
-| 3 | Standard | $99.99 | $999.90 | 250 students |
-| 4 | Growth | $149.00 | $1,490.00 | 500 students |
-| 5 | Empire | $199.00 | $1,990.00 | Unlimited |
-
-### Trial System
-- 14-day free trial
-- Full feature access
-- No credit card required to start
-- Auto-conversion to appropriate tier
-
-### Lock Strategy
-- Automatic tier suggestions based on student count
-- Proactive upgrade notifications
-- Prevents feature usage beyond tier limits
-
----
-
-## Parent Premium Subscription (Club Revenue Engine)
-
-### Revenue Sharing Model
-- Parents can upgrade to Premium for enhanced features
-- Cost: $4.99/month per family
-- Revenue split between TaekUp and club owner
-
-### Premium Parent Features
-- Priority private lesson booking
-- Extended video curriculum access
-- Advanced progress analytics
-- AI parenting insights
-- Custom habit tracking
-- Shareable digital achievement cards
-
----
-
-## Email System (SendGrid Integration)
-
-### Automated Emails
-| Template | Trigger |
-|----------|---------|
-| Welcome | On club signup |
-| Day 3 Check-in | 3 days after signup |
-| Day 7 Mid-Trial | 7 days into trial |
-| Trial Ending | 3 days before trial ends |
-| Trial Expired | When trial ends |
-
-### Transactional Emails
-- Coach Invite
-- Password Reset
-- New Student Added
-- Belt Promotion
-- Attendance Alert
-- Birthday Wishes
-- Class Feedback
-- Monthly Revenue Report
-- Parent Welcome
-
----
-
-## TV Lobby Display (Dojang TV)
-
-Full-screen display mode for lobby/waiting areas:
-- Current class schedule
-- Upcoming events
-- Leaderboards (XP rankings)
-- Recent belt promotions
-- Club announcements
-- Rotating motivational content
-
----
-
-## Technical Architecture
-
-### Frontend
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite 5
-- **Styling**: Tailwind CSS
-- **Routing**: React Router DOM
-- **Icons**: Lucide React
-
-### Backend
-- **Server**: Express.js with TypeScript
-- **Database**: PostgreSQL (Neon for production)
-- **ORM**: Drizzle ORM
-- **API Architecture**: RESTful endpoints
-
-### Infrastructure
-- **Development**: Replit with dual-server setup
-- **Production**: Vercel (serverless functions + static hosting)
-- **Database**: Neon PostgreSQL
-- **Payments**: Stripe (subscriptions, webhooks, customer portal)
-- **Email**: SendGrid (transactional + marketing)
-- **AI**: OpenAI GPT-4o + Google Gemini
-
-### Security
-- Backend-only API key storage
-- Secure password hashing (bcrypt)
-- Session-based authentication
-- Super Admin isolation with audit logging
-- Stripe webhook signature verification
-
----
-
-## Database Schema (Key Tables)
-
-| Table | Purpose |
-|-------|---------|
-| `clubs` | Club information, trial status, owner details |
-| `users` | Authentication, roles (owner, coach, parent, super_admin) |
-| `students` | Student profiles, belt history, XP stats |
-| `subscriptions` | Stripe subscription data |
-| `activity_log` | Event tracking, audit trail |
-| `email_log` | Email delivery tracking |
-| `trial_extensions` | Trial modification history |
-| `support_sessions` | Impersonation audit log |
-| `challenges` | Dojang Rivals challenge records |
-| `churn_reasons` | Cancellation feedback from clubs |
-| `onboarding_progress` | Wizard step completion tracking |
-| `onboarding_steps` | Step definitions for wizard funnel |
-| `mrr_goals` | Monthly revenue targets and actuals |
-| `automation_rules` | Configurable automation triggers |
-| `automation_executions` | Automation run logs |
-| `failed_payments` | Payment recovery tracking |
-| `payment_recovery_attempts` | Dunning email attempts |
-
----
-
-## URLs & Access
-
-### Public Pages
-- `/` - Landing page (MyTaek home)
-- `/pricing` - Subscription tiers
-
-### Authenticated Pages
-- `/wizard` - Setup wizard (new signups)
-- `/app/admin` - Admin dashboard
-- `/app/coach` - Coach dashboard
-- `/app/parent/:studentId` - Parent portal
-- `/dojang-tv` - TV lobby display
-
-### Super Admin
-- `/super-admin-login.html` - Standalone login
-- `/super-admin/dashboard` - Main dashboard
-- `/super-admin/clubs` - Club management
-- `/super-admin/parents` - Parent subscriptions
-- `/super-admin/payments` - Payment history
-- `/super-admin/analytics` - Advanced analytics dashboard
-
----
-
-## Environment Variables
-
-### Required
-- `DATABASE_URL` - PostgreSQL connection string
-- `STRIPE_SECRET_KEY` or `SANDBOX_STRIPE_KEY` - Stripe API key
-- `STRIPE_PUBLISHABLE_KEY` or `SANDBOX_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
-- `SUPER_ADMIN_PASSWORD` - Super Admin login
-- `APP_URL` - Production URL (e.g., `https://mytaek.com`)
-- `SENDGRID_API_KEY` - For email delivery (required for welcome emails)
-
-### Optional
-- `SENDGRID_FROM_EMAIL` - Sender email (defaults to hello@mytaek.com)
-- `OPENAI_API_KEY` - For GPT-4o features
-- `GOOGLE_API_KEY` - For Gemini features
-- `SUPABASE_URL` / `SUPABASE_ANON_KEY` - For realtime features
-
----
-
-## Recent Updates (December 2025)
-
-- Added signup API endpoint (saves clubs to database)
-- Integrated automatic welcome email on signup
-- Fixed Super Admin endpoints for production
-- Added webhook handlers for Stripe events
-- Updated email logging with correct schema
-- Added activity logging for all signups
-- **NEW: Super Admin Analytics Dashboard** with 6 feature tabs:
-  - Cohort Analytics: Track signup cohorts, conversion rates, LTV by month
-  - Onboarding Funnel: Monitor wizard step completion rates
-  - Churn Analysis: Collect and analyze cancellation reasons
-  - Payment Recovery: Track failed payments and dunning status
-  - MRR Goals: Set monthly revenue targets and track progress
-  - Automations: Configure health score triggers, trial reminders, alerts
-- Added 8 new database tables for analytics features
-- **Wizard Data Persistence** (December 9, 2025):
-  - POST /api/club/save-wizard-data - saves full wizard data to database
-  - GET /api/club/:clubId/data - fetches club data with wizard config, students, coaches
-  - Automatic data restoration on login when wizardCompleted=true
-  - Belt ID translation for proper rehydration (belt name → belt ID lookup)
-- Added video category tags to Creator Hub (Forms, Sparring, Self-Defense, etc.)
-- Implemented Stripe Connect Express for Club Wallet bank account linking
-- Created automation service for scheduled email triggers
-
----
-
-## Deployment
-
-1. Push code to GitHub
-2. Vercel auto-deploys from main branch
-3. Production database: Neon PostgreSQL
-4. Domain: mytaek.com
-
----
+TaekUp is a comprehensive martial arts club management platform designed to streamline operations for martial arts schools. It provides tools for managing students, coaches, and parents, enhancing engagement through gamification and AI-powered features. The platform supports two brands: MyTaek (ecosystem landing page, red theme) and TaekUp (management application, cyan theme). Its purpose is to offer an all-in-one solution for martial arts club owners, coaches, and parents, improving administrative efficiency and student engagement.
 
 ## User Preferences
 None specified yet.
 
----
+## System Architecture
 
-*Last updated: December 8, 2025*
+### UI/UX Decisions
+The platform features distinct themes for its dual brands: MyTaek uses a red theme for its ecosystem landing pages, while the TaekUp management application employs a cyan theme. User interfaces are tailored for specific roles: Club Owner, Coach, Parent, and Super Admin, each with a dedicated dashboard. A 6-step setup wizard guides new clubs through initial configuration. Dojang TV provides a full-screen display mode for club lobbies, showing schedules, leaderboards, and announcements.
+
+### Technical Implementations
+- **Frontend**: React 18 with TypeScript, Vite 5, Tailwind CSS, React Router DOM, Lucide React.
+- **Backend**: Express.js with TypeScript, PostgreSQL (Neon for production), Drizzle ORM, RESTful API architecture.
+- **AI Integration**: Dual AI architecture utilizing GPT-4o for complex tasks like TaekBot conversations and class planning, and Google Gemini for cost-optimized routine tasks.
+- **Gamification**: "Dojang Rivals" system includes challenge categories (Power, Technique, Flexibility), 19 original challenges, an XP system with various reward actions, and special features like Team Battles and Leaderboards.
+- **Belt Systems**: Supports 11 martial arts (WT, ITF, Karate, BJJ, Judo, Hapkido, Tang Soo Do, Aikido, Krav Maga, Kung Fu) plus custom belt configurations. Includes an AI-powered "Black Belt Time Machine" for promotion predictions.
+- **AI Features**:
+    - **TaekBot**: Conversational AI assistant for martial arts, context-aware, multi-language.
+    - **AI Class Planner**: Generates lesson plans based on belt level, focus, duration, and student count.
+    - **AI Feedback Generator**: Creates personalized feedback for parents, promotion messages, and attendance follow-ups.
+    - **Welcome Email Generator**: Automated, personalized welcome emails for new users.
+- **Subscription & Pricing**: "Ladder of Success" pricing model with 5 tiers based on student limits, a 14-day free trial, and a lock strategy for tier management.
+- **Parent Premium Subscription**: An optional $4.99/month family subscription offering enhanced features (priority booking, extended curriculum, advanced analytics, AI insights, habit tracking, digital cards) with revenue sharing.
+
+### Feature Specifications
+- **Club Owner (Admin Dashboard)**: Manages students, staff, schedule, content (Creator Hub), club settings, and billing.
+- **Coach Dashboard**: Handles grading, attendance, AI lesson planning, sparring tracking, challenge building, and personal schedule.
+- **Parent Portal**: Tracks student journey, provides AI insights, practice curriculum, booking, gamification (Rivals), daily habits (Home Dojo), and digital student cards.
+- **Super Admin Dashboard**: Platform-wide management, including KPIs, club/parent management, payment history, revenue analytics, activity feed, health scores, email tools, CSV exports, and impersonation. New advanced analytics dashboard with cohort analysis, onboarding funnel, churn analysis, payment recovery, MRR goals, and automations.
+- **Email System**: Integration with SendGrid for automated (welcome, trial reminders) and transactional emails (coach invites, password resets, promotions, attendance alerts, birthday wishes, revenue reports).
+
+### System Design Choices
+- **Development Environment**: Replit with a dual-server setup.
+- **Production Deployment**: Vercel for serverless functions and static hosting.
+- **Database**: PostgreSQL hosted on Neon.
+- **Payment Processing**: Stripe for subscriptions, webhooks, and customer portals.
+- **Email Service**: SendGrid.
+- **Security**: Backend-only API key storage, bcrypt for password hashing, session-based authentication, Super Admin isolation with audit logging, Stripe webhook signature verification.
+
+## External Dependencies
+- **Database**: PostgreSQL (Neon)
+- **Payment Gateway**: Stripe
+- **Email Service**: SendGrid
+- **AI Models**: OpenAI (GPT-4o), Google (Gemini)
+- **Hosting**: Vercel
