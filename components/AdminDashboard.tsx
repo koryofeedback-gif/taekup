@@ -2578,6 +2578,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             </select>
                             <input type="time" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, time: e.target.value})} />
                         </div>
+                        <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, instructor: e.target.value})}>
+                            <option value="">Assign Instructor</option>
+                            <option value={data.ownerName}>{data.ownerName} (Owner)</option>
+                            {data.coaches.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                        </select>
                         <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, location: e.target.value})}>
                             {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
