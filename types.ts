@@ -40,6 +40,8 @@ export interface PerformanceRecord {
   date: string; // ISO date string
   scores: Record<string, number | null>; // skillId: score
   bonusPoints?: number;
+  note?: string; // Coach note for this session
+  coachName?: string; // Coach who recorded this
 }
 
 export interface FeedbackRecord {

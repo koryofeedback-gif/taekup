@@ -429,6 +429,69 @@ const NoteEditorModal: React.FC<{student: Student, initialNote: string, onSave: 
     );
 };
 
+const NotesHistoryModal: React.FC<{student: Student, onClose: () => void}> = ({ student, onClose }) => {
+    const notesFromPerformance = (student.performanceHistory || [])
+        .filter(p => p.note)
+        .map(p => ({
+            date: p.date,
+            text: p.note || '',
+            coachName: p.coachName || 'Coach',
+            type: 'session' as const
+        }));
+    
+    const notesFromFeedback = (student.feedbackHistory || [])
+        .map(f => ({
+            date: f.date,
+            text: f.text,
+            coachName: f.coachName,
+            type: f.isAIGenerated ? 'ai-feedback' as const : 'feedback' as const
+        }));
+    
+    const allNotes = [...notesFromPerformance, ...notesFromFeedback]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return (
+        <Modal onClose={onClose} title={`Training Notes - ${student.name}`} size="2xl">
+            <div className="space-y-4">
+                {allNotes.length === 0 ? (
+                    <div className="text-center py-8">
+                        <p className="text-gray-400">No training notes recorded yet.</p>
+                        <p className="text-sm text-gray-500 mt-2">Notes added during grading will appear here.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {allNotes.map((note, idx) => (
+                            <div key={idx} className={`p-3 rounded-lg border ${
+                                note.type === 'session' ? 'bg-gray-900/50 border-gray-700' :
+                                note.type === 'ai-feedback' ? 'bg-indigo-900/30 border-indigo-700/50' :
+                                'bg-sky-900/30 border-sky-700/50'
+                            }`}>
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg">
+                                            {note.type === 'session' ? '📝' : note.type === 'ai-feedback' ? '🤖' : '💬'}
+                                        </span>
+                                        <span className="text-xs font-medium text-gray-400">
+                                            {note.type === 'session' ? 'Class Note' : note.type === 'ai-feedback' ? 'AI Feedback' : 'Parent Message'}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs text-gray-500">
+                                        {new Date(note.date).toLocaleDateString()} • {note.coachName}
+                                    </span>
+                                </div>
+                                <p className="text-gray-300 text-sm">{note.text}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className="flex justify-end pt-2 border-t border-gray-700">
+                    <button onClick={onClose} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">Close</button>
+                </div>
+            </div>
+        </Modal>
+    );
+};
+
 const FeedbackPreviewModal: React.FC<{messages: Record<string, string>, students: Student[], onClose: () => void}> = ({ messages, students, onClose }) => (
     <Modal onClose={onClose} title="Preview Parent Feedback" size="2xl">
         <div className="space-y-4">
@@ -797,6 +860,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const [isAddEventOpen, setIsAddEventOpen] = useState(false);
     const [showChallengeBuilder, setShowChallengeBuilder] = useState(false);
 
+    // Focus Mode and Notes History State
+    const [focusMode, setFocusMode] = useState(false);
+    const [viewingNotesHistory, setViewingNotesHistory] = useState<Student | null>(null);
+
     // SENSEI VOICE STATE
     const [isVoiceActive, setIsVoiceActive] = useState(false);
     const [voiceTranscript, setVoiceTranscript] = useState('');
@@ -1073,7 +1140,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             const newPerformanceRecord: PerformanceRecord = {
                 date: new Date().toISOString(),
                 scores: { ...studentScores },
-                bonusPoints: studentBonus + studentHomework, 
+                bonusPoints: studentBonus + studentHomework,
+                note: notes[student.id] || undefined,
+                coachName: coachName,
             };
 
             const newFeedbackRecord: FeedbackRecord | null = parentMessages[student.id] ? {
@@ -1382,6 +1451,13 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         <button onClick={() => handleBulkScore(0)} className="bg-red-500/80 hover:bg-red-500 text-white font-bold py-1.5 px-3 text-sm rounded-md">❤️ All Reds</button>
                                         <button onClick={() => handleBulkScore(null)} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-1.5 px-3 text-sm rounded-md">Reset</button>
                                     </div>
+                                    <button 
+                                        onClick={() => setFocusMode(!focusMode)} 
+                                        className={`py-1.5 px-3 text-sm rounded-md font-bold transition-all ${focusMode ? 'bg-orange-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                        title="Focus Mode - Simplified view for faster grading"
+                                    >
+                                        {focusMode ? '🎯 Focus ON' : '🎯 Focus'}
+                                    </button>
                                 </div>
                             </>
                         )}
@@ -1395,15 +1471,15 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     <tr>
                                         <th className="px-4 py-3">Student</th>
                                         {activeSkills.map(s => <th key={s.id} className="px-3 py-3 text-center">{s.name}</th>)}
-                                        {data.homeworkBonus && <th className="px-2 py-3 text-center text-sky-300">Homework</th>}
-                                        {data.coachBonus && <th className="px-2 py-3 text-center text-purple-400">Bonus</th>}
+                                        {!focusMode && data.homeworkBonus && <th className="px-2 py-3 text-center text-sky-300">Homework</th>}
+                                        {!focusMode && data.coachBonus && <th className="px-2 py-3 text-center text-purple-400">Bonus</th>}
                                         <th className="px-2 py-3 text-center">Total</th>
                                         <th className="px-4 py-3 min-w-[200px]">Stripe Bar</th>
-                                        {data.gradingRequirementEnabled && (
+                                        {!focusMode && data.gradingRequirementEnabled && (
                                             <th className="px-2 py-3 text-center text-yellow-400">{data.gradingRequirementName || 'Req.'}</th>
                                         )}
                                         <th className="px-2 py-3 text-center">Note</th>
-                                        <th className="px-2 py-3 text-center">View</th>
+                                        {!focusMode && <th className="px-2 py-3 text-center">View</th>}
                                         <th className="px-4 py-3 text-center">✅</th>
                                     </tr>
                                 </thead>
@@ -1445,8 +1521,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 )}
                                             </td>
                                             {activeSkills.map(skill => <td key={skill.id} className="px-3 py-2"><ScoreDropdown score={sessionScores[student.id]?.[skill.id]} onChange={score => handleScoreChange(student.id, skill.id, score)} /></td>)}
-                                            {data.homeworkBonus && <td className="px-2 py-2"><input type="number" min="0" placeholder="0" value={homeworkPoints[student.id] || ''} onChange={e => handleHomeworkChange(student.id, parseInt(e.target.value) || 0)} className="w-16 bg-gray-700 text-blue-300 font-bold p-1 rounded-md border border-gray-600 text-center focus:ring-sky-500"/></td>}
-                                            {data.coachBonus && <td className="px-2 py-2"><input type="number" min="0" placeholder="0" value={bonusPoints[student.id] || ''} onChange={e => handleBonusChange(student.id, parseInt(e.target.value) || 0)} className="w-16 bg-gray-700 text-purple-300 font-bold p-1 rounded-md border border-gray-600 text-center focus:ring-purple-500"/></td>}
+                                            {!focusMode && data.homeworkBonus && <td className="px-2 py-2"><input type="number" min="0" placeholder="0" value={homeworkPoints[student.id] || ''} onChange={e => handleHomeworkChange(student.id, parseInt(e.target.value) || 0)} className="w-16 bg-gray-700 text-blue-300 font-bold p-1 rounded-md border border-gray-600 text-center focus:ring-sky-500"/></td>}
+                                            {!focusMode && data.coachBonus && <td className="px-2 py-2"><input type="number" min="0" placeholder="0" value={bonusPoints[student.id] || ''} onChange={e => handleBonusChange(student.id, parseInt(e.target.value) || 0)} className="w-16 bg-gray-700 text-purple-300 font-bold p-1 rounded-md border border-gray-600 text-center focus:ring-purple-500"/></td>}
                                             <td className="px-2 py-2 text-center font-bold text-lg">{sessionTotal}</td>
                                             <td className="px-4 py-2">
                                                 {isReady ? (
@@ -1470,7 +1546,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 )}
                                             </td>
                                             
-                                            {data.gradingRequirementEnabled && (
+                                            {!focusMode && data.gradingRequirementEnabled && (
                                                 <td className="px-2 py-2 text-center">
                                                     <div className="flex justify-center" title={hasMaxStripes ? "Toggle Readiness" : "Earn max stripes to unlock"}>
                                                         <input 
@@ -1484,8 +1560,13 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 </td>
                                             )}
 
-                                            <td className="px-2 py-2 text-center text-lg"><button onClick={() => handleOpenNoteModal(student)} className="hover:scale-125 transition-transform">{notes[student.id] ? '✍️' : '🎤'}</button></td>
-                                            <td className="px-2 py-2 text-center"><button onClick={() => setViewingStudent(student)} className="text-xl hover:text-sky-300 transition-colors">👁️</button></td>
+                                            <td className="px-2 py-2 text-center text-lg">
+                                                <div className="flex justify-center gap-1">
+                                                    <button onClick={() => handleOpenNoteModal(student)} className="hover:scale-125 transition-transform" title="Add Note">{notes[student.id] ? '✍️' : '🎤'}</button>
+                                                    <button onClick={() => setViewingNotesHistory(student)} className="hover:scale-125 transition-transform text-gray-400 hover:text-sky-300" title="View Notes History">📋</button>
+                                                </div>
+                                            </td>
+                                            {!focusMode && <td className="px-2 py-2 text-center"><button onClick={() => setViewingStudent(student)} className="text-xl hover:text-sky-300 transition-colors">👁️</button></td>}
                                             <td className="px-4 py-2 text-center"><input type="checkbox" checked={!!attendance[student.id]} onChange={() => setAttendance(p => ({...p, [student.id]: !p[student.id]}))} className="w-5 h-5 text-sky-500 bg-gray-700 border-gray-600 rounded focus:ring-sky-500"/></td>
                                         </tr>
                                     )}))}
@@ -1749,6 +1830,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     onClose={() => setCertificateData({ show: false, student: null, newBelt: '' })} 
                 />
             )}
+            {viewingNotesHistory && <NotesHistoryModal student={viewingNotesHistory} onClose={() => setViewingNotesHistory(null)} />}
             {showChallengeBuilder && (
                 <ChallengeBuilder
                     coachId={coachName}
