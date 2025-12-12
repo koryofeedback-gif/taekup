@@ -256,14 +256,30 @@ export function registerRoutes(app: Express) {
       console.log('[Login] User authenticated:', user.email, 'Role:', user.role);
 
       let wizardCompleted = false;
+      let wizardData = null;
+      
       if (user.club_id) {
+        // Fetch wizard_data from clubs table
+        const clubDataResult = await db.execute(
+          sql`SELECT wizard_data FROM clubs WHERE id = ${user.club_id}::uuid LIMIT 1`
+        );
+        const clubData = (clubDataResult as any[])[0];
+        if (clubData?.wizard_data && Object.keys(clubData.wizard_data).length > 0) {
+          wizardData = clubData.wizard_data;
+          wizardCompleted = true;
+        }
+        
+        // Also check onboarding_progress table
         const progressResult = await db.execute(
           sql`SELECT wizard_completed FROM onboarding_progress WHERE club_id = ${user.club_id}::uuid LIMIT 1`
         );
         const progress = (progressResult as any[])[0];
-        wizardCompleted = progress?.wizard_completed || user.has_wizard_data || false;
+        if (progress?.wizard_completed) {
+          wizardCompleted = true;
+        }
         
-        if (user.has_wizard_data && !progress?.wizard_completed) {
+        // Auto-recover if wizard_data exists but onboarding_progress doesn't
+        if (wizardData && !progress?.wizard_completed) {
           await db.execute(sql`
             INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
             VALUES (${user.club_id}::uuid, true, NOW())
@@ -291,7 +307,8 @@ export function registerRoutes(app: Express) {
           trialStatus: user.trial_status,
           trialEnd: user.trial_end,
           wizardCompleted
-        }
+        },
+        wizardData
       });
 
     } catch (error: any) {
