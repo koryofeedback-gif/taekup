@@ -828,6 +828,20 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
         }
     }
     
+    // Ensure required arrays exist to prevent crashes
+    if (dataToUse) {
+        dataToUse = {
+            ...dataToUse,
+            students: dataToUse.students || [],
+            coaches: dataToUse.coaches || [],
+            belts: dataToUse.belts || [],
+            schedule: dataToUse.schedule || [],
+            events: dataToUse.events || [],
+            curriculum: dataToUse.curriculum || [],
+            classes: dataToUse.classes || [],
+        };
+    }
+    
     console.log('[AdminRouteGuard] Render:', { effectiveUserType, hasData: !!dataToUse, isLoadingData });
     
     // Show loading only when explicitly loading from API
