@@ -1313,7 +1313,11 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                         </span>
                                                     )}
                                                 </button>
-                                                <div className="text-[10px] text-gray-500 font-normal">{student.location} • {student.assignedClass}</div>
+                                                {(student.location || student.assignedClass) && (
+                                                    <div className="text-[10px] text-gray-500 font-normal">
+                                                        {[student.location, student.assignedClass].filter(Boolean).join(' • ')}
+                                                    </div>
+                                                )}
                                             </td>
                                             {activeSkills.map(skill => <td key={skill.id} className="px-3 py-2"><ScoreDropdown score={sessionScores[student.id]?.[skill.id]} onChange={score => handleScoreChange(student.id, skill.id, score)} /></td>)}
                                             {data.homeworkBonus && <td className="px-2 py-2"><input type="number" min="0" placeholder="0" value={homeworkPoints[student.id] || ''} onChange={e => handleHomeworkChange(student.id, parseInt(e.target.value) || 0)} className="w-16 bg-gray-700 text-blue-300 font-bold p-1 rounded-md border border-gray-600 text-center focus:ring-sky-500"/></td>}
