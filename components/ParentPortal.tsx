@@ -535,9 +535,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
                     </div>
                     <div className="flex justify-between mt-2">
-                        {Array.from({ length: data.stripesPerBelt }).map((_, i) => (
-                            <div key={i} className={`h-1.5 flex-1 rounded-full mx-0.5 ${i < currentBeltStripes ? 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'bg-gray-700'}`}></div>
-                        ))}
+                        {Array.from({ length: data.stripesPerBelt }).map((_, i) => {
+                            const isEarned = i < currentBeltStripes;
+                            const stripeColor = data.useColorCodedStripes && data.stripeColors?.[i] ? data.stripeColors[i] : '#FACC15';
+                            return (
+                                <div 
+                                    key={i} 
+                                    className={`h-2 flex-1 rounded-full mx-0.5 transition-all ${isEarned ? 'shadow-lg' : 'bg-gray-700'}`}
+                                    style={isEarned ? { backgroundColor: stripeColor, boxShadow: `0 0 8px ${stripeColor}80` } : {}}
+                                ></div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
