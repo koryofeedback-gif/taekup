@@ -748,13 +748,32 @@ const DEFAULT_VIDEO_TAGS = [
 ];
 
 const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
-    const [newVideo, setNewVideo] = useState({ title: '', url: '', beltId: 'all', tags: [] as string[] });
-    const [connectingBank, setConnectingBank] = useState(false);
-    const [newTagName, setNewTagName] = useState('');
-    const [showAddTag, setShowAddTag] = useState(false);
+    const [activeTab, setActiveTab] = useState<'content' | 'courses' | 'analytics'>('content');
+    const [newVideo, setNewVideo] = useState({ 
+        title: '', 
+        url: '', 
+        beltId: 'all', 
+        tags: [] as string[],
+        contentType: 'video' as 'video' | 'document',
+        status: 'draft' as 'draft' | 'live',
+        pricingType: 'free' as 'free' | 'premium',
+        xpReward: 10,
+        description: ''
+    });
+    const [newCourse, setNewCourse] = useState({
+        title: '',
+        description: '',
+        beltId: 'all',
+        xpReward: 50,
+        status: 'draft' as 'draft' | 'live'
+    });
+    const [showCourseForm, setShowCourseForm] = useState(false);
+    const [editingContentId, setEditingContentId] = useState<string | null>(null);
 
     const customTags = data.customVideoTags || [];
     const allTags = [...DEFAULT_VIDEO_TAGS, ...customTags.map(t => ({ id: t, name: t, icon: '🏷️' }))];
+    const courses = data.courses || [];
+    const curriculum = data.curriculum || [];
 
     const toggleTag = (tagId: string) => {
         const updated = newVideo.tags.includes(tagId)
@@ -763,22 +782,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         setNewVideo({...newVideo, tags: updated});
     };
 
-    const handleAddCustomTag = () => {
-        if (!newTagName.trim()) return;
-        const tagName = newTagName.trim();
-        if (!customTags.includes(tagName)) {
-            onUpdateData({ customVideoTags: [...customTags, tagName] });
-        }
-        setNewTagName('');
-        setShowAddTag(false);
-    };
-
-    const handleRemoveCustomTag = (tagName: string) => {
-        onUpdateData({ customVideoTags: customTags.filter(t => t !== tagName) });
-        setNewVideo({...newVideo, tags: newVideo.tags.filter(t => t !== tagName)});
-    };
-
-    const handleAddVideo = () => {
+    const handleAddContent = () => {
         if(!newVideo.title || !newVideo.url) return;
         const item: CurriculumItem = {
             id: `vid-${Date.now()}`,
@@ -786,143 +790,558 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             url: newVideo.url,
             beltId: newVideo.beltId,
             category: newVideo.tags.join(','),
-            description: 'Uploaded by Instructor',
-            authorName: data.ownerName
+            description: newVideo.description || 'Uploaded by Instructor',
+            authorName: data.ownerName,
+            contentType: newVideo.contentType,
+            status: newVideo.status,
+            pricingType: newVideo.pricingType,
+            xpReward: newVideo.xpReward,
+            viewCount: 0,
+            completionCount: 0
         };
-        onUpdateData({ curriculum: [...(data.curriculum || []), item] });
-        setNewVideo({ title: '', url: '', beltId: 'all', tags: [] });
+        onUpdateData({ curriculum: [...curriculum, item] });
+        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '' });
     };
 
-    const handleConnectBank = async () => {
-        setConnectingBank(true);
-        try {
-            const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId');
-            if (!effectiveClubId) {
-                alert('Club not found. Please log in again.');
-                setConnectingBank(false);
-                return;
-            }
-            const response = await fetch('/api/stripe-connect/onboard', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clubId: effectiveClubId })
-            });
-            const result = await response.json();
-            if (result.url) {
-                window.location.href = result.url;
-            } else {
-                alert(result.error || 'Failed to create bank connection link. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error connecting bank:', error);
-            alert('Error connecting bank account. Please try again.');
-        } finally {
-            setConnectingBank(false);
-        }
+    const handleAddCourse = () => {
+        if(!newCourse.title) return;
+        const course = {
+            id: `course-${Date.now()}`,
+            title: newCourse.title,
+            description: newCourse.description,
+            beltId: newCourse.beltId,
+            xpReward: newCourse.xpReward,
+            status: newCourse.status,
+            items: []
+        };
+        onUpdateData({ courses: [...courses, course] });
+        setNewCourse({ title: '', description: '', beltId: 'all', xpReward: 50, status: 'draft' });
+        setShowCourseForm(false);
     };
+
+    const toggleContentStatus = (contentId: string) => {
+        const updated = curriculum.map(c => 
+            c.id === contentId ? { ...c, status: (c.status === 'live' ? 'draft' : 'live') as 'draft' | 'live' } : c
+        );
+        onUpdateData({ curriculum: updated });
+    };
+
+    const toggleCourseStatus = (courseId: string) => {
+        const updated = courses.map(c => 
+            c.id === courseId ? { ...c, status: (c.status === 'live' ? 'draft' : 'live') as 'draft' | 'live' } : c
+        );
+        onUpdateData({ courses: updated });
+    };
+
+    const addContentToCourse = (contentId: string, courseId: string) => {
+        const updated = curriculum.map(c => 
+            c.id === contentId ? { ...c, courseId } : c
+        );
+        onUpdateData({ curriculum: updated });
+    };
+
+    const removeContentFromCourse = (contentId: string) => {
+        const updated = curriculum.map(c => 
+            c.id === contentId ? { ...c, courseId: undefined } : c
+        );
+        onUpdateData({ curriculum: updated });
+    };
+
+    const liveContent = curriculum.filter(c => c.status === 'live');
+    const draftContent = curriculum.filter(c => c.status !== 'live');
+    const totalViews = curriculum.reduce((sum, c) => sum + (c.viewCount || 0), 0);
+    const totalCompletions = curriculum.reduce((sum, c) => sum + (c.completionCount || 0), 0);
 
     return (
         <div>
-            <SectionHeader title="Creator Hub" description="Upload curriculum videos and manage your passive income." />
+            <SectionHeader title="Creator Hub" description="Create courses, upload content, and track your curriculum performance." />
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left: Upload */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                        <h3 className="font-bold text-white mb-4">Upload New Video</h3>
-                        <div className="space-y-4">
-                            <input 
-                                type="text" 
-                                placeholder="Video Title (e.g. Yellow Belt Pattern)" 
-                                value={newVideo.title} 
-                                onChange={e => setNewVideo({...newVideo, title: e.target.value})}
-                                className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
-                            />
-                            <input 
-                                type="text" 
-                                placeholder="Video Link (YouTube / Vimeo)" 
-                                value={newVideo.url} 
-                                onChange={e => setNewVideo({...newVideo, url: e.target.value})}
-                                className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
-                            />
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-2">Tags (select multiple)</label>
+            <div className="flex gap-2 mb-6 border-b border-gray-700 pb-4">
+                <button 
+                    onClick={() => setActiveTab('content')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'content' ? 'bg-sky-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                >
+                    📹 Content Library
+                </button>
+                <button 
+                    onClick={() => setActiveTab('courses')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'courses' ? 'bg-sky-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                >
+                    📚 Courses
+                </button>
+                <button 
+                    onClick={() => setActiveTab('analytics')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'analytics' ? 'bg-sky-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                >
+                    📊 Analytics
+                </button>
+            </div>
+
+            {activeTab === 'content' && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <h3 className="font-bold text-white mb-4">Add New Content</h3>
+                            <div className="space-y-4">
+                                <div className="flex gap-2 mb-4">
+                                    <button 
+                                        onClick={() => setNewVideo({...newVideo, contentType: 'video'})}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium ${newVideo.contentType === 'video' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300'}`}
+                                    >📹 Video</button>
+                                    <button 
+                                        onClick={() => setNewVideo({...newVideo, contentType: 'document'})}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium ${newVideo.contentType === 'document' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300'}`}
+                                    >📄 Document</button>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Title (e.g. Yellow Belt Form Tutorial)" 
+                                    value={newVideo.title} 
+                                    onChange={e => setNewVideo({...newVideo, title: e.target.value})}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+                                />
+                                <input 
+                                    type="text" 
+                                    placeholder={newVideo.contentType === 'video' ? "Video URL (YouTube, Vimeo, or direct link)" : "Document URL (Google Drive, Dropbox, or direct link)"} 
+                                    value={newVideo.url} 
+                                    onChange={e => setNewVideo({...newVideo, url: e.target.value})}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+                                />
+                                <textarea 
+                                    placeholder="Description (optional)" 
+                                    value={newVideo.description} 
+                                    onChange={e => setNewVideo({...newVideo, description: e.target.value})}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white h-20"
+                                />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Belt Level</label>
+                                        <select 
+                                            value={newVideo.beltId}
+                                            onChange={e => setNewVideo({...newVideo, beltId: e.target.value})}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                        >
+                                            <option value="all">All Belts</option>
+                                            {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">XP Reward</label>
+                                        <input 
+                                            type="number" 
+                                            min="0" 
+                                            max="100"
+                                            value={newVideo.xpReward}
+                                            onChange={e => setNewVideo({...newVideo, xpReward: parseInt(e.target.value) || 0})}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Access</label>
+                                        <select 
+                                            value={newVideo.pricingType}
+                                            onChange={e => setNewVideo({...newVideo, pricingType: e.target.value as 'free' | 'premium'})}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                        >
+                                            <option value="free">Free for All</option>
+                                            <option value="premium">Premium Only</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Status</label>
+                                        <select 
+                                            value={newVideo.status}
+                                            onChange={e => setNewVideo({...newVideo, status: e.target.value as 'draft' | 'live'})}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                        >
+                                            <option value="draft">Draft (Hidden)</option>
+                                            <option value="live">Live (Published)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-2">Tags</label>
                                     <div className="flex flex-wrap gap-2">
                                         {allTags.map(tag => (
                                             <button
                                                 key={tag.id}
                                                 type="button"
                                                 onClick={() => toggleTag(tag.id)}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1 ${
+                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                                                     newVideo.tags.includes(tag.id)
                                                         ? 'bg-sky-500 text-white'
                                                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                                                 }`}
                                             >
                                                 {tag.icon} {tag.name}
-                                                {customTags.includes(tag.name) && (
-                                                    <span 
-                                                        onClick={(e) => { e.stopPropagation(); handleRemoveCustomTag(tag.name); }}
-                                                        className="ml-1 hover:text-red-300 cursor-pointer"
-                                                    >×</span>
-                                                )}
                                             </button>
                                         ))}
-                                        {showAddTag ? (
-                                            <div className="flex items-center gap-1">
-                                                <input
-                                                    type="text"
-                                                    value={newTagName}
-                                                    onChange={e => setNewTagName(e.target.value)}
-                                                    onKeyDown={e => e.key === 'Enter' && handleAddCustomTag()}
-                                                    placeholder="Tag name..."
-                                                    className="bg-gray-700 border border-gray-600 rounded-full px-3 py-1 text-xs text-white w-24"
-                                                    autoFocus
-                                                />
-                                                <button onClick={handleAddCustomTag} className="text-green-400 hover:text-green-300 text-sm">✓</button>
-                                                <button onClick={() => { setShowAddTag(false); setNewTagName(''); }} className="text-red-400 hover:text-red-300 text-sm">×</button>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowAddTag(true)}
-                                                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 border border-dashed border-gray-500"
-                                            >
-                                                + Add Tag
-                                            </button>
-                                        )}
                                     </div>
+                                </div>
+                                <button 
+                                    onClick={handleAddContent} 
+                                    disabled={!newVideo.title || !newVideo.url}
+                                    className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-2 rounded"
+                                >
+                                    {newVideo.status === 'live' ? '📤 Publish Content' : '💾 Save as Draft'}
+                                </button>
                             </div>
-                            <button onClick={handleAddVideo} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded">
-                                📤 Publish to App
-                            </button>
+                        </div>
+
+                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-white">Published Content ({liveContent.length})</h3>
+                            </div>
+                            <div className="space-y-2">
+                                {liveContent.length === 0 && <p className="text-gray-500 italic text-sm">No published content yet.</p>}
+                                {liveContent.map(vid => {
+                                    const tags = vid.category?.split(',').filter(Boolean) || [];
+                                    return (
+                                        <div key={vid.id} className="flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">{vid.contentType === 'document' ? '📄' : '📹'}</span>
+                                                <div>
+                                                    <p className="font-bold text-white text-sm flex items-center gap-2">
+                                                        {vid.title}
+                                                        <span className="text-xs px-2 py-0.5 bg-green-600/20 text-green-400 rounded">LIVE</span>
+                                                        {vid.pricingType === 'premium' && <span className="text-xs px-2 py-0.5 bg-yellow-600/20 text-yellow-400 rounded">PREMIUM</span>}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {vid.beltId === 'all' ? 'All Belts' : data.belts.find(b => b.id === vid.beltId)?.name}
+                                                        <span className="mx-2">•</span>
+                                                        {vid.xpReward || 10} XP
+                                                        <span className="mx-2">•</span>
+                                                        {vid.viewCount || 0} views
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => toggleContentStatus(vid.id)} className="text-yellow-400 hover:text-yellow-300 text-xs px-2 py-1 bg-gray-700 rounded">Unpublish</button>
+                                                <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 rounded">Delete</button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <h3 className="font-bold text-white mb-4">Drafts ({draftContent.length})</h3>
+                            <div className="space-y-2">
+                                {draftContent.length === 0 && <p className="text-gray-500 italic text-sm">No drafts.</p>}
+                                {draftContent.map(vid => (
+                                    <div key={vid.id} className="flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700 opacity-75">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-2xl">{vid.contentType === 'document' ? '📄' : '📹'}</span>
+                                            <div>
+                                                <p className="font-bold text-white text-sm flex items-center gap-2">
+                                                    {vid.title}
+                                                    <span className="text-xs px-2 py-0.5 bg-gray-600/50 text-gray-400 rounded">DRAFT</span>
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {vid.beltId === 'all' ? 'All Belts' : data.belts.find(b => b.id === vid.beltId)?.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => toggleContentStatus(vid.id)} className="text-green-400 hover:text-green-300 text-xs px-2 py-1 bg-gray-700 rounded">Publish</button>
+                                            <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 rounded">Delete</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Library */}
-                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                        <h3 className="font-bold text-white mb-4">Video Library</h3>
-                        <div className="space-y-2">
-                            {(data.curriculum || []).length === 0 && <p className="text-gray-500 italic">No videos uploaded yet.</p>}
-                            {(data.curriculum || []).map(vid => {
-                                const tags = vid.category?.split(',') || [];
-                                return (
-                                    <div key={vid.id} className="flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700">
+                    <div className="space-y-6">
+                        <div className="bg-gradient-to-br from-sky-600 to-blue-700 p-6 rounded-lg">
+                            <h3 className="font-bold text-white mb-2">Quick Stats</h3>
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                                <div className="bg-white/10 p-3 rounded">
+                                    <p className="text-3xl font-bold text-white">{curriculum.length}</p>
+                                    <p className="text-xs text-white/70">Total Items</p>
+                                </div>
+                                <div className="bg-white/10 p-3 rounded">
+                                    <p className="text-3xl font-bold text-white">{liveContent.length}</p>
+                                    <p className="text-xs text-white/70">Published</p>
+                                </div>
+                                <div className="bg-white/10 p-3 rounded">
+                                    <p className="text-3xl font-bold text-white">{totalViews}</p>
+                                    <p className="text-xs text-white/70">Total Views</p>
+                                </div>
+                                <div className="bg-white/10 p-3 rounded">
+                                    <p className="text-3xl font-bold text-white">{courses.length}</p>
+                                    <p className="text-xs text-white/70">Courses</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                            <h3 className="font-bold text-white mb-3 text-sm">XP Rewards Guide</h3>
+                            <div className="space-y-2 text-xs text-gray-400">
+                                <p>Students earn XP when they complete your content:</p>
+                                <div className="bg-gray-900/50 p-2 rounded space-y-1">
+                                    <p>📹 Short video: <span className="text-sky-400">5-10 XP</span></p>
+                                    <p>📹 Full tutorial: <span className="text-sky-400">15-25 XP</span></p>
+                                    <p>📄 Practice sheet: <span className="text-sky-400">5 XP</span></p>
+                                    <p>📚 Complete course: <span className="text-sky-400">50-100 XP</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'courses' && (
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <p className="text-gray-400">Bundle your content into structured courses for better learning paths.</p>
+                        <button 
+                            onClick={() => setShowCourseForm(!showCourseForm)}
+                            className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-4 rounded"
+                        >
+                            + Create Course
+                        </button>
+                    </div>
+
+                    {showCourseForm && (
+                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <h3 className="font-bold text-white mb-4">New Course</h3>
+                            <div className="space-y-4">
+                                <input 
+                                    type="text" 
+                                    placeholder="Course Title (e.g. Yellow Belt Mastery)" 
+                                    value={newCourse.title} 
+                                    onChange={e => setNewCourse({...newCourse, title: e.target.value})}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+                                />
+                                <textarea 
+                                    placeholder="Course Description" 
+                                    value={newCourse.description} 
+                                    onChange={e => setNewCourse({...newCourse, description: e.target.value})}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white h-20"
+                                />
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Belt Level</label>
+                                        <select 
+                                            value={newCourse.beltId}
+                                            onChange={e => setNewCourse({...newCourse, beltId: e.target.value})}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                        >
+                                            <option value="all">All Belts</option>
+                                            {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Course XP</label>
+                                        <input 
+                                            type="number" 
+                                            min="0"
+                                            value={newCourse.xpReward}
+                                            onChange={e => setNewCourse({...newCourse, xpReward: parseInt(e.target.value) || 0})}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Status</label>
+                                        <select 
+                                            value={newCourse.status}
+                                            onChange={e => setNewCourse({...newCourse, status: e.target.value as 'draft' | 'live'})}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                        >
+                                            <option value="draft">Draft</option>
+                                            <option value="live">Live</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={handleAddCourse} className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded">
+                                        Create Course
+                                    </button>
+                                    <button onClick={() => setShowCourseForm(false)} className="bg-gray-600 hover:bg-gray-500 text-white py-2 px-4 rounded">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid gap-6">
+                        {courses.length === 0 && !showCourseForm && (
+                            <div className="bg-gray-800 p-8 rounded-lg border border-gray-700 text-center">
+                                <p className="text-4xl mb-4">📚</p>
+                                <p className="text-white font-bold mb-2">No Courses Yet</p>
+                                <p className="text-gray-400 text-sm mb-4">Create your first course to bundle content into a structured learning path.</p>
+                                <button 
+                                    onClick={() => setShowCourseForm(true)}
+                                    className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-4 rounded"
+                                >
+                                    Create Your First Course
+                                </button>
+                            </div>
+                        )}
+                        {courses.map(course => {
+                            const courseContent = curriculum.filter(c => c.courseId === course.id);
+                            return (
+                                <div key={course.id} className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                                    <div className="flex justify-between items-start mb-4">
                                         <div>
-                                            <p className="font-bold text-white text-sm">{vid.title}</p>
-                                            <p className="text-xs text-gray-500">
-                                                {vid.beltId === 'all' ? '🎯 All Belts' : data.belts.find(b => b.id === vid.beltId)?.name}
-                                                {tags.length > 0 && <span className="ml-2">{tags.map(t => allTags.find(at => at.id === t)?.name || t).join(', ')}</span>}
+                                            <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                                                📚 {course.title}
+                                                <span className={`text-xs px-2 py-0.5 rounded ${course.status === 'live' ? 'bg-green-600/20 text-green-400' : 'bg-gray-600/50 text-gray-400'}`}>
+                                                    {course.status === 'live' ? 'LIVE' : 'DRAFT'}
+                                                </span>
+                                            </h3>
+                                            <p className="text-gray-400 text-sm mt-1">{course.description || 'No description'}</p>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                {course.beltId === 'all' ? 'All Belts' : data.belts.find(b => b.id === course.beltId)?.name}
+                                                <span className="mx-2">•</span>
+                                                {course.xpReward} XP on completion
+                                                <span className="mx-2">•</span>
+                                                {courseContent.length} items
                                             </p>
                                         </div>
-                                        <button onClick={() => onUpdateData({ curriculum: data.curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => toggleCourseStatus(course.id)}
+                                                className={`text-xs px-3 py-1 rounded ${course.status === 'live' ? 'bg-yellow-600/20 text-yellow-400' : 'bg-green-600/20 text-green-400'}`}
+                                            >
+                                                {course.status === 'live' ? 'Unpublish' : 'Publish'}
+                                            </button>
+                                            <button 
+                                                onClick={() => onUpdateData({ courses: courses.filter(c => c.id !== course.id) })}
+                                                className="text-xs px-3 py-1 rounded bg-red-600/20 text-red-400"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-gray-700 pt-4">
+                                        <p className="text-xs text-gray-500 mb-2">COURSE CONTENT</p>
+                                        {courseContent.length === 0 ? (
+                                            <p className="text-gray-500 italic text-sm">No content added yet. Add content from the library below.</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {courseContent.map((item, idx) => (
+                                                    <div key={item.id} className="flex items-center justify-between bg-gray-900/50 p-2 rounded">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-gray-500 text-sm w-6">{idx + 1}.</span>
+                                                            <span>{item.contentType === 'document' ? '📄' : '📹'}</span>
+                                                            <span className="text-white text-sm">{item.title}</span>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => removeContentFromCourse(item.id)}
+                                                            className="text-red-400 hover:text-red-300 text-xs"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {curriculum.filter(c => !c.courseId).length > 0 && (
+                                            <div className="mt-4">
+                                                <p className="text-xs text-gray-500 mb-2">ADD CONTENT</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {curriculum.filter(c => !c.courseId).map(item => (
+                                                        <button 
+                                                            key={item.id}
+                                                            onClick={() => addContentToCourse(item.id, course.id)}
+                                                            className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded flex items-center gap-1"
+                                                        >
+                                                            + {item.title}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'analytics' && (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <p className="text-gray-400 text-sm">Total Content</p>
+                            <p className="text-3xl font-bold text-white mt-1">{curriculum.length}</p>
+                            <p className="text-xs text-gray-500 mt-1">{liveContent.length} published</p>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <p className="text-gray-400 text-sm">Total Views</p>
+                            <p className="text-3xl font-bold text-white mt-1">{totalViews}</p>
+                            <p className="text-xs text-gray-500 mt-1">All time</p>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <p className="text-gray-400 text-sm">Completions</p>
+                            <p className="text-3xl font-bold text-white mt-1">{totalCompletions}</p>
+                            <p className="text-xs text-gray-500 mt-1">{totalViews > 0 ? Math.round((totalCompletions / totalViews) * 100) : 0}% completion rate</p>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <p className="text-gray-400 text-sm">Courses</p>
+                            <p className="text-3xl font-bold text-white mt-1">{courses.length}</p>
+                            <p className="text-xs text-gray-500 mt-1">{courses.filter(c => c.status === 'live').length} live</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                        <h3 className="font-bold text-white mb-4">Content Performance</h3>
+                        {curriculum.length === 0 ? (
+                            <p className="text-gray-500 italic">No content to analyze yet.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {[...curriculum].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 10).map((item, idx) => (
+                                    <div key={item.id} className="flex items-center gap-4">
+                                        <span className="text-gray-500 w-6 text-right">{idx + 1}.</span>
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-white text-sm font-medium">{item.title}</p>
+                                                <p className="text-gray-400 text-sm">{item.viewCount || 0} views</p>
+                                            </div>
+                                            <div className="w-full bg-gray-700 rounded-full h-2 mt-1">
+                                                <div 
+                                                    className="bg-sky-500 h-2 rounded-full" 
+                                                    style={{ width: `${totalViews > 0 ? ((item.viewCount || 0) / totalViews) * 100 : 0}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                        <h3 className="font-bold text-white mb-4">Content by Belt Level</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {['all', ...data.belts.map(b => b.id)].map(beltId => {
+                                const count = curriculum.filter(c => c.beltId === beltId).length;
+                                const belt = beltId === 'all' ? null : data.belts.find(b => b.id === beltId);
+                                return (
+                                    <div key={beltId} className="bg-gray-900/50 p-3 rounded text-center">
+                                        {belt ? (
+                                            <div className="w-8 h-8 rounded-full mx-auto mb-2" style={{ backgroundColor: belt.color1 }}></div>
+                                        ) : (
+                                            <div className="w-8 h-8 rounded-full mx-auto mb-2 bg-gradient-to-r from-sky-500 to-purple-500"></div>
+                                        )}
+                                        <p className="text-white font-bold">{count}</p>
+                                        <p className="text-xs text-gray-500">{belt?.name || 'All Belts'}</p>
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
