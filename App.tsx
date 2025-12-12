@@ -995,13 +995,19 @@ const DashboardView: React.FC<DashboardViewProps> = ({ data, onboardingMessage }
     };
 
     const bgStyle =
-        data.clubPhoto && data.clubPhoto instanceof File
+        data.clubPhoto && (data.clubPhoto instanceof Blob)
             ? {
                   backgroundImage: `url(${URL.createObjectURL(data.clubPhoto)})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
               }
-            : {};
+            : (typeof data.clubPhoto === 'string' && data.clubPhoto
+                ? {
+                      backgroundImage: `url(${data.clubPhoto})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                  }
+                : {});
 
     const hasStudents = data.students && data.students.length > 0;
     const firstStudentId = hasStudents ? data.students[0].id : null;

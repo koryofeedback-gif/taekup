@@ -505,7 +505,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         <div className="flex items-center space-x-4">
                             {data.logo ? (
                                 <img 
-                                    src={typeof data.logo === 'string' ? data.logo : URL.createObjectURL(data.logo)} 
+                                    src={typeof data.logo === 'string' ? data.logo : (data.logo instanceof Blob ? URL.createObjectURL(data.logo) : '')} 
                                     alt="Club Logo" 
                                     className="w-20 h-20 rounded-lg object-cover border border-gray-600"
                                 />
@@ -1506,7 +1506,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     <div className="flex items-center space-x-3">
                         {data.logo ? (
                             <img 
-                                src={typeof data.logo === 'string' ? data.logo : URL.createObjectURL(data.logo)} 
+                                src={typeof data.logo === 'string' ? data.logo : (data.logo instanceof Blob ? URL.createObjectURL(data.logo) : '')} 
                                 alt="Club Logo" 
                                 className="w-12 h-12 rounded-lg object-cover border border-gray-600"
                             />
