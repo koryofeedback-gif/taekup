@@ -69,6 +69,7 @@ export interface CurriculumItem {
     viewCount?: number;
     completionCount?: number;
     thumbnailUrl?: string;
+    publishAt?: string; // ISO date for scheduled publishing
 }
 
 export interface CurriculumCourse {

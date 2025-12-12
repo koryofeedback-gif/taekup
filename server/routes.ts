@@ -1109,4 +1109,112 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to link parent to student' });
     }
   });
+
+  // Content Analytics - Record content view/completion
+  app.post('/api/content/view', async (req: Request, res: Response) => {
+    try {
+      const { contentId, studentId, completed, xpAwarded } = req.body;
+      
+      if (!contentId) {
+        return res.status(400).json({ error: 'Content ID is required' });
+      }
+
+      // Check if view already exists for this content/student
+      const existingView = await db.execute(sql`
+        SELECT id, completed FROM content_views 
+        WHERE content_id = ${contentId}::uuid 
+        ${studentId ? sql`AND student_id = ${studentId}::uuid` : sql`AND student_id IS NULL`}
+        LIMIT 1
+      `);
+
+      if ((existingView as any[]).length > 0) {
+        // Update existing view if completing
+        if (completed && !(existingView as any[])[0].completed) {
+          await db.execute(sql`
+            UPDATE content_views 
+            SET completed = true, completed_at = NOW(), xp_awarded = ${xpAwarded || 0}
+            WHERE id = ${(existingView as any[])[0].id}::uuid
+          `);
+          
+          // Increment completion count on content
+          await db.execute(sql`
+            UPDATE curriculum_content 
+            SET completion_count = COALESCE(completion_count, 0) + 1
+            WHERE id = ${contentId}::uuid
+          `);
+        }
+        return res.json({ success: true, action: 'updated' });
+      }
+
+      // Create new view record
+      await db.execute(sql`
+        INSERT INTO content_views (content_id, student_id, completed, completed_at, xp_awarded, viewed_at)
+        VALUES (
+          ${contentId}::uuid, 
+          ${studentId ? sql`${studentId}::uuid` : sql`NULL`}, 
+          ${completed || false}, 
+          ${completed ? sql`NOW()` : sql`NULL`}, 
+          ${xpAwarded || 0}, 
+          NOW()
+        )
+      `);
+
+      // Increment view count on content
+      await db.execute(sql`
+        UPDATE curriculum_content 
+        SET view_count = COALESCE(view_count, 0) + 1
+        ${completed ? sql`, completion_count = COALESCE(completion_count, 0) + 1` : sql``}
+        WHERE id = ${contentId}::uuid
+      `);
+
+      res.json({ success: true, action: 'created' });
+    } catch (error: any) {
+      console.error('[Content View] Error:', error.message);
+      res.status(500).json({ error: 'Failed to record content view' });
+    }
+  });
+
+  // Content Analytics - Get analytics for a club's content
+  app.get('/api/content/analytics/:clubId', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+
+      // Get total views and completions per content
+      const contentStats = await db.execute(sql`
+        SELECT 
+          cc.id,
+          cc.title,
+          cc.content_type,
+          cc.belt_id,
+          cc.pricing_type,
+          cc.xp_reward,
+          COALESCE(cc.view_count, 0) as view_count,
+          COALESCE(cc.completion_count, 0) as completion_count,
+          COUNT(cv.id) as tracked_views,
+          COUNT(CASE WHEN cv.completed = true THEN 1 END) as tracked_completions
+        FROM curriculum_content cc
+        LEFT JOIN content_views cv ON cc.id = cv.content_id
+        WHERE cc.club_id = ${clubId}::uuid
+        GROUP BY cc.id, cc.title, cc.content_type, cc.belt_id, cc.pricing_type, cc.xp_reward
+        ORDER BY cc.created_at DESC
+      `);
+
+      // Get total XP awarded
+      const xpStats = await db.execute(sql`
+        SELECT COALESCE(SUM(cv.xp_awarded), 0) as total_xp_awarded
+        FROM content_views cv
+        JOIN curriculum_content cc ON cv.content_id = cc.id
+        WHERE cc.club_id = ${clubId}::uuid
+      `);
+
+      res.json({
+        success: true,
+        content: contentStats,
+        totalXpAwarded: (xpStats as any[])[0]?.total_xp_awarded || 0
+      });
+    } catch (error: any) {
+      console.error('[Content Analytics] Error:', error.message);
+      res.status(500).json({ error: 'Failed to get content analytics' });
+    }
+  });
 }

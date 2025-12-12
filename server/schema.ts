@@ -422,6 +422,7 @@ export const curriculumContent = pgTable('curriculum_content', {
   viewCount: integer('view_count').default(0),
   completionCount: integer('completion_count').default(0),
   authorName: varchar('author_name', { length: 255 }),
+  publishAt: timestamp('publish_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

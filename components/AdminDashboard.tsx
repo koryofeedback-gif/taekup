@@ -758,7 +758,8 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         status: 'draft' as 'draft' | 'live',
         pricingType: 'free' as 'free' | 'premium',
         xpReward: 10,
-        description: ''
+        description: '',
+        publishAt: '' // Scheduled publishing date
     });
     const [newCourse, setNewCourse] = useState({
         title: '',
@@ -769,6 +770,12 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     });
     const [showCourseForm, setShowCourseForm] = useState(false);
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
+    
+    // Search and filter state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterBelt, setFilterBelt] = useState('all');
+    const [filterType, setFilterType] = useState<'all' | 'video' | 'document'>('all');
+    const [filterAccess, setFilterAccess] = useState<'all' | 'free' | 'premium'>('all');
 
     const customTags = data.customVideoTags || [];
     const allTags = [...DEFAULT_VIDEO_TAGS, ...customTags.map(t => ({ id: t, name: t, icon: '🏷️' }))];
@@ -793,15 +800,52 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             description: newVideo.description || 'Uploaded by Instructor',
             authorName: data.ownerName,
             contentType: newVideo.contentType,
-            status: newVideo.status,
+            status: newVideo.publishAt ? 'draft' : newVideo.status, // If scheduled, start as draft
             pricingType: newVideo.pricingType,
             xpReward: newVideo.xpReward,
             viewCount: 0,
-            completionCount: 0
+            completionCount: 0,
+            publishAt: newVideo.publishAt || undefined
         };
         onUpdateData({ curriculum: [...curriculum, item] });
-        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '' });
+        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '' });
     };
+
+    // Filter content based on search and filters
+    const filterContent = (items: CurriculumItem[]) => {
+        return items.filter(item => {
+            const matchesSearch = !searchQuery || 
+                item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesBelt = filterBelt === 'all' || item.beltId === filterBelt;
+            const matchesType = filterType === 'all' || item.contentType === filterType;
+            const matchesAccess = filterAccess === 'all' || item.pricingType === filterAccess;
+            return matchesSearch && matchesBelt && matchesType && matchesAccess;
+        });
+    };
+
+    // Check for scheduled content that should be published
+    const checkScheduledPublishing = () => {
+        const now = new Date();
+        const updatedCurriculum = curriculum.map(item => {
+            if (item.publishAt && item.status === 'draft') {
+                const publishDate = new Date(item.publishAt);
+                if (publishDate <= now) {
+                    return { ...item, status: 'live' as const, publishAt: undefined };
+                }
+            }
+            return item;
+        });
+        if (JSON.stringify(updatedCurriculum) !== JSON.stringify(curriculum)) {
+            onUpdateData({ curriculum: updatedCurriculum });
+        }
+    };
+
+    React.useEffect(() => {
+        checkScheduledPublishing();
+        const interval = setInterval(checkScheduledPublishing, 60000); // Check every minute
+        return () => clearInterval(interval);
+    }, [curriculum]);
 
     const handleAddCourse = () => {
         if(!newCourse.title) return;
@@ -847,10 +891,12 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         onUpdateData({ curriculum: updated });
     };
 
-    const liveContent = curriculum.filter(c => c.status === 'live');
-    const draftContent = curriculum.filter(c => c.status !== 'live');
+    const liveContent = filterContent(curriculum.filter(c => c.status === 'live'));
+    const draftContent = filterContent(curriculum.filter(c => c.status !== 'live'));
+    const scheduledContent = draftContent.filter(c => c.publishAt);
     const totalViews = curriculum.reduce((sum, c) => sum + (c.viewCount || 0), 0);
     const totalCompletions = curriculum.reduce((sum, c) => sum + (c.completionCount || 0), 0);
+    const hasActiveFilters = searchQuery || filterBelt !== 'all' || filterType !== 'all' || filterAccess !== 'all';
 
     return (
         <div>
@@ -880,6 +926,62 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             {activeTab === 'content' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Search and Filter Bar */}
+                        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                            <div className="flex flex-col md:flex-row gap-3">
+                                <div className="flex-1">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search content by title or description..." 
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                    />
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
+                                    <select 
+                                        value={filterBelt}
+                                        onChange={e => setFilterBelt(e.target.value)}
+                                        className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                                    >
+                                        <option value="all">All Belts</option>
+                                        {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                    </select>
+                                    <select 
+                                        value={filterType}
+                                        onChange={e => setFilterType(e.target.value as 'all' | 'video' | 'document')}
+                                        className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                                    >
+                                        <option value="all">All Types</option>
+                                        <option value="video">Videos</option>
+                                        <option value="document">Documents</option>
+                                    </select>
+                                    <select 
+                                        value={filterAccess}
+                                        onChange={e => setFilterAccess(e.target.value as 'all' | 'free' | 'premium')}
+                                        className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                                    >
+                                        <option value="all">All Access</option>
+                                        <option value="free">Free</option>
+                                        <option value="premium">Premium</option>
+                                    </select>
+                                    {hasActiveFilters && (
+                                        <button 
+                                            onClick={() => { setSearchQuery(''); setFilterBelt('all'); setFilterType('all'); setFilterAccess('all'); }}
+                                            className="px-3 py-2 bg-red-600/20 text-red-400 rounded text-sm hover:bg-red-600/30"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            {hasActiveFilters && (
+                                <p className="text-xs text-gray-400 mt-2">
+                                    Showing {liveContent.length + draftContent.length} of {curriculum.length} items
+                                </p>
+                            )}
+                        </div>
+
                         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                             <h3 className="font-bold text-white mb-4">Add New Content</h3>
                             <div className="space-y-4">
@@ -953,13 +1055,31 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                         <label className="block text-xs text-gray-400 mb-1">Status</label>
                                         <select 
                                             value={newVideo.status}
-                                            onChange={e => setNewVideo({...newVideo, status: e.target.value as 'draft' | 'live'})}
+                                            onChange={e => setNewVideo({...newVideo, status: e.target.value as 'draft' | 'live', publishAt: ''})}
                                             className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                         >
                                             <option value="draft">Draft (Hidden)</option>
                                             <option value="live">Live (Published)</option>
                                         </select>
                                     </div>
+                                </div>
+                                {/* Scheduled Publishing */}
+                                <div className="bg-gray-700/50 p-3 rounded border border-gray-600">
+                                    <label className="flex items-center gap-2 text-xs text-gray-400 mb-2">
+                                        <span>📅</span> Schedule Publishing (Optional)
+                                    </label>
+                                    <input 
+                                        type="datetime-local"
+                                        value={newVideo.publishAt}
+                                        onChange={e => setNewVideo({...newVideo, publishAt: e.target.value, status: 'draft'})}
+                                        min={new Date().toISOString().slice(0, 16)}
+                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                    />
+                                    {newVideo.publishAt && (
+                                        <p className="text-xs text-sky-400 mt-1">
+                                            Content will auto-publish on {new Date(newVideo.publishAt).toLocaleString()}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs text-gray-400 mb-2">Tags</label>
@@ -985,7 +1105,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     disabled={!newVideo.title || !newVideo.url}
                                     className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-2 rounded"
                                 >
-                                    {newVideo.status === 'live' ? '📤 Publish Content' : '💾 Save as Draft'}
+                                    {newVideo.publishAt ? '📅 Schedule Content' : (newVideo.status === 'live' ? '📤 Publish Content' : '💾 Save as Draft')}
                                 </button>
                             </div>
                         </div>
@@ -1028,25 +1148,45 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                         </div>
 
                         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <h3 className="font-bold text-white mb-4">Drafts ({draftContent.length})</h3>
+                            <h3 className="font-bold text-white mb-4">
+                                Drafts ({draftContent.length})
+                                {scheduledContent.length > 0 && (
+                                    <span className="text-xs font-normal text-sky-400 ml-2">
+                                        ({scheduledContent.length} scheduled)
+                                    </span>
+                                )}
+                            </h3>
                             <div className="space-y-2">
                                 {draftContent.length === 0 && <p className="text-gray-500 italic text-sm">No drafts.</p>}
                                 {draftContent.map(vid => (
-                                    <div key={vid.id} className="flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700 opacity-75">
+                                    <div key={vid.id} className={`flex justify-between items-center bg-gray-900/50 p-3 rounded border ${vid.publishAt ? 'border-sky-500/50' : 'border-gray-700'} opacity-75`}>
                                         <div className="flex items-center gap-3">
                                             <span className="text-2xl">{vid.contentType === 'document' ? '📄' : '📹'}</span>
                                             <div>
                                                 <p className="font-bold text-white text-sm flex items-center gap-2">
                                                     {vid.title}
-                                                    <span className="text-xs px-2 py-0.5 bg-gray-600/50 text-gray-400 rounded">DRAFT</span>
+                                                    {vid.publishAt ? (
+                                                        <span className="text-xs px-2 py-0.5 bg-sky-600/20 text-sky-400 rounded">
+                                                            📅 {new Date(vid.publishAt).toLocaleDateString()}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs px-2 py-0.5 bg-gray-600/50 text-gray-400 rounded">DRAFT</span>
+                                                    )}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
                                                     {vid.beltId === 'all' ? 'All Belts' : data.belts.find(b => b.id === vid.beltId)?.name}
+                                                    {vid.publishAt && (
+                                                        <span className="ml-2 text-sky-400">
+                                                            publishes {new Date(vid.publishAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                        </span>
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <button onClick={() => toggleContentStatus(vid.id)} className="text-green-400 hover:text-green-300 text-xs px-2 py-1 bg-gray-700 rounded">Publish</button>
+                                            <button onClick={() => toggleContentStatus(vid.id)} className="text-green-400 hover:text-green-300 text-xs px-2 py-1 bg-gray-700 rounded">
+                                                {vid.publishAt ? 'Publish Now' : 'Publish'}
+                                            </button>
                                             <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 rounded">Delete</button>
                                         </div>
                                     </div>

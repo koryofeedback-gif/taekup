@@ -7,6 +7,7 @@ import { LANGUAGES } from '../constants';
 import { useChallengeRealtime } from '../hooks/useChallengeRealtime';
 import { ChallengeToast } from './ChallengeToast';
 import { isSupabaseConfigured } from '../services/supabaseClient';
+import { useStudentProgress } from '../hooks/useStudentProgress';
 
 interface ParentPortalProps {
     student: Student;
@@ -84,33 +85,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [dailyStreak, setDailyStreak] = useState(student.rivalsStats?.dailyStreak || 0);
     const [lastChallengeDate, setLastChallengeDate] = useState<string>(student.rivalsStats?.lastChallengeDate || new Date().toISOString().split('T')[0]);
     
-    // Track completed content and points locally for atomic updates
-    const [localCompletedIds, setLocalCompletedIds] = useState<string[]>(student.completedContentIds || []);
-    const [localTotalPoints, setLocalTotalPoints] = useState<number>(student.totalPoints);
-    
-    // Track pending local changes to avoid prop overwrites during rapid updates
-    const pendingChangesRef = useRef<{ ids: string[], points: number, xp: number } | null>(null);
-    const lastSyncedStudentIdRef = useRef<string>(student.id);
-    
-    // Sync from props when student changes, but preserve local changes
-    useEffect(() => {
-        if (lastSyncedStudentIdRef.current !== student.id) {
-            // Different student - reset everything
-            lastSyncedStudentIdRef.current = student.id;
-            setLocalCompletedIds(student.completedContentIds || []);
-            setLocalTotalPoints(student.totalPoints);
-            pendingChangesRef.current = null;
-        } else if (pendingChangesRef.current === null) {
-            // Same student, no pending changes - accept prop updates
-            const propsIds = student.completedContentIds || [];
-            if (propsIds.length > localCompletedIds.length) {
-                setLocalCompletedIds(propsIds);
-            }
-            if (student.totalPoints > localTotalPoints) {
-                setLocalTotalPoints(student.totalPoints);
-            }
-        }
-    }, [student.id, student.completedContentIds, student.totalPoints, localCompletedIds.length, localTotalPoints]);
+    // Use robust progress tracking hook for XP/completion
+    const { 
+        completedContentIds: localCompletedIds, 
+        totalPoints: localTotalPoints, 
+        xp: progressXp,
+        completeContent,
+        isCompleted: isContentCompleted
+    } = useStudentProgress({ student, onUpdateStudent });
     
     // Sync rivals stats to student record whenever they change
     const syncRivalsStats = useCallback(() => {
@@ -134,9 +116,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             completedContentIds: localCompletedIds,
             totalPoints: localTotalPoints
         };
-        
-        // Clear pending changes after sync
-        pendingChangesRef.current = null;
         
         onUpdateStudent(updatedStudent);
     }, [rivalStats, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted, student, onUpdateStudent, localCompletedIds, localTotalPoints]);
@@ -735,34 +714,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 .filter(v => v.status === 'live' || !v.status)
                                 .filter(v => v.pricingType !== 'premium' || hasPremiumAccess)
                                 .map((video, idx) => {
-                                const isCompleted = localCompletedIds.includes(video.id);
+                                const isCompleted = isContentCompleted(video.id);
                                 const xpReward = video.xpReward || 10;
                                 const isPremiumContent = video.pricingType === 'premium';
                                 
                                 const handleComplete = (e: React.MouseEvent) => {
                                     e.preventDefault();
-                                    if (!localCompletedIds.includes(video.id) && onUpdateStudent) {
-                                        const newCompletedIds = [...localCompletedIds, video.id];
-                                        const newXp = rivalStats.xp + xpReward;
-                                        const newTotalPoints = localTotalPoints + xpReward;
-                                        
-                                        pendingChangesRef.current = { ids: newCompletedIds, points: newTotalPoints, xp: newXp };
-                                        
-                                        setLocalCompletedIds(newCompletedIds);
-                                        setLocalTotalPoints(newTotalPoints);
-                                        setRivalStats(prev => ({ ...prev, xp: newXp }));
-                                        
-                                        onUpdateStudent({
-                                            ...student,
-                                            completedContentIds: newCompletedIds,
-                                            totalPoints: newTotalPoints,
-                                            rivalsStats: {
-                                                ...(student.rivalsStats || { wins: 0, losses: 0, streak: 0, xp: 0, dailyStreak: 0, teamBattlesWon: 0, familyChallengesCompleted: 0, mysteryBoxCompleted: 0 }),
-                                                xp: newXp
-                                            }
-                                        });
-                                        
-                                        setTimeout(() => { pendingChangesRef.current = null; }, 1000);
+                                    const awarded = completeContent(video.id, xpReward);
+                                    if (awarded) {
+                                        setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
                                     }
                                     window.open(video.url, '_blank');
                                 };
