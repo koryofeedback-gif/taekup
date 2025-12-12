@@ -342,7 +342,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
     );
 
     const coachesResult = await client.query(
-      `SELECT id, name, email, location, assigned_classes
+      `SELECT id, name, email
        FROM coaches WHERE club_id = $1::uuid AND is_active = true`,
       [clubId]
     );
@@ -590,11 +590,22 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
     const tempPassword = crypto.randomBytes(8).toString('hex');
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-    await client.query(
+    // Insert into users table for authentication
+    const userResult = await client.query(
       `INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
        VALUES ($1, $2, $3, 'coach', $4::uuid, true, NOW())
-       ON CONFLICT (email) DO UPDATE SET name = $3, club_id = $4::uuid, role = 'coach', is_active = true`,
+       ON CONFLICT (email) DO UPDATE SET name = $3, club_id = $4::uuid, role = 'coach', is_active = true
+       RETURNING id`,
       [email, passwordHash, name, clubId]
+    );
+    const userId = userResult.rows[0]?.id;
+
+    // Also insert into coaches table for data fetching
+    await client.query(
+      `INSERT INTO coaches (id, club_id, user_id, name, email, is_active, invite_sent_at, created_at)
+       VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3, $4, true, NOW(), NOW())
+       ON CONFLICT (email) DO UPDATE SET name = $3, club_id = $1::uuid, is_active = true, invite_sent_at = NOW()`,
+      [clubId, userId, name, email]
     );
 
     const coachSent = await sendTemplateEmail(email, EMAIL_TEMPLATES.COACH_INVITE, {

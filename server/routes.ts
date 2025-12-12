@@ -149,7 +149,7 @@ export function registerRoutes(app: Express) {
       `);
 
       const coachesResult = await db.execute(sql`
-        SELECT id, name, email, location, assigned_classes
+        SELECT id, name, email
         FROM coaches WHERE club_id = ${clubId}::uuid AND is_active = true
       `);
 
@@ -996,10 +996,20 @@ export function registerRoutes(app: Express) {
       const tempPassword = crypto.randomBytes(8).toString('hex');
       const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-      await db.execute(sql`
+      // Insert into users table for authentication
+      const userResult = await db.execute(sql`
         INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
         VALUES (${email}, ${passwordHash}, ${name}, 'coach', ${clubId}::uuid, true, NOW())
         ON CONFLICT (email) DO UPDATE SET name = ${name}, club_id = ${clubId}::uuid, role = 'coach', is_active = true
+        RETURNING id
+      `);
+      const userId = (userResult as any[])[0]?.id;
+
+      // Also insert into coaches table for data fetching
+      await db.execute(sql`
+        INSERT INTO coaches (id, club_id, user_id, name, email, is_active, invite_sent_at, created_at)
+        VALUES (gen_random_uuid(), ${clubId}::uuid, ${userId}::uuid, ${name}, ${email}, true, NOW(), NOW())
+        ON CONFLICT (email) DO UPDATE SET name = ${name}, club_id = ${clubId}::uuid, is_active = true, invite_sent_at = NOW()
       `);
 
       await emailService.sendCoachInviteEmail(email, {
