@@ -1,0 +1,101 @@
+Pay less and store more with IDrive® e2
+S3 Compatible Storage Integrations 
+
+Paid Plans
+Veeam/MSP/Reseller Plans
+Monthly Plan
+Contact Sales
+Pay-as-you-go
+$5 per month, per TB
+(Try with 10GB Free)
+
+IDrive® e2 charges a minimum storage fee of $5/TB. The minimum charge is per TB; even if your total storage is less than 1 TB, you will be charged for the entire 1 TB.
+
+Veeam/MSP/Reseller
+$4 per month, per TB
+(Try with 1TB Free)
+
+IDrive® e2 charges a minimum storage fee of $4/TB. The minimum charge is per TB; even if your total storage is less than 1 TB, you will be charged for the entire 1 TB.
+
+Contact sales for more storage, demo, or migration requirements
+Subscribe to yearly plans
+
+Save 50%*
+
+on the first year
+
+LIMITED TIME ONLY!
+
+Special Offer for
+
+Veeam/MSP users
+
+Starts at $39.50/year
+$19.75 First year, 1 TB
+
+LIMITED TIME ONLY!
+
+Free egress policy
+Download less than or equal to 3X your active storage volume for free!
+
+Free API Calls
+IDrive® e2 does not impose any additional charges for your API calls.
+
+Straight-forward and tierless pricing
+ 
+$0.005/GB per month
+
+($5/TB per month)
+
+ Try with 10 GB Free
+
+ 
+Yearly plans start from
+1 TB for $49.50/year $24.75 first year
+
+ 
+No restrictions of minimum data retention
+
+ 
+Free ingress and egress
+
+No additional charges
+
+Compare Pricing
+
+Yearly
+
+Monthly
+Total data stored
+
+1 TB
+1024 TB
+Monthly data downloads
+
+0 TB
+1024 TB
+IDrive® e2
+Azure
+Amazon
+Google cloud
+$49.50/year
+$255/year
+$282/year
+$282/year
+Have more queries?
+How does IDrive® e2 calculate service charges for Pay As You Go pricing model?
+IDrive® e2 calculates the service charge based on the amount of active storage used during the billing cycle. There are no additional charges for ingress, egress, data deletion, and API requests.
+
+Does IDrive® e2 have a minimum storage fee for the Pay As You Go pricing model?
+Yes, IDrive® e2 charges a minimum storage fee of $5 associated with 1 TB of active cloud storage. If you store less than 1 TB, you will still be charged for the entire 1 TB. For example, if you store 900 GB with IDrive® e2 for the duration of a billing cycle, this is less than the 1 TB monthly minimum storage volume. Therefore, you will still be charged $5 for the 1 TB base storage.
+
+Does IDrive® e2 impose a minimum storage duration policy?
+No, unlike most competitors in the market, IDrive® e2 does not impose a minimum storage duration on uploaded objects nor charge users for deleting the objects.
+
+How do I update my credit card information?
+Go to Billing > Payment Settings. In the Add new card section, enter the new card number, expiry date, billing address, and CVC and click Add Card. Your card will be added to the Saved cards list.
+
+Learn more
+
+Note:
+AWS, Azure, Google Cloud pricing are gathered periodically from their respective websites.
