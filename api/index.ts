@@ -6,6 +6,8 @@ import Stripe from 'stripe';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import sgMail from '@sendgrid/mail';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -707,6 +709,112 @@ async function handleLinkParent(req: VercelRequest, res: VercelResponse, student
   }
 }
 
+// S3 client for video uploads
+function getS3Client(): S3Client | null {
+  if (!process.env.IDRIVE_E2_ACCESS_KEY || !process.env.IDRIVE_E2_SECRET_KEY || !process.env.IDRIVE_E2_ENDPOINT) {
+    return null;
+  }
+  return new S3Client({
+    endpoint: `https://${process.env.IDRIVE_E2_ENDPOINT}`,
+    region: 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.IDRIVE_E2_ACCESS_KEY,
+      secretAccessKey: process.env.IDRIVE_E2_SECRET_KEY,
+    },
+    forcePathStyle: true,
+  });
+}
+
+async function handlePresignedUpload(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { studentId, challengeId, filename, contentType } = parseBody(req);
+  
+  if (!studentId || !challengeId || !filename) {
+    return res.status(400).json({ error: 'studentId, challengeId, and filename are required' });
+  }
+
+  const s3Client = getS3Client();
+  const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
+  
+  if (!s3Client || !bucketName) {
+    console.error('[Videos] Missing S3 configuration');
+    return res.status(500).json({ error: 'Video storage not configured. Please contact support.' });
+  }
+
+  try {
+    const timestamp = Date.now();
+    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `challenge-videos/${studentId}/${challengeId}/${timestamp}-${sanitizedFilename}`;
+    
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      ContentType: contentType || 'video/mp4',
+    });
+    
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    const publicUrl = `https://${bucketName}.${process.env.IDRIVE_E2_ENDPOINT}/${key}`;
+    
+    return res.json({ uploadUrl, key, publicUrl });
+  } catch (error: any) {
+    console.error('[Videos] Presigned upload error:', error.message);
+    return res.status(500).json({ error: 'Failed to generate upload URL' });
+  }
+}
+
+async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, score } = parseBody(req);
+  
+  if (!studentId || !clubId || !challengeId || !videoUrl) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, created_at, updated_at)
+       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, 'pending', NOW(), NOW())
+       RETURNING id`,
+      [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0]
+    );
+    
+    const video = result.rows[0];
+    return res.json({ success: true, videoId: video?.id });
+  } catch (error: any) {
+    console.error('[Videos] Create error:', error.message);
+    return res.status(500).json({ error: 'Failed to save video record' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleGetStudentVideos(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id, challenge_id as "challengeId", challenge_name as "challengeName", 
+              video_url as "videoUrl", status, score, vote_count as "voteCount", 
+              coach_notes as "coachNotes", created_at as "createdAt"
+       FROM challenge_videos 
+       WHERE student_id = $1::uuid
+       ORDER BY created_at DESC`,
+      [studentId]
+    );
+    
+    return res.json(result.rows);
+  } catch (error: any) {
+    console.error('[Videos] Get student videos error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch videos' });
+  } finally {
+    client.release();
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -738,6 +846,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const linkParentMatch = path.match(/^\/students\/([^/]+)\/link-parent\/?$/);
     if (linkParentMatch) return await handleLinkParent(req, res, linkParentMatch[1]);
+
+    // Video endpoints
+    if (path === '/videos/presigned-upload' || path === '/videos/presigned-upload/') return await handlePresignedUpload(req, res);
+    if (path === '/videos' || path === '/videos/') return await handleSaveVideo(req, res);
+    
+    const studentVideosMatch = path.match(/^\/videos\/student\/([^/]+)\/?$/);
+    if (studentVideosMatch) return await handleGetStudentVideos(req, res, studentVideosMatch[1]);
 
     return res.status(404).json({ error: 'Not found', path });
   } catch (error: any) {
