@@ -1313,8 +1313,21 @@ export function registerRoutes(app: Express) {
     try {
       const { studentId, challengeId, filename, contentType } = req.body;
       
+      console.log('[Videos] Presigned upload request:', { studentId, challengeId, filename, contentType });
+      
       if (!studentId || !challengeId || !filename) {
         return res.status(400).json({ error: 'studentId, challengeId, and filename are required' });
+      }
+
+      // Check if S3 credentials are configured
+      if (!process.env.IDRIVE_E2_ACCESS_KEY || !process.env.IDRIVE_E2_SECRET_KEY || !process.env.IDRIVE_E2_BUCKET_NAME || !process.env.IDRIVE_E2_ENDPOINT) {
+        console.error('[Videos] Missing S3 configuration:', {
+          hasAccessKey: !!process.env.IDRIVE_E2_ACCESS_KEY,
+          hasSecretKey: !!process.env.IDRIVE_E2_SECRET_KEY,
+          hasBucket: !!process.env.IDRIVE_E2_BUCKET_NAME,
+          hasEndpoint: !!process.env.IDRIVE_E2_ENDPOINT
+        });
+        return res.status(500).json({ error: 'Video storage not configured. Please contact support.' });
       }
 
       const result = await s3Storage.getPresignedUploadUrl(
@@ -1324,9 +1337,11 @@ export function registerRoutes(app: Express) {
         contentType || 'video/mp4'
       );
 
+      console.log('[Videos] Presigned URL generated successfully');
       res.json(result);
     } catch (error: any) {
       console.error('[Videos] Presigned upload error:', error.message);
+      console.error('[Videos] Full error:', error);
       res.status(500).json({ error: 'Failed to generate upload URL' });
     }
   });
