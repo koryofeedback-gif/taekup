@@ -1362,6 +1362,31 @@ export function registerRoutes(app: Express) {
 
       const video = (result as any[])[0];
       
+      // Send email notification to coaches
+      try {
+        const studentResult = await db.execute(sql`SELECT name FROM students WHERE id = ${studentId}::uuid`);
+        const clubResult = await db.execute(sql`
+          SELECT c.name as club_name, co.email as coach_email, co.name as coach_name
+          FROM clubs c
+          LEFT JOIN coaches co ON co.club_id = c.id AND co.is_active = true
+          WHERE c.id = ${clubId}::uuid
+        `);
+        
+        const studentName = (studentResult as any[])[0]?.name || 'Student';
+        const clubData = clubResult as any[];
+        
+        for (const coach of clubData.filter(c => c.coach_email)) {
+          emailService.sendVideoSubmittedNotification(coach.coach_email, {
+            coachName: coach.coach_name || 'Coach',
+            studentName,
+            challengeName: challengeName || challengeId,
+            clubName: coach.club_name || 'Your Club'
+          }).catch(err => console.error('[Videos] Email notification error:', err));
+        }
+      } catch (emailErr) {
+        console.error('[Videos] Email notification setup error:', emailErr);
+      }
+      
       res.json({ success: true, videoId: video?.id });
     } catch (error: any) {
       console.error('[Videos] Create error:', error.message);
@@ -1391,11 +1416,15 @@ export function registerRoutes(app: Express) {
   app.get('/api/videos/approved/:clubId', async (req: Request, res: Response) => {
     try {
       const { clubId } = req.params;
+      const { studentId } = req.query;
       
       const videos = await db.execute(sql`
-        SELECT cv.*, s.name as student_name, s.belt as student_belt
+        SELECT cv.*, s.name as student_name, s.belt as student_belt,
+               CASE WHEN cvv.id IS NOT NULL THEN true ELSE false END as has_voted
         FROM challenge_videos cv
         JOIN students s ON cv.student_id = s.id
+        LEFT JOIN challenge_video_votes cvv ON cv.id = cvv.video_id 
+          AND cvv.voter_student_id = ${studentId ? studentId : null}::uuid
         WHERE cv.club_id = ${clubId}::uuid AND cv.status = 'approved'
         ORDER BY cv.vote_count DESC, cv.created_at DESC
       `);
@@ -1426,6 +1455,30 @@ export function registerRoutes(app: Express) {
             updated_at = NOW()
         WHERE id = ${videoId}::uuid
       `);
+
+      // Send email notification to parent
+      try {
+        const videoResult = await db.execute(sql`
+          SELECT cv.challenge_name, s.name as student_name, s.parent_email, s.parent_name
+          FROM challenge_videos cv
+          JOIN students s ON cv.student_id = s.id
+          WHERE cv.id = ${videoId}::uuid
+        `);
+        
+        const videoData = (videoResult as any[])[0];
+        if (videoData?.parent_email) {
+          emailService.sendVideoVerifiedNotification(videoData.parent_email, {
+            parentName: videoData.parent_name || 'Parent',
+            studentName: videoData.student_name,
+            challengeName: videoData.challenge_name,
+            status: status as 'approved' | 'rejected',
+            coachNotes: coachNotes || undefined,
+            xpAwarded: status === 'approved' ? (xpAwarded || 0) : undefined
+          }).catch(err => console.error('[Videos] Parent notification error:', err));
+        }
+      } catch (emailErr) {
+        console.error('[Videos] Parent notification setup error:', emailErr);
+      }
 
       res.json({ success: true });
     } catch (error: any) {

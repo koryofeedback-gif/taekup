@@ -33,7 +33,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [challengeResult, setChallengeResult] = useState<'pending' | 'win' | 'loss' | null>(null);
     const [isSimulatingChallenge, setIsSimulatingChallenge] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState<string>('');
-    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery'>('arena');
+    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery' | 'community'>('arena');
     const [challengeHistory, setChallengeHistory] = useState<Array<{
         id: string;
         opponent: string;
@@ -104,6 +104,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         createdAt: string;
     }>>([]);
     const videoInputRef = useRef<HTMLInputElement>(null);
+    
+    // Community Videos State (for voting)
+    const [communityVideos, setCommunityVideos] = useState<Array<{
+        id: string;
+        studentId: string;
+        studentName: string;
+        challengeId: string;
+        challengeName: string;
+        videoUrl: string;
+        score: number;
+        voteCount: number;
+        hasVoted: boolean;
+        createdAt: string;
+    }>>([]);
+    const [isLoadingCommunity, setIsLoadingCommunity] = useState(false);
+    const [votingVideoId, setVotingVideoId] = useState<string | null>(null);
     
     // Use robust progress tracking hook for XP/completion
     const { 
@@ -467,6 +483,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             fetchMyVideos();
         }
     }, [hasPremiumAccess, student.id]);
+    
+    // Fetch community videos when switching to community tab
+    useEffect(() => {
+        if (rivalsView === 'community' && hasPremiumAccess) {
+            fetchCommunityVideos();
+        }
+    }, [rivalsView, hasPremiumAccess]);
 
     const fetchMyVideos = async () => {
         try {
@@ -487,6 +510,61 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         } catch (error) {
             console.error('Failed to fetch videos:', error);
+        }
+    };
+
+    const fetchCommunityVideos = async () => {
+        const clubId = localStorage.getItem('taekup_club_id') || sessionStorage.getItem('impersonate_clubId');
+        if (!clubId) return;
+        
+        setIsLoadingCommunity(true);
+        try {
+            const response = await fetch(`/api/videos/approved/${clubId}?studentId=${student.id}`);
+            if (response.ok) {
+                const videos = await response.json();
+                setCommunityVideos(videos.map((v: any) => ({
+                    id: v.id,
+                    studentId: v.student_id,
+                    studentName: v.student_name,
+                    challengeId: v.challenge_id,
+                    challengeName: v.challenge_name,
+                    videoUrl: v.video_url,
+                    score: v.score || 0,
+                    voteCount: v.vote_count || 0,
+                    hasVoted: v.has_voted || false,
+                    createdAt: v.created_at
+                })));
+            }
+        } catch (error) {
+            console.error('Failed to fetch community videos:', error);
+        } finally {
+            setIsLoadingCommunity(false);
+        }
+    };
+
+    const handleVoteForVideo = async (videoId: string) => {
+        setVotingVideoId(videoId);
+        try {
+            const response = await fetch(`/api/videos/${videoId}/vote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ voterStudentId: student.id })
+            });
+            
+            if (response.ok) {
+                setCommunityVideos(prev => prev.map(v => 
+                    v.id === videoId 
+                        ? { ...v, hasVoted: true, voteCount: v.voteCount + 1 }
+                        : v
+                ));
+            } else {
+                const err = await response.json();
+                alert(err.error || 'Failed to vote');
+            }
+        } catch (error) {
+            console.error('Vote error:', error);
+        } finally {
+            setVotingVideoId(null);
         }
     };
 
@@ -1855,7 +1933,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         {[
                             { id: 'teams', label: 'Teams', icon: '👥', badge: 0 },
                             { id: 'family', label: 'Family', icon: '👨‍👧', badge: 0 },
-                            { id: 'weekly', label: 'Weekly', icon: '🎯', badge: 0 },
+                            { id: 'community', label: 'Videos', icon: '🎬', badge: communityVideos.length > 0 ? communityVideos.length : 0, premium: true },
                             { id: 'history', label: 'History', icon: '📜', badge: 0 },
                         ].map(tab => (
                             <button
@@ -2529,6 +2607,107 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                         ))
                                     )}
+                                </div>
+                            )}
+
+                            {/* COMMUNITY VIDEOS VIEW */}
+                            {rivalsView === 'community' && (
+                                <div className="space-y-4">
+                                    <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-4 rounded-xl border border-purple-500/30">
+                                        <h4 className="font-bold text-white flex items-center">
+                                            <span className="mr-2 text-xl">🎬</span> Community Videos
+                                        </h4>
+                                        <p className="text-xs text-purple-300">Watch and vote for your fellow students' challenge videos!</p>
+                                    </div>
+                                    
+                                    {!hasPremiumAccess ? (
+                                        <div className="bg-gray-800 rounded-xl border border-yellow-500/30 p-8 text-center">
+                                            <div className="text-5xl mb-4">🔒</div>
+                                            <h4 className="text-lg font-bold text-yellow-400 mb-2">Premium Feature</h4>
+                                            <p className="text-gray-400 text-sm">Upgrade to Premium to access video challenges and community voting!</p>
+                                        </div>
+                                    ) : isLoadingCommunity ? (
+                                        <div className="flex items-center justify-center py-12">
+                                            <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                                        </div>
+                                    ) : communityVideos.length === 0 ? (
+                                        <div className="bg-gray-800 rounded-xl border border-gray-700 p-8 text-center">
+                                            <div className="text-5xl mb-4">📹</div>
+                                            <h4 className="text-lg font-bold text-gray-400 mb-2">No Videos Yet</h4>
+                                            <p className="text-gray-500 text-sm">Be the first to submit a video challenge from the Arena!</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {communityVideos.filter(v => v.studentId !== student.id).map(video => (
+                                                <div key={video.id} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                                                    <div className="aspect-video bg-black">
+                                                        <video 
+                                                            src={video.videoUrl} 
+                                                            controls 
+                                                            className="w-full h-full object-contain"
+                                                            poster=""
+                                                        />
+                                                    </div>
+                                                    <div className="p-4">
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <h5 className="font-bold text-white">{video.studentName}</h5>
+                                                                <p className="text-xs text-gray-400">{video.challengeName} Challenge</p>
+                                                                <p className="text-[10px] text-gray-500 mt-1">
+                                                                    Score: {video.score} • {new Date(video.createdAt).toLocaleDateString()}
+                                                                </p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="flex items-center gap-1 text-yellow-400 font-bold">
+                                                                    <span className="text-lg">👍</span>
+                                                                    <span>{video.voteCount}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {video.hasVoted ? (
+                                                            <div className="flex items-center justify-center gap-2 py-3 bg-green-900/30 rounded-lg border border-green-500/30">
+                                                                <span className="text-green-400">✓</span>
+                                                                <span className="text-green-400 text-sm font-bold">You voted!</span>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleVoteForVideo(video.id)}
+                                                                disabled={votingVideoId === video.id}
+                                                                className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                                            >
+                                                                {votingVideoId === video.id ? (
+                                                                    <>
+                                                                        <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                                                                        <span>Voting...</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="text-xl">👍</span>
+                                                                        <span>Vote for this!</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            
+                                            {communityVideos.filter(v => v.studentId !== student.id).length === 0 && (
+                                                <div className="bg-gray-800 rounded-xl border border-gray-700 p-8 text-center">
+                                                    <div className="text-4xl mb-4">🎥</div>
+                                                    <p className="text-gray-400 text-sm">Only your own videos are available. Invite others to submit!</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    <button
+                                        onClick={fetchCommunityVideos}
+                                        className="w-full py-2 text-gray-400 hover:text-white text-sm flex items-center justify-center gap-2"
+                                    >
+                                        <span>🔄</span> Refresh Videos
+                                    </button>
                                 </div>
                             )}
 

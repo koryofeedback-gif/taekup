@@ -380,6 +380,72 @@ export async function sendChurnRiskEmail(
   }, `Need Help Getting Started? We're Here for You!`);
 }
 
+export async function sendVideoSubmittedNotification(
+  to: string,
+  data: { 
+    coachName: string;
+    studentName: string;
+    challengeName: string;
+    clubName: string;
+  }
+): Promise<EmailResult> {
+  try {
+    const { client } = await getUncachableSendGridClient();
+    const sender = SENDER_EMAILS.transactional;
+    
+    const msg = {
+      to,
+      from: { email: sender.email, name: sender.name },
+      subject: `New Video Submission from ${data.studentName}`,
+      text: `Hi ${data.coachName},\n\n${data.studentName} has submitted a new video for the "${data.challengeName}" challenge.\n\nPlease log in to the Coach Dashboard to review and verify this submission.\n\n${BASE_URL}/app/coach\n\nBest,\nThe TaekUp Team`,
+      html: `<p>Hi ${data.coachName},</p><p><strong>${data.studentName}</strong> has submitted a new video for the "<strong>${data.challengeName}</strong>" challenge.</p><p>Please log in to the Coach Dashboard to review and verify this submission.</p><p><a href="${BASE_URL}/app/coach">Review Video</a></p><p>Best,<br>The TaekUp Team</p>`
+    };
+
+    const [response] = await client.send(msg);
+    console.log('[Email] Video submitted notification sent to:', to);
+    return { success: true, messageId: response.headers['x-message-id'] };
+  } catch (error: any) {
+    console.error('[Email] Failed to send video submitted notification:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function sendVideoVerifiedNotification(
+  to: string,
+  data: { 
+    parentName: string;
+    studentName: string;
+    challengeName: string;
+    status: 'approved' | 'rejected';
+    coachNotes?: string;
+    xpAwarded?: number;
+  }
+): Promise<EmailResult> {
+  try {
+    const { client } = await getUncachableSendGridClient();
+    const sender = SENDER_EMAILS.transactional;
+    
+    const statusEmoji = data.status === 'approved' ? '✅' : '❌';
+    const statusText = data.status === 'approved' ? 'Approved' : 'Not Approved';
+    const xpText = data.status === 'approved' && data.xpAwarded ? ` and earned ${data.xpAwarded} XP!` : '';
+    
+    const msg = {
+      to,
+      from: { email: sender.email, name: sender.name },
+      subject: `${statusEmoji} Video Challenge ${statusText} - ${data.studentName}`,
+      text: `Hi ${data.parentName},\n\n${data.studentName}'s "${data.challengeName}" video has been ${statusText.toLowerCase()}${xpText}\n\n${data.coachNotes ? `Coach Notes: ${data.coachNotes}\n\n` : ''}View in the Parent Portal: ${BASE_URL}/app/parent\n\nKeep up the great work!\nThe TaekUp Team`,
+      html: `<p>Hi ${data.parentName},</p><p><strong>${data.studentName}</strong>'s "<strong>${data.challengeName}</strong>" video has been <strong>${statusText.toLowerCase()}</strong>${xpText}</p>${data.coachNotes ? `<p><em>Coach Notes: ${data.coachNotes}</em></p>` : ''}<p><a href="${BASE_URL}/app/parent">View in Parent Portal</a></p><p>Keep up the great work!<br>The TaekUp Team</p>`
+    };
+
+    const [response] = await client.send(msg);
+    console.log('[Email] Video verified notification sent to:', to);
+    return { success: true, messageId: response.headers['x-message-id'] };
+  } catch (error: any) {
+    console.error('[Email] Failed to send video verified notification:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 export default {
   sendWelcomeEmail,
   sendPaymentConfirmationEmail,
@@ -398,5 +464,7 @@ export default {
   sendBirthdayWishEmail,
   sendWinBackEmail,
   sendChurnRiskEmail,
+  sendVideoSubmittedNotification,
+  sendVideoVerifiedNotification,
   EMAIL_TEMPLATES,
 };
