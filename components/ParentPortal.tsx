@@ -1714,25 +1714,35 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         )}
                                     </div>
 
-                                    {/* Select Opponent with Fair Matchmaking */}
-                                    <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
-                                        <h4 className="font-bold text-white mb-2 flex items-center">
-                                            <span className="mr-2">👤</span> Choose Opponent
-                                        </h4>
-                                        <p className="text-gray-400 text-xs mb-3">
-                                            <span className="text-green-400">Fair Match:</span> {studentBeltTier} tier ({fairMatchClassmates.length} available)
-                                        </p>
+                                    {/* Select Opponent with Fair Matchmaking - Pro Design */}
+                                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-5 rounded-2xl border border-gray-700 shadow-xl">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="font-bold text-white text-lg flex items-center">
+                                                <span className="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center mr-3">👤</span>
+                                                Choose Opponent
+                                            </h4>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-4 p-2 bg-green-900/20 rounded-lg border border-green-700/30">
+                                            <span className="w-6 h-6 bg-green-600/30 rounded-full flex items-center justify-center">
+                                                <span className="text-green-400 text-xs">⚖️</span>
+                                            </span>
+                                            <div>
+                                                <span className="text-green-400 text-xs font-bold">Fair Match</span>
+                                                <span className="text-gray-400 text-xs ml-1">• {studentBeltTier} tier</span>
+                                                <span className="text-gray-500 text-xs ml-1">({fairMatchClassmates.length} available)</span>
+                                            </div>
+                                        </div>
                                         <select 
                                             value={selectedRival} 
                                             onChange={e => setSelectedRival(e.target.value)}
-                                            className="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 text-sm"
+                                            className="w-full bg-gray-800 text-white p-4 rounded-xl border-2 border-gray-600 text-sm font-medium focus:border-blue-500 focus:outline-none transition-colors cursor-pointer"
                                         >
                                             <option value="">Select Opponent...</option>
                                             {fairMatchClassmates.length > 0 && (
-                                                <optgroup label="Fair Match (Same Tier)">
+                                                <optgroup label="⚖️ Fair Match (Same Tier)">
                                                     {fairMatchClassmates.map(c => (
                                                         <option key={c.id} value={c.id}>
-                                                            ⚖️ {c.name} ({data.belts.find(b => b.id === c.beltId)?.name})
+                                                            {c.name} • {data.belts.find(b => b.id === c.beltId)?.name}
                                                         </option>
                                                     ))}
                                                 </optgroup>
@@ -1741,7 +1751,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <optgroup label="All Others">
                                                     {classmates.filter(c => !fairMatchClassmates.includes(c)).map(c => (
                                                         <option key={c.id} value={c.id}>
-                                                            {c.name} ({data.belts.find(b => b.id === c.beltId)?.name})
+                                                            {c.name} • {data.belts.find(b => b.id === c.beltId)?.name}
                                                         </option>
                                                     ))}
                                                 </optgroup>
@@ -1749,32 +1759,54 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </select>
                                     </div>
 
-                                    {/* Challenge Categories */}
-                                    <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
-                                        <h4 className="font-bold text-white mb-3 flex items-center">
-                                            <span className="mr-2">🎮</span> Select Challenge
-                                        </h4>
+                                    {/* Challenge Categories - Pro Design */}
+                                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-5 rounded-2xl border border-gray-700 shadow-xl">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="font-bold text-white text-lg flex items-center">
+                                                <span className="w-8 h-8 bg-red-600/20 rounded-lg flex items-center justify-center mr-3">🎮</span>
+                                                Select Challenge
+                                            </h4>
+                                            {hasPremiumAccess && (
+                                                <span className="text-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-bold">
+                                                    ✓ Video Proof
+                                                </span>
+                                            )}
+                                        </div>
                                         
-                                        {challengeCategories.map(category => (
-                                            <div key={category.name} className="mb-4">
-                                                <div className="flex items-center mb-2">
-                                                    <span className="text-lg mr-2">{category.icon}</span>
-                                                    <span className="text-xs font-bold text-gray-400 uppercase">{category.name}</span>
+                                        {challengeCategories.map((category, catIdx) => (
+                                            <div key={category.name} className={`${catIdx > 0 ? 'mt-5 pt-5 border-t border-gray-700/50' : ''}`}>
+                                                <div className="flex items-center mb-3">
+                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2 ${
+                                                        category.name === 'Power' ? 'bg-red-900/50' :
+                                                        category.name === 'Technique' ? 'bg-blue-900/50' :
+                                                        category.name === 'Flexibility' ? 'bg-purple-900/50' : 'bg-cyan-900/50'
+                                                    }`}>
+                                                        <span className="text-base">{category.icon}</span>
+                                                    </div>
+                                                    <span className="text-sm font-bold text-gray-300">{category.name}</span>
+                                                    <span className="ml-2 text-[10px] text-gray-500">({category.challenges.length})</span>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-2">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                                     {category.challenges.map(challenge => (
                                                         <button
                                                             key={challenge.id}
                                                             onClick={() => setSelectedChallenge(challenge.id)}
-                                                            className={`p-3 rounded-lg text-center transition-all border ${
+                                                            className={`group relative p-3 rounded-xl text-center transition-all duration-200 border-2 ${
                                                                 selectedChallenge === challenge.id
-                                                                    ? 'bg-red-900/50 border-red-500 scale-105'
-                                                                    : 'bg-gray-700 border-transparent hover:border-gray-500'
+                                                                    ? 'bg-gradient-to-br from-red-900/60 to-red-950/60 border-red-500 shadow-lg shadow-red-900/30 scale-[1.02]'
+                                                                    : 'bg-gray-800/50 border-gray-700/50 hover:border-gray-500 hover:bg-gray-700/50'
                                                             }`}
                                                         >
-                                                            <div className="text-xl mb-1">{challenge.icon}</div>
-                                                            <div className="text-[10px] font-bold text-gray-300">{challenge.name}</div>
-                                                            <div className="text-[9px] text-yellow-500">+{challenge.xp} XP</div>
+                                                            {selectedChallenge === challenge.id && (
+                                                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                                                                    <span className="text-white text-[10px]">✓</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform">{challenge.icon}</div>
+                                                            <div className="text-xs font-semibold text-gray-200 leading-tight">{challenge.name}</div>
+                                                            <div className="mt-1 inline-block px-2 py-0.5 bg-yellow-900/30 rounded-full">
+                                                                <span className="text-[10px] font-bold text-yellow-400">+{challenge.xp} XP</span>
+                                                            </div>
                                                         </button>
                                                     ))}
                                                 </div>
@@ -1782,13 +1814,32 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         ))}
                                     </div>
 
-                                    {/* Send Challenge Button */}
+                                    {/* Send Challenge Button - Pro Design */}
                                     <button 
                                         onClick={handleSendChallenge}
                                         disabled={!selectedRival || !selectedChallenge}
-                                        className="w-full bg-red-600 hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl shadow-lg transform active:scale-95 transition-all text-lg uppercase tracking-wider"
+                                        className={`w-full py-4 rounded-2xl shadow-xl transform active:scale-[0.98] transition-all text-lg font-black uppercase tracking-wide ${
+                                            !selectedRival || !selectedChallenge
+                                                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                                : 'bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white hover:from-red-500 hover:via-red-400 hover:to-orange-400 shadow-red-900/50'
+                                        }`}
                                     >
-                                        {!selectedRival ? 'SELECT OPPONENT' : !selectedChallenge ? 'SELECT CHALLENGE' : '📨 SEND CHALLENGE'}
+                                        {!selectedRival ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <span className="w-5 h-5 border-2 border-gray-500 rounded-full"></span>
+                                                Select Opponent
+                                            </span>
+                                        ) : !selectedChallenge ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <span className="w-5 h-5 border-2 border-gray-500 rounded-full"></span>
+                                                Select Challenge
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <span className="text-xl">⚔️</span>
+                                                Send Challenge
+                                            </span>
+                                        )}
                                     </button>
                                     
                                     {/* Challenge Sent Confirmation */}

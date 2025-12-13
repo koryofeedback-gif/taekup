@@ -470,6 +470,45 @@ export type NewCurriculumCourse = typeof curriculumCourses.$inferInsert;
 export type CurriculumContentItem = typeof curriculumContent.$inferSelect;
 export type NewCurriculumContent = typeof curriculumContent.$inferInsert;
 export type ContentView = typeof contentViews.$inferSelect;
+
+// =====================================================
+// VIDEO VERIFICATION SYSTEM - Rivals Challenge Videos
+// =====================================================
+
+export const videoStatusEnum = pgEnum('video_status', ['pending', 'approved', 'rejected']);
+
+export const challengeVideos = pgTable('challenge_videos', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  challengeId: varchar('challenge_id', { length: 255 }).notNull(),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  videoUrl: varchar('video_url', { length: 1000 }).notNull(),
+  videoKey: varchar('video_key', { length: 500 }),
+  thumbnailUrl: varchar('thumbnail_url', { length: 1000 }),
+  challengeName: varchar('challenge_name', { length: 255 }),
+  challengeCategory: varchar('challenge_category', { length: 100 }),
+  score: integer('score'),
+  status: videoStatusEnum('status').default('pending'),
+  coachNotes: text('coach_notes'),
+  verifiedBy: uuid('verified_by').references(() => coaches.id, { onDelete: 'set null' }),
+  verifiedAt: timestamp('verified_at', { withTimezone: true }),
+  xpAwarded: integer('xp_awarded').default(0),
+  voteCount: integer('vote_count').default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const challengeVideoVotes = pgTable('challenge_video_votes', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  videoId: uuid('video_id').references(() => challengeVideos.id, { onDelete: 'cascade' }).notNull(),
+  voterStudentId: uuid('voter_student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  voteValue: integer('vote_value').default(1),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type ChallengeVideo = typeof challengeVideos.$inferSelect;
+export type NewChallengeVideo = typeof challengeVideos.$inferInsert;
+export type ChallengeVideoVote = typeof challengeVideoVotes.$inferSelect;
 export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
 export type CreatorEarning = typeof creatorEarnings.$inferSelect;
 
