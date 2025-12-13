@@ -638,7 +638,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             });
 
             if (!presignedResponse.ok) {
-                throw new Error('Failed to get upload URL');
+                const errorData = await presignedResponse.json().catch(() => ({}));
+                throw new Error(errorData.error || `Failed to get upload URL (${presignedResponse.status})`);
             }
 
             const { uploadUrl, key, publicUrl } = await presignedResponse.json();
@@ -654,7 +655,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             });
 
             if (!uploadResponse.ok) {
-                throw new Error('Failed to upload video');
+                throw new Error(`Failed to upload video to storage (${uploadResponse.status})`);
             }
             setVideoUploadProgress(80);
 
@@ -677,7 +678,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             });
 
             if (!saveResponse.ok) {
-                throw new Error('Failed to save video record');
+                const saveError = await saveResponse.json().catch(() => ({}));
+                throw new Error(saveError.error || `Failed to save video record (${saveResponse.status})`);
             }
 
             setVideoUploadProgress(100);
