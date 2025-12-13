@@ -440,7 +440,145 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
       [clubId]
     );
 
-    console.log('[Wizard] Saved wizard data for club:', clubId);
+    // Create user accounts for coaches
+    const coaches = wizardData.coaches || [];
+    for (const coach of coaches) {
+      if (coach.email) {
+        try {
+          // Hash password if provided, otherwise use a temporary one
+          const tempPassword = coach.password || crypto.randomBytes(8).toString('hex');
+          const passwordHash = await bcrypt.hash(tempPassword, 10);
+          
+          // Create or update user account for coach
+          const userResult = await client.query(
+            `INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
+             VALUES ($1, $2, $3, 'coach', $4::uuid, true, NOW())
+             ON CONFLICT (email) DO UPDATE SET 
+               password_hash = COALESCE(NULLIF($2, ''), users.password_hash),
+               name = COALESCE($3, users.name),
+               club_id = $4::uuid,
+               role = 'coach',
+               updated_at = NOW()
+             RETURNING id`,
+            [coach.email.toLowerCase().trim(), passwordHash, coach.name, clubId]
+          );
+          const userId = userResult.rows[0]?.id;
+          
+          // Check if coach exists, then create or update
+          const existingCoach = await client.query(
+            `SELECT id FROM coaches WHERE club_id = $1::uuid AND email = $2 LIMIT 1`,
+            [clubId, coach.email.toLowerCase().trim()]
+          );
+          
+          if (existingCoach.rows.length > 0) {
+            await client.query(
+              `UPDATE coaches SET user_id = $1::uuid, name = $2, is_active = true, updated_at = NOW()
+               WHERE id = $3::uuid`,
+              [userId, coach.name, existingCoach.rows[0].id]
+            );
+          } else {
+            await client.query(
+              `INSERT INTO coaches (club_id, user_id, name, email, is_active, created_at)
+               VALUES ($1::uuid, $2::uuid, $3, $4, true, NOW())`,
+              [clubId, userId, coach.name, coach.email.toLowerCase().trim()]
+            );
+          }
+          
+          console.log('[Wizard] Created user account for coach:', coach.email);
+        } catch (coachErr: any) {
+          console.error('[Wizard] Error creating coach account:', coach.email, coachErr.message);
+        }
+      }
+    }
+
+    // Create user accounts for parents and save students
+    const students = wizardData.students || [];
+    for (const student of students) {
+      try {
+        const parentEmail = student.parentEmail?.toLowerCase().trim() || null;
+        
+        // Check if student exists
+        const existingStudent = await client.query(
+          `SELECT id FROM students WHERE club_id = $1::uuid AND name = $2 AND (parent_email = $3 OR (parent_email IS NULL AND $3 IS NULL)) LIMIT 1`,
+          [clubId, student.name, parentEmail]
+        );
+        
+        let studentId;
+        if (existingStudent.rows.length > 0) {
+          studentId = existingStudent.rows[0].id;
+          await client.query(
+            `UPDATE students SET 
+               parent_name = COALESCE($1, parent_name),
+               parent_phone = COALESCE($2, parent_phone),
+               belt = COALESCE($3, belt),
+               birthdate = COALESCE($4::timestamptz, birthdate),
+               total_points = COALESCE($5, total_points),
+               is_active = true,
+               updated_at = NOW()
+             WHERE id = $6::uuid`,
+            [
+              student.parentName || null,
+              student.parentPhone || null,
+              student.beltId || 'white',
+              student.birthday ? student.birthday + 'T00:00:00Z' : null,
+              student.totalPoints || 0,
+              studentId
+            ]
+          );
+        } else {
+          const insertResult = await client.query(
+            `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, is_active, created_at)
+             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, true, NOW())
+             RETURNING id`,
+            [
+              clubId, 
+              student.name, 
+              parentEmail,
+              student.parentName || null,
+              student.parentPhone || null,
+              student.beltId || 'white',
+              student.birthday ? student.birthday + 'T00:00:00Z' : null,
+              student.totalPoints || 0
+            ]
+          );
+          studentId = insertResult.rows[0]?.id;
+        }
+        
+        // Create parent user account if email and password provided
+        if (parentEmail && student.parentPassword) {
+          const existingParent = await client.query(
+            `SELECT id FROM users WHERE email = $1 LIMIT 1`,
+            [parentEmail]
+          );
+          
+          const parentPasswordHash = await bcrypt.hash(student.parentPassword, 10);
+          
+          if (existingParent.rows.length > 0) {
+            await client.query(
+              `UPDATE users SET 
+                 password_hash = $1,
+                 name = COALESCE($2, name),
+                 club_id = $3::uuid,
+                 role = 'parent',
+                 updated_at = NOW()
+               WHERE id = $4::uuid`,
+              [parentPasswordHash, student.parentName || student.name + "'s Parent", clubId, existingParent.rows[0].id]
+            );
+          } else {
+            await client.query(
+              `INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
+               VALUES ($1, $2, $3, 'parent', $4::uuid, true, NOW())`,
+              [parentEmail, parentPasswordHash, student.parentName || student.name + "'s Parent", clubId]
+            );
+          }
+          console.log('[Wizard] Created user account for parent:', parentEmail);
+        }
+      } catch (studentErr: any) {
+        console.error('[Wizard] Error saving student:', student.name, studentErr.message);
+      }
+    }
+
+    console.log('[Wizard] Saved wizard data for club:', clubId, `(${coaches.length} coaches, ${students.length} students)`);
     return res.json({ success: true });
   } catch (error: any) {
     console.error('[Wizard] Save error:', error);

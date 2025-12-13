@@ -28,6 +28,7 @@ const initialStudentState: Omit<Student, 'id'> = {
     parentName: '',
     parentEmail: '',
     parentPhone: '',
+    parentPassword: '',
     totalPoints: 0,
     medicalInfo: '',
     attendanceCount: 0,
@@ -500,7 +501,8 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                             </div>
                         </div>
                         
-                        <input type="text" value={newStudent.parentEmail} onChange={e => setNewStudent({...newStudent, parentEmail: e.target.value})} placeholder="Parent Email (Optional)" className="wizard-input md:col-span-2" />
+                        <input type="text" value={newStudent.parentEmail} onChange={e => setNewStudent({...newStudent, parentEmail: e.target.value})} placeholder="Parent Email (Optional)" className="wizard-input" />
+                        <input type="password" value={newStudent.parentPassword || ''} onChange={e => setNewStudent({...newStudent, parentPassword: e.target.value})} placeholder="Parent Password (Optional)" className="wizard-input" />
 
                         <button 
                             onClick={handleAddStudent}

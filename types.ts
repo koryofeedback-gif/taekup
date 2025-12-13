@@ -204,6 +204,7 @@ export interface Student {
   parentName?: string; // New field
   parentEmail: string;
   parentPhone?: string; // New field
+  parentPassword?: string; // Password for parent login account
   location?: string; // New field
   assignedClass?: string; // New field for Class/Group assignment
   totalPoints: number;
