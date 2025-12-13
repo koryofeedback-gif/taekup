@@ -1,0 +1,29 @@
+/api/challenges/received/18f69d4e-043b-4721-80aa-427feb10df09:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+index-CZ_pVx9B.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at lF.getReceivedChallenges (index-CZ_pVx9B.js:188:27551)
+    at async index-CZ_pVx9B.js:188:24938
+getReceivedChallenges @ index-CZ_pVx9B.js:188Understand this error
+/api/challenges/received/18f69d4e-043b-4721-80aa-427feb10df09:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+index-CZ_pVx9B.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at lF.getReceivedChallenges (index-CZ_pVx9B.js:188:27551)
+    at async index-CZ_pVx9B.js:188:24938
+getReceivedChallenges @ index-CZ_pVx9B.js:188Understand this error
+/api/videos/presigned-upload:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+index-CZ_pVx9B.js:235 Video upload error: Error: Failed to get upload URL
+    at hj (index-CZ_pVx9B.js:235:53203)
+hj @ index-CZ_pVx9B.js:235Understand this error
+index-CZ_pVx9B.js:188  GET https://www.mytaek.com/api/challenges/received/18f69d4e-043b-4721-80aa-427feb10df09 404 (Not Found)
+getReceivedChallenges @ index-CZ_pVx9B.js:188
+(anonymous) @ index-CZ_pVx9B.js:188Understand this error
+index-CZ_pVx9B.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at lF.getReceivedChallenges (index-CZ_pVx9B.js:188:27551)
+    at async index-CZ_pVx9B.js:188:24938
+getReceivedChallenges @ index-CZ_pVx9B.js:188
+await in getReceivedChallenges
+(anonymous) @ index-CZ_pVx9B.js:188Understand this error
+index-CZ_pVx9B.js:188  GET https://www.mytaek.com/api/challenges/received/18f69d4e-043b-4721-80aa-427feb10df09 404 (Not Found)
+getReceivedChallenges @ index-CZ_pVx9B.js:188
+(anonymous) @ index-CZ_pVx9B.js:188Understand this error
+index-CZ_pVx9B.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at lF.getReceivedChallenges (index-CZ_pVx9B.js:188:27551)
+    at async index-CZ_pVx9B.js:188:24938
