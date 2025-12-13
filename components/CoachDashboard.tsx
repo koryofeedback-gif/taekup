@@ -17,6 +17,7 @@ interface CoachDashboardProps {
   onBack: () => void;
   userType?: 'owner' | 'coach' | 'parent';
   onGoToAdmin?: () => void;
+  clubId?: string;
 }
 
 // --- SPEECH RECOGNITION TYPES (Browser Native) ---
@@ -875,7 +876,7 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
 
 // --- MAIN DASHBOARD COMPONENT ---
 
-export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName, onUpdateStudents, onUpdateData, onBack, userType, onGoToAdmin }) => {
+export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName, onUpdateStudents, onUpdateData, onBack, userType, onGoToAdmin, clubId }) => {
     const [students, setStudents] = useState<Student[]>(() => data.students.map(s => ({ ...s, totalPoints: s.totalPoints || 0 })));
     const [sessionScores, setSessionScores] = useState<SessionScores>({});
     const [bonusPoints, setBonusPoints] = useState<Record<string, number>>({});
@@ -1394,8 +1395,6 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
     // --- VIDEO REVIEW FUNCTIONS ---
     const fetchPendingVideos = async () => {
-        // Get clubId from wizard data or signupData
-        const clubId = (data as any).clubId || (data as any).signupData?.clubId;
         if (!clubId) {
             console.log('[Videos] No clubId available, skipping video fetch');
             return;

@@ -651,6 +651,7 @@ const AppContent: React.FC<AppContentProps> = ({
                                     coachName={loggedInUserName || finalWizardData.ownerName}
                                     onBack={onLogout}
                                     userType={loggedInUserType}
+                                    clubId={signupData?.clubId || localStorage.getItem('taekup_club_id') || sessionStorage.getItem('impersonate_clubId') || undefined}
                                 />
                             ) : (
                                 <Navigate to="/login" replace />
@@ -771,6 +772,7 @@ interface CoachDashboardRouteProps {
     onUpdateData?: (data: Partial<WizardData>) => void;
     onBack: () => void;
     userType: 'owner' | 'coach' | 'parent';
+    clubId?: string;
 }
 
 const CoachDashboardRoute: React.FC<CoachDashboardRouteProps> = ({
@@ -780,6 +782,7 @@ const CoachDashboardRoute: React.FC<CoachDashboardRouteProps> = ({
     onUpdateData,
     onBack,
     userType,
+    clubId,
 }) => {
     const navigate = useNavigate();
     
@@ -798,6 +801,7 @@ const CoachDashboardRoute: React.FC<CoachDashboardRouteProps> = ({
                 onBack={onBack}
                 userType={userType}
                 onGoToAdmin={handleGoToAdmin}
+                clubId={clubId}
             />
         </>
     );
