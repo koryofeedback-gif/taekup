@@ -928,6 +928,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         );
     }
     
+    const [cardFlipped, setCardFlipped] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
+    
     const renderAthleteCard = () => {
         const stats = student.sparringStats || { matches: 0, wins: 0, draws: 0, headKicks: 0, bodyKicks: 0, punches: 0, takedowns: 0, defense: 0 };
         
@@ -951,7 +954,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
         // Calculate individual stats for the card (Limit to 6 slots)
         const cardStats = activeSkills.slice(0, 6).map(skill => ({
-            label: skill.name.substring(0, 3).toUpperCase(), // e.g. Technique -> TEC
+            label: skill.name.substring(0, 3).toUpperCase(),
             value: calcAvg(skill.id)
         }));
 
@@ -960,90 +963,273 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         // Calculate OVR (Overall Rating) based on ALL skills + Belt
         const beltIndex = data.belts.findIndex(b => b.id === student.beltId);
-        const beltBase = 60 + (beltIndex * 4); // Higher belt = Higher base OVR
+        const beltBase = 60 + (beltIndex * 4);
         
         const skillSum = cardStats.reduce((sum, stat) => sum + stat.value, 0);
         const ovr = Math.round((skillSum + att + beltBase) / (cardStats.length + 2));
 
         const hasSparringData = stats.matches > 0;
 
+        // RARITY SYSTEM based on OVR
+        const getRarity = (rating: number) => {
+            if (rating >= 95) return { name: 'LEGENDARY', gradient: 'from-amber-400 via-yellow-300 to-amber-500', glow: 'shadow-[0_0_40px_rgba(251,191,36,0.8)]', icon: '💎', textColor: 'text-amber-300', borderColor: 'border-amber-400' };
+            if (rating >= 90) return { name: 'DIAMOND', gradient: 'from-cyan-300 via-blue-200 to-cyan-400', glow: 'shadow-[0_0_35px_rgba(34,211,238,0.7)]', icon: '💠', textColor: 'text-cyan-200', borderColor: 'border-cyan-300' };
+            if (rating >= 85) return { name: 'GOLD', gradient: 'from-yellow-500 via-amber-400 to-yellow-600', glow: 'shadow-[0_0_30px_rgba(234,179,8,0.6)]', icon: '🥇', textColor: 'text-yellow-300', borderColor: 'border-yellow-400' };
+            if (rating >= 80) return { name: 'SILVER', gradient: 'from-gray-300 via-slate-200 to-gray-400', glow: 'shadow-[0_0_25px_rgba(148,163,184,0.5)]', icon: '🥈', textColor: 'text-gray-200', borderColor: 'border-gray-300' };
+            return { name: 'BRONZE', gradient: 'from-orange-600 via-amber-700 to-orange-700', glow: 'shadow-[0_0_20px_rgba(194,65,12,0.5)]', icon: '🥉', textColor: 'text-orange-300', borderColor: 'border-orange-400' };
+        };
+
+        const rarity = getRarity(ovr);
+
+        // Generate achievements for back of card (with null checks)
+        const achievements = [
+            { icon: '🎯', label: 'Classes Attended', value: student.attendanceCount || 0 },
+            { icon: '⚡', label: 'Current Streak', value: `${rivalStats?.streak || 0} wins` },
+            { icon: '🏆', label: 'Total Wins', value: rivalStats?.wins || 0 },
+            { icon: '⭐', label: 'XP Earned', value: (rivalStats?.xp || 0) + (localTotalPoints || 0) },
+            { icon: '🥋', label: 'Belt Rank', value: currentBelt?.name || 'White' },
+            { icon: '📅', label: 'Member Since', value: student.joinDate ? new Date(student.joinDate).getFullYear() : new Date().getFullYear() },
+        ];
+
+        // Sparkle positions (deterministic to avoid hydration issues)
+        const sparklePositions = [
+            { left: '15%', top: '20%' },
+            { left: '75%', top: '15%' },
+            { left: '25%', top: '60%' },
+            { left: '80%', top: '55%' },
+        ];
+        
+        // Sparkle component for high stats (deterministic positions)
+        const Sparkle = ({ delay = 0, position }: { delay?: number; position: { left: string; top: string } }) => (
+            <span 
+                className="absolute text-yellow-300 animate-ping text-xs pointer-events-none"
+                style={{ 
+                    animationDelay: `${delay}ms`,
+                    animationDuration: '1.5s',
+                    left: position.left,
+                    top: position.top
+                }}
+            >✦</span>
+        );
+
+        // Download card as image
+        const handleShareCard = async () => {
+            if (!cardRef.current) return;
+            try {
+                const html2canvas = (await import('html2canvas')).default;
+                const canvas = await html2canvas(cardRef.current, { 
+                    backgroundColor: '#000',
+                    scale: 2 
+                });
+                const link = document.createElement('a');
+                link.download = `${student.name.replace(/\s+/g, '_')}_athlete_card.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (err) {
+                console.error('Failed to generate card image:', err);
+                alert('Could not download card. Try again later.');
+            }
+        };
+
         return (
             <div className="relative h-full min-h-[500px] flex flex-col items-center pb-20">
                 {!hasPremiumAccess && renderPremiumLock("Athlete Card", "Unlock your official Athlete Card with tracked stats like Focus, Power, and Discipline.")}
                 
                 <div className={`w-full max-w-xs mt-4 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none' : ''}`}>
-                    {/* THE ATHLETE CARD */}
-                    <div className="bg-gradient-to-b from-blue-600 via-blue-800 to-black p-1 rounded-[20px] shadow-2xl transform hover:scale-105 transition-transform duration-500">
-                        <div className="bg-black rounded-[18px] p-4 relative overflow-hidden border border-blue-600/50 h-[450px] flex flex-col">
-                            {/* Background Texture */}
-                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
-                            
-                            {/* Top Stats */}
-                            <div className="flex justify-between items-start relative z-10 mb-2">
-                                <div>
-                                    <span className="text-4xl font-black text-sky-300 italic">{ovr}</span>
-                                    <span className="block text-[10px] text-blue-200 font-bold uppercase">OVR</span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="block text-xs text-gray-400">{data.clubName}</span>
-                                    <div className="w-6 h-4 rounded mt-1 ml-auto" style={{background: currentBelt?.color1 || 'white'}}></div>
-                                </div>
-                            </div>
+                    
+                    {/* Rarity Badge */}
+                    <div className="flex justify-center mb-3">
+                        <div className={`px-4 py-1 rounded-full bg-gradient-to-r ${rarity.gradient} text-black text-xs font-black uppercase tracking-widest flex items-center gap-1 ${rarity.glow}`}>
+                            {rarity.icon} {rarity.name} {rarity.icon}
+                        </div>
+                    </div>
 
-                            {/* Photo Area */}
-                            <div className="relative z-10 flex-1 flex items-end justify-center mb-4">
-                                <div className="w-32 h-32 rounded-full border-4 border-sky-500 overflow-hidden shadow-[0_0_20px_rgba(59,130,246,0.5)] bg-gray-800">
-                                    {student.photo ? (
-                                        <img src={student.photo} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-5xl">🥋</div>
-                                    )}
-                                </div>
-                            </div>
+                    {/* FLIP CARD CONTAINER */}
+                    <div 
+                        className="relative w-full h-[480px] cursor-pointer"
+                        style={{ perspective: '1000px' }}
+                        onClick={() => setCardFlipped(!cardFlipped)}
+                    >
+                        <div 
+                            className="relative w-full h-full transition-transform duration-700"
+                            style={{ 
+                                transformStyle: 'preserve-3d',
+                                transform: cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                            }}
+                        >
+                            {/* FRONT OF CARD */}
+                            <div 
+                                ref={cardRef}
+                                className="absolute inset-0"
+                                style={{ backfaceVisibility: 'hidden' }}
+                            >
+                                <div className={`bg-gradient-to-b ${rarity.gradient} p-1 rounded-[20px] ${rarity.glow} transform hover:scale-[1.02] transition-transform duration-300 h-full`}>
+                                    <div className={`bg-gradient-to-b from-gray-900 via-black to-gray-900 rounded-[18px] p-4 relative overflow-hidden ${rarity.borderColor} border h-full flex flex-col`}>
+                                        
+                                        {/* Holographic Shimmer Effect */}
+                                        <div 
+                                            className="absolute inset-0 opacity-30 pointer-events-none"
+                                            style={{
+                                                background: 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.3) 30%, transparent 40%, transparent 60%, rgba(255,255,255,0.2) 70%, transparent 80%)',
+                                                backgroundSize: '200% 100%',
+                                                animation: 'shimmer 3s infinite linear'
+                                            }}
+                                        />
+                                        
+                                        {/* Sparkles for Legendary/Diamond */}
+                                        {ovr >= 90 && sparklePositions.map((pos, i) => (
+                                            <Sparkle key={i} delay={i * 300} position={pos} />
+                                        ))}
+                                        
+                                        {/* Background Texture */}
+                                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                                        
+                                        {/* Top Stats */}
+                                        <div className="flex justify-between items-start relative z-10 mb-2">
+                                            <div>
+                                                <span className={`text-5xl font-black ${rarity.textColor} italic drop-shadow-lg`}>{ovr}</span>
+                                                <span className="block text-[10px] text-gray-300 font-bold uppercase">OVR</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="block text-xs text-gray-400 max-w-[100px] truncate">{data.clubName}</span>
+                                                <div className="w-8 h-5 rounded mt-1 ml-auto border border-white/30" style={{background: currentBelt?.color1 || 'white'}}></div>
+                                            </div>
+                                        </div>
 
-                            {/* Name */}
-                            <div className="relative z-10 text-center mb-6">
-                                <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">{student.name}</h2>
-                                <div className="h-0.5 w-20 bg-gradient-to-r from-transparent via-blue-500 to-transparent mx-auto mt-1"></div>
-                            </div>
+                                        {/* Photo Area with Glow */}
+                                        <div className="relative z-10 flex-1 flex items-end justify-center mb-3">
+                                            <div className={`w-28 h-28 rounded-full ${rarity.borderColor} border-4 overflow-hidden ${rarity.glow} bg-gray-800`}>
+                                                {student.photo ? (
+                                                    <img src={student.photo} className="w-full h-full object-cover" alt={student.name} />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-b from-gray-700 to-gray-900">🥋</div>
+                                                )}
+                                            </div>
+                                        </div>
 
-                            {/* General Attributes Grid - DYNAMIC */}
-                            <div className="relative z-10 grid grid-cols-2 gap-x-6 gap-y-2 text-sm font-mono">
-                                {cardStats.map((stat, i) => (
-                                    <div key={i} className="flex justify-between border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400">{stat.label}</span>
-                                        <span className="font-bold text-white">{stat.value}</span>
+                                        {/* Name */}
+                                        <div className="relative z-10 text-center mb-4">
+                                            <h2 className={`text-xl font-black text-white uppercase tracking-tight italic drop-shadow-lg`}>{student.name}</h2>
+                                            <div className={`h-0.5 w-16 bg-gradient-to-r from-transparent ${rarity.gradient.includes('amber') ? 'via-amber-400' : rarity.gradient.includes('cyan') ? 'via-cyan-400' : rarity.gradient.includes('yellow') ? 'via-yellow-400' : 'via-gray-400'} to-transparent mx-auto mt-1`}></div>
+                                        </div>
+
+                                        {/* Stats Grid */}
+                                        <div className="relative z-10 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-mono">
+                                            {cardStats.map((stat, i) => (
+                                                <div key={i} className="flex justify-between border-b border-gray-800/50 pb-1 items-center">
+                                                    <span className="text-gray-400">{stat.label}</span>
+                                                    <span className={`font-bold ${stat.value >= 95 ? 'text-amber-300' : stat.value >= 90 ? 'text-cyan-300' : 'text-white'}`}>
+                                                        {stat.value}
+                                                        {stat.value >= 95 && <span className="ml-0.5 text-amber-400">★</span>}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                            <div className="flex justify-between border-b border-gray-800/50 pb-1 items-center">
+                                                <span className="text-gray-400">ATT</span>
+                                                <span className={`font-bold ${att >= 95 ? 'text-amber-300' : att >= 90 ? 'text-cyan-300' : 'text-white'}`}>
+                                                    {att}
+                                                    {att >= 95 && <span className="ml-0.5 text-amber-400">★</span>}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Tap to Flip hint */}
+                                        <div className="text-center mt-3 text-[10px] text-gray-500 animate-pulse">
+                                            ↻ Tap to flip
+                                        </div>
                                     </div>
-                                ))}
-                                <div className="flex justify-between border-b border-gray-800 pb-1">
-                                    <span className="text-gray-400">ATT</span>
-                                    <span className="font-bold text-white">{att}</span>
+                                </div>
+                            </div>
+
+                            {/* BACK OF CARD */}
+                            <div 
+                                className="absolute inset-0"
+                                style={{ 
+                                    backfaceVisibility: 'hidden',
+                                    transform: 'rotateY(180deg)'
+                                }}
+                            >
+                                <div className={`bg-gradient-to-b ${rarity.gradient} p-1 rounded-[20px] ${rarity.glow} h-full`}>
+                                    <div className={`bg-gradient-to-b from-gray-900 via-black to-gray-900 rounded-[18px] p-4 relative overflow-hidden ${rarity.borderColor} border h-full flex flex-col`}>
+                                        
+                                        {/* Holographic Shimmer */}
+                                        <div 
+                                            className="absolute inset-0 opacity-20 pointer-events-none"
+                                            style={{
+                                                background: 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.3) 30%, transparent 40%)',
+                                                backgroundSize: '200% 100%',
+                                                animation: 'shimmer 3s infinite linear'
+                                            }}
+                                        />
+                                        
+                                        {/* Header */}
+                                        <div className="text-center mb-4 relative z-10">
+                                            <h3 className={`text-lg font-black ${rarity.textColor} uppercase tracking-wide`}>🏆 Achievements</h3>
+                                            <div className={`h-0.5 w-24 bg-gradient-to-r ${rarity.gradient} mx-auto mt-1`}></div>
+                                        </div>
+
+                                        {/* Achievements Grid */}
+                                        <div className="flex-1 space-y-2 relative z-10 overflow-y-auto">
+                                            {achievements.map((ach, i) => (
+                                                <div key={i} className="flex items-center justify-between bg-gray-800/60 rounded-lg px-3 py-2 border border-gray-700/50">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-lg">{ach.icon}</span>
+                                                        <span className="text-gray-300 text-xs">{ach.label}</span>
+                                                    </div>
+                                                    <span className={`font-bold text-sm ${rarity.textColor}`}>{ach.value}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Combat Stats if available */}
+                                        {hasSparringData && (
+                                            <div className="mt-3 pt-3 border-t border-gray-700 relative z-10">
+                                                <p className="text-center text-xs text-gray-400 mb-2">🥊 Combat Record</p>
+                                                <div className="flex justify-around text-center">
+                                                    <div>
+                                                        <p className="text-lg font-bold text-green-400">{stats.wins}</p>
+                                                        <p className="text-[10px] text-gray-500">Wins</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-lg font-bold text-gray-400">{stats.draws}</p>
+                                                        <p className="text-[10px] text-gray-500">Draws</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-lg font-bold text-red-400">{stats.matches - stats.wins - stats.draws}</p>
+                                                        <p className="text-[10px] text-gray-500">Losses</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Tap to Flip hint */}
+                                        <div className="text-center mt-3 text-[10px] text-gray-500 animate-pulse relative z-10">
+                                            ↻ Tap to flip back
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    {/* Optional Sparring Stats (Only if they fight) */}
-                    {hasSparringData && (
-                        <div className="mt-6 bg-gray-800 p-4 rounded-xl border border-gray-700">
-                            <h4 className="text-white font-bold mb-2 text-sm uppercase tracking-wider text-center">🥊 Combat Stats</h4>
-                            <div className="grid grid-cols-3 gap-2 text-center">
-                                <div className="bg-gray-900 p-2 rounded">
-                                    <p className="text-xs text-gray-500 uppercase">Matches</p>
-                                    <p className="font-mono font-bold text-white">{stats.matches}</p>
-                                </div>
-                                <div className="bg-gray-900 p-2 rounded">
-                                    <p className="text-xs text-gray-500 uppercase">Wins</p>
-                                    <p className="font-mono font-bold text-green-400">{stats.wins}</p>
-                                </div>
-                                <div className="bg-gray-900 p-2 rounded">
-                                    <p className="text-xs text-gray-500 uppercase">Takedowns</p>
-                                    <p className="font-mono font-bold text-sky-300">{stats.takedowns}</p>
-                                </div>
-                            </div>
-                        </div>
+
+                    {/* Share/Download Button - Only for Premium */}
+                    {hasPremiumAccess && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); handleShareCard(); }}
+                            className={`mt-4 w-full py-3 rounded-xl bg-gradient-to-r ${rarity.gradient} text-black font-bold text-sm flex items-center justify-center gap-2 ${rarity.glow} hover:scale-[1.02] active:scale-95 transition-transform`}
+                        >
+                            📥 Download Card
+                        </button>
                     )}
                 </div>
+
+                {/* CSS for shimmer animation */}
+                <style>{`
+                    @keyframes shimmer {
+                        0% { background-position: 200% 0; }
+                        100% { background-position: -200% 0; }
+                    }
+                `}</style>
             </div>
         )
     }
