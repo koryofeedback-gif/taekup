@@ -1217,4 +1217,90 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to get content analytics' });
     }
   });
+
+  // =====================================================
+  // RIVALS CHALLENGES API - Real-time student challenges
+  // =====================================================
+
+  app.post('/api/challenges', async (req: Request, res: Response) => {
+    try {
+      const challenge = req.body;
+      const id = `challenge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      await db.execute(sql`
+        INSERT INTO challenges (id, from_student_id, from_student_name, to_student_id, to_student_name, challenge_id, challenge_name, challenge_xp, status, created_at, expires_at)
+        VALUES (${id}, ${challenge.from_student_id}, ${challenge.from_student_name}, ${challenge.to_student_id}, ${challenge.to_student_name}, ${challenge.challenge_id}, ${challenge.challenge_name}, ${challenge.challenge_xp}, 'pending', NOW(), ${expiresAt}::timestamptz)
+      `);
+
+      res.json({ success: true, id, expires_at: expiresAt });
+    } catch (error: any) {
+      console.error('[Challenges] Create error:', error.message);
+      res.status(500).json({ error: 'Failed to create challenge' });
+    }
+  });
+
+  app.get('/api/challenges/received/:studentId', async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      const challenges = await db.execute(sql`
+        SELECT * FROM challenges WHERE to_student_id = ${studentId} ORDER BY created_at DESC
+      `);
+      res.json(challenges);
+    } catch (error: any) {
+      console.error('[Challenges] Fetch received error:', error.message);
+      res.status(500).json({ error: 'Failed to get challenges' });
+    }
+  });
+
+  app.get('/api/challenges/sent/:studentId', async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      const challenges = await db.execute(sql`
+        SELECT * FROM challenges WHERE from_student_id = ${studentId} ORDER BY created_at DESC
+      `);
+      res.json(challenges);
+    } catch (error: any) {
+      console.error('[Challenges] Fetch sent error:', error.message);
+      res.status(500).json({ error: 'Failed to get challenges' });
+    }
+  });
+
+  app.put('/api/challenges/:challengeId/accept', async (req: Request, res: Response) => {
+    try {
+      const { challengeId } = req.params;
+      const { score } = req.body;
+
+      const existing = await db.execute(sql`SELECT * FROM challenges WHERE id = ${challengeId}`);
+      if (!(existing as any[])[0]) {
+        return res.status(404).json({ error: 'Challenge not found' });
+      }
+
+      const challenge = (existing as any[])[0];
+      const fromScore = Math.floor(Math.random() * 100);
+      const winnerId = score > fromScore ? challenge.to_student_id : challenge.from_student_id;
+
+      await db.execute(sql`
+        UPDATE challenges 
+        SET status = 'completed', to_score = ${score}, from_score = ${fromScore}, winner_id = ${winnerId}, completed_at = NOW()
+        WHERE id = ${challengeId}
+      `);
+
+      res.json({ success: true, winner_id: winnerId, from_score: fromScore, to_score: score });
+    } catch (error: any) {
+      console.error('[Challenges] Accept error:', error.message);
+      res.status(500).json({ error: 'Failed to accept challenge' });
+    }
+  });
+
+  app.put('/api/challenges/:challengeId/decline', async (req: Request, res: Response) => {
+    try {
+      const { challengeId } = req.params;
+      await db.execute(sql`UPDATE challenges SET status = 'declined' WHERE id = ${challengeId}`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Challenges] Decline error:', error.message);
+      res.status(500).json({ error: 'Failed to decline challenge' });
+    }
+  });
 }
