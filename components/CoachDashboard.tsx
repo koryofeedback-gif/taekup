@@ -1791,7 +1791,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 </button>
                             </div>
                         </div>
-                    ) : (
+                    ) : activeView === 'schedule' ? (
                         // SCHEDULE VIEW
                         <div className="p-6 space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1866,7 +1866,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 </div>
                             </div>
                         </div>
-                    )}
+                    ) : null}
 
                     {/* CHALLENGES VIEW */}
                     {activeView === 'challenges' && (
