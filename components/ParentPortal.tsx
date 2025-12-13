@@ -85,6 +85,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [dailyStreak, setDailyStreak] = useState(student.rivalsStats?.dailyStreak || 0);
     const [lastChallengeDate, setLastChallengeDate] = useState<string>(student.rivalsStats?.lastChallengeDate || new Date().toISOString().split('T')[0]);
     
+    // Video Upload State (Premium Feature)
+    const [showVideoUpload, setShowVideoUpload] = useState(false);
+    const [videoFile, setVideoFile] = useState<File | null>(null);
+    const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+    const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+    const [videoUploadError, setVideoUploadError] = useState<string | null>(null);
+    const [videoScore, setVideoScore] = useState<string>('');
+    const [myVideos, setMyVideos] = useState<Array<{
+        id: string;
+        challengeId: string;
+        challengeName: string;
+        videoUrl: string;
+        status: 'pending' | 'approved' | 'rejected';
+        score: number;
+        voteCount: number;
+        coachNotes?: string;
+        createdAt: string;
+    }>>([]);
+    const videoInputRef = useRef<HTMLInputElement>(null);
+    
     // Use robust progress tracking hook for XP/completion
     const { 
         completedContentIds: localCompletedIds, 
@@ -440,6 +460,167 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const end = new Date(new Date(`${event.date}T${event.time}`).getTime() + 2*60*60*1000).toISOString().replace(/-|:|\.\d\d\d/g, '');
         return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${start}/${end}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
     }
+
+    // Fetch student's videos on mount
+    useEffect(() => {
+        if (hasPremiumAccess && student.id) {
+            fetchMyVideos();
+        }
+    }, [hasPremiumAccess, student.id]);
+
+    const fetchMyVideos = async () => {
+        try {
+            const response = await fetch(`/api/videos/student/${student.id}`);
+            if (response.ok) {
+                const videos = await response.json();
+                setMyVideos(videos.map((v: any) => ({
+                    id: v.id,
+                    challengeId: v.challenge_id,
+                    challengeName: v.challenge_name,
+                    videoUrl: v.video_url,
+                    status: v.status,
+                    score: v.score,
+                    voteCount: v.vote_count || 0,
+                    coachNotes: v.coach_notes,
+                    createdAt: v.created_at
+                })));
+            }
+        } catch (error) {
+            console.error('Failed to fetch videos:', error);
+        }
+    };
+
+    const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 100 * 1024 * 1024) {
+                setVideoUploadError('Video must be under 100MB');
+                return;
+            }
+            if (!file.type.startsWith('video/')) {
+                setVideoUploadError('Please select a video file');
+                return;
+            }
+            setVideoFile(file);
+            setVideoUploadError(null);
+        }
+    };
+
+    // Challenge lookup helper for video upload
+    const getChallengeInfo = (challengeId: string) => {
+        const allChallenges: Record<string, { name: string; category: string }> = {
+            'pushups': { name: 'Pushups', category: 'Power' },
+            'squats': { name: 'Squats', category: 'Power' },
+            'plank': { name: 'Plank Hold', category: 'Power' },
+            'burpees': { name: 'Burpees', category: 'Power' },
+            'running': { name: '1-Mile Run', category: 'Power' },
+            'kicks100': { name: '100 Kicks', category: 'Power' },
+            'wallsit': { name: 'Wall Sit', category: 'Power' },
+            'forms': { name: 'Forms Accuracy', category: 'Technique' },
+            'combo': { name: 'Combo Challenge', category: 'Technique' },
+            'balance': { name: 'One-Leg Balance', category: 'Technique' },
+            'breaking': { name: 'Board Breaking', category: 'Technique' },
+            'kicks30': { name: '30-Second Kicks', category: 'Technique' },
+            'punches30': { name: '30-Second Punches', category: 'Technique' },
+            'jumprope': { name: 'Jump Rope Speed', category: 'Technique' },
+            'splits': { name: 'Splits Challenge', category: 'Flexibility' },
+            'highkick': { name: 'High Kick Height', category: 'Flexibility' },
+            'backbend': { name: 'Back Bend', category: 'Flexibility' },
+            'stretch': { name: 'Full Stretch Hold', category: 'Flexibility' },
+            'yoga': { name: 'Yoga Flow', category: 'Flexibility' },
+        };
+        
+        // Check custom challenges
+        const customChallenge = data.customChallenges?.find(c => c.id === challengeId);
+        if (customChallenge) {
+            return { name: customChallenge.name, category: 'Coach Picks' };
+        }
+        
+        return allChallenges[challengeId] || { name: challengeId, category: 'Power' };
+    };
+
+    const handleVideoUpload = async () => {
+        if (!videoFile || !selectedChallenge) return;
+        
+        setIsUploadingVideo(true);
+        setVideoUploadProgress(0);
+        setVideoUploadError(null);
+
+        try {
+            // Step 1: Get presigned upload URL
+            const presignedResponse = await fetch('/api/videos/presigned-upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    challengeId: selectedChallenge,
+                    filename: videoFile.name,
+                    contentType: videoFile.type
+                })
+            });
+
+            if (!presignedResponse.ok) {
+                throw new Error('Failed to get upload URL');
+            }
+
+            const { uploadUrl, key, publicUrl } = await presignedResponse.json();
+            setVideoUploadProgress(20);
+
+            // Step 2: Upload directly to S3
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                body: videoFile,
+                headers: {
+                    'Content-Type': videoFile.type
+                }
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error('Failed to upload video');
+            }
+            setVideoUploadProgress(80);
+
+            // Step 3: Save video record to database
+            const challengeInfo = getChallengeInfo(selectedChallenge);
+
+            const saveResponse = await fetch('/api/videos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    clubId: student.id, // Use student ID as club reference for now
+                    challengeId: selectedChallenge,
+                    challengeName: challengeInfo.name,
+                    challengeCategory: challengeInfo.category,
+                    videoUrl: publicUrl,
+                    videoKey: key,
+                    score: parseInt(videoScore) || 0
+                })
+            });
+
+            if (!saveResponse.ok) {
+                throw new Error('Failed to save video record');
+            }
+
+            setVideoUploadProgress(100);
+            
+            // Success - reset and refresh
+            setTimeout(() => {
+                setShowVideoUpload(false);
+                setVideoFile(null);
+                setVideoUploadProgress(0);
+                setVideoScore('');
+                setSelectedChallenge('');
+                fetchMyVideos();
+            }, 1000);
+
+        } catch (error: any) {
+            console.error('Video upload error:', error);
+            setVideoUploadError(error.message || 'Upload failed. Please try again.');
+        } finally {
+            setIsUploadingVideo(false);
+        }
+    };
 
     const renderPremiumLock = (featureName: string, description: string) => {
         if (hasPremiumAccess) return null;
@@ -1848,6 +2029,195 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             <span className="text-2xl">✅</span>
                                             <p className="text-green-400 font-bold mt-2">Challenge Sent!</p>
                                             <p className="text-gray-400 text-xs">They have 24 hours to respond</p>
+                                        </div>
+                                    )}
+
+                                    {/* Video Proof Section - Premium Only */}
+                                    {hasPremiumAccess && (
+                                        <div className="bg-gradient-to-b from-purple-900/40 to-gray-900 p-5 rounded-2xl border border-purple-500/50 shadow-xl">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="font-bold text-white text-lg flex items-center">
+                                                    <span className="w-8 h-8 bg-purple-600/30 rounded-lg flex items-center justify-center mr-3">🎬</span>
+                                                    Video Proof
+                                                </h4>
+                                                <span className="text-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-bold animate-pulse">
+                                                    PREMIUM
+                                                </span>
+                                            </div>
+                                            <p className="text-gray-400 text-sm mb-4">
+                                                Record yourself completing a challenge for coach verification and earn extra XP!
+                                            </p>
+                                            <button
+                                                onClick={() => setShowVideoUpload(true)}
+                                                disabled={!selectedChallenge}
+                                                className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                                                    selectedChallenge
+                                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-900/50'
+                                                        : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                                }`}
+                                            >
+                                                <span className="text-lg">📹</span>
+                                                {selectedChallenge ? 'Submit Video Proof' : 'Select a Challenge First'}
+                                            </button>
+
+                                            {/* My Submitted Videos */}
+                                            {myVideos.length > 0 && (
+                                                <div className="mt-4 pt-4 border-t border-purple-500/30">
+                                                    <h5 className="text-sm font-bold text-gray-300 mb-3">My Submissions</h5>
+                                                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                        {myVideos.map(video => (
+                                                            <div key={video.id} className="flex items-center justify-between bg-gray-800/50 p-3 rounded-lg">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-lg">
+                                                                        {video.status === 'pending' ? '⏳' : video.status === 'approved' ? '✅' : '❌'}
+                                                                    </span>
+                                                                    <div>
+                                                                        <p className="text-sm text-white font-medium">{video.challengeName}</p>
+                                                                        <p className="text-xs text-gray-500">
+                                                                            {video.status === 'pending' && 'Awaiting coach review'}
+                                                                            {video.status === 'approved' && `Verified! ${video.voteCount} votes`}
+                                                                            {video.status === 'rejected' && (video.coachNotes || 'Not approved')}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                {video.status === 'approved' && (
+                                                                    <span className="text-xs bg-green-900/50 text-green-400 px-2 py-1 rounded-full">
+                                                                        ✓ Verified
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Video Upload Modal */}
+                                    {showVideoUpload && (
+                                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+                                            <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-purple-500 shadow-2xl">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h3 className="text-xl font-black text-white flex items-center gap-2">
+                                                        <span className="text-2xl">🎬</span> Video Proof
+                                                    </h3>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setShowVideoUpload(false);
+                                                            setVideoFile(null);
+                                                            setVideoUploadError(null);
+                                                        }}
+                                                        className="text-gray-400 hover:text-white text-2xl"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+
+                                                {/* Challenge Info */}
+                                                <div className="bg-gray-800 rounded-xl p-4 mb-4">
+                                                    <p className="text-gray-400 text-xs mb-1">Submitting for:</p>
+                                                    <p className="text-white font-bold">
+                                                        {challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge)?.name || 'Unknown Challenge'}
+                                                    </p>
+                                                </div>
+
+                                                {/* Score Input */}
+                                                <div className="mb-4">
+                                                    <label className="text-gray-400 text-xs block mb-2">Your Score (reps, seconds, etc.)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={videoScore}
+                                                        onChange={(e) => setVideoScore(e.target.value)}
+                                                        placeholder="Enter your score..."
+                                                        className="w-full bg-gray-800 text-white text-xl font-bold text-center p-3 rounded-xl border border-gray-600 focus:border-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+
+                                                {/* File Upload Area */}
+                                                <div 
+                                                    onClick={() => videoInputRef.current?.click()}
+                                                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                                                        videoFile 
+                                                            ? 'border-purple-500 bg-purple-900/20' 
+                                                            : 'border-gray-600 hover:border-purple-400 hover:bg-gray-800/50'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        ref={videoInputRef}
+                                                        type="file"
+                                                        accept="video/*"
+                                                        onChange={handleVideoFileChange}
+                                                        className="hidden"
+                                                    />
+                                                    {videoFile ? (
+                                                        <div>
+                                                            <span className="text-4xl">✅</span>
+                                                            <p className="text-white font-bold mt-2">{videoFile.name}</p>
+                                                            <p className="text-gray-400 text-xs mt-1">
+                                                                {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <span className="text-4xl">📹</span>
+                                                            <p className="text-gray-300 font-medium mt-2">Tap to select video</p>
+                                                            <p className="text-gray-500 text-xs mt-1">MP4, MOV, WEBM • Max 100MB</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Upload Progress */}
+                                                {isUploadingVideo && (
+                                                    <div className="mt-4">
+                                                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                                            <span>Uploading...</span>
+                                                            <span>{videoUploadProgress}%</span>
+                                                        </div>
+                                                        <div className="w-full bg-gray-700 rounded-full h-2">
+                                                            <div 
+                                                                className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all"
+                                                                style={{ width: `${videoUploadProgress}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Error Message */}
+                                                {videoUploadError && (
+                                                    <div className="mt-4 bg-red-900/50 border border-red-500 p-3 rounded-lg">
+                                                        <p className="text-red-400 text-sm text-center">{videoUploadError}</p>
+                                                    </div>
+                                                )}
+
+                                                {/* Submit Button */}
+                                                <button
+                                                    onClick={handleVideoUpload}
+                                                    disabled={!videoFile || isUploadingVideo || !videoScore}
+                                                    className={`w-full mt-4 py-4 rounded-xl font-bold text-lg transition-all ${
+                                                        videoFile && !isUploadingVideo && videoScore
+                                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg'
+                                                            : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                                    }`}
+                                                >
+                                                    {isUploadingVideo ? (
+                                                        <span className="flex items-center justify-center gap-2">
+                                                            <span className="animate-spin">⏳</span> Uploading...
+                                                        </span>
+                                                    ) : videoUploadProgress === 100 ? (
+                                                        <span className="flex items-center justify-center gap-2">
+                                                            <span>✅</span> Submitted!
+                                                        </span>
+                                                    ) : (
+                                                        <span className="flex items-center justify-center gap-2">
+                                                            <span>🚀</span> Submit for Verification
+                                                        </span>
+                                                    )}
+                                                </button>
+
+                                                <p className="text-gray-500 text-xs text-center mt-3">
+                                                    Your coach will review and verify your video within 24 hours
+                                                </p>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

@@ -9,6 +9,7 @@ import emailService from './services/emailService';
 import * as emailAutomation from './services/emailAutomationService';
 import { db } from './db';
 import { sql } from 'drizzle-orm';
+import s3Storage from './services/s3StorageService';
 
 let cachedProducts: any[] | null = null;
 let cacheTimestamp: number = 0;
@@ -1301,6 +1302,173 @@ export function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error('[Challenges] Decline error:', error.message);
       res.status(500).json({ error: 'Failed to decline challenge' });
+    }
+  });
+
+  // =====================================================
+  // VIDEO VERIFICATION ENDPOINTS
+  // =====================================================
+
+  app.post('/api/videos/presigned-upload', async (req: Request, res: Response) => {
+    try {
+      const { studentId, challengeId, filename, contentType } = req.body;
+      
+      if (!studentId || !challengeId || !filename) {
+        return res.status(400).json({ error: 'studentId, challengeId, and filename are required' });
+      }
+
+      const result = await s3Storage.getPresignedUploadUrl(
+        studentId,
+        challengeId,
+        filename,
+        contentType || 'video/mp4'
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('[Videos] Presigned upload error:', error.message);
+      res.status(500).json({ error: 'Failed to generate upload URL' });
+    }
+  });
+
+  app.post('/api/videos', async (req: Request, res: Response) => {
+    try {
+      const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, score } = req.body;
+      
+      if (!studentId || !clubId || !challengeId || !videoUrl) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const result = await db.execute(sql`
+        INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, created_at, updated_at)
+        VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeId}, ${challengeName || ''}, ${challengeCategory || ''}, ${videoUrl}, ${videoKey || ''}, ${score || 0}, 'pending', NOW(), NOW())
+        RETURNING id
+      `);
+
+      const video = (result as any[])[0];
+      
+      res.json({ success: true, videoId: video?.id });
+    } catch (error: any) {
+      console.error('[Videos] Create error:', error.message);
+      res.status(500).json({ error: 'Failed to save video record' });
+    }
+  });
+
+  app.get('/api/videos/pending/:clubId', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      
+      const videos = await db.execute(sql`
+        SELECT cv.*, s.name as student_name, s.belt as student_belt
+        FROM challenge_videos cv
+        JOIN students s ON cv.student_id = s.id
+        WHERE cv.club_id = ${clubId}::uuid AND cv.status = 'pending'
+        ORDER BY cv.created_at DESC
+      `);
+
+      res.json(videos);
+    } catch (error: any) {
+      console.error('[Videos] Fetch pending error:', error.message);
+      res.status(500).json({ error: 'Failed to get pending videos' });
+    }
+  });
+
+  app.get('/api/videos/approved/:clubId', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      
+      const videos = await db.execute(sql`
+        SELECT cv.*, s.name as student_name, s.belt as student_belt
+        FROM challenge_videos cv
+        JOIN students s ON cv.student_id = s.id
+        WHERE cv.club_id = ${clubId}::uuid AND cv.status = 'approved'
+        ORDER BY cv.vote_count DESC, cv.created_at DESC
+      `);
+
+      res.json(videos);
+    } catch (error: any) {
+      console.error('[Videos] Fetch approved error:', error.message);
+      res.status(500).json({ error: 'Failed to get approved videos' });
+    }
+  });
+
+  app.put('/api/videos/:videoId/verify', async (req: Request, res: Response) => {
+    try {
+      const { videoId } = req.params;
+      const { status, coachNotes, coachId, xpAwarded } = req.body;
+      
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Status must be approved or rejected' });
+      }
+
+      await db.execute(sql`
+        UPDATE challenge_videos 
+        SET status = ${status}::video_status, 
+            coach_notes = ${coachNotes || null}, 
+            verified_by = ${coachId ? coachId : null}::uuid, 
+            verified_at = NOW(),
+            xp_awarded = ${xpAwarded || 0},
+            updated_at = NOW()
+        WHERE id = ${videoId}::uuid
+      `);
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Videos] Verify error:', error.message);
+      res.status(500).json({ error: 'Failed to verify video' });
+    }
+  });
+
+  app.post('/api/videos/:videoId/vote', async (req: Request, res: Response) => {
+    try {
+      const { videoId } = req.params;
+      const { voterStudentId } = req.body;
+      
+      if (!voterStudentId) {
+        return res.status(400).json({ error: 'voterStudentId is required' });
+      }
+
+      const existing = await db.execute(sql`
+        SELECT id FROM challenge_video_votes 
+        WHERE video_id = ${videoId}::uuid AND voter_student_id = ${voterStudentId}::uuid
+      `);
+
+      if ((existing as any[]).length > 0) {
+        return res.status(400).json({ error: 'Already voted on this video' });
+      }
+
+      await db.execute(sql`
+        INSERT INTO challenge_video_votes (video_id, voter_student_id, vote_value, created_at)
+        VALUES (${videoId}::uuid, ${voterStudentId}::uuid, 1, NOW())
+      `);
+
+      await db.execute(sql`
+        UPDATE challenge_videos 
+        SET vote_count = vote_count + 1, updated_at = NOW()
+        WHERE id = ${videoId}::uuid
+      `);
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Videos] Vote error:', error.message);
+      res.status(500).json({ error: 'Failed to vote' });
+    }
+  });
+
+  app.get('/api/videos/student/:studentId', async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      
+      const videos = await db.execute(sql`
+        SELECT * FROM challenge_videos 
+        WHERE student_id = ${studentId}::uuid
+        ORDER BY created_at DESC
+      `);
+
+      res.json(videos);
+    } catch (error: any) {
+      console.error('[Videos] Fetch student videos error:', error.message);
+      res.status(500).json({ error: 'Failed to get student videos' });
     }
   });
 }

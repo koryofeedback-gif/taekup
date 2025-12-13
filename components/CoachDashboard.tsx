@@ -897,9 +897,18 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const [certificateData, setCertificateData] = useState<{show: boolean, student: Student | null, newBelt: string}>({ show: false, student: null, newBelt: '' });
     
     // Navigation State
-    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'sparring' | 'planner' | 'challenges'>('grading');
+    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'sparring' | 'planner' | 'challenges' | 'videos'>('grading');
     const [isAddEventOpen, setIsAddEventOpen] = useState(false);
     const [showChallengeBuilder, setShowChallengeBuilder] = useState(false);
+
+    // Video Review State
+    const [pendingVideos, setPendingVideos] = useState<any[]>([]);
+    const [currentVideoPlaying, setCurrentVideoPlaying] = useState<string | null>(null);
+    const [reviewingVideo, setReviewingVideo] = useState<any | null>(null);
+    const [coachVideoNotes, setCoachVideoNotes] = useState('');
+    const [xpToAward, setXpToAward] = useState<number>(50);
+    const [isLoadingVideos, setIsLoadingVideos] = useState(false);
+    const [isProcessingVideo, setIsProcessingVideo] = useState(false);
 
     // Focus Mode and Notes History State
     const [focusMode, setFocusMode] = useState(false);
@@ -1383,6 +1392,108 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         setFighter2('');
     }
 
+    // --- VIDEO REVIEW FUNCTIONS ---
+    const fetchPendingVideos = async () => {
+        // Get clubId from wizard data or signupData
+        const clubId = (data as any).clubId || (data as any).signupData?.clubId;
+        if (!clubId) {
+            console.log('[Videos] No clubId available, skipping video fetch');
+            return;
+        }
+
+        setIsLoadingVideos(true);
+        try {
+            const response = await fetch(`/api/videos/pending/${clubId}`);
+            if (response.ok) {
+                const videos = await response.json();
+                setPendingVideos(Array.isArray(videos) ? videos : []);
+            } else {
+                console.log('[Videos] Failed to fetch pending videos:', response.status);
+                setPendingVideos([]);
+            }
+        } catch (error) {
+            console.error('[Videos] Failed to fetch pending videos:', error);
+            setPendingVideos([]);
+        } finally {
+            setIsLoadingVideos(false);
+        }
+    };
+
+    // Fetch videos when switching to videos view
+    useEffect(() => {
+        if (activeView === 'videos') {
+            fetchPendingVideos();
+        }
+    }, [activeView]);
+
+    const handleApproveVideo = async (video: any) => {
+        setIsProcessingVideo(true);
+        try {
+            const response = await fetch(`/api/videos/${video.id}/verify`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'approved',
+                    coachNotes: coachVideoNotes,
+                    xpAwarded: xpToAward
+                })
+            });
+
+            if (response.ok) {
+                setPendingVideos(prev => prev.filter(v => v.id !== video.id));
+                setReviewingVideo(null);
+                setCoachVideoNotes('');
+                setXpToAward(50);
+                setCurrentVideoPlaying(null);
+                setConfirmation({ show: true, message: `Video approved! +${xpToAward} XP awarded.` });
+                setTimeout(() => setConfirmation({ show: false, message: '' }), 3000);
+            }
+        } catch (error) {
+            console.error('[Videos] Failed to approve video:', error);
+        } finally {
+            setIsProcessingVideo(false);
+        }
+    };
+
+    const handleRejectVideo = async (video: any) => {
+        setIsProcessingVideo(true);
+        try {
+            const response = await fetch(`/api/videos/${video.id}/verify`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'rejected',
+                    coachNotes: coachVideoNotes,
+                    xpAwarded: 0
+                })
+            });
+
+            if (response.ok) {
+                setPendingVideos(prev => prev.filter(v => v.id !== video.id));
+                setReviewingVideo(null);
+                setCoachVideoNotes('');
+                setCurrentVideoPlaying(null);
+                setConfirmation({ show: true, message: 'Video rejected.' });
+                setTimeout(() => setConfirmation({ show: false, message: '' }), 3000);
+            }
+        } catch (error) {
+            console.error('[Videos] Failed to reject video:', error);
+        } finally {
+            setIsProcessingVideo(false);
+        }
+    };
+
+    const getCategoryEmoji = (category: string) => {
+        switch(category?.toLowerCase()) {
+            case 'power': return '💪';
+            case 'technique': return '🎯';
+            case 'flexibility': return '🧘';
+            case 'speed': return '⚡';
+            case 'endurance': return '🔥';
+            default: return '🏆';
+        }
+    };
+
     return (
         <div className="container mx-auto px-4 py-8">
              {confirmation.show && (
@@ -1402,7 +1513,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         <div className="flex flex-wrap justify-between items-center">
                             <div>
                                 <h1 className="text-xl font-bold text-white">
-                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : `🥊 Sparring Tracker`}
+                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : activeView === 'videos' ? '🎬 Video Review' : `🥊 Sparring Tracker`}
                                 </h1>
                                 <p className="text-sm text-gray-400">👤 Coach {coachName} | 🏫 {data.clubName}</p>
                             </div>
@@ -1445,6 +1556,17 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'challenges' ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                                 >
                                     🏆 Challenges
+                                </button>
+                                <button 
+                                    onClick={() => setActiveView('videos')}
+                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors relative ${activeView === 'videos' ? 'bg-orange-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                >
+                                    🎬 Videos
+                                    {pendingVideos.length > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                                            {pendingVideos.length}
+                                        </span>
+                                    )}
                                 </button>
                                 {userType === 'owner' && onGoToAdmin && (
                                     <button onClick={onGoToAdmin} className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 text-sm rounded-md transition-colors">⬅️ Admin</button>
@@ -1835,6 +1957,173 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         >
                                             + Add More Challenges
                                         </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* VIDEOS VIEW */}
+                    {activeView === 'videos' && (
+                        <div className="p-6">
+                            <div className="space-y-6">
+                                {/* Stats Cards */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="bg-gradient-to-br from-orange-900/40 to-orange-800/20 rounded-xl p-6 border border-orange-500/30 text-center">
+                                        <div className="text-4xl mb-2">📹</div>
+                                        <div className="text-3xl font-black text-orange-400">{pendingVideos.length}</div>
+                                        <div className="text-gray-400 text-sm">Pending Review</div>
+                                    </div>
+                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+                                        <div className="text-4xl mb-2">✅</div>
+                                        <div className="text-3xl font-black text-green-400">-</div>
+                                        <div className="text-gray-400 text-sm">Approved Today</div>
+                                    </div>
+                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+                                        <div className="text-4xl mb-2">⭐</div>
+                                        <div className="text-3xl font-black text-yellow-400">-</div>
+                                        <div className="text-gray-400 text-sm">XP Awarded</div>
+                                    </div>
+                                </div>
+
+                                {/* Video Queue */}
+                                {isLoadingVideos ? (
+                                    <div className="text-center py-16">
+                                        <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                        <p className="text-gray-400">Loading pending videos...</p>
+                                    </div>
+                                ) : pendingVideos.length === 0 ? (
+                                    <div className="text-center py-16 bg-gray-800/50 rounded-2xl border border-gray-700">
+                                        <div className="text-7xl mb-4">🎬</div>
+                                        <h3 className="text-2xl font-bold text-white mb-2">No Videos to Review</h3>
+                                        <p className="text-gray-400 max-w-md mx-auto">
+                                            When students submit video proofs for Dojang Rivals challenges, they'll appear here for your review.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                            <span className="text-orange-400">●</span> Pending Video Submissions
+                                        </h3>
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                            {pendingVideos.map(video => (
+                                                <div key={video.id} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-orange-500/50 transition-all">
+                                                    {/* Video Preview */}
+                                                    <div className="relative bg-black aspect-video">
+                                                        <video 
+                                                            src={video.video_url}
+                                                            className="w-full h-full object-contain"
+                                                            controls={currentVideoPlaying === video.id}
+                                                            onClick={() => setCurrentVideoPlaying(video.id)}
+                                                            poster=""
+                                                        />
+                                                        {currentVideoPlaying !== video.id && (
+                                                            <div 
+                                                                onClick={() => setCurrentVideoPlaying(video.id)}
+                                                                className="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer hover:bg-black/30 transition-colors"
+                                                            >
+                                                                <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center">
+                                                                    <span className="text-3xl ml-1">▶</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Video Info */}
+                                                    <div className="p-4">
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <h4 className="font-bold text-white text-lg">{video.student_name}</h4>
+                                                                <p className="text-gray-400 text-sm">{video.student_belt} Belt</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="flex items-center gap-1 text-orange-400">
+                                                                    <span className="text-xl">{getCategoryEmoji(video.challenge_category)}</span>
+                                                                    <span className="font-bold">{video.score || 0}</span>
+                                                                </div>
+                                                                <p className="text-xs text-gray-500">Claimed Score</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="bg-gray-900/50 rounded-lg p-3 mb-3">
+                                                            <p className="text-sm font-medium text-white mb-1">{video.challenge_name || 'Challenge'}</p>
+                                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                <span className={`px-2 py-0.5 rounded ${
+                                                                    video.challenge_category === 'Power' ? 'bg-red-900/50 text-red-400' :
+                                                                    video.challenge_category === 'Technique' ? 'bg-blue-900/50 text-blue-400' :
+                                                                    'bg-purple-900/50 text-purple-400'
+                                                                }`}>
+                                                                    {video.challenge_category || 'General'}
+                                                                </span>
+                                                                <span>•</span>
+                                                                <span>{new Date(video.created_at).toLocaleDateString()}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Review Actions */}
+                                                        {reviewingVideo?.id === video.id ? (
+                                                            <div className="space-y-3">
+                                                                <textarea 
+                                                                    value={coachVideoNotes}
+                                                                    onChange={(e) => setCoachVideoNotes(e.target.value)}
+                                                                    placeholder="Add feedback for the student (optional)..."
+                                                                    className="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 text-sm resize-none focus:ring-orange-500 focus:border-orange-500"
+                                                                    rows={2}
+                                                                />
+                                                                <div className="flex items-center gap-3">
+                                                                    <label className="text-sm text-gray-400">XP Award:</label>
+                                                                    <input 
+                                                                        type="number"
+                                                                        value={xpToAward}
+                                                                        onChange={(e) => setXpToAward(Math.max(0, parseInt(e.target.value) || 0))}
+                                                                        className="w-20 bg-gray-700 text-green-400 font-bold p-2 rounded-lg border border-gray-600 text-center"
+                                                                        min="0"
+                                                                        max="500"
+                                                                    />
+                                                                    <span className="text-green-400 font-bold">XP</span>
+                                                                </div>
+                                                                <div className="flex gap-2">
+                                                                    <button 
+                                                                        onClick={() => handleApproveVideo(video)}
+                                                                        disabled={isProcessingVideo}
+                                                                        className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        {isProcessingVideo ? '...' : '✅ Approve'}
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => handleRejectVideo(video)}
+                                                                        disabled={isProcessingVideo}
+                                                                        className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        {isProcessingVideo ? '...' : '❌ Reject'}
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            setReviewingVideo(null);
+                                                                            setCoachVideoNotes('');
+                                                                            setXpToAward(50);
+                                                                        }}
+                                                                        className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setReviewingVideo(video);
+                                                                    setCurrentVideoPlaying(video.id);
+                                                                }}
+                                                                className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                                                            >
+                                                                Review Video
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
