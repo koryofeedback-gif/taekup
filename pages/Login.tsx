@@ -65,10 +65,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             sessionStorage.removeItem('impersonation_user_name');
             sessionStorage.removeItem('impersonation_club_id');
             
+            // CRITICAL: Clear old cached wizard data to force fresh data with proper UUIDs
+            localStorage.removeItem('taekup_wizard_data');
+            console.log('[Login] Cleared old cached wizard data');
+            
             // FIRST: Check if API returned wizardData directly (Vercel production path)
             if (data.wizardData && Object.keys(data.wizardData).length > 0) {
                 localStorage.setItem('taekup_wizard_data', JSON.stringify(data.wizardData));
-                console.log('[Login] Saved wizard data from login API response');
+                console.log('[Login] Saved fresh wizard data from login API (with database UUIDs)');
             }
             // FALLBACK: For owners, try to fetch wizard data from database if not in login response
             else if (userType === 'owner' && user.clubId && !user.wizardCompleted) {
