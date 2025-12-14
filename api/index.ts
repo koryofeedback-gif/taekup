@@ -1038,6 +1038,66 @@ async function handleGetPendingVideos(req: VercelRequest, res: VercelResponse, c
   }
 }
 
+async function handleGetApprovedVideos(req: VercelRequest, res: VercelResponse, clubId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const studentId = req.query.studentId as string;
+  
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT cv.id, cv.student_id, s.name as student_name, cv.challenge_id, cv.challenge_name,
+              cv.video_key, cv.video_url, cv.score, cv.vote_count, cv.created_at
+       FROM challenge_videos cv
+       JOIN students s ON cv.student_id = s.id
+       WHERE cv.club_id = $1::uuid AND cv.status = 'approved'
+       ORDER BY cv.created_at DESC`,
+      [clubId]
+    );
+    
+    const s3Client = getS3Client();
+    const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
+    
+    const videosWithData = await Promise.all(result.rows.map(async (video) => {
+      let videoUrl = video.video_url;
+      
+      if (s3Client && bucketName && video.video_key) {
+        try {
+          const command = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: video.video_key,
+          });
+          videoUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        } catch (e) {
+          console.error('[Videos] Failed to generate signed URL:', e);
+        }
+      }
+      
+      let hasVoted = false;
+      if (studentId) {
+        const voteCheck = await client.query(
+          `SELECT id FROM challenge_video_votes WHERE video_id = $1::uuid AND voter_student_id = $2::uuid`,
+          [video.id, studentId]
+        );
+        hasVoted = voteCheck.rows.length > 0;
+      }
+      
+      return {
+        ...video,
+        video_url: videoUrl,
+        has_voted: hasVoted
+      };
+    }));
+    
+    return res.json(videosWithData);
+  } catch (error: any) {
+    console.error('[Videos] Fetch approved error:', error.message);
+    return res.status(500).json({ error: 'Failed to get approved videos' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleVoteVideo(req: VercelRequest, res: VercelResponse, videoId: string) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -1167,6 +1227,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const pendingVideosMatch = path.match(/^\/videos\/pending\/([^/]+)\/?$/);
     if (pendingVideosMatch) return await handleGetPendingVideos(req, res, pendingVideosMatch[1]);
+    
+    const approvedVideosMatch = path.match(/^\/videos\/approved\/([^/]+)\/?$/);
+    if (approvedVideosMatch) return await handleGetApprovedVideos(req, res, approvedVideosMatch[1]);
     
     const verifyVideoMatch = path.match(/^\/videos\/([^/]+)\/verify\/?$/);
     if (verifyVideoMatch) return await handleVerifyVideo(req, res, verifyVideoMatch[1]);
