@@ -1276,11 +1276,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const rarity = getRarity(ovr);
 
         // Generate achievements for back of card (with null checks)
+        // Use actual database XP (totalPoints) as the source of truth
+        const actualXP = student.totalPoints || 0;
         const achievements = [
             { icon: '🎯', label: 'Classes Attended', value: student.attendanceCount || 0 },
-            { icon: '⚡', label: 'Current Streak', value: `${rivalStats?.streak || 0} wins` },
+            { icon: '⚡', label: 'Current Streak', value: `${student.rivalsStats?.dailyStreak || 0} days` },
             { icon: '🏆', label: 'Total Wins', value: rivalStats?.wins || 0 },
-            { icon: '⭐', label: 'XP Earned', value: (rivalStats?.xp || 0) + (localTotalPoints || 0) },
+            { icon: '⭐', label: 'XP Earned', value: actualXP },
             { icon: '🥋', label: 'Belt Rank', value: currentBelt?.name || 'White' },
             { icon: '📅', label: 'Member Since', value: student.joinDate ? new Date(student.joinDate).getFullYear() : new Date().getFullYear() },
         ];
