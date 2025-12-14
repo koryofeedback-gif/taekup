@@ -81,6 +81,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [dailyStreak, setDailyStreak] = useState(student.rivalsStats?.dailyStreak || 0);
     const [lastChallengeDate, setLastChallengeDate] = useState<string>(student.rivalsStats?.lastChallengeDate || new Date().toISOString().split('T')[0]);
     
+    // Video Upload State (Premium Feature)
+    const [showVideoUpload, setShowVideoUpload] = useState(false);
+    const [videoFile, setVideoFile] = useState<File | null>(null);
+    const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+    const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+    const [videoUploadError, setVideoUploadError] = useState<string | null>(null);
+    const [videoScore, setVideoScore] = useState<string>('');
+    const [myVideos, setMyVideos] = useState<Array<{
+        id: string;
+        challengeId: string;
+        challengeName: string;
+        videoUrl: string;
+        status: 'pending' | 'approved' | 'rejected';
+        score: number;
+        voteCount: number;
+        coachNotes?: string;
+        createdAt: string;
+    }>>([]);
+    const videoInputRef = useRef<HTMLInputElement>(null);
     
     // Use robust progress tracking hook for XP/completion
     const { 
@@ -433,6 +452,162 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${start}/${end}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
     }
 
+    // Fetch student's videos on mount
+    useEffect(() => {
+        if (hasPremiumAccess && student.id) {
+            fetchMyVideos();
+        }
+    }, [hasPremiumAccess, student.id]);
+
+    const fetchMyVideos = async () => {
+        try {
+            const response = await fetch(`/api/videos/student/${student.id}`);
+            if (response.ok) {
+                const videos = await response.json();
+                setMyVideos(videos.map((v: any) => ({
+                    id: v.id,
+                    challengeId: v.challenge_id,
+                    challengeName: v.challenge_name,
+                    videoUrl: v.video_url,
+                    status: v.status,
+                    score: v.score,
+                    voteCount: v.vote_count || 0,
+                    coachNotes: v.coach_notes,
+                    createdAt: v.created_at
+                })));
+            }
+        } catch (error) {
+            console.error('Failed to fetch videos:', error);
+        }
+    };
+
+    const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 100 * 1024 * 1024) {
+                setVideoUploadError('Video must be under 100MB');
+                return;
+            }
+            if (!file.type.startsWith('video/')) {
+                setVideoUploadError('Please select a video file');
+                return;
+            }
+            setVideoFile(file);
+            setVideoUploadError(null);
+        }
+    };
+
+    const getChallengeInfo = (challengeId: string) => {
+        const allChallenges: Record<string, { name: string; category: string }> = {
+            'pushups': { name: 'Pushups', category: 'Power' },
+            'squats': { name: 'Squats', category: 'Power' },
+            'plank': { name: 'Plank Hold', category: 'Power' },
+            'burpees': { name: 'Burpees', category: 'Power' },
+            'running': { name: '1-Mile Run', category: 'Power' },
+            'kicks100': { name: '100 Kicks', category: 'Power' },
+            'wallsit': { name: 'Wall Sit', category: 'Power' },
+            'forms': { name: 'Forms Accuracy', category: 'Technique' },
+            'combo': { name: 'Combo Challenge', category: 'Technique' },
+            'balance': { name: 'One-Leg Balance', category: 'Technique' },
+            'breaking': { name: 'Board Breaking', category: 'Technique' },
+            'kicks30': { name: '30-Second Kicks', category: 'Technique' },
+            'punches30': { name: '30-Second Punches', category: 'Technique' },
+            'jumprope': { name: 'Jump Rope Speed', category: 'Technique' },
+            'splits': { name: 'Splits Challenge', category: 'Flexibility' },
+            'highkick': { name: 'High Kick Height', category: 'Flexibility' },
+            'backbend': { name: 'Back Bend', category: 'Flexibility' },
+            'stretch': { name: 'Full Stretch Hold', category: 'Flexibility' },
+            'yoga': { name: 'Yoga Flow', category: 'Flexibility' },
+        };
+        const customChallenge = data.customChallenges?.find(c => c.id === challengeId);
+        if (customChallenge) {
+            return { name: customChallenge.name, category: 'Coach Picks' };
+        }
+        return allChallenges[challengeId] || { name: challengeId, category: 'Power' };
+    };
+
+    const handleVideoUpload = async () => {
+        if (!videoFile || !selectedChallenge) return;
+        
+        setIsUploadingVideo(true);
+        setVideoUploadProgress(0);
+        setVideoUploadError(null);
+
+        try {
+            const presignedResponse = await fetch('/api/videos/presigned-upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    challengeId: selectedChallenge,
+                    filename: videoFile.name,
+                    contentType: videoFile.type
+                })
+            });
+
+            if (!presignedResponse.ok) {
+                const errorData = await presignedResponse.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to get upload URL');
+            }
+
+            const { uploadUrl, key, publicUrl } = await presignedResponse.json();
+            setVideoUploadProgress(20);
+
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                body: videoFile,
+                headers: { 'Content-Type': videoFile.type }
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error('Failed to upload video');
+            }
+            setVideoUploadProgress(80);
+
+            const challengeInfo = getChallengeInfo(selectedChallenge);
+            const clubId = localStorage.getItem('taekup_club_id');
+            
+            if (!clubId) {
+                throw new Error('Club information not found. Please log in again.');
+            }
+
+            const saveResponse = await fetch('/api/videos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    clubId: clubId,
+                    challengeId: selectedChallenge,
+                    challengeName: challengeInfo.name,
+                    challengeCategory: challengeInfo.category,
+                    videoUrl: publicUrl,
+                    videoKey: key,
+                    score: parseInt(videoScore) || 0
+                })
+            });
+
+            if (!saveResponse.ok) {
+                throw new Error('Failed to save video record');
+            }
+
+            setVideoUploadProgress(100);
+            
+            setTimeout(() => {
+                setShowVideoUpload(false);
+                setVideoFile(null);
+                setVideoUploadProgress(0);
+                setVideoScore('');
+                setSelectedChallenge('');
+                fetchMyVideos();
+            }, 1000);
+
+        } catch (error: any) {
+            console.error('Video upload error:', error);
+            setVideoUploadError(error.message || 'Upload failed');
+        } finally {
+            setIsUploadingVideo(false);
+        }
+    };
 
     const renderPremiumLock = (featureName: string, description: string) => {
         if (hasPremiumAccess) return null;
