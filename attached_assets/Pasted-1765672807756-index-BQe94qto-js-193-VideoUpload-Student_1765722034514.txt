@@ -1,0 +1,35 @@
+1765672807756
+index-BQe94qto.js:193 [VideoUpload] Student object: {"id":"student-1765672807756","name":"ali","photo":null,"badges":[],"beltId":"wt-7","gender":"Male","stripes":2,"birthday":"","joinDate":"2025-12-14","location":"Main Location","parentName":"","medicalInfo":"","parentEmail":"student321@mkzaso.com","parentPhone":"","rivalsStats":{"xp":0,"wins":0,"losses":0,"streak":0,"dailyStreak":0,"lastChallengeDate":"2025-12-14","teamBattlesWon":0,"familyChallengesCompleted":0,"mysteryBoxCompleted":0},"totalPoints":128,"customHabits":[{"id":"h1","icon":"🛏️","category":"Chores","isActive":true,"question":"Did they make their bed?"},{"id":"h2","icon":"🦷","category":"Health","isActive":true,"question":"Did they brush their teeth?"},{"id":"h3","icon":"🙇","category":"Character","isActive":true,"question":"Did they show respect to parents?"}],"assignedClass":"Kids Class","sparringStats":{"wins":0,"draws":0,"defense":0,"matches":0,"punches":0,"bodyKicks":0,"headKicks":0,"takedowns":0},"parentPassword":"13661712","attendanceCount":0,"feedbackHistory":[],"isReadyForGrading":false,"lastPromotionDate":"2025-12-14T00:37:48.505Z","lifeSkillsHistory":[],"performanceHistory":[],"completedContentIds":[]}
+index-BQe94qto.js:193 [VideoUpload] Club ID: 2fc1c89f-e6b7-4565-af5d-da5d5c458c19
+/api/challenges/received/student-1765672807756:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+index-BQe94qto.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at V6.getReceivedChallenges (index-BQe94qto.js:188:28677)
+    at async index-BQe94qto.js:188:26064
+getReceivedChallenges @ index-BQe94qto.js:188Understand this error
+/api/videos:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-BQe94qto.js:193 Video upload error: Error: Failed to save video record
+    at qv (index-BQe94qto.js:193:14739)
+qv @ index-BQe94qto.js:193Understand this error
+/api/challenges/received/student-1765672807756:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+index-BQe94qto.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at V6.getReceivedChallenges (index-BQe94qto.js:188:28677)
+    at async index-BQe94qto.js:188:26064
+getReceivedChallenges @ index-BQe94qto.js:188Understand this error
+index-BQe94qto.js:188  GET https://www.mytaek.com/api/challenges/received/student-1765672807756 404 (Not Found)
+getReceivedChallenges @ index-BQe94qto.js:188
+(anonymous) @ index-BQe94qto.js:188Understand this error
+index-BQe94qto.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at V6.getReceivedChallenges (index-BQe94qto.js:188:28677)
+    at async index-BQe94qto.js:188:26064
+getReceivedChallenges @ index-BQe94qto.js:188
+await in getReceivedChallenges
+(anonymous) @ index-BQe94qto.js:188Understand this error
+index-BQe94qto.js:188  GET https://www.mytaek.com/api/challenges/received/student-1765672807756 404 (Not Found)
+getReceivedChallenges @ index-BQe94qto.js:188
+(anonymous) @ index-BQe94qto.js:188Understand this error
+index-BQe94qto.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at V6.getReceivedChallenges (index-BQe94qto.js:188:28677)
+    at async index-BQe94qto.js:188:26064
+getReceivedChallenges @ index-BQe94qto.js:188
+await in getReceivedChallenges
+(anonymous) @ index-BQe94qto.js:188Understand this error
