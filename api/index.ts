@@ -338,7 +338,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
 
     const studentsResult = await client.query(
       `SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-              total_xp, current_streak, stripe_count
+              total_points, current_streak, stripe_count
        FROM students WHERE club_id = $1::uuid`,
       [clubId]
     );
@@ -369,7 +369,8 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       parentPhone: s.parent_phone,
       beltId: getBeltIdFromName(s.belt),
       birthday: s.birthdate,
-      totalXP: s.total_xp || 0,
+      totalXP: s.total_points || 0,
+      totalPoints: s.total_points || 0,
       currentStreak: s.current_streak || 0,
       stripeCount: s.stripe_count || 0,
       performanceHistory: [],

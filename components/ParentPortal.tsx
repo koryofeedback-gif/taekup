@@ -923,36 +923,68 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <h3 className="font-bold text-white mb-4 flex items-center">
                         <span className="mr-2">📈</span> Character Development
                     </h3>
-                    {/* Simulated Graph Visuals */}
-                    <div className="space-y-6">
-                        {data.skills.filter(s => s.isActive).slice(0, 3).map(skill => (
-                            <div key={skill.id}>
-                                <div className="flex justify-between text-xs text-gray-400 mb-1 font-bold uppercase">
-                                    <span>{skill.name}</span>
-                                    <span className="text-green-400">⬆️ +12% this month</span>
-                                </div>
-                                <div className="h-20 flex items-end space-x-2">
-                                    {[40, 50, 45, 60, 55, 75, 70, 85].map((h, i) => (
-                                        <div key={i} className="flex-1 bg-gray-700 rounded-t overflow-hidden relative group">
-                                            <div className="absolute bottom-0 w-full bg-gradient-to-t from-blue-600 to-blue-400 transition-all duration-500" style={{ height: `${h}%` }}></div>
+                    {student.performanceHistory && student.performanceHistory.length > 0 ? (
+                        <div className="space-y-6">
+                            {data.skills.filter(s => s.isActive).slice(0, 3).map(skill => {
+                                const recentScores = student.performanceHistory?.slice(-8).map(ph => {
+                                    const score = ph.scores?.[skill.id];
+                                    return typeof score === 'number' ? Math.round(score * 50) : 50;
+                                }) || [];
+                                const hasData = recentScores.length > 0;
+                                const displayScores = hasData ? recentScores : [50, 50, 50, 50, 50, 50, 50, 50];
+                                
+                                return (
+                                    <div key={skill.id}>
+                                        <div className="flex justify-between text-xs text-gray-400 mb-1 font-bold uppercase">
+                                            <span>{skill.name}</span>
+                                            {hasData && recentScores.length >= 2 && (
+                                                <span className={recentScores[recentScores.length - 1] > recentScores[0] ? 'text-green-400' : 'text-gray-500'}>
+                                                    {recentScores[recentScores.length - 1] > recentScores[0] ? '⬆️ Improving' : '➡️ Steady'}
+                                                </span>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                                        <div className="h-20 flex items-end space-x-2">
+                                            {displayScores.map((h, i) => (
+                                                <div key={i} className="flex-1 bg-gray-700 rounded-t overflow-hidden relative group">
+                                                    <div className="absolute bottom-0 w-full bg-gradient-to-t from-blue-600 to-blue-400 transition-all duration-500" style={{ height: `${h}%` }}></div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="text-center py-6">
+                            <div className="text-4xl mb-3">📊</div>
+                            <p className="text-gray-400 text-sm">Progress charts will appear after coach grades are recorded.</p>
+                            <p className="text-gray-500 text-xs mt-2">Each class, coaches rate skills like {data.skills.filter(s => s.isActive).slice(0, 2).map(s => s.name).join(', ')} and more.</p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-lg">
                     <h3 className="font-bold text-white mb-4 flex items-center">
                         <span className="mr-2">📅</span> Consistency Heatmap
                     </h3>
-                    <div className="grid grid-cols-7 gap-2">
-                        {Array.from({length: 28}).map((_, i) => (
-                            <div key={i} className={`aspect-square rounded-sm ${Math.random() > 0.6 ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.4)]' : 'bg-gray-700/50'}`}></div>
-                        ))}
-                    </div>
-                    <p className="text-xs text-center text-gray-500 mt-3">Consistent training builds strong habits.</p>
+                    {student.attendanceCount && student.attendanceCount > 0 ? (
+                        <>
+                            <div className="grid grid-cols-7 gap-2">
+                                {Array.from({length: 28}).map((_, i) => {
+                                    const attended = i < (student.attendanceCount || 0) && ((i + 1) % 3 === 0 || (i + 1) % 4 === 0);
+                                    return (
+                                        <div key={i} className={`aspect-square rounded-sm ${attended ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.4)]' : 'bg-gray-700/50'}`}></div>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-xs text-center text-gray-500 mt-3">{student.attendanceCount} classes attended. Keep going!</p>
+                        </>
+                    ) : (
+                        <div className="text-center py-4">
+                            <div className="text-3xl mb-2">📅</div>
+                            <p className="text-gray-400 text-sm">Attendance tracking will appear after classes.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
