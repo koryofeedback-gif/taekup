@@ -136,11 +136,27 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
       ['User logged in: ' + user.email, user.club_id, JSON.stringify({ email: user.email, role: user.role })]
     );
 
+    // CRITICAL: For parent users, look up their student by parent_email
+    let studentId = null;
+    if (user.role === 'parent') {
+      const studentResult = await client.query(
+        `SELECT id FROM students WHERE LOWER(parent_email) = $1 AND club_id = $2::uuid LIMIT 1`,
+        [user.email.toLowerCase().trim(), user.club_id]
+      );
+      if (studentResult.rows.length > 0) {
+        studentId = studentResult.rows[0].id;
+        console.log('[Login] Found student for parent:', user.email, '-> studentId:', studentId);
+      } else {
+        console.log('[Login] No student found for parent email:', user.email);
+      }
+    }
+
     return res.json({
       success: true,
       user: { id: user.id, email: user.email, name: user.name || user.club_name, role: user.role,
               clubId: user.club_id, clubName: user.club_name, clubStatus: user.club_status,
-              trialStatus: user.trial_status, trialEnd: user.trial_end, wizardCompleted },
+              trialStatus: user.trial_status, trialEnd: user.trial_end, wizardCompleted,
+              studentId: studentId },
       wizardData: user.wizard_data || null
     });
   } finally { client.release(); }
