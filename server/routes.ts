@@ -570,6 +570,44 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to generate welcome email' });
     }
   });
+
+  app.post('/api/ai/video-feedback', async (req: Request, res: Response) => {
+    try {
+      const { studentName, challengeName, challengeCategory, score, beltLevel } = req.body;
+      
+      console.log('[AI Video Feedback] Request:', { studentName, challengeName, challengeCategory, score, beltLevel });
+      
+      if (!studentName || !challengeName) {
+        return res.status(400).json({ error: 'Student name and challenge name are required' });
+      }
+      
+      const feedback = await generateTaekBotResponse(
+        `Generate a brief, encouraging coach feedback message (2-3 sentences max) for a martial arts student's video submission.
+
+Student: ${studentName}
+Challenge: ${challengeName}
+Category: ${challengeCategory || 'General'}
+Score: ${score || 'Not specified'}
+Belt Level: ${beltLevel || 'Not specified'}
+
+Write a warm, motivating message that:
+- Acknowledges their effort on this specific challenge
+- Provides one specific encouragement
+- Keeps a professional but friendly coach tone
+- Does NOT mention watching any video
+
+Keep it under 50 words.`,
+        { name: 'Coach', artType: 'martial arts', language: 'English' }
+      );
+      
+      res.json({ feedback });
+    } catch (error: any) {
+      console.error('[AI Video Feedback] Error:', error.message);
+      const fallback = `Great job on the ${req.body.challengeName || 'challenge'}! Your dedication to training is impressive. Keep pushing your limits!`;
+      res.json({ feedback: fallback });
+    }
+  });
+
   app.get('/api/stripe/publishable-key', async (req: Request, res: Response) => {
     try {
       const publishableKey = await getStripePublishableKey();

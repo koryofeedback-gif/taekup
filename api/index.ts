@@ -1207,12 +1207,16 @@ async function handleVideoFeedback(req: VercelRequest, res: VercelResponse) {
   
   const { studentName, challengeName, challengeCategory, score, beltLevel } = parseBody(req);
   
+  console.log('[AI Video Feedback] Request:', { studentName, challengeName, challengeCategory, score, beltLevel });
+  
   if (!studentName || !challengeName) {
+    console.log('[AI Video Feedback] Missing required fields');
     return res.status(400).json({ error: 'Student name and challenge name are required' });
   }
 
   try {
     const gemini = getGeminiClient();
+    console.log('[AI Video Feedback] Gemini client available:', !!gemini);
     if (gemini) {
       const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const prompt = `Generate a brief, encouraging coach feedback message (2-3 sentences max) for a martial arts student's video submission.
