@@ -43,11 +43,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         xpEarned: number;
         isTeam?: boolean;
         isFamily?: boolean;
-    }>>([
-        { id: '1', opponent: 'Alex Kim', challenge: 'Pushups', result: 'win', date: '2 days ago', xpEarned: 50 },
-        { id: '2', opponent: 'Sarah Chen', challenge: 'Plank Hold', result: 'loss', date: '3 days ago', xpEarned: 10 },
-        { id: '3', opponent: 'Mike Park', challenge: 'High Kicks', result: 'win', date: '5 days ago', xpEarned: 75 },
-    ]);
+    }>>([]);
     const [rivalStats, setRivalStats] = useState(() => {
         // Initialize from student's saved stats or use defaults
         if (student.rivalsStats) {
@@ -181,13 +177,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         createdAt: string;
         expiresIn: string;
     }
-    const [pendingChallenges, setPendingChallenges] = useState<PendingChallenge[]>([
-        { id: 'pc1', fromId: 's2', fromName: 'Alex Kim', toId: student.id, toName: student.name, challengeId: 'pushups', challengeName: 'Pushups', challengeXp: 50, status: 'pending', createdAt: '2 hours ago', expiresIn: '22 hours' },
-        { id: 'pc2', fromId: 's3', fromName: 'Sarah Chen', toId: student.id, toName: student.name, challengeId: 'plank', challengeName: 'Plank Hold', challengeXp: 75, status: 'pending', createdAt: '5 hours ago', expiresIn: '19 hours' },
-    ]);
-    const [sentChallenges, setSentChallenges] = useState<PendingChallenge[]>([
-        { id: 'sc1', fromId: student.id, fromName: student.name, toId: 's4', toName: 'Mike Park', challengeId: 'kicks30', challengeName: '30-Second Kicks', challengeXp: 60, status: 'pending', createdAt: '1 day ago', expiresIn: '12 hours' },
-    ]);
+    const [pendingChallenges, setPendingChallenges] = useState<PendingChallenge[]>([]);
+    const [sentChallenges, setSentChallenges] = useState<PendingChallenge[]>([]);
     const [activeChallenge, setActiveChallenge] = useState<PendingChallenge | null>(null);
     const [myScore, setMyScore] = useState<string>('');
     const [showScoreSubmit, setShowScoreSubmit] = useState(false);
@@ -1729,15 +1720,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             { id: 'w3', name: 'Perfect Form', description: 'Win Forms Accuracy with 90%+', icon: '🎯', reward: '200 XP + Master Badge', progress: 0, total: 1, endsIn: '3 days' },
         ];
 
-        // Leaderboard Data
+        // Leaderboard Data - Only show current student (real data from database will be added via API)
         const leaderboard = [
-            { rank: 1, name: 'Alex Kim', xp: 2450, wins: 28, badge: '🥇' },
-            { rank: 2, name: 'Sarah Chen', xp: 2100, wins: 24, badge: '🥈' },
-            { rank: 3, name: 'Mike Park', xp: 1850, wins: 21, badge: '🥉' },
-            { rank: 4, name: student.name, xp: rivalStats.xp, wins: rivalStats.wins, badge: '⭐', isYou: true },
-            { rank: 5, name: 'Emma Lee', xp: 720, wins: 9, badge: '' },
-            { rank: 6, name: 'James Wong', xp: 580, wins: 7, badge: '' },
-        ].sort((a, b) => b.xp - a.xp).map((p, i) => ({ ...p, rank: i + 1 }));
+            { rank: 1, name: student.name, xp: rivalStats.xp, wins: rivalStats.wins, badge: '⭐', isYou: true },
+        ];
 
         // Available Badges
         const allBadges = [
