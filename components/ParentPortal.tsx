@@ -615,6 +615,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         setVideoUploadProgress(0);
         setVideoUploadError(null);
 
+        // DEBUG: Log the student ID being used
+        console.log('[VideoUpload] Student ID:', student.id);
+        console.log('[VideoUpload] Student object:', JSON.stringify(student));
+        console.log('[VideoUpload] Club ID:', localStorage.getItem('taekup_club_id'));
+
         try {
             // Step 1: Get presigned upload URL
             const presignedResponse = await fetch('/api/videos/presigned-upload', {
