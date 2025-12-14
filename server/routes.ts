@@ -573,9 +573,9 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/ai/video-feedback', async (req: Request, res: Response) => {
     try {
-      const { studentName, challengeName, challengeCategory, score, beltLevel } = req.body;
+      const { studentName, challengeName, challengeCategory, score, beltLevel, coachNotes } = req.body;
       
-      console.log('[AI Video Feedback] Request:', { studentName, challengeName, challengeCategory, score, beltLevel });
+      console.log('[AI Video Feedback] Request:', { studentName, challengeName, challengeCategory, score, beltLevel, coachNotes });
       
       if (!studentName || !challengeName) {
         return res.status(400).json({ error: 'Student name and challenge name are required' });
@@ -586,7 +586,8 @@ export function registerRoutes(app: Express) {
         challengeName,
         challengeCategory,
         score,
-        beltLevel
+        beltLevel,
+        coachNotes
       });
       
       res.json({ feedback });

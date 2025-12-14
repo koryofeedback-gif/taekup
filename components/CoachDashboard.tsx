@@ -1510,7 +1510,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     challengeName: video.challenge_name,
                     challengeCategory: video.challenge_category,
                     score: video.score,
-                    beltLevel: video.student_belt
+                    beltLevel: video.student_belt,
+                    coachNotes: coachVideoNotes
                 })
             });
 

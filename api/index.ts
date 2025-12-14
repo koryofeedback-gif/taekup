@@ -1205,14 +1205,15 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
 async function handleVideoFeedback(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
-  const { studentName, challengeName, challengeCategory, score, beltLevel } = parseBody(req);
+  const { studentName, challengeName, challengeCategory, score, beltLevel, coachNotes } = parseBody(req);
   
   if (!studentName || !challengeName) {
     return res.status(400).json({ error: 'Student name and challenge name are required' });
   }
 
   const scoreText = score ? `achieved a score of ${score}` : 'completed';
-  const prompt = `Generate a brief, encouraging coach feedback (2 sentences max) for ${studentName}, a ${beltLevel || 'student'} belt, who ${scoreText} in the "${challengeName}" challenge (${challengeCategory || 'General'} category). 
+  const coachObservation = coachNotes ? `\n\nCoach's observation: "${coachNotes}". Incorporate this feedback naturally.` : '';
+  const prompt = `Generate a brief, encouraging coach feedback (2 sentences max) for ${studentName}, a ${beltLevel || 'student'} belt, who ${scoreText} in the "${challengeName}" challenge (${challengeCategory || 'General'} category).${coachObservation}
 
 IMPORTANT: You MUST mention their specific score of ${score || 'their result'} in your feedback. Be specific about their achievement. Keep it under 40 words.`;
 

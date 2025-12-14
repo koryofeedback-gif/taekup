@@ -564,13 +564,15 @@ export async function generateVideoFeedback(params: {
   challengeCategory?: string;
   score?: number;
   beltLevel?: string;
+  coachNotes?: string;
 }): Promise<string> {
   // Try Gemini first (cost-effective), fallback to OpenAI
   const gemini = getGeminiClient();
   const openai = getOpenAIClient();
   
   const scoreText = params.score ? `achieved a score of ${params.score}` : 'completed';
-  const prompt = `Generate a brief, encouraging coach feedback (2 sentences max) for ${params.studentName}, a ${params.beltLevel || 'student'} belt, who ${scoreText} in the "${params.challengeName}" challenge (${params.challengeCategory || 'General'} category). 
+  const coachObservation = params.coachNotes ? `\n\nCoach's observation: "${params.coachNotes}". Incorporate this feedback naturally.` : '';
+  const prompt = `Generate a brief, encouraging coach feedback (2 sentences max) for ${params.studentName}, a ${params.beltLevel || 'student'} belt, who ${scoreText} in the "${params.challengeName}" challenge (${params.challengeCategory || 'General'} category).${coachObservation}
 
 IMPORTANT: You MUST mention their specific score of ${params.score || 'their result'} in your feedback. Be specific about their achievement. Keep it under 40 words.`;
 
