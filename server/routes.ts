@@ -417,6 +417,23 @@ export function registerRoutes(app: Express) {
         }
       }
 
+      // For parents, look up their linked student(s) to get the database UUID
+      let studentId: string | null = null;
+      if (user.role === 'parent' && user.club_id) {
+        const studentResult = await db.execute(sql`
+          SELECT id FROM students 
+          WHERE club_id = ${user.club_id}::uuid 
+          AND LOWER(parent_email) = ${normalizedEmail}
+          ORDER BY created_at ASC
+          LIMIT 1
+        `);
+        const linkedStudent = (studentResult as any[])[0];
+        if (linkedStudent) {
+          studentId = linkedStudent.id;
+          console.log('[Login] Parent linked to student:', studentId);
+        }
+      }
+
       await db.execute(sql`
         INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
         VALUES ('user_login', 'User Login', ${'User logged in: ' + user.email}, ${user.club_id}::uuid, ${JSON.stringify({ email: user.email, role: user.role })}::jsonb, NOW())
@@ -434,7 +451,8 @@ export function registerRoutes(app: Express) {
           clubStatus: user.club_status,
           trialStatus: user.trial_status,
           trialEnd: user.trial_end,
-          wizardCompleted
+          wizardCompleted,
+          studentId
         },
         wizardData
       });
