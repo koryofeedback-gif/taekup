@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { storage } from './storage';
 import { stripeService } from './stripeService';
 import { getStripePublishableKey, getUncachableStripeClient } from './stripeClient';
-import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail } from './aiService';
+import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail, generateVideoFeedback } from './aiService';
 import emailService from './services/emailService';
 import * as emailAutomation from './services/emailAutomationService';
 import { db } from './db';
@@ -581,30 +581,18 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Student name and challenge name are required' });
       }
       
-      const feedback = await generateTaekBotResponse(
-        `Generate a brief, encouraging coach feedback message (2-3 sentences max) for a martial arts student's video submission.
-
-Student: ${studentName}
-Challenge: ${challengeName}
-Category: ${challengeCategory || 'General'}
-Score: ${score || 'Not specified'}
-Belt Level: ${beltLevel || 'Not specified'}
-
-Write a warm, motivating message that:
-- Acknowledges their effort on this specific challenge
-- Provides one specific encouragement
-- Keeps a professional but friendly coach tone
-- Does NOT mention watching any video
-
-Keep it under 50 words.`,
-        { name: 'Coach', artType: 'martial arts', language: 'English' }
-      );
+      const feedback = await generateVideoFeedback({
+        studentName,
+        challengeName,
+        challengeCategory,
+        score,
+        beltLevel
+      });
       
       res.json({ feedback });
     } catch (error: any) {
       console.error('[AI Video Feedback] Error:', error.message);
-      const fallback = `Great job on the ${req.body.challengeName || 'challenge'}! Your dedication to training is impressive. Keep pushing your limits!`;
-      res.json({ feedback: fallback });
+      res.status(500).json({ error: 'Failed to generate feedback' });
     }
   });
 

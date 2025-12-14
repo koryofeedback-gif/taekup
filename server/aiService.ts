@@ -557,3 +557,55 @@ We look forward to seeing ${params.studentName} in class soon!
 Best regards,
 The ${params.clubName} Team`;
 }
+
+export async function generateVideoFeedback(params: {
+  studentName: string;
+  challengeName: string;
+  challengeCategory?: string;
+  score?: number;
+  beltLevel?: string;
+}): Promise<string> {
+  const gemini = getGeminiClient();
+  
+  if (!gemini) {
+    console.log('[VideoFeedback] No Gemini client, using fallback');
+    return getVideoFeedbackFallback(params);
+  }
+
+  try {
+    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const prompt = `Generate a brief, encouraging coach feedback message (2-3 sentences) for a martial arts student's challenge submission.
+
+Student: ${params.studentName}
+Challenge: ${params.challengeName}
+Category: ${params.challengeCategory || 'General'}
+Score: ${params.score || 'submitted'}
+Belt Level: ${params.beltLevel || 'student'}
+
+Write a warm, motivating message that:
+- Mentions ${params.studentName} by name
+- References the specific ${params.challengeName} challenge
+- Provides encouragement relevant to the ${params.challengeCategory || 'challenge'} category
+- Sounds like a real martial arts coach
+
+Keep it under 50 words. Be specific and unique.`;
+
+    console.log('[VideoFeedback] Generating with Gemini...');
+    const result = await model.generateContent(prompt);
+    const feedback = result.response.text();
+    console.log('[VideoFeedback] Generated:', feedback);
+    return feedback || getVideoFeedbackFallback(params);
+  } catch (error: any) {
+    console.error('[VideoFeedback] Gemini error:', error.message);
+    return getVideoFeedbackFallback(params);
+  }
+}
+
+function getVideoFeedbackFallback(params: { studentName: string; challengeName: string; challengeCategory?: string }): string {
+  const encouragements = [
+    `Outstanding work on the ${params.challengeName}, ${params.studentName}! Your dedication to improving your ${params.challengeCategory || 'skills'} really shows. Keep pushing forward!`,
+    `${params.studentName}, great effort on the ${params.challengeName} challenge! Your commitment to martial arts training is inspiring. Stay focused and keep training hard!`,
+    `Impressive submission, ${params.studentName}! The ${params.challengeName} is a tough challenge and you're showing real progress. Keep up that warrior spirit!`,
+  ];
+  return encouragements[Math.floor(Math.random() * encouragements.length)];
+}
