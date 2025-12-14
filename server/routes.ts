@@ -272,7 +272,7 @@ export function registerRoutes(app: Express) {
 
       const studentsResult = await db.execute(sql`
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-               total_xp, current_streak, stripe_count
+               total_points, current_streak, stripe_count
         FROM students WHERE club_id = ${clubId}::uuid
       `);
 
@@ -301,7 +301,7 @@ export function registerRoutes(app: Express) {
         parentPhone: s.parent_phone,
         beltId: getBeltIdFromName(s.belt),
         birthday: s.birthdate,
-        totalXP: s.total_xp || 0,
+        totalXP: s.total_points || 0,
         currentStreak: s.current_streak || 0,
         stripeCount: s.stripe_count || 0,
         performanceHistory: [],
@@ -399,7 +399,7 @@ export function registerRoutes(app: Express) {
           // CRITICAL: Replace wizard_data students with fresh database students (proper UUIDs)
           const studentsResult = await db.execute(sql`
             SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-                   total_xp, current_streak, stripe_count
+                   total_points, current_streak, stripe_count
             FROM students WHERE club_id = ${user.club_id}::uuid
           `);
           
@@ -422,8 +422,8 @@ export function registerRoutes(app: Express) {
             parentPhone: s.parent_phone,
             beltId: getBeltIdFromName(s.belt),
             birthday: s.birthdate,
-            totalXP: s.total_xp || 0,
-            totalPoints: s.total_xp || 0,
+            totalXP: s.total_points || 0,
+            totalPoints: s.total_points || 0,
             currentStreak: s.current_streak || 0,
             stripeCount: s.stripe_count || 0,
             performanceHistory: [],
