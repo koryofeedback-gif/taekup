@@ -121,24 +121,38 @@ export function registerRoutes(app: Express) {
       for (const coach of coaches) {
         if (coach.email) {
           try {
+            const coachEmail = coach.email.toLowerCase().trim();
             const tempPassword = coach.password || crypto.randomBytes(8).toString('hex');
             const passwordHash = await bcrypt.hash(tempPassword, 10);
             
-            const userResult = await db.execute(sql`
-              INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
-              VALUES (${coach.email.toLowerCase().trim()}, ${passwordHash}, ${coach.name}, 'coach', ${clubId}::uuid, true, NOW())
-              ON CONFLICT (email) DO UPDATE SET 
-                password_hash = COALESCE(NULLIF(${passwordHash}, ''), users.password_hash),
-                name = COALESCE(${coach.name}, users.name),
-                club_id = ${clubId}::uuid,
-                role = 'coach',
-                updated_at = NOW()
-              RETURNING id
+            // Check if user already exists
+            const existingUser = await db.execute(sql`
+              SELECT id FROM users WHERE email = ${coachEmail} LIMIT 1
             `);
-            const userId = (userResult as any[])[0]?.id;
+            
+            let userId;
+            if ((existingUser as any[]).length > 0) {
+              userId = (existingUser as any[])[0].id;
+              await db.execute(sql`
+                UPDATE users SET 
+                  password_hash = ${passwordHash},
+                  name = ${coach.name},
+                  club_id = ${clubId}::uuid,
+                  role = 'coach',
+                  updated_at = NOW()
+                WHERE id = ${userId}::uuid
+              `);
+            } else {
+              const userResult = await db.execute(sql`
+                INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
+                VALUES (${coachEmail}, ${passwordHash}, ${coach.name}, 'coach', ${clubId}::uuid, true, NOW())
+                RETURNING id
+              `);
+              userId = (userResult as any[])[0]?.id;
+            }
             
             const existingCoach = await db.execute(sql`
-              SELECT id FROM coaches WHERE club_id = ${clubId}::uuid AND email = ${coach.email.toLowerCase().trim()} LIMIT 1
+              SELECT id FROM coaches WHERE club_id = ${clubId}::uuid AND email = ${coachEmail} LIMIT 1
             `);
             
             if ((existingCoach as any[]).length > 0) {
@@ -149,10 +163,10 @@ export function registerRoutes(app: Express) {
             } else {
               await db.execute(sql`
                 INSERT INTO coaches (club_id, user_id, name, email, is_active, created_at)
-                VALUES (${clubId}::uuid, ${userId}::uuid, ${coach.name}, ${coach.email.toLowerCase().trim()}, true, NOW())
+                VALUES (${clubId}::uuid, ${userId}::uuid, ${coach.name}, ${coachEmail}, true, NOW())
               `);
             }
-            console.log('[Wizard] Created user account for coach:', coach.email);
+            console.log('[Wizard] Created user account for coach:', coachEmail);
           } catch (coachErr: any) {
             console.error('[Wizard] Error creating coach account:', coach.email, coachErr.message);
           }
@@ -181,15 +195,14 @@ export function registerRoutes(app: Express) {
                 belt = ${student.beltId || 'white'},
                 birthdate = ${birthdateValue}::timestamptz,
                 total_points = ${student.totalPoints || 0},
-                is_active = true,
                 updated_at = NOW()
               WHERE id = ${studentId}::uuid
             `);
           } else {
             const birthdateValue = student.birthday ? student.birthday + 'T00:00:00Z' : null;
             const insertResult = await db.execute(sql`
-              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, is_active, created_at)
-              VALUES (${clubId}::uuid, ${student.name}, ${parentEmail}, ${student.parentName || null}, ${student.parentPhone || null}, ${student.beltId || 'white'}, ${birthdateValue}::timestamptz, ${student.totalPoints || 0}, true, NOW())
+              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, created_at)
+              VALUES (${clubId}::uuid, ${student.name}, ${parentEmail}, ${student.parentName || null}, ${student.parentPhone || null}, ${student.beltId || 'white'}, ${birthdateValue}::timestamptz, ${student.totalPoints || 0}, NOW())
               RETURNING id
             `);
             studentId = (insertResult as any[])[0]?.id;
@@ -255,7 +268,7 @@ export function registerRoutes(app: Express) {
       const studentsResult = await db.execute(sql`
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
                total_xp, current_streak, stripe_count
-        FROM students WHERE club_id = ${clubId}::uuid AND is_active = true
+        FROM students WHERE club_id = ${clubId}::uuid
       `);
 
       const coachesResult = await db.execute(sql`

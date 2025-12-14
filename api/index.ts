@@ -339,7 +339,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
     const studentsResult = await client.query(
       `SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
               total_xp, current_streak, stripe_count
-       FROM students WHERE club_id = $1::uuid AND is_active = true`,
+       FROM students WHERE club_id = $1::uuid`,
       [clubId]
     );
 
@@ -445,29 +445,43 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
     for (const coach of coaches) {
       if (coach.email) {
         try {
-          // Hash password if provided, otherwise use a temporary one
+          const coachEmail = coach.email.toLowerCase().trim();
           const tempPassword = coach.password || crypto.randomBytes(8).toString('hex');
           const passwordHash = await bcrypt.hash(tempPassword, 10);
           
-          // Create or update user account for coach
-          const userResult = await client.query(
-            `INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
-             VALUES ($1, $2, $3, 'coach', $4::uuid, true, NOW())
-             ON CONFLICT (email) DO UPDATE SET 
-               password_hash = COALESCE(NULLIF($2, ''), users.password_hash),
-               name = COALESCE($3, users.name),
-               club_id = $4::uuid,
-               role = 'coach',
-               updated_at = NOW()
-             RETURNING id`,
-            [coach.email.toLowerCase().trim(), passwordHash, coach.name, clubId]
+          // Check if user already exists
+          const existingUser = await client.query(
+            `SELECT id FROM users WHERE email = $1 LIMIT 1`,
+            [coachEmail]
           );
-          const userId = userResult.rows[0]?.id;
+          
+          let userId;
+          if (existingUser.rows.length > 0) {
+            userId = existingUser.rows[0].id;
+            await client.query(
+              `UPDATE users SET 
+                 password_hash = $1,
+                 name = $2,
+                 club_id = $3::uuid,
+                 role = 'coach',
+                 updated_at = NOW()
+               WHERE id = $4::uuid`,
+              [passwordHash, coach.name, clubId, userId]
+            );
+          } else {
+            const userResult = await client.query(
+              `INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
+               VALUES ($1, $2, $3, 'coach', $4::uuid, true, NOW())
+               RETURNING id`,
+              [coachEmail, passwordHash, coach.name, clubId]
+            );
+            userId = userResult.rows[0]?.id;
+          }
           
           // Check if coach exists, then create or update
           const existingCoach = await client.query(
             `SELECT id FROM coaches WHERE club_id = $1::uuid AND email = $2 LIMIT 1`,
-            [clubId, coach.email.toLowerCase().trim()]
+            [clubId, coachEmail]
           );
           
           if (existingCoach.rows.length > 0) {
@@ -480,11 +494,11 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
             await client.query(
               `INSERT INTO coaches (club_id, user_id, name, email, is_active, created_at)
                VALUES ($1::uuid, $2::uuid, $3, $4, true, NOW())`,
-              [clubId, userId, coach.name, coach.email.toLowerCase().trim()]
+              [clubId, userId, coach.name, coachEmail]
             );
           }
           
-          console.log('[Wizard] Created user account for coach:', coach.email);
+          console.log('[Wizard] Created user account for coach:', coachEmail);
         } catch (coachErr: any) {
           console.error('[Wizard] Error creating coach account:', coach.email, coachErr.message);
         }
@@ -513,7 +527,6 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
                belt = COALESCE($3, belt),
                birthdate = COALESCE($4::timestamptz, birthdate),
                total_points = COALESCE($5, total_points),
-               is_active = true,
                updated_at = NOW()
              WHERE id = $6::uuid`,
             [
@@ -527,8 +540,8 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
           );
         } else {
           const insertResult = await client.query(
-            `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, is_active, created_at)
-             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, true, NOW())
+            `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, created_at)
+             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, NOW())
              RETURNING id`,
             [
               clubId, 
