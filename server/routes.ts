@@ -110,11 +110,16 @@ export function registerRoutes(app: Express) {
         WHERE id = ${clubId}::uuid
       `);
 
-      await db.execute(sql`
-        INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
-        VALUES (${clubId}::uuid, true, NOW())
-        ON CONFLICT (club_id) DO UPDATE SET wizard_completed = true
-      `);
+      // Try to update onboarding_progress (may not exist on all databases)
+      try {
+        await db.execute(sql`
+          INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
+          VALUES (${clubId}::uuid, true, NOW())
+          ON CONFLICT (club_id) DO UPDATE SET wizard_completed = true
+        `);
+      } catch (onboardingErr: any) {
+        console.log('[Wizard] onboarding_progress table may not exist, continuing:', onboardingErr);
+      }
 
       // Create user accounts for coaches
       const coaches = wizardData.coaches || [];

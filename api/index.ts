@@ -433,12 +433,17 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
       [JSON.stringify(wizardData), clubId]
     );
 
-    await client.query(
-      `INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
-       VALUES ($1::uuid, true, NOW())
-       ON CONFLICT (club_id) DO UPDATE SET wizard_completed = true`,
-      [clubId]
-    );
+    // Try to update onboarding_progress (may not exist on all databases)
+    try {
+      await client.query(
+        `INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
+         VALUES ($1::uuid, true, NOW())
+         ON CONFLICT (club_id) DO UPDATE SET wizard_completed = true`,
+        [clubId]
+      );
+    } catch (onboardingErr: any) {
+      console.log('[Wizard] onboarding_progress table may not exist, continuing:', onboardingErr.message);
+    }
 
     // Create user accounts for coaches
     const coaches = wizardData.coaches || [];
