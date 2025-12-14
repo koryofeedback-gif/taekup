@@ -393,8 +393,57 @@ export function registerRoutes(app: Express) {
         );
         const clubData = (clubDataResult as any[])[0];
         if (clubData?.wizard_data && Object.keys(clubData.wizard_data).length > 0) {
-          wizardData = clubData.wizard_data;
+          wizardData = { ...clubData.wizard_data };
           wizardCompleted = true;
+          
+          // CRITICAL: Replace wizard_data students with fresh database students (proper UUIDs)
+          const studentsResult = await db.execute(sql`
+            SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
+                   total_xp, current_streak, stripe_count
+            FROM students WHERE club_id = ${user.club_id}::uuid
+          `);
+          
+          const savedBelts = wizardData.belts || [];
+          const getBeltIdFromName = (beltName: string): string => {
+            if (!beltName) return savedBelts[0]?.id || 'white';
+            const matchedBelt = savedBelts.find((b: any) => 
+              b.name?.toLowerCase() === beltName.toLowerCase() ||
+              b.id?.toLowerCase() === beltName.toLowerCase()
+            );
+            return matchedBelt?.id || savedBelts[0]?.id || 'white';
+          };
+          
+          // Replace students with database records (with proper UUIDs)
+          wizardData.students = (studentsResult as any[]).map(s => ({
+            id: s.id,
+            name: s.name,
+            parentEmail: s.parent_email,
+            parentName: s.parent_name,
+            parentPhone: s.parent_phone,
+            beltId: getBeltIdFromName(s.belt),
+            birthday: s.birthdate,
+            totalXP: s.total_xp || 0,
+            totalPoints: s.total_xp || 0,
+            currentStreak: s.current_streak || 0,
+            stripeCount: s.stripe_count || 0,
+            performanceHistory: [],
+            homeDojo: { character: [], chores: [], school: [], health: [] }
+          }));
+          
+          // Also fetch coaches with proper UUIDs
+          const coachesResult = await db.execute(sql`
+            SELECT id, name, email
+            FROM coaches WHERE club_id = ${user.club_id}::uuid AND is_active = true
+          `);
+          wizardData.coaches = (coachesResult as any[]).map(c => ({
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            location: '',
+            assignedClasses: []
+          }));
+          
+          console.log('[Login] Replaced wizard students/coaches with database records');
         }
         
         // Also check onboarding_progress table
