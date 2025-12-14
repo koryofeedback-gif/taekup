@@ -1857,11 +1857,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <div className="bg-gradient-to-r from-red-900 to-black p-4 rounded-xl border border-red-600/50 text-center relative overflow-hidden">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
                         
-                        {/* Connection Status */}
-                        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
-                            <div className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`}></div>
-                            <span className="text-[8px] text-gray-400 uppercase">{isSupabaseConfigured ? 'Live' : 'Demo'}</span>
-                        </div>
                         
                         <h3 className="text-2xl font-black text-white italic tracking-tighter relative z-10">DOJANG RIVALS</h3>
                         <p className="text-red-400 font-bold uppercase tracking-widest text-[10px] relative z-10">Challenge. Compete. Win.</p>
