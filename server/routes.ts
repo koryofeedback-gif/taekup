@@ -1477,8 +1477,22 @@ export function registerRoutes(app: Express) {
     try {
       const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, score } = req.body;
       
+      console.log('[Videos] Save request:', { studentId, clubId, challengeId, challengeName });
+      
       if (!studentId || !clubId || !challengeId || !videoUrl) {
+        console.log('[Videos] Missing fields:', { studentId: !!studentId, clubId: !!clubId, challengeId: !!challengeId, videoUrl: !!videoUrl });
         return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        console.log('[Videos] Invalid student ID format:', studentId);
+        return res.status(400).json({ error: 'Invalid student ID format. Please log out and log back in.' });
+      }
+      if (!uuidRegex.test(clubId)) {
+        console.log('[Videos] Invalid club ID format:', clubId);
+        return res.status(400).json({ error: 'Invalid club ID format. Please log out and log back in.' });
       }
 
       const result = await db.execute(sql`
