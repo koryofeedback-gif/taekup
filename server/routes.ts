@@ -1531,7 +1531,8 @@ export function registerRoutes(app: Express) {
       res.json({ success: true, videoId: video?.id });
     } catch (error: any) {
       console.error('[Videos] Create error:', error.message);
-      res.status(500).json({ error: 'Failed to save video record' });
+      console.error('[Videos] Full error:', error);
+      res.status(500).json({ error: `Failed to save video record: ${error.message}` });
     }
   });
 
