@@ -371,6 +371,31 @@ const App: React.FC = () => {
                             console.log('[Login] Using localStorage wizard data after fetch error');
                         }
                     }
+                } else {
+                    // CRITICAL: For non-owners (coaches, parents), update React state with fresh wizard data
+                    // Login.tsx saves fresh wizard data to localStorage, we need to pick it up here
+                    const freshWizardData = localStorage.getItem('taekup_wizard_data');
+                    if (freshWizardData) {
+                        try {
+                            const parsed = JSON.parse(freshWizardData);
+                            setFinalWizardData(parsed);
+                            console.log('[Login] Updated wizard data state with fresh localStorage data for', userType);
+                        } catch (e) {
+                            console.error('[Login] Failed to parse fresh wizard data:', e);
+                        }
+                    }
+                }
+            } else {
+                // No clubId - still try to refresh wizard data from localStorage for all user types
+                const freshWizardData = localStorage.getItem('taekup_wizard_data');
+                if (freshWizardData) {
+                    try {
+                        const parsed = JSON.parse(freshWizardData);
+                        setFinalWizardData(parsed);
+                        console.log('[Login] Updated wizard data state from localStorage for', userType);
+                    } catch (e) {
+                        console.error('[Login] Failed to parse fresh wizard data:', e);
+                    }
                 }
             }
             setIsLoadingData(false);
