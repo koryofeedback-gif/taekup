@@ -565,31 +565,49 @@ export async function generateVideoFeedback(params: {
   score?: number;
   beltLevel?: string;
 }): Promise<string> {
+  // Try Gemini first (cost-effective), fallback to OpenAI
+  const gemini = getGeminiClient();
   const openai = getOpenAIClient();
   
-  if (!openai) {
-    console.log('[VideoFeedback] No OpenAI client, using fallback');
-    return getVideoFeedbackFallback(params);
+  const prompt = `Generate a brief, encouraging coach feedback message (2 sentences max) for a martial arts student named ${params.studentName} who completed the "${params.challengeName}" challenge in the ${params.challengeCategory || 'General'} category. Their belt level is ${params.beltLevel || 'student'}. Be warm, motivating, and specific. Mention their name and the challenge. Keep it under 40 words.`;
+
+  // Try Gemini first
+  if (gemini) {
+    try {
+      console.log('[VideoFeedback] Trying Gemini...');
+      const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(prompt);
+      const feedback = result.response.text();
+      if (feedback) {
+        console.log('[VideoFeedback] Gemini success');
+        return feedback;
+      }
+    } catch (error: any) {
+      console.log('[VideoFeedback] Gemini failed, trying OpenAI...');
+    }
   }
 
-  try {
-    const prompt = `Generate a brief, encouraging coach feedback message (2 sentences max) for a martial arts student named ${params.studentName} who completed the "${params.challengeName}" challenge in the ${params.challengeCategory || 'General'} category. Their belt level is ${params.beltLevel || 'student'}. Be warm, motivating, and specific. Mention their name and the challenge. Keep it under 40 words.`;
-
-    console.log('[VideoFeedback] Generating with OpenAI...');
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 100,
-      temperature: 0.8,
-    });
-
-    const feedback = response.choices[0]?.message?.content?.trim();
-    console.log('[VideoFeedback] Generated:', feedback);
-    return feedback || getVideoFeedbackFallback(params);
-  } catch (error: any) {
-    console.error('[VideoFeedback] OpenAI error:', error.message);
-    return getVideoFeedbackFallback(params);
+  // Fallback to OpenAI
+  if (openai) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 100,
+        temperature: 0.8,
+      });
+      const feedback = response.choices[0]?.message?.content?.trim();
+      if (feedback) {
+        console.log('[VideoFeedback] OpenAI success');
+        return feedback;
+      }
+    } catch (error: any) {
+      console.error('[VideoFeedback] OpenAI error:', error.message);
+    }
   }
+
+  console.log('[VideoFeedback] Using fallback');
+  return getVideoFeedbackFallback(params);
 }
 
 function getVideoFeedbackFallback(params: { studentName: string; challengeName: string; challengeCategory?: string }): string {

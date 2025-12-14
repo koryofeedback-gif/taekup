@@ -1207,47 +1207,49 @@ async function handleVideoFeedback(req: VercelRequest, res: VercelResponse) {
   
   const { studentName, challengeName, challengeCategory, score, beltLevel } = parseBody(req);
   
-  console.log('[AI Video Feedback] Request:', { studentName, challengeName, challengeCategory, score, beltLevel });
-  
   if (!studentName || !challengeName) {
-    console.log('[AI Video Feedback] Missing required fields');
     return res.status(400).json({ error: 'Student name and challenge name are required' });
   }
 
-  try {
-    const gemini = getGeminiClient();
-    console.log('[AI Video Feedback] Gemini client available:', !!gemini);
-    if (gemini) {
+  const prompt = `Generate a brief, encouraging coach feedback message (2 sentences max) for a martial arts student named ${studentName} who completed the "${challengeName}" challenge in the ${challengeCategory || 'General'} category. Their belt level is ${beltLevel || 'student'}. Be warm, motivating, and specific. Mention their name and the challenge. Keep it under 40 words.`;
+
+  // Try Gemini first (cost-effective)
+  const gemini = getGeminiClient();
+  if (gemini) {
+    try {
       const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const prompt = `Generate a brief, encouraging coach feedback message (2-3 sentences max) for a martial arts student's video submission.
-
-Student: ${studentName}
-Challenge: ${challengeName}
-Category: ${challengeCategory || 'General'}
-Score: ${score || 'Not specified'}
-Belt Level: ${beltLevel || 'Not specified'}
-
-Write a warm, motivating message that:
-- Acknowledges their effort on this specific challenge
-- Provides one specific encouragement
-- Keeps a professional but friendly coach tone
-- Does NOT mention watching any video
-
-Keep it under 50 words.`;
-
       const result = await model.generateContent(prompt);
       const feedback = result.response.text();
-      return res.json({ feedback });
+      if (feedback) return res.json({ feedback });
+    } catch (error: any) {
+      console.log('[VideoFeedback] Gemini failed, trying OpenAI...');
     }
-    
-    // Fallback if no AI available
-    const fallback = `Great job on the ${challengeName} challenge, ${studentName}! Your dedication to training is impressive. Keep pushing your limits!`;
-    return res.json({ feedback: fallback });
-  } catch (error: any) {
-    console.error('[AI Video Feedback] Error:', error.message);
-    const fallback = `Excellent effort on the ${challengeName} challenge! Keep up the great work, ${studentName}!`;
-    return res.json({ feedback: fallback });
   }
+
+  // Fallback to OpenAI
+  const openai = getOpenAIClient();
+  if (openai) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 100,
+        temperature: 0.8,
+      });
+      const feedback = response.choices[0]?.message?.content?.trim();
+      if (feedback) return res.json({ feedback });
+    } catch (error: any) {
+      console.error('[VideoFeedback] OpenAI error:', error.message);
+    }
+  }
+
+  // Final fallback
+  const fallbacks = [
+    `Outstanding work on the ${challengeName}, ${studentName}! Your dedication really shows. Keep pushing forward!`,
+    `${studentName}, great effort on the ${challengeName} challenge! Your commitment to martial arts is inspiring!`,
+    `Impressive submission, ${studentName}! The ${challengeName} is tough and you're showing real progress!`,
+  ];
+  return res.json({ feedback: fallbacks[Math.floor(Math.random() * fallbacks.length)] });
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
