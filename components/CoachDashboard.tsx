@@ -1426,6 +1426,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     }, [activeView]);
 
     const handleApproveVideo = async (video: any) => {
+        console.log('[Videos] Approving video:', video.id);
         setIsProcessingVideo(true);
         try {
             const response = await fetch(`/api/videos/${video.id}/verify`, {
@@ -1438,6 +1439,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 })
             });
 
+            const data = await response.json();
+            console.log('[Videos] Approve response:', response.status, data);
+
             if (response.ok) {
                 setPendingVideos(prev => prev.filter(v => v.id !== video.id));
                 setReviewingVideo(null);
@@ -1445,6 +1449,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 setXpToAward(50);
                 setCurrentVideoPlaying(null);
                 setConfirmation({ show: true, message: `Video approved! +${xpToAward} XP awarded.` });
+                setTimeout(() => setConfirmation({ show: false, message: '' }), 3000);
+            } else {
+                console.error('[Videos] Approve failed:', data.error);
+                setConfirmation({ show: true, message: `Error: ${data.error || 'Failed to approve'}` });
                 setTimeout(() => setConfirmation({ show: false, message: '' }), 3000);
             }
         } catch (error) {
@@ -1455,6 +1463,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     };
 
     const handleRejectVideo = async (video: any) => {
+        console.log('[Videos] Rejecting video:', video.id);
         setIsProcessingVideo(true);
         try {
             const response = await fetch(`/api/videos/${video.id}/verify`, {
@@ -1467,12 +1476,19 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 })
             });
 
+            const data = await response.json();
+            console.log('[Videos] Reject response:', response.status, data);
+
             if (response.ok) {
                 setPendingVideos(prev => prev.filter(v => v.id !== video.id));
                 setReviewingVideo(null);
                 setCoachVideoNotes('');
                 setCurrentVideoPlaying(null);
                 setConfirmation({ show: true, message: 'Video rejected.' });
+                setTimeout(() => setConfirmation({ show: false, message: '' }), 3000);
+            } else {
+                console.error('[Videos] Reject failed:', data.error);
+                setConfirmation({ show: true, message: `Error: ${data.error || 'Failed to reject'}` });
                 setTimeout(() => setConfirmation({ show: false, message: '' }), 3000);
             }
         } catch (error) {
@@ -2012,20 +2028,12 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                         <video 
                                                             src={video.video_url}
                                                             className="w-full h-full object-contain"
-                                                            controls={currentVideoPlaying === video.id}
-                                                            onClick={() => setCurrentVideoPlaying(video.id)}
-                                                            poster=""
+                                                            controls
+                                                            crossOrigin="anonymous"
+                                                            playsInline
+                                                            preload="metadata"
+                                                            onError={(e) => console.error('[Video] Load error:', video.video_url, e)}
                                                         />
-                                                        {currentVideoPlaying !== video.id && (
-                                                            <div 
-                                                                onClick={() => setCurrentVideoPlaying(video.id)}
-                                                                className="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer hover:bg-black/30 transition-colors"
-                                                            >
-                                                                <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center">
-                                                                    <span className="text-3xl ml-1">▶</span>
-                                                                </div>
-                                                            </div>
-                                                        )}
                                                     </div>
 
                                                     {/* Video Info */}
