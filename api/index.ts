@@ -1044,7 +1044,7 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
     // If approved, award XP to student
     if (status === 'approved' && xpAwarded > 0) {
       await client.query(
-        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+        `UPDATE students SET total_points = COALESCE(total_points, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
         [xpAwarded, video.student_id]
       );
     }
