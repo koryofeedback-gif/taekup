@@ -506,14 +506,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     const fetchCommunityVideos = async () => {
         const clubId = localStorage.getItem('taekup_club_id') || sessionStorage.getItem('impersonate_clubId');
-        if (!clubId) return;
+        console.log('[CommunityVideos] Fetching with clubId:', clubId, 'studentId:', student.id);
+        if (!clubId) {
+            console.warn('[CommunityVideos] No clubId found in localStorage');
+            return;
+        }
         
         setIsLoadingCommunity(true);
         try {
             const response = await fetch(`/api/videos/approved/${clubId}?studentId=${student.id}`);
+            console.log('[CommunityVideos] API response status:', response.status);
             if (response.ok) {
                 const videos = await response.json();
-                setCommunityVideos(videos.map((v: any) => ({
+                console.log('[CommunityVideos] Received videos:', videos.length, videos.map((v: any) => ({ id: v.id, studentName: v.student_name, studentId: v.student_id })));
+                const mapped = videos.map((v: any) => ({
                     id: v.id,
                     studentId: v.student_id,
                     studentName: v.student_name,
@@ -524,7 +530,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     voteCount: v.vote_count || 0,
                     hasVoted: v.has_voted || false,
                     createdAt: v.created_at
-                })));
+                }));
+                console.log('[CommunityVideos] After filter (excluding current student):', mapped.filter(v => v.studentId !== student.id).length);
+                setCommunityVideos(mapped);
             }
         } catch (error) {
             console.error('Failed to fetch community videos:', error);
