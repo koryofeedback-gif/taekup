@@ -2029,10 +2029,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                             src={video.video_url}
                                                             className="w-full h-full object-contain"
                                                             controls
-                                                            crossOrigin="anonymous"
                                                             playsInline
-                                                            preload="metadata"
-                                                            onError={(e) => console.error('[Video] Load error:', video.video_url, e)}
+                                                            preload="auto"
                                                         />
                                                     </div>
 
