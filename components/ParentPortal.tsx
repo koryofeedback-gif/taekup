@@ -652,13 +652,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
             // Step 3: Save video record to database
             const challengeInfo = getChallengeInfo(selectedChallenge);
+            const clubId = localStorage.getItem('taekup_club_id') || sessionStorage.getItem('impersonate_clubId');
+            
+            if (!clubId) {
+                throw new Error('Club information not found. Please log in again.');
+            }
 
             const saveResponse = await fetch('/api/videos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     studentId: student.id,
-                    clubId: student.id, // Use student ID as club reference for now
+                    clubId: clubId,
                     challengeId: selectedChallenge,
                     challengeName: challengeInfo.name,
                     challengeCategory: challengeInfo.category,
