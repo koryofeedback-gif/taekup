@@ -993,6 +993,71 @@ async function handleGetStudentVideos(req: VercelRequest, res: VercelResponse, s
   }
 }
 
+async function handleGetPendingVideos(req: VercelRequest, res: VercelResponse, clubId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT cv.*, s.name as student_name, s.belt as student_belt
+       FROM challenge_videos cv
+       JOIN students s ON cv.student_id = s.id
+       WHERE cv.club_id = $1::uuid AND cv.status = 'pending'
+       ORDER BY cv.created_at DESC`,
+      [clubId]
+    );
+    
+    return res.json(result.rows);
+  } catch (error: any) {
+    console.error('[Videos] Fetch pending error:', error.message);
+    return res.status(500).json({ error: 'Failed to get pending videos' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoId: string) {
+  if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { status, coachNotes, xpAwarded } = parseBody(req);
+  
+  if (!status || !['approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Valid status (approved/rejected) is required' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `UPDATE challenge_videos 
+       SET status = $1, coach_notes = $2, xp_awarded = $3, verified_at = NOW(), updated_at = NOW()
+       WHERE id = $4::uuid
+       RETURNING *`,
+      [status, coachNotes || '', xpAwarded || 0, videoId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    const video = result.rows[0];
+    
+    // If approved, award XP to student
+    if (status === 'approved' && xpAwarded > 0) {
+      await client.query(
+        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+        [xpAwarded, video.student_id]
+      );
+    }
+    
+    return res.json({ success: true, video: result.rows[0] });
+  } catch (error: any) {
+    console.error('[Videos] Verify error:', error.message);
+    return res.status(500).json({ error: 'Failed to verify video' });
+  } finally {
+    client.release();
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -1031,6 +1096,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const studentVideosMatch = path.match(/^\/videos\/student\/([^/]+)\/?$/);
     if (studentVideosMatch) return await handleGetStudentVideos(req, res, studentVideosMatch[1]);
+    
+    const pendingVideosMatch = path.match(/^\/videos\/pending\/([^/]+)\/?$/);
+    if (pendingVideosMatch) return await handleGetPendingVideos(req, res, pendingVideosMatch[1]);
+    
+    const verifyVideoMatch = path.match(/^\/videos\/([^/]+)\/verify\/?$/);
+    if (verifyVideoMatch) return await handleVerifyVideo(req, res, verifyVideoMatch[1]);
 
     return res.status(404).json({ error: 'Not found', path });
   } catch (error: any) {
