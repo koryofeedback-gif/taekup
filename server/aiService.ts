@@ -565,38 +565,29 @@ export async function generateVideoFeedback(params: {
   score?: number;
   beltLevel?: string;
 }): Promise<string> {
-  const gemini = getGeminiClient();
+  const openai = getOpenAIClient();
   
-  if (!gemini) {
-    console.log('[VideoFeedback] No Gemini client, using fallback');
+  if (!openai) {
+    console.log('[VideoFeedback] No OpenAI client, using fallback');
     return getVideoFeedbackFallback(params);
   }
 
   try {
-    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `Generate a brief, encouraging coach feedback message (2-3 sentences) for a martial arts student's challenge submission.
+    const prompt = `Generate a brief, encouraging coach feedback message (2 sentences max) for a martial arts student named ${params.studentName} who completed the "${params.challengeName}" challenge in the ${params.challengeCategory || 'General'} category. Their belt level is ${params.beltLevel || 'student'}. Be warm, motivating, and specific. Mention their name and the challenge. Keep it under 40 words.`;
 
-Student: ${params.studentName}
-Challenge: ${params.challengeName}
-Category: ${params.challengeCategory || 'General'}
-Score: ${params.score || 'submitted'}
-Belt Level: ${params.beltLevel || 'student'}
+    console.log('[VideoFeedback] Generating with OpenAI...');
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 100,
+      temperature: 0.8,
+    });
 
-Write a warm, motivating message that:
-- Mentions ${params.studentName} by name
-- References the specific ${params.challengeName} challenge
-- Provides encouragement relevant to the ${params.challengeCategory || 'challenge'} category
-- Sounds like a real martial arts coach
-
-Keep it under 50 words. Be specific and unique.`;
-
-    console.log('[VideoFeedback] Generating with Gemini...');
-    const result = await model.generateContent(prompt);
-    const feedback = result.response.text();
+    const feedback = response.choices[0]?.message?.content?.trim();
     console.log('[VideoFeedback] Generated:', feedback);
     return feedback || getVideoFeedbackFallback(params);
   } catch (error: any) {
-    console.error('[VideoFeedback] Gemini error:', error.message);
+    console.error('[VideoFeedback] OpenAI error:', error.message);
     return getVideoFeedbackFallback(params);
   }
 }
