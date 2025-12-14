@@ -662,7 +662,7 @@ async function handleWelcomeEmail(req: VercelRequest, res: VercelResponse) {
 
 async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { clubId, name, parentEmail, parentName, parentPhone, belt, birthdate } = parseBody(req);
+  const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate } = parseBody(req);
 
   if (!clubId || !name) {
     return res.status(400).json({ error: 'Club ID and student name are required' });
@@ -684,6 +684,28 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
       [clubId, name, parentEmail || null, parentName || null, parentPhone || null, belt || 'White', birthdate ? birthdate + 'T00:00:00Z' : null]
     );
     const student = studentResult.rows[0];
+
+    // Create parent user account if email and password provided
+    if (parentEmail && parentPassword) {
+      try {
+        const parentPasswordHash = await bcrypt.hash(parentPassword, 10);
+        const existingParent = await client.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [parentEmail.toLowerCase()]);
+        if (existingParent.rows.length > 0) {
+          await client.query(
+            `UPDATE users SET password_hash = $1, name = $2, club_id = $3::uuid, role = 'parent', updated_at = NOW() WHERE id = $4::uuid`,
+            [parentPasswordHash, parentName || name + "'s Parent", clubId, existingParent.rows[0].id]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at) VALUES ($1, $2, $3, 'parent', $4::uuid, true, NOW())`,
+            [parentEmail.toLowerCase(), parentPasswordHash, parentName || name + "'s Parent", clubId]
+          );
+        }
+        console.log('[AddStudent] Created parent user account:', parentEmail);
+      } catch (parentErr: any) {
+        console.error('[AddStudent] Error creating parent account:', parentErr.message);
+      }
+    }
 
     const age = birthdate ? Math.floor((Date.now() - new Date(birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
 
@@ -733,7 +755,7 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
 
 async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { clubId, name, email, location, assignedClasses } = parseBody(req);
+  const { clubId, name, email, location, assignedClasses, password } = parseBody(req);
 
   if (!clubId || !name || !email) {
     return res.status(400).json({ error: 'Club ID, coach name, and email are required' });
@@ -745,7 +767,7 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
     const club = clubResult.rows[0];
     if (!club) return res.status(404).json({ error: 'Club not found' });
 
-    const tempPassword = crypto.randomBytes(8).toString('hex');
+    const tempPassword = password || crypto.randomBytes(8).toString('hex');
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
     // Insert into users table for authentication

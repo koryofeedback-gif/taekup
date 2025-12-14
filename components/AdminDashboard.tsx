@@ -2216,6 +2216,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         parentEmail: tempStudent.parentEmail,
                         parentName: tempStudent.parentName,
                         parentPhone: tempStudent.parentPhone,
+                        parentPassword: tempStudent.parentPassword,
                         belt: belt?.name || 'White',
                         birthdate: tempStudent.birthday
                     })
@@ -2286,6 +2287,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         clubId,
                         name: tempCoach.name,
                         email: tempCoach.email,
+                        password: tempCoach.password,
                         location: tempCoach.location || data.branchNames?.[0] || 'Main Location',
                         assignedClasses: []
                     })
@@ -2490,7 +2492,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             <div className="border-t border-gray-600 pt-4">
                                 <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent Info</p>
                                 <input type="text" placeholder="Parent Name" className="w-full bg-gray-700 rounded p-2 text-white mb-2" onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} />
-                                <input type="email" placeholder="Parent Email" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} />
+                                <input type="email" placeholder="Parent Email" className="w-full bg-gray-700 rounded p-2 text-white mb-2" onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} />
+                                <input type="password" placeholder="Parent Password (for login)" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, parentPassword: e.target.value})} />
                             </div>
                             {data.clubSponsoredPremium && (
                                 <p className="text-xs text-indigo-300 bg-indigo-900/20 p-2 rounded">
