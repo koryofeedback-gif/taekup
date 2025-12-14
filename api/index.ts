@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import sgMail from '@sendgrid/mail';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const pool = new Pool({
@@ -1007,7 +1007,28 @@ async function handleGetPendingVideos(req: VercelRequest, res: VercelResponse, c
       [clubId]
     );
     
-    return res.json(result.rows);
+    // Generate presigned URLs for each video
+    const s3Client = getS3Client();
+    const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
+    
+    const videosWithSignedUrls = await Promise.all(result.rows.map(async (video) => {
+      if (s3Client && bucketName && video.video_key) {
+        try {
+          const command = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: video.video_key,
+          });
+          const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+          return { ...video, video_url: signedUrl };
+        } catch (e) {
+          console.error('[Videos] Failed to generate signed URL:', e);
+          return video;
+        }
+      }
+      return video;
+    }));
+    
+    return res.json(videosWithSignedUrls);
   } catch (error: any) {
     console.error('[Videos] Fetch pending error:', error.message);
     return res.status(500).json({ error: 'Failed to get pending videos' });
