@@ -90,6 +90,7 @@ export const students = pgTable('students', {
   joinDate: timestamp('join_date', { withTimezone: true }).defaultNow(),
   lastClassAt: timestamp('last_class_at', { withTimezone: true }),
   totalPoints: integer('total_points').default(0),
+  totalXp: integer('total_xp').default(0),
   premiumStatus: premiumStatusEnum('premium_status').default('none'),
   premiumStartedAt: timestamp('premium_started_at', { withTimezone: true }),
   premiumCanceledAt: timestamp('premium_canceled_at', { withTimezone: true }),

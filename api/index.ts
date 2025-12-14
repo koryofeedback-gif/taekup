@@ -354,7 +354,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
 
     const studentsResult = await client.query(
       `SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-              total_points, current_streak, stripe_count
+              total_points, total_xp, current_streak, stripe_count
        FROM students WHERE club_id = $1::uuid`,
       [clubId]
     );
@@ -385,7 +385,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       parentPhone: s.parent_phone,
       beltId: getBeltIdFromName(s.belt),
       birthday: s.birthdate,
-      totalXP: s.total_points || 0,
+      totalXP: s.total_xp || 0,
       totalPoints: s.total_points || 0,
       currentStreak: s.current_streak || 0,
       stripeCount: s.stripe_count || 0,
@@ -1188,7 +1188,7 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
     // If approved, award XP to student
     if (status === 'approved' && xpAwarded > 0) {
       await client.query(
-        `UPDATE students SET total_points = COALESCE(total_points, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
         [xpAwarded, video.student_id]
       );
     }

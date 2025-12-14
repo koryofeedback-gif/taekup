@@ -272,7 +272,7 @@ export function registerRoutes(app: Express) {
 
       const studentsResult = await db.execute(sql`
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-               total_points, current_streak, stripe_count
+               total_points, total_xp, current_streak, stripe_count
         FROM students WHERE club_id = ${clubId}::uuid
       `);
 
@@ -301,7 +301,8 @@ export function registerRoutes(app: Express) {
         parentPhone: s.parent_phone,
         beltId: getBeltIdFromName(s.belt),
         birthday: s.birthdate,
-        totalXP: s.total_points || 0,
+        totalXP: s.total_xp || 0,
+        totalPoints: s.total_points || 0,
         currentStreak: s.current_streak || 0,
         stripeCount: s.stripe_count || 0,
         performanceHistory: [],
@@ -399,7 +400,7 @@ export function registerRoutes(app: Express) {
           // CRITICAL: Replace wizard_data students with fresh database students (proper UUIDs)
           const studentsResult = await db.execute(sql`
             SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-                   total_points, current_streak, stripe_count
+                   total_points, total_xp, current_streak, stripe_count
             FROM students WHERE club_id = ${user.club_id}::uuid
           `);
           
@@ -422,7 +423,7 @@ export function registerRoutes(app: Express) {
             parentPhone: s.parent_phone,
             beltId: getBeltIdFromName(s.belt),
             birthday: s.birthdate,
-            totalXP: s.total_points || 0,
+            totalXP: s.total_xp || 0,
             totalPoints: s.total_points || 0,
             currentStreak: s.current_streak || 0,
             stripeCount: s.stripe_count || 0,
@@ -1702,7 +1703,7 @@ export function registerRoutes(app: Express) {
       if (status === 'approved' && xpAwarded > 0 && studentId) {
         await db.execute(sql`
           UPDATE students 
-          SET total_points = COALESCE(total_points, 0) + ${xpAwarded}, 
+          SET total_xp = COALESCE(total_xp, 0) + ${xpAwarded}, 
               updated_at = NOW() 
           WHERE id = ${studentId}::uuid
         `);
