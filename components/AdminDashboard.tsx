@@ -2179,9 +2179,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
         setBulkError(newStudents.length === 0 ? 'No valid data found' : '');
     };
 
-    const confirmBulkImport = () => {
+    const confirmBulkImport = async () => {
         const validStudents = parsedBulkStudents.filter(s => s.beltId !== 'INVALID_BELT');
-        onUpdateData({ students: [...data.students, ...validStudents] });
+        
+        // Save each student to database and get proper UUIDs
+        const studentsWithDbIds: Student[] = [];
+        
+        for (const student of validStudents) {
+            if (clubId) {
+                try {
+                    const belt = data.belts.find(b => b.id === student.beltId);
+                    const response = await fetch('/api/students', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            clubId,
+                            name: student.name,
+                            parentEmail: student.parentEmail || null,
+                            parentName: student.parentName,
+                            parentPhone: student.parentPhone,
+                            belt: belt?.name || 'White',
+                            birthdate: student.birthday
+                        })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.student?.id) {
+                        // Use database-generated UUID
+                        studentsWithDbIds.push({ ...student, id: result.student.id });
+                        console.log('[AdminDashboard] Bulk import: Student saved with database ID:', result.student.id);
+                    } else {
+                        // Fallback to local ID if API fails
+                        studentsWithDbIds.push(student);
+                        console.error('[AdminDashboard] Bulk import: Failed to save student:', student.name);
+                    }
+                } catch (error) {
+                    // Fallback to local ID on error
+                    studentsWithDbIds.push(student);
+                    console.error('[AdminDashboard] Bulk import: API error for student:', student.name, error);
+                }
+            } else {
+                // No clubId, use local ID
+                studentsWithDbIds.push(student);
+            }
+        }
+        
+        onUpdateData({ students: [...data.students, ...studentsWithDbIds] });
         setParsedBulkStudents([]);
         setBulkStudentData('');
         setModalType(null);
@@ -2204,7 +2246,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
         console.log('[AdminDashboard] handleAddStudent called with clubId:', clubId, 'parentEmail:', tempStudent.parentEmail);
         
-        if (clubId && tempStudent.parentEmail) {
+        // Variable to store database-generated student ID
+        let databaseStudentId: string | null = null;
+        
+        // Always try to save to database if we have clubId (not just when parentEmail exists)
+        if (clubId) {
             try {
                 console.log('[AdminDashboard] Sending students API request...');
                 const response = await fetch('/api/students', {
@@ -2213,7 +2259,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     body: JSON.stringify({
                         clubId,
                         name: tempStudent.name,
-                        parentEmail: tempStudent.parentEmail,
+                        parentEmail: tempStudent.parentEmail || null,
                         parentName: tempStudent.parentName,
                         parentPhone: tempStudent.parentPhone,
                         parentPassword: tempStudent.parentPassword,
@@ -2222,24 +2268,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     })
                 });
                 const result = await response.json();
-                if (response.ok) {
-                    console.log('[AdminDashboard] Student added successfully:', result);
-                    alert(`Welcome email sent to parent at ${tempStudent.parentEmail}!`);
+                if (response.ok && result.student?.id) {
+                    // CRITICAL: Use the database-generated UUID
+                    databaseStudentId = result.student.id;
+                    console.log('[AdminDashboard] Student added successfully with database ID:', databaseStudentId);
+                    if (tempStudent.parentEmail) {
+                        alert(`Welcome email sent to parent at ${tempStudent.parentEmail}!`);
+                    }
                 } else {
                     console.error('[AdminDashboard] Student API error:', result);
-                    alert(`Failed to send welcome email: ${result.error || 'Unknown error'}. Student added locally.`);
+                    if (tempStudent.parentEmail) {
+                        alert(`Failed to send welcome email: ${result.error || 'Unknown error'}. Student added locally.`);
+                    }
                 }
             } catch (error) {
                 console.error('[AdminDashboard] API call failed, continuing with local update:', error);
-                alert('Failed to send welcome email. Student added locally.');
+                if (tempStudent.parentEmail) {
+                    alert('Failed to send welcome email. Student added locally.');
+                }
             }
-        } else if (!clubId && tempStudent.parentEmail) {
+        } else {
             console.warn('[AdminDashboard] No clubId available - skipping API call');
-            alert('Unable to send welcome email. Please log out and log back in to enable email notifications.');
+            if (tempStudent.parentEmail) {
+                alert('Unable to send welcome email. Please log out and log back in to enable email notifications.');
+            }
         }
 
         const newStudent: Student = {
-            id: `student-${Date.now()}`,
+            // Use database ID if available, otherwise fall back to local ID
+            id: databaseStudentId || `student-${Date.now()}`,
             name: tempStudent.name,
             beltId: tempStudent.beltId,
             stripes: tempStudent.stripes || 0,
