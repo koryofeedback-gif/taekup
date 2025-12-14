@@ -259,8 +259,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     const currentBelt = getBelt(student.beltId, data.belts);
     
-    // Calculate Streak (Mock logic)
-    const streak = 3; 
+    // Use actual streak from rivalStats (daily practice streak)
+    const streak = student.rivalsStats?.dailyStreak || dailyStreak || 0; 
 
     // Calculate Progress
     let pointsPerStripe = data.pointsPerStripe;
