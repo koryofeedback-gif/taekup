@@ -643,7 +643,7 @@ const AppContent: React.FC<AppContentProps> = ({
                     <Route
                         path="/app/coach"
                         element={
-                            finalWizardData && loggedInUserType ? (
+                            finalWizardData && (loggedInUserType === 'coach' || loggedInUserType === 'owner') ? (
                                 <CoachDashboardRoute
                                     data={finalWizardData}
                                     onUpdateStudents={onStudentDataUpdate}
@@ -653,6 +653,8 @@ const AppContent: React.FC<AppContentProps> = ({
                                     userType={loggedInUserType}
                                     clubId={signupData?.clubId || localStorage.getItem('taekup_club_id') || sessionStorage.getItem('impersonate_clubId') || undefined}
                                 />
+                            ) : loggedInUserType === 'parent' ? (
+                                <Navigate to={`/app/parent/${parentStudentId || 'unknown'}`} replace />
                             ) : (
                                 <Navigate to="/login" replace />
                             )
@@ -965,7 +967,18 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
         );
     }
     
-    // Not logged in or not owner - redirect to login
+    // Coach - redirect to coach dashboard
+    if (effectiveUserType === 'coach') {
+        return <Navigate to="/app/coach" replace />;
+    }
+    
+    // Parent - redirect to parent portal
+    if (effectiveUserType === 'parent') {
+        const studentId = localStorage.getItem('taekup_student_id') || 'unknown';
+        return <Navigate to={`/app/parent/${studentId}`} replace />;
+    }
+    
+    // Not logged in - redirect to login
     return <Navigate to="/login" replace />;
 };
 
