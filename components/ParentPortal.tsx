@@ -1804,7 +1804,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="text-[10px] text-gray-400 uppercase">Rank</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-2xl font-black text-purple-400">{rivalStats.xp}</div>
+                                <div className="text-2xl font-black text-purple-400">{(student.totalPoints || 0) + (rivalStats.xp || 0)}</div>
                                 <div className="text-[10px] text-gray-400 uppercase">Total XP</div>
                             </div>
                             <div className="text-center">
