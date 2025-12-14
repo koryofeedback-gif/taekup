@@ -1211,7 +1211,10 @@ async function handleVideoFeedback(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Student name and challenge name are required' });
   }
 
-  const prompt = `Generate a brief, encouraging coach feedback message (2 sentences max) for a martial arts student named ${studentName} who completed the "${challengeName}" challenge in the ${challengeCategory || 'General'} category. Their belt level is ${beltLevel || 'student'}. Be warm, motivating, and specific. Mention their name and the challenge. Keep it under 40 words.`;
+  const scoreText = score ? `achieved a score of ${score}` : 'completed';
+  const prompt = `Generate a brief, encouraging coach feedback (2 sentences max) for ${studentName}, a ${beltLevel || 'student'} belt, who ${scoreText} in the "${challengeName}" challenge (${challengeCategory || 'General'} category). 
+
+IMPORTANT: You MUST mention their specific score of ${score || 'their result'} in your feedback. Be specific about their achievement. Keep it under 40 words.`;
 
   // Try Gemini first (cost-effective)
   const gemini = getGeminiClient();

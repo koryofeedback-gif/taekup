@@ -569,7 +569,10 @@ export async function generateVideoFeedback(params: {
   const gemini = getGeminiClient();
   const openai = getOpenAIClient();
   
-  const prompt = `Generate a brief, encouraging coach feedback message (2 sentences max) for a martial arts student named ${params.studentName} who completed the "${params.challengeName}" challenge in the ${params.challengeCategory || 'General'} category. Their belt level is ${params.beltLevel || 'student'}. Be warm, motivating, and specific. Mention their name and the challenge. Keep it under 40 words.`;
+  const scoreText = params.score ? `achieved a score of ${params.score}` : 'completed';
+  const prompt = `Generate a brief, encouraging coach feedback (2 sentences max) for ${params.studentName}, a ${params.beltLevel || 'student'} belt, who ${scoreText} in the "${params.challengeName}" challenge (${params.challengeCategory || 'General'} category). 
+
+IMPORTANT: You MUST mention their specific score of ${params.score || 'their result'} in your feedback. Be specific about their achievement. Keep it under 40 words.`;
 
   // Try Gemini first
   if (gemini) {
