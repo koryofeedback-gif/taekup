@@ -1681,6 +1681,12 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Status must be approved or rejected' });
       }
 
+      // Get video info first to get student_id
+      const videoInfo = await db.execute(sql`
+        SELECT student_id FROM challenge_videos WHERE id = ${videoId}::uuid
+      `);
+      const studentId = (videoInfo as any[])[0]?.student_id;
+
       await db.execute(sql`
         UPDATE challenge_videos 
         SET status = ${status}::video_status, 
@@ -1691,6 +1697,17 @@ export function registerRoutes(app: Express) {
             updated_at = NOW()
         WHERE id = ${videoId}::uuid
       `);
+
+      // Award XP to student if approved
+      if (status === 'approved' && xpAwarded > 0 && studentId) {
+        await db.execute(sql`
+          UPDATE students 
+          SET total_points = COALESCE(total_points, 0) + ${xpAwarded}, 
+              updated_at = NOW() 
+          WHERE id = ${studentId}::uuid
+        `);
+        console.log('[Videos] Awarded', xpAwarded, 'XP to student', studentId);
+      }
 
       // Send email notification to parent
       try {
