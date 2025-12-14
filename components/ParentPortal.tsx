@@ -2085,7 +2085,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <p className="text-sm text-white font-medium">{video.challengeName}</p>
                                                                         <p className="text-xs text-gray-500">
                                                                             {video.status === 'pending' && 'Awaiting coach review'}
-                                                                            {video.status === 'approved' && `Verified! ${video.voteCount} votes`}
+                                                                            {video.status === 'approved' && (video.coachNotes || `Verified! ${video.voteCount} votes`)}
                                                                             {video.status === 'rejected' && (video.coachNotes || 'Not approved')}
                                                                         </p>
                                                                     </div>

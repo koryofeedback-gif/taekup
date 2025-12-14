@@ -1202,6 +1202,50 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
   }
 }
 
+async function handleVideoFeedback(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { studentName, challengeName, challengeCategory, score, beltLevel } = parseBody(req);
+  
+  if (!studentName || !challengeName) {
+    return res.status(400).json({ error: 'Student name and challenge name are required' });
+  }
+
+  try {
+    const gemini = getGeminiClient();
+    if (gemini) {
+      const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const prompt = `Generate a brief, encouraging coach feedback message (2-3 sentences max) for a martial arts student's video submission.
+
+Student: ${studentName}
+Challenge: ${challengeName}
+Category: ${challengeCategory || 'General'}
+Score: ${score || 'Not specified'}
+Belt Level: ${beltLevel || 'Not specified'}
+
+Write a warm, motivating message that:
+- Acknowledges their effort on this specific challenge
+- Provides one specific encouragement
+- Keeps a professional but friendly coach tone
+- Does NOT mention watching any video
+
+Keep it under 50 words.`;
+
+      const result = await model.generateContent(prompt);
+      const feedback = result.response.text();
+      return res.json({ feedback });
+    }
+    
+    // Fallback if no AI available
+    const fallback = `Great job on the ${challengeName} challenge, ${studentName}! Your dedication to training is impressive. Keep pushing your limits!`;
+    return res.json({ feedback: fallback });
+  } catch (error: any) {
+    console.error('[AI Video Feedback] Error:', error.message);
+    const fallback = `Excellent effort on the ${challengeName} challenge! Keep up the great work, ${studentName}!`;
+    return res.json({ feedback: fallback });
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -1222,6 +1266,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/ai/taekbot' || path === '/ai/taekbot/') return await handleTaekBot(req, res);
     if (path === '/ai/class-plan' || path === '/ai/class-plan/') return await handleClassPlan(req, res);
     if (path === '/ai/welcome-email' || path === '/ai/welcome-email/') return await handleWelcomeEmail(req, res);
+    if (path === '/ai/video-feedback' || path === '/ai/video-feedback/') return await handleVideoFeedback(req, res);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     

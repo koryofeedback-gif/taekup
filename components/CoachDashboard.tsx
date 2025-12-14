@@ -910,6 +910,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const [xpToAward, setXpToAward] = useState<number>(50);
     const [isLoadingVideos, setIsLoadingVideos] = useState(false);
     const [isProcessingVideo, setIsProcessingVideo] = useState(false);
+    const [isGeneratingVideoFeedback, setIsGeneratingVideoFeedback] = useState(false);
 
     // Focus Mode and Notes History State
     const [focusMode, setFocusMode] = useState(false);
@@ -1498,6 +1499,37 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         }
     };
 
+    const handleGenerateVideoFeedback = async (video: any) => {
+        setIsGeneratingVideoFeedback(true);
+        try {
+            const response = await fetch('/api/ai/video-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentName: video.student_name,
+                    challengeName: video.challenge_name,
+                    challengeCategory: video.challenge_category,
+                    score: video.score,
+                    beltLevel: video.student_belt
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                setCoachVideoNotes(result.feedback || '');
+            } else {
+                const fallback = `Great effort on the ${video.challenge_name} challenge, ${video.student_name}! Keep up the hard work and continue to push yourself. Your dedication shows!`;
+                setCoachVideoNotes(fallback);
+            }
+        } catch (error) {
+            console.error('[Videos] Failed to generate AI feedback:', error);
+            const fallback = `Excellent submission for the ${video.challenge_name} challenge! Keep training hard and stay focused on your goals.`;
+            setCoachVideoNotes(fallback);
+        } finally {
+            setIsGeneratingVideoFeedback(false);
+        }
+    };
+
     const getCategoryEmoji = (category: string) => {
         switch(category?.toLowerCase()) {
             case 'power': return '💪';
@@ -2068,13 +2100,30 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                         {/* Review Actions */}
                                                         {reviewingVideo?.id === video.id ? (
                                                             <div className="space-y-3">
-                                                                <textarea 
-                                                                    value={coachVideoNotes}
-                                                                    onChange={(e) => setCoachVideoNotes(e.target.value)}
-                                                                    placeholder="Add feedback for the student (optional)..."
-                                                                    className="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 text-sm resize-none focus:ring-orange-500 focus:border-orange-500"
-                                                                    rows={2}
-                                                                />
+                                                                <div className="relative">
+                                                                    <textarea 
+                                                                        value={coachVideoNotes}
+                                                                        onChange={(e) => setCoachVideoNotes(e.target.value)}
+                                                                        placeholder="Add feedback for the student (optional)..."
+                                                                        className="w-full bg-gray-700 text-white p-3 pr-24 rounded-lg border border-gray-600 text-sm resize-none focus:ring-orange-500 focus:border-orange-500"
+                                                                        rows={2}
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => handleGenerateVideoFeedback(video)}
+                                                                        disabled={isGeneratingVideoFeedback}
+                                                                        className="absolute right-2 top-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-bold py-1.5 px-3 rounded-md transition-all disabled:opacity-50 flex items-center gap-1"
+                                                                        title="Generate AI feedback"
+                                                                    >
+                                                                        {isGeneratingVideoFeedback ? (
+                                                                            <>
+                                                                                <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                                                AI...
+                                                                            </>
+                                                                        ) : (
+                                                                            <>✨ AI</>
+                                                                        )}
+                                                                    </button>
+                                                                </div>
                                                                 <div className="flex items-center gap-3">
                                                                     <label className="text-sm text-gray-400">XP Award:</label>
                                                                     <input 
@@ -2119,6 +2168,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                                 onClick={() => {
                                                                     setReviewingVideo(video);
                                                                     setCurrentVideoPlaying(video.id);
+                                                                    setCoachVideoNotes('');
+                                                                    setXpToAward(50);
                                                                 }}
                                                                 className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
                                                             >
