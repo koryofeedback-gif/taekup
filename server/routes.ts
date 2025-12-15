@@ -1828,6 +1828,20 @@ export function registerRoutes(app: Express) {
   // AI DAILY MYSTERY CHALLENGE - "Lazy Generator" Pattern
   // =====================================================
 
+  // Hardcoded fallback challenge for when AI generation fails
+  const getFallbackChallenge = () => ({
+    title: "Master's Wisdom",
+    description: "What is the most important belt in martial arts? (Hint: It holds up your pants, but represents your mind!)",
+    type: 'quiz' as const,
+    xpReward: 50,
+    quizData: {
+      question: "What is the most important belt in martial arts?",
+      options: ["Black Belt", "White Belt", "The Mind", "Gold Belt"],
+      correctIndex: 1,
+      explanation: "The White Belt represents a beginner's mindset - always eager to learn. In martial arts philosophy, maintaining this 'empty cup' mentality is the most important quality!"
+    }
+  });
+
   app.get('/api/daily-challenge', async (req: Request, res: Response) => {
     try {
       const { studentId, clubId, belt } = req.query;
@@ -1879,7 +1893,7 @@ export function registerRoutes(app: Express) {
         challenge = (existingChallenge as any[])[0];
         console.log(`[DailyChallenge] Using cached challenge for ${targetBelt} belt`);
       } else {
-        // Generate new challenge with AI
+        // Try to generate new challenge with AI, with fallback on failure
         let artType = 'Taekwondo';
         const clubIdStr = clubId as string;
         const isValidClubUuid = uuidRegex.test(clubIdStr);
@@ -1897,18 +1911,43 @@ export function registerRoutes(app: Express) {
           }
         }
 
-        const generated = await generateDailyChallenge(targetBelt, artType);
+        let generated;
+        try {
+          generated = await generateDailyChallenge(targetBelt, artType);
+          console.log(`[DailyChallenge] AI generated challenge for ${targetBelt} belt`);
+        } catch (aiError: any) {
+          // AI generation failed - use fallback challenge
+          console.error(`[DailyChallenge] AI generation failed: ${aiError.message}`);
+          console.log(`[DailyChallenge] Using fallback challenge for ${targetBelt} belt`);
+          generated = getFallbackChallenge();
+        }
         
         // Cache in database
-        const insertResult = await db.execute(sql`
-          INSERT INTO daily_challenges (date, target_belt, title, description, xp_reward, type, quiz_data, created_by_ai)
-          VALUES (${today}, ${targetBelt}, ${generated.title}, ${generated.description}, ${generated.xpReward}, 
-                  ${generated.type}::daily_challenge_type, ${JSON.stringify(generated.quizData)}::jsonb, NOW())
-          RETURNING *
-        `);
-        
-        challenge = (insertResult as any[])[0];
-        console.log(`[DailyChallenge] Generated and cached new challenge for ${targetBelt} belt`);
+        try {
+          const insertResult = await db.execute(sql`
+            INSERT INTO daily_challenges (date, target_belt, title, description, xp_reward, type, quiz_data, created_by_ai)
+            VALUES (${today}, ${targetBelt}, ${generated.title}, ${generated.description}, ${generated.xpReward}, 
+                    ${generated.type}::daily_challenge_type, ${JSON.stringify(generated.quizData)}::jsonb, NOW())
+            RETURNING *
+          `);
+          
+          challenge = (insertResult as any[])[0];
+          console.log(`[DailyChallenge] Cached challenge for ${targetBelt} belt`);
+        } catch (dbError: any) {
+          // If DB insert fails, return the generated challenge directly without caching
+          console.error(`[DailyChallenge] DB cache failed: ${dbError.message}`);
+          return res.json({
+            completed: false,
+            challenge: {
+              id: 'temp-' + Date.now(),
+              title: generated.title,
+              description: generated.description,
+              type: generated.type,
+              xpReward: generated.xpReward,
+              quizData: generated.quizData,
+            }
+          });
+        }
       }
 
       res.json({
@@ -1923,8 +1962,84 @@ export function registerRoutes(app: Express) {
         }
       });
     } catch (error: any) {
-      console.error('[DailyChallenge] Error:', error.message);
-      res.status(500).json({ error: 'Failed to get daily challenge' });
+      // Ultimate fallback - return hardcoded challenge even if everything else fails
+      console.error('[DailyChallenge] Critical error:', error.message);
+      const fallback = getFallbackChallenge();
+      res.json({
+        completed: false,
+        challenge: {
+          id: 'fallback-' + Date.now(),
+          title: fallback.title,
+          description: fallback.description,
+          type: fallback.type,
+          xpReward: fallback.xpReward,
+          quizData: fallback.quizData,
+        }
+      });
+    }
+  });
+
+  // Debug endpoint to force regenerate daily challenge
+  app.get('/debug/force-challenge', async (req: Request, res: Response) => {
+    try {
+      const { belt = 'white' } = req.query;
+      const today = new Date().toISOString().split('T')[0];
+      const targetBelt = (belt as string).toLowerCase();
+
+      // Delete today's challenge for this belt
+      const deleteResult = await db.execute(sql`
+        DELETE FROM daily_challenges 
+        WHERE date = ${today} AND target_belt = ${targetBelt}
+        RETURNING id
+      `);
+      
+      const deletedCount = (deleteResult as any[]).length;
+      console.log(`[Debug] Deleted ${deletedCount} existing challenge(s) for ${targetBelt} belt`);
+
+      // Try to generate new one
+      let generated;
+      let generationError = null;
+      
+      try {
+        generated = await generateDailyChallenge(targetBelt, 'Taekwondo');
+        console.log(`[Debug] AI successfully generated new challenge`);
+      } catch (aiError: any) {
+        generationError = aiError.message;
+        console.error(`[Debug] AI generation failed: ${aiError.message}`);
+        generated = getFallbackChallenge();
+      }
+
+      // Insert new challenge
+      const insertResult = await db.execute(sql`
+        INSERT INTO daily_challenges (date, target_belt, title, description, xp_reward, type, quiz_data, created_by_ai)
+        VALUES (${today}, ${targetBelt}, ${generated.title}, ${generated.description}, ${generated.xpReward}, 
+                ${generated.type}::daily_challenge_type, ${JSON.stringify(generated.quizData)}::jsonb, NOW())
+        RETURNING *
+      `);
+
+      const newChallenge = (insertResult as any[])[0];
+
+      res.json({
+        success: true,
+        deletedPrevious: deletedCount,
+        aiGenerationError: generationError,
+        usedFallback: !!generationError,
+        challenge: {
+          id: newChallenge.id,
+          title: newChallenge.title,
+          description: newChallenge.description,
+          type: newChallenge.type,
+          xpReward: newChallenge.xp_reward,
+          quizData: newChallenge.quiz_data,
+        }
+      });
+    } catch (error: any) {
+      console.error('[Debug] Force challenge error:', error.message);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        stack: error.stack 
+      });
     }
   });
 
