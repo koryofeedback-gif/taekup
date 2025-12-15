@@ -57,25 +57,28 @@ export function isValidTierSelection(tier: ChallengeTierKey, isWeeklyChallenge: 
 }
 
 /**
- * Fair Grading Algorithm for Class PTS (Points)
+ * Calculate Class PTS (Points) - Raw Sum Method
  * 
- * Normalizes scoring to handle variable grading criteria (e.g., some coaches use 4 items, others use 6).
- * This ensures fairness: a student graded on 4 items gets the same max PTS as one graded on 6.
+ * Simply sums up the raw scores from grading:
+ * - Green = 2 PTS
+ * - Yellow = 1 PTS
+ * - Red = 0 PTS
  * 
  * NOTE: These are POINTS (PTS) for stripe/belt progress, NOT XP.
+ * PTS accumulate toward stripes (e.g., 64 PTS per stripe).
  * 
  * @param scores - Array of score values (Green=2, Yellow=1, Red=0) or null for unentered
- * @returns Normalized PTS value (0-100)
+ * @returns Raw sum of PTS
  * 
  * @example
- * // 4 items, all green: (8/8) * 100 = 100 PTS
- * calculateClassPTS([2, 2, 2, 2]) // returns 100
+ * // 4 items, all green: 2+2+2+2 = 8 PTS
+ * calculateClassPTS([2, 2, 2, 2]) // returns 8
  * 
- * // 6 items, all green: (12/12) * 100 = 100 PTS  
- * calculateClassPTS([2, 2, 2, 2, 2, 2]) // returns 100
+ * // 6 items, all green: 2+2+2+2+2+2 = 12 PTS
+ * calculateClassPTS([2, 2, 2, 2, 2, 2]) // returns 12
  * 
- * // 4 items: 3 green, 1 yellow: (7/8) * 100 = 87.5 PTS
- * calculateClassPTS([2, 2, 2, 1]) // returns 87.5
+ * // 4 items: 3 green, 1 yellow: 2+2+2+1 = 7 PTS
+ * calculateClassPTS([2, 2, 2, 1]) // returns 7
  */
 export function calculateClassPTS(scores: (number | null | undefined)[]): number {
   // Filter out null/undefined scores (unentered items)
@@ -86,26 +89,17 @@ export function calculateClassPTS(scores: (number | null | undefined)[]): number
     return 0;
   }
   
-  // Calculate max possible score (each item can be max 2 = Green)
-  const maxPossibleScore = validScores.length * SCORE_VALUES.GREEN;
-  
-  // Calculate actual score sum
-  const actualScore = validScores.reduce((sum, score) => sum + score, 0);
-  
-  // Apply normalization formula: (actual / max) * MAX_CLASS_PTS
-  const normalizedPTS = (actualScore / maxPossibleScore) * MAX_CLASS_PTS;
-  
-  // Round to 1 decimal place for cleaner display
-  return Math.round(normalizedPTS * 10) / 10;
+  // Simply sum up the raw scores (Green=2, Yellow=1, Red=0)
+  return validScores.reduce((sum, score) => sum + score, 0);
 }
 
-// Backward compatibility alias
+// Backward compatibility alias (note: this is now raw PTS, not normalized XP)
 export const calculateClassXP = calculateClassPTS;
 export const MAX_CLASS_XP = MAX_CLASS_PTS;
 
 /**
  * Calculate PTS with bonus points
- * Bonus points are added on top of the normalized class PTS
+ * Bonus points are added on top of the raw class PTS
  * 
  * @param scores - Array of score values
  * @param bonusPoints - Extra points from coach (e.g., helping others, great effort)
