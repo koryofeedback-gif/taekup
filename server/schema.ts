@@ -520,3 +520,37 @@ export type MrrGoal = typeof mrrGoals.$inferSelect;
 export type AutomationRule = typeof automationRules.$inferSelect;
 export type AutomationExecution = typeof automationExecutions.$inferSelect;
 export type PaymentRecoveryAttempt = typeof paymentRecoveryAttempts.$inferSelect;
+
+// =====================================================
+// AI DAILY MYSTERY CHALLENGE - "Lazy Generator" Pattern
+// =====================================================
+
+export const dailyChallengeTypeEnum = pgEnum('daily_challenge_type', ['quiz', 'photo', 'text']);
+
+export const dailyChallenges = pgTable('daily_challenges', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  date: varchar('date', { length: 10 }).notNull(),
+  targetBelt: varchar('target_belt', { length: 100 }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description').notNull(),
+  xpReward: integer('xp_reward').default(25),
+  type: dailyChallengeTypeEnum('type').default('quiz'),
+  quizData: jsonb('quiz_data'),
+  createdByAi: timestamp('created_by_ai', { withTimezone: true }).defaultNow(),
+});
+
+export const challengeSubmissions = pgTable('challenge_submissions', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  challengeId: uuid('challenge_id').references(() => dailyChallenges.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  answer: text('answer'),
+  isCorrect: boolean('is_correct'),
+  xpAwarded: integer('xp_awarded').default(0),
+  completedAt: timestamp('completed_at', { withTimezone: true }).defaultNow(),
+});
+
+export type DailyChallenge = typeof dailyChallenges.$inferSelect;
+export type NewDailyChallenge = typeof dailyChallenges.$inferInsert;
+export type ChallengeSubmission = typeof challengeSubmissions.$inferSelect;
+export type NewChallengeSubmission = typeof challengeSubmissions.$inferInsert;
