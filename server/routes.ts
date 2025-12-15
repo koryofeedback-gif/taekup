@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { storage } from './storage';
 import { stripeService } from './stripeService';
 import { getStripePublishableKey, getUncachableStripeClient } from './stripeClient';
-import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail, generateVideoFeedback } from './aiService';
+import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail, generateVideoFeedback, generateDailyChallenge } from './aiService';
 import emailService from './services/emailService';
 import * as emailAutomation from './services/emailAutomationService';
 import { db } from './db';
@@ -1821,6 +1821,171 @@ export function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error('[Videos] Fetch student videos error:', error.message);
       res.status(500).json({ error: 'Failed to get student videos' });
+    }
+  });
+
+  // =====================================================
+  // AI DAILY MYSTERY CHALLENGE - "Lazy Generator" Pattern
+  // =====================================================
+
+  app.get('/api/daily-challenge', async (req: Request, res: Response) => {
+    try {
+      const { studentId, clubId, belt } = req.query;
+      
+      if (!studentId || !belt) {
+        return res.status(400).json({ error: 'studentId and belt are required' });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const targetBelt = (belt as string).toLowerCase();
+
+      // Check if student already completed today's challenge
+      const existingSubmission = await db.execute(sql`
+        SELECT cs.id, cs.is_correct, cs.xp_awarded, dc.title
+        FROM challenge_submissions cs
+        JOIN daily_challenges dc ON cs.challenge_id = dc.id
+        WHERE cs.student_id = ${studentId}::uuid 
+        AND dc.date = ${today} 
+        AND dc.target_belt = ${targetBelt}
+      `);
+
+      if ((existingSubmission as any[]).length > 0) {
+        const sub = (existingSubmission as any[])[0];
+        return res.json({ 
+          completed: true, 
+          message: `You already completed today's challenge: "${sub.title}"!`,
+          xpAwarded: sub.xp_awarded,
+          wasCorrect: sub.is_correct
+        });
+      }
+
+      // "Lazy Generator" - Check if challenge exists for today + belt
+      let existingChallenge = await db.execute(sql`
+        SELECT * FROM daily_challenges 
+        WHERE date = ${today} AND target_belt = ${targetBelt}
+        LIMIT 1
+      `);
+
+      let challenge: any;
+
+      if ((existingChallenge as any[]).length > 0) {
+        // Use cached challenge
+        challenge = (existingChallenge as any[])[0];
+        console.log(`[DailyChallenge] Using cached challenge for ${targetBelt} belt`);
+      } else {
+        // Generate new challenge with AI
+        let artType = 'Taekwondo';
+        if (clubId) {
+          const clubData = await db.execute(sql`
+            SELECT art_type FROM clubs WHERE id = ${clubId}::uuid
+          `);
+          if ((clubData as any[]).length > 0) {
+            artType = (clubData as any[])[0].art_type || 'Taekwondo';
+          }
+        }
+
+        const generated = await generateDailyChallenge(targetBelt, artType);
+        
+        // Cache in database
+        const insertResult = await db.execute(sql`
+          INSERT INTO daily_challenges (date, target_belt, title, description, xp_reward, type, quiz_data, created_by_ai)
+          VALUES (${today}, ${targetBelt}, ${generated.title}, ${generated.description}, ${generated.xpReward}, 
+                  ${generated.type}::daily_challenge_type, ${JSON.stringify(generated.quizData)}::jsonb, NOW())
+          RETURNING *
+        `);
+        
+        challenge = (insertResult as any[])[0];
+        console.log(`[DailyChallenge] Generated and cached new challenge for ${targetBelt} belt`);
+      }
+
+      res.json({
+        completed: false,
+        challenge: {
+          id: challenge.id,
+          title: challenge.title,
+          description: challenge.description,
+          type: challenge.type,
+          xpReward: challenge.xp_reward,
+          quizData: challenge.quiz_data,
+        }
+      });
+    } catch (error: any) {
+      console.error('[DailyChallenge] Error:', error.message);
+      res.status(500).json({ error: 'Failed to get daily challenge' });
+    }
+  });
+
+  app.post('/api/daily-challenge/submit', async (req: Request, res: Response) => {
+    try {
+      const { challengeId, studentId, clubId, answer, selectedIndex } = req.body;
+      
+      if (!challengeId || !studentId || !clubId) {
+        return res.status(400).json({ error: 'challengeId, studentId, and clubId are required' });
+      }
+
+      // Get challenge details
+      const challengeResult = await db.execute(sql`
+        SELECT * FROM daily_challenges WHERE id = ${challengeId}::uuid
+      `);
+
+      if ((challengeResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Challenge not found' });
+      }
+
+      const challenge = (challengeResult as any[])[0];
+      
+      // Check for existing submission
+      const existing = await db.execute(sql`
+        SELECT id FROM challenge_submissions 
+        WHERE challenge_id = ${challengeId}::uuid AND student_id = ${studentId}::uuid
+      `);
+
+      if ((existing as any[]).length > 0) {
+        return res.status(400).json({ error: 'Already submitted this challenge' });
+      }
+
+      // Check if answer is correct (for quiz type)
+      let isCorrect = false;
+      let xpAwarded = 0;
+      
+      if (challenge.type === 'quiz' && challenge.quiz_data) {
+        const quizData = typeof challenge.quiz_data === 'string' 
+          ? JSON.parse(challenge.quiz_data) 
+          : challenge.quiz_data;
+        isCorrect = selectedIndex === quizData.correctIndex;
+        xpAwarded = isCorrect ? (challenge.xp_reward || 25) : 5; // 5 XP for trying
+      } else {
+        xpAwarded = challenge.xp_reward || 25;
+        isCorrect = true;
+      }
+
+      // Create submission
+      await db.execute(sql`
+        INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded, completed_at)
+        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${clubId}::uuid, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
+      `);
+
+      // Award XP to student
+      await db.execute(sql`
+        UPDATE students 
+        SET lifetime_xp = lifetime_xp + ${xpAwarded}, updated_at = NOW()
+        WHERE id = ${studentId}::uuid
+      `);
+
+      console.log(`[DailyChallenge] ${isCorrect ? 'Correct' : 'Incorrect'} submission - ${xpAwarded} XP awarded`);
+
+      res.json({
+        success: true,
+        isCorrect,
+        xpAwarded,
+        explanation: challenge.quiz_data?.explanation || null,
+        message: isCorrect 
+          ? `Excellent! You earned ${xpAwarded} XP!` 
+          : `Good try! You earned ${xpAwarded} XP for participating.`
+      });
+    } catch (error: any) {
+      console.error('[DailyChallenge] Submit error:', error.message);
+      res.status(500).json({ error: 'Failed to submit challenge' });
     }
   });
 }

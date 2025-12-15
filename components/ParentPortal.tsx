@@ -74,10 +74,27 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [parentScore, setParentScore] = useState<string>('');
     const [activeFamilyChallenge, setActiveFamilyChallenge] = useState<string | null>(null);
     
-    // Mystery Challenge State
-    const [mysteryChallenge, setMysteryChallenge] = useState<{id: string; name: string; icon: string; xp: number; category: ChallengeCategory} | null>(null);
+    // Mystery Challenge State (AI-powered daily challenge)
+    const [mysteryChallenge, setMysteryChallenge] = useState<{
+        id: string; 
+        title: string;
+        description: string;
+        type: 'quiz' | 'photo' | 'text';
+        xpReward: number;
+        quizData?: {
+            question: string;
+            options: string[];
+            correctIndex: number;
+            explanation: string;
+        };
+    } | null>(null);
     const [mysteryCompleted, setMysteryCompleted] = useState(false);
-    const [mysteryScore, setMysteryScore] = useState<string>('');
+    const [mysteryCompletionMessage, setMysteryCompletionMessage] = useState<string>('');
+    const [mysteryXpAwarded, setMysteryXpAwarded] = useState<number>(0);
+    const [mysteryWasCorrect, setMysteryWasCorrect] = useState<boolean>(false);
+    const [selectedQuizAnswer, setSelectedQuizAnswer] = useState<number | null>(null);
+    const [quizExplanation, setQuizExplanation] = useState<string>('');
+    const [loadingMysteryChallenge, setLoadingMysteryChallenge] = useState(true);
     
     // Daily Streak
     const [dailyStreak, setDailyStreak] = useState(student.rivalsStats?.dailyStreak || 0);
@@ -146,6 +163,84 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         return () => clearTimeout(timeoutId);
     }, [rivalStats.wins, rivalStats.losses, rivalStats.streak, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted]);
+    
+    // Get belt name from beltId for API call
+    const studentBeltName = useMemo(() => {
+        const belt = data.belts.find(b => b.id === student.beltId);
+        return belt?.name || 'White';
+    }, [data.belts, student.beltId]);
+    
+    // Fetch AI-powered Daily Mystery Challenge
+    useEffect(() => {
+        const fetchDailyChallenge = async () => {
+            if (!student.id || !studentBeltName) return;
+            
+            setLoadingMysteryChallenge(true);
+            try {
+                const params = new URLSearchParams({
+                    studentId: student.id,
+                    belt: studentBeltName,
+                });
+                
+                const response = await fetch(`/api/daily-challenge?${params}`);
+                const result = await response.json();
+                
+                if (result.completed) {
+                    setMysteryCompleted(true);
+                    setMysteryXpAwarded(result.xpAwarded || 0);
+                    setMysteryWasCorrect(result.wasCorrect || false);
+                    setMysteryCompletionMessage(result.message || 'Challenge already completed!');
+                } else if (result.challenge) {
+                    setMysteryChallenge(result.challenge);
+                    setMysteryCompleted(false);
+                }
+            } catch (error) {
+                console.error('[MysteryChallenge] Failed to fetch:', error);
+            } finally {
+                setLoadingMysteryChallenge(false);
+            }
+        };
+        
+        fetchDailyChallenge();
+    }, [student.id, studentBeltName]);
+    
+    // Submit Mystery Challenge answer
+    const submitMysteryChallenge = async (selectedIndex: number) => {
+        if (!mysteryChallenge || !student.id) return;
+        
+        try {
+            const response = await fetch('/api/daily-challenge/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    challengeId: mysteryChallenge.id,
+                    studentId: student.id,
+                    clubId: 'demo',
+                    selectedIndex,
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                setMysteryCompleted(true);
+                setMysteryXpAwarded(result.xpAwarded);
+                setMysteryWasCorrect(result.isCorrect);
+                setMysteryCompletionMessage(result.message);
+                setQuizExplanation(result.explanation || '');
+                setMysteryBoxCompletedCount(prev => prev + 1);
+                
+                // Update local stats
+                setRivalStats(prev => ({
+                    ...prev,
+                    wins: prev.wins + (result.isCorrect ? 1 : 0),
+                    xp: prev.xp + result.xpAwarded
+                }));
+            }
+        } catch (error) {
+            console.error('[MysteryChallenge] Submit error:', error);
+        }
+    };
     
     // Challenge Inbox State
     interface PendingChallenge {
@@ -1656,39 +1751,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         ];
         
-        // Core challenges for mystery box (only from Power, Technique, Flexibility)
-        const mysteryChallenges: {id: string; name: string; icon: string; xp: number; category: ChallengeCategory}[] = [
-            ...challengeCategories
-                .filter(c => c.name === 'Power' || c.name === 'Technique' || c.name === 'Flexibility')
-                .flatMap(c => 
-                    c.challenges.map(ch => ({ 
-                        id: ch.id, 
-                        name: ch.name, 
-                        icon: ch.icon, 
-                        xp: ch.xp, 
-                        category: c.name as ChallengeCategory 
-                    }))
-                )
-        ];
-        
-        // Generate daily mystery challenge
-        const generateMysteryChallenge = () => {
-            if (mysteryChallenges.length === 0) return;
-            const today = new Date().toISOString().split('T')[0];
-            const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0);
-            const index = seed % mysteryChallenges.length;
-            const challenge = mysteryChallenges[index];
-            setMysteryChallenge({
-                ...challenge,
-                xp: Math.round(challenge.xp * 1.5) // 50% bonus for mystery
-            });
-        };
-        
-        // Initialize mystery challenge on first render
-        if (!mysteryChallenge && !mysteryCompleted) {
-            generateMysteryChallenge();
-        }
-        
         // Family challenge pairs
         const familyChallenges = [
             { id: 'family_pushups', name: 'Parent vs Kid: Pushups', icon: '💪', xp: 100, description: 'Who can do more pushups?' },
@@ -2607,80 +2669,100 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             )}
 
 
-                            {/* MYSTERY CHALLENGE VIEW */}
+                            {/* MYSTERY CHALLENGE VIEW - AI-powered Daily Quiz */}
                             {rivalsView === 'mystery' && (
                                 <div className="space-y-4">
                                     <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 rounded-xl border border-purple-500/30 text-center">
                                         <h4 className="font-bold text-white flex items-center justify-center mb-2">
                                             <span className="mr-2 text-2xl">🎁</span> Daily Mystery Challenge
                                         </h4>
-                                        <p className="text-xs text-purple-300">Complete today's surprise challenge for bonus XP!</p>
+                                        <p className="text-xs text-purple-300">AI-powered daily quiz - test your martial arts knowledge!</p>
                                     </div>
                                     
-                                    {mysteryCompleted ? (
-                                        <div className="bg-gray-800 rounded-xl border border-green-500/30 p-8 text-center">
-                                            <div className="text-6xl mb-4">✅</div>
-                                            <h4 className="text-xl font-bold text-green-400 mb-2">Mystery Complete!</h4>
-                                            <p className="text-gray-400 text-sm">Come back tomorrow for a new mystery challenge</p>
+                                    {loadingMysteryChallenge ? (
+                                        <div className="bg-gray-800 rounded-xl border border-purple-500/30 p-8 text-center">
+                                            <div className="text-5xl mb-4 animate-spin">🎁</div>
+                                            <p className="text-purple-300">Generating your mystery challenge...</p>
+                                        </div>
+                                    ) : mysteryCompleted ? (
+                                        <div className="bg-gray-800 rounded-xl border border-green-500/30 p-6 text-center">
+                                            <div className="text-6xl mb-4">{mysteryWasCorrect ? '🎉' : '📚'}</div>
+                                            <h4 className={`text-xl font-bold mb-2 ${mysteryWasCorrect ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                {mysteryWasCorrect ? 'Correct!' : 'Good Try!'}
+                                            </h4>
+                                            <p className="text-gray-300 text-sm mb-3">{mysteryCompletionMessage}</p>
+                                            {quizExplanation && (
+                                                <div className="bg-gray-700/50 rounded-lg p-3 mb-4 text-left">
+                                                    <p className="text-xs text-gray-400 mb-1">Explanation:</p>
+                                                    <p className="text-sm text-purple-200">{quizExplanation}</p>
+                                                </div>
+                                            )}
+                                            <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
+                                                <p className="text-yellow-400 font-bold">+{mysteryXpAwarded} XP earned!</p>
+                                            </div>
+                                            <p className="text-gray-500 text-xs mt-4">Come back tomorrow for a new challenge!</p>
                                         </div>
                                     ) : mysteryChallenge ? (
                                         <div className="bg-gray-800 rounded-xl border border-purple-500/50 overflow-hidden">
                                             <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 text-center">
-                                                <div className="text-5xl mb-2 animate-bounce">{mysteryChallenge.icon}</div>
-                                                <h4 className="text-xl font-black text-white">{mysteryChallenge.name}</h4>
-                                                <p className="text-purple-200 text-xs">{mysteryChallenge.category} Challenge</p>
+                                                <div className="text-4xl mb-2">🧠</div>
+                                                <h4 className="text-lg font-black text-white">{mysteryChallenge.title}</h4>
+                                                <p className="text-purple-200 text-xs">{mysteryChallenge.description}</p>
                                             </div>
                                             <div className="p-4">
                                                 <div className="flex justify-between items-center mb-4">
-                                                    <span className="text-gray-400 text-sm">Bonus XP Reward:</span>
-                                                    <span className="text-yellow-400 font-black text-xl">+{mysteryChallenge.xp} XP</span>
-                                                </div>
-                                                <div className="text-center text-gray-400 text-xs mb-4">
-                                                    <span className="text-green-400">1.5x bonus</span> for mystery completion!
+                                                    <span className="text-gray-400 text-sm">Reward:</span>
+                                                    <span className="text-yellow-400 font-black text-lg">+{mysteryChallenge.xpReward} XP</span>
                                                 </div>
                                                 
-                                                <div className="space-y-3">
-                                                    <input
-                                                        type="number"
-                                                        placeholder="Enter your score..."
-                                                        value={mysteryScore}
-                                                        onChange={(e) => setMysteryScore(e.target.value)}
-                                                        className="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 text-center text-lg"
-                                                    />
-                                                    <button
-                                                        onClick={() => {
-                                                            if (!mysteryScore) return;
-                                                            const multiplier = getStreakMultiplier();
-                                                            const xpEarned = Math.round(mysteryChallenge.xp * multiplier);
-                                                            setRivalStats(prev => ({
-                                                                ...prev,
-                                                                wins: prev.wins + 1,
-                                                                streak: prev.streak + 1,
-                                                                xp: prev.xp + xpEarned
-                                                            }));
-                                                            setDailyStreak(prev => prev + 1);
-                                                            setMysteryBoxCompletedCount(prev => prev + 1);
-                                                            setLastChallengeDate(new Date().toISOString().split('T')[0]);
-                                                            setChallengeHistory(prev => [{
-                                                                id: Date.now().toString(),
-                                                                opponent: 'Mystery Box',
-                                                                challenge: mysteryChallenge.name,
-                                                                result: 'win',
-                                                                date: 'Just now',
-                                                                xpEarned
-                                                            }, ...prev]);
-                                                            setMysteryCompleted(true);
-                                                            setMysteryScore('');
-                                                        }}
-                                                        disabled={!mysteryScore}
-                                                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all"
-                                                    >
-                                                        Complete Mystery Challenge!
-                                                    </button>
-                                                </div>
+                                                {mysteryChallenge.type === 'quiz' && mysteryChallenge.quizData ? (
+                                                    <div className="space-y-3">
+                                                        <div className="bg-gray-700/50 rounded-lg p-4 mb-4">
+                                                            <p className="text-white font-medium text-sm">{mysteryChallenge.quizData.question}</p>
+                                                        </div>
+                                                        
+                                                        <div className="space-y-2">
+                                                            {mysteryChallenge.quizData.options.map((option, index) => (
+                                                                <button
+                                                                    key={index}
+                                                                    onClick={() => setSelectedQuizAnswer(index)}
+                                                                    className={`w-full text-left p-3 rounded-lg border transition-all ${
+                                                                        selectedQuizAnswer === index
+                                                                            ? 'bg-purple-600/30 border-purple-500 text-white'
+                                                                            : 'bg-gray-700/50 border-gray-600 text-gray-300 hover:border-purple-500/50'
+                                                                    }`}
+                                                                >
+                                                                    <span className="font-bold mr-2">{String.fromCharCode(65 + index)}.</span>
+                                                                    {option}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                        
+                                                        <button
+                                                            onClick={() => {
+                                                                if (selectedQuizAnswer !== null) {
+                                                                    submitMysteryChallenge(selectedQuizAnswer);
+                                                                }
+                                                            }}
+                                                            disabled={selectedQuizAnswer === null}
+                                                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all mt-4"
+                                                        >
+                                                            Submit Answer
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-4">
+                                                        <p className="text-gray-400 text-sm">Challenge type not yet supported. Check back later!</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                    ) : null}
+                                    ) : (
+                                        <div className="bg-gray-800 rounded-xl border border-gray-600 p-6 text-center">
+                                            <div className="text-4xl mb-4">🎁</div>
+                                            <p className="text-gray-400">No challenge available right now.</p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

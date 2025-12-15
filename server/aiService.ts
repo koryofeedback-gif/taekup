@@ -623,3 +623,114 @@ function getVideoFeedbackFallback(params: { studentName: string; challengeName: 
   ];
   return encouragements[Math.floor(Math.random() * encouragements.length)];
 }
+
+export interface DailyChallengeResult {
+  title: string;
+  description: string;
+  type: 'quiz' | 'photo' | 'text';
+  xpReward: number;
+  quizData?: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  };
+}
+
+export async function generateDailyChallenge(belt: string, artType: string = 'Taekwondo'): Promise<DailyChallengeResult> {
+  const openai = getOpenAIClient();
+  
+  const prompt = `Generate a fun daily martial arts challenge for a ${belt} belt ${artType} student. The challenge should be:
+- Age-appropriate and safe to do at home
+- Related to ${artType} techniques, philosophy, or history appropriate for ${belt} level
+- Engaging and educational
+
+Return a JSON object with this exact structure:
+{
+  "title": "Brief catchy title (under 50 chars)",
+  "description": "Engaging 1-2 sentence description of what to do",
+  "type": "quiz",
+  "xpReward": 25,
+  "quizData": {
+    "question": "The trivia question about ${artType}",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctIndex": 0,
+    "explanation": "Brief explanation of why this is correct"
+  }
+}
+
+Make the quiz question appropriate for ${belt} belt level - easier for beginners, harder for advanced. Focus on ${artType} terminology, history, forms, or technique names.`;
+
+  if (openai) {
+    try {
+      console.log(`[DailyChallenge] Generating for ${belt} belt...`);
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 400,
+        temperature: 0.9,
+        response_format: { type: 'json_object' },
+      });
+      
+      const content = response.choices[0]?.message?.content;
+      if (content) {
+        const parsed = JSON.parse(content);
+        console.log('[DailyChallenge] Generated successfully');
+        return {
+          title: parsed.title || 'Daily Challenge',
+          description: parsed.description || 'Complete today\'s mystery challenge!',
+          type: parsed.type || 'quiz',
+          xpReward: parsed.xpReward || 25,
+          quizData: parsed.quizData,
+        };
+      }
+    } catch (error: any) {
+      console.error('[DailyChallenge] OpenAI error:', error.message);
+    }
+  }
+
+  return getDailyChallengeFallback(belt, artType);
+}
+
+function getDailyChallengeFallback(belt: string, artType: string): DailyChallengeResult {
+  const fallbacks: DailyChallengeResult[] = [
+    {
+      title: 'Stance Master Quiz',
+      description: 'Test your knowledge of fundamental stances!',
+      type: 'quiz',
+      xpReward: 25,
+      quizData: {
+        question: `What is the Korean name for "front stance" in Taekwondo?`,
+        options: ['Ap Seogi', 'Dwit Seogi', 'Juchum Seogi', 'Beom Seogi'],
+        correctIndex: 0,
+        explanation: 'Ap Seogi means "front stance" - "Ap" means front and "Seogi" means stance.',
+      },
+    },
+    {
+      title: 'Belt Knowledge Check',
+      description: 'How well do you know your belt system?',
+      type: 'quiz',
+      xpReward: 25,
+      quizData: {
+        question: 'What does the white belt symbolize in martial arts?',
+        options: ['Power', 'New beginning/purity', 'Water', 'Speed'],
+        correctIndex: 1,
+        explanation: 'The white belt symbolizes a new beginning and purity - like a blank slate ready to learn.',
+      },
+    },
+    {
+      title: 'Philosophy Challenge',
+      description: 'Understand the deeper meaning of martial arts!',
+      type: 'quiz',
+      xpReward: 25,
+      quizData: {
+        question: 'What is "Dojang" in Korean martial arts?',
+        options: ['A type of kick', 'Training hall', 'A belt rank', 'A competition'],
+        correctIndex: 1,
+        explanation: 'Dojang is the Korean term for a martial arts training hall, similar to the Japanese "Dojo".',
+      },
+    },
+  ];
+  
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+}
