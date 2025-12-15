@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { CustomChallenge, ChallengeCategory } from '../types';
+import { CHALLENGE_TIERS, ChallengeTierKey, isValidTierSelection } from '../services/gamificationService';
 
 interface ChallengeBuilderProps {
     coachId: string;
@@ -24,11 +25,12 @@ const ICON_OPTIONS = [
     '🧱', '🌉', '🦅', '🐯', '🐉', '🦁', '🐺', '🦊'
 ];
 
-const DIFFICULTY_OPTIONS: { value: CustomChallenge['difficulty']; label: string; xpMultiplier: number }[] = [
-    { value: 'Easy', label: 'Easy', xpMultiplier: 1 },
-    { value: 'Medium', label: 'Medium', xpMultiplier: 1.5 },
-    { value: 'Hard', label: 'Hard', xpMultiplier: 2 },
-    { value: 'Expert', label: 'Expert', xpMultiplier: 3 },
+// Tier-based difficulty options with fixed XP (Anti-Cheat System)
+const TIER_OPTIONS: { key: ChallengeTierKey; tier: typeof CHALLENGE_TIERS[ChallengeTierKey] }[] = [
+    { key: 'EASY', tier: CHALLENGE_TIERS.EASY },
+    { key: 'MEDIUM', tier: CHALLENGE_TIERS.MEDIUM },
+    { key: 'HARD', tier: CHALLENGE_TIERS.HARD },
+    { key: 'EPIC', tier: CHALLENGE_TIERS.EPIC },
 ];
 
 const MEASUREMENT_TYPES: { value: CustomChallenge['measurementType']; label: string; units: string[] }[] = [
@@ -54,23 +56,28 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState<ChallengeCategory>('Power');
     const [icon, setIcon] = useState('💪');
-    const [baseXp, setBaseXp] = useState(50);
+    const [selectedTier, setSelectedTier] = useState<ChallengeTierKey>('MEDIUM');
     const [videoUrl, setVideoUrl] = useState('');
-    const [difficulty, setDifficulty] = useState<CustomChallenge['difficulty']>('Medium');
     const [measurementType, setMeasurementType] = useState<CustomChallenge['measurementType']>('count');
     const [measurementUnit, setMeasurementUnit] = useState('reps');
     const [targetAudience, setTargetAudience] = useState<CustomChallenge['targetAudience']>('all');
     const [isWeeklyChallenge, setIsWeeklyChallenge] = useState(false);
     const [showIconPicker, setShowIconPicker] = useState(false);
 
+    // When weekly challenge is toggled off, reset tier if Epic was selected
+    useEffect(() => {
+        if (!isWeeklyChallenge && selectedTier === 'EPIC') {
+            setSelectedTier('HARD');
+        }
+    }, [isWeeklyChallenge, selectedTier]);
+
     const resetForm = () => {
         setName('');
         setDescription('');
         setCategory('Power');
         setIcon('💪');
-        setBaseXp(50);
+        setSelectedTier('MEDIUM');
         setVideoUrl('');
-        setDifficulty('Medium');
         setMeasurementType('count');
         setMeasurementUnit('reps');
         setTargetAudience('all');
@@ -84,9 +91,12 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
         setDescription(challenge.description);
         setCategory(challenge.category);
         setIcon(challenge.icon);
-        setBaseXp(challenge.xp);
+        // Map difficulty to tier (backward compatibility)
+        const tierMap: Record<string, ChallengeTierKey> = {
+            'Easy': 'EASY', 'Medium': 'MEDIUM', 'Hard': 'HARD', 'Expert': 'EPIC'
+        };
+        setSelectedTier(tierMap[challenge.difficulty] || 'MEDIUM');
         setVideoUrl(challenge.videoUrl || '');
-        setDifficulty(challenge.difficulty);
         setMeasurementType(challenge.measurementType);
         setMeasurementUnit(challenge.measurementUnit);
         setTargetAudience(challenge.targetAudience);
@@ -97,8 +107,17 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
     const handleSave = () => {
         if (!name.trim()) return;
 
-        const difficultyMultiplier = DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.xpMultiplier || 1;
-        const finalXp = Math.round(baseXp * difficultyMultiplier);
+        // Validate tier selection (Epic only allowed for weekly challenges)
+        if (!isValidTierSelection(selectedTier, isWeeklyChallenge)) {
+            alert('Epic tier is only available for Weekly Challenges');
+            return;
+        }
+
+        // Get fixed XP from the selected tier (Anti-Cheat: no custom XP values)
+        const tierInfo = CHALLENGE_TIERS[selectedTier];
+        const tierLabelMap: Record<ChallengeTierKey, CustomChallenge['difficulty']> = {
+            'EASY': 'Easy', 'MEDIUM': 'Medium', 'HARD': 'Hard', 'EPIC': 'Expert'
+        };
 
         const challenge: CustomChallenge = {
             id: editingChallenge?.id || `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -106,9 +125,9 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
             description: description.trim(),
             category,
             icon,
-            xp: finalXp,
+            xp: tierInfo.xp, // Fixed XP based on tier - cannot be modified
             videoUrl: videoUrl.trim() || undefined,
-            difficulty,
+            difficulty: tierLabelMap[selectedTier],
             measurementType,
             measurementUnit,
             createdBy: coachId,
@@ -270,38 +289,46 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                                     </div>
                                 </div>
 
-                                <div>
+                                <div className="md:col-span-2">
                                     <label className="block text-sm font-bold text-gray-400 mb-2">
-                                        Base XP Reward
+                                        Difficulty Tier (Fixed XP)
                                     </label>
-                                    <input
-                                        type="number"
-                                        value={baseXp}
-                                        onChange={(e) => setBaseXp(Math.max(10, parseInt(e.target.value) || 10))}
-                                        min={10}
-                                        max={500}
-                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Final XP: {Math.round(baseXp * (DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.xpMultiplier || 1))}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {TIER_OPTIONS.map(({ key, tier }) => {
+                                            const isEpic = key === 'EPIC';
+                                            const isDisabled = isEpic && !isWeeklyChallenge;
+                                            const isSelected = selectedTier === key;
+                                            
+                                            return (
+                                                <button
+                                                    key={key}
+                                                    type="button"
+                                                    disabled={isDisabled}
+                                                    onClick={() => setSelectedTier(key)}
+                                                    className={`relative p-4 rounded-lg border-2 transition-all ${
+                                                        isDisabled 
+                                                            ? 'bg-gray-900 border-gray-800 opacity-50 cursor-not-allowed'
+                                                            : isSelected
+                                                                ? 'bg-cyan-500/20 border-cyan-500 ring-2 ring-cyan-500/50'
+                                                                : 'bg-gray-800 border-gray-700 hover:border-gray-600'
+                                                    }`}
+                                                >
+                                                    <div className="text-2xl mb-1">{tier.icon}</div>
+                                                    <div className="font-bold text-white">{tier.label}</div>
+                                                    <div className="text-xl font-bold text-cyan-400">+{tier.xp} XP</div>
+                                                    <div className="text-xs text-gray-400 mt-1">{tier.description}</div>
+                                                    {isEpic && (
+                                                        <div className="absolute top-1 right-1 text-xs bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">
+                                                            Weekly Only
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        XP values are fixed to ensure fair gameplay across all clubs
                                     </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-400 mb-2">
-                                        Difficulty
-                                    </label>
-                                    <select
-                                        value={difficulty}
-                                        onChange={(e) => setDifficulty(e.target.value as CustomChallenge['difficulty'])}
-                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none"
-                                    >
-                                        {DIFFICULTY_OPTIONS.map(diff => (
-                                            <option key={diff.value} value={diff.value}>
-                                                {diff.label} ({diff.xpMultiplier}x XP)
-                                            </option>
-                                        ))}
-                                    </select>
                                 </div>
                             </div>
 
@@ -421,9 +448,11 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                                             <span className={`text-xs px-2 py-0.5 rounded-full bg-${getCategoryColor(category)}-500/20 text-${getCategoryColor(category)}-400`}>
                                                 {category}
                                             </span>
-                                            <span className="text-xs text-gray-500">{difficulty}</span>
-                                            <span className="text-green-400 text-sm font-bold">
-                                                +{Math.round(baseXp * (DIFFICULTY_OPTIONS.find(d => d.value === difficulty)?.xpMultiplier || 1))} XP
+                                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                                                {CHALLENGE_TIERS[selectedTier].icon} {CHALLENGE_TIERS[selectedTier].label}
+                                            </span>
+                                            <span className="text-cyan-400 text-sm font-bold">
+                                                +{CHALLENGE_TIERS[selectedTier].xp} XP
                                             </span>
                                         </div>
                                     </div>

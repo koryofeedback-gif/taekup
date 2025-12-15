@@ -12,6 +12,44 @@ export const SCORE_VALUES = {
 } as const;
 
 /**
+ * Challenge Tier System (Anti-Cheat Logic)
+ * 
+ * Coaches cannot input raw XP numbers for custom challenges.
+ * They must select a "Difficulty Tier" with fixed XP values.
+ * This prevents XP inflation and maintains balance across all clubs.
+ */
+export const CHALLENGE_TIERS = {
+  EASY: { tier: 1, label: 'Easy', xp: 15, description: 'Quick tasks, basic drills', icon: '🌱' },
+  MEDIUM: { tier: 2, label: 'Medium', xp: 30, description: 'Standard drills, moderate effort', icon: '⚡' },
+  HARD: { tier: 3, label: 'Hard', xp: 60, description: 'Intense workouts, high difficulty', icon: '🔥' },
+  EPIC: { tier: 4, label: 'Epic', xp: 100, description: 'Weekly special challenge only', icon: '🏆', weeklyOnly: true },
+} as const;
+
+export type ChallengeTierKey = keyof typeof CHALLENGE_TIERS;
+
+/**
+ * Get XP value for a challenge tier
+ * @param tier - The difficulty tier key
+ * @returns XP value for that tier
+ */
+export function getChallengeTierXP(tier: ChallengeTierKey): number {
+  return CHALLENGE_TIERS[tier].xp;
+}
+
+/**
+ * Validate if a tier selection is allowed
+ * @param tier - The difficulty tier key
+ * @param isWeeklyChallenge - Whether this is a weekly challenge
+ * @returns Whether the tier is valid for this challenge type
+ */
+export function isValidTierSelection(tier: ChallengeTierKey, isWeeklyChallenge: boolean): boolean {
+  if (tier === 'EPIC' && !isWeeklyChallenge) {
+    return false; // Epic tier only allowed for weekly challenges
+  }
+  return true;
+}
+
+/**
  * Fair Grading Algorithm for Class XP
  * 
  * Normalizes scoring to handle variable grading criteria (e.g., some coaches use 4 items, others use 6).
