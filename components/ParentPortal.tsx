@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory, RivalsStats, HolidayScheduleType } from '../types';
+import { calculateClassXP } from '../services/gamificationService';
 import { HOLIDAY_PRESETS } from '../types';
 import { BeltIcon, CalendarIcon } from './icons/FeatureIcons';
 import { generateParentingAdvice } from '../services/geminiService';
@@ -34,6 +35,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [isSimulatingChallenge, setIsSimulatingChallenge] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState<string>('');
     const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery'>('arena');
+    const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
     const [challengeHistory, setChallengeHistory] = useState<Array<{
         id: string;
         opponent: string;
@@ -1536,6 +1538,39 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     const renderRivals = () => {
         const classmates = data.students.filter(s => s.id !== student.id);
+        const allStudentsForLeaderboard = data.students;
+        
+        // Get start of current month for monthly XP calculation
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        // Calculate Monthly XP leaderboard (XP earned this month from performance history)
+        const monthlyLeaderboard = allStudentsForLeaderboard
+            .map(s => {
+                const monthlyXP = (s.performanceHistory || [])
+                    .filter(record => new Date(record.date) >= monthStart)
+                    .reduce((sum, record) => {
+                        const scores = Object.values(record.scores || {});
+                        const classXP = calculateClassXP(scores);
+                        return sum + classXP + (record.bonusPoints || 0);
+                    }, 0);
+                return { ...s, displayXP: monthlyXP, isYou: s.id === student.id };
+            })
+            .sort((a, b) => b.displayXP - a.displayXP)
+            .map((s, i) => ({ ...s, rank: i + 1 }));
+        
+        // Calculate All-Time XP leaderboard (lifetime XP)
+        const allTimeLeaderboard = allStudentsForLeaderboard
+            .map(s => ({
+                ...s,
+                displayXP: s.lifetimeXp || s.rivalsStats?.xp || 0,
+                isYou: s.id === student.id
+            }))
+            .sort((a, b) => b.displayXP - a.displayXP)
+            .map((s, i) => ({ ...s, rank: i + 1 }));
+        
+        // Select which leaderboard to display
+        const leaderboard = leaderboardMode === 'monthly' ? monthlyLeaderboard : allTimeLeaderboard;
         
         const activeCustomChallenges = (data.customChallenges || []).filter(c => c.isActive);
         
@@ -1668,11 +1703,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             { id: 'w1', name: 'Iron Fist Week', description: 'Win 5 Strength challenges', icon: '🥊', reward: '500 XP + Iron Fist Badge', progress: 3, total: 5, endsIn: '3 days' },
             { id: 'w2', name: 'Speed Demon', description: 'Complete 3 Speed challenges', icon: '⚡', reward: '300 XP + Lightning Badge', progress: 1, total: 3, endsIn: '3 days' },
             { id: 'w3', name: 'Perfect Form', description: 'Win Forms Accuracy with 90%+', icon: '🎯', reward: '200 XP + Master Badge', progress: 0, total: 1, endsIn: '3 days' },
-        ];
-
-        // Leaderboard Data - Only show current student (real data from database will be added via API)
-        const leaderboard = [
-            { rank: 1, name: student.name, xp: rivalStats.xp, wins: rivalStats.wins, badge: '⭐', isYou: true },
         ];
 
         // Available Badges
@@ -2450,46 +2480,80 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 </div>
                             )}
 
-                            {/* LEADERBOARD VIEW */}
+                            {/* LEADERBOARD VIEW - Dual Mode: Monthly / All-Time */}
                             {rivalsView === 'leaderboard' && (
                                 <div className="space-y-2">
                                     <div className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 p-4 rounded-xl border border-yellow-500/30 mb-4">
-                                        <h4 className="font-bold text-white flex items-center">
-                                            <span className="mr-2">🏆</span> Dojang Leaderboard
-                                        </h4>
-                                        <p className="text-xs text-gray-400">Top warriors in your dojo</p>
-                                    </div>
-                                    
-                                    {leaderboard.map((player, i) => (
-                                        <div 
-                                            key={i} 
-                                            className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                                                player.isYou 
-                                                    ? 'bg-cyan-900/30 border-cyan-500/50' 
-                                                    : 'bg-gray-800 border-gray-700'
-                                            }`}
-                                        >
-                                            <div className="flex items-center">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mr-3 ${
-                                                    player.rank === 1 ? 'bg-yellow-500 text-black' :
-                                                    player.rank === 2 ? 'bg-gray-400 text-black' :
-                                                    player.rank === 3 ? 'bg-orange-600 text-white' :
-                                                    'bg-gray-700 text-gray-400'
-                                                }`}>
-                                                    {player.rank <= 3 ? player.badge : player.rank}
-                                                </div>
-                                                <div>
-                                                    <p className={`font-bold text-sm ${player.isYou ? 'text-cyan-400' : 'text-white'}`}>
-                                                        {player.name} {player.isYou && '(You)'}
-                                                    </p>
-                                                    <p className="text-[10px] text-gray-500">{player.wins} wins</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="font-bold text-purple-400">{player.xp} XP</p>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-bold text-white flex items-center">
+                                                <span className="mr-2">🏆</span> Dojang Leaderboard
+                                            </h4>
+                                            <div className="flex text-xs">
+                                                <button 
+                                                    onClick={() => setLeaderboardMode('monthly')}
+                                                    className={`px-3 py-1 rounded-l-lg font-bold transition-all ${
+                                                        leaderboardMode === 'monthly' 
+                                                            ? 'bg-purple-600 text-white' 
+                                                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                                                    }`}
+                                                >This Month</button>
+                                                <button 
+                                                    onClick={() => setLeaderboardMode('alltime')}
+                                                    className={`px-3 py-1 rounded-r-lg font-bold transition-all ${
+                                                        leaderboardMode === 'alltime' 
+                                                            ? 'bg-purple-600 text-white' 
+                                                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                                                    }`}
+                                                >All-Time</button>
                                             </div>
                                         </div>
-                                    ))}
+                                        <p className="text-xs text-gray-400">
+                                            {leaderboardMode === 'monthly' 
+                                                ? 'XP earned this month - fresh competition!' 
+                                                : 'Lifetime XP - legends of the dojo'}
+                                        </p>
+                                    </div>
+                                    
+                                    {leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
+                                        <p className="text-gray-500 text-center py-8 italic">
+                                            {leaderboardMode === 'monthly' 
+                                                ? 'No XP earned this month yet. Start training!' 
+                                                : 'No XP recorded yet. Complete challenges to rank up!'}
+                                        </p>
+                                    ) : (
+                                        leaderboard.filter(p => p.displayXP > 0).map((player) => (
+                                            <div 
+                                                key={player.id} 
+                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                                    player.isYou 
+                                                        ? 'bg-cyan-900/30 border-cyan-500/50' 
+                                                        : 'bg-gray-800 border-gray-700'
+                                                }`}
+                                            >
+                                                <div className="flex items-center">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mr-3 ${
+                                                        player.rank === 1 ? 'bg-yellow-500 text-black' :
+                                                        player.rank === 2 ? 'bg-gray-400 text-black' :
+                                                        player.rank === 3 ? 'bg-orange-600 text-white' :
+                                                        'bg-gray-700 text-gray-400'
+                                                    }`}>
+                                                        {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : player.rank}
+                                                    </div>
+                                                    <div>
+                                                        <p className={`font-bold text-sm ${player.isYou ? 'text-cyan-400' : 'text-white'}`}>
+                                                            {player.name} {player.isYou && '(You)'}
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-500">
+                                                            {data.belts.find(b => b.id === player.beltId)?.name || 'Student'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} XP</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             )}
 
