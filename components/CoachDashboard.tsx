@@ -103,28 +103,14 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 };
 
 const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ students, belts }) => {
-    const [leaderboardPeriod, setLeaderboardPeriod] = useState<'week' | 'month'>('week');
-    
-    // 1. Leaderboard Logic - Rank by PTS earned this week or month (from recent performance)
-    const now = new Date();
-    const cutoffDate = leaderboardPeriod === 'week' 
-        ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-        : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    
+    // Top Students - Rank by live current_stripe_points (totalPoints) to match Stripe Bar
     const topStudents = [...students]
-        .map(student => {
-            // Calculate PTS earned in period using raw PTS calculation
-            const periodPTS = (student.performanceHistory || [])
-                .filter(record => new Date(record.date) >= cutoffDate)
-                .reduce((sum, record) => {
-                    const scores = Object.values(record.scores || {});
-                    const classPTS = calculateClassPTS(scores);
-                    return sum + classPTS + (record.bonusPoints || 0);
-                }, 0);
-            return { ...student, periodPTS };
-        })
-        .sort((a, b) => b.periodPTS - a.periodPTS)
-        .filter(s => s.periodPTS > 0)
+        .map(student => ({
+            ...student,
+            currentPTS: student.totalPoints || 0
+        }))
+        .sort((a, b) => b.currentPTS - a.currentPTS)
+        .filter(s => s.currentPTS > 0)
         .slice(0, 3);
 
     // 2. Retention Radar Logic
@@ -197,22 +183,13 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                 </div>
             </div>
 
-            {/* Leaderboard Widget - Top PTS This Week/Month */}
+            {/* Leaderboard Widget - Top Students by Current Stripe Points */}
             <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-4">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-white flex items-center">
                         <span className="text-xl mr-2">🏆</span> Top Students
                     </h3>
-                    <div className="flex text-xs">
-                        <button 
-                            onClick={() => setLeaderboardPeriod('week')}
-                            className={`px-2 py-1 rounded-l ${leaderboardPeriod === 'week' ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-400'}`}
-                        >Week</button>
-                        <button 
-                            onClick={() => setLeaderboardPeriod('month')}
-                            className={`px-2 py-1 rounded-r ${leaderboardPeriod === 'month' ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-400'}`}
-                        >Month</button>
-                    </div>
+                    <span className="text-xs text-gray-500">by current PTS</span>
                 </div>
                 <div className="space-y-3">
                     {topStudents.map((s, i) => {
@@ -227,11 +204,11 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                                         <p className="text-xs text-gray-400">{belt?.name}</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-bold text-sky-300">{s.periodPTS} PTS</span>
+                                <span className="text-sm font-bold text-sky-300">{s.currentPTS} PTS</span>
                             </div>
                         )
                     })}
-                    {topStudents.length === 0 && <p className="text-sm text-gray-500 italic">No activity this {leaderboardPeriod}.</p>}
+                    {topStudents.length === 0 && <p className="text-sm text-gray-500 italic">No students with points yet.</p>}
                 </div>
             </div>
 
