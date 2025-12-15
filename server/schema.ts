@@ -566,3 +566,27 @@ export type DailyChallenge = typeof dailyChallenges.$inferSelect;
 export type NewDailyChallenge = typeof dailyChallenges.$inferInsert;
 export type ChallengeSubmission = typeof challengeSubmissions.$inferSelect;
 export type NewChallengeSubmission = typeof challengeSubmissions.$inferInsert;
+
+// =====================================================
+// ARENA CHALLENGES - GPP Challenge Library
+// =====================================================
+
+export const arenaCategoryEnum = pgEnum('arena_category', ['POWER', 'TECHNIQUE', 'FLEXIBILITY']);
+export const difficultyTierEnum = pgEnum('difficulty_tier', ['EASY', 'MEDIUM', 'HARD']);
+
+export const arenaChallenges = pgTable('arena_challenges', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  icon: varchar('icon', { length: 10 }).default('💪'),
+  category: arenaCategoryEnum('category').notNull(),
+  difficultyTier: difficultyTierEnum('difficulty_tier').default('MEDIUM'),
+  xpReward: integer('xp_reward').default(30),
+  isSystemDefault: boolean('is_system_default').default(false),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type ArenaChallenge = typeof arenaChallenges.$inferSelect;
+export type NewArenaChallenge = typeof arenaChallenges.$inferInsert;
