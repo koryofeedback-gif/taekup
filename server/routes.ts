@@ -1988,4 +1988,425 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to submit challenge' });
     }
   });
+
+  // =====================================================
+  // ARENA CHALLENGES - Trust vs Verify Flow
+  // =====================================================
+
+  const TRUST_XP = 15;
+  const VIDEO_XP = 100;
+  const PVP_WIN_XP = 75;
+  const PVP_LOSE_XP = 15;
+  const TRUST_DAILY_LIMIT = 3;
+
+  // Unified challenge submission endpoint
+  app.post('/api/challenges/submit', async (req: Request, res: Response) => {
+    try {
+      const { studentId, clubId, challengeType, score, proofType, videoUrl } = req.body;
+      
+      if (!studentId || !clubId || !challengeType) {
+        return res.status(400).json({ error: 'studentId, clubId, and challengeType are required' });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      // TRUST submissions: Check daily limit
+      if (proofType === 'TRUST') {
+        const dailyTrustCount = await db.execute(sql`
+          SELECT COUNT(*) as count FROM challenge_submissions 
+          WHERE student_id = ${studentId}::uuid 
+          AND proof_type = 'TRUST' 
+          AND DATE(completed_at) = ${today}::date
+        `);
+        
+        const count = parseInt((dailyTrustCount as any[])[0]?.count || '0');
+        if (count >= TRUST_DAILY_LIMIT) {
+          return res.status(429).json({ 
+            error: 'Daily trust submission limit reached',
+            message: `You've used all ${TRUST_DAILY_LIMIT} trust submissions today. Try video proof for more XP!`
+          });
+        }
+
+        // Create TRUST submission - instant XP
+        await db.execute(sql`
+          INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, completed_at)
+          VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'COMPLETED', 'TRUST', ${TRUST_XP}, NOW())
+        `);
+
+        // Award XP instantly
+        await db.execute(sql`
+          UPDATE students SET lifetime_xp = lifetime_xp + ${TRUST_XP}, updated_at = NOW()
+          WHERE id = ${studentId}::uuid
+        `);
+
+        console.log(`[Arena] Trust submission: +${TRUST_XP} XP (${count + 1}/${TRUST_DAILY_LIMIT} today)`);
+
+        return res.json({
+          success: true,
+          xpAwarded: TRUST_XP,
+          status: 'COMPLETED',
+          remainingTrustSubmissions: TRUST_DAILY_LIMIT - count - 1,
+          message: `Challenge completed! +${TRUST_XP} XP earned.`
+        });
+      }
+
+      // VIDEO submissions: Pending verification
+      if (proofType === 'VIDEO') {
+        if (!videoUrl) {
+          return res.status(400).json({ error: 'videoUrl is required for video proof' });
+        }
+
+        await db.execute(sql`
+          INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
+          VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'PENDING', 'VIDEO', ${videoUrl}, 0, NOW())
+        `);
+
+        console.log(`[Arena] Video submission pending verification for student ${studentId}`);
+
+        return res.json({
+          success: true,
+          xpAwarded: 0,
+          pendingXp: VIDEO_XP,
+          status: 'PENDING',
+          message: `Video submitted! You'll earn ${VIDEO_XP} XP when your coach verifies it.`
+        });
+      }
+
+      return res.status(400).json({ error: 'Invalid proofType. Must be TRUST or VIDEO' });
+    } catch (error: any) {
+      console.error('[Arena] Submit error:', error.message);
+      res.status(500).json({ error: 'Failed to submit challenge' });
+    }
+  });
+
+  // Get presigned upload URL for video
+  app.post('/api/challenges/upload-url', async (req: Request, res: Response) => {
+    try {
+      const { studentId, challengeType, filename, contentType } = req.body;
+      
+      if (!studentId || !challengeType || !filename) {
+        return res.status(400).json({ error: 'studentId, challengeType, and filename are required' });
+      }
+
+      const { getPresignedUploadUrl } = await import('./services/s3StorageService');
+      const result = await getPresignedUploadUrl(studentId, challengeType, filename, contentType || 'video/mp4');
+
+      res.json({
+        uploadUrl: result.uploadUrl,
+        videoUrl: result.publicUrl,
+        key: result.key
+      });
+    } catch (error: any) {
+      console.error('[Arena] Upload URL error:', error.message);
+      res.status(500).json({ error: 'Failed to get upload URL' });
+    }
+  });
+
+  // =====================================================
+  // PVP CHALLENGES
+  // =====================================================
+
+  // Create PvP challenge
+  app.post('/api/challenges/pvp/create', async (req: Request, res: Response) => {
+    try {
+      const { challengerId, opponentId, clubId, challengeType } = req.body;
+      
+      if (!challengerId || !opponentId || !clubId || !challengeType) {
+        return res.status(400).json({ error: 'challengerId, opponentId, clubId, and challengeType are required' });
+      }
+
+      // Verify both students are in the same club
+      const students = await db.execute(sql`
+        SELECT id FROM students WHERE id IN (${challengerId}::uuid, ${opponentId}::uuid) AND club_id = ${clubId}::uuid
+      `);
+
+      if ((students as any[]).length !== 2) {
+        return res.status(400).json({ error: 'Both students must be in the same club' });
+      }
+
+      // Create PvP challenge
+      const result = await db.execute(sql`
+        INSERT INTO challenge_submissions (student_id, club_id, answer, mode, status, proof_type, opponent_id, xp_awarded, completed_at)
+        VALUES (${challengerId}::uuid, ${clubId}::uuid, ${challengeType}, 'PVP', 'PENDING_OPPONENT', 'TRUST', ${opponentId}::uuid, 0, NOW())
+        RETURNING id
+      `);
+
+      const challengeId = (result as any[])[0]?.id;
+
+      console.log(`[Arena] PvP challenge created: ${challengerId} vs ${opponentId}`);
+
+      res.json({
+        success: true,
+        challengeId,
+        status: 'PENDING_OPPONENT',
+        message: 'Challenge sent! Waiting for opponent to accept.'
+      });
+    } catch (error: any) {
+      console.error('[Arena] PvP create error:', error.message);
+      res.status(500).json({ error: 'Failed to create PvP challenge' });
+    }
+  });
+
+  // Get pending PvP challenges for a student
+  app.get('/api/challenges/pvp/pending/:studentId', async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+
+      const pending = await db.execute(sql`
+        SELECT cs.*, 
+               challenger.first_name as challenger_name,
+               challenger.current_belt as challenger_belt
+        FROM challenge_submissions cs
+        JOIN students challenger ON cs.student_id = challenger.id
+        WHERE cs.opponent_id = ${studentId}::uuid 
+        AND cs.status = 'PENDING_OPPONENT'
+        ORDER BY cs.completed_at DESC
+      `);
+
+      res.json(pending);
+    } catch (error: any) {
+      console.error('[Arena] PvP pending error:', error.message);
+      res.status(500).json({ error: 'Failed to get pending challenges' });
+    }
+  });
+
+  // Accept/decline PvP challenge
+  app.post('/api/challenges/pvp/respond', async (req: Request, res: Response) => {
+    try {
+      const { challengeId, accept } = req.body;
+      
+      if (!challengeId) {
+        return res.status(400).json({ error: 'challengeId is required' });
+      }
+
+      if (!accept) {
+        // Decline - mark as rejected
+        await db.execute(sql`
+          UPDATE challenge_submissions SET status = 'REJECTED' WHERE id = ${challengeId}::uuid
+        `);
+        return res.json({ success: true, message: 'Challenge declined' });
+      }
+
+      // Accept - mark as active
+      await db.execute(sql`
+        UPDATE challenge_submissions SET status = 'ACTIVE' WHERE id = ${challengeId}::uuid
+      `);
+
+      console.log(`[Arena] PvP challenge ${challengeId} accepted`);
+
+      res.json({ success: true, status: 'ACTIVE', message: 'Challenge accepted! Time to compete.' });
+    } catch (error: any) {
+      console.error('[Arena] PvP respond error:', error.message);
+      res.status(500).json({ error: 'Failed to respond to challenge' });
+    }
+  });
+
+  // Submit PvP scores (both players submit)
+  app.post('/api/challenges/pvp/submit-score', async (req: Request, res: Response) => {
+    try {
+      const { challengeId, studentId, score } = req.body;
+      
+      if (!challengeId || !studentId || score === undefined) {
+        return res.status(400).json({ error: 'challengeId, studentId, and score are required' });
+      }
+
+      // Get challenge
+      const challengeResult = await db.execute(sql`
+        SELECT * FROM challenge_submissions WHERE id = ${challengeId}::uuid
+      `);
+
+      if ((challengeResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Challenge not found' });
+      }
+
+      const challenge = (challengeResult as any[])[0];
+
+      if (challenge.status !== 'ACTIVE') {
+        return res.status(400).json({ error: 'Challenge is not active' });
+      }
+
+      const isChallenger = challenge.student_id === studentId;
+      const isOpponent = challenge.opponent_id === studentId;
+
+      if (!isChallenger && !isOpponent) {
+        return res.status(403).json({ error: 'You are not part of this challenge' });
+      }
+
+      // Store score in answer field as JSON
+      let scores = {};
+      try {
+        scores = challenge.answer ? JSON.parse(challenge.answer) : {};
+      } catch { scores = {}; }
+
+      if (isChallenger) {
+        (scores as any).challenger = score;
+      } else {
+        (scores as any).opponent = score;
+      }
+
+      await db.execute(sql`
+        UPDATE challenge_submissions SET answer = ${JSON.stringify(scores)}, score = ${score}
+        WHERE id = ${challengeId}::uuid
+      `);
+
+      // Check if both scores are in
+      if ((scores as any).challenger !== undefined && (scores as any).opponent !== undefined) {
+        const challengerScore = (scores as any).challenger;
+        const opponentScore = (scores as any).opponent;
+        
+        let winnerId, loserId;
+        if (challengerScore > opponentScore) {
+          winnerId = challenge.student_id;
+          loserId = challenge.opponent_id;
+        } else if (opponentScore > challengerScore) {
+          winnerId = challenge.opponent_id;
+          loserId = challenge.student_id;
+        } else {
+          // Tie - both get participation XP
+          await db.execute(sql`
+            UPDATE students SET lifetime_xp = lifetime_xp + ${PVP_LOSE_XP}, updated_at = NOW()
+            WHERE id IN (${challenge.student_id}::uuid, ${challenge.opponent_id}::uuid)
+          `);
+          await db.execute(sql`
+            UPDATE challenge_submissions SET status = 'COMPLETED', xp_awarded = ${PVP_LOSE_XP}
+            WHERE id = ${challengeId}::uuid
+          `);
+          
+          return res.json({
+            success: true,
+            status: 'COMPLETED',
+            result: 'TIE',
+            xpAwarded: PVP_LOSE_XP,
+            message: `It's a tie! Both players earned ${PVP_LOSE_XP} XP.`
+          });
+        }
+
+        // Award XP
+        await db.execute(sql`
+          UPDATE students SET lifetime_xp = lifetime_xp + ${PVP_WIN_XP}, updated_at = NOW()
+          WHERE id = ${winnerId}::uuid
+        `);
+        await db.execute(sql`
+          UPDATE students SET lifetime_xp = lifetime_xp + ${PVP_LOSE_XP}, updated_at = NOW()
+          WHERE id = ${loserId}::uuid
+        `);
+        await db.execute(sql`
+          UPDATE challenge_submissions SET status = 'COMPLETED', xp_awarded = ${PVP_WIN_XP}
+          WHERE id = ${challengeId}::uuid
+        `);
+
+        console.log(`[Arena] PvP complete: Winner ${winnerId} (+${PVP_WIN_XP}), Loser ${loserId} (+${PVP_LOSE_XP})`);
+
+        const youWon = winnerId === studentId;
+        return res.json({
+          success: true,
+          status: 'COMPLETED',
+          result: youWon ? 'WIN' : 'LOSS',
+          xpAwarded: youWon ? PVP_WIN_XP : PVP_LOSE_XP,
+          message: youWon ? `Victory! You earned ${PVP_WIN_XP} XP!` : `Good effort! You earned ${PVP_LOSE_XP} XP.`
+        });
+      }
+
+      res.json({
+        success: true,
+        status: 'ACTIVE',
+        message: 'Score submitted. Waiting for opponent...'
+      });
+    } catch (error: any) {
+      console.error('[Arena] PvP submit score error:', error.message);
+      res.status(500).json({ error: 'Failed to submit score' });
+    }
+  });
+
+  // =====================================================
+  // COACH VERIFICATION QUEUE
+  // =====================================================
+
+  // Get pending video verifications for coach
+  app.get('/api/challenges/pending-verification/:clubId', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+
+      const pending = await db.execute(sql`
+        SELECT cs.*, 
+               s.first_name, s.last_name, s.current_belt,
+               s.profile_image_url
+        FROM challenge_submissions cs
+        JOIN students s ON cs.student_id = s.id
+        WHERE cs.club_id = ${clubId}::uuid 
+        AND cs.proof_type = 'VIDEO'
+        AND cs.status = 'PENDING'
+        ORDER BY cs.completed_at ASC
+      `);
+
+      res.json(pending);
+    } catch (error: any) {
+      console.error('[Arena] Pending verification error:', error.message);
+      res.status(500).json({ error: 'Failed to get pending verifications' });
+    }
+  });
+
+  // Coach verify/reject submission
+  app.post('/api/challenges/verify', async (req: Request, res: Response) => {
+    try {
+      const { submissionId, verified, coachId } = req.body;
+      
+      if (!submissionId || verified === undefined) {
+        return res.status(400).json({ error: 'submissionId and verified are required' });
+      }
+
+      // Get submission
+      const subResult = await db.execute(sql`
+        SELECT * FROM challenge_submissions WHERE id = ${submissionId}::uuid
+      `);
+
+      if ((subResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Submission not found' });
+      }
+
+      const submission = (subResult as any[])[0];
+
+      if (submission.status !== 'PENDING') {
+        return res.status(400).json({ error: 'Submission is not pending verification' });
+      }
+
+      if (verified) {
+        // Approve - award XP
+        await db.execute(sql`
+          UPDATE challenge_submissions SET status = 'VERIFIED', xp_awarded = ${VIDEO_XP}
+          WHERE id = ${submissionId}::uuid
+        `);
+        await db.execute(sql`
+          UPDATE students SET lifetime_xp = lifetime_xp + ${VIDEO_XP}, updated_at = NOW()
+          WHERE id = ${submission.student_id}::uuid
+        `);
+
+        console.log(`[Arena] Video verified for ${submission.student_id}: +${VIDEO_XP} XP`);
+
+        res.json({
+          success: true,
+          status: 'VERIFIED',
+          xpAwarded: VIDEO_XP,
+          message: 'Video verified! XP awarded to student.'
+        });
+      } else {
+        // Reject
+        await db.execute(sql`
+          UPDATE challenge_submissions SET status = 'REJECTED'
+          WHERE id = ${submissionId}::uuid
+        `);
+
+        console.log(`[Arena] Video rejected for ${submission.student_id}`);
+
+        res.json({
+          success: true,
+          status: 'REJECTED',
+          message: 'Submission rejected.'
+        });
+      }
+    } catch (error: any) {
+      console.error('[Arena] Verify error:', error.message);
+      res.status(500).json({ error: 'Failed to verify submission' });
+    }
+  });
 }

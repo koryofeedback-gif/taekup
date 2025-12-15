@@ -539,15 +539,27 @@ export const dailyChallenges = pgTable('daily_challenges', {
   createdByAi: timestamp('created_by_ai', { withTimezone: true }).defaultNow(),
 });
 
+// Arena challenge enums
+export const challengeModeEnum = pgEnum('challenge_mode', ['SOLO', 'PVP']);
+export const challengeStatusEnum = pgEnum('challenge_status', ['PENDING', 'PENDING_OPPONENT', 'ACTIVE', 'COMPLETED', 'VERIFIED', 'REJECTED']);
+export const proofTypeEnum = pgEnum('proof_type', ['TRUST', 'VIDEO']);
+
 export const challengeSubmissions = pgTable('challenge_submissions', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
-  challengeId: uuid('challenge_id').references(() => dailyChallenges.id, { onDelete: 'cascade' }).notNull(),
+  challengeId: uuid('challenge_id').references(() => dailyChallenges.id, { onDelete: 'cascade' }),
   studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
   clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
   answer: text('answer'),
   isCorrect: boolean('is_correct'),
   xpAwarded: integer('xp_awarded').default(0),
   completedAt: timestamp('completed_at', { withTimezone: true }).defaultNow(),
+  // Arena fields
+  mode: challengeModeEnum('mode').default('SOLO'),
+  opponentId: uuid('opponent_id').references(() => students.id, { onDelete: 'set null' }),
+  status: challengeStatusEnum('status').default('COMPLETED'),
+  proofType: proofTypeEnum('proof_type').default('TRUST'),
+  videoUrl: text('video_url'),
+  score: integer('score').default(0),
 });
 
 export type DailyChallenge = typeof dailyChallenges.$inferSelect;
