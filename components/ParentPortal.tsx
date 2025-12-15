@@ -2394,64 +2394,36 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                     )}
 
-                                    {/* Video Proof Section - Premium Only */}
-                                    {hasPremiumAccess && (
-                                        <div className="bg-gradient-to-b from-purple-900/40 to-gray-900 p-5 rounded-2xl border border-purple-500/50 shadow-xl">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h4 className="font-bold text-white text-lg flex items-center">
-                                                    <span className="w-8 h-8 bg-purple-600/30 rounded-lg flex items-center justify-center mr-3">🎬</span>
-                                                    Video Proof
-                                                </h4>
-                                                <span className="text-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-bold animate-pulse">
-                                                    PREMIUM
-                                                </span>
-                                            </div>
-                                            <p className="text-gray-400 text-sm mb-4">
-                                                Record yourself completing a challenge for coach verification and earn extra XP!
-                                            </p>
-                                            <button
-                                                onClick={() => setShowVideoUpload(true)}
-                                                disabled={!selectedChallenge}
-                                                className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-                                                    selectedChallenge
-                                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-900/50'
-                                                        : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                                                }`}
-                                            >
-                                                <span className="text-lg">📹</span>
-                                                {selectedChallenge ? 'Submit Video Proof' : 'Select a Challenge First'}
-                                            </button>
-
-                                            {/* My Submitted Videos */}
-                                            {myVideos.length > 0 && (
-                                                <div className="mt-4 pt-4 border-t border-purple-500/30">
-                                                    <h5 className="text-sm font-bold text-gray-300 mb-3">My Submissions</h5>
-                                                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                                                        {myVideos.map(video => (
-                                                            <div key={video.id} className="flex items-center justify-between bg-gray-800/50 p-3 rounded-lg">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-lg">
-                                                                        {video.status === 'pending' ? '⏳' : video.status === 'approved' ? '✅' : '❌'}
-                                                                    </span>
-                                                                    <div>
-                                                                        <p className="text-sm text-white font-medium">{video.challengeName}</p>
-                                                                        <p className="text-xs text-gray-500">
-                                                                            {video.status === 'pending' && 'Awaiting coach review'}
-                                                                            {video.status === 'approved' && (video.coachNotes || `Verified! ${video.voteCount} votes`)}
-                                                                            {video.status === 'rejected' && (video.coachNotes || 'Not approved')}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                                {video.status === 'approved' && (
-                                                                    <span className="text-xs bg-green-900/50 text-green-400 px-2 py-1 rounded-full">
-                                                                        ✓ Verified
-                                                                    </span>
-                                                                )}
+                                    {/* My Video Submissions - Premium Only */}
+                                    {hasPremiumAccess && myVideos.length > 0 && (
+                                        <div className="bg-gray-800/50 p-4 rounded-xl border border-purple-500/30">
+                                            <h5 className="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
+                                                <span>📹</span> My Video Submissions
+                                            </h5>
+                                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                {myVideos.map(video => (
+                                                    <div key={video.id} className="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-lg">
+                                                                {video.status === 'pending' ? '⏳' : video.status === 'approved' ? '✅' : '❌'}
+                                                            </span>
+                                                            <div>
+                                                                <p className="text-sm text-white font-medium">{video.challengeName}</p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {video.status === 'pending' && 'Awaiting coach review'}
+                                                                    {video.status === 'approved' && (video.coachNotes || `Verified! ${video.voteCount} votes`)}
+                                                                    {video.status === 'rejected' && (video.coachNotes || 'Not approved')}
+                                                                </p>
                                                             </div>
-                                                        ))}
+                                                        </div>
+                                                        {video.status === 'approved' && (
+                                                            <span className="text-xs bg-green-900/50 text-green-400 px-2 py-1 rounded-full">
+                                                                ✓ Verified
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                </div>
-                                            )}
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
 
