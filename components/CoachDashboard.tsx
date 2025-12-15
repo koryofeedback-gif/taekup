@@ -103,27 +103,28 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 };
 
 const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ students, belts }) => {
-    // 1. Leaderboard Logic - Rank by PTS earned this week/month (from recent performance)
+    const [leaderboardPeriod, setLeaderboardPeriod] = useState<'week' | 'month'>('week');
+    
+    // 1. Leaderboard Logic - Rank by PTS earned this week or month (from recent performance)
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const cutoffDate = leaderboardPeriod === 'week' 
+        ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     
     const topStudents = [...students]
         .map(student => {
-            // Calculate PTS earned this week from performance history
-            const weeklyPTS = (student.performanceHistory || [])
-                .filter(record => new Date(record.date) >= oneWeekAgo)
+            // Calculate PTS earned in period using shared calculation logic
+            const periodPTS = (student.performanceHistory || [])
+                .filter(record => new Date(record.date) >= cutoffDate)
                 .reduce((sum, record) => {
-                    const scores = Object.values(record.scores || {}).filter((s): s is number => s !== null && s !== undefined);
-                    if (scores.length === 0) return sum;
-                    const maxPossible = scores.length * 2;
-                    const actual = scores.reduce((a, b) => a + b, 0);
-                    const normalizedPTS = (actual / maxPossible) * 100;
-                    return sum + Math.round(normalizedPTS) + (record.bonusPoints || 0);
+                    const scores = Object.values(record.scores || {});
+                    const classPTS = calculateClassXP(scores);
+                    return sum + Math.round(classPTS) + (record.bonusPoints || 0);
                 }, 0);
-            return { ...student, weeklyPTS };
+            return { ...student, periodPTS };
         })
-        .sort((a, b) => b.weeklyPTS - a.weeklyPTS)
-        .filter(s => s.weeklyPTS > 0)
+        .sort((a, b) => b.periodPTS - a.periodPTS)
+        .filter(s => s.periodPTS > 0)
         .slice(0, 3);
 
     // 2. Retention Radar Logic
@@ -196,12 +197,23 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                 </div>
             </div>
 
-            {/* Leaderboard Widget - Top PTS This Week */}
+            {/* Leaderboard Widget - Top PTS This Week/Month */}
             <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-4">
-                <h3 className="font-bold text-white flex items-center mb-3">
-                    <span className="text-xl mr-2">🏆</span> Top Students
-                    <span className="text-xs text-gray-400 ml-2 font-normal">(This Week)</span>
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-white flex items-center">
+                        <span className="text-xl mr-2">🏆</span> Top Students
+                    </h3>
+                    <div className="flex text-xs">
+                        <button 
+                            onClick={() => setLeaderboardPeriod('week')}
+                            className={`px-2 py-1 rounded-l ${leaderboardPeriod === 'week' ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                        >Week</button>
+                        <button 
+                            onClick={() => setLeaderboardPeriod('month')}
+                            className={`px-2 py-1 rounded-r ${leaderboardPeriod === 'month' ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                        >Month</button>
+                    </div>
+                </div>
                 <div className="space-y-3">
                     {topStudents.map((s, i) => {
                         const belt = belts.find(b => b.id === s.beltId);
@@ -215,11 +227,11 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                                         <p className="text-xs text-gray-400">{belt?.name}</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-bold text-sky-300">{s.weeklyPTS} PTS</span>
+                                <span className="text-sm font-bold text-sky-300">{s.periodPTS} PTS</span>
                             </div>
                         )
                     })}
-                    {topStudents.length === 0 && <p className="text-sm text-gray-500 italic">No activity this week.</p>}
+                    {topStudents.length === 0 && <p className="text-sm text-gray-500 italic">No activity this {leaderboardPeriod}.</p>}
                 </div>
             </div>
 
