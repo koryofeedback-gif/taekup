@@ -5,6 +5,7 @@ import { generateParentFeedback, generatePromotionMessage, generateLessonPlan } 
 import { generateLessonPlanGPT } from '../services/openaiService';
 import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
+import { calculateClassXP, MAX_CLASS_XP } from '../services/gamificationService';
 
 // --- TYPE DEFINITIONS ---
 type SessionScores = Record<string, Record<string, number | null>>;
@@ -1174,8 +1175,11 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             const studentScores = sessionScores[student.id] || {};
             const studentBonus = bonusPoints[student.id] || 0;
             const studentHomework = homeworkPoints[student.id] || 0;
-            const sessionTotalFromScores = Object.values(studentScores).reduce((sum: number, score) => sum + (Number(score) || 0), 0);
-            const sessionTotal = sessionTotalFromScores + studentBonus + studentHomework;
+            
+            // Fair Grading Algorithm: Normalize scores to 0-100 XP regardless of number of grading items
+            const scoresArray = Object.values(studentScores);
+            const classXP = calculateClassXP(scoresArray);
+            const sessionTotal = Math.round(classXP) + studentBonus + studentHomework;
             
             if (sessionTotal === 0 && Object.values(studentScores).every(s => s === null)) return student;
 
@@ -1313,8 +1317,11 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         const studentScores = sessionScores[student.id] || {};
         const studentBonus = bonusPoints[student.id] || 0;
         const studentHomework = homeworkPoints[student.id] || 0;
-        const sessionTotalFromScores = attendance[student.id] ? Object.values(studentScores).reduce((sum: number, score) => sum + (Number(score) || 0), 0) : 0;
-        const sessionTotal = sessionTotalFromScores + studentBonus + studentHomework;
+        
+        // Fair Grading Algorithm: Normalize scores to 0-100 XP regardless of grading items
+        const scoresArray = attendance[student.id] ? Object.values(studentScores) : [];
+        const classXP = calculateClassXP(scoresArray);
+        const sessionTotal = Math.round(classXP) + studentBonus + studentHomework;
         const totalPointsBefore = student.totalPoints || 0;
         const totalPointsAfter = totalPointsBefore + sessionTotal;
         const pointsRequired = getPointsRequired(student.beltId);
