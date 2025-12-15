@@ -180,12 +180,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Fetch AI-powered Daily Mystery Challenge
     useEffect(() => {
         const fetchDailyChallenge = async () => {
-            if (!student.id || !studentBeltName) return;
+            if (!studentBeltName) return;
+            
+            // Use student.id if available, otherwise use a demo fallback
+            const effectiveStudentId = student.id || 'demo-student';
             
             setLoadingMysteryChallenge(true);
             try {
                 const params = new URLSearchParams({
-                    studentId: student.id,
+                    studentId: effectiveStudentId,
                     belt: studentBeltName,
                 });
                 
@@ -213,7 +216,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     
     // Submit Mystery Challenge answer
     const submitMysteryChallenge = async (selectedIndex: number) => {
-        if (!mysteryChallenge || !student.id) return;
+        if (!mysteryChallenge) return;
+        
+        const effectiveStudentId = student.id || 'demo-student';
         
         try {
             const response = await fetch('/api/daily-challenge/submit', {
@@ -221,7 +226,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     challengeId: mysteryChallenge.id,
-                    studentId: student.id,
+                    studentId: effectiveStudentId,
                     clubId: 'demo',
                     selectedIndex,
                 })

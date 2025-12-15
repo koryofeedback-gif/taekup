@@ -1838,25 +1838,31 @@ export function registerRoutes(app: Express) {
 
       const today = new Date().toISOString().split('T')[0];
       const targetBelt = (belt as string).toLowerCase();
+      
+      // Check if studentId is a valid UUID (demo mode uses non-UUID IDs)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isValidUuid = uuidRegex.test(studentId as string);
 
-      // Check if student already completed today's challenge
-      const existingSubmission = await db.execute(sql`
-        SELECT cs.id, cs.is_correct, cs.xp_awarded, dc.title
-        FROM challenge_submissions cs
-        JOIN daily_challenges dc ON cs.challenge_id = dc.id
-        WHERE cs.student_id = ${studentId}::uuid 
-        AND dc.date = ${today} 
-        AND dc.target_belt = ${targetBelt}
-      `);
+      // Check if student already completed today's challenge (only for valid UUIDs)
+      if (isValidUuid) {
+        const existingSubmission = await db.execute(sql`
+          SELECT cs.id, cs.is_correct, cs.xp_awarded, dc.title
+          FROM challenge_submissions cs
+          JOIN daily_challenges dc ON cs.challenge_id = dc.id
+          WHERE cs.student_id = ${studentId}::uuid 
+          AND dc.date = ${today} 
+          AND dc.target_belt = ${targetBelt}
+        `);
 
-      if ((existingSubmission as any[]).length > 0) {
-        const sub = (existingSubmission as any[])[0];
-        return res.json({ 
-          completed: true, 
-          message: `You already completed today's challenge: "${sub.title}"!`,
-          xpAwarded: sub.xp_awarded,
-          wasCorrect: sub.is_correct
-        });
+        if ((existingSubmission as any[]).length > 0) {
+          const sub = (existingSubmission as any[])[0];
+          return res.json({ 
+            completed: true, 
+            message: `You already completed today's challenge: "${sub.title}"!`,
+            xpAwarded: sub.xp_awarded,
+            wasCorrect: sub.is_correct
+          });
+        }
       }
 
       // "Lazy Generator" - Check if challenge exists for today + belt
@@ -1875,12 +1881,19 @@ export function registerRoutes(app: Express) {
       } else {
         // Generate new challenge with AI
         let artType = 'Taekwondo';
-        if (clubId) {
-          const clubData = await db.execute(sql`
-            SELECT art_type FROM clubs WHERE id = ${clubId}::uuid
-          `);
-          if ((clubData as any[]).length > 0) {
-            artType = (clubData as any[])[0].art_type || 'Taekwondo';
+        const clubIdStr = clubId as string;
+        const isValidClubUuid = uuidRegex.test(clubIdStr);
+        
+        if (clubId && isValidClubUuid) {
+          try {
+            const clubData = await db.execute(sql`
+              SELECT art_type FROM clubs WHERE id = ${clubIdStr}::uuid
+            `);
+            if ((clubData as any[]).length > 0) {
+              artType = (clubData as any[])[0].art_type || 'Taekwondo';
+            }
+          } catch (e) {
+            // Ignore club lookup errors in demo mode
           }
         }
 
@@ -1923,6 +1936,12 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'challengeId, studentId, and clubId are required' });
       }
 
+      // Check if IDs are valid UUIDs (for demo mode detection)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isValidStudentUuid = uuidRegex.test(studentId);
+      const isValidClubUuid = uuidRegex.test(clubId);
+      const isDemoMode = !isValidStudentUuid || !isValidClubUuid;
+
       // Get challenge details
       const challengeResult = await db.execute(sql`
         SELECT * FROM daily_challenges WHERE id = ${challengeId}::uuid
@@ -1934,14 +1953,16 @@ export function registerRoutes(app: Express) {
 
       const challenge = (challengeResult as any[])[0];
       
-      // Check for existing submission
-      const existing = await db.execute(sql`
-        SELECT id FROM challenge_submissions 
-        WHERE challenge_id = ${challengeId}::uuid AND student_id = ${studentId}::uuid
-      `);
+      // Check for existing submission (only for real users)
+      if (isValidStudentUuid) {
+        const existing = await db.execute(sql`
+          SELECT id FROM challenge_submissions 
+          WHERE challenge_id = ${challengeId}::uuid AND student_id = ${studentId}::uuid
+        `);
 
-      if ((existing as any[]).length > 0) {
-        return res.status(400).json({ error: 'Already submitted this challenge' });
+        if ((existing as any[]).length > 0) {
+          return res.status(400).json({ error: 'Already submitted this challenge' });
+        }
       }
 
       // Check if answer is correct (for quiz type)
@@ -1959,20 +1980,23 @@ export function registerRoutes(app: Express) {
         isCorrect = true;
       }
 
-      // Create submission
-      await db.execute(sql`
-        INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded, completed_at)
-        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${clubId}::uuid, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
-      `);
+      // Only persist to database for real users (not demo mode)
+      if (!isDemoMode) {
+        // Create submission
+        await db.execute(sql`
+          INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded, completed_at)
+          VALUES (${challengeId}::uuid, ${studentId}::uuid, ${clubId}::uuid, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
+        `);
 
-      // Award XP to student
-      await db.execute(sql`
-        UPDATE students 
-        SET lifetime_xp = lifetime_xp + ${xpAwarded}, updated_at = NOW()
-        WHERE id = ${studentId}::uuid
-      `);
+        // Award XP to student
+        await db.execute(sql`
+          UPDATE students 
+          SET lifetime_xp = lifetime_xp + ${xpAwarded}, updated_at = NOW()
+          WHERE id = ${studentId}::uuid
+        `);
+      }
 
-      console.log(`[DailyChallenge] ${isCorrect ? 'Correct' : 'Incorrect'} submission - ${xpAwarded} XP awarded`);
+      console.log(`[DailyChallenge] ${isDemoMode ? '(Demo) ' : ''}${isCorrect ? 'Correct' : 'Incorrect'} submission - ${xpAwarded} XP awarded`);
 
       res.json({
         success: true,
