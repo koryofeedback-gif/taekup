@@ -1425,6 +1425,67 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// Database setup endpoint - creates missing tables
+async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
+  const { password } = parseBody(req);
+  const adminPassword = process.env.SUPER_ADMIN_PASSWORD;
+  
+  if (!adminPassword || password !== adminPassword) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    // Create challenge_submissions table if missing
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS challenge_submissions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        challenge_id UUID NOT NULL,
+        student_id UUID NOT NULL,
+        club_id UUID NOT NULL,
+        answer TEXT,
+        is_correct BOOLEAN DEFAULT false,
+        xp_awarded INTEGER DEFAULT 0,
+        completed_at TIMESTAMPTZ DEFAULT NOW(),
+        mode TEXT,
+        opponent_id UUID,
+        status TEXT,
+        proof_type TEXT,
+        video_url TEXT,
+        score INTEGER
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_cs_student ON challenge_submissions(student_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_cs_challenge ON challenge_submissions(challenge_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_cs_answer ON challenge_submissions(answer)`);
+    
+    // Create daily_challenges table if missing
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS daily_challenges (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title TEXT NOT NULL,
+        description TEXT,
+        type TEXT DEFAULT 'quiz',
+        xp_reward INTEGER DEFAULT 50,
+        quiz_data JSONB,
+        belt_level TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        is_active BOOLEAN DEFAULT true
+      )
+    `);
+    
+    return res.json({ 
+      success: true, 
+      message: 'Database tables created successfully! Daily Challenge should now work.' 
+    });
+  } catch (error: any) {
+    console.error('[DbSetup] Error:', error.message);
+    return res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -1632,6 +1693,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/ai/class-plan' || path === '/ai/class-plan/') return await handleClassPlan(req, res);
     if (path === '/ai/welcome-email' || path === '/ai/welcome-email/') return await handleWelcomeEmail(req, res);
     if (path === '/ai/video-feedback' || path === '/ai/video-feedback/') return await handleVideoFeedback(req, res);
+    
+    // Database setup (admin only)
+    if (path === '/admin/db-setup' || path === '/admin/db-setup/') return await handleDbSetup(req, res);
     
     // Daily Mystery Challenge
     if (path === '/daily-challenge' || path === '/daily-challenge/') return await handleDailyChallenge(req, res);
