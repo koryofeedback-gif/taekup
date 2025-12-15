@@ -1202,6 +1202,304 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
   }
 }
 
+// =====================================================
+// DAILY MYSTERY CHALLENGE - with robust fallback
+// =====================================================
+
+function getFallbackChallenge() {
+  return {
+    title: "Master's Wisdom",
+    description: "What is the most important belt in martial arts? (Hint: It holds up your pants, but represents your mind!)",
+    type: 'quiz' as const,
+    xpReward: 50,
+    quizData: {
+      question: "What is the most important belt in martial arts?",
+      options: ["Black Belt", "White Belt", "The Mind", "Gold Belt"],
+      correctIndex: 1,
+      explanation: "The White Belt represents a beginner's mindset - always eager to learn. In martial arts philosophy, maintaining this 'empty cup' mentality is the most important quality!"
+    }
+  };
+}
+
+async function generateDailyChallengeAI(targetBelt: string, artType: string): Promise<any> {
+  const gemini = getGeminiClient();
+  const openai = getOpenAIClient();
+  
+  const prompt = `Generate a fun daily quiz challenge for a ${targetBelt} belt ${artType} student.
+
+Return a JSON object with:
+- title: Short catchy title (max 30 chars)
+- description: Brief description of the challenge (max 100 chars)
+- question: The quiz question
+- options: Array of 4 answer choices
+- correctIndex: Index of correct answer (0-3)
+- explanation: Brief explanation of the correct answer (max 100 chars)
+
+The question should be age-appropriate, educational, and related to martial arts history, terminology, techniques, or philosophy. Make it fun and engaging!
+
+Return ONLY valid JSON, no markdown.`;
+
+  // Try Gemini first
+  if (gemini) {
+    try {
+      const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().replace(/```json\n?|\n?```/g, '').trim();
+      const parsed = JSON.parse(text);
+      return {
+        title: parsed.title || "Daily Challenge",
+        description: parsed.description || "Test your martial arts knowledge!",
+        type: 'quiz',
+        xpReward: 25,
+        quizData: {
+          question: parsed.question,
+          options: parsed.options,
+          correctIndex: parsed.correctIndex,
+          explanation: parsed.explanation
+        }
+      };
+    } catch (e: any) {
+      console.log('[DailyChallenge] Gemini failed:', e.message);
+    }
+  }
+
+  // Fallback to OpenAI
+  if (openai) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 500,
+        temperature: 0.8,
+      });
+      const text = response.choices[0]?.message?.content?.replace(/```json\n?|\n?```/g, '').trim() || '';
+      const parsed = JSON.parse(text);
+      return {
+        title: parsed.title || "Daily Challenge",
+        description: parsed.description || "Test your martial arts knowledge!",
+        type: 'quiz',
+        xpReward: 25,
+        quizData: {
+          question: parsed.question,
+          options: parsed.options,
+          correctIndex: parsed.correctIndex,
+          explanation: parsed.explanation
+        }
+      };
+    } catch (e: any) {
+      console.log('[DailyChallenge] OpenAI failed:', e.message);
+    }
+  }
+
+  throw new Error('All AI providers failed');
+}
+
+async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { studentId, clubId, belt } = req.query;
+  
+  if (!studentId || !belt) {
+    return res.status(400).json({ error: 'studentId and belt are required' });
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const targetBelt = (belt as string).toLowerCase();
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isValidUuid = uuidRegex.test(studentId as string);
+
+  const client = await pool.connect();
+  try {
+    // Check if student already completed today's challenge
+    if (isValidUuid) {
+      const existingSubmission = await client.query(
+        `SELECT cs.id, cs.is_correct, cs.xp_awarded, dc.title
+         FROM challenge_submissions cs
+         JOIN daily_challenges dc ON cs.challenge_id = dc.id
+         WHERE cs.student_id = $1::uuid 
+         AND dc.date = $2 
+         AND dc.target_belt = $3`,
+        [studentId, today, targetBelt]
+      );
+
+      if (existingSubmission.rows.length > 0) {
+        const sub = existingSubmission.rows[0];
+        return res.json({ 
+          completed: true, 
+          message: `You already completed today's challenge: "${sub.title}"!`,
+          xpAwarded: sub.xp_awarded,
+          wasCorrect: sub.is_correct
+        });
+      }
+    }
+
+    // Check if challenge exists for today
+    const existingChallenge = await client.query(
+      `SELECT * FROM daily_challenges WHERE date = $1 AND target_belt = $2 LIMIT 1`,
+      [today, targetBelt]
+    );
+
+    let challenge: any;
+
+    if (existingChallenge.rows.length > 0) {
+      challenge = existingChallenge.rows[0];
+      console.log(`[DailyChallenge] Using cached challenge for ${targetBelt} belt`);
+    } else {
+      // Generate new challenge with AI, with fallback
+      let artType = 'Taekwondo';
+      const clubIdStr = clubId as string;
+      const isValidClubUuid = uuidRegex.test(clubIdStr);
+      
+      if (clubId && isValidClubUuid) {
+        try {
+          const clubData = await client.query(`SELECT art_type FROM clubs WHERE id = $1::uuid`, [clubIdStr]);
+          if (clubData.rows.length > 0) {
+            artType = clubData.rows[0].art_type || 'Taekwondo';
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      let generated;
+      try {
+        generated = await generateDailyChallengeAI(targetBelt, artType);
+        console.log(`[DailyChallenge] AI generated challenge for ${targetBelt} belt`);
+      } catch (aiError: any) {
+        console.error(`[DailyChallenge] AI generation failed: ${aiError.message}`);
+        console.log(`[DailyChallenge] Using fallback challenge`);
+        generated = getFallbackChallenge();
+      }
+      
+      // Cache in database
+      try {
+        const insertResult = await client.query(
+          `INSERT INTO daily_challenges (date, target_belt, title, description, xp_reward, type, quiz_data, created_by_ai)
+           VALUES ($1, $2, $3, $4, $5, $6::daily_challenge_type, $7::jsonb, NOW())
+           RETURNING *`,
+          [today, targetBelt, generated.title, generated.description, generated.xpReward, 
+           generated.type, JSON.stringify(generated.quizData)]
+        );
+        challenge = insertResult.rows[0];
+      } catch (dbError: any) {
+        console.error(`[DailyChallenge] DB cache failed: ${dbError.message}`);
+        return res.json({
+          completed: false,
+          challenge: {
+            id: 'temp-' + Date.now(),
+            title: generated.title,
+            description: generated.description,
+            type: generated.type,
+            xpReward: generated.xpReward,
+            quizData: generated.quizData,
+          }
+        });
+      }
+    }
+
+    return res.json({
+      completed: false,
+      challenge: {
+        id: challenge.id,
+        title: challenge.title,
+        description: challenge.description,
+        type: challenge.type,
+        xpReward: challenge.xp_reward,
+        quizData: challenge.quiz_data,
+      }
+    });
+  } catch (error: any) {
+    console.error('[DailyChallenge] Critical error:', error.message);
+    const fallback = getFallbackChallenge();
+    return res.json({
+      completed: false,
+      challenge: {
+        id: 'fallback-' + Date.now(),
+        title: fallback.title,
+        description: fallback.description,
+        type: fallback.type,
+        xpReward: fallback.xpReward,
+        quizData: fallback.quizData,
+      }
+    });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { challengeId, studentId, clubId, answer, selectedIndex } = parseBody(req);
+  
+  if (!challengeId || !studentId || !clubId) {
+    return res.status(400).json({ error: 'challengeId, studentId, and clubId are required' });
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isValidStudentUuid = uuidRegex.test(studentId);
+  const isValidClubUuid = uuidRegex.test(clubId);
+  const isValidChallengeUuid = uuidRegex.test(challengeId);
+  const isDemoMode = !isValidStudentUuid || !isValidClubUuid || !isValidChallengeUuid;
+
+  // Demo mode - just return success
+  if (isDemoMode) {
+    return res.json({
+      success: true,
+      isCorrect: selectedIndex === 1,
+      correctIndex: 1,
+      xpAwarded: selectedIndex === 1 ? 25 : 0,
+      explanation: "The White Belt represents a beginner's mindset!",
+      message: selectedIndex === 1 ? 'Correct! +25 XP' : 'Not quite! The answer was White Belt.'
+    });
+  }
+
+  const client = await pool.connect();
+  try {
+    const challengeResult = await client.query(
+      `SELECT * FROM daily_challenges WHERE id = $1::uuid`,
+      [challengeId]
+    );
+
+    if (challengeResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    const challenge = challengeResult.rows[0];
+    const quizData = challenge.quiz_data || {};
+    const correctIndex = quizData.correctIndex ?? 0;
+    const isCorrect = selectedIndex === correctIndex;
+    const xpAwarded = isCorrect ? (challenge.xp_reward || 25) : 0;
+
+    // Save submission
+    await client.query(
+      `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded)
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6)`,
+      [challengeId, studentId, clubId, answer || String(selectedIndex), isCorrect, xpAwarded]
+    );
+
+    // Update student XP if correct
+    if (isCorrect && xpAwarded > 0) {
+      await client.query(
+        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+        [xpAwarded, studentId]
+      );
+    }
+
+    return res.json({
+      success: true,
+      isCorrect,
+      correctIndex,
+      xpAwarded,
+      explanation: quizData.explanation || 'Great effort!',
+      message: isCorrect ? `Correct! +${xpAwarded} XP` : `Not quite! The correct answer was option ${correctIndex + 1}.`
+    });
+  } catch (error: any) {
+    console.error('[DailyChallenge] Submit error:', error.message);
+    return res.status(500).json({ error: 'Failed to submit challenge' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleVideoFeedback(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -1277,6 +1575,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/ai/class-plan' || path === '/ai/class-plan/') return await handleClassPlan(req, res);
     if (path === '/ai/welcome-email' || path === '/ai/welcome-email/') return await handleWelcomeEmail(req, res);
     if (path === '/ai/video-feedback' || path === '/ai/video-feedback/') return await handleVideoFeedback(req, res);
+    
+    // Daily Mystery Challenge
+    if (path === '/daily-challenge' || path === '/daily-challenge/') return await handleDailyChallenge(req, res);
+    if (path === '/daily-challenge/submit' || path === '/daily-challenge/submit/') return await handleDailyChallengeSubmit(req, res);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     
