@@ -1831,14 +1831,14 @@ export function registerRoutes(app: Express) {
   // Hardcoded fallback challenge for when AI generation fails
   const getFallbackChallenge = () => ({
     title: "Master's Wisdom",
-    description: "What is the most important belt in martial arts? (Hint: It holds up your pants, but represents your mind!)",
+    description: "Test your knowledge of martial arts belt symbolism!",
     type: 'quiz' as const,
     xpReward: 50,
     quizData: {
-      question: "What is the most important belt in martial arts?",
-      options: ["Black Belt", "White Belt", "The Mind", "Gold Belt"],
+      question: "What does the color of the White Belt represent?",
+      options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
       correctIndex: 1,
-      explanation: "The White Belt represents a beginner's mindset - always eager to learn. In martial arts philosophy, maintaining this 'empty cup' mentality is the most important quality!"
+      explanation: "The White Belt represents innocence and a beginner's pure mind - ready to absorb new knowledge like a blank canvas!"
     }
   });
 
@@ -2080,8 +2080,9 @@ export function registerRoutes(app: Express) {
         }
       }
 
-      // Check if answer is correct (for quiz type)
+      // BUG FIX #2: Use the ACTUAL xp_reward from the database, not hardcoded value
       let isCorrect = false;
+      const challengeXpReward = challenge.xp_reward || 50;
       let xpAwarded = 0;
       
       if (challenge.type === 'quiz' && challenge.quiz_data) {
@@ -2089,9 +2090,9 @@ export function registerRoutes(app: Express) {
           ? JSON.parse(challenge.quiz_data) 
           : challenge.quiz_data;
         isCorrect = selectedIndex === quizData.correctIndex;
-        xpAwarded = isCorrect ? (challenge.xp_reward || 25) : 5; // 5 XP for trying
+        xpAwarded = isCorrect ? challengeXpReward : 0; // No XP for wrong answers
       } else {
-        xpAwarded = challenge.xp_reward || 25;
+        xpAwarded = challengeXpReward;
         isCorrect = true;
       }
 

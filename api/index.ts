@@ -1209,14 +1209,14 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
 function getFallbackChallenge() {
   return {
     title: "Master's Wisdom",
-    description: "What is the most important belt in martial arts? (Hint: It holds up your pants, but represents your mind!)",
+    description: "Test your knowledge of martial arts belt symbolism!",
     type: 'quiz' as const,
     xpReward: 50,
     quizData: {
-      question: "What is the most important belt in martial arts?",
-      options: ["Black Belt", "White Belt", "The Mind", "Gold Belt"],
+      question: "What does the color of the White Belt represent?",
+      options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
       correctIndex: 1,
-      explanation: "The White Belt represents a beginner's mindset - always eager to learn. In martial arts philosophy, maintaining this 'empty cup' mentality is the most important quality!"
+      explanation: "The White Belt represents innocence and a beginner's pure mind - ready to absorb new knowledge like a blank canvas!"
     }
   };
 }
@@ -1440,20 +1440,39 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
   const isValidChallengeUuid = uuidRegex.test(challengeId);
   const isDemoMode = !isValidStudentUuid || !isValidClubUuid || !isValidChallengeUuid;
 
-  // Demo mode - just return success
+  // Demo mode - just return success (use fallback XP of 50)
   if (isDemoMode) {
+    const fallbackXp = 50;
     return res.json({
       success: true,
       isCorrect: selectedIndex === 1,
       correctIndex: 1,
-      xpAwarded: selectedIndex === 1 ? 25 : 0,
-      explanation: "The White Belt represents a beginner's mindset!",
-      message: selectedIndex === 1 ? 'Correct! +25 XP' : 'Not quite! The answer was White Belt.'
+      xpAwarded: selectedIndex === 1 ? fallbackXp : 0,
+      explanation: "The White Belt represents innocence and a beginner's pure mind!",
+      message: selectedIndex === 1 ? `Correct! +${fallbackXp} XP` : 'Not quite! The answer was Innocence/Beginner.'
     });
   }
 
   const client = await pool.connect();
   try {
+    // BUG FIX #1: Check for duplicate submission BEFORE processing
+    const existingSubmission = await client.query(
+      `SELECT id, xp_awarded, is_correct FROM challenge_submissions 
+       WHERE challenge_id = $1::uuid AND student_id = $2::uuid LIMIT 1`,
+      [challengeId, studentId]
+    );
+
+    if (existingSubmission.rows.length > 0) {
+      const prev = existingSubmission.rows[0];
+      return res.status(400).json({ 
+        error: 'Already completed', 
+        message: 'You have already submitted this challenge!',
+        previousXp: prev.xp_awarded,
+        wasCorrect: prev.is_correct
+      });
+    }
+
+    // Get challenge from database
     const challengeResult = await client.query(
       `SELECT * FROM daily_challenges WHERE id = $1::uuid`,
       [challengeId]
@@ -1467,9 +1486,12 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
     const quizData = challenge.quiz_data || {};
     const correctIndex = quizData.correctIndex ?? 0;
     const isCorrect = selectedIndex === correctIndex;
-    const xpAwarded = isCorrect ? (challenge.xp_reward || 25) : 0;
+    
+    // BUG FIX #2: Use the ACTUAL xp_reward from the database, not hardcoded value
+    const challengeXpReward = challenge.xp_reward || 50;
+    const xpAwarded = isCorrect ? challengeXpReward : 0;
 
-    // Save submission
+    // Save submission record
     await client.query(
       `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded)
        VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6)`,
