@@ -1241,9 +1241,14 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 isAIGenerated: true,
             } : null;
 
+            // Calculate new lifetimeXp (normalized XP for Dojang Rivals - never resets)
+            const lifetimeXpBefore = student.lifetimeXp || 0;
+            const lifetimeXpAfter = lifetimeXpBefore + classXP; // Only add normalized classXP (bonuses are for PTS)
+
             return { 
                 ...student, 
                 totalPoints: totalPointsAfter,
+                lifetimeXp: lifetimeXpAfter, // Add normalized XP for Dojang Rivals
                 attendanceCount: (student.attendanceCount || 0) + 1,
                 performanceHistory: [...(student.performanceHistory || []), newPerformanceRecord],
                 feedbackHistory: newFeedbackRecord ? [...(student.feedbackHistory || []), newFeedbackRecord] : (student.feedbackHistory || []),
@@ -1253,6 +1258,24 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         onUpdateStudents(updatedStudents);
         setStudents(updatedStudents);
         resetDashboard();
+
+        // Persist grading data to database (totalPoints + lifetimeXp)
+        updatedStudents.forEach(async (student) => {
+            if (attendance[student.id]) {
+                try {
+                    await fetch(`/api/students/${student.id}/grading`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            totalPoints: student.totalPoints,
+                            lifetimeXp: student.lifetimeXp
+                        })
+                    });
+                } catch (err) {
+                    console.error('Failed to persist grading for student:', student.id, err);
+                }
+            }
+        });
 
         setConfirmation({ show: true, message: `${updatedCount} students updated. Parents notified. ${earnedStripes} new stripes earned!` });
         setTimeout(() => setConfirmation({ show: false, message: '' }), 5000);

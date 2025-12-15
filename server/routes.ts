@@ -200,14 +200,15 @@ export function registerRoutes(app: Express) {
                 belt = ${student.beltId || 'white'},
                 birthdate = ${birthdateValue}::timestamptz,
                 total_points = ${student.totalPoints || 0},
+                lifetime_xp = ${student.lifetimeXp || 0},
                 updated_at = NOW()
               WHERE id = ${studentId}::uuid
             `);
           } else {
             const birthdateValue = student.birthday ? student.birthday + 'T00:00:00Z' : null;
             const insertResult = await db.execute(sql`
-              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, created_at)
-              VALUES (${clubId}::uuid, ${student.name}, ${parentEmail}, ${student.parentName || null}, ${student.parentPhone || null}, ${student.beltId || 'white'}, ${birthdateValue}::timestamptz, ${student.totalPoints || 0}, NOW())
+              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, lifetime_xp, created_at)
+              VALUES (${clubId}::uuid, ${student.name}, ${parentEmail}, ${student.parentName || null}, ${student.parentPhone || null}, ${student.beltId || 'white'}, ${birthdateValue}::timestamptz, ${student.totalPoints || 0}, ${student.lifetimeXp || 0}, NOW())
               RETURNING id
             `);
             studentId = (insertResult as any[])[0]?.id;
@@ -272,7 +273,7 @@ export function registerRoutes(app: Express) {
 
       const studentsResult = await db.execute(sql`
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-               total_points, total_xp, current_streak, stripe_count
+               total_points, total_xp, current_streak, stripe_count, lifetime_xp
         FROM students WHERE club_id = ${clubId}::uuid
       `);
 
@@ -303,6 +304,7 @@ export function registerRoutes(app: Express) {
         birthday: s.birthdate,
         totalXP: s.total_xp || 0,
         totalPoints: s.total_points || 0,
+        lifetimeXp: s.lifetime_xp || 0,
         currentStreak: s.current_streak || 0,
         stripeCount: s.stripe_count || 0,
         performanceHistory: [],
@@ -400,7 +402,7 @@ export function registerRoutes(app: Express) {
           // CRITICAL: Replace wizard_data students with fresh database students (proper UUIDs)
           const studentsResult = await db.execute(sql`
             SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-                   total_points, total_xp, current_streak, stripe_count
+                   total_points, total_xp, current_streak, stripe_count, lifetime_xp
             FROM students WHERE club_id = ${user.club_id}::uuid
           `);
           
@@ -425,6 +427,7 @@ export function registerRoutes(app: Express) {
             birthday: s.birthdate,
             totalXP: s.total_xp || 0,
             totalPoints: s.total_points || 0,
+            lifetimeXp: s.lifetime_xp || 0,
             currentStreak: s.current_streak || 0,
             stripeCount: s.stripe_count || 0,
             performanceHistory: [],
@@ -1122,6 +1125,33 @@ export function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error('[Reset Password] Error:', error.message);
       res.status(500).json({ error: 'Failed to reset password' });
+    }
+  });
+
+  // Update student grading data (total_points and lifetime_xp)
+  app.patch('/api/students/:id/grading', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { totalPoints, lifetimeXp, attendanceCount } = req.body;
+      
+      if (!id) {
+        return res.status(400).json({ error: 'Student ID is required' });
+      }
+
+      await db.execute(sql`
+        UPDATE students SET 
+          total_points = COALESCE(${totalPoints}, total_points),
+          lifetime_xp = COALESCE(${lifetimeXp}, lifetime_xp),
+          last_class_at = NOW(),
+          updated_at = NOW()
+        WHERE id = ${id}::uuid
+      `);
+
+      console.log('[Grading] Updated student:', id, 'totalPoints:', totalPoints, 'lifetimeXp:', lifetimeXp);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Grading] Update error:', error.message);
+      res.status(500).json({ error: 'Failed to update student grading data' });
     }
   });
 
