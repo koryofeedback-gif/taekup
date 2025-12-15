@@ -1440,17 +1440,52 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
   const isValidChallengeUuid = uuidRegex.test(challengeId);
   const isDemoMode = !isValidStudentUuid || !isValidClubUuid || !isValidChallengeUuid;
 
-  // Demo mode - just return success (use fallback XP of 50)
+  // Demo mode - check daily completion via database with demo marker
   if (isDemoMode) {
-    const fallbackXp = 50;
-    return res.json({
-      success: true,
-      isCorrect: selectedIndex === 1,
-      correctIndex: 1,
-      xpAwarded: selectedIndex === 1 ? fallbackXp : 0,
-      explanation: "The White Belt represents innocence and a beginner's pure mind!",
-      message: selectedIndex === 1 ? `Correct! +${fallbackXp} XP` : 'Not quite! The answer was Innocence/Beginner.'
-    });
+    const client = await pool.connect();
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const demoKey = `demo-${studentId}-${today}`;
+      
+      // Check if demo user already completed today's challenge
+      const existingDemo = await client.query(
+        `SELECT id, xp_awarded, is_correct FROM challenge_submissions 
+         WHERE answer = $1 LIMIT 1`,
+        [demoKey]
+      );
+      
+      if (existingDemo.rows.length > 0) {
+        const prev = existingDemo.rows[0];
+        return res.status(400).json({ 
+          error: 'Already completed', 
+          message: 'You already completed today\'s challenge!',
+          previousXp: prev.xp_awarded,
+          wasCorrect: prev.is_correct
+        });
+      }
+      
+      const fallbackXp = 50;
+      const isCorrect = selectedIndex === 1;
+      const xpAwarded = isCorrect ? fallbackXp : 0;
+      
+      // Record demo submission to prevent duplicates
+      await client.query(
+        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded)
+         VALUES (gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), $1, $2, $3)`,
+        [demoKey, isCorrect, xpAwarded]
+      );
+      
+      return res.json({
+        success: true,
+        isCorrect,
+        correctIndex: 1,
+        xpAwarded,
+        explanation: "The White Belt represents innocence and a beginner's pure mind!",
+        message: isCorrect ? `Correct! +${fallbackXp} XP` : 'Not quite! The answer was Innocence/Beginner.'
+      });
+    } finally {
+      client.release();
+    }
   }
 
   const client = await pool.connect();
