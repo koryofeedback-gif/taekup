@@ -95,6 +95,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [selectedQuizAnswer, setSelectedQuizAnswer] = useState<number | null>(null);
     const [quizExplanation, setQuizExplanation] = useState<string>('');
     const [loadingMysteryChallenge, setLoadingMysteryChallenge] = useState(true);
+    const [submittingMystery, setSubmittingMystery] = useState(false);
     
     // Daily Streak
     const [dailyStreak, setDailyStreak] = useState(student.rivalsStats?.dailyStreak || 0);
@@ -218,6 +219,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const submitMysteryChallenge = async (selectedIndex: number) => {
         if (!mysteryChallenge) return;
         
+        // Prevent submission if already completed or currently submitting
+        if (mysteryCompleted || submittingMystery) {
+            console.log('[MysteryChallenge] Already completed or submitting, ignoring');
+            return;
+        }
+        
+        setSubmittingMystery(true);
         const effectiveStudentId = student.id || 'demo-student';
         
         try {
@@ -233,6 +241,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             });
             
             const result = await response.json();
+            
+            // Handle ALREADY_COMPLETED error from backend (security fix)
+            if (result.error === 'Already completed' || result.error === 'ALREADY_COMPLETED') {
+                setMysteryCompleted(true);
+                setMysteryXpAwarded(result.previousXp || 0);
+                setMysteryWasCorrect(result.wasCorrect || false);
+                setMysteryCompletionMessage(result.message || 'Nice try! You already finished this challenge today.');
+                setSelectedQuizAnswer(null);
+                return;
+            }
             
             if (result.success) {
                 setMysteryCompleted(true);
@@ -251,6 +269,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         } catch (error) {
             console.error('[MysteryChallenge] Submit error:', error);
+        } finally {
+            setSubmittingMystery(false);
         }
     };
 
@@ -2972,14 +2992,24 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         
                                                         <button
                                                             onClick={() => {
-                                                                if (selectedQuizAnswer !== null) {
+                                                                if (selectedQuizAnswer !== null && !submittingMystery) {
                                                                     submitMysteryChallenge(selectedQuizAnswer);
                                                                 }
                                                             }}
-                                                            disabled={selectedQuizAnswer === null}
-                                                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all mt-4"
+                                                            disabled={selectedQuizAnswer === null || submittingMystery}
+                                                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition-all mt-4 flex items-center justify-center"
                                                         >
-                                                            Submit Answer
+                                                            {submittingMystery ? (
+                                                                <>
+                                                                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                                                                    </svg>
+                                                                    Submitting...
+                                                                </>
+                                                            ) : (
+                                                                'Submit Answer'
+                                                            )}
                                                         </button>
                                                     </div>
                                                 ) : (
