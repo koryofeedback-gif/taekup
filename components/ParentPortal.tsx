@@ -1182,8 +1182,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const rarity = getRarity(ovr);
 
         // Generate achievements for back of card (with null checks)
-        // Use actual database XP (totalPoints) as the source of truth
-        const actualXP = student.totalPoints || 0;
+        // Use lifetime_xp (normalized XP for Dojang Rivals) as the source of truth
+        const actualXP = student.lifetimeXp || 0;
         const achievements = [
             { icon: '🎯', label: 'Classes Attended', value: student.attendanceCount || 0 },
             { icon: '⚡', label: 'Current Streak', value: `${student.rivalsStats?.dailyStreak || 0} days` },
@@ -1804,7 +1804,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="text-[10px] text-gray-400 uppercase">Rank</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-2xl font-black text-purple-400">{(student.totalXP || 0) + (rivalStats.xp || 0)}</div>
+                                <div className="text-2xl font-black text-purple-400">{(student.lifetimeXp || 0) + (rivalStats.xp || 0)}</div>
                                 <div className="text-[10px] text-gray-400 uppercase">Total XP</div>
                             </div>
                             <div className="text-center">

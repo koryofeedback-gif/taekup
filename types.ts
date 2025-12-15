@@ -223,6 +223,7 @@ export interface Student {
   customHabits: Habit[]; // Personalized list of questions
   rivalsStats?: RivalsStats; // Dojang Rivals engagement data
   completedContentIds?: string[]; // IDs of completed curriculum content for XP tracking
+  lifetimeXp?: number; // Normalized XP for Dojang Rivals (never resets)
 }
 
 // Holiday Schedule Types for Black Belt Time Machine accuracy
