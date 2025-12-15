@@ -1488,14 +1488,40 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
         setIsLoadingVideos(true);
         try {
-            const response = await fetch(`/api/videos/pending/${clubId}`);
-            if (response.ok) {
-                const videos = await response.json();
-                setPendingVideos(Array.isArray(videos) ? videos : []);
-            } else {
-                console.log('[Videos] Failed to fetch pending videos:', response.status);
-                setPendingVideos([]);
+            // Fetch from both original video system and new Arena submissions
+            const [videosRes, arenaRes] = await Promise.all([
+                fetch(`/api/videos/pending/${clubId}`),
+                fetch(`/api/challenges/pending-verification/${clubId}`)
+            ]);
+            
+            let allVideos: any[] = [];
+            
+            if (videosRes.ok) {
+                const videos = await videosRes.json();
+                allVideos = Array.isArray(videos) ? videos : [];
             }
+            
+            // Add Arena submissions with source marker
+            if (arenaRes.ok) {
+                const arenaSubmissions = await arenaRes.json();
+                if (Array.isArray(arenaSubmissions)) {
+                    const formattedArena = arenaSubmissions.map((s: any) => ({
+                        id: s.id,
+                        student_id: s.student_id,
+                        student_name: `${s.first_name} ${s.last_name}`,
+                        student_belt: s.current_belt,
+                        challenge_name: s.answer || 'Arena Challenge',
+                        video_url: s.video_url,
+                        score: s.score,
+                        status: 'pending',
+                        created_at: s.completed_at,
+                        source: 'arena' // Mark as Arena submission
+                    }));
+                    allVideos = [...allVideos, ...formattedArena];
+                }
+            }
+            
+            setPendingVideos(allVideos);
         } catch (error) {
             console.error('[Videos] Failed to fetch pending videos:', error);
             setPendingVideos([]);
@@ -1512,18 +1538,32 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     }, [activeView]);
 
     const handleApproveVideo = async (video: any) => {
-        console.log('[Videos] Approving video:', video.id);
+        console.log('[Videos] Approving video:', video.id, 'source:', video.source);
         setIsProcessingVideo(true);
         try {
-            const response = await fetch(`/api/videos/${video.id}/verify`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    status: 'approved',
-                    coachNotes: coachVideoNotes,
-                    xpAwarded: xpToAward
-                })
-            });
+            let response;
+            
+            if (video.source === 'arena') {
+                response = await fetch('/api/challenges/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        submissionId: video.id,
+                        verified: true,
+                        coachId: coachName
+                    })
+                });
+            } else {
+                response = await fetch(`/api/videos/${video.id}/verify`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'approved',
+                        coachNotes: coachVideoNotes,
+                        xpAwarded: xpToAward
+                    })
+                });
+            }
 
             const data = await response.json();
             console.log('[Videos] Approve response:', response.status, data);
@@ -1534,7 +1574,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 setCoachVideoNotes('');
                 setXpToAward(50);
                 setCurrentVideoPlaying(null);
-                setConfirmation({ show: true, message: `Video approved! +${xpToAward} XP awarded.` });
+                const xp = video.source === 'arena' ? data.xpAwarded : xpToAward;
+                setConfirmation({ show: true, message: `Video approved! +${xp} XP awarded.` });
                 setTimeout(() => setConfirmation({ show: false, message: '' }), 3000);
             } else {
                 console.error('[Videos] Approve failed:', data.error);
@@ -1549,18 +1590,32 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     };
 
     const handleRejectVideo = async (video: any) => {
-        console.log('[Videos] Rejecting video:', video.id);
+        console.log('[Videos] Rejecting video:', video.id, 'source:', video.source);
         setIsProcessingVideo(true);
         try {
-            const response = await fetch(`/api/videos/${video.id}/verify`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    status: 'rejected',
-                    coachNotes: coachVideoNotes,
-                    xpAwarded: 0
-                })
-            });
+            let response;
+            
+            if (video.source === 'arena') {
+                response = await fetch('/api/challenges/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        submissionId: video.id,
+                        verified: false,
+                        coachId: coachName
+                    })
+                });
+            } else {
+                response = await fetch(`/api/videos/${video.id}/verify`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'rejected',
+                        coachNotes: coachVideoNotes,
+                        xpAwarded: 0
+                    })
+                });
+            }
 
             const data = await response.json();
             console.log('[Videos] Reject response:', response.status, data);

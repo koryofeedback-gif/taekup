@@ -2050,10 +2050,32 @@ export function registerRoutes(app: Express) {
         });
       }
 
-      // VIDEO submissions: Pending verification
+      // VIDEO submissions: Require premium status
       if (proofType === 'VIDEO') {
         if (!videoUrl) {
           return res.status(400).json({ error: 'videoUrl is required for video proof' });
+        }
+
+        // Verify student has premium access for video submissions
+        const studentCheck = await db.execute(sql`
+          SELECT s.id, s.premium_status, c.parent_premium_enabled
+          FROM students s
+          LEFT JOIN clubs c ON s.club_id = c.id
+          WHERE s.id = ${studentId}::uuid
+        `);
+
+        if ((studentCheck as any[]).length === 0) {
+          return res.status(404).json({ error: 'Student not found' });
+        }
+
+        const student = (studentCheck as any[])[0];
+        const hasPremium = student.premium_status !== 'none' || student.parent_premium_enabled;
+
+        if (!hasPremium) {
+          return res.status(403).json({ 
+            error: 'Premium required',
+            message: 'Video proof submissions require a premium subscription. Upgrade to earn more XP!'
+          });
         }
 
         await db.execute(sql`
@@ -2079,7 +2101,7 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Get presigned upload URL for video
+  // Get presigned upload URL for video (Premium only)
   app.post('/api/challenges/upload-url', async (req: Request, res: Response) => {
     try {
       const { studentId, challengeType, filename, contentType } = req.body;
@@ -2088,8 +2110,37 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'studentId, challengeType, and filename are required' });
       }
 
+      // Verify student has premium access before allowing upload
+      const studentCheck = await db.execute(sql`
+        SELECT s.id, s.premium_status, c.parent_premium_enabled
+        FROM students s
+        LEFT JOIN clubs c ON s.club_id = c.id
+        WHERE s.id = ${studentId}::uuid
+      `);
+
+      if ((studentCheck as any[]).length === 0) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+
+      const student = (studentCheck as any[])[0];
+      const hasPremium = student.premium_status !== 'none' || student.parent_premium_enabled;
+
+      if (!hasPremium) {
+        return res.status(403).json({ 
+          error: 'Premium required',
+          message: 'Video uploads require a premium subscription.'
+        });
+      }
+
+      // Validate file type
+      const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+      const type = contentType || 'video/mp4';
+      if (!allowedTypes.includes(type)) {
+        return res.status(400).json({ error: 'Invalid video type. Allowed: mp4, webm, quicktime' });
+      }
+
       const { getPresignedUploadUrl } = await import('./services/s3StorageService');
-      const result = await getPresignedUploadUrl(studentId, challengeType, filename, contentType || 'video/mp4');
+      const result = await getPresignedUploadUrl(studentId, challengeType, filename, type);
 
       res.json({
         uploadUrl: result.uploadUrl,

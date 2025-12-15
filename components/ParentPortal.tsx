@@ -120,6 +120,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }>>([]);
     const videoInputRef = useRef<HTMLInputElement>(null);
     
+    // Solo Arena State (Trust vs Verify flow)
+    const [soloScore, setSoloScore] = useState<string>('');
+    const [remainingTrustSubmissions, setRemainingTrustSubmissions] = useState(3);
+    const [soloSubmitting, setSoloSubmitting] = useState(false);
+    const [soloResult, setSoloResult] = useState<{ success: boolean; message: string; xp: number } | null>(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    
     // Use robust progress tracking hook for XP/completion
     const { 
         completedContentIds: localCompletedIds, 
@@ -239,6 +246,109 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         } catch (error) {
             console.error('[MysteryChallenge] Submit error:', error);
+        }
+    };
+
+    // Solo Arena submission (Trust vs Video)
+    const submitSoloChallenge = async (proofType: 'TRUST' | 'VIDEO', videoUrl?: string) => {
+        if (!selectedChallenge || !student.id) return;
+        
+        setSoloSubmitting(true);
+        setSoloResult(null);
+        
+        try {
+            const response = await fetch('/api/challenges/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    clubId: 'demo',
+                    challengeType: selectedChallenge,
+                    score: parseInt(soloScore) || 0,
+                    proofType,
+                    videoUrl,
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                setSoloResult({
+                    success: true,
+                    message: result.message,
+                    xp: result.xpAwarded
+                });
+                
+                if (proofType === 'TRUST') {
+                    setRemainingTrustSubmissions(result.remainingTrustSubmissions ?? remainingTrustSubmissions - 1);
+                    setRivalStats(prev => ({
+                        ...prev,
+                        xp: prev.xp + result.xpAwarded
+                    }));
+                }
+                
+                setSoloScore('');
+                setSelectedChallenge('');
+                
+                setTimeout(() => setSoloResult(null), 4000);
+            } else {
+                setSoloResult({
+                    success: false,
+                    message: result.message || result.error || 'Submission failed',
+                    xp: 0
+                });
+            }
+        } catch (error) {
+            console.error('[SoloArena] Submit error:', error);
+            setSoloResult({
+                success: false,
+                message: 'Failed to submit. Please try again.',
+                xp: 0
+            });
+        } finally {
+            setSoloSubmitting(false);
+        }
+    };
+    
+    // Video upload for solo arena
+    const handleSoloVideoUpload = async () => {
+        if (!videoFile || !selectedChallenge) return;
+        
+        setIsUploadingVideo(true);
+        setVideoUploadError(null);
+        
+        try {
+            // Get presigned URL
+            const urlResponse = await fetch('/api/challenges/upload-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    challengeType: selectedChallenge,
+                    filename: videoFile.name,
+                    contentType: videoFile.type,
+                })
+            });
+            
+            const { uploadUrl, videoUrl } = await urlResponse.json();
+            
+            // Upload video to S3
+            await fetch(uploadUrl, {
+                method: 'PUT',
+                body: videoFile,
+                headers: { 'Content-Type': videoFile.type }
+            });
+            
+            // Submit challenge with video
+            await submitSoloChallenge('VIDEO', videoUrl);
+            
+            setShowVideoUpload(false);
+            setVideoFile(null);
+        } catch (error) {
+            console.error('[SoloArena] Video upload error:', error);
+            setVideoUploadError('Failed to upload video. Please try again.');
+        } finally {
+            setIsUploadingVideo(false);
         }
     };
     
@@ -2095,6 +2205,151 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+
+                                    {/* Solo Challenge Submission */}
+                                    {selectedChallenge && (
+                                        <div className="bg-gradient-to-b from-green-900/40 to-gray-900 p-5 rounded-2xl border border-green-500/50 shadow-xl">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="font-bold text-white text-lg flex items-center">
+                                                    <span className="w-8 h-8 bg-green-600/30 rounded-lg flex items-center justify-center mr-3">🏋️</span>
+                                                    Solo Practice
+                                                </h4>
+                                                <span className="text-[10px] bg-gray-700 text-gray-300 px-2 py-1 rounded-full font-bold">
+                                                    {remainingTrustSubmissions}/3 Trust Left
+                                                </span>
+                                            </div>
+                                            
+                                            <p className="text-gray-400 text-sm mb-4">
+                                                Complete this challenge solo and earn XP!
+                                            </p>
+                                            
+                                            {/* Score Input */}
+                                            <div className="mb-4">
+                                                <label className="text-gray-400 text-xs mb-2 block">Your Score (reps, seconds, etc.)</label>
+                                                <input
+                                                    type="number"
+                                                    value={soloScore}
+                                                    onChange={e => setSoloScore(e.target.value)}
+                                                    placeholder="Enter your score..."
+                                                    className="w-full bg-gray-800 text-white p-3 rounded-xl border border-gray-600 focus:border-green-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            
+                                            {/* Submission Buttons */}
+                                            <div className="space-y-3">
+                                                {/* Trust Submission */}
+                                                <button
+                                                    onClick={() => submitSoloChallenge('TRUST')}
+                                                    disabled={!soloScore || soloSubmitting || remainingTrustSubmissions <= 0}
+                                                    className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                                                        soloScore && remainingTrustSubmissions > 0 && !soloSubmitting
+                                                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white'
+                                                            : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                                    }`}
+                                                >
+                                                    {soloSubmitting ? (
+                                                        <span>Submitting...</span>
+                                                    ) : (
+                                                        <>
+                                                            <span className="text-lg">✓</span>
+                                                            Submit (Trust System) • +15 XP
+                                                        </>
+                                                    )}
+                                                </button>
+                                                
+                                                {/* Video Proof Submission */}
+                                                <button
+                                                    onClick={() => {
+                                                        if (hasPremiumAccess) {
+                                                            setShowVideoUpload(true);
+                                                        } else {
+                                                            setShowUpgradeModal(true);
+                                                        }
+                                                    }}
+                                                    disabled={!soloScore}
+                                                    className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                                                        soloScore
+                                                            ? hasPremiumAccess
+                                                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white'
+                                                                : 'bg-gray-700 border border-purple-500/50 text-purple-400 hover:bg-gray-600'
+                                                            : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                                    }`}
+                                                >
+                                                    {!hasPremiumAccess && <span className="text-lg">🔒</span>}
+                                                    <span className="text-lg">📹</span>
+                                                    Submit Video Proof • +100 XP
+                                                    {!hasPremiumAccess && <span className="text-[10px] ml-1">PREMIUM</span>}
+                                                </button>
+                                            </div>
+                                            
+                                            {/* Solo Result Message */}
+                                            {soloResult && (
+                                                <div className={`mt-4 p-4 rounded-xl text-center ${
+                                                    soloResult.success 
+                                                        ? 'bg-green-900/50 border border-green-500' 
+                                                        : 'bg-red-900/50 border border-red-500'
+                                                }`}>
+                                                    <span className="text-2xl">{soloResult.success ? '🎉' : '❌'}</span>
+                                                    <p className={`font-bold mt-2 ${soloResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                                                        {soloResult.message}
+                                                    </p>
+                                                    {soloResult.xp > 0 && (
+                                                        <p className="text-yellow-400 font-black text-lg mt-1">+{soloResult.xp} XP!</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Upgrade to Premium Modal */}
+                                    {showUpgradeModal && (
+                                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+                                            <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-purple-500 shadow-2xl">
+                                                <div className="text-center mb-6">
+                                                    <span className="text-5xl">👑</span>
+                                                    <h3 className="text-2xl font-black text-white mt-4">Unlock Video Proof</h3>
+                                                    <p className="text-gray-400 mt-2">
+                                                        Premium members can submit video proof for coach verification and earn <span className="text-yellow-400 font-bold">+100 XP</span> per challenge!
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 rounded-xl border border-purple-500/50 mb-6">
+                                                    <h4 className="font-bold text-white mb-2">Premium Benefits:</h4>
+                                                    <ul className="text-sm text-gray-300 space-y-2">
+                                                        <li className="flex items-center gap-2"><span>✅</span> Video proof submissions (+100 XP)</li>
+                                                        <li className="flex items-center gap-2"><span>✅</span> Coach feedback on technique</li>
+                                                        <li className="flex items-center gap-2"><span>✅</span> Progress analytics & insights</li>
+                                                        <li className="flex items-center gap-2"><span>✅</span> Digital athlete card</li>
+                                                    </ul>
+                                                </div>
+                                                
+                                                <div className="flex gap-3">
+                                                    <button
+                                                        onClick={() => setShowUpgradeModal(false)}
+                                                        className="flex-1 py-3 rounded-xl font-bold bg-gray-700 text-gray-300 hover:bg-gray-600"
+                                                    >
+                                                        Maybe Later
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowUpgradeModal(false);
+                                                            setActiveTab('home');
+                                                        }}
+                                                        className="flex-1 py-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500"
+                                                    >
+                                                        Upgrade Now
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* OR Divider */}
+                                    <div className="flex items-center gap-4 my-2">
+                                        <div className="flex-1 h-px bg-gray-700"></div>
+                                        <span className="text-gray-500 text-xs font-bold">OR CHALLENGE A RIVAL</span>
+                                        <div className="flex-1 h-px bg-gray-700"></div>
                                     </div>
 
                                     {/* Send Challenge Button - Pro Design */}
