@@ -1,10 +1,17 @@
 /**
  * Gamification Service
- * Handles XP calculations, challenge scoring, and reward logic for TaekUp
+ * Handles PTS (stripe progress) and XP (monster/game growth) calculations for TaekUp
+ * 
+ * IMPORTANT DISTINCTION:
+ * - PTS (Points) = Technical progress toward next stripe/belt, RESETS on promotion
+ * - XP = Monster/game growth (Dojang Rivals), NEVER resets
+ * 
+ * Grading/Class scores earn PTS (displayed in Coach Dashboard)
+ * Challenges/games earn XP (displayed in Parent Portal Rivals)
  */
 
 // Constants
-export const MAX_CLASS_XP = 100;
+export const MAX_CLASS_PTS = 100;
 export const SCORE_VALUES = {
   GREEN: 2,
   YELLOW: 1,
@@ -50,25 +57,27 @@ export function isValidTierSelection(tier: ChallengeTierKey, isWeeklyChallenge: 
 }
 
 /**
- * Fair Grading Algorithm for Class XP
+ * Fair Grading Algorithm for Class PTS (Points)
  * 
  * Normalizes scoring to handle variable grading criteria (e.g., some coaches use 4 items, others use 6).
- * This ensures fairness: a student graded on 4 items gets the same max XP as one graded on 6.
+ * This ensures fairness: a student graded on 4 items gets the same max PTS as one graded on 6.
+ * 
+ * NOTE: These are POINTS (PTS) for stripe/belt progress, NOT XP.
  * 
  * @param scores - Array of score values (Green=2, Yellow=1, Red=0) or null for unentered
- * @returns Normalized XP value (0-100)
+ * @returns Normalized PTS value (0-100)
  * 
  * @example
- * // 4 items, all green: (8/8) * 100 = 100 XP
- * calculateClassXP([2, 2, 2, 2]) // returns 100
+ * // 4 items, all green: (8/8) * 100 = 100 PTS
+ * calculateClassPTS([2, 2, 2, 2]) // returns 100
  * 
- * // 6 items, all green: (12/12) * 100 = 100 XP  
- * calculateClassXP([2, 2, 2, 2, 2, 2]) // returns 100
+ * // 6 items, all green: (12/12) * 100 = 100 PTS  
+ * calculateClassPTS([2, 2, 2, 2, 2, 2]) // returns 100
  * 
- * // 4 items: 3 green, 1 yellow: (7/8) * 100 = 87.5 XP
- * calculateClassXP([2, 2, 2, 1]) // returns 87.5
+ * // 4 items: 3 green, 1 yellow: (7/8) * 100 = 87.5 PTS
+ * calculateClassPTS([2, 2, 2, 1]) // returns 87.5
  */
-export function calculateClassXP(scores: (number | null | undefined)[]): number {
+export function calculateClassPTS(scores: (number | null | undefined)[]): number {
   // Filter out null/undefined scores (unentered items)
   const validScores = scores.filter((s): s is number => s !== null && s !== undefined);
   
@@ -83,40 +92,47 @@ export function calculateClassXP(scores: (number | null | undefined)[]): number 
   // Calculate actual score sum
   const actualScore = validScores.reduce((sum, score) => sum + score, 0);
   
-  // Apply normalization formula: (actual / max) * MAX_CLASS_XP
-  const normalizedXP = (actualScore / maxPossibleScore) * MAX_CLASS_XP;
+  // Apply normalization formula: (actual / max) * MAX_CLASS_PTS
+  const normalizedPTS = (actualScore / maxPossibleScore) * MAX_CLASS_PTS;
   
   // Round to 1 decimal place for cleaner display
-  return Math.round(normalizedXP * 10) / 10;
+  return Math.round(normalizedPTS * 10) / 10;
 }
 
+// Backward compatibility alias
+export const calculateClassXP = calculateClassPTS;
+export const MAX_CLASS_XP = MAX_CLASS_PTS;
+
 /**
- * Calculate XP with bonus points
- * Bonus points are added on top of the normalized class XP
+ * Calculate PTS with bonus points
+ * Bonus points are added on top of the normalized class PTS
  * 
  * @param scores - Array of score values
  * @param bonusPoints - Extra points from coach (e.g., helping others, great effort)
  * @param homeworkPoints - Points for completing homework
- * @returns Total XP including bonuses
+ * @returns Total PTS including bonuses
  */
-export function calculateTotalSessionXP(
+export function calculateTotalSessionPTS(
   scores: (number | null | undefined)[],
   bonusPoints: number = 0,
   homeworkPoints: number = 0
 ): number {
-  const classXP = calculateClassXP(scores);
-  return classXP + bonusPoints + homeworkPoints;
+  const classPTS = calculateClassPTS(scores);
+  return classPTS + bonusPoints + homeworkPoints;
 }
 
+// Backward compatibility alias
+export const calculateTotalSessionXP = calculateTotalSessionPTS;
+
 /**
- * Get performance rating based on XP percentage
- * @param xp - Normalized XP value (0-100)
+ * Get performance rating based on PTS percentage
+ * @param pts - Normalized PTS value (0-100)
  * @returns Performance rating
  */
-export function getPerformanceRating(xp: number): 'excellent' | 'good' | 'average' | 'needs_improvement' {
-  if (xp >= 90) return 'excellent';
-  if (xp >= 75) return 'good';
-  if (xp >= 50) return 'average';
+export function getPerformanceRating(pts: number): 'excellent' | 'good' | 'average' | 'needs_improvement' {
+  if (pts >= 90) return 'excellent';
+  if (pts >= 75) return 'good';
+  if (pts >= 50) return 'average';
   return 'needs_improvement';
 }
 

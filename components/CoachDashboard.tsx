@@ -103,9 +103,27 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 };
 
 const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ students, belts }) => {
-    // 1. Leaderboard Logic
+    // 1. Leaderboard Logic - Rank by PTS earned this week/month (from recent performance)
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
     const topStudents = [...students]
-        .sort((a, b) => b.totalPoints - a.totalPoints)
+        .map(student => {
+            // Calculate PTS earned this week from performance history
+            const weeklyPTS = (student.performanceHistory || [])
+                .filter(record => new Date(record.date) >= oneWeekAgo)
+                .reduce((sum, record) => {
+                    const scores = Object.values(record.scores || {}).filter((s): s is number => s !== null && s !== undefined);
+                    if (scores.length === 0) return sum;
+                    const maxPossible = scores.length * 2;
+                    const actual = scores.reduce((a, b) => a + b, 0);
+                    const normalizedPTS = (actual / maxPossible) * 100;
+                    return sum + Math.round(normalizedPTS) + (record.bonusPoints || 0);
+                }, 0);
+            return { ...student, weeklyPTS };
+        })
+        .sort((a, b) => b.weeklyPTS - a.weeklyPTS)
+        .filter(s => s.weeklyPTS > 0)
         .slice(0, 3);
 
     // 2. Retention Radar Logic
@@ -178,10 +196,11 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                 </div>
             </div>
 
-            {/* Leaderboard Widget */}
+            {/* Leaderboard Widget - Top PTS This Week */}
             <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-4">
                 <h3 className="font-bold text-white flex items-center mb-3">
                     <span className="text-xl mr-2">🏆</span> Top Students
+                    <span className="text-xs text-gray-400 ml-2 font-normal">(This Week)</span>
                 </h3>
                 <div className="space-y-3">
                     {topStudents.map((s, i) => {
@@ -196,11 +215,11 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                                         <p className="text-xs text-gray-400">{belt?.name}</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-bold text-sky-300">{s.totalPoints} pts</span>
+                                <span className="text-sm font-bold text-sky-300">{s.weeklyPTS} PTS</span>
                             </div>
                         )
                     })}
-                    {topStudents.length === 0 && <p className="text-sm text-gray-500 italic">No students yet.</p>}
+                    {topStudents.length === 0 && <p className="text-sm text-gray-500 italic">No activity this week.</p>}
                 </div>
             </div>
 
@@ -1176,10 +1195,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             const studentBonus = bonusPoints[student.id] || 0;
             const studentHomework = homeworkPoints[student.id] || 0;
             
-            // Fair Grading Algorithm: Normalize scores to 0-100 XP regardless of number of grading items
+            // Fair Grading Algorithm: Normalize scores to 0-100 PTS regardless of number of grading items
             const scoresArray = Object.values(studentScores);
-            const classXP = calculateClassXP(scoresArray);
-            const sessionTotal = Math.round(classXP) + studentBonus + studentHomework;
+            const classPTS = calculateClassXP(scoresArray);
+            const sessionTotal = Math.round(classPTS) + studentBonus + studentHomework;
             
             if (sessionTotal === 0 && Object.values(studentScores).every(s => s === null)) return student;
 
@@ -1318,10 +1337,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         const studentBonus = bonusPoints[student.id] || 0;
         const studentHomework = homeworkPoints[student.id] || 0;
         
-        // Fair Grading Algorithm: Normalize scores to 0-100 XP regardless of grading items
+        // Fair Grading Algorithm: Normalize scores to 0-100 PTS regardless of grading items
         const scoresArray = attendance[student.id] ? Object.values(studentScores) : [];
-        const classXP = calculateClassXP(scoresArray);
-        const sessionTotal = Math.round(classXP) + studentBonus + studentHomework;
+        const classPTS = calculateClassXP(scoresArray);
+        const sessionTotal = Math.round(classPTS) + studentBonus + studentHomework;
         const totalPointsBefore = student.totalPoints || 0;
         const totalPointsAfter = totalPointsBefore + sessionTotal;
         const pointsRequired = getPointsRequired(student.beltId);
