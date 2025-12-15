@@ -103,15 +103,44 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 };
 
 const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ students, belts }) => {
-    // Top Students - Rank by live current_stripe_points (totalPoints) to match Stripe Bar
-    const topStudents = [...students]
-        .map(student => ({
-            ...student,
-            currentPTS: student.totalPoints || 0
-        }))
-        .sort((a, b) => b.currentPTS - a.currentPTS)
-        .filter(s => s.currentPTS > 0)
-        .slice(0, 3);
+    const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
+    
+    // Get start of current month for filtering
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Mode 1: Monthly Effort - SUM of points earned from class logs this month
+    const monthlyEffortStudents = useMemo(() => {
+        return [...students]
+            .map(student => {
+                const monthlyPTS = (student.performanceHistory || [])
+                    .filter(record => new Date(record.date) >= monthStart)
+                    .reduce((sum, record) => {
+                        const scores = Object.values(record.scores || {});
+                        const classPTS = calculateClassPTS(scores);
+                        return sum + classPTS + (record.bonusPoints || 0);
+                    }, 0);
+                return { ...student, displayPTS: monthlyPTS };
+            })
+            .sort((a, b) => b.displayPTS - a.displayPTS)
+            .filter(s => s.displayPTS > 0)
+            .slice(0, 3);
+    }, [students, monthStart.getTime()]);
+    
+    // Mode 2: Belt Progress - Live current_stripe_points (totalPoints)
+    const beltProgressStudents = useMemo(() => {
+        return [...students]
+            .map(student => ({
+                ...student,
+                displayPTS: student.totalPoints || 0
+            }))
+            .sort((a, b) => b.displayPTS - a.displayPTS)
+            .filter(s => s.displayPTS > 0)
+            .slice(0, 3);
+    }, [students]);
+    
+    // Select which list to display based on mode
+    const topStudents = leaderboardMode === 'effort' ? monthlyEffortStudents : beltProgressStudents;
 
     // 2. Retention Radar Logic
     const atRiskStudents = students.filter(s => {
@@ -183,14 +212,26 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                 </div>
             </div>
 
-            {/* Leaderboard Widget - Top Students by Current Stripe Points */}
+            {/* Leaderboard Widget - Dual View: Monthly Effort / Belt Progress */}
             <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-4">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-white flex items-center">
                         <span className="text-xl mr-2">🏆</span> Top Students
                     </h3>
-                    <span className="text-xs text-gray-500">by current PTS</span>
+                    <div className="flex text-xs">
+                        <button 
+                            onClick={() => setLeaderboardMode('effort')}
+                            className={`px-2 py-1 rounded-l ${leaderboardMode === 'effort' ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                        >Monthly Effort</button>
+                        <button 
+                            onClick={() => setLeaderboardMode('progress')}
+                            className={`px-2 py-1 rounded-r ${leaderboardMode === 'progress' ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                        >Belt Progress</button>
+                    </div>
                 </div>
+                <p className="text-xs text-gray-500 mb-2">
+                    {leaderboardMode === 'effort' ? 'Points earned this month' : 'Current stripe progress'}
+                </p>
                 <div className="space-y-3">
                     {topStudents.map((s, i) => {
                         const belt = belts.find(b => b.id === s.beltId);
@@ -204,11 +245,15 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                                         <p className="text-xs text-gray-400">{belt?.name}</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-bold text-sky-300">{s.currentPTS} PTS</span>
+                                <span className="text-sm font-bold text-sky-300">{s.displayPTS} PTS</span>
                             </div>
                         )
                     })}
-                    {topStudents.length === 0 && <p className="text-sm text-gray-500 italic">No students with points yet.</p>}
+                    {topStudents.length === 0 && (
+                        <p className="text-sm text-gray-500 italic">
+                            {leaderboardMode === 'effort' ? 'No activity this month.' : 'No students with points yet.'}
+                        </p>
+                    )}
                 </div>
             </div>
 
