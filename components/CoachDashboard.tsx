@@ -5,7 +5,7 @@ import { generateParentFeedback, generatePromotionMessage, generateLessonPlan } 
 import { generateLessonPlanGPT } from '../services/openaiService';
 import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
-import { calculateClassXP, MAX_CLASS_XP } from '../services/gamificationService';
+import { calculateClassPTS, calculateClassXP } from '../services/gamificationService';
 
 // --- TYPE DEFINITIONS ---
 type SessionScores = Record<string, Record<string, number | null>>;
@@ -113,13 +113,13 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
     
     const topStudents = [...students]
         .map(student => {
-            // Calculate PTS earned in period using shared calculation logic
+            // Calculate PTS earned in period using raw PTS calculation
             const periodPTS = (student.performanceHistory || [])
                 .filter(record => new Date(record.date) >= cutoffDate)
                 .reduce((sum, record) => {
                     const scores = Object.values(record.scores || {});
-                    const classPTS = calculateClassXP(scores);
-                    return sum + Math.round(classPTS) + (record.bonusPoints || 0);
+                    const classPTS = calculateClassPTS(scores);
+                    return sum + classPTS + (record.bonusPoints || 0);
                 }, 0);
             return { ...student, periodPTS };
         })
@@ -1207,10 +1207,12 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             const studentBonus = bonusPoints[student.id] || 0;
             const studentHomework = homeworkPoints[student.id] || 0;
             
-            // Fair Grading Algorithm: Normalize scores to 0-100 PTS regardless of number of grading items
+            // Calculate raw PTS for stripe progress + normalized XP for Dojang Rivals
             const scoresArray = Object.values(studentScores);
-            const classPTS = calculateClassXP(scoresArray);
-            const sessionTotal = Math.round(classPTS) + studentBonus + studentHomework;
+            const classPTS = calculateClassPTS(scoresArray);
+            const classXP = calculateClassXP(scoresArray);
+            const sessionTotal = classPTS + studentBonus + studentHomework;
+            const sessionXP = classXP + studentBonus + studentHomework;
             
             if (sessionTotal === 0 && Object.values(studentScores).every(s => s === null)) return student;
 
@@ -1349,10 +1351,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         const studentBonus = bonusPoints[student.id] || 0;
         const studentHomework = homeworkPoints[student.id] || 0;
         
-        // Fair Grading Algorithm: Normalize scores to 0-100 PTS regardless of grading items
+        // Calculate raw PTS for stripe progress (display in grading table)
         const scoresArray = attendance[student.id] ? Object.values(studentScores) : [];
-        const classPTS = calculateClassXP(scoresArray);
-        const sessionTotal = Math.round(classPTS) + studentBonus + studentHomework;
+        const classPTS = calculateClassPTS(scoresArray);
+        const sessionTotal = classPTS + studentBonus + studentHomework;
         const totalPointsBefore = student.totalPoints || 0;
         const totalPointsAfter = totalPointsBefore + sessionTotal;
         const pointsRequired = getPointsRequired(student.beltId);

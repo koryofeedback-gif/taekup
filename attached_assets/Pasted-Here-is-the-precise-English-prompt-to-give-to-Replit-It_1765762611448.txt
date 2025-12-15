@@ -1,0 +1,52 @@
+Here is the precise English prompt to give to Replit. It clearly explains the "Normalization Logic" and provides the formula to ensure fairness regardless of how many grading items a coach uses.
+
+-----
+
+**Prompt for Replit:**
+
+**Task:** Implement a **"Normalized Scoring Algorithm"** for the Class Grading system.
+
+**Current Issue:** Currently, if a coach has more grading criteria (e.g., 6 items instead of 4), the student earns more raw XP, creating an unfair advantage. We need to normalize the XP so that a perfect class always equals **100 XP**, regardless of the number of items.
+
+**Logic Requirements:**
+
+1.  **Point Values:**
+      * Green = 2 points
+      * Yellow = 1 point
+      * Red = 0 points
+2.  **Constant:** `MAX_SESSION_XP = 100`.
+3.  **The Formula:**
+    $$\text{Earned XP} = \left( \frac{\text{Student's Total Score}}{\text{Max Possible Score}} \right) \times 100$$
+
+**Example Scenarios to Test:**
+
+  * **Scenario A (4 Items):** Max possible raw score is 8 ($4 \times 2$). If a student gets 7 raw points: $(7 / 8) \times 100 = 87.5$ XP.
+  * **Scenario B (6 Items):** Max possible raw score is 12 ($6 \times 2$). If a student gets 10.5 raw points: $(10.5 / 12) \times 100 = 87.5$ XP.
+
+**Implementation Request:**
+Please write the backend function (or update the existing grading logic) to apply this formula. The function should accept an array of grading results and return the final normalized XP (rounded to the nearest integer).
+
+```javascript
+// Example logic structure needed:
+const calculateNormalizedXP = (gradingResults) => {
+  const POINTS_GREEN = 2;
+  const MAX_SESSION_XP = 100;
+  
+  // 1. Calculate the maximum raw score possible for this specific configuration
+  const totalItems = gradingResults.length;
+  const maxPossibleRawScore = totalItems * POINTS_GREEN;
+
+  // 2. Calculate what the student actually got
+  const studentRawScore = gradingResults.reduce((total, item) => {
+    if (item.status === 'green') return total + 2;
+    if (item.status === 'yellow') return total + 1;
+    return total; // red is 0
+  }, 0);
+
+  // 3. Avoid division by zero
+  if (maxPossibleRawScore === 0) return 0;
+
+  // 4. Normalize to 100 scale
+  return Math.round((studentRawScore / maxPossibleRawScore) * MAX_SESSION_XP);
+};
+```

@@ -93,9 +93,55 @@ export function calculateClassPTS(scores: (number | null | undefined)[]): number
   return validScores.reduce((sum, score) => sum + score, 0);
 }
 
-// Backward compatibility alias (note: this is now raw PTS, not normalized XP)
-export const calculateClassXP = calculateClassPTS;
-export const MAX_CLASS_XP = MAX_CLASS_PTS;
+/**
+ * Calculate Class XP (Experience Points) - Normalized Method
+ * 
+ * Normalizes scoring so a perfect class ALWAYS = 100 XP, regardless of grading items.
+ * This ensures fairness: a student graded on 4 items gets the same max XP as one graded on 6.
+ * 
+ * NOTE: XP is for Dojang Rivals / monster growth (NEVER resets).
+ * This is separate from PTS which is raw sum for stripe progress.
+ * 
+ * @param scores - Array of score values (Green=2, Yellow=1, Red=0) or null for unentered
+ * @returns Normalized XP value (0-100)
+ * 
+ * Formula: (Student's Total Score / Max Possible Score) × 100
+ * 
+ * @example
+ * // 4 items, all green: (8/8) * 100 = 100 XP
+ * calculateClassXP([2, 2, 2, 2]) // returns 100
+ * 
+ * // 6 items, all green: (12/12) * 100 = 100 XP  
+ * calculateClassXP([2, 2, 2, 2, 2, 2]) // returns 100
+ * 
+ * // 4 items: 3 green, 1 yellow: (7/8) * 100 = 87.5 → 88 XP
+ * calculateClassXP([2, 2, 2, 1]) // returns 88
+ */
+export function calculateClassXP(scores: (number | null | undefined)[]): number {
+  const MAX_SESSION_XP = 100;
+  
+  // Filter out null/undefined scores (unentered items)
+  const validScores = scores.filter((s): s is number => s !== null && s !== undefined);
+  
+  // If no valid scores, return 0
+  if (validScores.length === 0) {
+    return 0;
+  }
+  
+  // Calculate max possible score (each item can be max 2 = Green)
+  const maxPossibleScore = validScores.length * SCORE_VALUES.GREEN;
+  
+  // Avoid division by zero
+  if (maxPossibleScore === 0) return 0;
+  
+  // Calculate actual score sum
+  const studentRawScore = validScores.reduce((sum, score) => sum + score, 0);
+  
+  // Normalize to 100 scale
+  return Math.round((studentRawScore / maxPossibleScore) * MAX_SESSION_XP);
+}
+
+export const MAX_CLASS_XP = 100;
 
 /**
  * Calculate PTS with bonus points
