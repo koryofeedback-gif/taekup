@@ -1474,9 +1474,67 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
       )
     `);
     
+    // Create arena_challenges table if missing
+    await client.query(`
+      DO $$ BEGIN
+        CREATE TYPE challenge_category AS ENUM ('POWER', 'TECHNIQUE', 'FLEXIBILITY');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await client.query(`
+      DO $$ BEGIN
+        CREATE TYPE difficulty_tier AS ENUM ('EASY', 'MEDIUM', 'HARD');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS arena_challenges (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        club_id UUID,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        icon VARCHAR(50) DEFAULT '💪',
+        category challenge_category NOT NULL,
+        difficulty_tier difficulty_tier DEFAULT 'MEDIUM',
+        xp_reward INTEGER DEFAULT 30,
+        is_system_default BOOLEAN DEFAULT false,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    
+    // Seed system default challenges (GPP - General Physical Preparedness)
+    const seedChallenges = [
+      // POWER
+      { name: 'Push-up Master', desc: 'Complete 10 perfect pushups', icon: '💪', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
+      { name: 'Squat Challenge', desc: 'Complete 20 squats', icon: '🦵', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
+      { name: 'Burpee Blast', desc: 'Complete 10 burpees', icon: '🔥', cat: 'POWER', diff: 'HARD', xp: 60 },
+      { name: 'Abs of Steel', desc: '20 Sit-ups', icon: '🏋️', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
+      // TECHNIQUE
+      { name: '100 Kicks Marathon', desc: 'Perform 100 kicks of any style', icon: '🦶', cat: 'TECHNIQUE', diff: 'HARD', xp: 60 },
+      { name: 'Speed Punches', desc: '50 shadow boxing punches', icon: '👊', cat: 'TECHNIQUE', diff: 'EASY', xp: 15 },
+      { name: 'Iron Horse Stance', desc: 'Hold Horse Stance for 60 seconds', icon: '🐴', cat: 'TECHNIQUE', diff: 'HARD', xp: 60 },
+      { name: 'Jump Rope Ninja', desc: 'Jump rope for 2 minutes', icon: '⏱️', cat: 'TECHNIQUE', diff: 'MEDIUM', xp: 30 },
+      // FLEXIBILITY
+      { name: 'Plank Hold', desc: 'Hold plank for 45 seconds', icon: '🧘', cat: 'FLEXIBILITY', diff: 'MEDIUM', xp: 30 },
+      { name: 'Touch Your Toes', desc: 'Keep legs straight and hold for 30s', icon: '🤸', cat: 'FLEXIBILITY', diff: 'EASY', xp: 15 },
+      { name: 'The Wall Sit', desc: 'Hold wall sit position for 45s', icon: '🧱', cat: 'FLEXIBILITY', diff: 'MEDIUM', xp: 30 },
+      { name: 'Crane Balance', desc: 'Balance on one leg for 60 seconds', icon: '🦩', cat: 'FLEXIBILITY', diff: 'EASY', xp: 15 },
+    ];
+    
+    for (const c of seedChallenges) {
+      await client.query(`
+        INSERT INTO arena_challenges (name, description, icon, category, difficulty_tier, xp_reward, is_system_default, club_id)
+        SELECT $1, $2, $3, $4::challenge_category, $5::difficulty_tier, $6, true, NULL
+        WHERE NOT EXISTS (SELECT 1 FROM arena_challenges WHERE name = $1 AND is_system_default = true)
+      `, [c.name, c.desc, c.icon, c.cat, c.diff, c.xp]);
+    }
+    
     return res.json({ 
       success: true, 
-      message: 'Database tables created successfully! Daily Challenge should now work.' 
+      message: 'Database tables created and 12 system challenges seeded successfully!' 
     });
   } catch (error: any) {
     console.error('[DbSetup] Error:', error.message);
