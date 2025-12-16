@@ -1853,6 +1853,7 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
 // HOME DOJO - HABIT TRACKING
 // =====================================================
 const HABIT_XP = 10;
+const DAILY_HABIT_XP_CAP = 60;
 
 async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -1890,24 +1891,45 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // Anti-cheat: Check daily XP cap (60 XP max from habits per day)
+    const dailyXpResult = await client.query(
+      `SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs WHERE student_id = $1::uuid AND log_date = $2::date`,
+      [studentId, today]
+    );
+    const totalXpToday = parseInt(dailyXpResult.rows[0]?.total_xp_today || '0');
+    const atDailyLimit = totalXpToday >= DAILY_HABIT_XP_CAP;
+    const xpToAward = atDailyLimit ? 0 : HABIT_XP;
+
+    // Insert habit log (mark as done regardless of XP cap)
     await client.query(
       `INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES ($1::uuid, $2, $3, $4::date)`,
-      [studentId, habitName, HABIT_XP, today]
+      [studentId, habitName, xpToAward, today]
     );
 
-    const updateResult = await client.query(
-      `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING total_xp`,
-      [HABIT_XP, studentId]
-    );
-    const newTotalXp = updateResult.rows[0]?.total_xp || 0;
-
-    console.log(`[HomeDojo] Habit "${habitName}" completed: +${HABIT_XP} XP, new total: ${newTotalXp}`);
+    let newTotalXp = 0;
+    if (xpToAward > 0) {
+      const updateResult = await client.query(
+        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING total_xp`,
+        [xpToAward, studentId]
+      );
+      newTotalXp = updateResult.rows[0]?.total_xp || 0;
+      console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total: ${newTotalXp}`);
+    } else {
+      const currentXp = await client.query(`SELECT total_xp FROM students WHERE id = $1::uuid`, [studentId]);
+      newTotalXp = currentXp.rows[0]?.total_xp || 0;
+      console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
+    }
 
     return res.json({
       success: true,
-      xpAwarded: HABIT_XP,
+      xpAwarded: xpToAward,
       newTotalXp,
-      message: `Habit completed! +${HABIT_XP} XP earned.`
+      dailyXpEarned: totalXpToday + xpToAward,
+      dailyXpCap: DAILY_HABIT_XP_CAP,
+      atDailyLimit,
+      message: atDailyLimit 
+        ? `Habit done! Daily Dojo Limit reached (Max ${DAILY_HABIT_XP_CAP} XP).`
+        : `Habit completed! +${HABIT_XP} XP earned.`
     });
   } catch (error: any) {
     console.error('[HomeDojo] Habit check error:', error.message);
@@ -1944,10 +1966,99 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     const completedHabits = result.rows.map(r => r.habit_name);
     const totalXpToday = result.rows.reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
 
-    return res.json({ completedHabits, totalXpToday });
+    return res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP });
   } catch (error: any) {
     console.error('[HomeDojo] Status fetch error:', error.message);
-    return res.json({ completedHabits: [], totalXpToday: 0 });
+    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleGetCustomHabits(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const studentId = req.query.studentId as string;
+
+  if (!studentId) {
+    return res.status(400).json({ error: 'studentId is required' });
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (studentId === 'demo' || !uuidRegex.test(studentId)) {
+    return res.json({ customHabits: [] });
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id, title, icon, is_active FROM user_custom_habits WHERE student_id = $1::uuid AND is_active = true ORDER BY created_at ASC`,
+      [studentId]
+    );
+
+    return res.json({ customHabits: result.rows });
+  } catch (error: any) {
+    console.error('[HomeDojo] Get custom habits error:', error.message);
+    return res.json({ customHabits: [] });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleCreateCustomHabit(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { studentId, title, icon } = parseBody(req);
+
+  if (!studentId || !title) {
+    return res.status(400).json({ error: 'studentId and title are required' });
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (studentId === 'demo' || !uuidRegex.test(studentId)) {
+    return res.json({ 
+      success: true, 
+      habit: { id: 'demo-' + Date.now(), title, icon: icon || '✨', is_active: true }
+    });
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO user_custom_habits (student_id, title, icon) VALUES ($1::uuid, $2, $3) RETURNING id, title, icon, is_active`,
+      [studentId, title.slice(0, 100), icon || '✨']
+    );
+
+    console.log(`[HomeDojo] Created custom habit: "${title}" for student ${studentId}`);
+    return res.json({ success: true, habit: result.rows[0] });
+  } catch (error: any) {
+    console.error('[HomeDojo] Create custom habit error:', error.message);
+    return res.status(500).json({ error: 'Failed to create habit' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleDeleteCustomHabit(req: VercelRequest, res: VercelResponse, habitId: string) {
+  if (req.method !== 'DELETE') return res.status(405).json({ error: 'Method not allowed' });
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(habitId)) {
+    return res.json({ success: true });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE user_custom_habits SET is_active = false WHERE id = $1::uuid`,
+      [habitId]
+    );
+
+    console.log(`[HomeDojo] Deleted custom habit: ${habitId}`);
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[HomeDojo] Delete custom habit error:', error.message);
+    return res.status(500).json({ error: 'Failed to delete habit' });
   } finally {
     client.release();
   }
@@ -2143,6 +2254,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Home Dojo - Habit Tracking
     if (path === '/habits/check' || path === '/habits/check/') return await handleHabitCheck(req, res);
     if (path === '/habits/status' || path === '/habits/status/') return await handleHabitStatus(req, res);
+    if (path === '/habits/custom' || path === '/habits/custom/') {
+      if (req.method === 'GET') return await handleGetCustomHabits(req, res);
+      if (req.method === 'POST') return await handleCreateCustomHabit(req, res);
+    }
+    const customHabitDeleteMatch = path.match(/^\/habits\/custom\/([^/]+)\/?$/);
+    if (customHabitDeleteMatch) return await handleDeleteCustomHabit(req, res, customHabitDeleteMatch[1]);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     
