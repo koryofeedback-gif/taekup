@@ -866,70 +866,9 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     // Check if ID looks like a database UUID (not a wizard-generated ID like "student-123-xxx")
     const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     
-    // ALWAYS resolve student ID from database to ensure we have a valid, existing UUID
-    // This fixes the issue where stale/cached UUIDs don't exist in the database
-    React.useEffect(() => {
-        const resolveStudentId = async () => {
-            const clubId = localStorage.getItem('taekup_club_id');
-            if (!clubId) {
-                console.log('[ParentPortal] No club ID found');
-                return;
-            }
-            
-            const wizardStudent = effectiveStudentId 
-                ? data.students.find(s => s.id === effectiveStudentId) || data.students[0]
-                : data.students[0];
-            
-            if (!wizardStudent) {
-                console.log('[ParentPortal] No wizard student found');
-                return;
-            }
-            
-            try {
-                // Method 1: Try to match by student name (most reliable)
-                if (wizardStudent.name) {
-                    const res = await fetch(`/api/students/by-name?name=${encodeURIComponent(wizardStudent.name)}&clubId=${clubId}`);
-                    if (res.ok) {
-                        const result = await res.json();
-                        if (result.studentId && isValidUUID(result.studentId)) {
-                            setResolvedStudentId(result.studentId);
-                            localStorage.setItem('taekup_student_id', result.studentId);
-                            console.log('[ParentPortal] Resolved by name to UUID:', result.studentId, 'for student:', wizardStudent.name);
-                            return;
-                        }
-                    }
-                }
-                
-                // Method 2: Try to match by parent email
-                if (wizardStudent.parentEmail) {
-                    const res = await fetch(`/api/students/by-email?email=${encodeURIComponent(wizardStudent.parentEmail)}&clubId=${clubId}`);
-                    if (res.ok) {
-                        const result = await res.json();
-                        if (result.studentId && isValidUUID(result.studentId)) {
-                            setResolvedStudentId(result.studentId);
-                            localStorage.setItem('taekup_student_id', result.studentId);
-                            console.log('[ParentPortal] Resolved by email to UUID:', result.studentId);
-                            return;
-                        }
-                    }
-                }
-                
-                // Method 3: Fall back to first student in the club
-                const res = await fetch(`/api/students/first?clubId=${clubId}`);
-                if (res.ok) {
-                    const result = await res.json();
-                    if (result.studentId && isValidUUID(result.studentId)) {
-                        setResolvedStudentId(result.studentId);
-                        localStorage.setItem('taekup_student_id', result.studentId);
-                        console.log('[ParentPortal] Fallback to first club student UUID:', result.studentId);
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to resolve student ID:', e);
-            }
-        };
-        resolveStudentId();
-    }, [effectiveStudentId, data.students]);
+    // DISABLED: Resolution logic removed - using hardcoded ID for golgol
+    // The hardcoded studentId = "e5e0e0a3-9420-46d8-97d4-24e83e4397f7" is used directly
+    console.log('[ParentPortal] Using HARDCODED student ID:', studentId);
     
     // Use resolved UUID if available, otherwise fall back to effectiveStudentId
     const finalStudentId = resolvedStudentId || effectiveStudentId;
