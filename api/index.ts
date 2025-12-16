@@ -828,6 +828,63 @@ async function handleGetStudentByEmail(req: VercelRequest, res: VercelResponse) 
   }
 }
 
+async function handleGetStudentByName(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const name = req.query.name as string;
+  const clubId = req.query.clubId as string;
+  
+  if (!name || !clubId) {
+    return res.status(400).json({ error: 'Name and clubId are required' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id FROM students WHERE LOWER(name) = $1 AND club_id = $2::uuid LIMIT 1`,
+      [name.toLowerCase().trim(), clubId]
+    );
+    
+    if (result.rows.length > 0) {
+      return res.json({ studentId: result.rows[0].id });
+    }
+    return res.json({ studentId: null });
+  } catch (error: any) {
+    console.error('[GetStudentByName] Error:', error.message);
+    return res.json({ studentId: null });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleGetFirstStudent(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const clubId = req.query.clubId as string;
+  
+  if (!clubId) {
+    return res.status(400).json({ error: 'clubId is required' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id FROM students WHERE club_id = $1::uuid ORDER BY created_at ASC LIMIT 1`,
+      [clubId]
+    );
+    
+    if (result.rows.length > 0) {
+      return res.json({ studentId: result.rows[0].id });
+    }
+    return res.json({ studentId: null });
+  } catch (error: any) {
+    console.error('[GetFirstStudent] Error:', error.message);
+    return res.json({ studentId: null });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { clubId, name, email, location, assignedClasses, password } = parseBody(req);
@@ -1964,6 +2021,21 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
   try {
     const today = new Date().toISOString().split('T')[0];
     
+    // First verify the student exists in database
+    const studentCheck = await client.query(
+      `SELECT id FROM students WHERE id = $1::uuid`,
+      [studentId]
+    );
+    
+    if (studentCheck.rows.length === 0) {
+      console.log(`[HomeDojo] Student ${studentId} not found in database - treating as demo mode`);
+      return res.json({
+        success: true,
+        xpAwarded: HABIT_XP,
+        message: `Habit completed! +${HABIT_XP} XP earned. (Demo Mode)`
+      });
+    }
+    
     // Use transaction for atomicity
     await client.query('BEGIN');
 
@@ -2372,6 +2444,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (customHabitDeleteMatch) return await handleDeleteCustomHabit(req, res, customHabitDeleteMatch[1]);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/students/by-email' || path === '/students/by-email/') return await handleGetStudentByEmail(req, res);
+    if (path === '/students/by-name' || path === '/students/by-name/') return await handleGetStudentByName(req, res);
+    if (path === '/students/first' || path === '/students/first/') return await handleGetFirstStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     
     // Club data routes
