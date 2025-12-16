@@ -578,15 +578,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Check if ID is a valid database UUID (not a wizard-generated ID)
     const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     
-    // Fetch habit status and custom habits on mount (only with valid UUID)
+    // Fetch habit status and custom habits on mount (same pattern as challenge history)
     useEffect(() => {
+        if (!student.id) return;
+        
         const fetchHabitData = async () => {
-            // Only fetch if we have a valid database UUID
-            if (!student.id || !isValidUUID(student.id)) {
-                console.log('[HomeDojo] Waiting for valid student UUID, current ID:', student.id);
-                return;
-            }
-            
             try {
                 console.log('[HomeDojo] Fetching habits for student:', student.id);
                 // Fetch habit status and sync XP from database
