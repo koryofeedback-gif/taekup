@@ -1844,7 +1844,7 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'proofType must be TRUST or VIDEO' });
   }
 
-  const isDemoMode = studentId === 'demo' || clubId === 'demo';
+  const isDemoMode = studentId === 'demo'; // Only skip DB if studentId is demo
   const baseXp = challengeXp || 15;
   const finalXp = proofType === 'VIDEO' ? baseXp * VIDEO_XP_MULTIPLIER : baseXp;
   const today = new Date().toISOString().split('T')[0];

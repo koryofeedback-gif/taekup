@@ -2231,8 +2231,8 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'proofType must be TRUST or VIDEO' });
       }
 
-      // Handle demo mode (for testing without real student)
-      const isDemoMode = studentId === 'demo' || clubId === 'demo';
+      // Handle demo mode (only skip DB if studentId is 'demo' - we look up real clubId from student)
+      const isDemoMode = studentId === 'demo';
       
       // Calculate XP based on proof type
       const baseXp = challengeXp || 15; // Use passed XP or default
