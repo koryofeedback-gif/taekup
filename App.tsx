@@ -852,18 +852,53 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
 }) => {
     const { studentId: urlStudentId } = useParams<{ studentId: string }>();
     const navigate = useNavigate();
+    const [resolvedStudentId, setResolvedStudentId] = React.useState<string | null>(null);
     
     let studentToShow: Student | undefined;
 
     const effectiveStudentId = urlStudentId || parentStudentId;
     
-    if (effectiveStudentId) {
-        studentToShow = data.students.find(s => s.id === effectiveStudentId);
+    // Check if ID looks like a database UUID (not a wizard-generated ID like "student-123-xxx")
+    const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    
+    // For wizard-generated IDs, try to resolve to database UUID by matching student name/email
+    React.useEffect(() => {
+        const resolveStudentId = async () => {
+            if (effectiveStudentId && !isValidUUID(effectiveStudentId) && data.students.length > 0) {
+                // Try to fetch the database student ID by matching the wizard student data
+                const wizardStudent = data.students.find(s => s.id === effectiveStudentId) || data.students[0];
+                if (wizardStudent?.parentEmail) {
+                    try {
+                        const clubId = localStorage.getItem('taekup_club_id');
+                        if (clubId) {
+                            const res = await fetch(`/api/students/by-email?email=${encodeURIComponent(wizardStudent.parentEmail)}&clubId=${clubId}`);
+                            if (res.ok) {
+                                const result = await res.json();
+                                if (result.studentId && isValidUUID(result.studentId)) {
+                                    setResolvedStudentId(result.studentId);
+                                    console.log('[ParentPortal] Resolved wizard ID to database UUID:', result.studentId);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to resolve student ID:', e);
+                    }
+                }
+            }
+        };
+        resolveStudentId();
+    }, [effectiveStudentId, data.students]);
+    
+    // Use resolved UUID if available, otherwise fall back to effectiveStudentId
+    const finalStudentId = resolvedStudentId || effectiveStudentId;
+    
+    if (finalStudentId) {
+        studentToShow = data.students.find(s => s.id === finalStudentId);
         
         // If student not found but we have an ID, use first student but override with real ID
-        // This fixes the mismatch between database UUIDs and wizard data IDs
+        // This ensures habits/XP are saved to the correct database record
         if (!studentToShow && data.students.length > 0) {
-            studentToShow = { ...data.students[0], id: effectiveStudentId };
+            studentToShow = { ...data.students[0], id: finalStudentId };
         }
     } else {
         studentToShow = data.students[0];

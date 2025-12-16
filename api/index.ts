@@ -788,6 +788,46 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+async function handleGetStudentByEmail(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const email = req.query.email as string;
+  const clubId = req.query.clubId as string;
+  
+  if (!email || !clubId) {
+    return res.status(400).json({ error: 'Email and clubId are required' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id FROM students WHERE LOWER(parent_email) = $1 AND club_id = $2::uuid LIMIT 1`,
+      [email.toLowerCase().trim(), clubId]
+    );
+    
+    if (result.rows.length > 0) {
+      return res.json({ studentId: result.rows[0].id });
+    }
+    
+    // Fallback: get first student from club
+    const fallbackResult = await client.query(
+      `SELECT id FROM students WHERE club_id = $1::uuid ORDER BY created_at DESC LIMIT 1`,
+      [clubId]
+    );
+    
+    if (fallbackResult.rows.length > 0) {
+      return res.json({ studentId: fallbackResult.rows[0].id });
+    }
+    
+    return res.json({ studentId: null });
+  } catch (error: any) {
+    console.error('[GetStudentByEmail] Error:', error.message);
+    return res.json({ studentId: null });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { clubId, name, email, location, assignedClasses, password } = parseBody(req);
@@ -2278,6 +2318,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const customHabitDeleteMatch = path.match(/^\/habits\/custom\/([^/]+)\/?$/);
     if (customHabitDeleteMatch) return await handleDeleteCustomHabit(req, res, customHabitDeleteMatch[1]);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
+    if (path === '/students/by-email' || path === '/students/by-email/') return await handleGetStudentByEmail(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     
     // Club data routes

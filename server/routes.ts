@@ -1249,6 +1249,40 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Get student by parent email - resolves wizard IDs to database UUIDs
+  app.get('/api/students/by-email', async (req: Request, res: Response) => {
+    try {
+      const email = req.query.email as string;
+      const clubId = req.query.clubId as string;
+
+      if (!email || !clubId) {
+        return res.status(400).json({ error: 'Email and clubId are required' });
+      }
+
+      const result = await db.execute(sql`
+        SELECT id FROM students WHERE LOWER(parent_email) = ${email.toLowerCase().trim()} AND club_id = ${clubId}::uuid LIMIT 1
+      `);
+
+      if ((result as any[]).length > 0) {
+        return res.json({ studentId: (result as any[])[0].id });
+      }
+
+      // Fallback: get first student from club
+      const fallbackResult = await db.execute(sql`
+        SELECT id FROM students WHERE club_id = ${clubId}::uuid ORDER BY created_at DESC LIMIT 1
+      `);
+
+      if ((fallbackResult as any[]).length > 0) {
+        return res.json({ studentId: (fallbackResult as any[])[0].id });
+      }
+
+      res.json({ studentId: null });
+    } catch (error: any) {
+      console.error('[GetStudentByEmail] Error:', error.message);
+      res.json({ studentId: null });
+    }
+  });
+
   app.post('/api/invite-coach', async (req: Request, res: Response) => {
     try {
       const { clubId, name, email, location, assignedClasses } = req.body;
