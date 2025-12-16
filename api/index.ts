@@ -1741,6 +1741,162 @@ IMPORTANT: You MUST mention their specific score of ${score || 'their result'} i
   return res.json({ feedback: fallbacks[Math.floor(Math.random() * fallbacks.length)] });
 }
 
+// Arena Challenge Submit (Trust/Video)
+const TRUST_PER_CHALLENGE_LIMIT = 1; // STRICT: 1 time per challenge per day
+const VIDEO_XP_MULTIPLIER = 2;
+
+async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { studentId, clubId, challengeType, score, proofType, videoUrl, challengeXp } = parseBody(req);
+
+  if (!studentId || !challengeType) {
+    return res.status(400).json({ error: 'studentId and challengeType are required' });
+  }
+
+  if (!proofType || !['TRUST', 'VIDEO'].includes(proofType)) {
+    return res.status(400).json({ error: 'proofType must be TRUST or VIDEO' });
+  }
+
+  const isDemoMode = studentId === 'demo' || clubId === 'demo';
+  const baseXp = challengeXp || 15;
+  const finalXp = proofType === 'VIDEO' ? baseXp * VIDEO_XP_MULTIPLIER : baseXp;
+  const today = new Date().toISOString().split('T')[0];
+
+  if (proofType === 'TRUST') {
+    if (isDemoMode) {
+      console.log(`[Arena] Demo trust submission for "${challengeType}": +${finalXp} XP`);
+      return res.json({
+        success: true,
+        status: 'COMPLETED',
+        xpAwarded: finalXp,
+        earned_xp: finalXp,
+        remainingForChallenge: 0,
+        message: `Challenge completed! +${finalXp} XP earned. (Demo Mode)`
+      });
+    }
+
+    const client = await pool.connect();
+    try {
+      // Check per-challenge daily limit
+      const countResult = await client.query(
+        `SELECT COUNT(*) as count FROM challenge_submissions 
+         WHERE student_id = $1::uuid AND answer = $2 AND proof_type = 'TRUST' 
+         AND DATE(completed_at) = $3::date`,
+        [studentId, challengeType, today]
+      );
+
+      const count = parseInt(countResult.rows[0]?.count || '0');
+      if (count >= TRUST_PER_CHALLENGE_LIMIT) {
+        return res.status(429).json({
+          error: 'Daily mission complete',
+          message: 'Daily Mission Complete! You can earn XP for this challenge again tomorrow.',
+          limitReached: true,
+          alreadyCompleted: true
+        });
+      }
+
+      // Get student's club
+      const studentResult = await client.query(
+        `SELECT id, club_id FROM students WHERE id = $1::uuid`,
+        [studentId]
+      );
+
+      if (studentResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+
+      const validClubId = studentResult.rows[0].club_id;
+
+      // Create submission
+      await client.query(
+        `INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, completed_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, 'SOLO', 'COMPLETED', 'TRUST', $5, NOW())`,
+        [studentId, validClubId, challengeType, score || 0, finalXp]
+      );
+
+      // Award XP
+      await client.query(
+        `UPDATE students SET lifetime_xp = COALESCE(lifetime_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+        [finalXp, studentId]
+      );
+
+      console.log(`[Arena] Trust submission for "${challengeType}": +${finalXp} XP (${count + 1}/${TRUST_PER_CHALLENGE_LIMIT} today)`);
+
+      return res.json({
+        success: true,
+        status: 'COMPLETED',
+        xpAwarded: finalXp,
+        earned_xp: finalXp,
+        remainingForChallenge: TRUST_PER_CHALLENGE_LIMIT - count - 1,
+        message: `Challenge completed! +${finalXp} XP earned.`
+      });
+    } finally {
+      client.release();
+    }
+  }
+
+  if (proofType === 'VIDEO') {
+    if (!videoUrl) {
+      return res.status(400).json({ error: 'videoUrl is required for video proof' });
+    }
+
+    if (isDemoMode) {
+      return res.json({
+        success: true,
+        status: 'PENDING',
+        xpAwarded: 0,
+        pendingXp: finalXp,
+        earned_xp: 0,
+        message: `Video submitted! You'll earn ${finalXp} XP when verified. (Demo Mode)`
+      });
+    }
+
+    const client = await pool.connect();
+    try {
+      const studentResult = await client.query(
+        `SELECT s.id, s.club_id, s.premium_status, c.parent_premium_enabled
+         FROM students s LEFT JOIN clubs c ON s.club_id = c.id
+         WHERE s.id = $1::uuid`,
+        [studentId]
+      );
+
+      if (studentResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+
+      const student = studentResult.rows[0];
+      const hasPremium = student.premium_status !== 'none' || student.parent_premium_enabled;
+
+      if (!hasPremium) {
+        return res.status(403).json({
+          error: 'Premium required',
+          message: 'Video proof requires premium. Upgrade to earn more XP!'
+        });
+      }
+
+      await client.query(
+        `INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, 'SOLO', 'PENDING', 'VIDEO', $5, $6, NOW())`,
+        [studentId, student.club_id, challengeType, score || 0, videoUrl, finalXp]
+      );
+
+      return res.json({
+        success: true,
+        status: 'PENDING',
+        xpAwarded: 0,
+        pendingXp: finalXp,
+        earned_xp: 0,
+        message: `Video submitted! You'll earn ${finalXp} XP when verified.`
+      });
+    } finally {
+      client.release();
+    }
+  }
+
+  return res.status(400).json({ error: 'Invalid proofType' });
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -1769,6 +1925,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Daily Mystery Challenge
     if (path === '/daily-challenge' || path === '/daily-challenge/') return await handleDailyChallenge(req, res);
     if (path === '/daily-challenge/submit' || path === '/daily-challenge/submit/') return await handleDailyChallengeSubmit(req, res);
+    
+    // Arena Challenge Submit (Trust/Video)
+    if (path === '/challenges/submit' || path === '/challenges/submit/') return await handleChallengeSubmit(req, res);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     
