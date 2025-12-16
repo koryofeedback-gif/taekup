@@ -1844,10 +1844,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 icon: '💪',
                 color: 'red',
                 challenges: [
-                    { id: 'pushup_master', name: 'Push-up Master', icon: '💪', xp: 30 },
-                    { id: 'squat_challenge', name: 'Squat Challenge', icon: '💪', xp: 30 },
-                    { id: 'burpee_blast', name: 'Burpee Blast', icon: '💪', xp: 60 },
-                    { id: 'abs_of_steel', name: 'Abs of Steel', icon: '💪', xp: 30 },
+                    { id: 'pushup_master', name: 'Push-up Master', icon: '💪', xp: 30, description: 'Complete 10 perfect push-ups with proper form - chest to ground, arms fully extended.' },
+                    { id: 'squat_challenge', name: 'Squat Challenge', icon: '💪', xp: 30, description: 'Perform 20 deep squats - thighs parallel to floor, back straight, knees over toes.' },
+                    { id: 'burpee_blast', name: 'Burpee Blast', icon: '💪', xp: 60, description: 'Complete 10 full burpees - squat, jump back, push-up, jump forward, jump up!' },
+                    { id: 'abs_of_steel', name: 'Abs of Steel', icon: '💪', xp: 30, description: 'Do 20 sit-ups with controlled movement - hands behind head, full crunch each rep.' },
                 ]
             },
             {
@@ -1855,10 +1855,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 icon: '🎯',
                 color: 'blue',
                 challenges: [
-                    { id: 'kicks_marathon', name: '100 Kicks Marathon', icon: '🎯', xp: 60 },
-                    { id: 'speed_punches', name: 'Speed Punches', icon: '🎯', xp: 15 },
-                    { id: 'horse_stance', name: 'Iron Horse Stance', icon: '🎯', xp: 60 },
-                    { id: 'jump_rope', name: 'Jump Rope Ninja', icon: '🎯', xp: 30 },
+                    { id: 'kicks_marathon', name: '100 Kicks Marathon', icon: '🎯', xp: 60, description: 'Execute 100 kicks total - mix front kicks, roundhouse, and side kicks with proper chamber.' },
+                    { id: 'speed_punches', name: 'Speed Punches', icon: '🎯', xp: 15, description: 'Throw 50 shadow punches with speed and accuracy - jab, cross, hook combinations.' },
+                    { id: 'horse_stance', name: 'Iron Horse Stance', icon: '🎯', xp: 60, description: 'Hold a deep horse stance for 60 seconds - feet wide, thighs parallel, back straight.' },
+                    { id: 'jump_rope', name: 'Jump Rope Ninja', icon: '🎯', xp: 30, description: 'Jump rope continuously for 2 minutes - light on your feet, consistent rhythm.' },
                 ]
             },
             {
@@ -1866,10 +1866,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 icon: '🧘',
                 color: 'purple',
                 challenges: [
-                    { id: 'plank_hold', name: 'Plank Hold', icon: '🧘', xp: 30 },
-                    { id: 'touch_toes', name: 'Touch Your Toes', icon: '🧘', xp: 15 },
-                    { id: 'wall_sit', name: 'The Wall Sit', icon: '🧘', xp: 30 },
-                    { id: 'one_leg_balance', name: 'One-Leg Balance', icon: '🧘', xp: 15 },
+                    { id: 'plank_hold', name: 'Plank Hold', icon: '🧘', xp: 30, description: 'Hold a solid plank position for 45 seconds - straight line from head to heels, core engaged.' },
+                    { id: 'touch_toes', name: 'Touch Your Toes', icon: '🧘', xp: 15, description: 'Stand and reach down to touch your toes, hold for 30 seconds - no bouncing, breathe deeply.' },
+                    { id: 'wall_sit', name: 'The Wall Sit', icon: '🧘', xp: 30, description: 'Sit against a wall with thighs parallel to floor for 45 seconds - back flat, knees at 90 degrees.' },
+                    { id: 'one_leg_balance', name: 'One-Leg Balance', icon: '🧘', xp: 15, description: 'Balance on one leg for 60 seconds each side - arms out for balance, eyes focused ahead.' },
                 ]
             }
         ];
