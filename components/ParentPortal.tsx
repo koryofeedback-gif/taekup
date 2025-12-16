@@ -305,7 +305,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 body: JSON.stringify({
                     challengeId: mysteryChallenge.id,
                     studentId: effectiveStudentId,
-                    clubId: 'demo',
+                    clubId: student.clubId || 'demo',
                     selectedIndex,
                 })
             });
@@ -370,7 +370,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     studentId: student.id,
-                    clubId: 'demo',
+                    clubId: student.clubId || 'demo',
                     challengeType: selectedChallenge,
                     score: parseInt(soloScore) || 0,
                     proofType,

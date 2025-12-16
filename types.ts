@@ -195,6 +195,7 @@ export interface RivalsStats {
 
 export interface Student {
   id: string;
+  clubId?: string; // Club UUID for challenge submissions
   name: string;
   photo?: string | null; // New field for student profile photo
   birthday: string;
