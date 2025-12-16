@@ -575,10 +575,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [customHabitIcon, setCustomHabitIcon] = useState('');
     const [customHabitCategory, setCustomHabitCategory] = useState<Habit['category']>('Custom');
 
-    // Fetch habit status and custom habits on mount
+    // Check if ID is a valid database UUID (not a wizard-generated ID)
+    const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    
+    // Fetch habit status and custom habits on mount (only with valid UUID)
     useEffect(() => {
         const fetchHabitData = async () => {
+            // Only fetch if we have a valid database UUID
+            if (!student.id || !isValidUUID(student.id)) {
+                console.log('[HomeDojo] Waiting for valid student UUID, current ID:', student.id);
+                return;
+            }
+            
             try {
+                console.log('[HomeDojo] Fetching habits for student:', student.id);
                 // Fetch habit status and sync XP from database
                 const statusRes = await fetch(`/api/habits/status?studentId=${student.id}`);
                 if (statusRes.ok) {
@@ -617,9 +627,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 console.error('Failed to fetch habit data:', e);
             }
         };
-        if (student.id) {
-            fetchHabitData();
-        }
+        fetchHabitData();
     }, [student.id]);
 
     // Time Machine State
@@ -686,6 +694,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Prevent double-clicks on already completed habits
         if (homeDojoChecks[habitId]) return;
         
+        // Validate student ID is a proper UUID before making API calls
+        if (!student.id || !isValidUUID(student.id)) {
+            console.warn('[HomeDojo] Cannot save habit - invalid student ID:', student.id);
+            return; // Don't allow habit checking without a valid database ID
+        }
+        
         // Check if at daily limit before visual feedback
         const wasAtLimit = atDailyLimit;
         const xpToShow = wasAtLimit ? 0 : 10;
@@ -709,7 +723,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             const res = await fetch('/api/habits/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId: student.id || 'demo', habitName: habitId })
+                body: JSON.stringify({ studentId: student.id, habitName: habitId })
             });
             const apiData = await res.json();
             if (apiData.success) {

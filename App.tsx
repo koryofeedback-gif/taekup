@@ -892,16 +892,17 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     // Use resolved UUID if available, otherwise fall back to effectiveStudentId
     const finalStudentId = resolvedStudentId || effectiveStudentId;
     
-    if (finalStudentId) {
-        studentToShow = data.students.find(s => s.id === finalStudentId);
-        
-        // If student not found but we have an ID, use first student but override with real ID
+    // Find the wizard student data first
+    const wizardStudent = effectiveStudentId 
+        ? data.students.find(s => s.id === effectiveStudentId) || data.students[0]
+        : data.students[0];
+    
+    if (wizardStudent) {
+        // ALWAYS use resolvedStudentId if available (it's the database UUID)
         // This ensures habits/XP are saved to the correct database record
-        if (!studentToShow && data.students.length > 0) {
-            studentToShow = { ...data.students[0], id: finalStudentId };
-        }
-    } else {
-        studentToShow = data.students[0];
+        studentToShow = resolvedStudentId 
+            ? { ...wizardStudent, id: resolvedStudentId }
+            : wizardStudent;
     }
 
     if (!studentToShow) {
