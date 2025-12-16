@@ -2234,7 +2234,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                             
                                             <p className="text-gray-400 text-sm mb-4">
-                                                Complete this challenge solo and earn XP!
+                                                {challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge)?.description || 'Complete this challenge solo and earn XP!'}
                                             </p>
                                             
                                             {/* Score Input */}
