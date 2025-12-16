@@ -2811,14 +2811,15 @@ export function registerRoutes(app: Express) {
 
       let newTotalXp = 0;
       if (xpToAward > 0) {
+        // Update lifetime_xp in students table (the correct column)
         const updateResult = await db.execute(sql`
-          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpToAward}, updated_at = NOW() WHERE id = ${studentId}::uuid RETURNING total_xp
+          UPDATE students SET lifetime_xp = COALESCE(lifetime_xp, 0) + ${xpToAward}, updated_at = NOW() WHERE id = ${studentId}::uuid RETURNING lifetime_xp
         `);
-        newTotalXp = (updateResult as any[])[0]?.total_xp || 0;
-        console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total: ${newTotalXp}`);
+        newTotalXp = (updateResult as any[])[0]?.lifetime_xp || 0;
+        console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new lifetime_xp: ${newTotalXp}`);
       } else {
-        const currentXp = await db.execute(sql`SELECT total_xp FROM students WHERE id = ${studentId}::uuid`);
-        newTotalXp = (currentXp as any[])[0]?.total_xp || 0;
+        const currentXp = await db.execute(sql`SELECT lifetime_xp FROM students WHERE id = ${studentId}::uuid`);
+        newTotalXp = (currentXp as any[])[0]?.lifetime_xp || 0;
         console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
       }
 
@@ -2828,7 +2829,7 @@ export function registerRoutes(app: Express) {
         newTotalXp,
         dailyXpEarned: totalXpToday + xpToAward,
         dailyXpCap: DAILY_HABIT_XP_CAP,
-        atDailyLimit,
+        atDailyLimit: (totalXpToday + xpToAward) >= DAILY_HABIT_XP_CAP,
         message: atDailyLimit 
           ? `Habit done! Daily Dojo Limit reached (Max ${DAILY_HABIT_XP_CAP} XP).`
           : `Habit completed! +${HABIT_XP} XP earned.`

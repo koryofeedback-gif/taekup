@@ -1877,13 +1877,18 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
   const client = await pool.connect();
   try {
     const today = new Date().toISOString().split('T')[0];
+    
+    // Use transaction for atomicity
+    await client.query('BEGIN');
 
+    // Check if habit already completed today
     const existing = await client.query(
       `SELECT id FROM habit_logs WHERE student_id = $1::uuid AND habit_name = $2 AND log_date = $3::date`,
       [studentId, habitName, today]
     );
 
     if (existing.rows.length > 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({
         error: 'Already completed',
         message: 'You already completed this habit today!',
@@ -1908,17 +1913,20 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
 
     let newTotalXp = 0;
     if (xpToAward > 0) {
+      // Update lifetime_xp in students table (the correct column)
       const updateResult = await client.query(
-        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING total_xp`,
+        `UPDATE students SET lifetime_xp = COALESCE(lifetime_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING lifetime_xp`,
         [xpToAward, studentId]
       );
-      newTotalXp = updateResult.rows[0]?.total_xp || 0;
-      console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total: ${newTotalXp}`);
+      newTotalXp = updateResult.rows[0]?.lifetime_xp || 0;
+      console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new lifetime_xp: ${newTotalXp}`);
     } else {
-      const currentXp = await client.query(`SELECT total_xp FROM students WHERE id = $1::uuid`, [studentId]);
-      newTotalXp = currentXp.rows[0]?.total_xp || 0;
+      const currentXp = await client.query(`SELECT lifetime_xp FROM students WHERE id = $1::uuid`, [studentId]);
+      newTotalXp = currentXp.rows[0]?.lifetime_xp || 0;
       console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
     }
+
+    await client.query('COMMIT');
 
     return res.json({
       success: true,
@@ -1926,12 +1934,13 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
       newTotalXp,
       dailyXpEarned: totalXpToday + xpToAward,
       dailyXpCap: DAILY_HABIT_XP_CAP,
-      atDailyLimit,
+      atDailyLimit: (totalXpToday + xpToAward) >= DAILY_HABIT_XP_CAP,
       message: atDailyLimit 
         ? `Habit done! Daily Dojo Limit reached (Max ${DAILY_HABIT_XP_CAP} XP).`
         : `Habit completed! +${HABIT_XP} XP earned.`
     });
   } catch (error: any) {
+    await client.query('ROLLBACK');
     console.error('[HomeDojo] Habit check error:', error.message);
     return res.status(500).json({ error: 'Failed to log habit' });
   } finally {

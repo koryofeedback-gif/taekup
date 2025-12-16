@@ -707,18 +707,33 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             });
             const apiData = await res.json();
             if (apiData.success) {
-                // Update with actual values from server
+                // Sync with actual values from server (source of truth)
                 setHabitXpToday(apiData.dailyXpEarned || 0);
                 setAtDailyLimit(apiData.atDailyLimit || false);
-                if (apiData.newTotalXp) {
-                    console.log('[HomeDojo] New total XP from server:', apiData.newTotalXp, 'Daily:', apiData.dailyXpEarned, '/', apiData.dailyXpCap);
+                // Update header XP from server's newTotalXp (lifetime_xp)
+                if (typeof apiData.newTotalXp === 'number') {
+                    setRivalStats(prev => ({ ...prev, xp: apiData.newTotalXp }));
+                    console.log('[HomeDojo] XP synced from server:', apiData.newTotalXp, 'Daily:', apiData.dailyXpEarned, '/', apiData.dailyXpCap);
                 }
             } else if (apiData.alreadyCompleted) {
-                // Already completed - ensure UI is consistent
+                // Already completed - revert optimistic update
                 setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
+                setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
+                // Revert the optimistic XP add
+                if (!wasAtLimit) {
+                    setRivalStats(prev => ({ ...prev, xp: prev.xp - 10 }));
+                    setHabitXpToday(prev => prev - 10);
+                }
             }
         } catch (e) {
             console.error('Habit API error:', e);
+            // Revert optimistic updates on error
+            setHomeDojoChecks(prev => ({ ...prev, [habitId]: false }));
+            setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
+            if (!wasAtLimit) {
+                setRivalStats(prev => ({ ...prev, xp: prev.xp - 10 }));
+                setHabitXpToday(prev => prev - 10);
+            }
         }
     };
     
