@@ -730,6 +730,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 body: JSON.stringify({ studentId, habitName: habitId })
             });
             const apiData = await res.json();
+            
+            // DEBUG: Alert on API failure
+            if (!res.ok) {
+                alert("SAVE FAILED:\n" + (apiData.error || 'Unknown error') + "\n\nStudent ID: " + studentId);
+                console.error('[HomeDojo] API Error:', apiData);
+                // Revert optimistic updates
+                setHomeDojoChecks(prev => ({ ...prev, [habitId]: false }));
+                if (!wasAtLimit) {
+                    setRivalStats(prev => ({ ...prev, xp: prev.xp - 10 }));
+                    setHabitXpToday(prev => prev - 10);
+                }
+                return;
+            }
+            
             if (apiData.success) {
                 // Sync with actual values from server (source of truth)
                 setHabitXpToday(apiData.dailyXpEarned || 0);
@@ -3653,7 +3667,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <div className="space-y-6 pb-20">
                     <div className="bg-gradient-to-r from-green-800 to-teal-900 p-6 rounded-xl shadow-lg relative overflow-hidden">
                         <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-2 -mt-2">🏠</div>
-                        <h3 className="font-bold text-white text-xl relative z-10">The Home Dojo</h3>
+                        <h3 className="font-bold text-white text-xl relative z-10">The Home Dojo v2</h3>
                         <p className="text-sm text-green-100 relative z-10 mt-1">
                             Building character starts at home.
                         </p>

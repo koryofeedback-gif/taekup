@@ -2104,8 +2104,12 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('[HomeDojo] Habit check error:', error.message);
-    return res.status(500).json({ error: 'Failed to log habit' });
+    console.error('[HomeDojo] Habit check error:', error.message, error.stack);
+    return res.status(500).json({ 
+      error: error.message || 'Failed to log habit',
+      details: error.stack,
+      code: error.code
+    });
   } finally {
     client.release();
   }
