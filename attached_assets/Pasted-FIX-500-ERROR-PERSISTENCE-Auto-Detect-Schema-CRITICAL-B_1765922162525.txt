@@ -1,0 +1,59 @@
+FIX 500 ERROR & PERSISTENCE (Auto-Detect Schema)
+CRITICAL BUG REPORT: The POST /api/habits/check endpoint is failing with a 500 Internal Server Error. Because of this crash, the database transaction rolls back, so neither the habit log nor the XP is saved.
+
+Root Cause: The code is likely trying to update a column (e.g., lifetime_xp) that does NOT exist in the students table.
+
+REQUIRED ACTION: Fix the Persistence Logic immediately.
+
+Step 1: Introspect the Database (Do this internally) Before writing the query, CHECK the students table schema.
+
+Does it have xp? Or total_xp? Or points?
+
+Hint: It is the column holding the integer value for the user's score.
+
+Step 2: Rewrite POST /api/habits/check
+
+Use the Confirmed Column Name from Step 1.
+
+The Logic must be:
+
+JavaScript
+
+try {
+  // 1. Check if already done today
+  const existing = await db.query(...);
+  if (existing) return res.json({ status: 'already_done' });
+
+  // 2. Calculate daily cap
+  const todayLogs = await db.query('SELECT sum(earned_xp) as total ...');
+  const currentDailyXP = todayLogs.rows[0].total || 0;
+  const xpToAward = (currentDailyXP < 60) ? 10 : 0;
+
+  // 3. EXECUTE TRANSACTION
+  await db.query('BEGIN');
+
+  // Insert Log
+  await db.query('INSERT INTO habit_logs ...', [userId, habitName, xpToAward]);
+
+  // Update User XP (ONLY if xpToAward > 0)
+  if (xpToAward > 0) {
+     // USE THE CORRECT COLUMN NAME HERE (e.g., 'xp')
+     await db.query('UPDATE students SET xp = xp + $1 WHERE id = $2', [xpToAward, userId]);
+  }
+
+  await db.query('COMMIT');
+
+  // 4. Return NEW total
+  const updatedUser = await db.query('SELECT xp FROM students WHERE id = $1', [userId]);
+  res.json({ status: 'success', newTotalXp: updatedUser.rows[0].xp });
+
+} catch (error) {
+  await db.query('ROLLBACK');
+  console.error("Habit Save Error:", error); // Log the EXACT error
+  res.status(500).json({ error: error.message });
+}
+Step 3: Fix Frontend (HomeDojo.tsx)
+
+Ensure useEffect calls GET /api/habits/today on load.
+
+When that data comes back, map it to the UI state so the checks stay green after refresh.
