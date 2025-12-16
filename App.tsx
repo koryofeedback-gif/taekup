@@ -861,28 +861,60 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     // Check if ID looks like a database UUID (not a wizard-generated ID like "student-123-xxx")
     const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     
-    // For wizard-generated IDs, try to resolve to database UUID by matching student name/email
+    // For wizard-generated IDs, try to resolve to database UUID
     React.useEffect(() => {
         const resolveStudentId = async () => {
-            if (effectiveStudentId && !isValidUUID(effectiveStudentId) && data.students.length > 0) {
-                // Try to fetch the database student ID by matching the wizard student data
+            // If we already have a valid UUID, use it directly
+            if (effectiveStudentId && isValidUUID(effectiveStudentId)) {
+                setResolvedStudentId(effectiveStudentId);
+                return;
+            }
+            
+            // For wizard IDs, try to find the database student
+            if (effectiveStudentId && data.students.length > 0) {
                 const wizardStudent = data.students.find(s => s.id === effectiveStudentId) || data.students[0];
-                if (wizardStudent?.parentEmail) {
-                    try {
-                        const clubId = localStorage.getItem('taekup_club_id');
-                        if (clubId) {
-                            const res = await fetch(`/api/students/by-email?email=${encodeURIComponent(wizardStudent.parentEmail)}&clubId=${clubId}`);
-                            if (res.ok) {
-                                const result = await res.json();
-                                if (result.studentId && isValidUUID(result.studentId)) {
-                                    setResolvedStudentId(result.studentId);
-                                    console.log('[ParentPortal] Resolved wizard ID to database UUID:', result.studentId);
-                                }
+                const clubId = localStorage.getItem('taekup_club_id');
+                
+                if (!clubId) return;
+                
+                try {
+                    // Method 1: Try to match by parent email
+                    if (wizardStudent?.parentEmail) {
+                        const res = await fetch(`/api/students/by-email?email=${encodeURIComponent(wizardStudent.parentEmail)}&clubId=${clubId}`);
+                        if (res.ok) {
+                            const result = await res.json();
+                            if (result.studentId && isValidUUID(result.studentId)) {
+                                setResolvedStudentId(result.studentId);
+                                console.log('[ParentPortal] Resolved by email to UUID:', result.studentId);
+                                return;
                             }
                         }
-                    } catch (e) {
-                        console.error('Failed to resolve student ID:', e);
                     }
+                    
+                    // Method 2: Try to match by student name
+                    if (wizardStudent?.name) {
+                        const res = await fetch(`/api/students/by-name?name=${encodeURIComponent(wizardStudent.name)}&clubId=${clubId}`);
+                        if (res.ok) {
+                            const result = await res.json();
+                            if (result.studentId && isValidUUID(result.studentId)) {
+                                setResolvedStudentId(result.studentId);
+                                console.log('[ParentPortal] Resolved by name to UUID:', result.studentId);
+                                return;
+                            }
+                        }
+                    }
+                    
+                    // Method 3: Fall back to first student in the club
+                    const res = await fetch(`/api/students/first?clubId=${clubId}`);
+                    if (res.ok) {
+                        const result = await res.json();
+                        if (result.studentId && isValidUUID(result.studentId)) {
+                            setResolvedStudentId(result.studentId);
+                            console.log('[ParentPortal] Fallback to first club student UUID:', result.studentId);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to resolve student ID:', e);
                 }
             }
         };

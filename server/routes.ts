@@ -1283,6 +1283,55 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Get student by name
+  app.get('/api/students/by-name', async (req: Request, res: Response) => {
+    try {
+      const name = req.query.name as string;
+      const clubId = req.query.clubId as string;
+
+      if (!name || !clubId) {
+        return res.status(400).json({ error: 'Name and clubId are required' });
+      }
+
+      const result = await db.execute(sql`
+        SELECT id FROM students WHERE LOWER(name) = ${name.toLowerCase().trim()} AND club_id = ${clubId}::uuid LIMIT 1
+      `);
+
+      if ((result as any[]).length > 0) {
+        return res.json({ studentId: (result as any[])[0].id });
+      }
+
+      res.json({ studentId: null });
+    } catch (error: any) {
+      console.error('[GetStudentByName] Error:', error.message);
+      res.json({ studentId: null });
+    }
+  });
+
+  // Get first student from club
+  app.get('/api/students/first', async (req: Request, res: Response) => {
+    try {
+      const clubId = req.query.clubId as string;
+
+      if (!clubId) {
+        return res.status(400).json({ error: 'clubId is required' });
+      }
+
+      const result = await db.execute(sql`
+        SELECT id FROM students WHERE club_id = ${clubId}::uuid ORDER BY created_at ASC LIMIT 1
+      `);
+
+      if ((result as any[]).length > 0) {
+        return res.json({ studentId: (result as any[])[0].id });
+      }
+
+      res.json({ studentId: null });
+    } catch (error: any) {
+      console.error('[GetFirstStudent] Error:', error.message);
+      res.json({ studentId: null });
+    }
+  });
+
   app.post('/api/invite-coach', async (req: Request, res: Response) => {
     try {
       const { clubId, name, email, location, assignedClasses } = req.body;
