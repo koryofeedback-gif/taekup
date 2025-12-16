@@ -73,6 +73,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [familyChallengeMode, setFamilyChallengeMode] = useState(false);
     const [parentScore, setParentScore] = useState<string>('');
     const [activeFamilyChallenge, setActiveFamilyChallenge] = useState<string | null>(null);
+    const [familyResult, setFamilyResult] = useState<{ show: boolean; won: boolean; xp: number; challengeName: string } | null>(null);
     
     // Mystery Challenge State (AI-powered daily challenge)
     const [mysteryChallenge, setMysteryChallenge] = useState<{
@@ -3059,6 +3060,31 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             {/* FAMILY CHALLENGES VIEW */}
                             {rivalsView === 'family' && (
                                 <div className="space-y-4">
+                                    {/* Family Challenge Result Feedback */}
+                                    {familyResult && (
+                                        <div className={`p-4 rounded-xl border-2 text-center animate-pulse ${
+                                            familyResult.won 
+                                                ? 'bg-gradient-to-r from-green-900/80 to-emerald-900/80 border-green-500' 
+                                                : 'bg-gradient-to-r from-orange-900/80 to-yellow-900/80 border-orange-500'
+                                        }`}>
+                                            <div className="text-4xl mb-2">{familyResult.won ? '🏆' : '💪'}</div>
+                                            <h4 className="font-black text-white text-xl mb-1">
+                                                {familyResult.won ? 'YOU WON!' : 'GREAT EFFORT!'}
+                                            </h4>
+                                            <p className="text-gray-200 text-sm mb-2">{familyResult.challengeName}</p>
+                                            <div className={`inline-block px-4 py-2 rounded-full font-bold ${
+                                                familyResult.won ? 'bg-green-600 text-white' : 'bg-orange-600 text-white'
+                                            }`}>
+                                                +{familyResult.xp} XP {familyResult.won ? 'Winner Bonus!' : 'Participation!'}
+                                            </div>
+                                            <p className="text-gray-400 text-xs mt-2">
+                                                {familyResult.won 
+                                                    ? 'Amazing work! Keep training with your family!' 
+                                                    : 'You still earned XP! Practice makes perfect!'}
+                                            </p>
+                                        </div>
+                                    )}
+                                    
                                     <div className="bg-gradient-to-r from-pink-900/50 to-red-900/50 p-4 rounded-xl border border-pink-500/30">
                                         <h4 className="font-bold text-white flex items-center">
                                             <span className="mr-2">👨‍👧</span> Family Challenges
@@ -3151,6 +3177,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     xpEarned,
                                                                     isFamily: true
                                                                 }, ...prev]);
+                                                                
+                                                                // Show result feedback
+                                                                setFamilyResult({ show: true, won, xp: xpEarned, challengeName: challenge.name });
+                                                                
+                                                                // Auto-hide after 4 seconds
+                                                                setTimeout(() => setFamilyResult(null), 4000);
                                                                 
                                                                 setActiveFamilyChallenge(null);
                                                                 setMyScore('');
