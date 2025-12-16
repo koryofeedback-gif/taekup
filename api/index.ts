@@ -1515,32 +1515,32 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
     try { await client.query(`DELETE FROM arena_submissions`); } catch (e) { /* may not exist */ }
     // Step 4: Now clear the challenges themselves
     try { await client.query(`DELETE FROM challenges`); } catch (e) { /* may not exist */ }
-    try { await client.query(`DELETE FROM arena_challenges`); } catch (e) { /* may not exist */ }
+    await client.query(`DELETE FROM arena_challenges`);
     
-    // Insert fresh GPP challenges into CHALLENGES table (what frontend reads)
+    // Insert fresh GPP challenges into ARENA_CHALLENGES table (what /api/challenges/arena reads)
     const seedChallenges = [
       // POWER (icon: 💪)
-      { name: 'Push-up Master', desc: '10 perfect pushups', icon: '💪', cat: 'POWER', xp: 30 },
-      { name: 'Squat Challenge', desc: '20 squats', icon: '💪', cat: 'POWER', xp: 30 },
-      { name: 'Burpee Blast', desc: '10 burpees', icon: '💪', cat: 'POWER', xp: 60 },
-      { name: 'Abs of Steel', desc: '20 Sit-ups', icon: '💪', cat: 'POWER', xp: 30 },
+      { name: 'Push-up Master', desc: '10 perfect pushups', icon: '💪', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
+      { name: 'Squat Challenge', desc: '20 squats', icon: '💪', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
+      { name: 'Burpee Blast', desc: '10 burpees', icon: '💪', cat: 'POWER', diff: 'HARD', xp: 60 },
+      { name: 'Abs of Steel', desc: '20 Sit-ups', icon: '💪', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
       // TECHNIQUE (icon: 🎯)
-      { name: '100 Kicks Marathon', desc: '100 kicks total', icon: '🎯', cat: 'TECHNIQUE', xp: 60 },
-      { name: 'Speed Punches', desc: '50 shadow punches', icon: '🎯', cat: 'TECHNIQUE', xp: 15 },
-      { name: 'Iron Horse Stance', desc: 'Hold stance 60s', icon: '🎯', cat: 'TECHNIQUE', xp: 60 },
-      { name: 'Jump Rope Ninja', desc: 'Jump rope 2 mins', icon: '🎯', cat: 'TECHNIQUE', xp: 30 },
+      { name: '100 Kicks Marathon', desc: '100 kicks total', icon: '🎯', cat: 'TECHNIQUE', diff: 'HARD', xp: 60 },
+      { name: 'Speed Punches', desc: '50 shadow punches', icon: '🎯', cat: 'TECHNIQUE', diff: 'EASY', xp: 15 },
+      { name: 'Iron Horse Stance', desc: 'Hold stance 60s', icon: '🎯', cat: 'TECHNIQUE', diff: 'HARD', xp: 60 },
+      { name: 'Jump Rope Ninja', desc: 'Jump rope 2 mins', icon: '🎯', cat: 'TECHNIQUE', diff: 'MEDIUM', xp: 30 },
       // FLEXIBILITY (icon: 🧘)
-      { name: 'Plank Hold', desc: 'Hold 45s', icon: '🧘', cat: 'FLEXIBILITY', xp: 30 },
-      { name: 'Touch Your Toes', desc: 'Hold 30s', icon: '🧘', cat: 'FLEXIBILITY', xp: 15 },
-      { name: 'The Wall Sit', desc: 'Hold 45s', icon: '🧘', cat: 'FLEXIBILITY', xp: 30 },
-      { name: 'One-Leg Balance', desc: 'Balance 60s', icon: '🧘', cat: 'FLEXIBILITY', xp: 15 },
+      { name: 'Plank Hold', desc: 'Hold 45s', icon: '🧘', cat: 'FLEXIBILITY', diff: 'MEDIUM', xp: 30 },
+      { name: 'Touch Your Toes', desc: 'Hold 30s', icon: '🧘', cat: 'FLEXIBILITY', diff: 'EASY', xp: 15 },
+      { name: 'The Wall Sit', desc: 'Hold 45s', icon: '🧘', cat: 'FLEXIBILITY', diff: 'MEDIUM', xp: 30 },
+      { name: 'One-Leg Balance', desc: 'Balance 60s', icon: '🧘', cat: 'FLEXIBILITY', diff: 'EASY', xp: 15 },
     ];
     
     for (const c of seedChallenges) {
       await client.query(`
-        INSERT INTO challenges (name, description, icon, category, xp_reward, is_system_default)
-        VALUES ($1, $2, $3, $4, $5, true)
-      `, [c.name, c.desc, c.icon, c.cat, c.xp]);
+        INSERT INTO arena_challenges (name, description, icon, category, difficulty_tier, xp_reward, is_system_default, club_id)
+        VALUES ($1::text, $2::text, $3::text, $4::challenge_category, $5::difficulty_tier, $6::integer, true, NULL)
+      `, [c.name, c.desc, c.icon, c.cat, c.diff, c.xp]);
     }
     
     return res.json({ 
