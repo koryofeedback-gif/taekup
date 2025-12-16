@@ -561,10 +561,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
     const defaultHabits: Habit[] = [
-        { id: 'homework', question: 'Did they finish homework on time?', category: 'School', icon: '📚', isActive: true },
-        { id: 'screentime', question: 'Did they limit screentime?', category: 'Health', icon: '📵', isActive: true },
-        { id: 'vegetables', question: 'Did they eat vegetables?', category: 'Health', icon: '🥦', isActive: true },
-        { id: 'chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: true },
+        { id: 'made_bed', question: 'Did they make their bed?', category: 'Chores', icon: '🛏️', isActive: true },
+        { id: 'brushed_teeth', question: 'Did they brush their teeth?', category: 'Health', icon: '🦷', isActive: true },
+        { id: 'showed_respect', question: 'Did they show respect to parents?', category: 'Character', icon: '🙇', isActive: true },
+        { id: 'did_chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: true },
     ];
     const [customHabitList, setCustomHabitList] = useState<Habit[]>(student.customHabits?.length ? student.customHabits : defaultHabits);
     // Custom habit creation state
@@ -686,12 +686,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }
 
     const PRESET_HABITS: Habit[] = [
-        { id: 'homework', question: 'Did they finish homework on time?', category: 'School', icon: '📚', isActive: true },
-        { id: 'screentime', question: 'Did they limit screentime?', category: 'Health', icon: '📵', isActive: true },
-        { id: 'vegetables', question: 'Did they eat vegetables?', category: 'Health', icon: '🥦', isActive: true },
-        { id: 'chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: true },
+        { id: 'made_bed', question: 'Did they make their bed?', category: 'Chores', icon: '🛏️', isActive: true },
+        { id: 'brushed_teeth', question: 'Did they brush their teeth?', category: 'Health', icon: '🦷', isActive: true },
+        { id: 'showed_respect', question: 'Did they show respect to parents?', category: 'Character', icon: '🙇', isActive: true },
+        { id: 'did_chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: true },
+        { id: 'homework', question: 'Did they finish homework on time?', category: 'School', icon: '📚', isActive: false },
         { id: 'kindness', question: 'Did they practice kindness?', category: 'Character', icon: '❤️', isActive: false },
-        { id: 'ready_alone', question: 'Did they get ready for school alone?', category: 'School', icon: '🎒', isActive: false },
     ];
 
     const handleToggleCustomHabit = (preset: Habit) => {
