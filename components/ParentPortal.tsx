@@ -149,6 +149,30 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [soloResult, setSoloResult] = useState<{ success: boolean; message: string; xp: number } | null>(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     
+    // Daily completed challenges tracking (localStorage-based, STRICT 1x per day limit)
+    const getTodayKey = useCallback(() => `arena-${student.id}-${new Date().toISOString().split('T')[0]}`, [student.id]);
+    const [dailyCompletedChallenges, setDailyCompletedChallenges] = useState<Set<string>>(() => {
+        try {
+            const key = `arena-${student.id}-${new Date().toISOString().split('T')[0]}`;
+            const saved = localStorage.getItem(key);
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch { return new Set(); }
+    });
+    
+    const markChallengeCompleted = useCallback((challengeId: string) => {
+        setDailyCompletedChallenges(prev => {
+            const updated = new Set(prev);
+            updated.add(challengeId);
+            try {
+                localStorage.setItem(getTodayKey(), JSON.stringify([...updated]));
+            } catch {}
+            return updated;
+        });
+    }, [getTodayKey]);
+    
+    const isChallengeCompletedToday = useCallback((challengeId: string) => 
+        dailyCompletedChallenges.has(challengeId), [dailyCompletedChallenges]);
+    
     // Use robust progress tracking hook for XP/completion
     const { 
         completedContentIds: localCompletedIds, 
@@ -299,6 +323,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const submitSoloChallenge = async (proofType: 'TRUST' | 'VIDEO', videoUrl?: string, challengeXp?: number) => {
         if (!selectedChallenge || !student.id) return;
         
+        // STRICT 1x daily limit - check frontend first
+        if (isChallengeCompletedToday(selectedChallenge)) {
+            setSoloResult({
+                success: false,
+                message: 'Daily Mission Complete! You can earn XP for this challenge again tomorrow.',
+                xp: 0
+            });
+            return;
+        }
+        
         // Use passed XP or default to 15
         const xpValue = challengeXp || 15;
         
@@ -316,24 +350,37 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     score: parseInt(soloScore) || 0,
                     proofType,
                     videoUrl,
-                    challengeXp: xpValue, // Pass dynamic XP to backend
+                    challengeXp: xpValue,
                 })
             });
             
             const result = await response.json();
             
+            // Handle 429 (daily limit) from backend
+            if (result.alreadyCompleted || result.limitReached) {
+                markChallengeCompleted(selectedChallenge);
+                setSoloResult({
+                    success: false,
+                    message: result.message || 'Daily Mission Complete!',
+                    xp: 0
+                });
+                return;
+            }
+            
             if (result.success) {
+                // Mark as completed in localStorage (1x daily limit)
+                markChallengeCompleted(selectedChallenge);
+                
                 setSoloResult({
                     success: true,
                     message: result.message,
-                    xp: result.xpAwarded
+                    xp: result.xpAwarded || result.earned_xp || 0
                 });
                 
                 if (proofType === 'TRUST') {
-                    setRemainingTrustSubmissions(result.remainingTrustSubmissions ?? remainingTrustSubmissions - 1);
                     setRivalStats(prev => ({
                         ...prev,
-                        xp: prev.xp + result.xpAwarded
+                        xp: prev.xp + (result.xpAwarded || result.earned_xp || 0)
                     }));
                 }
                 
@@ -2228,17 +2275,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <span className="ml-2 text-[10px] text-gray-500">({category.challenges.length})</span>
                                                 </div>
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                    {category.challenges.map(challenge => (
+                                                    {category.challenges.map(challenge => {
+                                                        const isCompleted = isChallengeCompletedToday(challenge.id);
+                                                        return (
                                                         <button
                                                             key={challenge.id}
-                                                            onClick={() => setSelectedChallenge(challenge.id)}
+                                                            onClick={() => !isCompleted && setSelectedChallenge(challenge.id)}
+                                                            disabled={isCompleted}
                                                             className={`group relative p-3 rounded-xl text-center transition-all duration-200 border-2 ${
-                                                                selectedChallenge === challenge.id
+                                                                isCompleted
+                                                                    ? 'bg-green-900/30 border-green-600/50 opacity-60 cursor-not-allowed'
+                                                                    : selectedChallenge === challenge.id
                                                                     ? 'bg-gradient-to-br from-red-900/60 to-red-950/60 border-red-500 shadow-lg shadow-red-900/30 scale-[1.02]'
                                                                     : 'bg-gray-800/50 border-gray-700/50 hover:border-gray-500 hover:bg-gray-700/50'
                                                             }`}
                                                         >
-                                                            {selectedChallenge === challenge.id && (
+                                                            {isCompleted ? (
+                                                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                                                    <span className="text-white text-[10px]">✓</span>
+                                                                </div>
+                                                            ) : selectedChallenge === challenge.id && (
                                                                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
                                                                     <span className="text-white text-[10px]">✓</span>
                                                                 </div>
@@ -2246,10 +2302,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform">{challenge.icon}</div>
                                                             <div className="text-xs font-semibold text-gray-200 leading-tight">{challenge.name}</div>
                                                             <div className="mt-1 inline-block px-2 py-0.5 bg-yellow-900/30 rounded-full">
-                                                                <span className="text-[10px] font-bold text-yellow-400">+{challenge.xp} XP</span>
+                                                                <span className="text-[10px] font-bold text-yellow-400">
+                                                                    {isCompleted ? 'Done ✓' : `+${challenge.xp} XP`}
+                                                                </span>
                                                             </div>
                                                         </button>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         ))}
