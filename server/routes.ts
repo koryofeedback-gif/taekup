@@ -2114,7 +2114,7 @@ export function registerRoutes(app: Express) {
         // Award XP to student
         await db.execute(sql`
           UPDATE students 
-          SET lifetime_xp = lifetime_xp + ${xpAwarded}, updated_at = NOW()
+          SET total_xp = COALESCE(total_xp, 0) + ${xpAwarded}, updated_at = NOW()
           WHERE id = ${studentId}::uuid
         `);
       }
@@ -2290,7 +2290,7 @@ export function registerRoutes(app: Express) {
 
           // Award XP instantly
           await db.execute(sql`
-            UPDATE students SET lifetime_xp = COALESCE(lifetime_xp, 0) + ${finalXp}, updated_at = NOW()
+            UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${finalXp}, updated_at = NOW()
             WHERE id = ${studentId}::uuid
           `);
 
@@ -2598,7 +2598,7 @@ export function registerRoutes(app: Express) {
         } else {
           // Tie - both get participation XP
           await db.execute(sql`
-            UPDATE students SET lifetime_xp = lifetime_xp + ${PVP_LOSE_XP}, updated_at = NOW()
+            UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${PVP_LOSE_XP}, updated_at = NOW()
             WHERE id IN (${challenge.student_id}::uuid, ${challenge.opponent_id}::uuid)
           `);
           await db.execute(sql`
@@ -2617,11 +2617,11 @@ export function registerRoutes(app: Express) {
 
         // Award XP
         await db.execute(sql`
-          UPDATE students SET lifetime_xp = lifetime_xp + ${PVP_WIN_XP}, updated_at = NOW()
+          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${PVP_WIN_XP}, updated_at = NOW()
           WHERE id = ${winnerId}::uuid
         `);
         await db.execute(sql`
-          UPDATE students SET lifetime_xp = lifetime_xp + ${PVP_LOSE_XP}, updated_at = NOW()
+          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${PVP_LOSE_XP}, updated_at = NOW()
           WHERE id = ${loserId}::uuid
         `);
         await db.execute(sql`
@@ -2713,7 +2713,7 @@ export function registerRoutes(app: Express) {
           WHERE id = ${submissionId}::uuid
         `);
         await db.execute(sql`
-          UPDATE students SET lifetime_xp = lifetime_xp + ${xpToAward}, updated_at = NOW()
+          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpToAward}, updated_at = NOW()
           WHERE id = ${submission.student_id}::uuid
         `);
 

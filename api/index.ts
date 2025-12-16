@@ -1911,7 +1911,7 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
 
       // Award XP
       await client.query(
-        `UPDATE students SET lifetime_xp = COALESCE(lifetime_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
         [finalXp, studentId]
       );
 
