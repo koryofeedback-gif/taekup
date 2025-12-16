@@ -2071,15 +2071,20 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
 
     let newTotalXp = 0;
     if (xpToAward > 0) {
-      // Update xp in students table (production uses xp, not lifetime_xp)
+      // Update BOTH total_xp AND lifetime_xp columns to ensure compatibility
       const updateResult = await client.query(
-        `UPDATE students SET xp = COALESCE(xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING xp`,
+        `UPDATE students SET 
+          total_xp = COALESCE(total_xp, 0) + $1, 
+          lifetime_xp = COALESCE(lifetime_xp, 0) + $1, 
+          updated_at = NOW() 
+        WHERE id = $2::uuid 
+        RETURNING total_xp, lifetime_xp`,
         [xpToAward, studentId]
       );
-      newTotalXp = updateResult.rows[0]?.xp || 0;
-      console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new xp: ${newTotalXp}`);
+      newTotalXp = updateResult.rows[0]?.lifetime_xp || updateResult.rows[0]?.total_xp || 0;
+      console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total: ${newTotalXp}`);
     } else {
-      const currentXp = await client.query(`SELECT xp FROM students WHERE id = $1::uuid`, [studentId]);
+      const currentXp = await client.query(`SELECT COALESCE(lifetime_xp, total_xp, 0) as xp FROM students WHERE id = $1::uuid`, [studentId]);
       newTotalXp = currentXp.rows[0]?.xp || 0;
       console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
     }
@@ -2125,9 +2130,9 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    // First check if student exists (production uses xp column)
+    // First check if student exists (use COALESCE for compatibility)
     const studentResult = await client.query(
-      `SELECT xp FROM students WHERE id = $1::uuid`,
+      `SELECT COALESCE(lifetime_xp, total_xp, 0) as xp FROM students WHERE id = $1::uuid`,
       [studentId]
     );
     
