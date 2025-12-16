@@ -662,16 +662,28 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
         setHabitXpEarned(prev => ({ ...prev, [habitId]: 10 }));
         setHabitXpToday(prev => prev + 10);
+        
+        // Update rivalStats.xp immediately so header shows new total
+        setRivalStats(prev => ({ ...prev, xp: prev.xp + 10 }));
+        
         setTimeout(() => {
             setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
         }, 2000);
         
-        // Try API call in background (don't wait for it)
-        fetch('/api/habits/check', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ studentId: student.id || 'demo', habitName: habitId })
-        }).catch(e => console.error('Habit API error:', e));
+        // API call to persist to database
+        try {
+            const res = await fetch('/api/habits/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ studentId: student.id || 'demo', habitName: habitId })
+            });
+            const data = await res.json();
+            if (data.newTotalXp) {
+                console.log('[HomeDojo] New total XP from server:', data.newTotalXp);
+            }
+        } catch (e) {
+            console.error('Habit API error:', e);
+        }
     };
     
     // Legacy handler kept for reference

@@ -1895,16 +1895,18 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
       [studentId, habitName, HABIT_XP, today]
     );
 
-    await client.query(
-      `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+    const updateResult = await client.query(
+      `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING total_xp`,
       [HABIT_XP, studentId]
     );
+    const newTotalXp = updateResult.rows[0]?.total_xp || 0;
 
-    console.log(`[HomeDojo] Habit "${habitName}" completed: +${HABIT_XP} XP`);
+    console.log(`[HomeDojo] Habit "${habitName}" completed: +${HABIT_XP} XP, new total: ${newTotalXp}`);
 
     return res.json({
       success: true,
       xpAwarded: HABIT_XP,
+      newTotalXp,
       message: `Habit completed! +${HABIT_XP} XP earned.`
     });
   } catch (error: any) {

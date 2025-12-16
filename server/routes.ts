@@ -2800,15 +2800,17 @@ export function registerRoutes(app: Express) {
         INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES (${studentId}::uuid, ${habitName}, ${HABIT_XP}, ${today}::date)
       `);
 
-      await db.execute(sql`
-        UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${HABIT_XP}, updated_at = NOW() WHERE id = ${studentId}::uuid
+      const updateResult = await db.execute(sql`
+        UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${HABIT_XP}, updated_at = NOW() WHERE id = ${studentId}::uuid RETURNING total_xp
       `);
+      const newTotalXp = (updateResult as any[])[0]?.total_xp || 0;
 
-      console.log(`[HomeDojo] Habit "${habitName}" completed: +${HABIT_XP} XP`);
+      console.log(`[HomeDojo] Habit "${habitName}" completed: +${HABIT_XP} XP, new total: ${newTotalXp}`);
 
       res.json({
         success: true,
         xpAwarded: HABIT_XP,
+        newTotalXp,
         message: `Habit completed! +${HABIT_XP} XP earned.`
       });
     } catch (error: any) {
