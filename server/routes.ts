@@ -2759,7 +2759,8 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'studentId and habitName are required' });
       }
 
-      if (studentId === 'demo') {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (studentId === 'demo' || !uuidRegex.test(studentId)) {
         return res.json({
           success: true,
           xpAwarded: HABIT_XP,
@@ -2810,7 +2811,8 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'studentId is required' });
       }
 
-      if (studentId === 'demo') {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (studentId === 'demo' || !uuidRegex.test(studentId)) {
         return res.json({ completedHabits: [], totalXpToday: 0 });
       }
 
@@ -2826,7 +2828,7 @@ export function registerRoutes(app: Express) {
       res.json({ completedHabits, totalXpToday });
     } catch (error: any) {
       console.error('[HomeDojo] Status fetch error:', error.message);
-      res.status(500).json({ error: 'Failed to fetch habit status' });
+      res.json({ completedHabits: [], totalXpToday: 0 });
     }
   });
 }
