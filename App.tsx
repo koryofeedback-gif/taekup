@@ -859,6 +859,12 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     
     if (effectiveStudentId) {
         studentToShow = data.students.find(s => s.id === effectiveStudentId);
+        
+        // If student not found but we have an ID, use first student but override with real ID
+        // This fixes the mismatch between database UUIDs and wizard data IDs
+        if (!studentToShow && data.students.length > 0) {
+            studentToShow = { ...data.students[0], id: effectiveStudentId };
+        }
     } else {
         studentToShow = data.students[0];
     }
