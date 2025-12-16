@@ -1532,9 +1532,44 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
       `, [c.name, c.desc, c.icon, c.cat, c.diff, c.xp]);
     }
     
+    // Standardize existing challenges to difficulty tier XP values
+    // Easy = 15 XP, Medium = 30 XP, Hard = 60 XP
+    const xpUpdates = [
+      // POWER - categorize by difficulty
+      { name: 'Pushups', diff: 'MEDIUM', xp: 30 },
+      { name: 'Squats', diff: 'MEDIUM', xp: 30 },
+      { name: 'Plank Hold', diff: 'MEDIUM', xp: 30 },
+      { name: 'Wall Sit', diff: 'MEDIUM', xp: 30 },
+      { name: 'Burpees', diff: 'HARD', xp: 60 },
+      { name: '1-Mile Run', diff: 'HARD', xp: 60 },
+      { name: '100 Kicks', diff: 'HARD', xp: 60 },
+      // TECHNIQUE
+      { name: '30-Second Kicks', diff: 'EASY', xp: 15 },
+      { name: '30-Second Punches', diff: 'EASY', xp: 15 },
+      { name: 'One-Leg Balance', diff: 'EASY', xp: 15 },
+      { name: 'Jump Rope Speed', diff: 'MEDIUM', xp: 30 },
+      { name: 'Combo Challenge', diff: 'HARD', xp: 60 },
+      { name: 'Forms Accuracy', diff: 'HARD', xp: 60 },
+      { name: 'Board Breaking', diff: 'HARD', xp: 60 },
+      // FLEXIBILITY
+      { name: 'Touch Your Toes', diff: 'EASY', xp: 15 },
+      { name: 'High Kick Height', diff: 'MEDIUM', xp: 30 },
+      { name: 'Side Kick Stretch', diff: 'MEDIUM', xp: 30 },
+      { name: 'Splits Challenge', diff: 'HARD', xp: 60 },
+      { name: 'Back Bridge', diff: 'HARD', xp: 60 },
+    ];
+    
+    for (const u of xpUpdates) {
+      await client.query(`
+        UPDATE arena_challenges 
+        SET difficulty_tier = $2::difficulty_tier, xp_reward = $3 
+        WHERE name = $1
+      `, [u.name, u.diff, u.xp]);
+    }
+    
     return res.json({ 
       success: true, 
-      message: 'Database tables created and 12 system challenges seeded successfully!' 
+      message: 'Database setup complete! Tables created, challenges seeded, and XP standardized to difficulty tiers (Easy=15, Medium=30, Hard=60).' 
     });
   } catch (error: any) {
     console.error('[DbSetup] Error:', error.message);
