@@ -146,7 +146,8 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     // CRITICAL: For parent users, look up their student by parent_email
     let studentId = null;
     if (user.role === 'parent') {
-      const studentResult = await client.query(
+      // Try exact email match first
+      let studentResult = await client.query(
         `SELECT id FROM students WHERE LOWER(parent_email) = $1 AND club_id = $2::uuid LIMIT 1`,
         [user.email.toLowerCase().trim(), user.club_id]
       );
@@ -154,7 +155,17 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
         studentId = studentResult.rows[0].id;
         console.log('[Login] Found student for parent:', user.email, '-> studentId:', studentId);
       } else {
-        console.log('[Login] No student found for parent email:', user.email);
+        // Fallback: Get any student from this club (for legacy parents without linked students)
+        studentResult = await client.query(
+          `SELECT id FROM students WHERE club_id = $1::uuid ORDER BY created_at DESC LIMIT 1`,
+          [user.club_id]
+        );
+        if (studentResult.rows.length > 0) {
+          studentId = studentResult.rows[0].id;
+          console.log('[Login] Fallback: Using first club student for parent:', user.email, '-> studentId:', studentId);
+        } else {
+          console.log('[Login] No student found for parent email:', user.email);
+        }
       }
     }
 

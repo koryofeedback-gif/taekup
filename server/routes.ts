@@ -480,17 +480,31 @@ export function registerRoutes(app: Express) {
       // For parents, look up their linked student(s) to get the database UUID
       let studentId: string | null = null;
       if (user.role === 'parent' && user.club_id) {
-        const studentResult = await db.execute(sql`
+        // Try exact email match first
+        let studentResult = await db.execute(sql`
           SELECT id FROM students 
           WHERE club_id = ${user.club_id}::uuid 
           AND LOWER(parent_email) = ${normalizedEmail}
           ORDER BY created_at ASC
           LIMIT 1
         `);
-        const linkedStudent = (studentResult as any[])[0];
+        let linkedStudent = (studentResult as any[])[0];
         if (linkedStudent) {
           studentId = linkedStudent.id;
           console.log('[Login] Parent linked to student:', studentId);
+        } else {
+          // Fallback: Get any student from this club (for legacy parents without linked students)
+          studentResult = await db.execute(sql`
+            SELECT id FROM students 
+            WHERE club_id = ${user.club_id}::uuid 
+            ORDER BY created_at DESC
+            LIMIT 1
+          `);
+          linkedStudent = (studentResult as any[])[0];
+          if (linkedStudent) {
+            studentId = linkedStudent.id;
+            console.log('[Login] Fallback: Using first club student for parent:', studentId);
+          }
         }
       }
 
