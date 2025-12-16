@@ -590,3 +590,31 @@ export const arenaChallenges = pgTable('arena_challenges', {
 
 export type ArenaChallenge = typeof arenaChallenges.$inferSelect;
 export type NewArenaChallenge = typeof arenaChallenges.$inferInsert;
+
+// =====================================================
+// HOME DOJO - Custom Habits
+// =====================================================
+
+export const userCustomHabits = pgTable('user_custom_habits', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar('title', { length: 100 }).notNull(),
+  icon: varchar('icon', { length: 10 }).default('✨'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type UserCustomHabit = typeof userCustomHabits.$inferSelect;
+export type NewUserCustomHabit = typeof userCustomHabits.$inferInsert;
+
+// Habit logs table (for tracking daily completions)
+export const habitLogs = pgTable('habit_logs', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  habitName: varchar('habit_name', { length: 100 }).notNull(),
+  xpAwarded: integer('xp_awarded').default(10),
+  logDate: timestamp('log_date', { withTimezone: true }).defaultNow(),
+});
+
+export type HabitLog = typeof habitLogs.$inferSelect;
+export type NewHabitLog = typeof habitLogs.$inferInsert;
