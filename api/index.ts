@@ -2073,20 +2073,19 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
 
     let newTotalXp = 0;
     if (xpToAward > 0) {
-      // Update BOTH total_xp AND lifetime_xp columns to ensure compatibility
+      // Update total_xp column (the correct column name in production)
       const updateResult = await client.query(
         `UPDATE students SET 
           total_xp = COALESCE(total_xp, 0) + $1, 
-          lifetime_xp = COALESCE(lifetime_xp, 0) + $1, 
           updated_at = NOW() 
         WHERE id = $2::uuid 
-        RETURNING total_xp, lifetime_xp`,
+        RETURNING total_xp`,
         [xpToAward, trimmedStudentId]
       );
-      newTotalXp = updateResult.rows[0]?.lifetime_xp || updateResult.rows[0]?.total_xp || 0;
+      newTotalXp = updateResult.rows[0]?.total_xp || 0;
       console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total: ${newTotalXp}`);
     } else {
-      const currentXp = await client.query(`SELECT COALESCE(lifetime_xp, total_xp, 0) as xp FROM students WHERE id = $1::uuid`, [trimmedStudentId]);
+      const currentXp = await client.query(`SELECT COALESCE(total_xp, 0) as xp FROM students WHERE id = $1::uuid`, [trimmedStudentId]);
       newTotalXp = currentXp.rows[0]?.xp || 0;
       console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
     }
@@ -2138,7 +2137,7 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
 
     // First check if student exists (use COALESCE for compatibility)
     const studentResult = await client.query(
-      `SELECT COALESCE(lifetime_xp, total_xp, 0) as xp FROM students WHERE id = $1::uuid`,
+      `SELECT COALESCE(total_xp, 0) as xp FROM students WHERE id = $1::uuid`,
       [studentId]
     );
     
