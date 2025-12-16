@@ -591,7 +591,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 console.error('Failed to fetch habit status:', e);
             }
         };
-        if (student.id && student.id !== 'demo') {
+        // Always try to fetch habit status (even for new students)
+        if (student.id) {
             fetchHabitStatus();
         }
     }, [student.id]);
