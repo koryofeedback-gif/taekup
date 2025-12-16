@@ -2138,6 +2138,85 @@ export function registerRoutes(app: Express) {
   const TRUST_PER_CHALLENGE_LIMIT = 1; // STRICT: 1 time per challenge per day (anti-XP farming)
   const VIDEO_XP_MULTIPLIER = 2; // Video proof earns 2x XP
 
+  // Challenge metadata mapping
+  const CHALLENGE_METADATA: Record<string, { name: string; icon: string; category: string }> = {
+    'pushup_master': { name: 'Push-up Master', icon: '💪', category: 'Power' },
+    'squat_challenge': { name: 'Squat Challenge', icon: '💪', category: 'Power' },
+    'burpee_blast': { name: 'Burpee Blast', icon: '💪', category: 'Power' },
+    'abs_of_steel': { name: 'Abs of Steel', icon: '💪', category: 'Power' },
+    '100_kicks': { name: '100 Kicks Marathon', icon: '🎯', category: 'Technique' },
+    'speed_punches': { name: 'Speed Punches', icon: '🎯', category: 'Technique' },
+    'horse_stance': { name: 'Iron Horse Stance', icon: '🎯', category: 'Technique' },
+    'jump_rope': { name: 'Jump Rope Ninja', icon: '🎯', category: 'Technique' },
+    'plank_hold': { name: 'Plank Hold', icon: '🧘', category: 'Flexibility' },
+    'touch_toes': { name: 'Touch Your Toes', icon: '🧘', category: 'Flexibility' },
+    'wall_sit': { name: 'The Wall Sit', icon: '🧘', category: 'Flexibility' },
+    'one_leg_balance': { name: 'One-Leg Balance', icon: '🧘', category: 'Flexibility' },
+    'family_form_practice': { name: 'Family Form Practice', icon: '👨‍👧', category: 'Family' },
+    'family_stretch': { name: 'Family Stretch', icon: '👨‍👧', category: 'Family' },
+    'family_kicks': { name: 'Family Kicks', icon: '👨‍👧', category: 'Family' },
+  };
+
+  // GET /api/challenges/history - Fetch challenge submission history
+  app.get('/api/challenges/history', async (req: Request, res: Response) => {
+    try {
+      const studentId = req.query.studentId as string;
+      if (!studentId) {
+        return res.status(400).json({ error: 'studentId is required' });
+      }
+
+      if (studentId === 'demo') {
+        return res.json({ history: [], message: 'Demo mode - no history available' });
+      }
+
+      const result = await db.execute(sql`
+        SELECT 
+          id,
+          answer as challenge_type,
+          status,
+          proof_type,
+          xp_awarded,
+          score,
+          video_url,
+          mode,
+          completed_at
+        FROM challenge_submissions 
+        WHERE student_id = ${studentId}::uuid
+        ORDER BY completed_at DESC
+        LIMIT 50
+      `);
+
+      const history = (result as any[]).map(row => {
+        const challengeType = row.challenge_type || 'unknown';
+        const meta = CHALLENGE_METADATA[challengeType] || { 
+          name: challengeType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()), 
+          icon: '⚡', 
+          category: 'General' 
+        };
+
+        return {
+          id: row.id,
+          challengeType,
+          challengeName: meta.name,
+          icon: meta.icon,
+          category: meta.category,
+          status: row.status || 'COMPLETED',
+          proofType: row.proof_type || 'TRUST',
+          xpAwarded: row.xp_awarded || 0,
+          score: row.score || 0,
+          videoUrl: row.video_url,
+          mode: row.mode || 'SOLO',
+          completedAt: row.completed_at
+        };
+      });
+
+      res.json({ history });
+    } catch (error: any) {
+      console.error('[ChallengeHistory] Error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch history' });
+    }
+  });
+
   // Unified challenge submission endpoint
   app.post('/api/challenges/submit', async (req: Request, res: Response) => {
     try {

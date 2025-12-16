@@ -38,14 +38,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
     const [challengeHistory, setChallengeHistory] = useState<Array<{
         id: string;
-        opponent: string;
-        challenge: string;
-        result: 'win' | 'loss';
-        date: string;
-        xpEarned: number;
-        isTeam?: boolean;
-        isFamily?: boolean;
+        challengeName: string;
+        icon: string;
+        category: string;
+        status: string;
+        proofType: string;
+        xpAwarded: number;
+        score: number;
+        mode: string;
+        completedAt: string;
     }>>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
     const [rivalStats, setRivalStats] = useState(() => {
         // Initialize from student's saved stats or use defaults
         if (student.rivalsStats) {
@@ -259,6 +262,28 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         fetchDailyChallenge();
     }, [student.id, studentBeltName]);
+    
+    // Fetch challenge history when History tab is active
+    useEffect(() => {
+        if (rivalsView !== 'history' || !student.id) return;
+        
+        const fetchHistory = async () => {
+            setHistoryLoading(true);
+            try {
+                const response = await fetch(`/api/challenges/history?studentId=${student.id}`);
+                const data = await response.json();
+                if (data.history) {
+                    setChallengeHistory(data.history);
+                }
+            } catch (error) {
+                console.error('[History] Failed to fetch:', error);
+            } finally {
+                setHistoryLoading(false);
+            }
+        };
+        
+        fetchHistory();
+    }, [rivalsView, student.id]);
     
     // Submit Mystery Challenge answer
     const submitMysteryChallenge = async (selectedIndex: number) => {
@@ -2059,15 +2084,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setRivalStats(prev => ({ ...prev, losses: prev.losses + 1, streak: 0, xp: prev.xp + 10 }));
                 }
                 
-                setChallengeHistory(prev => [{
-                    id: Date.now().toString(),
-                    opponent: activeChallenge.fromName,
-                    challenge: activeChallenge.challengeName,
-                    result: won ? 'win' : 'loss',
-                    date: 'Just now',
-                    xpEarned
-                }, ...prev]);
-                
                 setChallengeResult(won ? 'win' : 'loss');
             }
             
@@ -2966,46 +2982,64 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="space-y-2">
                                     <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 rounded-xl border border-gray-700 mb-4">
                                         <h4 className="font-bold text-white flex items-center">
-                                            <span className="mr-2">📜</span> Battle History
+                                            <span className="mr-2">📜</span> Challenge History
                                         </h4>
-                                        <p className="text-xs text-gray-400">Your recent challenges</p>
+                                        <p className="text-xs text-gray-400">Your recent challenge submissions</p>
                                     </div>
                                     
-                                    {challengeHistory.length === 0 ? (
-                                        <p className="text-gray-500 text-center py-8 italic">No challenges yet. Start your first duel!</p>
+                                    {historyLoading ? (
+                                        <div className="text-center py-8">
+                                            <div className="text-4xl animate-spin mb-2">⏳</div>
+                                            <p className="text-gray-400 text-sm">Loading history...</p>
+                                        </div>
+                                    ) : challengeHistory.length === 0 ? (
+                                        <p className="text-gray-500 text-center py-8 italic">No challenges yet. Complete your first challenge!</p>
                                     ) : (
-                                        challengeHistory.map(battle => (
-                                            <div 
-                                                key={battle.id} 
-                                                className={`flex items-center justify-between p-3 rounded-xl border ${
-                                                    battle.result === 'win' 
-                                                        ? 'bg-green-900/20 border-green-500/30' 
-                                                        : 'bg-red-900/20 border-red-500/30'
-                                                }`}
-                                            >
-                                                <div className="flex items-center">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl mr-3 ${
-                                                        battle.result === 'win' ? 'bg-green-900/50' : 'bg-red-900/50'
-                                                    }`}>
-                                                        {battle.result === 'win' ? '👑' : '💀'}
+                                        challengeHistory.map(entry => {
+                                            const date = new Date(entry.completedAt);
+                                            const today = new Date();
+                                            const yesterday = new Date(today);
+                                            yesterday.setDate(yesterday.getDate() - 1);
+                                            
+                                            let dateDisplay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                            if (date.toDateString() === today.toDateString()) dateDisplay = 'Today';
+                                            else if (date.toDateString() === yesterday.toDateString()) dateDisplay = 'Yesterday';
+                                            
+                                            const statusConfig = {
+                                                'PENDING': { badge: '🟡 In Review', color: 'text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/30' },
+                                                'VERIFIED': { badge: '🟢 Verified', color: 'text-green-400', bg: 'bg-green-900/20 border-green-500/30' },
+                                                'COMPLETED': { badge: '✅ Completed', color: 'text-green-400', bg: 'bg-gray-800 border-gray-600' },
+                                            };
+                                            const config = statusConfig[entry.status as keyof typeof statusConfig] || statusConfig['COMPLETED'];
+                                            
+                                            return (
+                                                <div 
+                                                    key={entry.id} 
+                                                    className={`flex items-center justify-between p-3 rounded-xl border ${config.bg}`}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl mr-3">
+                                                            {entry.icon || '⚡'}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-white text-sm">
+                                                                {entry.challengeName}
+                                                                {entry.category === 'Family' && <span className="ml-1 text-pink-400 text-[10px]">(Family)</span>}
+                                                            </p>
+                                                            <p className="text-[10px] text-gray-400">
+                                                                {entry.category} • {dateDisplay} • {entry.proofType === 'VIDEO' ? '📹 Video' : '✓ Trust'}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-bold text-white text-sm">
-                                                            vs {battle.opponent}
-                                                            {battle.isTeam && <span className="ml-1 text-blue-400 text-[10px]">(Team)</span>}
-                                                            {battle.isFamily && <span className="ml-1 text-pink-400 text-[10px]">(Family)</span>}
+                                                    <div className="text-right">
+                                                        <p className={`font-bold text-xs ${config.color}`}>
+                                                            {config.badge}
                                                         </p>
-                                                        <p className="text-[10px] text-gray-400">{battle.challenge} • {battle.date}</p>
+                                                        <p className="text-[10px] text-yellow-500 font-bold">+{entry.xpAwarded} XP</p>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className={`font-bold text-sm ${battle.result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {battle.result === 'win' ? 'VICTORY' : 'DEFEAT'}
-                                                    </p>
-                                                    <p className="text-[10px] text-yellow-500">+{battle.xpEarned} XP</p>
-                                                </div>
-                                            </div>
-                                        ))
+                                            );
+                                        })
                                     )}
                                 </div>
                             )}
@@ -3278,16 +3312,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 if (won) setDailyStreak(prev => prev + 1);
                                                                 setFamilyChallengesCompleted(prev => prev + 1);
                                                                 setLastChallengeDate(new Date().toISOString().split('T')[0]);
-                                                                
-                                                                setChallengeHistory(prev => [{
-                                                                    id: Date.now().toString(),
-                                                                    opponent: 'Parent',
-                                                                    challenge: challenge.name,
-                                                                    result: won ? 'win' : 'loss',
-                                                                    date: 'Just now',
-                                                                    xpEarned,
-                                                                    isFamily: true
-                                                                }, ...prev]);
                                                                 
                                                                 // Show result feedback
                                                                 setFamilyResult({ show: true, won, xp: xpEarned, challengeName: challenge.name });

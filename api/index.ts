@@ -1745,6 +1745,92 @@ IMPORTANT: You MUST mention their specific score of ${score || 'their result'} i
 const TRUST_PER_CHALLENGE_LIMIT = 1; // STRICT: 1 time per challenge per day
 const VIDEO_XP_MULTIPLIER = 2;
 
+// Challenge metadata mapping (since challenges are hardcoded in frontend)
+const CHALLENGE_METADATA: Record<string, { name: string; icon: string; category: string }> = {
+  'pushup_master': { name: 'Push-up Master', icon: '💪', category: 'Power' },
+  'squat_challenge': { name: 'Squat Challenge', icon: '💪', category: 'Power' },
+  'burpee_blast': { name: 'Burpee Blast', icon: '💪', category: 'Power' },
+  'abs_of_steel': { name: 'Abs of Steel', icon: '💪', category: 'Power' },
+  '100_kicks': { name: '100 Kicks Marathon', icon: '🎯', category: 'Technique' },
+  'speed_punches': { name: 'Speed Punches', icon: '🎯', category: 'Technique' },
+  'horse_stance': { name: 'Iron Horse Stance', icon: '🎯', category: 'Technique' },
+  'jump_rope': { name: 'Jump Rope Ninja', icon: '🎯', category: 'Technique' },
+  'plank_hold': { name: 'Plank Hold', icon: '🧘', category: 'Flexibility' },
+  'touch_toes': { name: 'Touch Your Toes', icon: '🧘', category: 'Flexibility' },
+  'wall_sit': { name: 'The Wall Sit', icon: '🧘', category: 'Flexibility' },
+  'one_leg_balance': { name: 'One-Leg Balance', icon: '🧘', category: 'Flexibility' },
+  'family_form_practice': { name: 'Family Form Practice', icon: '👨‍👧', category: 'Family' },
+  'family_stretch': { name: 'Family Stretch', icon: '👨‍👧', category: 'Family' },
+  'family_kicks': { name: 'Family Kicks', icon: '👨‍👧', category: 'Family' },
+};
+
+// GET /api/challenges/history - Fetch challenge submission history
+async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const studentId = req.query.studentId as string;
+  if (!studentId) {
+    return res.status(400).json({ error: 'studentId is required' });
+  }
+
+  // Demo mode - return empty array
+  if (studentId === 'demo') {
+    return res.json({ history: [], message: 'Demo mode - no history available' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT 
+        id,
+        answer as challenge_type,
+        status,
+        proof_type,
+        xp_awarded,
+        score,
+        video_url,
+        mode,
+        completed_at
+      FROM challenge_submissions 
+      WHERE student_id = $1::uuid
+      ORDER BY completed_at DESC
+      LIMIT 50`,
+      [studentId]
+    );
+
+    const history = result.rows.map(row => {
+      const challengeType = row.challenge_type || 'unknown';
+      const meta = CHALLENGE_METADATA[challengeType] || { 
+        name: challengeType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()), 
+        icon: '⚡', 
+        category: 'General' 
+      };
+
+      return {
+        id: row.id,
+        challengeType,
+        challengeName: meta.name,
+        icon: meta.icon,
+        category: meta.category,
+        status: row.status || 'COMPLETED',
+        proofType: row.proof_type || 'TRUST',
+        xpAwarded: row.xp_awarded || 0,
+        score: row.score || 0,
+        videoUrl: row.video_url,
+        mode: row.mode || 'SOLO',
+        completedAt: row.completed_at
+      };
+    });
+
+    return res.json({ history });
+  } catch (error: any) {
+    console.error('[ChallengeHistory] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch history' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -1926,8 +2012,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/daily-challenge' || path === '/daily-challenge/') return await handleDailyChallenge(req, res);
     if (path === '/daily-challenge/submit' || path === '/daily-challenge/submit/') return await handleDailyChallengeSubmit(req, res);
     
-    // Arena Challenge Submit (Trust/Video)
+    // Arena Challenge Submit & History
     if (path === '/challenges/submit' || path === '/challenges/submit/') return await handleChallengeSubmit(req, res);
+    if (path === '/challenges/history' || path === '/challenges/history/') return await handleChallengeHistory(req, res);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     
