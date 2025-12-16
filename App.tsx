@@ -946,11 +946,9 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
         return <div className="text-center py-20 text-white">No students available.</div>;
     }
     
-    // Check if we have a valid database UUID (reusing isValidUUID already defined above)
-    const hasValidId = studentToShow.id && isValidUUID(studentToShow.id);
-    
-    // Show loading state while resolving student ID to database UUID
-    if (!hasValidId && effectiveStudentId && !isValidUUID(effectiveStudentId)) {
+    // ALWAYS wait for resolvedStudentId before rendering - this ensures we have a verified DB UUID
+    // This fixes the issue where stale UUIDs that look valid but don't exist in DB cause 500 errors
+    if (!resolvedStudentId) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center">
                 <div className="text-center">
