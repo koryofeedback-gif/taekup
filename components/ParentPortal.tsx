@@ -731,23 +731,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     const getChallengeInfo = (challengeId: string) => {
         const allChallenges: Record<string, { name: string; category: string }> = {
-            'pushups': { name: 'Pushups', category: 'Power' },
-            'squats': { name: 'Squats', category: 'Power' },
-            'plank': { name: 'Plank Hold', category: 'Power' },
-            'burpees': { name: 'Burpees', category: 'Power' },
-            'running': { name: '1-Mile Run', category: 'Power' },
-            'kicks100': { name: '100 Kicks', category: 'Power' },
-            'wallsit': { name: 'Wall Sit', category: 'Power' },
-            'forms': { name: 'Forms Accuracy', category: 'Technique' },
-            'combo': { name: 'Combo Challenge', category: 'Technique' },
-            'balance': { name: 'One-Leg Balance', category: 'Technique' },
-            'breaking': { name: 'Board Breaking', category: 'Technique' },
-            'kicks30': { name: '30-Second Kicks', category: 'Technique' },
-            'punches30': { name: '30-Second Punches', category: 'Technique' },
-            'jumprope': { name: 'Jump Rope Speed', category: 'Technique' },
-            'splits': { name: 'Splits Challenge', category: 'Flexibility' },
-            'highkick': { name: 'High Kick Height', category: 'Flexibility' },
-            'backbend': { name: 'Back Bend', category: 'Flexibility' },
+            'pushup_master': { name: 'Push-up Master', category: 'Power' },
+            'squat_challenge': { name: 'Squat Challenge', category: 'Power' },
+            'burpee_blast': { name: 'Burpee Blast', category: 'Power' },
+            'abs_of_steel': { name: 'Abs of Steel', category: 'Power' },
+            'kicks_marathon': { name: '100 Kicks Marathon', category: 'Technique' },
+            'speed_punches': { name: 'Speed Punches', category: 'Technique' },
+            'horse_stance': { name: 'Iron Horse Stance', category: 'Technique' },
+            'jump_rope': { name: 'Jump Rope Ninja', category: 'Technique' },
+            'plank_hold': { name: 'Plank Hold', category: 'Flexibility' },
+            'touch_toes': { name: 'Touch Your Toes', category: 'Flexibility' },
+            'wall_sit': { name: 'The Wall Sit', category: 'Flexibility' },
+            'one_leg_balance': { name: 'One-Leg Balance', category: 'Flexibility' },
             'stretch': { name: 'Full Stretch Hold', category: 'Flexibility' },
             'yoga': { name: 'Yoga Flow', category: 'Flexibility' },
         };
@@ -1849,13 +1844,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 icon: '💪',
                 color: 'red',
                 challenges: [
-                    { id: 'pushups', name: 'Pushups', icon: '💪', xp: 50 },
-                    { id: 'squats', name: 'Squats', icon: '🦵', xp: 50 },
-                    { id: 'plank', name: 'Plank Hold', icon: '🧱', xp: 75 },
-                    { id: 'burpees', name: 'Burpees', icon: '🔥', xp: 100 },
-                    { id: 'running', name: '1-Mile Run', icon: '🏃', xp: 100 },
-                    { id: 'kicks100', name: '100 Kicks', icon: '💯', xp: 80 },
-                    { id: 'wallsit', name: 'Wall Sit', icon: '🧱', xp: 60 },
+                    { id: 'pushup_master', name: 'Push-up Master', icon: '💪', xp: 30 },
+                    { id: 'squat_challenge', name: 'Squat Challenge', icon: '💪', xp: 30 },
+                    { id: 'burpee_blast', name: 'Burpee Blast', icon: '💪', xp: 60 },
+                    { id: 'abs_of_steel', name: 'Abs of Steel', icon: '💪', xp: 30 },
                 ]
             },
             {
@@ -1863,13 +1855,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 icon: '🎯',
                 color: 'blue',
                 challenges: [
-                    { id: 'forms', name: 'Forms Accuracy', icon: '🥋', xp: 100 },
-                    { id: 'combo', name: 'Combo Challenge', icon: '💥', xp: 80 },
-                    { id: 'balance', name: 'One-Leg Balance', icon: '🦩', xp: 70 },
-                    { id: 'breaking', name: 'Board Breaking', icon: '🪵', xp: 150 },
-                    { id: 'kicks30', name: '30-Second Kicks', icon: '🦵', xp: 60 },
-                    { id: 'punches30', name: '30-Second Punches', icon: '👊', xp: 60 },
-                    { id: 'jumprope', name: 'Jump Rope Speed', icon: '🪢', xp: 50 },
+                    { id: 'kicks_marathon', name: '100 Kicks Marathon', icon: '🎯', xp: 60 },
+                    { id: 'speed_punches', name: 'Speed Punches', icon: '🎯', xp: 15 },
+                    { id: 'horse_stance', name: 'Iron Horse Stance', icon: '🎯', xp: 60 },
+                    { id: 'jump_rope', name: 'Jump Rope Ninja', icon: '🎯', xp: 30 },
                 ]
             },
             {
@@ -1877,11 +1866,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 icon: '🧘',
                 color: 'purple',
                 challenges: [
-                    { id: 'splits', name: 'Splits Challenge', icon: '🤸', xp: 75 },
-                    { id: 'highkick', name: 'High Kick Height', icon: '🦶', xp: 60 },
-                    { id: 'bridge', name: 'Back Bridge', icon: '🌉', xp: 80 },
-                    { id: 'stretch', name: 'Touch Your Toes', icon: '🦶', xp: 40 },
-                    { id: 'sidekick', name: 'Side Kick Stretch', icon: '🦿', xp: 65 },
+                    { id: 'plank_hold', name: 'Plank Hold', icon: '🧘', xp: 30 },
+                    { id: 'touch_toes', name: 'Touch Your Toes', icon: '🧘', xp: 15 },
+                    { id: 'wall_sit', name: 'The Wall Sit', icon: '🧘', xp: 30 },
+                    { id: 'one_leg_balance', name: 'One-Leg Balance', icon: '🧘', xp: 15 },
                 ]
             }
         ];
