@@ -3113,33 +3113,53 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     </div>
                                     
                                     <div className="grid gap-3">
-                                        {familyChallenges.map(challenge => (
+                                        {familyChallenges.map(challenge => {
+                                            const isCompletedToday = isFamilyChallengeCompletedToday(challenge.id);
+                                            return (
                                             <div 
                                                 key={challenge.id}
                                                 className={`bg-gray-800 rounded-xl border overflow-hidden transition-all ${
-                                                    activeFamilyChallenge === challenge.id 
-                                                        ? 'border-pink-500/50' 
-                                                        : 'border-gray-700 hover:border-pink-500/30'
+                                                    isCompletedToday
+                                                        ? 'border-green-500/50 opacity-75'
+                                                        : activeFamilyChallenge === challenge.id 
+                                                            ? 'border-pink-500/50' 
+                                                            : 'border-gray-700 hover:border-pink-500/30'
                                                 }`}
                                             >
                                                 <div 
-                                                    onClick={() => setActiveFamilyChallenge(
-                                                        activeFamilyChallenge === challenge.id ? null : challenge.id
-                                                    )}
-                                                    className="flex items-center justify-between p-4 cursor-pointer"
+                                                    onClick={() => {
+                                                        if (isCompletedToday) return; // Block if already done today
+                                                        setActiveFamilyChallenge(
+                                                            activeFamilyChallenge === challenge.id ? null : challenge.id
+                                                        );
+                                                    }}
+                                                    className={`flex items-center justify-between p-4 ${isCompletedToday ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                                 >
                                                     <div className="flex items-center">
-                                                        <div className="w-12 h-12 rounded-full bg-pink-900/50 flex items-center justify-center text-2xl mr-3">
-                                                            {challenge.icon}
+                                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mr-3 ${
+                                                            isCompletedToday ? 'bg-green-900/50' : 'bg-pink-900/50'
+                                                        }`}>
+                                                            {isCompletedToday ? '✅' : challenge.icon}
                                                         </div>
                                                         <div>
-                                                            <p className="text-white font-bold text-sm">{challenge.name}</p>
+                                                            <p className="text-white font-bold text-sm flex items-center gap-2">
+                                                                {challenge.name}
+                                                                {isCompletedToday && (
+                                                                    <span className="text-[10px] bg-green-600/30 text-green-400 px-2 py-0.5 rounded-full">Done Today</span>
+                                                                )}
+                                                            </p>
                                                             <p className="text-gray-400 text-[10px]">{challenge.description}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-yellow-400 font-bold">+{challenge.xp} XP</p>
-                                                        <p className="text-gray-500 text-[10px]">for winner</p>
+                                                        {isCompletedToday ? (
+                                                            <p className="text-green-400 font-bold text-sm">Completed!</p>
+                                                        ) : (
+                                                            <>
+                                                                <p className="text-yellow-400 font-bold">+{challenge.xp} XP</p>
+                                                                <p className="text-gray-500 text-[10px]">for winner</p>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 
@@ -3201,6 +3221,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 // Show result feedback
                                                                 setFamilyResult({ show: true, won, xp: xpEarned, challengeName: challenge.name });
                                                                 
+                                                                // Mark challenge as completed today (daily limit)
+                                                                markFamilyChallengeCompleted(challenge.id);
+                                                                
                                                                 // Auto-hide after 4 seconds
                                                                 setTimeout(() => setFamilyResult(null), 4000);
                                                                 
@@ -3216,7 +3239,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     </div>
                                                 )}
                                             </div>
-                                        ))}
+                                        );
+                                        })}
                                     </div>
                                     
                                     <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
