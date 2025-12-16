@@ -555,6 +555,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     // Home Dojo State
     const [homeDojoChecks, setHomeDojoChecks] = useState<Record<string, boolean>>({});
+    const [habitLoading, setHabitLoading] = useState<Record<string, boolean>>({});
+    const [habitXpEarned, setHabitXpEarned] = useState<Record<string, number>>({});
+    const [habitXpToday, setHabitXpToday] = useState(0);
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
     const [customHabitList, setCustomHabitList] = useState<Habit[]>(student.customHabits || []);
@@ -563,6 +566,29 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [customHabitQuestion, setCustomHabitQuestion] = useState('');
     const [customHabitIcon, setCustomHabitIcon] = useState('');
     const [customHabitCategory, setCustomHabitCategory] = useState<Habit['category']>('Custom');
+
+    // Fetch habit status on mount
+    useEffect(() => {
+        const fetchHabitStatus = async () => {
+            try {
+                const res = await fetch(`/api/habits/status?studentId=${student.id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const checks: Record<string, boolean> = {};
+                    (data.completedHabits || []).forEach((habitName: string) => {
+                        checks[habitName] = true;
+                    });
+                    setHomeDojoChecks(checks);
+                    setHabitXpToday(data.totalXpToday || 0);
+                }
+            } catch (e) {
+                console.error('Failed to fetch habit status:', e);
+            }
+        };
+        if (student.id && student.id !== 'demo') {
+            fetchHabitStatus();
+        }
+    }, [student.id]);
 
     // Time Machine State
     const [simulatedAttendance, setSimulatedAttendance] = useState(2); // Default 2x week
@@ -622,29 +648,53 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }
 
     // Home Dojo Helpers
-    const toggleHabitCheck = (habitId: string) => {
-        setHomeDojoChecks(prev => {
-            const newState = { ...prev, [habitId]: !prev[habitId] };
-            return newState;
-        });
+    const toggleHabitCheck = async (habitId: string, habitName: string) => {
+        if (homeDojoChecks[habitId]) return;
+        
+        setHabitLoading(prev => ({ ...prev, [habitId]: true }));
+        
+        try {
+            const res = await fetch('/api/habits/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ studentId: student.id, habitName: habitId })
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok && data.success) {
+                setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
+                setHabitXpEarned(prev => ({ ...prev, [habitId]: data.xpAwarded || 10 }));
+                setHabitXpToday(prev => prev + (data.xpAwarded || 10));
+                setTimeout(() => {
+                    setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
+                }, 2000);
+            } else if (data.alreadyCompleted) {
+                setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
+            }
+        } catch (e) {
+            console.error('Failed to check habit:', e);
+        } finally {
+            setHabitLoading(prev => ({ ...prev, [habitId]: false }));
+        }
     }
 
     const PRESET_HABITS: Habit[] = [
-        { id: 'p1', question: 'Did they finish homework on time?', category: 'School', icon: '📚', isActive: false },
-        { id: 'p2', question: 'Did they limit screentime?', category: 'Health', icon: '📵', isActive: false },
-        { id: 'p3', question: 'Did they eat vegetables?', category: 'Health', icon: '🥦', isActive: false },
-        { id: 'p4', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: false },
-        { id: 'p5', question: 'Did they practice kindness?', category: 'Character', icon: '❤️', isActive: false },
-        { id: 'p6', question: 'Did they get ready for school alone?', category: 'School', icon: '🎒', isActive: false },
+        { id: 'homework', question: 'Did they finish homework on time?', category: 'School', icon: '📚', isActive: false },
+        { id: 'screentime', question: 'Did they limit screentime?', category: 'Health', icon: '📵', isActive: false },
+        { id: 'vegetables', question: 'Did they eat vegetables?', category: 'Health', icon: '🥦', isActive: false },
+        { id: 'chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: false },
+        { id: 'kindness', question: 'Did they practice kindness?', category: 'Character', icon: '❤️', isActive: false },
+        { id: 'ready_alone', question: 'Did they get ready for school alone?', category: 'School', icon: '🎒', isActive: false },
     ];
 
     const handleToggleCustomHabit = (preset: Habit) => {
         setCustomHabitList(prev => {
-            const exists = prev.find(h => h.question === preset.question);
+            const exists = prev.find(h => h.id === preset.id);
             if (exists) {
-                return prev.filter(h => h.question !== preset.question);
+                return prev.filter(h => h.id !== preset.id);
             } else {
-                return [...prev, { ...preset, id: `custom-${Date.now()}` }];
+                return [...prev, { ...preset }];
             }
         });
     }
@@ -3447,21 +3497,33 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </button>
                     </div>
 
+                    {/* XP Summary */}
+                    {habitXpToday > 0 && (
+                        <div className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border border-yellow-500/30 p-3 rounded-lg flex items-center justify-between">
+                            <span className="text-yellow-400 font-bold text-sm">Today's Habit XP</span>
+                            <span className="text-yellow-300 font-black text-lg">+{habitXpToday} XP</span>
+                        </div>
+                    )}
+
                     {/* Habit Tracker List */}
                     {!isEditingHabits ? (
                         <div className="space-y-3">
                             {activeHabits.map(habit => (
                                 <div 
                                     key={habit.id}
-                                    onClick={() => toggleHabitCheck(habit.id)}
-                                    className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between group
+                                    onClick={() => !habitLoading[habit.id] && !homeDojoChecks[habit.id] && toggleHabitCheck(habit.id, habit.question)}
+                                    className={`p-4 rounded-xl border transition-all flex items-center justify-between group relative
                                         ${homeDojoChecks[habit.id] 
-                                            ? 'bg-green-900/20 border-green-500/50' 
-                                            : 'bg-gray-800 border-gray-700 hover:border-gray-500'}`}
+                                            ? 'bg-green-900/20 border-green-500/50 cursor-default' 
+                                            : habitLoading[habit.id]
+                                                ? 'bg-gray-800 border-gray-600 cursor-wait opacity-70'
+                                                : 'bg-gray-800 border-gray-700 hover:border-gray-500 cursor-pointer'}`}
                                 >
                                     <div className="flex items-center space-x-4">
                                         <div className="text-3xl bg-gray-900 w-12 h-12 rounded-full flex items-center justify-center shadow-inner">
-                                            {habit.icon}
+                                            {habitLoading[habit.id] ? (
+                                                <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                                            ) : habit.icon}
                                         </div>
                                         <div>
                                             <h4 className={`font-bold text-base ${homeDojoChecks[habit.id] ? 'text-green-400' : 'text-white'}`}>
@@ -3472,9 +3534,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </span>
                                         </div>
                                     </div>
-                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
-                                        ${homeDojoChecks[habit.id] ? 'bg-green-500 border-green-500 scale-110' : 'border-gray-600 group-hover:border-gray-400'}`}>
-                                        {homeDojoChecks[habit.id] && <span className="text-white font-bold">✓</span>}
+                                    <div className="flex items-center space-x-2">
+                                        {habitXpEarned[habit.id] > 0 && (
+                                            <span className="text-green-400 font-black text-sm animate-pulse">+{habitXpEarned[habit.id]} XP</span>
+                                        )}
+                                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
+                                            ${homeDojoChecks[habit.id] ? 'bg-green-500 border-green-500 scale-110' : 'border-gray-600 group-hover:border-gray-400'}`}>
+                                            {homeDojoChecks[habit.id] && <span className="text-white font-bold">✓</span>}
+                                        </div>
                                     </div>
                                 </div>
                             ))}

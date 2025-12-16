@@ -2745,4 +2745,88 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to verify submission' });
     }
   });
+
+  // =====================================================
+  // HOME DOJO - HABIT TRACKING
+  // =====================================================
+  const HABIT_XP = 10;
+
+  app.post('/api/habits/check', async (req: Request, res: Response) => {
+    try {
+      const { studentId, habitName } = req.body;
+
+      if (!studentId || !habitName) {
+        return res.status(400).json({ error: 'studentId and habitName are required' });
+      }
+
+      if (studentId === 'demo') {
+        return res.json({
+          success: true,
+          xpAwarded: HABIT_XP,
+          message: `Habit completed! +${HABIT_XP} XP earned. (Demo Mode)`
+        });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const existing = await db.execute(sql`
+        SELECT id FROM habit_logs WHERE student_id = ${studentId}::uuid AND habit_name = ${habitName} AND log_date = ${today}::date
+      `);
+
+      if ((existing as any[]).length > 0) {
+        return res.status(400).json({
+          error: 'Already completed',
+          message: 'You already completed this habit today!',
+          alreadyCompleted: true
+        });
+      }
+
+      await db.execute(sql`
+        INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES (${studentId}::uuid, ${habitName}, ${HABIT_XP}, ${today}::date)
+      `);
+
+      await db.execute(sql`
+        UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${HABIT_XP}, updated_at = NOW() WHERE id = ${studentId}::uuid
+      `);
+
+      console.log(`[HomeDojo] Habit "${habitName}" completed: +${HABIT_XP} XP`);
+
+      res.json({
+        success: true,
+        xpAwarded: HABIT_XP,
+        message: `Habit completed! +${HABIT_XP} XP earned.`
+      });
+    } catch (error: any) {
+      console.error('[HomeDojo] Habit check error:', error.message);
+      res.status(500).json({ error: 'Failed to log habit' });
+    }
+  });
+
+  app.get('/api/habits/status', async (req: Request, res: Response) => {
+    try {
+      const studentId = req.query.studentId as string;
+
+      if (!studentId) {
+        return res.status(400).json({ error: 'studentId is required' });
+      }
+
+      if (studentId === 'demo') {
+        return res.json({ completedHabits: [], totalXpToday: 0 });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const result = await db.execute(sql`
+        SELECT habit_name, xp_awarded FROM habit_logs WHERE student_id = ${studentId}::uuid AND log_date = ${today}::date
+      `);
+
+      const completedHabits = (result as any[]).map(r => r.habit_name);
+      const totalXpToday = (result as any[]).reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
+
+      res.json({ completedHabits, totalXpToday });
+    } catch (error: any) {
+      console.error('[HomeDojo] Status fetch error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch habit status' });
+    }
+  });
 }

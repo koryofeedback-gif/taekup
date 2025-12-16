@@ -1838,6 +1838,104 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// =====================================================
+// HOME DOJO - HABIT TRACKING
+// =====================================================
+const HABIT_XP = 10;
+
+async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { studentId, habitName } = parseBody(req);
+
+  if (!studentId || !habitName) {
+    return res.status(400).json({ error: 'studentId and habitName are required' });
+  }
+
+  if (studentId === 'demo') {
+    return res.json({
+      success: true,
+      xpAwarded: HABIT_XP,
+      message: `Habit completed! +${HABIT_XP} XP earned. (Demo Mode)`
+    });
+  }
+
+  const client = await pool.connect();
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const existing = await client.query(
+      `SELECT id FROM habit_logs WHERE student_id = $1::uuid AND habit_name = $2 AND log_date = $3::date`,
+      [studentId, habitName, today]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({
+        error: 'Already completed',
+        message: 'You already completed this habit today!',
+        alreadyCompleted: true
+      });
+    }
+
+    await client.query(
+      `INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES ($1::uuid, $2, $3, $4::date)`,
+      [studentId, habitName, HABIT_XP, today]
+    );
+
+    await client.query(
+      `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+      [HABIT_XP, studentId]
+    );
+
+    console.log(`[HomeDojo] Habit "${habitName}" completed: +${HABIT_XP} XP`);
+
+    return res.json({
+      success: true,
+      xpAwarded: HABIT_XP,
+      message: `Habit completed! +${HABIT_XP} XP earned.`
+    });
+  } catch (error: any) {
+    console.error('[HomeDojo] Habit check error:', error.message);
+    return res.status(500).json({ error: 'Failed to log habit' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const studentId = req.query.studentId as string;
+
+  if (!studentId) {
+    return res.status(400).json({ error: 'studentId is required' });
+  }
+
+  if (studentId === 'demo') {
+    return res.json({ completedHabits: [], totalXpToday: 0 });
+  }
+
+  const client = await pool.connect();
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const result = await client.query(
+      `SELECT habit_name, xp_awarded FROM habit_logs WHERE student_id = $1::uuid AND log_date = $2::date`,
+      [studentId, today]
+    );
+
+    const completedHabits = result.rows.map(r => r.habit_name);
+    const totalXpToday = result.rows.reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
+
+    return res.json({ completedHabits, totalXpToday });
+  } catch (error: any) {
+    console.error('[HomeDojo] Status fetch error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch habit status' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -2024,6 +2122,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Arena Challenge Submit & History
     if (path === '/challenges/submit' || path === '/challenges/submit/') return await handleChallengeSubmit(req, res);
     if (path === '/challenges/history' || path === '/challenges/history/') return await handleChallengeHistory(req, res);
+    
+    // Home Dojo - Habit Tracking
+    if (path === '/habits/check' || path === '/habits/check/') return await handleHabitCheck(req, res);
+    if (path === '/habits/status' || path === '/habits/status/') return await handleHabitStatus(req, res);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     
