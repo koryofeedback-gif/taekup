@@ -1967,18 +1967,26 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
   try {
     const today = new Date().toISOString().split('T')[0];
 
+    // Fetch today's habit logs
     const result = await client.query(
       `SELECT habit_name, xp_awarded FROM habit_logs WHERE student_id = $1::uuid AND log_date = $2::date`,
       [studentId, today]
     );
 
+    // Also fetch student's current lifetime_xp for sync on page load
+    const studentResult = await client.query(
+      `SELECT lifetime_xp FROM students WHERE id = $1::uuid`,
+      [studentId]
+    );
+    const lifetimeXp = studentResult.rows[0]?.lifetime_xp || 0;
+
     const completedHabits = result.rows.map(r => r.habit_name);
     const totalXpToday = result.rows.reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
 
-    return res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP });
+    return res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp });
   } catch (error: any) {
     console.error('[HomeDojo] Status fetch error:', error.message);
-    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP });
+    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp: 0 });
   } finally {
     client.release();
   }

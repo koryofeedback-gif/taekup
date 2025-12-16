@@ -2855,17 +2855,24 @@ export function registerRoutes(app: Express) {
 
       const today = new Date().toISOString().split('T')[0];
 
+      // Fetch today's habit logs
       const result = await db.execute(sql`
         SELECT habit_name, xp_awarded FROM habit_logs WHERE student_id = ${studentId}::uuid AND log_date = ${today}::date
       `);
 
+      // Also fetch student's current lifetime_xp for sync on page load
+      const studentResult = await db.execute(sql`
+        SELECT lifetime_xp FROM students WHERE id = ${studentId}::uuid
+      `);
+      const lifetimeXp = (studentResult as any[])[0]?.lifetime_xp || 0;
+
       const completedHabits = (result as any[]).map(r => r.habit_name);
       const totalXpToday = (result as any[]).reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
 
-      res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP });
+      res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp });
     } catch (error: any) {
       console.error('[HomeDojo] Status fetch error:', error.message);
-      res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP });
+      res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp: 0 });
     }
   });
 

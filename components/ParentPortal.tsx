@@ -579,7 +579,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     useEffect(() => {
         const fetchHabitData = async () => {
             try {
-                // Fetch habit status
+                // Fetch habit status and sync XP from database
                 const statusRes = await fetch(`/api/habits/status?studentId=${student.id}`);
                 if (statusRes.ok) {
                     const data = await statusRes.json();
@@ -590,6 +590,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setHomeDojoChecks(checks);
                     setHabitXpToday(data.totalXpToday || 0);
                     setAtDailyLimit((data.totalXpToday || 0) >= (data.dailyXpCap || 60));
+                    
+                    // Sync rivalStats XP from database lifetime_xp (source of truth)
+                    if (typeof data.lifetimeXp === 'number') {
+                        setRivalStats(prev => ({ ...prev, xp: data.lifetimeXp }));
+                        console.log('[HomeDojo] XP hydrated from DB:', data.lifetimeXp);
+                    }
                 }
                 
                 // Fetch custom habits from database (only user-created ones)
