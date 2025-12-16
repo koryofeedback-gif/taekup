@@ -1527,8 +1527,8 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
     for (const c of seedChallenges) {
       await client.query(`
         INSERT INTO arena_challenges (name, description, icon, category, difficulty_tier, xp_reward, is_system_default, club_id)
-        SELECT $1, $2, $3, $4::challenge_category, $5::difficulty_tier, $6, true, NULL
-        WHERE NOT EXISTS (SELECT 1 FROM arena_challenges WHERE name = $1 AND is_system_default = true)
+        SELECT $1::text, $2::text, $3::text, $4::challenge_category, $5::difficulty_tier, $6::integer, true, NULL
+        WHERE NOT EXISTS (SELECT 1 FROM arena_challenges WHERE name = $1::text AND is_system_default = true)
       `, [c.name, c.desc, c.icon, c.cat, c.diff, c.xp]);
     }
     
