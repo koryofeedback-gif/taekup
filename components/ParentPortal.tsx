@@ -3016,96 +3016,32 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 </div>
                             )}
 
-                            {/* TEAM BATTLES VIEW */}
+                            {/* TEAM BATTLES VIEW - Coming Soon */}
                             {rivalsView === 'teams' && (
                                 <div className="space-y-4">
                                     <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 p-4 rounded-xl border border-blue-500/30">
                                         <h4 className="font-bold text-white flex items-center">
                                             <span className="mr-2">👥</span> Team Battles
+                                            <span className="ml-2 text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">Coming Soon</span>
                                         </h4>
                                         <p className="text-xs text-blue-300">Team up with classmates for combined challenges!</p>
                                     </div>
                                     
-                                    <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
-                                        <h5 className="font-bold text-white mb-3 text-sm">Build Your Squad (2-3 members)</h5>
-                                        <div className="space-y-2 mb-4">
-                                            {fairMatchClassmates.length > 0 ? fairMatchClassmates.map(mate => (
-                                                <div 
-                                                    key={mate.id}
-                                                    onClick={() => {
-                                                        if (selectedTeammates.includes(mate.id)) {
-                                                            setSelectedTeammates(prev => prev.filter(id => id !== mate.id));
-                                                        } else if (selectedTeammates.length < 2) {
-                                                            setSelectedTeammates(prev => [...prev, mate.id]);
-                                                        }
-                                                    }}
-                                                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                                                        selectedTeammates.includes(mate.id)
-                                                            ? 'bg-blue-900/30 border-blue-500/50'
-                                                            : 'bg-gray-700 border-gray-600 hover:border-blue-500/30'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center">
-                                                        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-lg mr-3">
-                                                            {mate.name[0]}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-white font-bold text-sm">{mate.name}</p>
-                                                            <p className="text-gray-400 text-[10px]">{data.belts.find(b => b.id === mate.beltId)?.name}</p>
-                                                        </div>
-                                                    </div>
-                                                    {selectedTeammates.includes(mate.id) && (
-                                                        <span className="text-blue-400 text-xl">✓</span>
-                                                    )}
-                                                </div>
-                                            )) : (
-                                                <p className="text-gray-500 text-sm text-center py-4">No classmates at your belt level for fair teams</p>
-                                            )}
+                                    <div className="bg-gray-800/30 p-8 rounded-xl border border-gray-700 text-center">
+                                        <div className="text-6xl mb-4">🚀</div>
+                                        <h5 className="font-bold text-white text-lg mb-2">Team Battles Coming Soon!</h5>
+                                        <p className="text-gray-400 text-sm mb-4">
+                                            We're working hard to bring you an exciting team-based challenge experience.
+                                        </p>
+                                        <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/20">
+                                            <h6 className="font-bold text-blue-300 text-sm mb-2">What to expect:</h6>
+                                            <ul className="text-gray-400 text-xs space-y-1 text-left">
+                                                <li>• Build squads with 2-3 classmates</li>
+                                                <li>• Combined scores from all team members</li>
+                                                <li>• XP split equally among teammates</li>
+                                                <li>• Fair matchmaking by belt level</li>
+                                            </ul>
                                         </div>
-                                        
-                                        {selectedTeammates.length > 0 && (
-                                            <div className="bg-blue-900/20 p-3 rounded-lg border border-blue-500/30 mb-4">
-                                                <p className="text-blue-300 text-xs font-bold mb-2">Your Team:</p>
-                                                <div className="flex gap-2 flex-wrap">
-                                                    <span className="bg-cyan-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-                                                        {student.name} (You)
-                                                    </span>
-                                                    {selectedTeammates.map(id => {
-                                                        const mate = classmates.find(c => c.id === id);
-                                                        return mate ? (
-                                                            <span key={id} className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-                                                                {mate.name}
-                                                            </span>
-                                                        ) : null;
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
-                                        
-                                        <button
-                                            disabled={selectedTeammates.length === 0}
-                                            onClick={() => {
-                                                setTeamBattleMode(true);
-                                                setMyTeam(selectedTeammates);
-                                            }}
-                                            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition-colors"
-                                        >
-                                            {selectedTeammates.length === 0 
-                                                ? 'Select Teammates First' 
-                                                : `Challenge as Team (${selectedTeammates.length + 1} members)`}
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
-                                        <h5 className="font-bold text-white mb-2 text-sm flex items-center">
-                                            <span className="mr-2">💡</span> How Team Battles Work
-                                        </h5>
-                                        <ul className="text-gray-400 text-xs space-y-1">
-                                            <li>• Combined scores from all team members</li>
-                                            <li>• XP is split equally among teammates</li>
-                                            <li>• Win together, lose together!</li>
-                                            <li>• Matchmaking pairs similar belt levels</li>
-                                        </ul>
                                     </div>
                                 </div>
                             )}
