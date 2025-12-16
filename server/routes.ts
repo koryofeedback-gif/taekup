@@ -15,6 +15,13 @@ let cachedProducts: any[] | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+// Generate deterministic UUID from challenge type string (since challenges are hardcoded, not in DB)
+function generateChallengeUUID(challengeType: string): string {
+  const hash = crypto.createHash('sha256').update(`taekup-challenge-${challengeType}`).digest('hex');
+  // Format as UUID: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+  return `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-a${hash.slice(17,20)}-${hash.slice(20,32)}`;
+}
+
 export function registerRoutes(app: Express) {
   app.post('/api/signup', async (req: Request, res: Response) => {
     try {
@@ -2274,10 +2281,11 @@ export function registerRoutes(app: Express) {
           const studentData = (studentResult as any[])[0];
           const validClubId = studentData.club_id;
 
-          // Create TRUST submission - instant XP
+          // Create TRUST submission - instant XP with deterministic challenge_id
+          const challengeUUID = generateChallengeUUID(challengeType);
           await db.execute(sql`
-            INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, completed_at)
-            VALUES (${studentId}::uuid, ${validClubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'COMPLETED', 'TRUST', ${finalXp}, NOW())
+            INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, completed_at)
+            VALUES (${challengeUUID}::uuid, ${studentId}::uuid, ${validClubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'COMPLETED', 'TRUST', ${finalXp}, NOW())
           `);
 
           // Award XP instantly
@@ -2350,10 +2358,11 @@ export function registerRoutes(app: Express) {
           });
         }
 
-        // Store pending XP in xp_awarded field (to be used when verified)
+        // Store pending XP in xp_awarded field (to be used when verified) with deterministic challenge_id
+        const challengeUUID = generateChallengeUUID(challengeType);
         await db.execute(sql`
-          INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
-          VALUES (${studentId}::uuid, ${student.club_id}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'PENDING', 'VIDEO', ${videoUrl}, ${finalXp}, NOW())
+          INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
+          VALUES (${challengeUUID}::uuid, ${studentId}::uuid, ${student.club_id}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'PENDING', 'VIDEO', ${videoUrl}, ${finalXp}, NOW())
         `);
 
         console.log(`[Arena] Video submission for "${challengeType}" pending verification (pending: ${finalXp} XP)`);

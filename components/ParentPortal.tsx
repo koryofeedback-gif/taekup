@@ -2338,8 +2338,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <span className="w-8 h-8 bg-green-600/30 rounded-lg flex items-center justify-center mr-3">🏋️</span>
                                                     Solo Practice
                                                 </h4>
-                                                <span className="text-[10px] bg-gray-700 text-gray-300 px-2 py-1 rounded-full font-bold">
-                                                    {remainingTrustSubmissions}/3 Trust Left
+                                                <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${
+                                                    isChallengeCompletedToday(selectedChallenge) 
+                                                        ? 'bg-green-600 text-white' 
+                                                        : 'bg-gray-700 text-gray-300'
+                                                }`}>
+                                                    {isChallengeCompletedToday(selectedChallenge) ? '✅ Completed' : 'Daily Mission'}
                                                 </span>
                                             </div>
                                             
@@ -2369,9 +2373,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         <>
                                                             <button
                                                                 onClick={() => submitSoloChallenge('TRUST', undefined, challengeXpValue)}
-                                                                disabled={!soloScore || soloSubmitting || remainingTrustSubmissions <= 0}
+                                                                disabled={!soloScore || soloSubmitting || isChallengeCompletedToday(selectedChallenge)}
                                                                 className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-                                                                    soloScore && remainingTrustSubmissions > 0 && !soloSubmitting
+                                                                    soloScore && !isChallengeCompletedToday(selectedChallenge) && !soloSubmitting
                                                                         ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white'
                                                                         : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                                                                 }`}

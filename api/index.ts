@@ -15,6 +15,13 @@ const pool = new Pool({
   max: 5
 });
 
+// Generate deterministic UUID from challenge type string (since challenges are hardcoded, not in DB)
+function generateChallengeUUID(challengeType: string): string {
+  const hash = crypto.createHash('sha256').update(`taekup-challenge-${challengeType}`).digest('hex');
+  // Format as UUID: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+  return `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-a${hash.slice(17,20)}-${hash.slice(20,32)}`;
+}
+
 const EMAIL_TEMPLATES = {
   WELCOME: 'd-c75234cb326144f68395a66668081ee8',
   PARENT_WELCOME: 'd-7747be090c32477e8589d8985608d055',
@@ -1894,11 +1901,12 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
 
       const validClubId = studentResult.rows[0].club_id;
 
-      // Create submission
+      // Create submission with deterministic challenge_id
+      const challengeUUID = generateChallengeUUID(challengeType);
       await client.query(
-        `INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, completed_at)
-         VALUES ($1::uuid, $2::uuid, $3, $4, 'SOLO', 'COMPLETED', 'TRUST', $5, NOW())`,
-        [studentId, validClubId, challengeType, score || 0, finalXp]
+        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, completed_at)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'COMPLETED', 'TRUST', $6, NOW())`,
+        [challengeUUID, studentId, validClubId, challengeType, score || 0, finalXp]
       );
 
       // Award XP
@@ -1961,10 +1969,11 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
         });
       }
 
+      const challengeUUID = generateChallengeUUID(challengeType);
       await client.query(
-        `INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
-         VALUES ($1::uuid, $2::uuid, $3, $4, 'SOLO', 'PENDING', 'VIDEO', $5, $6, NOW())`,
-        [studentId, student.club_id, challengeType, score || 0, videoUrl, finalXp]
+        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'PENDING', 'VIDEO', $6, $7, NOW())`,
+        [challengeUUID, studentId, student.club_id, challengeType, score || 0, videoUrl, finalXp]
       );
 
       return res.json({
