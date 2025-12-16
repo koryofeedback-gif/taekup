@@ -1505,71 +1505,38 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
       )
     `);
     
-    // Seed system default challenges (GPP - General Physical Preparedness)
+    // HARD RESET: Delete ALL existing challenges first
+    await client.query(`DELETE FROM arena_challenges`);
+    
+    // Insert fresh GPP challenges (General Physical Preparedness)
     const seedChallenges = [
-      // POWER
-      { name: 'Push-up Master', desc: 'Complete 10 perfect pushups', icon: '💪', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
-      { name: 'Squat Challenge', desc: 'Complete 20 squats', icon: '🦵', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
-      { name: 'Burpee Blast', desc: 'Complete 10 burpees', icon: '🔥', cat: 'POWER', diff: 'HARD', xp: 60 },
-      { name: 'Abs of Steel', desc: '20 Sit-ups', icon: '🏋️', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
-      // TECHNIQUE
-      { name: '100 Kicks Marathon', desc: 'Perform 100 kicks of any style', icon: '🦶', cat: 'TECHNIQUE', diff: 'HARD', xp: 60 },
-      { name: 'Speed Punches', desc: '50 shadow boxing punches', icon: '👊', cat: 'TECHNIQUE', diff: 'EASY', xp: 15 },
-      { name: 'Iron Horse Stance', desc: 'Hold Horse Stance for 60 seconds', icon: '🐴', cat: 'TECHNIQUE', diff: 'HARD', xp: 60 },
-      { name: 'Jump Rope Ninja', desc: 'Jump rope for 2 minutes', icon: '⏱️', cat: 'TECHNIQUE', diff: 'MEDIUM', xp: 30 },
-      // FLEXIBILITY
-      { name: 'Plank Hold', desc: 'Hold plank for 45 seconds', icon: '🧘', cat: 'FLEXIBILITY', diff: 'MEDIUM', xp: 30 },
-      { name: 'Touch Your Toes', desc: 'Keep legs straight and hold for 30s', icon: '🤸', cat: 'FLEXIBILITY', diff: 'EASY', xp: 15 },
-      { name: 'The Wall Sit', desc: 'Hold wall sit position for 45s', icon: '🧱', cat: 'FLEXIBILITY', diff: 'MEDIUM', xp: 30 },
-      { name: 'Crane Balance', desc: 'Balance on one leg for 60 seconds', icon: '🦩', cat: 'FLEXIBILITY', diff: 'EASY', xp: 15 },
+      // POWER (icon: 💪)
+      { name: 'Push-up Master', desc: '10 perfect pushups', icon: '💪', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
+      { name: 'Squat Challenge', desc: '20 squats', icon: '💪', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
+      { name: 'Burpee Blast', desc: '10 burpees', icon: '💪', cat: 'POWER', diff: 'HARD', xp: 60 },
+      { name: 'Abs of Steel', desc: '20 Sit-ups', icon: '💪', cat: 'POWER', diff: 'MEDIUM', xp: 30 },
+      // TECHNIQUE (icon: 🎯)
+      { name: '100 Kicks Marathon', desc: '100 kicks total', icon: '🎯', cat: 'TECHNIQUE', diff: 'HARD', xp: 60 },
+      { name: 'Speed Punches', desc: '50 shadow punches', icon: '🎯', cat: 'TECHNIQUE', diff: 'EASY', xp: 15 },
+      { name: 'Iron Horse Stance', desc: 'Hold stance 60s', icon: '🎯', cat: 'TECHNIQUE', diff: 'HARD', xp: 60 },
+      { name: 'Jump Rope Ninja', desc: 'Jump rope 2 mins', icon: '🎯', cat: 'TECHNIQUE', diff: 'MEDIUM', xp: 30 },
+      // FLEXIBILITY (icon: 🧘)
+      { name: 'Plank Hold', desc: 'Hold 45s', icon: '🧘', cat: 'FLEXIBILITY', diff: 'MEDIUM', xp: 30 },
+      { name: 'Touch Your Toes', desc: 'Hold 30s', icon: '🧘', cat: 'FLEXIBILITY', diff: 'EASY', xp: 15 },
+      { name: 'The Wall Sit', desc: 'Hold 45s', icon: '🧘', cat: 'FLEXIBILITY', diff: 'MEDIUM', xp: 30 },
+      { name: 'One-Leg Balance', desc: 'Balance 60s', icon: '🧘', cat: 'FLEXIBILITY', diff: 'EASY', xp: 15 },
     ];
     
     for (const c of seedChallenges) {
       await client.query(`
         INSERT INTO arena_challenges (name, description, icon, category, difficulty_tier, xp_reward, is_system_default, club_id)
-        SELECT $1::text, $2::text, $3::text, $4::challenge_category, $5::difficulty_tier, $6::integer, true, NULL
-        WHERE NOT EXISTS (SELECT 1 FROM arena_challenges WHERE name = $1::text AND is_system_default = true)
+        VALUES ($1::text, $2::text, $3::text, $4::challenge_category, $5::difficulty_tier, $6::integer, true, NULL)
       `, [c.name, c.desc, c.icon, c.cat, c.diff, c.xp]);
-    }
-    
-    // Standardize existing challenges to difficulty tier XP values
-    // Easy = 15 XP, Medium = 30 XP, Hard = 60 XP
-    const xpUpdates = [
-      // POWER - categorize by difficulty
-      { name: 'Pushups', diff: 'MEDIUM', xp: 30 },
-      { name: 'Squats', diff: 'MEDIUM', xp: 30 },
-      { name: 'Plank Hold', diff: 'MEDIUM', xp: 30 },
-      { name: 'Wall Sit', diff: 'MEDIUM', xp: 30 },
-      { name: 'Burpees', diff: 'HARD', xp: 60 },
-      { name: '1-Mile Run', diff: 'HARD', xp: 60 },
-      { name: '100 Kicks', diff: 'HARD', xp: 60 },
-      // TECHNIQUE
-      { name: '30-Second Kicks', diff: 'EASY', xp: 15 },
-      { name: '30-Second Punches', diff: 'EASY', xp: 15 },
-      { name: 'One-Leg Balance', diff: 'EASY', xp: 15 },
-      { name: 'Jump Rope Speed', diff: 'MEDIUM', xp: 30 },
-      { name: 'Combo Challenge', diff: 'HARD', xp: 60 },
-      { name: 'Forms Accuracy', diff: 'HARD', xp: 60 },
-      { name: 'Board Breaking', diff: 'HARD', xp: 60 },
-      // FLEXIBILITY
-      { name: 'Touch Your Toes', diff: 'EASY', xp: 15 },
-      { name: 'High Kick Height', diff: 'MEDIUM', xp: 30 },
-      { name: 'Side Kick Stretch', diff: 'MEDIUM', xp: 30 },
-      { name: 'Splits Challenge', diff: 'HARD', xp: 60 },
-      { name: 'Back Bridge', diff: 'HARD', xp: 60 },
-    ];
-    
-    for (const u of xpUpdates) {
-      await client.query(`
-        UPDATE arena_challenges 
-        SET difficulty_tier = $2::difficulty_tier, xp_reward = $3 
-        WHERE name = $1
-      `, [u.name, u.diff, u.xp]);
     }
     
     return res.json({ 
       success: true, 
-      message: 'Database setup complete! Tables created, challenges seeded, and XP standardized to difficulty tiers (Easy=15, Medium=30, Hard=60).' 
+      message: 'HARD RESET complete! Old challenges deleted. 12 new GPP challenges inserted with standardized XP (Easy=15, Medium=30, Hard=60).' 
     });
   } catch (error: any) {
     console.error('[DbSetup] Error:', error.message);
