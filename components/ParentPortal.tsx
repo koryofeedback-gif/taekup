@@ -75,6 +75,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [activeFamilyChallenge, setActiveFamilyChallenge] = useState<string | null>(null);
     const [familyResult, setFamilyResult] = useState<{ show: boolean; won: boolean; xp: number; challengeName: string } | null>(null);
     
+    // Daily limit for family challenges - prevent XP farming
+    const [completedFamilyToday, setCompletedFamilyToday] = useState<string[]>(() => {
+        const today = new Date().toISOString().split('T')[0];
+        const stored = localStorage.getItem(`family_challenges_${student.id}_${today}`);
+        return stored ? JSON.parse(stored) : [];
+    });
+    
+    // Save completed family challenges to localStorage
+    const markFamilyChallengeCompleted = (challengeId: string) => {
+        const today = new Date().toISOString().split('T')[0];
+        const updated = [...completedFamilyToday, challengeId];
+        setCompletedFamilyToday(updated);
+        localStorage.setItem(`family_challenges_${student.id}_${today}`, JSON.stringify(updated));
+    };
+    
+    // Check if a family challenge is already done today
+    const isFamilyChallengeCompletedToday = (challengeId: string) => {
+        return completedFamilyToday.includes(challengeId);
+    };
+    
     // Mystery Challenge State (AI-powered daily challenge)
     const [mysteryChallenge, setMysteryChallenge] = useState<{
         id: string; 
