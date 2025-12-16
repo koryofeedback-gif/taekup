@@ -908,6 +908,21 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     if (!studentToShow) {
         return <div className="text-center py-20 text-white">No students available.</div>;
     }
+    
+    // Check if we have a valid database UUID (reusing isValidUUID already defined above)
+    const hasValidId = studentToShow.id && isValidUUID(studentToShow.id);
+    
+    // Show loading state while resolving student ID to database UUID
+    if (!hasValidId && effectiveStudentId && !isValidUUID(effectiveStudentId)) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading student data...</p>
+                </div>
+            </div>
+        );
+    }
 
     const handleUpdateStudent = (updatedStudent: Student) => {
         const updatedStudents = data.students.map(s => 
@@ -928,6 +943,7 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
         <>
             <SEO title={`Parent Portal - ${studentToShow.name} | TaekUp`} />
             <ParentPortal
+                key={studentToShow.id}
                 student={studentToShow}
                 data={data}
                 onBack={handleBack}
