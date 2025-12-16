@@ -578,15 +578,66 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Check if ID is a valid database UUID (not a wizard-generated ID)
     const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     
-    // Fetch habit status and custom habits on mount (same pattern as challenge history)
+    // Resolved student ID for database operations
+    const [resolvedStudentId, setResolvedStudentId] = useState<string | null>(
+        student.id && isValidUUID(student.id) ? student.id : null
+    );
+    
+    // Resolve student ID on mount if it's not a valid UUID
     useEffect(() => {
-        if (!student.id) return;
+        const resolveId = async () => {
+            // If we already have a valid UUID, use it
+            if (student.id && isValidUUID(student.id)) {
+                setResolvedStudentId(student.id);
+                console.log('[HomeDojo] Using valid student UUID:', student.id);
+                return;
+            }
+            
+            // Try to resolve wizard ID to database UUID
+            const clubId = localStorage.getItem('taekup_club_id');
+            if (!clubId) {
+                console.warn('[HomeDojo] No clubId found in localStorage');
+                return;
+            }
+            
+            try {
+                // Try by name first, then fall back to first student
+                const res = await fetch(`/api/students/by-name?name=${encodeURIComponent(student.name)}&clubId=${clubId}`);
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result.studentId && isValidUUID(result.studentId)) {
+                        setResolvedStudentId(result.studentId);
+                        console.log('[HomeDojo] Resolved by name to UUID:', result.studentId);
+                        return;
+                    }
+                }
+                
+                // Fall back to first student
+                const fallbackRes = await fetch(`/api/students/first?clubId=${clubId}`);
+                if (fallbackRes.ok) {
+                    const fallbackResult = await fallbackRes.json();
+                    if (fallbackResult.studentId && isValidUUID(fallbackResult.studentId)) {
+                        setResolvedStudentId(fallbackResult.studentId);
+                        console.log('[HomeDojo] Fallback to first student UUID:', fallbackResult.studentId);
+                    }
+                }
+            } catch (e) {
+                console.error('[HomeDojo] Failed to resolve student ID:', e);
+            }
+        };
+        
+        resolveId();
+    }, [student.id, student.name]);
+    
+    // Fetch habit status and custom habits when we have a resolved ID
+    useEffect(() => {
+        if (!resolvedStudentId) return;
         
         const fetchHabitData = async () => {
             try {
-                console.log('[HomeDojo] Fetching habits for student:', student.id);
+                console.log('[HomeDojo] Fetching habits for student:', resolvedStudentId);
                 // Fetch habit status and sync XP from database
-                const statusRes = await fetch(`/api/habits/status?studentId=${student.id}`);
+                const statusRes = await fetch(`/api/habits/status?studentId=${resolvedStudentId}`);
                 if (statusRes.ok) {
                     const data = await statusRes.json();
                     const checks: Record<string, boolean> = {};
@@ -605,7 +656,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 }
                 
                 // Fetch custom habits from database (only user-created ones)
-                const customRes = await fetch(`/api/habits/custom?studentId=${student.id}`);
+                const customRes = await fetch(`/api/habits/custom?studentId=${resolvedStudentId}`);
                 if (customRes.ok) {
                     const customData = await customRes.json();
                     const dbHabits = (customData.customHabits || []).map((h: any) => ({
@@ -624,7 +675,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         };
         fetchHabitData();
-    }, [student.id]);
+    }, [resolvedStudentId]);
 
     // Time Machine State
     const [simulatedAttendance, setSimulatedAttendance] = useState(2); // Default 2x week
@@ -683,17 +734,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         setIsGeneratingAdvice(false);
     }
 
+    // Check if student has a valid database UUID
+    const hasValidStudentId = student.id && isValidUUID(student.id);
+    
     // Home Dojo Helpers - use habitId as the key for both frontend state and backend storage
     const toggleHabitCheck = async (habitId: string, habitName: string) => {
-        console.log('[HomeDojo] Click detected:', habitId, 'student.id:', student.id);
+        console.log('[HomeDojo] Click detected:', habitId, 'student.id:', student.id, 'valid:', hasValidStudentId);
         
         // Prevent double-clicks on already completed habits
         if (homeDojoChecks[habitId]) return;
         
         // Validate student ID is a proper UUID before making API calls
-        if (!student.id || !isValidUUID(student.id)) {
+        if (!hasValidStudentId) {
             console.warn('[HomeDojo] Cannot save habit - invalid student ID:', student.id);
-            return; // Don't allow habit checking without a valid database ID
+            alert('Please wait - loading student data. Try again in a moment.');
+            return;
         }
         
         // Check if at daily limit before visual feedback
