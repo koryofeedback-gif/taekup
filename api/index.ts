@@ -2071,16 +2071,16 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
 
     let newTotalXp = 0;
     if (xpToAward > 0) {
-      // Update lifetime_xp in students table (the correct column)
+      // Update xp in students table (production uses xp, not lifetime_xp)
       const updateResult = await client.query(
-        `UPDATE students SET lifetime_xp = COALESCE(lifetime_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING lifetime_xp`,
+        `UPDATE students SET xp = COALESCE(xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING xp`,
         [xpToAward, studentId]
       );
-      newTotalXp = updateResult.rows[0]?.lifetime_xp || 0;
-      console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new lifetime_xp: ${newTotalXp}`);
+      newTotalXp = updateResult.rows[0]?.xp || 0;
+      console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new xp: ${newTotalXp}`);
     } else {
-      const currentXp = await client.query(`SELECT lifetime_xp FROM students WHERE id = $1::uuid`, [studentId]);
-      newTotalXp = currentXp.rows[0]?.lifetime_xp || 0;
+      const currentXp = await client.query(`SELECT xp FROM students WHERE id = $1::uuid`, [studentId]);
+      newTotalXp = currentXp.rows[0]?.xp || 0;
       console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
     }
 
@@ -2125,9 +2125,9 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    // First check if student exists
+    // First check if student exists (production uses xp column)
     const studentResult = await client.query(
-      `SELECT lifetime_xp FROM students WHERE id = $1::uuid`,
+      `SELECT xp FROM students WHERE id = $1::uuid`,
       [studentId]
     );
     
@@ -2136,7 +2136,7 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
       return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp: 0 });
     }
     
-    const lifetimeXp = studentResult.rows[0]?.lifetime_xp || 0;
+    const lifetimeXp = studentResult.rows[0]?.xp || 0;
 
     // Fetch today's habit logs
     const result = await client.query(
