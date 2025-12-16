@@ -1505,9 +1505,13 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
       )
     `);
     
-    // NUCLEAR WIPE: Delete ALL challenges from BOTH tables
+    // NUCLEAR WIPE: Delete ALL challenges (handle missing tables gracefully)
     await client.query(`DELETE FROM arena_challenges`);
-    await client.query(`DELETE FROM challenges`);
+    try {
+      await client.query(`DELETE FROM challenges`);
+    } catch (e) {
+      // Table may not exist in production - that's OK
+    }
     
     // Insert fresh GPP challenges (General Physical Preparedness)
     const seedChallenges = [
