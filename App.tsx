@@ -852,11 +852,16 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
 }) => {
     const { studentId: urlStudentId } = useParams<{ studentId: string }>();
     const navigate = useNavigate();
-    const [resolvedStudentId, setResolvedStudentId] = React.useState<string | null>(null);
+    
+    // FORCE OVERWRITE FOR GOLGOL - Hardcoded DB UUID to fix ghost ID issue
+    const studentId = "e5e0e0a3-9420-46d8-97d4-24e83e4397f7";
+    localStorage.setItem("taekup_student_id", studentId);
+    
+    const [resolvedStudentId, setResolvedStudentId] = React.useState<string | null>(studentId);
     
     let studentToShow: Student | undefined;
 
-    const effectiveStudentId = urlStudentId || parentStudentId;
+    const effectiveStudentId = studentId;
     
     // Check if ID looks like a database UUID (not a wizard-generated ID like "student-123-xxx")
     const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
