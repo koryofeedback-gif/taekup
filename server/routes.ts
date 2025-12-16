@@ -2133,20 +2133,24 @@ export function registerRoutes(app: Express) {
   // ARENA CHALLENGES - Trust vs Verify Flow
   // =====================================================
 
-  const TRUST_XP = 15;
-  const VIDEO_XP = 100;
   const PVP_WIN_XP = 75;
   const PVP_LOSE_XP = 15;
   const TRUST_DAILY_LIMIT = 3;
+  const VIDEO_XP_MULTIPLIER = 2; // Video proof earns 2x XP
 
   // Unified challenge submission endpoint
   app.post('/api/challenges/submit', async (req: Request, res: Response) => {
     try {
-      const { studentId, clubId, challengeType, score, proofType, videoUrl } = req.body;
+      const { studentId, clubId, challengeType, score, proofType, videoUrl, challengeXp } = req.body;
       
       if (!studentId || !clubId || !challengeType) {
         return res.status(400).json({ error: 'studentId, clubId, and challengeType are required' });
       }
+
+      // Use dynamic XP from challenge, default to 15 for backwards compatibility
+      const baseXp = challengeXp || 15;
+      const trustXp = baseXp;
+      const videoXp = baseXp * VIDEO_XP_MULTIPLIER;
 
       const today = new Date().toISOString().split('T')[0];
 
@@ -2167,30 +2171,30 @@ export function registerRoutes(app: Express) {
           });
         }
 
-        // Create TRUST submission - instant XP
+        // Create TRUST submission - instant XP (uses challenge's base XP)
         await db.execute(sql`
           INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, completed_at)
-          VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'COMPLETED', 'TRUST', ${TRUST_XP}, NOW())
+          VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'COMPLETED', 'TRUST', ${trustXp}, NOW())
         `);
 
         // Award XP instantly
         await db.execute(sql`
-          UPDATE students SET lifetime_xp = lifetime_xp + ${TRUST_XP}, updated_at = NOW()
+          UPDATE students SET lifetime_xp = lifetime_xp + ${trustXp}, updated_at = NOW()
           WHERE id = ${studentId}::uuid
         `);
 
-        console.log(`[Arena] Trust submission: +${TRUST_XP} XP (${count + 1}/${TRUST_DAILY_LIMIT} today)`);
+        console.log(`[Arena] Trust submission: +${trustXp} XP (${count + 1}/${TRUST_DAILY_LIMIT} today)`);
 
         return res.json({
           success: true,
-          xpAwarded: TRUST_XP,
+          xpAwarded: trustXp,
           status: 'COMPLETED',
           remainingTrustSubmissions: TRUST_DAILY_LIMIT - count - 1,
-          message: `Challenge completed! +${TRUST_XP} XP earned.`
+          message: `Challenge completed! +${trustXp} XP earned.`
         });
       }
 
-      // VIDEO submissions: Require premium status
+      // VIDEO submissions: Require premium status (2x XP multiplier)
       if (proofType === 'VIDEO') {
         if (!videoUrl) {
           return res.status(400).json({ error: 'videoUrl is required for video proof' });
@@ -2218,19 +2222,20 @@ export function registerRoutes(app: Express) {
           });
         }
 
+        // Store the pending XP in xp_awarded field (to be used when verified)
         await db.execute(sql`
           INSERT INTO challenge_submissions (student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
-          VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'PENDING', 'VIDEO', ${videoUrl}, 0, NOW())
+          VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'PENDING', 'VIDEO', ${videoUrl}, ${videoXp}, NOW())
         `);
 
-        console.log(`[Arena] Video submission pending verification for student ${studentId}`);
+        console.log(`[Arena] Video submission pending verification for student ${studentId} (pending: ${videoXp} XP)`);
 
         return res.json({
           success: true,
           xpAwarded: 0,
-          pendingXp: VIDEO_XP,
+          pendingXp: videoXp,
           status: 'PENDING',
-          message: `Video submitted! You'll earn ${VIDEO_XP} XP when your coach verifies it.`
+          message: `Video submitted! You'll earn ${videoXp} XP when your coach verifies it.`
         });
       }
 
@@ -2562,23 +2567,25 @@ export function registerRoutes(app: Express) {
       }
 
       if (verified) {
-        // Approve - award XP
+        // Approve - award the XP that was stored in the submission when created
+        const xpToAward = submission.xp_awarded || 30; // Fallback to 30 (15 base * 2) for legacy submissions
+        
         await db.execute(sql`
-          UPDATE challenge_submissions SET status = 'VERIFIED', xp_awarded = ${VIDEO_XP}
+          UPDATE challenge_submissions SET status = 'VERIFIED'
           WHERE id = ${submissionId}::uuid
         `);
         await db.execute(sql`
-          UPDATE students SET lifetime_xp = lifetime_xp + ${VIDEO_XP}, updated_at = NOW()
+          UPDATE students SET lifetime_xp = lifetime_xp + ${xpToAward}, updated_at = NOW()
           WHERE id = ${submission.student_id}::uuid
         `);
 
-        console.log(`[Arena] Video verified for ${submission.student_id}: +${VIDEO_XP} XP`);
+        console.log(`[Arena] Video verified for ${submission.student_id}: +${xpToAward} XP`);
 
         res.json({
           success: true,
           status: 'VERIFIED',
-          xpAwarded: VIDEO_XP,
-          message: 'Video verified! XP awarded to student.'
+          xpAwarded: xpToAward,
+          message: `Video verified! +${xpToAward} XP awarded to student.`
         });
       } else {
         // Reject

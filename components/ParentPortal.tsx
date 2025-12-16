@@ -296,8 +296,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     };
 
     // Solo Arena submission (Trust vs Video)
-    const submitSoloChallenge = async (proofType: 'TRUST' | 'VIDEO', videoUrl?: string) => {
+    const submitSoloChallenge = async (proofType: 'TRUST' | 'VIDEO', videoUrl?: string, challengeXp?: number) => {
         if (!selectedChallenge || !student.id) return;
+        
+        // Use passed XP or default to 15
+        const xpValue = challengeXp || 15;
         
         setSoloSubmitting(true);
         setSoloResult(null);
@@ -313,6 +316,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     score: parseInt(soloScore) || 0,
                     proofType,
                     videoUrl,
+                    challengeXp: xpValue, // Pass dynamic XP to backend
                 })
             });
             
@@ -2283,48 +2287,56 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             {/* Submission Buttons */}
                                             <div className="space-y-3">
                                                 {/* Trust Submission */}
-                                                <button
-                                                    onClick={() => submitSoloChallenge('TRUST')}
-                                                    disabled={!soloScore || soloSubmitting || remainingTrustSubmissions <= 0}
-                                                    className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-                                                        soloScore && remainingTrustSubmissions > 0 && !soloSubmitting
-                                                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white'
-                                                            : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                                                    }`}
-                                                >
-                                                    {soloSubmitting ? (
-                                                        <span>Submitting...</span>
-                                                    ) : (
+                                                {(() => {
+                                                    const selectedChallengeData = challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge);
+                                                    const challengeXpValue = selectedChallengeData?.xp || 15;
+                                                    return (
                                                         <>
-                                                            <span className="text-lg">✓</span>
-                                                            Submit (Trust System) • +15 XP
+                                                            <button
+                                                                onClick={() => submitSoloChallenge('TRUST', undefined, challengeXpValue)}
+                                                                disabled={!soloScore || soloSubmitting || remainingTrustSubmissions <= 0}
+                                                                className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                                                                    soloScore && remainingTrustSubmissions > 0 && !soloSubmitting
+                                                                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white'
+                                                                        : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                                                }`}
+                                                            >
+                                                                {soloSubmitting ? (
+                                                                    <span>Submitting...</span>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="text-lg">✓</span>
+                                                                        Submit (Trust System) • +{challengeXpValue} XP
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                            
+                                                            {/* Video Proof Submission - 2x XP Multiplier */}
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (hasPremiumAccess) {
+                                                                        setShowVideoUpload(true);
+                                                                    } else {
+                                                                        setShowUpgradeModal(true);
+                                                                    }
+                                                                }}
+                                                                disabled={!soloScore}
+                                                                className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                                                                    soloScore
+                                                                        ? hasPremiumAccess
+                                                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white'
+                                                                            : 'bg-gray-700 border border-purple-500/50 text-purple-400 hover:bg-gray-600'
+                                                                        : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                                                }`}
+                                                            >
+                                                                {!hasPremiumAccess && <span className="text-lg">🔒</span>}
+                                                                <span className="text-lg">📹</span>
+                                                                Submit Video Proof • +{challengeXpValue * 2} XP
+                                                                {!hasPremiumAccess && <span className="text-[10px] ml-1">PREMIUM</span>}
+                                                            </button>
                                                         </>
-                                                    )}
-                                                </button>
-                                                
-                                                {/* Video Proof Submission */}
-                                                <button
-                                                    onClick={() => {
-                                                        if (hasPremiumAccess) {
-                                                            setShowVideoUpload(true);
-                                                        } else {
-                                                            setShowUpgradeModal(true);
-                                                        }
-                                                    }}
-                                                    disabled={!soloScore}
-                                                    className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-                                                        soloScore
-                                                            ? hasPremiumAccess
-                                                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white'
-                                                                : 'bg-gray-700 border border-purple-500/50 text-purple-400 hover:bg-gray-600'
-                                                            : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                                                    }`}
-                                                >
-                                                    {!hasPremiumAccess && <span className="text-lg">🔒</span>}
-                                                    <span className="text-lg">📹</span>
-                                                    Submit Video Proof • +100 XP
-                                                    {!hasPremiumAccess && <span className="text-[10px] ml-1">PREMIUM</span>}
-                                                </button>
+                                                    );
+                                                })()}
                                             </div>
                                             
                                             {/* Solo Result Message */}
@@ -2354,14 +2366,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <span className="text-5xl">👑</span>
                                                     <h3 className="text-2xl font-black text-white mt-4">Unlock Video Proof</h3>
                                                     <p className="text-gray-400 mt-2">
-                                                        Premium members can submit video proof for coach verification and earn <span className="text-yellow-400 font-bold">+100 XP</span> per challenge!
+                                                        Premium members can submit video proof for coach verification and earn <span className="text-yellow-400 font-bold">2x XP</span> per challenge!
                                                     </p>
                                                 </div>
                                                 
                                                 <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 rounded-xl border border-purple-500/50 mb-6">
                                                     <h4 className="font-bold text-white mb-2">Premium Benefits:</h4>
                                                     <ul className="text-sm text-gray-300 space-y-2">
-                                                        <li className="flex items-center gap-2"><span>✅</span> Video proof submissions (+100 XP)</li>
+                                                        <li className="flex items-center gap-2"><span>✅</span> Video proof submissions (2x XP)</li>
                                                         <li className="flex items-center gap-2"><span>✅</span> Coach feedback on technique</li>
                                                         <li className="flex items-center gap-2"><span>✅</span> Progress analytics & insights</li>
                                                         <li className="flex items-center gap-2"><span>✅</span> Digital athlete card</li>
