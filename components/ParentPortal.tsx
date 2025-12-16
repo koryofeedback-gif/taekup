@@ -656,7 +656,29 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     // Home Dojo Helpers
     const toggleHabitCheck = async (habitId: string, habitName: string) => {
-        if (homeDojoChecks[habitId]) return;
+        console.log('[HomeDojo] Click detected:', habitId, 'student.id:', student.id);
+        
+        // Immediate visual feedback - mark as complete right away
+        setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
+        setHabitXpEarned(prev => ({ ...prev, [habitId]: 10 }));
+        setHabitXpToday(prev => prev + 10);
+        setTimeout(() => {
+            setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
+        }, 2000);
+        
+        // Try API call in background (don't wait for it)
+        fetch('/api/habits/check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentId: student.id || 'demo', habitName: habitId })
+        }).catch(e => console.error('Habit API error:', e));
+    };
+    
+    // Legacy handler kept for reference
+    const toggleHabitCheckLegacy = async (habitId: string, habitName: string) => {
+        if (homeDojoChecks[habitId]) {
+            return;
+        }
         
         setHabitLoading(prev => ({ ...prev, [habitId]: true }));
         
@@ -3533,7 +3555,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             {activeHabits.map(habit => (
                                 <div 
                                     key={habit.id}
-                                    onClick={() => !habitLoading[habit.id] && !homeDojoChecks[habit.id] && toggleHabitCheck(habit.id, habit.question)}
+                                    onClick={() => toggleHabitCheck(habit.id, habit.question)}
                                     className={`p-4 rounded-xl border transition-all flex items-center justify-between group relative
                                         ${homeDojoChecks[habit.id] 
                                             ? 'bg-green-900/20 border-green-500/50 cursor-default' 
