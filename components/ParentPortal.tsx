@@ -560,7 +560,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [habitXpToday, setHabitXpToday] = useState(0);
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
-    const [customHabitList, setCustomHabitList] = useState<Habit[]>(student.customHabits || []);
+    const defaultHabits: Habit[] = [
+        { id: 'homework', question: 'Did they finish homework on time?', category: 'School', icon: '📚', isActive: true },
+        { id: 'screentime', question: 'Did they limit screentime?', category: 'Health', icon: '📵', isActive: true },
+        { id: 'vegetables', question: 'Did they eat vegetables?', category: 'Health', icon: '🥦', isActive: true },
+        { id: 'chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: true },
+    ];
+    const [customHabitList, setCustomHabitList] = useState<Habit[]>(student.customHabits?.length ? student.customHabits : defaultHabits);
     // Custom habit creation state
     const [showCustomForm, setShowCustomForm] = useState(false);
     const [customHabitQuestion, setCustomHabitQuestion] = useState('');
@@ -680,10 +686,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }
 
     const PRESET_HABITS: Habit[] = [
-        { id: 'homework', question: 'Did they finish homework on time?', category: 'School', icon: '📚', isActive: false },
-        { id: 'screentime', question: 'Did they limit screentime?', category: 'Health', icon: '📵', isActive: false },
-        { id: 'vegetables', question: 'Did they eat vegetables?', category: 'Health', icon: '🥦', isActive: false },
-        { id: 'chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: false },
+        { id: 'homework', question: 'Did they finish homework on time?', category: 'School', icon: '📚', isActive: true },
+        { id: 'screentime', question: 'Did they limit screentime?', category: 'Health', icon: '📵', isActive: true },
+        { id: 'vegetables', question: 'Did they eat vegetables?', category: 'Health', icon: '🥦', isActive: true },
+        { id: 'chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: true },
         { id: 'kindness', question: 'Did they practice kindness?', category: 'Character', icon: '❤️', isActive: false },
         { id: 'ready_alone', question: 'Did they get ready for school alone?', category: 'School', icon: '🎒', isActive: false },
     ];
