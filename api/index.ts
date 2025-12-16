@@ -1505,8 +1505,9 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
       )
     `);
     
-    // HARD RESET: Delete ALL existing challenges first
+    // NUCLEAR WIPE: Delete ALL challenges from BOTH tables
     await client.query(`DELETE FROM arena_challenges`);
+    await client.query(`DELETE FROM challenges`);
     
     // Insert fresh GPP challenges (General Physical Preparedness)
     const seedChallenges = [
