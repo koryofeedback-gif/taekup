@@ -2007,13 +2007,15 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'studentId and habitName are required' });
   }
 
-  // Handle demo/invalid UUIDs gracefully - just return success without DB
+  // STRICT MODE: Reject invalid UUIDs - NO MORE DEMO MODE
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (studentId === 'demo' || !uuidRegex.test(studentId)) {
-    return res.json({
-      success: true,
-      xpAwarded: HABIT_XP,
-      message: `Habit completed! +${HABIT_XP} XP earned. (Demo Mode)`
+  const trimmedStudentId = studentId.trim();
+  if (!uuidRegex.test(trimmedStudentId)) {
+    console.error('[HomeDojo] INVALID UUID FORMAT:', studentId);
+    return res.status(400).json({
+      error: 'Invalid student ID format',
+      receivedId: studentId,
+      message: 'Student ID must be a valid UUID'
     });
   }
 
@@ -2021,18 +2023,18 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    // First verify the student exists in database
+    // First verify the student exists in database (use trimmed ID)
     const studentCheck = await client.query(
       `SELECT id FROM students WHERE id = $1::uuid`,
-      [studentId]
+      [trimmedStudentId]
     );
     
     if (studentCheck.rows.length === 0) {
-      console.log(`[HomeDojo] Student ${studentId} not found in database - treating as demo mode`);
-      return res.json({
-        success: true,
-        xpAwarded: HABIT_XP,
-        message: `Habit completed! +${HABIT_XP} XP earned. (Demo Mode)`
+      console.error('[HomeDojo] STUDENT NOT FOUND IN DB:', trimmedStudentId);
+      return res.status(404).json({
+        error: 'Student ID not found in database',
+        studentId: trimmedStudentId,
+        message: 'This student does not exist in the database. Please re-login.'
       });
     }
     
@@ -2042,7 +2044,7 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
     // Check if habit already completed today
     const existing = await client.query(
       `SELECT id FROM habit_logs WHERE student_id = $1::uuid AND habit_name = $2 AND log_date = $3::date`,
-      [studentId, habitName, today]
+      [trimmedStudentId, habitName, today]
     );
 
     if (existing.rows.length > 0) {
@@ -2057,7 +2059,7 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
     // Anti-cheat: Check daily XP cap (60 XP max from habits per day)
     const dailyXpResult = await client.query(
       `SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs WHERE student_id = $1::uuid AND log_date = $2::date`,
-      [studentId, today]
+      [trimmedStudentId, today]
     );
     const totalXpToday = parseInt(dailyXpResult.rows[0]?.total_xp_today || '0');
     const atDailyLimit = totalXpToday >= DAILY_HABIT_XP_CAP;
@@ -2066,7 +2068,7 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
     // Insert habit log (mark as done regardless of XP cap)
     await client.query(
       `INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES ($1::uuid, $2, $3, $4::date)`,
-      [studentId, habitName, xpToAward, today]
+      [trimmedStudentId, habitName, xpToAward, today]
     );
 
     let newTotalXp = 0;
@@ -2079,12 +2081,12 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
           updated_at = NOW() 
         WHERE id = $2::uuid 
         RETURNING total_xp, lifetime_xp`,
-        [xpToAward, studentId]
+        [xpToAward, trimmedStudentId]
       );
       newTotalXp = updateResult.rows[0]?.lifetime_xp || updateResult.rows[0]?.total_xp || 0;
       console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total: ${newTotalXp}`);
     } else {
-      const currentXp = await client.query(`SELECT COALESCE(lifetime_xp, total_xp, 0) as xp FROM students WHERE id = $1::uuid`, [studentId]);
+      const currentXp = await client.query(`SELECT COALESCE(lifetime_xp, total_xp, 0) as xp FROM students WHERE id = $1::uuid`, [trimmedStudentId]);
       newTotalXp = currentXp.rows[0]?.xp || 0;
       console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
     }
