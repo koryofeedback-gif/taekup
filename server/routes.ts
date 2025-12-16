@@ -2135,7 +2135,7 @@ export function registerRoutes(app: Express) {
 
   const PVP_WIN_XP = 75;
   const PVP_LOSE_XP = 15;
-  const TRUST_PER_CHALLENGE_LIMIT = 3; // Max 3 times per challenge per day
+  const TRUST_PER_CHALLENGE_LIMIT = 1; // STRICT: 1 time per challenge per day (anti-XP farming)
   const VIDEO_XP_MULTIPLIER = 2; // Video proof earns 2x XP
 
   // Unified challenge submission endpoint
@@ -2176,9 +2176,10 @@ export function registerRoutes(app: Express) {
           const count = parseInt((challengeDailyCount as any[])[0]?.count || '0');
           if (count >= TRUST_PER_CHALLENGE_LIMIT) {
             return res.status(429).json({ 
-              error: 'Daily limit reached for this exercise',
-              message: `You hit the daily limit for this exercise! Try a different one.`,
-              limitReached: true
+              error: 'Daily mission complete',
+              message: `Daily Mission Complete! You can earn XP for this challenge again tomorrow.`,
+              limitReached: true,
+              alreadyCompleted: true
             });
           }
 
