@@ -558,6 +558,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [habitLoading, setHabitLoading] = useState<Record<string, boolean>>({});
     const [habitXpEarned, setHabitXpEarned] = useState<Record<string, number>>({});
     const [habitXpToday, setHabitXpToday] = useState(0);
+    const [dailyXpCap] = useState(60);
+    const [atDailyLimit, setAtDailyLimit] = useState(false);
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
     const defaultHabits: Habit[] = [
@@ -573,27 +575,44 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [customHabitIcon, setCustomHabitIcon] = useState('');
     const [customHabitCategory, setCustomHabitCategory] = useState<Habit['category']>('Custom');
 
-    // Fetch habit status on mount
+    // Fetch habit status and custom habits on mount
     useEffect(() => {
-        const fetchHabitStatus = async () => {
+        const fetchHabitData = async () => {
             try {
-                const res = await fetch(`/api/habits/status?studentId=${student.id}`);
-                if (res.ok) {
-                    const data = await res.json();
+                // Fetch habit status
+                const statusRes = await fetch(`/api/habits/status?studentId=${student.id}`);
+                if (statusRes.ok) {
+                    const data = await statusRes.json();
                     const checks: Record<string, boolean> = {};
                     (data.completedHabits || []).forEach((habitName: string) => {
                         checks[habitName] = true;
                     });
                     setHomeDojoChecks(checks);
                     setHabitXpToday(data.totalXpToday || 0);
+                    setAtDailyLimit((data.totalXpToday || 0) >= (data.dailyXpCap || 60));
+                }
+                
+                // Fetch custom habits from database (only user-created ones)
+                const customRes = await fetch(`/api/habits/custom?studentId=${student.id}`);
+                if (customRes.ok) {
+                    const customData = await customRes.json();
+                    const dbHabits = (customData.customHabits || []).map((h: any) => ({
+                        id: h.id,
+                        question: h.title,
+                        category: 'Custom' as const,
+                        icon: h.icon || '✨',
+                        isActive: true,
+                        isCustom: true
+                    }));
+                    // Start with default habits and add any custom habits from DB
+                    setCustomHabitList([...defaultHabits, ...dbHabits]);
                 }
             } catch (e) {
-                console.error('Failed to fetch habit status:', e);
+                console.error('Failed to fetch habit data:', e);
             }
         };
-        // Always try to fetch habit status (even for new students)
         if (student.id) {
-            fetchHabitStatus();
+            fetchHabitData();
         }
     }, [student.id]);
 
@@ -654,35 +673,95 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         setIsGeneratingAdvice(false);
     }
 
-    // Home Dojo Helpers
+    // Home Dojo Helpers - use habitId as the key for both frontend state and backend storage
     const toggleHabitCheck = async (habitId: string, habitName: string) => {
         console.log('[HomeDojo] Click detected:', habitId, 'student.id:', student.id);
         
+        // Prevent double-clicks on already completed habits
+        if (homeDojoChecks[habitId]) return;
+        
+        // Check if at daily limit before visual feedback
+        const wasAtLimit = atDailyLimit;
+        const xpToShow = wasAtLimit ? 0 : 10;
+        
         // Immediate visual feedback - mark as complete right away
         setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
-        setHabitXpEarned(prev => ({ ...prev, [habitId]: 10 }));
-        setHabitXpToday(prev => prev + 10);
+        setHabitXpEarned(prev => ({ ...prev, [habitId]: xpToShow }));
+        setHabitXpToday(prev => prev + xpToShow);
         
-        // Update rivalStats.xp immediately so header shows new total
-        setRivalStats(prev => ({ ...prev, xp: prev.xp + 10 }));
+        // Update rivalStats.xp immediately so header shows new total (only if not at limit)
+        if (!wasAtLimit) {
+            setRivalStats(prev => ({ ...prev, xp: prev.xp + 10 }));
+        }
         
         setTimeout(() => {
             setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
         }, 2000);
         
-        // API call to persist to database
+        // API call to persist to database - use habitId as the key
         try {
             const res = await fetch('/api/habits/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ studentId: student.id || 'demo', habitName: habitId })
             });
-            const data = await res.json();
-            if (data.newTotalXp) {
-                console.log('[HomeDojo] New total XP from server:', data.newTotalXp);
+            const apiData = await res.json();
+            if (apiData.success) {
+                // Update with actual values from server
+                setHabitXpToday(apiData.dailyXpEarned || 0);
+                setAtDailyLimit(apiData.atDailyLimit || false);
+                if (apiData.newTotalXp) {
+                    console.log('[HomeDojo] New total XP from server:', apiData.newTotalXp, 'Daily:', apiData.dailyXpEarned, '/', apiData.dailyXpCap);
+                }
+            } else if (apiData.alreadyCompleted) {
+                // Already completed - ensure UI is consistent
+                setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
             }
         } catch (e) {
             console.error('Habit API error:', e);
+        }
+    };
+    
+    // Create custom habit and save to database
+    const handleCreateCustomHabit = async () => {
+        if (!customHabitQuestion.trim()) return;
+        
+        const newHabit: Habit = {
+            id: 'custom_' + Date.now(),
+            question: customHabitQuestion.trim(),
+            category: 'Custom',
+            icon: customHabitIcon || '✨',
+            isActive: true,
+            isCustom: true
+        };
+        
+        // Add to local list immediately
+        setCustomHabitList(prev => [...prev, newHabit]);
+        setShowCustomForm(false);
+        setCustomHabitQuestion('');
+        setCustomHabitIcon('');
+        
+        // Save to database
+        try {
+            const res = await fetch('/api/habits/custom', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    studentId: student.id || 'demo', 
+                    title: customHabitQuestion.trim(),
+                    icon: customHabitIcon || '✨'
+                })
+            });
+            const apiData = await res.json();
+            if (apiData.success && apiData.habit) {
+                // Update with real DB ID
+                setCustomHabitList(prev => prev.map(h => 
+                    h.id === newHabit.id ? { ...h, id: apiData.habit.id } : h
+                ));
+                console.log('[HomeDojo] Custom habit saved:', apiData.habit.id);
+            }
+        } catch (e) {
+            console.error('Failed to save custom habit:', e);
         }
     };
     
@@ -3553,13 +3632,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </button>
                     </div>
 
-                    {/* XP Summary */}
-                    {habitXpToday > 0 && (
-                        <div className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border border-yellow-500/30 p-3 rounded-lg flex items-center justify-between">
-                            <span className="text-yellow-400 font-bold text-sm">Today's Habit XP</span>
-                            <span className="text-yellow-300 font-black text-lg">+{habitXpToday} XP</span>
+                    {/* XP Summary with Daily Cap */}
+                    <div className={`p-3 rounded-lg flex items-center justify-between ${atDailyLimit ? 'bg-gradient-to-r from-orange-900/50 to-red-900/50 border border-orange-500/30' : 'bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border border-yellow-500/30'}`}>
+                        <div>
+                            <span className={`font-bold text-sm ${atDailyLimit ? 'text-orange-400' : 'text-yellow-400'}`}>
+                                {atDailyLimit ? 'Daily Limit Reached!' : "Today's Habit XP"}
+                            </span>
+                            <div className="text-[10px] text-gray-400">Max {dailyXpCap} XP per day</div>
                         </div>
-                    )}
+                        <div className="text-right">
+                            <span className={`font-black text-lg ${atDailyLimit ? 'text-orange-300' : 'text-yellow-300'}`}>
+                                {habitXpToday}/{dailyXpCap} XP
+                            </span>
+                        </div>
+                    </div>
 
                     {/* Habit Tracker List */}
                     {!isEditingHabits ? (
@@ -3676,24 +3762,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         
                                         {/* Add Button */}
                                         <button
-                                            onClick={() => {
-                                                if (customHabitQuestion.trim() && customHabitIcon) {
-                                                    const newHabit: Habit = {
-                                                        id: `custom-${Date.now()}`,
-                                                        question: customHabitQuestion.trim(),
-                                                        icon: customHabitIcon,
-                                                        category: customHabitCategory,
-                                                        isActive: true,
-                                                        isCustom: true
-                                                    };
-                                                    setCustomHabitList(prev => [...prev, newHabit]);
-                                                    setCustomHabitQuestion('');
-                                                    setCustomHabitIcon('');
-                                                    setCustomHabitCategory('Custom');
-                                                    setShowCustomForm(false);
-                                                }
-                                            }}
-                                            disabled={!customHabitQuestion.trim() || !customHabitIcon}
+                                            onClick={handleCreateCustomHabit}
+                                            disabled={!customHabitQuestion.trim()}
                                             className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-2 rounded-lg transition-colors"
                                         >
                                             Add Custom Habit
@@ -3717,7 +3787,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     </div>
                                                 </div>
                                                 <button 
-                                                    onClick={() => setCustomHabitList(prev => prev.filter(h => h.id !== habit.id))}
+                                                    onClick={async () => {
+                                                        setCustomHabitList(prev => prev.filter(h => h.id !== habit.id));
+                                                        try {
+                                                            await fetch(`/api/habits/custom/${habit.id}`, { method: 'DELETE' });
+                                                        } catch (e) { console.error('Failed to delete habit:', e); }
+                                                    }}
                                                     className="px-3 py-1 rounded text-xs font-bold bg-red-900/50 text-red-400 border border-red-900 hover:bg-red-900/80 transition-colors"
                                                 >
                                                     Remove

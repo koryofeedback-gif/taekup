@@ -2764,6 +2764,7 @@ export function registerRoutes(app: Express) {
   // HOME DOJO - HABIT TRACKING
   // =====================================================
   const HABIT_XP = 10;
+  const DAILY_HABIT_XP_CAP = 60;
 
   app.post('/api/habits/check', async (req: Request, res: Response) => {
     try {
@@ -2796,22 +2797,41 @@ export function registerRoutes(app: Express) {
         });
       }
 
+      // Anti-cheat: Check daily XP cap (60 XP max from habits per day)
+      const dailyXpResult = await db.execute(sql`
+        SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs WHERE student_id = ${studentId}::uuid AND log_date = ${today}::date
+      `);
+      const totalXpToday = parseInt((dailyXpResult as any[])[0]?.total_xp_today || '0');
+      const atDailyLimit = totalXpToday >= DAILY_HABIT_XP_CAP;
+      const xpToAward = atDailyLimit ? 0 : HABIT_XP;
+
       await db.execute(sql`
-        INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES (${studentId}::uuid, ${habitName}, ${HABIT_XP}, ${today}::date)
+        INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES (${studentId}::uuid, ${habitName}, ${xpToAward}, ${today}::date)
       `);
 
-      const updateResult = await db.execute(sql`
-        UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${HABIT_XP}, updated_at = NOW() WHERE id = ${studentId}::uuid RETURNING total_xp
-      `);
-      const newTotalXp = (updateResult as any[])[0]?.total_xp || 0;
-
-      console.log(`[HomeDojo] Habit "${habitName}" completed: +${HABIT_XP} XP, new total: ${newTotalXp}`);
+      let newTotalXp = 0;
+      if (xpToAward > 0) {
+        const updateResult = await db.execute(sql`
+          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpToAward}, updated_at = NOW() WHERE id = ${studentId}::uuid RETURNING total_xp
+        `);
+        newTotalXp = (updateResult as any[])[0]?.total_xp || 0;
+        console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total: ${newTotalXp}`);
+      } else {
+        const currentXp = await db.execute(sql`SELECT total_xp FROM students WHERE id = ${studentId}::uuid`);
+        newTotalXp = (currentXp as any[])[0]?.total_xp || 0;
+        console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
+      }
 
       res.json({
         success: true,
-        xpAwarded: HABIT_XP,
+        xpAwarded: xpToAward,
         newTotalXp,
-        message: `Habit completed! +${HABIT_XP} XP earned.`
+        dailyXpEarned: totalXpToday + xpToAward,
+        dailyXpCap: DAILY_HABIT_XP_CAP,
+        atDailyLimit,
+        message: atDailyLimit 
+          ? `Habit done! Daily Dojo Limit reached (Max ${DAILY_HABIT_XP_CAP} XP).`
+          : `Habit completed! +${HABIT_XP} XP earned.`
       });
     } catch (error: any) {
       console.error('[HomeDojo] Habit check error:', error.message);
@@ -2829,7 +2849,7 @@ export function registerRoutes(app: Express) {
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (studentId === 'demo' || !uuidRegex.test(studentId)) {
-        return res.json({ completedHabits: [], totalXpToday: 0 });
+        return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP });
       }
 
       const today = new Date().toISOString().split('T')[0];
@@ -2841,10 +2861,67 @@ export function registerRoutes(app: Express) {
       const completedHabits = (result as any[]).map(r => r.habit_name);
       const totalXpToday = (result as any[]).reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
 
-      res.json({ completedHabits, totalXpToday });
+      res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP });
     } catch (error: any) {
       console.error('[HomeDojo] Status fetch error:', error.message);
-      res.json({ completedHabits: [], totalXpToday: 0 });
+      res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP });
+    }
+  });
+
+  // Custom Habits endpoints
+  app.get('/api/habits/custom', async (req: Request, res: Response) => {
+    try {
+      const studentId = req.query.studentId as string;
+      if (!studentId) return res.status(400).json({ error: 'studentId is required' });
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (studentId === 'demo' || !uuidRegex.test(studentId)) {
+        return res.json({ customHabits: [] });
+      }
+
+      const result = await db.execute(sql`
+        SELECT id, title, icon, is_active FROM user_custom_habits WHERE student_id = ${studentId}::uuid AND is_active = true ORDER BY created_at ASC
+      `);
+      res.json({ customHabits: result });
+    } catch (error: any) {
+      console.error('[HomeDojo] Get custom habits error:', error.message);
+      res.json({ customHabits: [] });
+    }
+  });
+
+  app.post('/api/habits/custom', async (req: Request, res: Response) => {
+    try {
+      const { studentId, title, icon } = req.body;
+      if (!studentId || !title) return res.status(400).json({ error: 'studentId and title are required' });
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (studentId === 'demo' || !uuidRegex.test(studentId)) {
+        return res.json({ success: true, habit: { id: 'demo-' + Date.now(), title, icon: icon || '✨', is_active: true } });
+      }
+
+      const result = await db.execute(sql`
+        INSERT INTO user_custom_habits (student_id, title, icon) VALUES (${studentId}::uuid, ${title.slice(0, 100)}, ${icon || '✨'}) RETURNING id, title, icon, is_active
+      `);
+      console.log(`[HomeDojo] Created custom habit: "${title}" for student ${studentId}`);
+      res.json({ success: true, habit: (result as any[])[0] });
+    } catch (error: any) {
+      console.error('[HomeDojo] Create custom habit error:', error.message);
+      res.status(500).json({ error: 'Failed to create habit' });
+    }
+  });
+
+  app.delete('/api/habits/custom/:habitId', async (req: Request, res: Response) => {
+    try {
+      const habitId = req.params.habitId;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(habitId)) return res.json({ success: true });
+
+      await db.execute(sql`UPDATE user_custom_habits SET is_active = false WHERE id = ${habitId}::uuid`);
+      console.log(`[HomeDojo] Deleted custom habit: ${habitId}`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[HomeDojo] Delete custom habit error:', error.message);
+      res.status(500).json({ error: 'Failed to delete habit' });
     }
   });
 }
