@@ -1822,6 +1822,52 @@ const CHALLENGE_METADATA: Record<string, { name: string; icon: string; category:
   'family_kicks': { name: 'Family Kicks', icon: '👨‍👧', category: 'Family' },
 };
 
+// GET /api/challenges/received/:studentId - Fetch challenges received by student
+async function handleReceivedChallenges(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  if (!studentId || studentId === 'demo') {
+    return res.json([]);
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT * FROM challenges WHERE to_student_id = $1::uuid ORDER BY created_at DESC`,
+      [studentId]
+    );
+    return res.json(result.rows);
+  } catch (error: any) {
+    console.error('[Challenges] Fetch received error:', error.message);
+    return res.json([]);
+  } finally {
+    client.release();
+  }
+}
+
+// GET /api/challenges/sent/:studentId - Fetch challenges sent by student
+async function handleSentChallenges(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  if (!studentId || studentId === 'demo') {
+    return res.json([]);
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT * FROM challenges WHERE from_student_id = $1::uuid ORDER BY created_at DESC`,
+      [studentId]
+    );
+    return res.json(result.rows);
+  } catch (error: any) {
+    console.error('[Challenges] Fetch sent error:', error.message);
+    return res.json([]);
+  } finally {
+    client.release();
+  }
+}
+
 // GET /api/challenges/history - Fetch challenge submission history
 async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -2307,6 +2353,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Arena Challenge Submit & History
     if (path === '/challenges/submit' || path === '/challenges/submit/') return await handleChallengeSubmit(req, res);
     if (path === '/challenges/history' || path === '/challenges/history/') return await handleChallengeHistory(req, res);
+    
+    // Challenges received/sent by student
+    const receivedChallengesMatch = path.match(/^\/challenges\/received\/([^/]+)\/?$/);
+    if (receivedChallengesMatch) return await handleReceivedChallenges(req, res, receivedChallengesMatch[1]);
+    
+    const sentChallengesMatch = path.match(/^\/challenges\/sent\/([^/]+)\/?$/);
+    if (sentChallengesMatch) return await handleSentChallenges(req, res, sentChallengesMatch[1]);
     
     // Home Dojo - Habit Tracking
     if (path === '/habits/check' || path === '/habits/check/') return await handleHabitCheck(req, res);

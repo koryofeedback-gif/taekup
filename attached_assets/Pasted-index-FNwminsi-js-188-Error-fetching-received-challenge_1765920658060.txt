@@ -1,0 +1,25 @@
+index-FNwminsi.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at WA.getReceivedChallenges (index-FNwminsi.js:188:28682)
+    at async index-FNwminsi.js:188:26069
+getReceivedChallenges @ index-FNwminsi.js:188Understand this error
+/api/challenges/received/1bf1fb68-7ed9-4204-a511-9184a5ed0ac1:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+index-FNwminsi.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at WA.getReceivedChallenges (index-FNwminsi.js:188:28682)
+    at async index-FNwminsi.js:188:26069
+getReceivedChallenges @ index-FNwminsi.js:188Understand this error
+/api/challenges/received/1bf1fb68-7ed9-4204-a511-9184a5ed0ac1:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+index-FNwminsi.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at WA.getReceivedChallenges (index-FNwminsi.js:188:28682)
+    at async index-FNwminsi.js:188:26069
+getReceivedChallenges @ index-FNwminsi.js:188Understand this error
+/api/challenges/received/1bf1fb68-7ed9-4204-a511-9184a5ed0ac1:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+index-FNwminsi.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at WA.getReceivedChallenges (index-FNwminsi.js:188:28682)
+    at async index-FNwminsi.js:188:26069
+getReceivedChallenges @ index-FNwminsi.js:188Understand this error
+/api/challenges/received/1bf1fb68-7ed9-4204-a511-9184a5ed0ac1:1  Failed to load resource: the server responded with a status of 404 ()Understand this error
+index-FNwminsi.js:188 Error fetching received challenges: Error: Failed to fetch challenges
+    at WA.getReceivedChallenges (index-FNwminsi.js:188:28682)
+    at async index-FNwminsi.js:188:26069
+getReceivedChallenges @ index-FNwminsi.js:188Understand this error
+index-FNwminsi.js:193 [HomeDojo] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1 valid UUID: true
