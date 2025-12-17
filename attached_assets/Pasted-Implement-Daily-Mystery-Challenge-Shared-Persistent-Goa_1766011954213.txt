@@ -1,0 +1,56 @@
+Implement Daily Mystery Challenge (Shared & Persistent)
+Goal: Upgrade the "Daily Mystery Challenge" to a dynamic "Daily Paper" system (one shared question per day per sport). CRITICAL REQUIREMENT: Do NOT modify or break the existing Login/Auth logic. The persistence fix we just implemented must remain untouched. Only work on the Challenge features.
+
+Core Features:
+
+Shared Daily Question: Generate ONE question per sport per day. Store it in the DB (daily_trivia table).
+
+Lazy Generation: Created only when the first user requests it. Subsequent users get the cached DB version.
+
+Real XP Persistence: When a user answers correctly, the XP must be permanently added to their students.total_xp in the database, not just shown on UI.
+
+Technical Implementation:
+
+1. Database Schema (daily_trivia):
+
+Create table if not exists.
+
+Columns: id, date (YYYY-MM-DD), sport, question_text, options (JSON), correct_index, xp_reward.
+
+2. Backend Logic (api/challenge.ts):
+
+GET /api/daily-challenge:
+
+Check DB for today's question (date + sport).
+
+If found: Return it.
+
+If not found: Generate one (AI or mock list), INSERT into DB, then return it.
+
+POST /api/daily-challenge/submit:
+
+Validation: Check xp_logs to ensure user hasn't already earned XP for "Daily Mystery" today.
+
+If Valid & Correct:
+
+UPDATE SQL: UPDATE students SET total_xp = total_xp + [reward] WHERE id = [user_id];
+
+LOG SQL: INSERT INTO xp_logs (student_id, activity_type, xp_amount, date) ...
+
+Return the new total XP.
+
+3. Frontend (MysteryChallenge.tsx):
+
+Fetch the question on load.
+
+If user already played today, show "Come back tomorrow".
+
+On success, update the local XP state to reflect the new database value immediately.
+
+Safety Instruction:
+
+Scope: Only modify api/challenge.ts, MysteryChallenge.tsx, and database schema.
+
+Do NOT touch: api/auth.ts, Login.tsx, or api/stats.ts. The user session logic is perfect and must not change.
+
+Action: Implement the shared daily question logic and ensure XP is permanently saved to the database upon completion.
