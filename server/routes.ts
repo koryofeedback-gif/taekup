@@ -507,6 +507,7 @@ export function registerRoutes(app: Express) {
           wizardData.students = (studentsResult as any[]).map(s => ({
             id: s.id,
             name: s.name,
+            clubId: user.club_id,
             parentEmail: s.parent_email,
             parentName: s.parent_name,
             parentPhone: s.parent_phone,

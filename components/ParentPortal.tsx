@@ -372,9 +372,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         setSubmittingMystery(true);
         
+        // Debug: Log current student data
+        console.log('[MysteryChallenge] Submitting with:', {
+            studentId: student.id,
+            clubId: student.clubId,
+            challengeId: mysteryChallenge.id,
+            selectedIndex
+        });
+        
         // STRICT MODE: Require valid student ID and clubId
         if (!student.id || !student.clubId) {
-            console.error('[MysteryChallenge] Missing student.id or clubId');
+            console.error('[MysteryChallenge] Missing student.id or clubId - student object:', student);
             setSubmittingMystery(false);
             return;
         }
