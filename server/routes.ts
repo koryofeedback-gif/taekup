@@ -514,8 +514,7 @@ export function registerRoutes(app: Express) {
               SELECT 
                 COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = ${studentId}::uuid), 0) +
                 COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = ${studentId}::uuid), 0) +
-                COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${studentId}::uuid), 0) +
-                COALESCE((SELECT SUM(xp_awarded) FROM daily_challenges WHERE student_id = ${studentId}::uuid AND completed = true), 0)
+                COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${studentId}::uuid), 0)
                 AS total
             `);
             const calculatedXp = parseInt((xpResult as any[])[0]?.total || '0', 10);

@@ -175,8 +175,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
             `SELECT 
               COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
               COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
-              COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0) +
-              COALESCE((SELECT SUM(xp_awarded) FROM daily_challenges WHERE student_id = $1::uuid AND completed = true), 0)
+              COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0)
               AS total`,
             [studentId]
           );
@@ -2128,8 +2127,7 @@ async function handleXpSync(req: VercelRequest, res: VercelResponse) {
       SELECT 
         COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
         COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
-        COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid AND status = 'APPROVED'), 0) +
-        COALESCE((SELECT SUM(xp_awarded) FROM daily_challenges WHERE student_id = $1::uuid AND completed = true), 0)
+        COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0)
       AS calculated_xp
     `, [studentId]);
 
