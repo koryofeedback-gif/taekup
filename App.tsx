@@ -853,9 +853,20 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     const { studentId: urlStudentId } = useParams<{ studentId: string }>();
     const navigate = useNavigate();
     
-    // FORCE OVERWRITE FOR GOLGOL - Hardcoded DB UUID to fix ghost ID issue
-    const studentId = "e5e0e0a3-9420-46d8-97d4-24e83e4397f7";
-    localStorage.setItem("taekup_student_id", studentId);
+    // Get or generate student ID from localStorage
+    const getOrCreateStudentId = (): string => {
+        const stored = localStorage.getItem("taekup_student_id");
+        if (stored && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stored)) {
+            return stored;
+        }
+        // Generate new UUID
+        const newId = crypto.randomUUID();
+        localStorage.setItem("taekup_student_id", newId);
+        console.log('[ParentPortal] Generated new student ID:', newId);
+        return newId;
+    };
+    
+    const studentId = urlStudentId || parentStudentId || getOrCreateStudentId();
     
     const [resolvedStudentId, setResolvedStudentId] = React.useState<string | null>(studentId);
     
@@ -863,12 +874,10 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
 
     const effectiveStudentId = studentId;
     
-    // Check if ID looks like a database UUID (not a wizard-generated ID like "student-123-xxx")
+    // Check if ID looks like a database UUID
     const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     
-    // DISABLED: Resolution logic removed - using hardcoded ID for golgol
-    // The hardcoded studentId = "e5e0e0a3-9420-46d8-97d4-24e83e4397f7" is used directly
-    console.log('[ParentPortal] Using HARDCODED student ID:', studentId);
+    console.log('[ParentPortal] Using student ID:', studentId);
     
     // Use resolved UUID if available, otherwise fall back to effectiveStudentId
     const finalStudentId = resolvedStudentId || effectiveStudentId;

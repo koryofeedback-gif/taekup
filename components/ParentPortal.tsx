@@ -3667,7 +3667,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <div className="space-y-6 pb-20">
                     <div className="bg-gradient-to-r from-green-800 to-teal-900 p-6 rounded-xl shadow-lg relative overflow-hidden">
                         <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-2 -mt-2">🏠</div>
-                        <h3 className="font-bold text-white text-xl relative z-10">The Home Dojo v2</h3>
+                        <h3 className="font-bold text-white text-xl relative z-10">The Home Dojo</h3>
                         <p className="text-sm text-green-100 relative z-10 mt-1">
                             Building character starts at home.
                         </p>

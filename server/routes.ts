@@ -2858,15 +2858,30 @@ export function registerRoutes(app: Express) {
       }
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (studentId === 'demo' || !uuidRegex.test(studentId)) {
-        return res.json({
-          success: true,
-          xpAwarded: HABIT_XP,
-          message: `Habit completed! +${HABIT_XP} XP earned. (Demo Mode)`
-        });
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid student ID format' });
       }
 
       const today = new Date().toISOString().split('T')[0];
+
+      // AUTO-CREATE: Check if student exists, if not create them
+      const studentCheck = await db.execute(sql`SELECT id FROM students WHERE id = ${studentId}::uuid`);
+      if ((studentCheck as any[]).length === 0) {
+        // Get first available club for default assignment
+        const clubResult = await db.execute(sql`SELECT id FROM clubs ORDER BY created_at ASC LIMIT 1`);
+        const defaultClubId = (clubResult as any[])[0]?.id;
+        
+        if (!defaultClubId) {
+          return res.status(400).json({ error: 'No clubs available. Please contact support.' });
+        }
+        
+        // Auto-create the student
+        await db.execute(sql`
+          INSERT INTO students (id, club_id, name, total_xp, created_at, updated_at)
+          VALUES (${studentId}::uuid, ${defaultClubId}::uuid, 'New Student', 0, NOW(), NOW())
+        `);
+        console.log(`[HomeDojo] Auto-created student ${studentId} in club ${defaultClubId}`);
+      }
 
       const existing = await db.execute(sql`
         SELECT id FROM habit_logs WHERE student_id = ${studentId}::uuid AND habit_name = ${habitName} AND log_date = ${today}::date
