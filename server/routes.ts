@@ -2251,24 +2251,31 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/daily-challenge/submit', async (req: Request, res: Response) => {
     try {
+      console.log('📥 [DailyChallenge] Received Payload:', JSON.stringify(req.body, null, 2));
+      
       const { challengeId, studentId, clubId, answer, selectedIndex } = req.body;
       
       // Only require studentId and challengeId - clubId is optional for home users
       if (!challengeId || !studentId) {
+        console.error('❌ [DailyChallenge] Missing required fields:', { challengeId, studentId });
         return res.status(400).json({ error: 'challengeId and studentId are required' });
       }
 
-      // STRICT MODE: Validate UUIDs - NO DEMO MODE
+      // Validate UUIDs - clubId is optional and ignored if invalid
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      
       if (!uuidRegex.test(studentId)) {
+        console.error('❌ [DailyChallenge] Invalid studentId:', studentId);
         return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
       }
-      if (clubId && !uuidRegex.test(clubId)) {
-        return res.status(400).json({ error: 'Invalid clubId - must be a valid UUID' });
-      }
       if (!uuidRegex.test(challengeId)) {
+        console.error('❌ [DailyChallenge] Invalid challengeId:', challengeId);
         return res.status(400).json({ error: 'Invalid challengeId - must be a valid UUID' });
       }
+      
+      // clubId: Accept valid UUID or ignore if invalid/missing (home users)
+      const validClubId = clubId && uuidRegex.test(clubId) ? clubId : null;
+      console.log('📋 [DailyChallenge] Validated:', { studentId, challengeId, validClubId, selectedIndex });
 
       // Get challenge details
       const challengeResult = await db.execute(sql`
@@ -2308,9 +2315,10 @@ export function registerRoutes(app: Express) {
       }
 
       // Create submission (clubId is optional for home users)
+      console.log('💾 [DailyChallenge] Inserting submission:', { challengeId, studentId, validClubId, isCorrect, xpAwarded });
       await db.execute(sql`
         INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded, completed_at)
-        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${clubId ? sql`${clubId}::uuid` : sql`NULL`}, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
+        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${validClubId ? sql`${validClubId}::uuid` : sql`NULL`}, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
       `);
 
       // Award XP to student
@@ -2332,8 +2340,9 @@ export function registerRoutes(app: Express) {
           : `Good try! You earned ${xpAwarded} XP for participating.`
       });
     } catch (error: any) {
-      console.error('[DailyChallenge] Submit error:', error.message);
-      res.status(500).json({ error: 'Failed to submit challenge' });
+      console.error('❌ DAILY CHALLENGE ERROR:', error);
+      console.error('❌ Error stack:', error.stack);
+      res.status(500).json({ error: 'Failed to submit challenge', details: error.message });
     }
   });
 
