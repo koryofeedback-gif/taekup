@@ -104,8 +104,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         fetchFamilyChallengeStatus();
     }, [student.id]);
     
-    // Submit family challenge to backend
-    const submitFamilyChallenge = async (challengeId: string, xpAwarded: number, won: boolean) => {
+    // Submit family challenge to backend (XP calculated server-side)
+    const submitFamilyChallenge = async (challengeId: string, won: boolean) => {
         if (!student.id) return { success: false };
         
         setFamilyChallengeSubmitting(true);
@@ -116,8 +116,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 body: JSON.stringify({
                     studentId: student.id,
                     challengeId,
-                    xpAwarded,
-                    won
+                    won  // XP is calculated server-side to prevent tampering
                 })
             });
             
@@ -3599,13 +3598,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             onClick={async () => {
                                                                 if (!myScore || !parentScore) return;
                                                                 const won = parseInt(myScore) > parseInt(parentScore);
-                                                                const multiplier = getStreakMultiplier();
-                                                                const xpEarned = won 
-                                                                    ? Math.round(challenge.xp * multiplier)
-                                                                    : Math.round(challenge.xp * 0.5 * multiplier);
                                                                 
-                                                                // Submit to backend for persistence
-                                                                const result = await submitFamilyChallenge(challenge.id, xpEarned, won);
+                                                                // Submit to backend - XP calculated server-side
+                                                                const result = await submitFamilyChallenge(challenge.id, won);
                                                                 
                                                                 if (result.alreadyCompleted) {
                                                                     setFamilyResult({ show: true, won: false, xp: 0, challengeName: challenge.name + ' (already completed today)' });
@@ -3617,20 +3612,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 }
                                                                 
                                                                 if (result.success) {
+                                                                    const xpAwarded = result.xpAwarded || 0;
                                                                     setRivalStats(prev => ({
                                                                         ...prev,
                                                                         wins: won ? prev.wins + 1 : prev.wins,
                                                                         losses: won ? prev.losses : prev.losses + 1,
                                                                         streak: won ? prev.streak + 1 : 0,
-                                                                        xp: prev.xp + (result.xpAwarded || xpEarned)
+                                                                        xp: prev.xp + xpAwarded
                                                                     }));
                                                                     
                                                                     if (won) setDailyStreak(prev => prev + 1);
                                                                     setFamilyChallengesCompleted(prev => prev + 1);
                                                                     setLastChallengeDate(new Date().toISOString().split('T')[0]);
                                                                     
-                                                                    // Show result feedback
-                                                                    setFamilyResult({ show: true, won, xp: result.xpAwarded || xpEarned, challengeName: challenge.name });
+                                                                    // Show result feedback with server-calculated XP
+                                                                    setFamilyResult({ show: true, won, xp: xpAwarded, challengeName: challenge.name });
                                                                 }
                                                                 
                                                                 // Auto-hide after 4 seconds

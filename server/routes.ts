@@ -3028,10 +3028,19 @@ export function registerRoutes(app: Express) {
   // FAMILY CHALLENGES - Trust System (Parent Verified)
   // =====================================================
 
+  // Server-side family challenge definitions (canonical XP values)
+  const FAMILY_CHALLENGES: Record<string, { name: string; baseXp: number }> = {
+    'family_pushups': { name: 'Push-up Battle', baseXp: 25 },
+    'family_plank': { name: 'Plank Hold', baseXp: 30 },
+    'family_kicks': { name: 'Kick Count', baseXp: 35 },
+    'family_balance': { name: 'Balance Stand', baseXp: 25 },
+    'family_reaction': { name: 'Reaction Time', baseXp: 20 }
+  };
+
   // Submit a family challenge completion
   app.post('/api/family-challenges/submit', async (req: Request, res: Response) => {
     try {
-      const { studentId, challengeId, xpAwarded, won } = req.body;
+      const { studentId, challengeId, won } = req.body;
 
       if (!studentId || !challengeId) {
         return res.status(400).json({ error: 'studentId and challengeId are required' });
@@ -3043,8 +3052,15 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
       }
 
+      // SERVER-SIDE XP CALCULATION - prevent client tampering
+      const challenge = FAMILY_CHALLENGES[challengeId];
+      if (!challenge) {
+        return res.status(400).json({ error: 'Invalid challengeId' });
+      }
+      
+      const baseXp = challenge.baseXp;
+      const xp = won ? baseXp : Math.round(baseXp * 0.5); // Win = full XP, Loss = 50%
       const today = new Date().toISOString().split('T')[0];
-      const xp = xpAwarded || 0;
 
       // Check if already completed today (1x daily limit per challenge)
       const existing = await db.execute(sql`
