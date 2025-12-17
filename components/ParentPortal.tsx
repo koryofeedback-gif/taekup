@@ -78,19 +78,68 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [activeFamilyChallenge, setActiveFamilyChallenge] = useState<string | null>(null);
     const [familyResult, setFamilyResult] = useState<{ show: boolean; won: boolean; xp: number; challengeName: string } | null>(null);
     
-    // Daily limit for family challenges - prevent XP farming
-    const [completedFamilyToday, setCompletedFamilyToday] = useState<string[]>(() => {
-        const today = new Date().toISOString().split('T')[0];
-        const stored = localStorage.getItem(`family_challenges_${student.id}_${today}`);
-        return stored ? JSON.parse(stored) : [];
-    });
+    // Daily limit for family challenges - prevent XP farming (now backed by database)
+    const [completedFamilyToday, setCompletedFamilyToday] = useState<string[]>([]);
+    const [familyChallengeSubmitting, setFamilyChallengeSubmitting] = useState(false);
     
-    // Save completed family challenges to localStorage
-    const markFamilyChallengeCompleted = (challengeId: string) => {
-        const today = new Date().toISOString().split('T')[0];
-        const updated = [...completedFamilyToday, challengeId];
-        setCompletedFamilyToday(updated);
-        localStorage.setItem(`family_challenges_${student.id}_${today}`, JSON.stringify(updated));
+    // Fetch family challenge status from backend on load
+    useEffect(() => {
+        const fetchFamilyChallengeStatus = async () => {
+            if (!student.id) return;
+            
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(student.id)) return;
+            
+            try {
+                const response = await fetch(`/api/family-challenges/status?studentId=${student.id}`);
+                const data = await response.json();
+                if (data.completedChallenges) {
+                    setCompletedFamilyToday(data.completedChallenges);
+                }
+            } catch (error) {
+                console.error('[FamilyChallenge] Failed to fetch status:', error);
+            }
+        };
+        
+        fetchFamilyChallengeStatus();
+    }, [student.id]);
+    
+    // Submit family challenge to backend
+    const submitFamilyChallenge = async (challengeId: string, xpAwarded: number, won: boolean) => {
+        if (!student.id) return { success: false };
+        
+        setFamilyChallengeSubmitting(true);
+        try {
+            const response = await fetch('/api/family-challenges/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    challengeId,
+                    xpAwarded,
+                    won
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.alreadyCompleted) {
+                setCompletedFamilyToday(prev => prev.includes(challengeId) ? prev : [...prev, challengeId]);
+                return { success: false, alreadyCompleted: true };
+            }
+            
+            if (result.success) {
+                setCompletedFamilyToday(prev => [...prev, challengeId]);
+                return { success: true, xpAwarded: result.xpAwarded, newTotalXp: result.newTotalXp };
+            }
+            
+            return { success: false };
+        } catch (error) {
+            console.error('[FamilyChallenge] Submit error:', error);
+            return { success: false };
+        } finally {
+            setFamilyChallengeSubmitting(false);
+        }
     };
     
     // Check if a family challenge is already done today
@@ -3547,7 +3596,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             </div>
                                                         </div>
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={async () => {
                                                                 if (!myScore || !parentScore) return;
                                                                 const won = parseInt(myScore) > parseInt(parentScore);
                                                                 const multiplier = getStreakMultiplier();
@@ -3555,23 +3604,34 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     ? Math.round(challenge.xp * multiplier)
                                                                     : Math.round(challenge.xp * 0.5 * multiplier);
                                                                 
-                                                                setRivalStats(prev => ({
-                                                                    ...prev,
-                                                                    wins: won ? prev.wins + 1 : prev.wins,
-                                                                    losses: won ? prev.losses : prev.losses + 1,
-                                                                    streak: won ? prev.streak + 1 : 0,
-                                                                    xp: prev.xp + xpEarned
-                                                                }));
+                                                                // Submit to backend for persistence
+                                                                const result = await submitFamilyChallenge(challenge.id, xpEarned, won);
                                                                 
-                                                                if (won) setDailyStreak(prev => prev + 1);
-                                                                setFamilyChallengesCompleted(prev => prev + 1);
-                                                                setLastChallengeDate(new Date().toISOString().split('T')[0]);
+                                                                if (result.alreadyCompleted) {
+                                                                    setFamilyResult({ show: true, won: false, xp: 0, challengeName: challenge.name + ' (already completed today)' });
+                                                                    setTimeout(() => setFamilyResult(null), 4000);
+                                                                    setActiveFamilyChallenge(null);
+                                                                    setMyScore('');
+                                                                    setParentScore('');
+                                                                    return;
+                                                                }
                                                                 
-                                                                // Show result feedback
-                                                                setFamilyResult({ show: true, won, xp: xpEarned, challengeName: challenge.name });
-                                                                
-                                                                // Mark challenge as completed today (daily limit)
-                                                                markFamilyChallengeCompleted(challenge.id);
+                                                                if (result.success) {
+                                                                    setRivalStats(prev => ({
+                                                                        ...prev,
+                                                                        wins: won ? prev.wins + 1 : prev.wins,
+                                                                        losses: won ? prev.losses : prev.losses + 1,
+                                                                        streak: won ? prev.streak + 1 : 0,
+                                                                        xp: prev.xp + (result.xpAwarded || xpEarned)
+                                                                    }));
+                                                                    
+                                                                    if (won) setDailyStreak(prev => prev + 1);
+                                                                    setFamilyChallengesCompleted(prev => prev + 1);
+                                                                    setLastChallengeDate(new Date().toISOString().split('T')[0]);
+                                                                    
+                                                                    // Show result feedback
+                                                                    setFamilyResult({ show: true, won, xp: result.xpAwarded || xpEarned, challengeName: challenge.name });
+                                                                }
                                                                 
                                                                 // Auto-hide after 4 seconds
                                                                 setTimeout(() => setFamilyResult(null), 4000);
@@ -3580,10 +3640,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 setMyScore('');
                                                                 setParentScore('');
                                                             }}
-                                                            disabled={!myScore || !parentScore}
+                                                            disabled={!myScore || !parentScore || familyChallengeSubmitting}
                                                             className="w-full bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white font-bold py-2 rounded-lg transition-colors"
                                                         >
-                                                            Submit Results
+                                                            {familyChallengeSubmitting ? 'Submitting...' : 'Submit Results'}
                                                         </button>
                                                     </div>
                                                 )}

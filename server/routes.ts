@@ -3023,4 +3023,109 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to delete habit' });
     }
   });
+
+  // =====================================================
+  // FAMILY CHALLENGES - Trust System (Parent Verified)
+  // =====================================================
+
+  // Submit a family challenge completion
+  app.post('/api/family-challenges/submit', async (req: Request, res: Response) => {
+    try {
+      const { studentId, challengeId, xpAwarded, won } = req.body;
+
+      if (!studentId || !challengeId) {
+        return res.status(400).json({ error: 'studentId and challengeId are required' });
+      }
+
+      // Validate UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const xp = xpAwarded || 0;
+
+      // Check if already completed today (1x daily limit per challenge)
+      const existing = await db.execute(sql`
+        SELECT id FROM family_logs 
+        WHERE student_id = ${studentId}::uuid 
+        AND challenge_id = ${challengeId} 
+        AND completed_at = ${today}::date
+      `);
+
+      if ((existing as any[]).length > 0) {
+        return res.status(429).json({
+          error: 'Already completed',
+          message: 'You already completed this family challenge today!',
+          alreadyCompleted: true
+        });
+      }
+
+      // Insert into family_logs
+      await db.execute(sql`
+        INSERT INTO family_logs (student_id, challenge_id, xp_awarded, completed_at)
+        VALUES (${studentId}::uuid, ${challengeId}, ${xp}, ${today}::date)
+      `);
+
+      // Update student's total_xp
+      const updateResult = await db.execute(sql`
+        UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xp}, updated_at = NOW()
+        WHERE id = ${studentId}::uuid
+        RETURNING total_xp
+      `);
+
+      const newTotalXp = (updateResult as any[])[0]?.total_xp || 0;
+
+      console.log(`[FamilyChallenge] "${challengeId}" completed: +${xp} XP, won: ${won}, new total_xp: ${newTotalXp}`);
+
+      res.json({
+        success: true,
+        xpAwarded: xp,
+        newTotalXp,
+        won: won || false,
+        message: `Family challenge completed! +${xp} XP earned.`
+      });
+    } catch (error: any) {
+      console.error('[FamilyChallenge] Submit error:', error.message);
+      res.status(500).json({ error: 'Failed to submit family challenge' });
+    }
+  });
+
+  // Get family challenge status for today
+  app.get('/api/family-challenges/status', async (req: Request, res: Response) => {
+    try {
+      const studentId = req.query.studentId as string;
+
+      if (!studentId) {
+        return res.status(400).json({ error: 'studentId is required' });
+      }
+
+      // Validate UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      // Get all completed family challenges for today
+      const result = await db.execute(sql`
+        SELECT challenge_id, xp_awarded FROM family_logs 
+        WHERE student_id = ${studentId}::uuid 
+        AND completed_at = ${today}::date
+      `);
+
+      const completedChallenges = (result as any[]).map(r => r.challenge_id);
+      const totalXpToday = (result as any[]).reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
+
+      res.json({
+        completedChallenges,
+        totalXpToday
+      });
+    } catch (error: any) {
+      console.error('[FamilyChallenge] Status error:', error.message);
+      res.status(500).json({ error: 'Failed to get family challenge status' });
+    }
+  });
 }
