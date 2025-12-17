@@ -1786,23 +1786,31 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
 async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
-  const { challengeId, studentId, clubId, answer, selectedIndex } = parseBody(req);
+  const body = parseBody(req);
+  console.log('📥 [DailyChallenge] Received Payload:', JSON.stringify(body, null, 2));
   
-  if (!challengeId || !studentId || !clubId) {
-    return res.status(400).json({ error: 'challengeId, studentId, and clubId are required' });
+  const { challengeId, studentId, clubId, answer, selectedIndex } = body;
+  
+  // Only require studentId and challengeId - clubId is optional for home users
+  if (!challengeId || !studentId) {
+    console.error('❌ [DailyChallenge] Missing required fields:', { challengeId, studentId });
+    return res.status(400).json({ error: 'challengeId and studentId are required' });
   }
 
-  // STRICT MODE: Validate all UUIDs - NO DEMO MODE
+  // Validate UUIDs - clubId is optional and ignored if invalid
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(studentId)) {
+    console.error('❌ [DailyChallenge] Invalid studentId:', studentId);
     return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
   }
-  if (!uuidRegex.test(clubId)) {
-    return res.status(400).json({ error: 'Invalid clubId - must be a valid UUID' });
-  }
   if (!uuidRegex.test(challengeId)) {
+    console.error('❌ [DailyChallenge] Invalid challengeId:', challengeId);
     return res.status(400).json({ error: 'Invalid challengeId - must be a valid UUID' });
   }
+  
+  // clubId: Accept valid UUID or set to null (home users)
+  const validClubId = clubId && uuidRegex.test(clubId) ? clubId : null;
+  console.log('📋 [DailyChallenge] Validated:', { studentId, challengeId, validClubId, selectedIndex });
 
   const client = await pool.connect();
   try {
@@ -1842,11 +1850,12 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
     const challengeXpReward = challenge.xp_reward || 50;
     const xpAwarded = isCorrect ? challengeXpReward : 0;
 
-    // Save submission record
+    // Save submission record (clubId is optional for home users)
+    console.log('💾 [DailyChallenge] Inserting submission:', { challengeId, studentId, validClubId, isCorrect, xpAwarded });
     await client.query(
       `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded)
-       VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6)`,
-      [challengeId, studentId, clubId, answer || String(selectedIndex), isCorrect, xpAwarded]
+       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)`,
+      [challengeId, studentId, validClubId, answer || String(selectedIndex), isCorrect, xpAwarded]
     );
 
     // Update student XP if correct
@@ -1866,8 +1875,9 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       message: isCorrect ? `Correct! +${xpAwarded} XP` : `Not quite! The correct answer was option ${correctIndex + 1}.`
     });
   } catch (error: any) {
-    console.error('[DailyChallenge] Submit error:', error.message);
-    return res.status(500).json({ error: 'Failed to submit challenge' });
+    console.error('🔥 FATAL SUBMIT ERROR:', error);
+    console.error('🔥 Error stack:', error.stack);
+    return res.status(500).json({ error: 'Failed to submit challenge', details: error.message });
   } finally {
     client.release();
   }
