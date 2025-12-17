@@ -506,6 +506,27 @@ export function registerRoutes(app: Express) {
             console.log('[Login] Fallback: Using first club student for parent:', studentId);
           }
         }
+        
+        // AUTO-SYNC XP: Recalculate total_xp from all XP sources on login
+        if (studentId) {
+          try {
+            const xpResult = await db.execute(sql`
+              SELECT 
+                COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = ${studentId}::uuid), 0) +
+                COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = ${studentId}::uuid), 0) +
+                COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${studentId}::uuid), 0) +
+                COALESCE((SELECT SUM(xp_awarded) FROM daily_challenges WHERE student_id = ${studentId}::uuid AND completed = true), 0)
+                AS total
+            `);
+            const calculatedXp = parseInt((xpResult as any[])[0]?.total || '0', 10);
+            
+            // Update student's total_xp to match actual logs
+            await db.execute(sql`UPDATE students SET total_xp = ${calculatedXp} WHERE id = ${studentId}::uuid`);
+            console.log('[Login] XP synced for student:', studentId, '-> total_xp:', calculatedXp);
+          } catch (xpError: any) {
+            console.error('[Login] XP sync error (non-fatal):', xpError.message);
+          }
+        }
       }
 
       await db.execute(sql`

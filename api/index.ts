@@ -167,6 +167,31 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
           console.log('[Login] No student found for parent email:', user.email);
         }
       }
+      
+      // AUTO-SYNC XP: Recalculate total_xp from all XP sources on login
+      if (studentId) {
+        try {
+          const xpResult = await client.query(
+            `SELECT 
+              COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
+              COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
+              COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0) +
+              COALESCE((SELECT SUM(xp_awarded) FROM daily_challenges WHERE student_id = $1::uuid AND completed = true), 0)
+              AS total`,
+            [studentId]
+          );
+          const calculatedXp = parseInt(xpResult.rows[0]?.total || '0', 10);
+          
+          // Update student's total_xp to match actual logs
+          await client.query(
+            `UPDATE students SET total_xp = $1 WHERE id = $2::uuid`,
+            [calculatedXp, studentId]
+          );
+          console.log('[Login] XP synced for student:', studentId, '-> total_xp:', calculatedXp);
+        } catch (xpError: any) {
+          console.error('[Login] XP sync error (non-fatal):', xpError.message);
+        }
+      }
     }
 
     return res.json({
@@ -2227,7 +2252,7 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     return res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp, lifetimeXp: totalXp, streak });
   } catch (error: any) {
     console.error('[HomeDojo] Status fetch error:', error.message);
-    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp: 0, streak: 0 });
+    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
   } finally {
     client.release();
   }
