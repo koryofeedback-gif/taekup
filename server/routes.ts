@@ -355,6 +355,86 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Simple name-based login - finds existing student or creates new one
+  app.post('/api/login-by-name', async (req: Request, res: Response) => {
+    try {
+      const { name } = req.body;
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({ error: 'Name is required' });
+      }
+      
+      const studentName = name.trim();
+      
+      // Step A: Look up existing student by name
+      const existingResult = await db.execute(sql`
+        SELECT id, name, total_xp, club_id FROM students WHERE LOWER(name) = LOWER(${studentName}) LIMIT 1
+      `);
+      
+      if ((existingResult as any[]).length > 0) {
+        // Step B: Found existing student - return their ID
+        const student = (existingResult as any[])[0];
+        console.log(`[LoginByName] Found existing student: ${student.name} (${student.id}), XP: ${student.total_xp}`);
+        
+        // Sync XP from logs
+        const xpResult = await db.execute(sql`
+          SELECT 
+            COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = ${student.id}::uuid), 0) +
+            COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = ${student.id}::uuid), 0) +
+            COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${student.id}::uuid), 0)
+            AS total
+        `);
+        const calculatedXp = parseInt((xpResult as any[])[0]?.total || '0', 10);
+        await db.execute(sql`UPDATE students SET total_xp = ${calculatedXp} WHERE id = ${student.id}::uuid`);
+        
+        return res.json({
+          success: true,
+          isNew: false,
+          student: {
+            id: student.id,
+            name: student.name,
+            totalXp: calculatedXp,
+            clubId: student.club_id
+          }
+        });
+      }
+      
+      // Step C: No existing student - create new one
+      const clubResult = await db.execute(sql`SELECT id FROM clubs LIMIT 1`);
+      let clubId: string;
+      
+      if ((clubResult as any[]).length > 0) {
+        clubId = (clubResult as any[])[0].id;
+      } else {
+        const newClubResult = await db.execute(sql`
+          INSERT INTO clubs (name, owner_email, status, trial_status, created_at) 
+          VALUES ('Demo Dojo', 'demo@taekup.com', 'active', 'active', NOW()) RETURNING id
+        `);
+        clubId = (newClubResult as any[])[0].id;
+      }
+      
+      const insertResult = await db.execute(sql`
+        INSERT INTO students (club_id, name, belt, total_xp, created_at)
+        VALUES (${clubId}::uuid, ${studentName}, 'White', 0, NOW()) RETURNING id, name, total_xp, club_id
+      `);
+      const newStudent = (insertResult as any[])[0];
+      console.log(`[LoginByName] Created new student: ${newStudent.name} (${newStudent.id})`);
+      
+      return res.json({
+        success: true,
+        isNew: true,
+        student: {
+          id: newStudent.id,
+          name: newStudent.name,
+          totalXp: 0,
+          clubId: newStudent.club_id
+        }
+      });
+    } catch (error: any) {
+      console.error('[LoginByName] Error:', error.message);
+      return res.status(500).json({ error: 'Login failed. Please try again.' });
+    }
+  });
+
   app.post('/api/login', async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;

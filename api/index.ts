@@ -204,6 +204,95 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
   } finally { client.release(); }
 }
 
+// Simple name-based login - finds existing student or creates new one
+async function handleLoginByName(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { name } = parseBody(req);
+  if (!name || name.trim().length === 0) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+  
+  const studentName = name.trim();
+  const client = await pool.connect();
+  
+  try {
+    // Step A: Look up existing student by name
+    const existingResult = await client.query(
+      `SELECT id, name, total_xp, club_id FROM students WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+      [studentName]
+    );
+    
+    if (existingResult.rows.length > 0) {
+      // Step B: Found existing student - return their ID
+      const student = existingResult.rows[0];
+      console.log(`[LoginByName] Found existing student: ${student.name} (${student.id}), XP: ${student.total_xp}`);
+      
+      // Sync XP from logs
+      const xpResult = await client.query(
+        `SELECT 
+          COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0)
+          AS total`,
+        [student.id]
+      );
+      const calculatedXp = parseInt(xpResult.rows[0]?.total || '0', 10);
+      await client.query(`UPDATE students SET total_xp = $1 WHERE id = $2::uuid`, [calculatedXp, student.id]);
+      
+      return res.json({
+        success: true,
+        isNew: false,
+        student: {
+          id: student.id,
+          name: student.name,
+          totalXp: calculatedXp,
+          clubId: student.club_id
+        }
+      });
+    }
+    
+    // Step C: No existing student - create new one
+    // Use the first available club (or create a demo club if needed)
+    let clubId: string;
+    const clubResult = await client.query(`SELECT id FROM clubs LIMIT 1`);
+    if (clubResult.rows.length > 0) {
+      clubId = clubResult.rows[0].id;
+    } else {
+      // Create a demo club if none exists
+      const newClubResult = await client.query(
+        `INSERT INTO clubs (name, owner_email, status, trial_status, created_at) 
+         VALUES ('Demo Dojo', 'demo@taekup.com', 'active', 'active', NOW()) RETURNING id`
+      );
+      clubId = newClubResult.rows[0].id;
+    }
+    
+    const insertResult = await client.query(
+      `INSERT INTO students (club_id, name, belt, total_xp, created_at)
+       VALUES ($1::uuid, $2, 'White', 0, NOW()) RETURNING id, name, total_xp, club_id`,
+      [clubId, studentName]
+    );
+    const newStudent = insertResult.rows[0];
+    console.log(`[LoginByName] Created new student: ${newStudent.name} (${newStudent.id})`);
+    
+    return res.json({
+      success: true,
+      isNew: true,
+      student: {
+        id: newStudent.id,
+        name: newStudent.name,
+        totalXp: 0,
+        clubId: newStudent.club_id
+      }
+    });
+  } catch (error: any) {
+    console.error('[LoginByName] Error:', error.message);
+    return res.status(500).json({ error: 'Login failed. Please try again.' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleSignup(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -2625,6 +2714,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (path === '/login' || path === '/login/') return await handleLogin(req, res);
+    if (path === '/login-by-name' || path === '/login-by-name/') return await handleLoginByName(req, res);
     if (path === '/signup' || path === '/signup/') return await handleSignup(req, res);
     if (path === '/forgot-password' || path === '/forgot-password/') return await handleForgotPassword(req, res);
     if (path === '/reset-password' || path === '/reset-password/') return await handleResetPassword(req, res);
