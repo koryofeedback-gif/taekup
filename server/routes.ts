@@ -3028,13 +3028,23 @@ export function registerRoutes(app: Express) {
   // FAMILY CHALLENGES - Trust System (Parent Verified)
   // =====================================================
 
-  // Server-side family challenge definitions (canonical XP values)
+  // Server-side family challenge definitions (canonical XP values - must match frontend)
   const FAMILY_CHALLENGES: Record<string, { name: string; baseXp: number }> = {
-    'family_pushups': { name: 'Push-up Battle', baseXp: 25 },
-    'family_plank': { name: 'Plank Hold', baseXp: 30 },
-    'family_kicks': { name: 'Kick Count', baseXp: 35 },
-    'family_balance': { name: 'Balance Stand', baseXp: 25 },
-    'family_reaction': { name: 'Reaction Time', baseXp: 20 }
+    // HARD tier (100+ XP)
+    'family_pushups': { name: 'Parent vs Kid: Pushups', baseXp: 100 },
+    'family_plank': { name: 'Family Plank-Off', baseXp: 120 },
+    'family_squat_hold': { name: 'The Squat Showdown', baseXp: 100 },
+    // MEDIUM tier (80-99 XP)
+    'family_statue': { name: 'The Statue Challenge', baseXp: 80 },
+    'family_kicks': { name: 'Kick Count Battle', baseXp: 90 },
+    'family_balance': { name: 'Flamingo Stand-Off', baseXp: 80 },
+    'family_situps': { name: 'Sit-Up Showdown', baseXp: 90 },
+    'family_reaction': { name: 'Reaction Time Test', baseXp: 85 },
+    'family_mirror': { name: 'Mirror Challenge', baseXp: 75 },
+    // EASY tier (50-79 XP)
+    'family_dance': { name: 'Martial Arts Dance-Off', baseXp: 70 },
+    'family_stretch': { name: 'Stretch Together', baseXp: 60 },
+    'family_breathing': { name: 'Calm Warrior Breathing', baseXp: 50 }
   };
 
   // Submit a family challenge completion
