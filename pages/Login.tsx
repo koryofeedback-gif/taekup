@@ -13,61 +13,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [quickName, setQuickName] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isQuickLoading, setIsQuickLoading] = useState(false);
-
-    // Quick Login by Name - finds existing student or creates new one
-    const handleQuickLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!quickName.trim()) {
-            setError('Please enter your name.');
-            return;
-        }
-        
-        setError('');
-        setIsQuickLoading(true);
-        
-        try {
-            const response = await fetch('/api/login-by-name', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: quickName.trim() })
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok || !data.success) {
-                setError(data.error || 'Login failed. Please try again.');
-                setIsQuickLoading(false);
-                return;
-            }
-            
-            const student = data.student;
-            console.log('[QuickLogin]', data.isNew ? 'Created new' : 'Found existing', 'student:', student.name, student.id);
-            
-            // Save to localStorage
-            localStorage.setItem('taekup_user_type', 'parent');
-            localStorage.setItem('taekup_user_name', student.name);
-            localStorage.setItem('taekup_student_id', student.id);
-            localStorage.setItem('taekup_club_id', student.clubId);
-            
-            // Clear impersonation data
-            sessionStorage.removeItem('impersonationToken');
-            sessionStorage.removeItem('impersonationClubId');
-            
-            // Call the success handler
-            await onLoginSuccess('parent', student.name, student.id, { clubId: student.clubId });
-            
-            // Redirect to parent portal
-            window.location.href = `/app/parent/${student.id}`;
-        } catch (err: any) {
-            console.error('Quick login error:', err);
-            setError('Network error. Please try again.');
-            setIsQuickLoading(false);
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -251,28 +198,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                     >
                         Forgot your password?
                     </Link>
-                </div>
-                
-                <div className="mt-6 pt-6 border-t border-gray-700">
-                    <p className="text-center text-gray-400 text-sm mb-4">Quick Access (Demo Mode)</p>
-                    <form onSubmit={handleQuickLogin} className="space-y-3">
-                        <input
-                            type="text"
-                            value={quickName}
-                            onChange={e => setQuickName(e.target.value)}
-                            className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-green-500 outline-none"
-                            placeholder="Enter your name (e.g., golgol)"
-                            disabled={isQuickLoading}
-                        />
-                        <button
-                            type="submit"
-                            disabled={isQuickLoading}
-                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                            {isQuickLoading ? 'Logging in...' : 'Quick Login by Name'}
-                        </button>
-                    </form>
-                    <p className="text-center text-gray-500 text-xs mt-2">Your progress will be saved and restored on next login</p>
                 </div>
                 
                 <div className="mt-6 pt-6 border-t border-gray-700">
