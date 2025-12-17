@@ -731,10 +731,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             });
             const apiData = await res.json();
             
-            // DEBUG: Alert on API failure
+            // Log API failures (no blocking alerts)
             if (!res.ok) {
-                alert("SAVE FAILED:\n" + (apiData.error || 'Unknown error') + "\n\nStudent ID: " + studentId);
-                console.error('[HomeDojo] API Error:', apiData);
+                console.error('[HomeDojo] API Error:', apiData.error || 'Unknown error', 'Student ID:', studentId);
                 // Revert optimistic updates
                 setHomeDojoChecks(prev => ({ ...prev, [habitId]: false }));
                 if (!wasAtLimit) {
@@ -779,8 +778,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const handleCreateCustomHabit = async () => {
         if (!customHabitQuestion.trim()) return;
         
+        // Generate a stable ID based on the question text (slugified)
+        const stableId = 'custom_' + customHabitQuestion.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 30);
+        
         const newHabit: Habit = {
-            id: 'custom_' + Date.now(),
+            id: stableId,
             question: customHabitQuestion.trim(),
             category: 'Custom',
             icon: customHabitIcon || '✨',
