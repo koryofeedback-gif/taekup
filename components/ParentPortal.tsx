@@ -662,10 +662,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setHabitXpToday(data.totalXpToday || 0);
                     setAtDailyLimit((data.totalXpToday || 0) >= (data.dailyXpCap || 60));
                     
-                    // Sync rivalStats XP from database lifetime_xp (source of truth)
-                    if (typeof data.lifetimeXp === 'number') {
-                        setRivalStats(prev => ({ ...prev, xp: data.lifetimeXp }));
-                        console.log('[HomeDojo] XP hydrated from DB:', data.lifetimeXp);
+                    // Sync XP from database totalXp (single source of truth)
+                    const dbXp = data.totalXp ?? data.lifetimeXp ?? 0;
+                    setRivalStats(prev => ({ ...prev, xp: dbXp }));
+                    console.log('[HomeDojo] XP hydrated from DB:', dbXp);
+                    
+                    // Sync streak from database (calculated from habit_logs)
+                    if (typeof data.streak === 'number') {
+                        setDailyStreak(data.streak);
+                        console.log('[HomeDojo] Streak hydrated from DB:', data.streak);
                     }
                 }
                 
@@ -2179,11 +2184,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             .sort((a, b) => b.displayXP - a.displayXP)
             .map((s, i) => ({ ...s, rank: i + 1 }));
         
-        // Calculate All-Time XP leaderboard (lifetime XP)
+        // Calculate All-Time XP leaderboard (use totalXP or hydrated rivalStats.xp for current student)
         const allTimeLeaderboard = allStudentsForLeaderboard
             .map(s => ({
                 ...s,
-                displayXP: s.lifetimeXp || s.rivalsStats?.xp || 0,
+                // For current student, use hydrated rivalStats.xp; for others use their stored XP
+                displayXP: s.id === student.id 
+                    ? (rivalStats.xp || s.totalXP || s.lifetimeXp || 0)
+                    : (s.totalXP || s.lifetimeXp || s.rivalsStats?.xp || 0),
                 isYou: s.id === student.id
             }))
             .sort((a, b) => b.displayXP - a.displayXP)
@@ -2415,11 +2423,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="text-[10px] text-gray-400 uppercase">Rank</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-2xl font-black text-purple-400">{(student.lifetimeXp || 0) + (rivalStats.xp || 0)}</div>
+                                <div className="text-2xl font-black text-purple-400">{rivalStats.xp || student.totalXP || 0}</div>
                                 <div className="text-[10px] text-gray-400 uppercase">Total XP</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-2xl font-black text-yellow-400">{rivalStats.streak}🔥</div>
+                                <div className="text-2xl font-black text-yellow-400">{dailyStreak}🔥</div>
                                 <div className="text-[10px] text-gray-400 uppercase">Streak</div>
                             </div>
                         </div>

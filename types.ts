@@ -225,6 +225,7 @@ export interface Student {
   rivalsStats?: RivalsStats; // Dojang Rivals engagement data
   completedContentIds?: string[]; // IDs of completed curriculum content for XP tracking
   lifetimeXp?: number; // Normalized XP for Dojang Rivals (never resets)
+  totalXP?: number; // Database total_xp - single source of truth for all XP
 }
 
 // Holiday Schedule Types for Black Belt Time Machine accuracy

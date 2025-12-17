@@ -2081,6 +2081,104 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// Self-healing XP Sync - recalculates total_xp from all log tables
+async function handleXpSync(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { studentId } = parseBody(req);
+
+  if (!studentId) {
+    return res.status(400).json({ error: 'studentId is required' });
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+  }
+
+  const client = await pool.connect();
+  try {
+    // Calculate true total from all XP sources
+    const result = await client.query(`
+      SELECT 
+        COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid AND status = 'APPROVED'), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM daily_challenges WHERE student_id = $1::uuid AND completed = true), 0)
+      AS calculated_xp
+    `, [studentId]);
+
+    const calculatedXp = parseInt(result.rows[0]?.calculated_xp || '0');
+
+    // Update student's total_xp to match calculated value
+    const updateResult = await client.query(
+      `UPDATE students SET total_xp = $1, updated_at = NOW() WHERE id = $2::uuid RETURNING total_xp`,
+      [calculatedXp, studentId]
+    );
+
+    const newTotalXp = updateResult.rows[0]?.total_xp || 0;
+    console.log(`[XP Sync] Student ${studentId}: synced to ${newTotalXp} XP`);
+
+    return res.json({ success: true, totalXp: newTotalXp, synced: true });
+  } catch (error: any) {
+    console.error('[XP Sync] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to sync XP' });
+  } finally {
+    client.release();
+  }
+}
+
+// Calculate streak from habit_logs - consecutive days with at least 1 habit completed
+async function calculateStreak(client: any, studentId: string): Promise<number> {
+  try {
+    // Get all distinct dates where student completed at least 1 habit, sorted DESC
+    const result = await client.query(
+      `SELECT DISTINCT log_date FROM habit_logs WHERE student_id = $1::uuid ORDER BY log_date DESC`,
+      [studentId]
+    );
+
+    if (result.rows.length === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const dates = result.rows.map((r: any) => {
+      const d = new Date(r.log_date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    });
+
+    // Check if streak is active (today or yesterday has activity)
+    const todayTime = today.getTime();
+    const yesterdayTime = yesterday.getTime();
+    
+    if (!dates.includes(todayTime) && !dates.includes(yesterdayTime)) {
+      return 0; // Streak broken - no activity today or yesterday
+    }
+
+    // Count consecutive days backwards from the most recent activity
+    let streak = 0;
+    let checkDate = dates.includes(todayTime) ? today : yesterday;
+    
+    for (let i = 0; i < dates.length && i < 365; i++) {
+      const expectedTime = checkDate.getTime();
+      if (dates.includes(expectedTime)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break; // Gap found, streak ends
+      }
+    }
+
+    return streak;
+  } catch (error) {
+    console.error('[Streak] Calculation error:', error);
+    return 0;
+  }
+}
+
 async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -2108,10 +2206,10 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     
     if (studentResult.rows.length === 0) {
       console.log(`[HomeDojo] Student ${studentId} not found for status - returning empty`);
-      return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp: 0 });
+      return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
     }
     
-    const lifetimeXp = studentResult.rows[0]?.xp || 0;
+    const totalXp = studentResult.rows[0]?.xp || 0;
 
     // Fetch today's habit logs
     const result = await client.query(
@@ -2122,10 +2220,14 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     const completedHabits = result.rows.map(r => r.habit_name);
     const totalXpToday = result.rows.reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
 
-    return res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp });
+    // Calculate real streak from habit_logs
+    const streak = await calculateStreak(client, studentId);
+
+    // Return totalXp as single source of truth (also as lifetimeXp for backward compatibility)
+    return res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp, lifetimeXp: totalXp, streak });
   } catch (error: any) {
     console.error('[HomeDojo] Status fetch error:', error.message);
-    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp: 0 });
+    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp: 0, streak: 0 });
   } finally {
     client.release();
   }
@@ -2538,6 +2640,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Home Dojo - Habit Tracking
     if (path === '/habits/check' || path === '/habits/check/') return await handleHabitCheck(req, res);
     if (path === '/habits/status' || path === '/habits/status/') return await handleHabitStatus(req, res);
+    if (path === '/xp/sync' || path === '/xp/sync/') return await handleXpSync(req, res);
     if (path === '/habits/custom' || path === '/habits/custom/') {
       if (req.method === 'GET') return await handleGetCustomHabits(req, res);
       if (req.method === 'POST') return await handleCreateCustomHabit(req, res);

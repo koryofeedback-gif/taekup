@@ -2925,6 +2925,54 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Calculate streak from habit_logs - consecutive days with at least 1 habit completed
+  async function calculateStreak(studentId: string): Promise<number> {
+    try {
+      const result = await db.execute(sql`
+        SELECT DISTINCT log_date FROM habit_logs WHERE student_id = ${studentId}::uuid ORDER BY log_date DESC
+      `);
+
+      const rows = result as any[];
+      if (rows.length === 0) return 0;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      const dates = rows.map((r: any) => {
+        const d = new Date(r.log_date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime();
+      });
+
+      const todayTime = today.getTime();
+      const yesterdayTime = yesterday.getTime();
+      
+      if (!dates.includes(todayTime) && !dates.includes(yesterdayTime)) {
+        return 0;
+      }
+
+      let streak = 0;
+      let checkDate = dates.includes(todayTime) ? today : yesterday;
+      
+      for (let i = 0; i < dates.length && i < 365; i++) {
+        const expectedTime = checkDate.getTime();
+        if (dates.includes(expectedTime)) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
+      return streak;
+    } catch (error) {
+      console.error('[Streak] Calculation error:', error);
+      return 0;
+    }
+  }
+
   app.get('/api/habits/status', async (req: Request, res: Response) => {
     try {
       const studentId = req.query.studentId as string;
@@ -2950,15 +2998,19 @@ export function registerRoutes(app: Express) {
       const studentResult = await db.execute(sql`
         SELECT total_xp FROM students WHERE id = ${studentId}::uuid
       `);
-      const lifetimeXp = (studentResult as any[])[0]?.total_xp || 0;
+      const totalXp = (studentResult as any[])[0]?.total_xp || 0;
 
       const completedHabits = (result as any[]).map(r => r.habit_name);
       const totalXpToday = (result as any[]).reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
 
-      res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp });
+      // Calculate real streak from habit_logs
+      const streak = await calculateStreak(studentId);
+
+      // Return totalXp as single source of truth (also as lifetimeXp for backward compatibility)
+      res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp, lifetimeXp: totalXp, streak });
     } catch (error: any) {
       console.error('[HomeDojo] Status fetch error:', error.message);
-      res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp: 0 });
+      res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
     }
   });
 
