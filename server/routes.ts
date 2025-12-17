@@ -1957,30 +1957,30 @@ export function registerRoutes(app: Express) {
       const today = new Date().toISOString().split('T')[0];
       const targetBelt = (belt as string).toLowerCase();
       
-      // Check if studentId is a valid UUID (demo mode uses non-UUID IDs)
+      // STRICT MODE: Validate UUID - NO DEMO MODE
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const isValidUuid = uuidRegex.test(studentId as string);
+      if (!uuidRegex.test(studentId as string)) {
+        return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+      }
 
-      // Check if student already completed today's challenge (only for valid UUIDs)
-      if (isValidUuid) {
-        const existingSubmission = await db.execute(sql`
-          SELECT cs.id, cs.is_correct, cs.xp_awarded, dc.title
-          FROM challenge_submissions cs
-          JOIN daily_challenges dc ON cs.challenge_id = dc.id
-          WHERE cs.student_id = ${studentId}::uuid 
-          AND dc.date = ${today} 
-          AND dc.target_belt = ${targetBelt}
-        `);
+      // Check if student already completed today's challenge
+      const existingSubmission = await db.execute(sql`
+        SELECT cs.id, cs.is_correct, cs.xp_awarded, dc.title
+        FROM challenge_submissions cs
+        JOIN daily_challenges dc ON cs.challenge_id = dc.id
+        WHERE cs.student_id = ${studentId}::uuid 
+        AND dc.date = ${today} 
+        AND dc.target_belt = ${targetBelt}
+      `);
 
-        if ((existingSubmission as any[]).length > 0) {
-          const sub = (existingSubmission as any[])[0];
-          return res.json({ 
-            completed: true, 
-            message: `You already completed today's challenge: "${sub.title}"!`,
-            xpAwarded: sub.xp_awarded,
-            wasCorrect: sub.is_correct
-          });
-        }
+      if ((existingSubmission as any[]).length > 0) {
+        const sub = (existingSubmission as any[])[0];
+        return res.json({ 
+          completed: true, 
+          message: `You already completed today's challenge: "${sub.title}"!`,
+          xpAwarded: sub.xp_awarded,
+          wasCorrect: sub.is_correct
+        });
       }
 
       // "Lazy Generator" - Check if challenge exists for today + belt
@@ -2003,15 +2003,11 @@ export function registerRoutes(app: Express) {
         const isValidClubUuid = uuidRegex.test(clubIdStr);
         
         if (clubId && isValidClubUuid) {
-          try {
-            const clubData = await db.execute(sql`
-              SELECT art_type FROM clubs WHERE id = ${clubIdStr}::uuid
-            `);
-            if ((clubData as any[]).length > 0) {
-              artType = (clubData as any[])[0].art_type || 'Taekwondo';
-            }
-          } catch (e) {
-            // Ignore club lookup errors in demo mode
+          const clubData = await db.execute(sql`
+            SELECT art_type FROM clubs WHERE id = ${clubIdStr}::uuid
+          `);
+          if ((clubData as any[]).length > 0) {
+            artType = (clubData as any[])[0].art_type || 'Taekwondo';
           }
         }
 
@@ -2155,11 +2151,17 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'challengeId, studentId, and clubId are required' });
       }
 
-      // Check if IDs are valid UUIDs (for demo mode detection)
+      // STRICT MODE: Validate all UUIDs - NO DEMO MODE
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const isValidStudentUuid = uuidRegex.test(studentId);
-      const isValidClubUuid = uuidRegex.test(clubId);
-      const isDemoMode = !isValidStudentUuid || !isValidClubUuid;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+      }
+      if (!uuidRegex.test(clubId)) {
+        return res.status(400).json({ error: 'Invalid clubId - must be a valid UUID' });
+      }
+      if (!uuidRegex.test(challengeId)) {
+        return res.status(400).json({ error: 'Invalid challengeId - must be a valid UUID' });
+      }
 
       // Get challenge details
       const challengeResult = await db.execute(sql`
@@ -2172,16 +2174,14 @@ export function registerRoutes(app: Express) {
 
       const challenge = (challengeResult as any[])[0];
       
-      // Check for existing submission (only for real users)
-      if (isValidStudentUuid) {
-        const existing = await db.execute(sql`
-          SELECT id FROM challenge_submissions 
-          WHERE challenge_id = ${challengeId}::uuid AND student_id = ${studentId}::uuid
-        `);
+      // Check for existing submission
+      const existing = await db.execute(sql`
+        SELECT id FROM challenge_submissions 
+        WHERE challenge_id = ${challengeId}::uuid AND student_id = ${studentId}::uuid
+      `);
 
-        if ((existing as any[]).length > 0) {
-          return res.status(400).json({ error: 'Already submitted this challenge' });
-        }
+      if ((existing as any[]).length > 0) {
+        return res.status(400).json({ error: 'Already submitted this challenge' });
       }
 
       // BUG FIX #2: Use the ACTUAL xp_reward from the database, not hardcoded value
@@ -2200,23 +2200,20 @@ export function registerRoutes(app: Express) {
         isCorrect = true;
       }
 
-      // Only persist to database for real users (not demo mode)
-      if (!isDemoMode) {
-        // Create submission
-        await db.execute(sql`
-          INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded, completed_at)
-          VALUES (${challengeId}::uuid, ${studentId}::uuid, ${clubId}::uuid, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
-        `);
+      // Create submission
+      await db.execute(sql`
+        INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded, completed_at)
+        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${clubId}::uuid, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
+      `);
 
-        // Award XP to student
-        await db.execute(sql`
-          UPDATE students 
-          SET total_xp = COALESCE(total_xp, 0) + ${xpAwarded}, updated_at = NOW()
-          WHERE id = ${studentId}::uuid
-        `);
-      }
+      // Award XP to student
+      await db.execute(sql`
+        UPDATE students 
+        SET total_xp = COALESCE(total_xp, 0) + ${xpAwarded}, updated_at = NOW()
+        WHERE id = ${studentId}::uuid
+      `);
 
-      console.log(`[DailyChallenge] ${isDemoMode ? '(Demo) ' : ''}${isCorrect ? 'Correct' : 'Incorrect'} submission - ${xpAwarded} XP awarded`);
+      console.log(`[DailyChallenge] ${isCorrect ? 'Correct' : 'Incorrect'} submission - ${xpAwarded} XP awarded`);
 
       res.json({
         success: true,
@@ -2931,9 +2928,10 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'studentId is required' });
       }
 
+      // STRICT MODE: Validate UUID - NO DEMO MODE
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (studentId === 'demo' || !uuidRegex.test(studentId)) {
-        return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP });
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
       }
 
       const today = new Date().toISOString().split('T')[0];
@@ -2965,9 +2963,10 @@ export function registerRoutes(app: Express) {
       const studentId = req.query.studentId as string;
       if (!studentId) return res.status(400).json({ error: 'studentId is required' });
 
+      // STRICT MODE: Validate UUID - NO DEMO MODE
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (studentId === 'demo' || !uuidRegex.test(studentId)) {
-        return res.json({ customHabits: [] });
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
       }
 
       const result = await db.execute(sql`
@@ -2976,7 +2975,7 @@ export function registerRoutes(app: Express) {
       res.json({ customHabits: result });
     } catch (error: any) {
       console.error('[HomeDojo] Get custom habits error:', error.message);
-      res.json({ customHabits: [] });
+      res.status(500).json({ error: 'Failed to fetch custom habits' });
     }
   });
 
@@ -2985,9 +2984,10 @@ export function registerRoutes(app: Express) {
       const { studentId, title, icon } = req.body;
       if (!studentId || !title) return res.status(400).json({ error: 'studentId and title are required' });
 
+      // STRICT MODE: Validate UUID - NO DEMO MODE
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (studentId === 'demo' || !uuidRegex.test(studentId)) {
-        return res.json({ success: true, habit: { id: 'demo-' + Date.now(), title, icon: icon || '✨', is_active: true } });
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
       }
 
       const result = await db.execute(sql`
@@ -3004,8 +3004,11 @@ export function registerRoutes(app: Express) {
   app.delete('/api/habits/custom/:habitId', async (req: Request, res: Response) => {
     try {
       const habitId = req.params.habitId;
+      // STRICT MODE: Validate UUID - NO DEMO MODE
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(habitId)) return res.json({ success: true });
+      if (!uuidRegex.test(habitId)) {
+        return res.status(400).json({ error: 'Invalid habitId - must be a valid UUID' });
+      }
 
       await db.execute(sql`UPDATE user_custom_habits SET is_active = false WHERE id = ${habitId}::uuid`);
       console.log(`[HomeDojo] Deleted custom habit: ${habitId}`);

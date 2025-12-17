@@ -1679,58 +1679,16 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
     return res.status(400).json({ error: 'challengeId, studentId, and clubId are required' });
   }
 
+  // STRICT MODE: Validate all UUIDs - NO DEMO MODE
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const isValidStudentUuid = uuidRegex.test(studentId);
-  const isValidClubUuid = uuidRegex.test(clubId);
-  const isValidChallengeUuid = uuidRegex.test(challengeId);
-  const isDemoMode = !isValidStudentUuid || !isValidClubUuid || !isValidChallengeUuid;
-
-  // Demo mode - check daily completion via database with demo marker
-  if (isDemoMode) {
-    const client = await pool.connect();
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const demoKey = `demo-${studentId}-${today}`;
-      
-      // Check if demo user already completed today's challenge
-      const existingDemo = await client.query(
-        `SELECT id, xp_awarded, is_correct FROM challenge_submissions 
-         WHERE answer = $1 LIMIT 1`,
-        [demoKey]
-      );
-      
-      if (existingDemo.rows.length > 0) {
-        const prev = existingDemo.rows[0];
-        return res.status(400).json({ 
-          error: 'Already completed', 
-          message: 'You already completed today\'s challenge!',
-          previousXp: prev.xp_awarded,
-          wasCorrect: prev.is_correct
-        });
-      }
-      
-      const fallbackXp = 50;
-      const isCorrect = selectedIndex === 1;
-      const xpAwarded = isCorrect ? fallbackXp : 0;
-      
-      // Record demo submission to prevent duplicates
-      await client.query(
-        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded)
-         VALUES (gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), $1, $2, $3)`,
-        [demoKey, isCorrect, xpAwarded]
-      );
-      
-      return res.json({
-        success: true,
-        isCorrect,
-        correctIndex: 1,
-        xpAwarded,
-        explanation: "The White Belt represents innocence and a beginner's pure mind!",
-        message: isCorrect ? `Correct! +${fallbackXp} XP` : 'Not quite! The answer was Innocence/Beginner.'
-      });
-    } finally {
-      client.release();
-    }
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+  }
+  if (!uuidRegex.test(clubId)) {
+    return res.status(400).json({ error: 'Invalid clubId - must be a valid UUID' });
+  }
+  if (!uuidRegex.test(challengeId)) {
+    return res.status(400).json({ error: 'Invalid challengeId - must be a valid UUID' });
   }
 
   const client = await pool.connect();
@@ -1883,8 +1841,10 @@ const CHALLENGE_METADATA: Record<string, { name: string; icon: string; category:
 async function handleReceivedChallenges(req: VercelRequest, res: VercelResponse, studentId: string) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (!studentId || studentId === 'demo') {
-    return res.json([]);
+  // STRICT MODE: Validate UUID - NO DEMO MODE
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!studentId || !uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
   }
 
   const client = await pool.connect();
@@ -1896,7 +1856,7 @@ async function handleReceivedChallenges(req: VercelRequest, res: VercelResponse,
     return res.json(result.rows);
   } catch (error: any) {
     console.error('[Challenges] Fetch received error:', error.message);
-    return res.json([]);
+    return res.status(500).json({ error: 'Failed to fetch challenges' });
   } finally {
     client.release();
   }
@@ -1906,8 +1866,10 @@ async function handleReceivedChallenges(req: VercelRequest, res: VercelResponse,
 async function handleSentChallenges(req: VercelRequest, res: VercelResponse, studentId: string) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (!studentId || studentId === 'demo') {
-    return res.json([]);
+  // STRICT MODE: Validate UUID - NO DEMO MODE
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!studentId || !uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
   }
 
   const client = await pool.connect();
@@ -1919,7 +1881,7 @@ async function handleSentChallenges(req: VercelRequest, res: VercelResponse, stu
     return res.json(result.rows);
   } catch (error: any) {
     console.error('[Challenges] Fetch sent error:', error.message);
-    return res.json([]);
+    return res.status(500).json({ error: 'Failed to fetch challenges' });
   } finally {
     client.release();
   }
@@ -1934,9 +1896,10 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'studentId is required' });
   }
 
-  // Demo mode - return empty array
-  if (studentId === 'demo') {
-    return res.json({ history: [], message: 'Demo mode - no history available' });
+  // STRICT MODE: Validate UUID - NO DEMO MODE
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
   }
 
   const client = await pool.connect();
@@ -2125,10 +2088,10 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'studentId is required' });
   }
 
-  // Handle demo/invalid IDs gracefully
+  // STRICT MODE: Validate UUID - NO DEMO MODE
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (studentId === 'demo' || !uuidRegex.test(studentId)) {
-    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, lifetimeXp: 0 });
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
   }
 
   const client = await pool.connect();
@@ -2175,9 +2138,10 @@ async function handleGetCustomHabits(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'studentId is required' });
   }
 
+  // STRICT MODE: Validate UUID - NO DEMO MODE
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (studentId === 'demo' || !uuidRegex.test(studentId)) {
-    return res.json({ customHabits: [] });
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
   }
 
   const client = await pool.connect();
@@ -2190,7 +2154,7 @@ async function handleGetCustomHabits(req: VercelRequest, res: VercelResponse) {
     return res.json({ customHabits: result.rows });
   } catch (error: any) {
     console.error('[HomeDojo] Get custom habits error:', error.message);
-    return res.json({ customHabits: [] });
+    return res.status(500).json({ error: 'Failed to fetch custom habits' });
   } finally {
     client.release();
   }
@@ -2205,12 +2169,10 @@ async function handleCreateCustomHabit(req: VercelRequest, res: VercelResponse) 
     return res.status(400).json({ error: 'studentId and title are required' });
   }
 
+  // STRICT MODE: Validate UUID - NO DEMO MODE
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (studentId === 'demo' || !uuidRegex.test(studentId)) {
-    return res.json({ 
-      success: true, 
-      habit: { id: 'demo-' + Date.now(), title, icon: icon || '✨', is_active: true }
-    });
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
   }
 
   const client = await pool.connect();
@@ -2233,9 +2195,10 @@ async function handleCreateCustomHabit(req: VercelRequest, res: VercelResponse) 
 async function handleDeleteCustomHabit(req: VercelRequest, res: VercelResponse, habitId: string) {
   if (req.method !== 'DELETE') return res.status(405).json({ error: 'Method not allowed' });
 
+  // STRICT MODE: Validate UUID - NO DEMO MODE
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(habitId)) {
-    return res.json({ success: true });
+    return res.status(400).json({ error: 'Invalid habitId - must be a valid UUID' });
   }
 
   const client = await pool.connect();
@@ -2268,24 +2231,17 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'proofType must be TRUST or VIDEO' });
   }
 
-  const isDemoMode = studentId === 'demo'; // Only skip DB if studentId is demo
+  // STRICT MODE: Validate UUID - NO DEMO MODE
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+  }
+
   const baseXp = challengeXp || 15;
   const finalXp = proofType === 'VIDEO' ? baseXp * VIDEO_XP_MULTIPLIER : baseXp;
   const today = new Date().toISOString().split('T')[0];
 
   if (proofType === 'TRUST') {
-    if (isDemoMode) {
-      console.log(`[Arena] Demo trust submission for "${challengeType}": +${finalXp} XP`);
-      return res.json({
-        success: true,
-        status: 'COMPLETED',
-        xpAwarded: finalXp,
-        earned_xp: finalXp,
-        remainingForChallenge: 0,
-        message: `Challenge completed! +${finalXp} XP earned. (Demo Mode)`
-      });
-    }
-
     const client = await pool.connect();
     try {
       // Check per-challenge daily limit
@@ -2350,17 +2306,6 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   if (proofType === 'VIDEO') {
     if (!videoUrl) {
       return res.status(400).json({ error: 'videoUrl is required for video proof' });
-    }
-
-    if (isDemoMode) {
-      return res.json({
-        success: true,
-        status: 'PENDING',
-        xpAwarded: 0,
-        pendingXp: finalXp,
-        earned_xp: 0,
-        message: `Video submitted! You'll earn ${finalXp} XP when verified. (Demo Mode)`
-      });
     }
 
     const client = await pool.connect();

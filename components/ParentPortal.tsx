@@ -229,15 +229,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Fetch AI-powered Daily Mystery Challenge
     useEffect(() => {
         const fetchDailyChallenge = async () => {
-            if (!studentBeltName) return;
+            if (!studentBeltName || !student.id) return;
             
-            // Use student.id if available, otherwise use a demo fallback
-            const effectiveStudentId = student.id || 'demo-student';
+            // STRICT MODE: Require valid student ID
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(student.id)) {
+                console.warn('[MysteryChallenge] Invalid student ID, skipping fetch');
+                return;
+            }
             
             setLoadingMysteryChallenge(true);
             try {
                 const params = new URLSearchParams({
-                    studentId: effectiveStudentId,
+                    studentId: student.id,
                     belt: studentBeltName,
                 });
                 
@@ -296,7 +300,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         }
         
         setSubmittingMystery(true);
-        const effectiveStudentId = student.id || 'demo-student';
+        
+        // STRICT MODE: Require valid student ID and clubId
+        if (!student.id || !student.clubId) {
+            console.error('[MysteryChallenge] Missing student.id or clubId');
+            setSubmittingMystery(false);
+            return;
+        }
         
         try {
             const response = await fetch('/api/daily-challenge/submit', {
@@ -304,8 +314,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     challengeId: mysteryChallenge.id,
-                    studentId: effectiveStudentId,
-                    clubId: student.clubId || 'demo',
+                    studentId: student.id,
+                    clubId: student.clubId,
                     selectedIndex,
                 })
             });
@@ -370,7 +380,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     studentId: student.id,
-                    clubId: student.clubId || 'demo',
+                    clubId: student.clubId,
                     challengeType: selectedChallenge,
                     score: parseInt(soloScore) || 0,
                     proofType,
@@ -802,7 +812,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    studentId: studentId || 'demo', 
+                    studentId: studentId, 
                     title: customHabitQuestion.trim(),
                     icon: customHabitIcon || '✨'
                 })
@@ -832,7 +842,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             const res = await fetch('/api/habits/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId: student.id || 'demo', habitName: habitId })
+                body: JSON.stringify({ studentId: student.id, habitName: habitId })
             });
             
             const data = await res.json();
