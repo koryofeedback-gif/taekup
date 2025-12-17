@@ -207,14 +207,14 @@ export function registerRoutes(app: Express) {
                 belt = ${student.beltId || 'white'},
                 birthdate = ${birthdateValue}::timestamptz,
                 total_points = ${student.totalPoints || 0},
-                lifetime_xp = ${student.lifetimeXp || 0},
+                total_xp = ${student.lifetimeXp || 0},
                 updated_at = NOW()
               WHERE id = ${studentId}::uuid
             `);
           } else {
             const birthdateValue = student.birthday ? student.birthday + 'T00:00:00Z' : null;
             const insertResult = await db.execute(sql`
-              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, lifetime_xp, created_at)
+              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, total_xp, created_at)
               VALUES (${clubId}::uuid, ${student.name}, ${parentEmail}, ${student.parentName || null}, ${student.parentPhone || null}, ${student.beltId || 'white'}, ${birthdateValue}::timestamptz, ${student.totalPoints || 0}, ${student.lifetimeXp || 0}, NOW())
               RETURNING id
             `);
@@ -280,7 +280,7 @@ export function registerRoutes(app: Express) {
 
       const studentsResult = await db.execute(sql`
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-               total_points, total_xp, current_streak, stripe_count, lifetime_xp
+               total_points, total_xp, current_streak, stripe_count
         FROM students WHERE club_id = ${clubId}::uuid
       `);
 
@@ -311,7 +311,7 @@ export function registerRoutes(app: Express) {
         birthday: s.birthdate,
         totalXP: s.total_xp || 0,
         totalPoints: s.total_points || 0,
-        lifetimeXp: s.lifetime_xp || 0,
+        lifetimeXp: s.total_xp || 0,
         currentStreak: s.current_streak || 0,
         stripeCount: s.stripe_count || 0,
         performanceHistory: [],
@@ -409,7 +409,7 @@ export function registerRoutes(app: Express) {
           // CRITICAL: Replace wizard_data students with fresh database students (proper UUIDs)
           const studentsResult = await db.execute(sql`
             SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-                   total_points, total_xp, current_streak, stripe_count, lifetime_xp
+                   total_points, total_xp, current_streak, stripe_count
             FROM students WHERE club_id = ${user.club_id}::uuid
           `);
           
@@ -1149,7 +1149,7 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Update student grading data (total_points and lifetime_xp)
+  // Update student grading data (total_points and total_xp)
   app.patch('/api/students/:id/grading', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -1162,13 +1162,13 @@ export function registerRoutes(app: Express) {
       await db.execute(sql`
         UPDATE students SET 
           total_points = COALESCE(${totalPoints}, total_points),
-          lifetime_xp = COALESCE(${lifetimeXp}, lifetime_xp),
+          total_xp = COALESCE(${lifetimeXp}, total_xp),
           last_class_at = NOW(),
           updated_at = NOW()
         WHERE id = ${id}::uuid
       `);
 
-      console.log('[Grading] Updated student:', id, 'totalPoints:', totalPoints, 'lifetimeXp:', lifetimeXp);
+      console.log('[Grading] Updated student:', id, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
       res.json({ success: true });
     } catch (error: any) {
       console.error('[Grading] Update error:', error.message);
@@ -2894,15 +2894,15 @@ export function registerRoutes(app: Express) {
 
       let newTotalXp = 0;
       if (xpToAward > 0) {
-        // Update lifetime_xp in students table (the correct column)
+        // Update total_xp in students table (the correct column)
         const updateResult = await db.execute(sql`
-          UPDATE students SET lifetime_xp = COALESCE(lifetime_xp, 0) + ${xpToAward}, updated_at = NOW() WHERE id = ${studentId}::uuid RETURNING lifetime_xp
+          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpToAward}, updated_at = NOW() WHERE id = ${studentId}::uuid RETURNING total_xp
         `);
-        newTotalXp = (updateResult as any[])[0]?.lifetime_xp || 0;
-        console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new lifetime_xp: ${newTotalXp}`);
+        newTotalXp = (updateResult as any[])[0]?.total_xp || 0;
+        console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total_xp: ${newTotalXp}`);
       } else {
-        const currentXp = await db.execute(sql`SELECT lifetime_xp FROM students WHERE id = ${studentId}::uuid`);
-        newTotalXp = (currentXp as any[])[0]?.lifetime_xp || 0;
+        const currentXp = await db.execute(sql`SELECT total_xp FROM students WHERE id = ${studentId}::uuid`);
+        newTotalXp = (currentXp as any[])[0]?.total_xp || 0;
         console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
       }
 
@@ -2943,11 +2943,11 @@ export function registerRoutes(app: Express) {
         SELECT habit_name, xp_awarded FROM habit_logs WHERE student_id = ${studentId}::uuid AND log_date = ${today}::date
       `);
 
-      // Also fetch student's current lifetime_xp for sync on page load
+      // Also fetch student's current total_xp for sync on page load
       const studentResult = await db.execute(sql`
-        SELECT lifetime_xp FROM students WHERE id = ${studentId}::uuid
+        SELECT total_xp FROM students WHERE id = ${studentId}::uuid
       `);
-      const lifetimeXp = (studentResult as any[])[0]?.lifetime_xp || 0;
+      const lifetimeXp = (studentResult as any[])[0]?.total_xp || 0;
 
       const completedHabits = (result as any[]).map(r => r.habit_name);
       const totalXpToday = (result as any[]).reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
