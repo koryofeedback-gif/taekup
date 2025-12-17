@@ -168,6 +168,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [quizExplanation, setQuizExplanation] = useState<string>('');
     const [loadingMysteryChallenge, setLoadingMysteryChallenge] = useState(true);
     const [submittingMystery, setSubmittingMystery] = useState(false);
+    const [mysterySource, setMysterySource] = useState<'api' | 'static' | null>(null);
     
     // Daily Streak
     const [dailyStreak, setDailyStreak] = useState(student.rivalsStats?.dailyStreak || 0);
@@ -301,12 +302,34 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setMysteryXpAwarded(result.xpAwarded || 0);
                     setMysteryWasCorrect(result.wasCorrect || false);
                     setMysteryCompletionMessage(result.message || 'Challenge already completed!');
+                    setMysterySource('api');
                 } else if (result.challenge) {
                     setMysteryChallenge(result.challenge);
                     setMysteryCompleted(false);
+                    setMysterySource('api');
+                    console.log('[MysteryChallenge] Loaded from API:', result.challenge.title);
+                } else {
+                    throw new Error('No challenge in response');
                 }
             } catch (error) {
-                console.error('[MysteryChallenge] Failed to fetch:', error);
+                console.error('[MysteryChallenge] Failed to fetch, using fallback:', error);
+                // Static fallback question
+                const fallbackChallenge = {
+                    id: 'static-fallback',
+                    title: 'Martial Arts Trivia',
+                    description: 'Test your knowledge while we reconnect!',
+                    type: 'quiz' as const,
+                    xpReward: 10,
+                    quizData: {
+                        question: 'What is the traditional bow in martial arts called?',
+                        options: ['Kyungye (경례)', 'Kick', 'Punch', 'Block'],
+                        correctIndex: 0,
+                        explanation: 'Kyungye (경례) means "bow" in Korean and is used to show respect in martial arts.'
+                    }
+                };
+                setMysteryChallenge(fallbackChallenge);
+                setMysteryCompleted(false);
+                setMysterySource('static');
             } finally {
                 setLoadingMysteryChallenge(false);
             }
@@ -3445,6 +3468,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 'Submit Answer'
                                                             )}
                                                         </button>
+                                                        
+                                                        {/* Debug indicator */}
+                                                        <p className={`text-[10px] mt-3 text-center ${mysterySource === 'api' ? 'text-green-500' : 'text-orange-500'}`}>
+                                                            Source: {mysterySource === 'api' ? 'API (Dynamic)' : 'Static (Fallback)'}
+                                                        </p>
                                                     </div>
                                                 ) : (
                                                     <div className="text-center py-4">
