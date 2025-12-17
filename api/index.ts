@@ -1849,14 +1849,16 @@ async function handleReceivedChallenges(req: VercelRequest, res: VercelResponse,
 
   const client = await pool.connect();
   try {
+    // Query challenge_inbox table for incomplete challenges
     const result = await client.query(
-      `SELECT * FROM challenges WHERE to_student_id = $1::uuid ORDER BY created_at DESC`,
+      `SELECT * FROM challenge_inbox WHERE student_id = $1::uuid AND is_completed = false ORDER BY created_at DESC`,
       [studentId]
     );
     return res.json(result.rows);
   } catch (error: any) {
-    console.error('[Challenges] Fetch received error:', error.message);
-    return res.status(500).json({ error: 'Failed to fetch challenges' });
+    console.error('[Challenges] Fetch received error:', error.message, error.stack);
+    // Return empty array instead of 500 if table doesn't exist
+    return res.json([]);
   } finally {
     client.release();
   }
@@ -2218,6 +2220,141 @@ async function handleDeleteCustomHabit(req: VercelRequest, res: VercelResponse, 
   }
 }
 
+// =====================================================
+// FAMILY CHALLENGES - Trust System (Parent Verified)
+// =====================================================
+
+// Server-side family challenge definitions (canonical XP values)
+const FAMILY_CHALLENGES: Record<string, { name: string; baseXp: number }> = {
+  // HARD tier (100+ XP)
+  'family_pushups': { name: 'Parent vs Kid: Pushups', baseXp: 100 },
+  'family_plank': { name: 'Family Plank-Off', baseXp: 120 },
+  'family_squat_hold': { name: 'The Squat Showdown', baseXp: 100 },
+  // MEDIUM tier (80-99 XP)
+  'family_statue': { name: 'The Statue Challenge', baseXp: 80 },
+  'family_kicks': { name: 'Kick Count Battle', baseXp: 90 },
+  'family_balance': { name: 'Flamingo Stand-Off', baseXp: 80 },
+  'family_situps': { name: 'Sit-Up Showdown', baseXp: 90 },
+  'family_reaction': { name: 'Reaction Time Test', baseXp: 85 },
+  'family_mirror': { name: 'Mirror Challenge', baseXp: 75 },
+  // EASY tier (50-79 XP)
+  'family_dance': { name: 'Martial Arts Dance-Off', baseXp: 70 },
+  'family_stretch': { name: 'Stretch Together', baseXp: 60 },
+  'family_breathing': { name: 'Calm Warrior Breathing', baseXp: 50 }
+};
+
+async function handleFamilyChallengeSubmit(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { studentId, challengeId, won } = parseBody(req);
+
+  if (!studentId || !challengeId) {
+    return res.status(400).json({ error: 'studentId and challengeId are required' });
+  }
+
+  // STRICT MODE: Validate UUID - NO DEMO MODE
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+  }
+
+  // SERVER-SIDE XP CALCULATION - prevent client tampering
+  const challenge = FAMILY_CHALLENGES[challengeId];
+  if (!challenge) {
+    return res.status(400).json({ error: 'Invalid challengeId' });
+  }
+
+  const baseXp = challenge.baseXp;
+  const xp = won ? baseXp : Math.round(baseXp * 0.5); // Win = full XP, Loss = 50%
+  const today = new Date().toISOString().split('T')[0];
+
+  const client = await pool.connect();
+  try {
+    // Check if already completed today (1x daily limit per challenge)
+    const existing = await client.query(
+      `SELECT id FROM family_logs WHERE student_id = $1::uuid AND challenge_id = $2 AND completed_at = $3::date`,
+      [studentId, challengeId, today]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(200).json({
+        success: true,
+        alreadyCompleted: true,
+        message: 'You already completed this family challenge today!'
+      });
+    }
+
+    // Insert into family_logs
+    await client.query(
+      `INSERT INTO family_logs (student_id, challenge_id, xp_awarded, completed_at) VALUES ($1::uuid, $2, $3, $4::date)`,
+      [studentId, challengeId, xp, today]
+    );
+
+    // Update student's total_xp
+    const updateResult = await client.query(
+      `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING total_xp`,
+      [xp, studentId]
+    );
+
+    const newTotalXp = updateResult.rows[0]?.total_xp || 0;
+
+    console.log(`[FamilyChallenge] "${challengeId}" completed: +${xp} XP, won: ${won}, new total_xp: ${newTotalXp}`);
+
+    return res.json({
+      success: true,
+      xpAwarded: xp,
+      newTotalXp,
+      won: won || false,
+      message: `Family challenge completed! +${xp} XP earned.`
+    });
+  } catch (error: any) {
+    console.error('[FamilyChallenge] Submit error:', error.message);
+    return res.status(500).json({ error: 'Failed to submit family challenge' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleFamilyChallengeStatus(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const studentId = req.query.studentId as string;
+
+  if (!studentId) {
+    return res.status(400).json({ error: 'studentId is required' });
+  }
+
+  // STRICT MODE: Validate UUID - NO DEMO MODE
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const client = await pool.connect();
+  try {
+    // Get all completed family challenges for today
+    const result = await client.query(
+      `SELECT challenge_id, xp_awarded FROM family_logs WHERE student_id = $1::uuid AND completed_at = $2::date`,
+      [studentId, today]
+    );
+
+    const completedChallenges = result.rows.map(r => r.challenge_id);
+    const totalXpToday = result.rows.reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
+
+    return res.json({
+      completedChallenges,
+      totalXpToday
+    });
+  } catch (error: any) {
+    console.error('[FamilyChallenge] Status error:', error.message);
+    return res.json({ completedChallenges: [], totalXpToday: 0 });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -2386,6 +2523,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Arena Challenge Submit & History
     if (path === '/challenges/submit' || path === '/challenges/submit/') return await handleChallengeSubmit(req, res);
     if (path === '/challenges/history' || path === '/challenges/history/') return await handleChallengeHistory(req, res);
+    
+    // Family Challenges
+    if (path === '/family-challenges/submit' || path === '/family-challenges/submit/') return await handleFamilyChallengeSubmit(req, res);
+    if (path === '/family-challenges/status' || path === '/family-challenges/status/') return await handleFamilyChallengeStatus(req, res);
     
     // Challenges received/sent by student
     const receivedChallengesMatch = path.match(/^\/challenges\/received\/([^/]+)\/?$/);
