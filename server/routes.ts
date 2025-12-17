@@ -2269,8 +2269,9 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'studentId is required' });
       }
 
-      if (studentId === 'demo') {
-        return res.json({ history: [], message: 'Demo mode - no history available' });
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid student ID format' });
       }
 
       const result = await db.execute(sql`
@@ -2335,8 +2336,11 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'proofType must be TRUST or VIDEO' });
       }
 
-      // Handle demo mode (only skip DB if studentId is 'demo' - we look up real clubId from student)
-      const isDemoMode = studentId === 'demo';
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid student ID format' });
+      }
       
       // Calculate XP based on proof type
       const baseXp = challengeXp || 15; // Use passed XP or default
@@ -2344,39 +2348,48 @@ export function registerRoutes(app: Express) {
 
       const today = new Date().toISOString().split('T')[0];
 
+      // AUTO-CREATE: Check if student exists, if not create them
+      let studentResult = await db.execute(sql`SELECT id, club_id FROM students WHERE id = ${studentId}::uuid`);
+      if ((studentResult as any[]).length === 0) {
+        const clubResult = await db.execute(sql`SELECT id FROM clubs ORDER BY created_at ASC LIMIT 1`);
+        const defaultClubId = (clubResult as any[])[0]?.id;
+        
+        if (!defaultClubId) {
+          return res.status(400).json({ error: 'No clubs available. Please contact support.' });
+        }
+        
+        await db.execute(sql`
+          INSERT INTO students (id, club_id, name, total_xp, created_at, updated_at)
+          VALUES (${studentId}::uuid, ${defaultClubId}::uuid, 'New Student', 0, NOW(), NOW())
+        `);
+        console.log(`[Arena] Auto-created student ${studentId} in club ${defaultClubId}`);
+        
+        studentResult = await db.execute(sql`SELECT id, club_id FROM students WHERE id = ${studentId}::uuid`);
+      }
+
+      const studentData = (studentResult as any[])[0];
+      const validClubId = studentData.club_id;
+
       // TRUST submissions: Check PER-CHALLENGE daily limit (anti-cheat)
       if (proofType === 'TRUST') {
-        if (!isDemoMode) {
-          // Count submissions for THIS SPECIFIC challenge today
-          const challengeDailyCount = await db.execute(sql`
-            SELECT COUNT(*) as count FROM challenge_submissions 
-            WHERE student_id = ${studentId}::uuid 
-            AND answer = ${challengeType}
-            AND proof_type = 'TRUST' 
-            AND DATE(completed_at) = ${today}::date
-          `);
-          
-          const count = parseInt((challengeDailyCount as any[])[0]?.count || '0');
-          if (count >= TRUST_PER_CHALLENGE_LIMIT) {
-            return res.status(429).json({ 
-              error: 'Daily mission complete',
-              message: `Daily Mission Complete! You can earn XP for this challenge again tomorrow.`,
-              limitReached: true,
-              alreadyCompleted: true
-            });
-          }
-
-          // Get valid club ID from student
-          const studentResult = await db.execute(sql`
-            SELECT id, club_id FROM students WHERE id = ${studentId}::uuid
-          `);
-
-          if ((studentResult as any[]).length === 0) {
-            return res.status(404).json({ error: 'Student not found' });
-          }
-
-          const studentData = (studentResult as any[])[0];
-          const validClubId = studentData.club_id;
+        // Count submissions for THIS SPECIFIC challenge today
+        const challengeDailyCount = await db.execute(sql`
+          SELECT COUNT(*) as count FROM challenge_submissions 
+          WHERE student_id = ${studentId}::uuid 
+          AND answer = ${challengeType}
+          AND proof_type = 'TRUST' 
+          AND DATE(completed_at) = ${today}::date
+        `);
+        
+        const count = parseInt((challengeDailyCount as any[])[0]?.count || '0');
+        if (count >= TRUST_PER_CHALLENGE_LIMIT) {
+          return res.status(429).json({ 
+            error: 'Daily mission complete',
+            message: `Daily Mission Complete! You can earn XP for this challenge again tomorrow.`,
+            limitReached: true,
+            alreadyCompleted: true
+          });
+        }
 
           // Create TRUST submission - instant XP with deterministic challenge_id
           const challengeUUID = generateChallengeUUID(challengeType);
@@ -2391,28 +2404,16 @@ export function registerRoutes(app: Express) {
             WHERE id = ${studentId}::uuid
           `);
 
-          console.log(`[Arena] Trust submission for "${challengeType}": +${finalXp} XP (${count + 1}/${TRUST_PER_CHALLENGE_LIMIT} today)`);
+        console.log(`[Arena] Trust submission for "${challengeType}": +${finalXp} XP (${count + 1}/${TRUST_PER_CHALLENGE_LIMIT} today)`);
 
-          return res.json({
-            success: true,
-            status: 'COMPLETED',
-            xpAwarded: finalXp,
-            earned_xp: finalXp,
-            remainingForChallenge: TRUST_PER_CHALLENGE_LIMIT - count - 1,
-            message: `Challenge completed! +${finalXp} XP earned.`
-          });
-        } else {
-          // Demo mode - just return success without DB operations
-          console.log(`[Arena] Demo trust submission for "${challengeType}": +${finalXp} XP`);
-          return res.json({
-            success: true,
-            status: 'COMPLETED',
-            xpAwarded: finalXp,
-            earned_xp: finalXp,
-            remainingForChallenge: 2,
-            message: `Challenge completed! +${finalXp} XP earned. (Demo Mode)`
-          });
-        }
+        return res.json({
+          success: true,
+          status: 'COMPLETED',
+          xpAwarded: finalXp,
+          earned_xp: finalXp,
+          remainingForChallenge: TRUST_PER_CHALLENGE_LIMIT - count - 1,
+          message: `Challenge completed! +${finalXp} XP earned.`
+        });
       }
 
       // VIDEO submissions: Require premium status (2x XP multiplier)
@@ -2421,19 +2422,7 @@ export function registerRoutes(app: Express) {
           return res.status(400).json({ error: 'videoUrl is required for video proof' });
         }
 
-        if (isDemoMode) {
-          console.log(`[Arena] Demo video submission for "${challengeType}": pending ${finalXp} XP`);
-          return res.json({
-            success: true,
-            status: 'PENDING',
-            xpAwarded: 0,
-            pendingXp: finalXp,
-            earned_xp: 0,
-            message: `Video submitted! You'll earn ${finalXp} XP when verified. (Demo Mode)`
-          });
-        }
-
-        // Verify student exists and has premium access
+        // Check premium access
         const studentCheck = await db.execute(sql`
           SELECT s.id, s.club_id, s.premium_status, c.parent_premium_enabled
           FROM students s
@@ -2441,12 +2430,8 @@ export function registerRoutes(app: Express) {
           WHERE s.id = ${studentId}::uuid
         `);
 
-        if ((studentCheck as any[]).length === 0) {
-          return res.status(404).json({ error: 'Student not found' });
-        }
-
         const student = (studentCheck as any[])[0];
-        const hasPremium = student.premium_status !== 'none' || student.parent_premium_enabled;
+        const hasPremium = student?.premium_status !== 'none' || student?.parent_premium_enabled;
 
         if (!hasPremium) {
           return res.status(403).json({ 
@@ -2459,7 +2444,7 @@ export function registerRoutes(app: Express) {
         const challengeUUID = generateChallengeUUID(challengeType);
         await db.execute(sql`
           INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
-          VALUES (${challengeUUID}::uuid, ${studentId}::uuid, ${student.club_id}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'PENDING', 'VIDEO', ${videoUrl}, ${finalXp}, NOW())
+          VALUES (${challengeUUID}::uuid, ${studentId}::uuid, ${validClubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'PENDING', 'VIDEO', ${videoUrl}, ${finalXp}, NOW())
         `);
 
         console.log(`[Arena] Video submission for "${challengeType}" pending verification (pending: ${finalXp} XP)`);
