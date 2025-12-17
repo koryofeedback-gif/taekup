@@ -853,20 +853,17 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     const { studentId: urlStudentId } = useParams<{ studentId: string }>();
     const navigate = useNavigate();
     
-    // Get or generate student ID from localStorage
-    const getOrCreateStudentId = (): string => {
+    // Get student ID from localStorage - NEVER generate random IDs
+    const getStoredStudentId = (): string | null => {
         const stored = localStorage.getItem("taekup_student_id");
         if (stored && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stored)) {
             return stored;
         }
-        // Generate new UUID
-        const newId = crypto.randomUUID();
-        localStorage.setItem("taekup_student_id", newId);
-        console.log('[ParentPortal] Generated new student ID:', newId);
-        return newId;
+        console.warn('[ParentPortal] No valid student ID in localStorage');
+        return null;
     };
     
-    const studentId = urlStudentId || parentStudentId || getOrCreateStudentId();
+    const studentId = urlStudentId || parentStudentId || getStoredStudentId();
     
     const [resolvedStudentId, setResolvedStudentId] = React.useState<string | null>(studentId);
     
@@ -895,8 +892,10 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
             : wizardStudent;
     }
 
-    if (!studentToShow) {
-        return <div className="text-center py-20 text-white">No students available.</div>;
+    if (!studentToShow || !studentId) {
+        // No valid student ID - redirect to login
+        console.error('[ParentPortal] No valid student ID available, redirecting to login');
+        return <Navigate to="/login" replace />;
     }
     
     // ALWAYS wait for resolvedStudentId before rendering - this ensures we have a verified DB UUID
