@@ -375,28 +375,32 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Debug: Log current student data
         console.log('[MysteryChallenge] Submitting with:', {
             studentId: student.id,
-            clubId: student.clubId,
+            clubId: student.clubId || 'none (home user)',
             challengeId: mysteryChallenge.id,
             selectedIndex
         });
         
-        // STRICT MODE: Require valid student ID and clubId
-        if (!student.id || !student.clubId) {
-            console.error('[MysteryChallenge] Missing student.id or clubId - student object:', student);
+        // Only require student ID - clubId is optional for home users
+        if (!student.id) {
+            console.error('[MysteryChallenge] Missing student.id - student object:', student);
             setSubmittingMystery(false);
             return;
         }
         
         try {
+            const payload: any = {
+                challengeId: mysteryChallenge.id,
+                studentId: student.id,
+                selectedIndex,
+            };
+            if (student.clubId) {
+                payload.clubId = student.clubId;
+            }
+            
             const response = await fetch('/api/daily-challenge/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    challengeId: mysteryChallenge.id,
-                    studentId: student.id,
-                    clubId: student.clubId,
-                    selectedIndex,
-                })
+                body: JSON.stringify(payload)
             });
             
             const result = await response.json();

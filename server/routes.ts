@@ -2253,16 +2253,17 @@ export function registerRoutes(app: Express) {
     try {
       const { challengeId, studentId, clubId, answer, selectedIndex } = req.body;
       
-      if (!challengeId || !studentId || !clubId) {
-        return res.status(400).json({ error: 'challengeId, studentId, and clubId are required' });
+      // Only require studentId and challengeId - clubId is optional for home users
+      if (!challengeId || !studentId) {
+        return res.status(400).json({ error: 'challengeId and studentId are required' });
       }
 
-      // STRICT MODE: Validate all UUIDs - NO DEMO MODE
+      // STRICT MODE: Validate UUIDs - NO DEMO MODE
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(studentId)) {
         return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
       }
-      if (!uuidRegex.test(clubId)) {
+      if (clubId && !uuidRegex.test(clubId)) {
         return res.status(400).json({ error: 'Invalid clubId - must be a valid UUID' });
       }
       if (!uuidRegex.test(challengeId)) {
@@ -2306,10 +2307,10 @@ export function registerRoutes(app: Express) {
         isCorrect = true;
       }
 
-      // Create submission
+      // Create submission (clubId is optional for home users)
       await db.execute(sql`
         INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded, completed_at)
-        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${clubId}::uuid, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
+        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${clubId ? sql`${clubId}::uuid` : sql`NULL`}, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
       `);
 
       // Award XP to student
