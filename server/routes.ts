@@ -1582,15 +1582,18 @@ export function registerRoutes(app: Express) {
   app.post('/api/challenges', async (req: Request, res: Response) => {
     try {
       const challenge = req.body;
-      const id = `challenge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-      await db.execute(sql`
+      // Use database-generated UUID for stable ID
+      const result = await db.execute(sql`
         INSERT INTO challenges (id, from_student_id, from_student_name, to_student_id, to_student_name, challenge_id, challenge_name, challenge_xp, status, created_at, expires_at)
-        VALUES (${id}, ${challenge.from_student_id}, ${challenge.from_student_name}, ${challenge.to_student_id}, ${challenge.to_student_name}, ${challenge.challenge_id}, ${challenge.challenge_name}, ${challenge.challenge_xp}, 'pending', NOW(), ${expiresAt}::timestamptz)
+        VALUES (gen_random_uuid()::text, ${challenge.from_student_id}, ${challenge.from_student_name}, ${challenge.to_student_id}, ${challenge.to_student_name}, ${challenge.challenge_id}, ${challenge.challenge_name}, ${challenge.challenge_xp}, 'pending', NOW(), ${expiresAt}::timestamptz)
+        RETURNING id
       `);
+      
+      const newId = (result as any[])[0]?.id;
 
-      res.json({ success: true, id, expires_at: expiresAt });
+      res.json({ success: true, id: newId, expires_at: expiresAt });
     } catch (error: any) {
       console.error('[Challenges] Create error:', error.message);
       res.status(500).json({ error: 'Failed to create challenge' });
@@ -1634,7 +1637,9 @@ export function registerRoutes(app: Express) {
       }
 
       const challenge = (existing as any[])[0];
-      const fromScore = Math.floor(Math.random() * 100);
+      // Note: fromScore is simulated for the challenger (PvP async) since they don't submit real-time
+      // This is by design for async PvP challenges where only one player submits a score
+      const fromScore = challenge.from_score || 0;
       const winnerId = score > fromScore ? challenge.to_student_id : challenge.from_student_id;
 
       await db.execute(sql`
