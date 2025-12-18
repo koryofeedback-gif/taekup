@@ -1823,6 +1823,26 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
 
   const client = await pool.connect();
   try {
+    // BUG FIX: Check if user already completed a daily challenge TODAY (prevents infinite XP exploit)
+    const today = new Date().toISOString().split('T')[0];
+    const alreadyPlayedToday = await client.query(
+      `SELECT id, xp_amount FROM xp_logs 
+       WHERE student_id = $1::uuid 
+       AND activity_type = 'daily_challenge' 
+       AND DATE(created_at) = $2::date
+       LIMIT 1`,
+      [studentId, today]
+    );
+    
+    if (alreadyPlayedToday.rows.length > 0) {
+      console.log('⛔ [DailyChallenge] Already played today - blocking duplicate:', { studentId, today });
+      return res.status(400).json({
+        error: 'Already completed',
+        message: 'You already completed today\'s challenge! Come back tomorrow.',
+        previousXp: alreadyPlayedToday.rows[0].xp_amount || 0
+      });
+    }
+    
     // FALLBACK CHALLENGE HANDLING: Skip DB lookup, trust frontend
     if (isFallbackChallenge) {
       console.log('🎯 [DailyChallenge] Processing FALLBACK challenge - skipping DB lookup');
@@ -1831,13 +1851,22 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
       const xpAwarded = isCorrect ? (frontendXpReward || 50) : 0;
       
-      // Award XP directly to student (no submission record for fallback challenges)
+      // Award XP directly to student AND log to xp_logs for persistence
       if (isCorrect && xpAwarded > 0) {
+        // 1. Update student's total XP
         await client.query(
           `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
           [xpAwarded, studentId]
         );
-        console.log(`✅ [DailyChallenge] Fallback Submit Success - XP Awarded: ${xpAwarded}`);
+        
+        // 2. Insert into xp_logs for persistence and duplicate prevention
+        await client.query(
+          `INSERT INTO xp_logs (student_id, activity_type, xp_amount, description, created_at)
+           VALUES ($1::uuid, 'daily_challenge', $2, $3, NOW())`,
+          [studentId, xpAwarded, `Daily Mystery Challenge (${challengeIdStr})`]
+        );
+        
+        console.log(`✅ [DailyChallenge] Fallback XP PERSISTED: ${xpAwarded} XP to student ${studentId}`);
       }
       
       return res.json({
