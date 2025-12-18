@@ -1789,28 +1789,34 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
   const body = parseBody(req);
   console.log('📥 [DailyChallenge] Received Payload:', JSON.stringify(body, null, 2));
   
-  const { challengeId, studentId, clubId, answer, selectedIndex } = body;
+  // Extract fields - be very lenient with what we accept
+  const { challengeId, studentId, selectedIndex, answer } = body;
+  const clubIdRaw = body.clubId;
   
-  // Only require studentId and challengeId - clubId is optional for home users
+  // Only require studentId and challengeId
   if (!challengeId || !studentId) {
     console.error('❌ [DailyChallenge] Missing required fields:', { challengeId, studentId });
     return res.status(400).json({ error: 'challengeId and studentId are required' });
   }
 
-  // Validate UUIDs - clubId is optional and ignored if invalid
+  // Very lenient UUID validation - just check format loosely
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(studentId)) {
-    console.error('❌ [DailyChallenge] Invalid studentId:', studentId);
-    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+  
+  // For studentId and challengeId: try to use as-is if valid, otherwise log and reject
+  if (!uuidRegex.test(String(studentId))) {
+    console.error('❌ [DailyChallenge] Invalid studentId format:', studentId);
+    return res.status(400).json({ error: 'Invalid studentId format' });
   }
-  if (!uuidRegex.test(challengeId)) {
-    console.error('❌ [DailyChallenge] Invalid challengeId:', challengeId);
-    return res.status(400).json({ error: 'Invalid challengeId - must be a valid UUID' });
+  if (!uuidRegex.test(String(challengeId))) {
+    console.error('❌ [DailyChallenge] Invalid challengeId format:', challengeId);
+    return res.status(400).json({ error: 'Invalid challengeId format' });
   }
   
-  // clubId: Accept valid UUID or set to null (home users)
-  const validClubId = clubId && uuidRegex.test(clubId) ? clubId : null;
-  console.log('📋 [DailyChallenge] Validated:', { studentId, challengeId, validClubId, selectedIndex });
+  // clubId: FULLY OPTIONAL - accept null, undefined, invalid strings, anything
+  // If it's not a valid UUID, just set to null - NO ERRORS
+  const validClubId = (clubIdRaw && typeof clubIdRaw === 'string' && uuidRegex.test(clubIdRaw)) ? clubIdRaw : null;
+  
+  console.log('📋 [DailyChallenge] Validated (lenient):', { studentId, challengeId, validClubId, selectedIndex });
 
   const client = await pool.connect();
   try {
@@ -1866,6 +1872,8 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       );
     }
 
+    console.log(`✅ [DailyChallenge] Submit Success - XP Awarded: ${xpAwarded}`);
+    
     return res.json({
       success: true,
       isCorrect,

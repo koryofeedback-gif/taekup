@@ -2253,29 +2253,32 @@ export function registerRoutes(app: Express) {
     try {
       console.log('📥 [DailyChallenge] Received Payload:', JSON.stringify(req.body, null, 2));
       
-      const { challengeId, studentId, clubId, answer, selectedIndex } = req.body;
+      // Extract fields - be very lenient with what we accept
+      const { challengeId, studentId, answer, selectedIndex } = req.body;
+      const clubIdRaw = req.body.clubId;
       
-      // Only require studentId and challengeId - clubId is optional for home users
+      // Only require studentId and challengeId
       if (!challengeId || !studentId) {
         console.error('❌ [DailyChallenge] Missing required fields:', { challengeId, studentId });
         return res.status(400).json({ error: 'challengeId and studentId are required' });
       }
 
-      // Validate UUIDs - clubId is optional and ignored if invalid
+      // Very lenient UUID validation
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       
-      if (!uuidRegex.test(studentId)) {
-        console.error('❌ [DailyChallenge] Invalid studentId:', studentId);
-        return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+      if (!uuidRegex.test(String(studentId))) {
+        console.error('❌ [DailyChallenge] Invalid studentId format:', studentId);
+        return res.status(400).json({ error: 'Invalid studentId format' });
       }
-      if (!uuidRegex.test(challengeId)) {
-        console.error('❌ [DailyChallenge] Invalid challengeId:', challengeId);
-        return res.status(400).json({ error: 'Invalid challengeId - must be a valid UUID' });
+      if (!uuidRegex.test(String(challengeId))) {
+        console.error('❌ [DailyChallenge] Invalid challengeId format:', challengeId);
+        return res.status(400).json({ error: 'Invalid challengeId format' });
       }
       
-      // clubId: Accept valid UUID or ignore if invalid/missing (home users)
-      const validClubId = clubId && uuidRegex.test(clubId) ? clubId : null;
-      console.log('📋 [DailyChallenge] Validated:', { studentId, challengeId, validClubId, selectedIndex });
+      // clubId: FULLY OPTIONAL - accept null, undefined, invalid strings, anything
+      // If it's not a valid UUID, just set to null - NO ERRORS
+      const validClubId = (clubIdRaw && typeof clubIdRaw === 'string' && uuidRegex.test(clubIdRaw)) ? clubIdRaw : null;
+      console.log('📋 [DailyChallenge] Validated (lenient):', { studentId, challengeId, validClubId, selectedIndex });
 
       // Get challenge details
       const challengeResult = await db.execute(sql`
@@ -2328,7 +2331,7 @@ export function registerRoutes(app: Express) {
         WHERE id = ${studentId}::uuid
       `);
 
-      console.log(`[DailyChallenge] ${isCorrect ? 'Correct' : 'Incorrect'} submission - ${xpAwarded} XP awarded`);
+      console.log(`✅ [DailyChallenge] Submit Success - XP Awarded: ${xpAwarded}`);
 
       res.json({
         success: true,

@@ -410,14 +410,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         }
         
         try {
+            // Sanitize clubId: only include if it's a valid UUID, not strings like "none" or "home user"
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            const sanitizedClubId = student.clubId && uuidRegex.test(student.clubId) ? student.clubId : null;
+            
             const payload: any = {
                 challengeId: mysteryChallenge.id,
                 studentId: student.id,
                 selectedIndex,
             };
-            if (student.clubId) {
-                payload.clubId = student.clubId;
+            if (sanitizedClubId) {
+                payload.clubId = sanitizedClubId;
             }
+            
+            console.log('[MysteryChallenge] Sending sanitized payload:', payload);
             
             const response = await fetch('/api/daily-challenge/submit', {
                 method: 'POST',
