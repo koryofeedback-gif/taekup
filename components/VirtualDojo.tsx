@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Package, RotateCcw, ArrowLeft, X, Cookie, Flower2, Gem, Star, Zap } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Sparkles, Package, RotateCcw, ArrowLeft, X, Cookie, Flower2, Zap } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 interface DojoItem {
   id: string;
@@ -9,6 +10,15 @@ interface DojoItem {
   itemEmoji: string;
   quantity: number;
   evolutionPoints: number;
+}
+
+interface PlacedDecoration {
+  id: string;
+  emoji: string;
+  name: string;
+  x: number;
+  y: number;
+  scale: number;
 }
 
 interface MonsterState {
@@ -22,18 +32,6 @@ interface VirtualDojoProps {
   studentName: string;
   onBack: () => void;
 }
-
-const WHEEL_ITEMS = [
-  { name: 'Rice Ball', type: 'FOOD', rarity: 'COMMON', emoji: '🍙', evolutionPoints: 10, weight: 30 },
-  { name: 'Sushi', type: 'FOOD', rarity: 'COMMON', emoji: '🍣', evolutionPoints: 15, weight: 25 },
-  { name: 'Ramen', type: 'FOOD', rarity: 'RARE', emoji: '🍜', evolutionPoints: 25, weight: 15 },
-  { name: 'Golden Apple', type: 'FOOD', rarity: 'EPIC', emoji: '🍎', evolutionPoints: 50, weight: 8 },
-  { name: 'Dragon Fruit', type: 'FOOD', rarity: 'LEGENDARY', emoji: '🐉', evolutionPoints: 100, weight: 2 },
-  { name: 'Bonsai Tree', type: 'DECORATION', rarity: 'COMMON', emoji: '🌳', evolutionPoints: 0, weight: 20 },
-  { name: 'Lucky Cat', type: 'DECORATION', rarity: 'RARE', emoji: '🐱', evolutionPoints: 0, weight: 10 },
-  { name: 'Golden Trophy', type: 'DECORATION', rarity: 'EPIC', emoji: '🏆', evolutionPoints: 0, weight: 5 },
-  { name: 'Crystal Orb', type: 'DECORATION', rarity: 'LEGENDARY', emoji: '🔮', evolutionPoints: 0, weight: 2 },
-];
 
 const SPIN_COST = 200;
 
@@ -59,19 +57,33 @@ const RARITY_GLOW = {
   LEGENDARY: 'shadow-yellow-400 shadow-xl animate-pulse',
 };
 
+const DECORATION_POSITIONS = [
+  { x: 10, y: 20 },
+  { x: 80, y: 15 },
+  { x: 5, y: 60 },
+  { x: 85, y: 55 },
+  { x: 15, y: 40 },
+  { x: 75, y: 35 },
+  { x: 25, y: 10 },
+  { x: 70, y: 65 },
+];
+
 export default function VirtualDojo({ studentId, studentName, onBack }: VirtualDojoProps) {
   const [xpBalance, setXpBalance] = useState<number>(0);
   const [inventory, setInventory] = useState<DojoItem[]>([]);
   const [monster, setMonster] = useState<MonsterState>({ stage: 'egg', evolutionPoints: 0, name: 'My Monster' });
+  const [placedDecorations, setPlacedDecorations] = useState<PlacedDecoration[]>([]);
   const [loading, setLoading] = useState(true);
   const [spinning, setSpinning] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
   const [showWheel, setShowWheel] = useState(false);
-  const [spinResult, setSpinResult] = useState<typeof WHEEL_ITEMS[0] | null>(null);
+  const [spinResult, setSpinResult] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [feedingItem, setFeedingItem] = useState<string | null>(null);
   const [feedToast, setFeedToast] = useState<{ ep: number; show: boolean } | null>(null);
   const [evolveToast, setEvolveToast] = useState<{ newStage: string; emoji: string } | null>(null);
+  const [isMonsterBouncing, setIsMonsterBouncing] = useState(false);
+  const roomRef = useRef<HTMLDivElement>(null);
 
   const fetchDojoState = useCallback(async () => {
     try {
@@ -82,6 +94,11 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
       setXpBalance(data.xpBalance || 0);
       setInventory(data.inventory || []);
       setMonster(data.monster || { stage: 'egg', evolutionPoints: 0, name: 'My Monster' });
+      
+      const savedDecorations = localStorage.getItem(`dojo-decorations-${studentId}`);
+      if (savedDecorations) {
+        setPlacedDecorations(JSON.parse(savedDecorations));
+      }
     } catch (err: any) {
       console.error('[Dojo] Failed to fetch state:', err);
       setError(err.message);
@@ -93,6 +110,33 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
   useEffect(() => {
     fetchDojoState();
   }, [fetchDojoState]);
+
+  const triggerConfetti = () => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+      if (timeLeft <= 0) return clearInterval(interval);
+
+      const particleCount = 50 * (timeLeft / duration);
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
+      });
+    }, 250);
+  };
 
   const handleSpin = async () => {
     if (xpBalance < SPIN_COST) {
@@ -145,14 +189,19 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
       
       const epGained = feedingItemData?.evolutionPoints || 10;
       setFeedToast({ ep: epGained, show: true });
+      
+      setIsMonsterBouncing(true);
+      setTimeout(() => setIsMonsterBouncing(false), 600);
+      
       setTimeout(() => setFeedToast(null), 2000);
       
       if (data.monster.stage !== oldStage) {
         const newStageInfo = EVOLUTION_STAGES.find(s => s.stage === data.monster.stage);
         if (newStageInfo) {
           setTimeout(() => {
+            triggerConfetti();
             setEvolveToast({ newStage: newStageInfo.name, emoji: newStageInfo.emoji });
-            setTimeout(() => setEvolveToast(null), 3000);
+            setTimeout(() => setEvolveToast(null), 4000);
           }, 500);
         }
       }
@@ -166,8 +215,38 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
     }
   };
 
-  const handleEquipDecoration = (itemName: string) => {
-    console.log(`[Dojo] Equipping decoration: ${itemName}`);
+  const handleEquipDecoration = (item: DojoItem) => {
+    const existingIndex = placedDecorations.findIndex(d => d.id === item.id);
+    
+    if (existingIndex >= 0) {
+      const newDecorations = placedDecorations.filter(d => d.id !== item.id);
+      setPlacedDecorations(newDecorations);
+      localStorage.setItem(`dojo-decorations-${studentId}`, JSON.stringify(newDecorations));
+      return;
+    }
+    
+    const usedPositions = placedDecorations.map(d => ({ x: d.x, y: d.y }));
+    const availablePositions = DECORATION_POSITIONS.filter(
+      pos => !usedPositions.some(used => Math.abs(used.x - pos.x) < 10 && Math.abs(used.y - pos.y) < 10)
+    );
+    
+    const position = availablePositions[0] || {
+      x: 10 + Math.random() * 30,
+      y: 10 + Math.random() * 50,
+    };
+    
+    const newDecoration: PlacedDecoration = {
+      id: item.id,
+      emoji: item.itemEmoji,
+      name: item.itemName,
+      x: position.x,
+      y: position.y,
+      scale: item.itemRarity === 'LEGENDARY' ? 1.5 : item.itemRarity === 'EPIC' ? 1.3 : 1.1,
+    };
+    
+    const newDecorations = [...placedDecorations, newDecoration];
+    setPlacedDecorations(newDecorations);
+    localStorage.setItem(`dojo-decorations-${studentId}`, JSON.stringify(newDecorations));
   };
 
   const handleDebugAddXP = async () => {
@@ -213,112 +292,223 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-cyan-900 via-teal-800 to-emerald-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-white text-xl animate-pulse">Loading Virtual Dojo...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-cyan-900 via-teal-800 to-emerald-900 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-10 left-10 text-6xl animate-bounce">🏯</div>
-        <div className="absolute top-20 right-20 text-4xl animate-pulse">⛩️</div>
-        <div className="absolute bottom-20 left-20 text-5xl">🎋</div>
-        <div className="absolute bottom-10 right-10 text-4xl animate-bounce" style={{ animationDelay: '0.5s' }}>🌸</div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      <style>{`
+        @keyframes monster-bounce {
+          0%, 100% { transform: translateY(0) scale(1); }
+          25% { transform: translateY(-30px) scale(1.1); }
+          50% { transform: translateY(-15px) scale(1.05); }
+          75% { transform: translateY(-25px) scale(1.08); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes glow-pulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+          50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+        }
+        .monster-bounce {
+          animation: monster-bounce 0.6s ease-in-out;
+        }
+        .float-animation {
+          animation: float 3s ease-in-out infinite;
+        }
+        .glow-animation {
+          animation: glow-pulse 2s ease-in-out infinite;
+        }
+      `}</style>
 
       <div className="relative z-10 p-4">
-        <div className="flex items-center justify-between mb-6 bg-black/30 backdrop-blur-sm rounded-xl p-4">
+        <div className="flex items-center justify-between mb-4 bg-black/40 backdrop-blur-md rounded-xl p-3">
           <button onClick={onBack} className="flex items-center gap-2 text-white hover:text-cyan-300 transition">
             <ArrowLeft size={20} />
-            <span>Back</span>
+            <span className="hidden sm:inline">Back</span>
           </button>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-white">Virtual Dojo</h1>
-            <p className="text-cyan-300 text-sm">{studentName}'s Training Ground</p>
+            <h1 className="text-xl font-bold text-white">🏯 Virtual Dojo</h1>
+            <p className="text-cyan-300 text-xs">{studentName}'s Training Ground</p>
           </div>
-          <div className="flex items-center gap-2 bg-yellow-500/20 rounded-lg px-4 py-2">
-            <Zap className="text-yellow-400" size={20} />
-            <span className="text-yellow-300 font-bold text-lg">{xpBalance.toLocaleString()} XP</span>
+          <div className="flex items-center gap-2 bg-yellow-500/20 rounded-lg px-3 py-2">
+            <Zap className="text-yellow-400" size={18} />
+            <span className="text-yellow-300 font-bold">{xpBalance.toLocaleString()} XP</span>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-400 rounded-lg p-3 mb-4 text-red-200 text-center">
+          <div className="bg-red-500/20 border border-red-400 rounded-lg p-3 mb-4 text-red-200 text-center text-sm">
             {error}
             <button onClick={() => setError(null)} className="ml-2 text-red-300 hover:text-white">
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
         )}
 
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative">
-            <div className="w-48 h-48 rounded-full bg-gradient-to-br from-cyan-400/30 to-emerald-400/30 flex items-center justify-center backdrop-blur-sm border-4 border-white/20 shadow-2xl">
-              <span className="text-8xl animate-bounce" style={{ animationDuration: '3s' }}>
+        <div 
+          ref={roomRef}
+          className="relative w-full max-w-2xl mx-auto rounded-2xl overflow-hidden border-4 border-amber-800/50 glow-animation"
+          style={{
+            height: '400px',
+            background: `
+              linear-gradient(to bottom, 
+                rgba(139, 90, 43, 0.9) 0%, 
+                rgba(101, 67, 33, 0.95) 30%,
+                rgba(74, 54, 34, 1) 100%
+              ),
+              repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 48px,
+                rgba(0,0,0,0.1) 48px,
+                rgba(0,0,0,0.1) 50px
+              ),
+              repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 48px,
+                rgba(0,0,0,0.05) 48px,
+                rgba(0,0,0,0.05) 50px
+              )
+            `,
+          }}
+        >
+          <div 
+            className="absolute top-0 left-0 right-0 h-24"
+            style={{
+              background: 'linear-gradient(to bottom, rgba(45, 35, 25, 0.9), transparent)',
+            }}
+          />
+          
+          <div className="absolute top-2 left-4 text-4xl opacity-60">🏯</div>
+          <div className="absolute top-2 right-4 text-3xl opacity-60">⛩️</div>
+          
+          <div 
+            className="absolute bottom-0 left-0 right-0 h-20"
+            style={{
+              background: 'linear-gradient(to top, rgba(34, 25, 15, 0.8), transparent)',
+            }}
+          />
+
+          {placedDecorations.map((decoration, index) => (
+            <div
+              key={decoration.id}
+              className="absolute float-animation cursor-pointer hover:scale-110 transition-transform"
+              style={{
+                left: `${decoration.x}%`,
+                top: `${decoration.y}%`,
+                fontSize: `${3 * decoration.scale}rem`,
+                animationDelay: `${index * 0.3}s`,
+                filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                zIndex: 10,
+              }}
+              title={decoration.name}
+            >
+              {decoration.emoji}
+            </div>
+          ))}
+
+          <div 
+            className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center ${isMonsterBouncing ? 'monster-bounce' : ''}`}
+            style={{ zIndex: 20 }}
+          >
+            <div 
+              className="relative"
+              style={{
+                filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))',
+              }}
+            >
+              <span 
+                className="block text-[8rem] leading-none"
+                style={{
+                  textShadow: currentStage.stage === 'master' 
+                    ? '0 0 30px gold, 0 0 60px orange' 
+                    : '0 0 20px rgba(255,255,255,0.3)',
+                }}
+              >
                 {currentStage.emoji}
               </span>
+              
+              {currentStage.stage === 'master' && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-3xl animate-bounce">
+                  👑
+                </div>
+              )}
             </div>
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white/90 rounded-full px-4 py-1 text-sm font-bold text-gray-800">
-              {currentStage.name}
+            
+            <div className="mt-2 bg-black/60 backdrop-blur-sm rounded-full px-4 py-1.5 border border-white/20">
+              <span className="text-white font-bold text-sm">{currentStage.name}</span>
             </div>
           </div>
 
-          <div className="mt-8 w-full max-w-xs">
-            <div className="flex justify-between text-sm text-white mb-1">
-              <span>Evolution Progress</span>
-              <span>{monster.evolutionPoints} EP</span>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-64">
+            <div className="flex justify-between text-xs text-white/80 mb-1">
+              <span>Evolution</span>
+              <span>{monster.evolutionPoints} / {nextStage?.minPoints || 'MAX'} EP</span>
             </div>
-            <div className="h-4 bg-black/30 rounded-full overflow-hidden">
+            <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/20">
               <div 
-                className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 transition-all duration-700"
                 style={{ width: `${evolutionProgress()}%` }}
               />
             </div>
             {nextStage && (
-              <p className="text-cyan-300 text-xs mt-1 text-center">
-                {nextStage.minPoints - monster.evolutionPoints} EP to {nextStage.name} {nextStage.emoji}
+              <p className="text-cyan-300/80 text-xs mt-1 text-center">
+                {nextStage.minPoints - monster.evolutionPoints} EP to {nextStage.emoji}
               </p>
             )}
           </div>
-
-          {decorItems.length > 0 && (
-            <div className="mt-4 flex gap-2">
-              {decorItems.slice(0, 5).map(item => (
-                <span key={item.id} className="text-2xl" title={item.itemName}>
-                  {item.itemEmoji}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mt-6">
           <button
             onClick={() => setShowInventory(true)}
-            className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white rounded-xl p-6 shadow-lg transition transform hover:scale-105"
+            className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white rounded-xl p-5 shadow-lg transition transform hover:scale-105 border border-purple-400/30"
           >
-            <Package size={32} />
+            <Package size={28} />
             <span className="font-bold">Inventory</span>
             <span className="text-xs opacity-80">{inventory.reduce((sum, i) => sum + i.quantity, 0)} items</span>
           </button>
           
           <button
             onClick={() => setShowWheel(true)}
-            className="flex flex-col items-center gap-2 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl p-6 shadow-lg transition transform hover:scale-105"
+            className="flex flex-col items-center gap-2 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl p-5 shadow-lg transition transform hover:scale-105 border border-amber-400/30"
           >
-            <Sparkles size={32} />
+            <Sparkles size={28} />
             <span className="font-bold">Lucky Wheel</span>
             <span className="text-xs opacity-80">{SPIN_COST} XP per spin</span>
           </button>
         </div>
+
+        {placedDecorations.length > 0 && (
+          <div className="max-w-md mx-auto mt-4 bg-black/30 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-white/60 text-xs text-center mb-2">Placed Decorations (tap to remove)</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {placedDecorations.map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => handleEquipDecoration({ id: d.id, itemEmoji: d.emoji, itemName: d.name } as DojoItem)}
+                  className="text-2xl hover:scale-125 transition-transform bg-white/10 rounded-lg p-2"
+                  title={`Remove ${d.name}`}
+                >
+                  {d.emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {showInventory && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 flex items-center justify-between">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-hidden border border-purple-500/30">
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-700 p-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Package size={24} /> Inventory
               </h2>
@@ -327,9 +517,9 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
               </button>
             </div>
             
-            <div className="p-4 overflow-y-auto max-h-96">
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
               {inventory.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-400">
                   <Package size={48} className="mx-auto mb-2 opacity-50" />
                   <p>Your inventory is empty!</p>
                   <p className="text-sm">Spin the Lucky Wheel to get items.</p>
@@ -338,28 +528,28 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
                 <>
                   {foodItems.length > 0 && (
                     <div className="mb-6">
-                      <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2">
-                        <Cookie size={18} /> Food Items
+                      <h3 className="font-bold text-white mb-3 flex items-center gap-2">
+                        <Cookie size={18} className="text-orange-400" /> Food Items
                       </h3>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-3">
                         {foodItems.map(item => (
                           <div 
                             key={item.id} 
-                            className={`p-3 rounded-lg border-2 ${RARITY_COLORS[item.itemRarity]} ${RARITY_GLOW[item.itemRarity]}`}
+                            className={`p-3 rounded-xl border-2 ${RARITY_COLORS[item.itemRarity]} ${RARITY_GLOW[item.itemRarity]}`}
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="text-2xl">{item.itemEmoji}</span>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-3xl">{item.itemEmoji}</span>
                               <div className="flex-1">
-                                <p className="font-medium text-sm">{item.itemName}</p>
+                                <p className="font-bold text-sm">{item.itemName}</p>
                                 <p className="text-xs opacity-70">+{item.evolutionPoints} EP × {item.quantity}</p>
                               </div>
                             </div>
                             <button
                               onClick={() => handleFeed(item.id)}
                               disabled={feedingItem === item.id}
-                              className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white text-sm py-1 rounded-lg disabled:opacity-50 transition"
+                              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white text-sm py-2 rounded-lg disabled:opacity-50 transition font-bold"
                             >
-                              {feedingItem === item.id ? 'Feeding...' : 'Feed Monster'}
+                              {feedingItem === item.id ? '🍽️ Feeding...' : '🍽️ Feed Monster'}
                             </button>
                           </div>
                         ))}
@@ -369,30 +559,37 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
                   
                   {decorItems.length > 0 && (
                     <div>
-                      <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2">
-                        <Flower2 size={18} /> Decorations
+                      <h3 className="font-bold text-white mb-3 flex items-center gap-2">
+                        <Flower2 size={18} className="text-pink-400" /> Decorations
                       </h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        {decorItems.map(item => (
-                          <div 
-                            key={item.id} 
-                            className={`p-3 rounded-lg border-2 ${RARITY_COLORS[item.itemRarity]} ${RARITY_GLOW[item.itemRarity]}`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-2xl">{item.itemEmoji}</span>
-                              <div className="flex-1">
-                                <p className="font-medium text-sm">{item.itemName}</p>
-                                <p className="text-xs opacity-70">×{item.quantity}</p>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleEquipDecoration(item.itemName)}
-                              className="mt-2 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-sm py-1 rounded-lg transition"
+                      <div className="grid grid-cols-2 gap-3">
+                        {decorItems.map(item => {
+                          const isPlaced = placedDecorations.some(d => d.id === item.id);
+                          return (
+                            <div 
+                              key={item.id} 
+                              className={`p-3 rounded-xl border-2 ${RARITY_COLORS[item.itemRarity]} ${RARITY_GLOW[item.itemRarity]} ${isPlaced ? 'ring-2 ring-cyan-400' : ''}`}
                             >
-                              Equip / Place
-                            </button>
-                          </div>
-                        ))}
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-3xl">{item.itemEmoji}</span>
+                                <div className="flex-1">
+                                  <p className="font-bold text-sm">{item.itemName}</p>
+                                  <p className="text-xs opacity-70">×{item.quantity}</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleEquipDecoration(item)}
+                                className={`w-full text-white text-sm py-2 rounded-lg transition font-bold ${
+                                  isPlaced 
+                                    ? 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500' 
+                                    : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500'
+                                }`}
+                              >
+                                {isPlaced ? '📤 Remove' : '📍 Place in Dojo'}
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -404,8 +601,8 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
       )}
 
       {showWheel && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 rounded-2xl max-w-md w-full overflow-hidden border border-amber-500/30">
             <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Sparkles size={24} /> Lucky Wheel
@@ -417,36 +614,40 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
             
             <div className="p-6">
               <div className="text-center mb-6">
-                <div className="inline-flex items-center gap-2 bg-yellow-100 rounded-full px-4 py-2">
-                  <Zap className="text-yellow-600" size={20} />
-                  <span className="font-bold text-yellow-700">{xpBalance.toLocaleString()} XP</span>
+                <div className="inline-flex items-center gap-2 bg-yellow-500/20 rounded-full px-4 py-2 border border-yellow-500/30">
+                  <Zap className="text-yellow-400" size={20} />
+                  <span className="font-bold text-yellow-300">{xpBalance.toLocaleString()} XP</span>
                 </div>
-                <p className="text-gray-500 text-sm mt-2">Cost: {SPIN_COST} XP per spin</p>
+                <p className="text-gray-400 text-sm mt-2">Cost: {SPIN_COST} XP per spin</p>
               </div>
 
-              <div className="relative w-48 h-48 mx-auto mb-6">
-                <div className={`w-full h-full rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center shadow-xl ${spinning ? 'animate-spin' : ''}`} 
-                     style={{ animationDuration: '0.3s' }}>
-                  {spinning ? (
-                    <RotateCcw className="text-white animate-pulse" size={64} />
-                  ) : spinResult ? (
-                    <div className="text-center">
-                      <span className={`text-6xl ${RARITY_GLOW[spinResult.rarity as keyof typeof RARITY_GLOW]}`}>
-                        {spinResult.emoji}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-6xl">🎰</span>
-                  )}
+              <div className="relative w-52 h-52 mx-auto mb-6">
+                <div 
+                  className={`w-full h-full rounded-full flex items-center justify-center shadow-2xl border-4 border-amber-400/50 ${spinning ? 'animate-spin' : ''}`} 
+                  style={{ 
+                    animationDuration: '0.3s',
+                    background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #8b5cf6, #06b6d4, #10b981, #f59e0b)',
+                  }}
+                >
+                  <div className="w-40 h-40 rounded-full bg-slate-800 flex items-center justify-center border-4 border-slate-700">
+                    {spinning ? (
+                      <RotateCcw className="text-white animate-pulse" size={64} />
+                    ) : spinResult ? (
+                      <span className="text-7xl">{spinResult.emoji}</span>
+                    ) : (
+                      <span className="text-7xl">🎰</span>
+                    )}
+                  </div>
                 </div>
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 text-3xl">▼</div>
               </div>
 
               {spinResult && !spinning && (
-                <div className={`text-center p-4 rounded-xl mb-4 ${RARITY_COLORS[spinResult.rarity as keyof typeof RARITY_COLORS]}`}>
+                <div className={`text-center p-4 rounded-xl mb-4 border-2 ${RARITY_COLORS[spinResult.rarity as keyof typeof RARITY_COLORS]}`}>
                   <p className="font-bold text-lg">{spinResult.name}</p>
                   <p className="text-sm opacity-80">{spinResult.rarity} {spinResult.type}</p>
                   {spinResult.evolutionPoints > 0 && (
-                    <p className="text-xs mt-1">+{spinResult.evolutionPoints} Evolution Points when fed!</p>
+                    <p className="text-xs mt-1">+{spinResult.evolutionPoints} EP when fed!</p>
                   )}
                 </div>
               )}
@@ -454,7 +655,7 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
               <button
                 onClick={handleSpin}
                 disabled={spinning || xpBalance < SPIN_COST}
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 border border-amber-400/30"
               >
                 {spinning ? (
                   <>
@@ -470,7 +671,7 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
               </button>
               
               {xpBalance < SPIN_COST && !spinning && (
-                <p className="text-red-500 text-sm text-center mt-2">
+                <p className="text-red-400 text-sm text-center mt-2">
                   Not enough XP! Earn more through training.
                 </p>
               )}
@@ -479,37 +680,38 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
         </div>
       )}
 
-      {/* Feed Toast */}
       {feedToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
-          <div className="bg-green-500 text-white px-6 py-3 rounded-full shadow-lg font-bold text-lg">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-full shadow-2xl font-bold text-xl border-2 border-green-300">
             Yum! +{feedToast.ep} EP 🍽️
           </div>
         </div>
       )}
 
-      {/* Evolution Toast */}
       {evolveToast && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
-          <div className="bg-gradient-to-br from-purple-500 via-pink-500 to-yellow-500 p-1 rounded-3xl animate-pulse">
-            <div className="bg-gray-900 rounded-3xl p-8 text-center">
-              <div className="text-7xl mb-4 animate-bounce">{evolveToast.emoji}</div>
-              <h2 className="text-3xl font-bold text-white mb-2">EVOLUTION!</h2>
-              <p className="text-xl text-cyan-300">
-                Your monster evolved to <span className="font-bold text-yellow-300">{evolveToast.newStage}</span>!
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500 blur-3xl opacity-50 animate-pulse" />
+            <div className="relative bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-3xl p-10 text-center border-4 border-yellow-400/50">
+              <div className="text-[10rem] mb-4 animate-bounce leading-none">{evolveToast.emoji}</div>
+              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 mb-2">
+                ✨ EVOLUTION! ✨
+              </h2>
+              <p className="text-2xl text-white">
+                Your monster evolved to{' '}
+                <span className="font-bold text-yellow-300">{evolveToast.newStage}</span>!
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Debug Button - Bottom of screen */}
       <div className="fixed bottom-4 left-4 z-50">
         <button
           onClick={handleDebugAddXP}
-          className="bg-gray-700/80 hover:bg-gray-600 text-gray-300 text-xs px-3 py-2 rounded-lg border border-gray-500/50 transition"
+          className="bg-gray-800/80 hover:bg-gray-700 text-gray-400 text-xs px-3 py-2 rounded-lg border border-gray-600/50 transition"
         >
-          DEV: Add 1000 XP
+          DEV: +1000 XP
         </button>
       </div>
     </div>
