@@ -1579,6 +1579,7 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
   try {
     // Check if student already completed today's challenge
     if (isValidUuid) {
+      // Check 1: Regular challenge_submissions table (for DB-stored challenges)
       const existingSubmission = await client.query(
         `SELECT cs.id, cs.is_correct, cs.xp_awarded, dc.title
          FROM challenge_submissions cs
@@ -1596,6 +1597,26 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
           message: `You already completed today's challenge: "${sub.title}"!`,
           xpAwarded: sub.xp_awarded,
           wasCorrect: sub.is_correct
+        });
+      }
+      
+      // Check 2: xp_transactions table (for fallback/dynamic challenges)
+      const fallbackSubmission = await client.query(
+        `SELECT id, amount FROM xp_transactions 
+         WHERE student_id = $1::uuid 
+         AND reason LIKE '%daily_challenge%' 
+         AND DATE(created_at) = $2::date
+         LIMIT 1`,
+        [studentId, today]
+      );
+      
+      if (fallbackSubmission.rows.length > 0) {
+        const xpAmount = fallbackSubmission.rows[0].amount || 0;
+        return res.json({ 
+          completed: true, 
+          message: `You already completed today's mystery challenge!`,
+          xpAwarded: xpAmount,
+          wasCorrect: true
         });
       }
     }
