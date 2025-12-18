@@ -2284,11 +2284,12 @@ export function registerRoutes(app: Express) {
       console.log('📋 [DailyChallenge] Validated (lenient):', { studentId, challengeId: challengeIdStr, validClubId, selectedIndex, isFallbackChallenge });
 
       // BUG FIX: Check if user already completed a daily challenge TODAY (prevents infinite XP exploit)
+      // Use xp_transactions table (correct table name) with reason containing 'daily_challenge'
       const today = new Date().toISOString().split('T')[0];
       const alreadyPlayedToday = await db.execute(sql`
-        SELECT id, xp_amount FROM xp_logs 
+        SELECT id, amount FROM xp_transactions 
         WHERE student_id = ${studentId}::uuid 
-        AND activity_type = 'daily_challenge' 
+        AND reason LIKE '%daily_challenge%' 
         AND DATE(created_at) = ${today}::date
         LIMIT 1
       `);
@@ -2298,7 +2299,7 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({
           error: 'Already completed',
           message: 'You already completed today\'s challenge! Come back tomorrow.',
-          previousXp: (alreadyPlayedToday as any[])[0].xp_amount || 0
+          previousXp: (alreadyPlayedToday as any[])[0].amount || 0
         });
       }
 
@@ -2310,7 +2311,7 @@ export function registerRoutes(app: Express) {
         const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
         const xpAwarded = isCorrect ? (frontendXpReward || 50) : 0;
         
-        // Award XP directly to student AND log to xp_logs for persistence
+        // Award XP directly to student AND log to xp_transactions for persistence
         if (isCorrect && xpAwarded > 0) {
           // 1. Update student's total XP
           await db.execute(sql`
@@ -2319,10 +2320,11 @@ export function registerRoutes(app: Express) {
             WHERE id = ${studentId}::uuid
           `);
           
-          // 2. Insert into xp_logs for persistence and duplicate prevention
+          // 2. Insert into xp_transactions for persistence and duplicate prevention
+          // CRITICAL: Do NOT store string challengeId - just record that daily_challenge happened
           await db.execute(sql`
-            INSERT INTO xp_logs (student_id, activity_type, xp_amount, description, created_at)
-            VALUES (${studentId}::uuid, 'daily_challenge', ${xpAwarded}, ${`Daily Mystery Challenge (${challengeIdStr})`}, NOW())
+            INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+            VALUES (${studentId}::uuid, ${xpAwarded}, 'EARN', 'daily_challenge', NOW())
           `);
           
           console.log(`✅ [DailyChallenge] Fallback XP PERSISTED: ${xpAwarded} XP to student ${studentId}`);

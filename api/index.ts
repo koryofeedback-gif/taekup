@@ -1824,11 +1824,12 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
   const client = await pool.connect();
   try {
     // BUG FIX: Check if user already completed a daily challenge TODAY (prevents infinite XP exploit)
+    // Use xp_transactions table (correct table name) with reason containing 'daily_challenge'
     const today = new Date().toISOString().split('T')[0];
     const alreadyPlayedToday = await client.query(
-      `SELECT id, xp_amount FROM xp_logs 
+      `SELECT id, amount FROM xp_transactions 
        WHERE student_id = $1::uuid 
-       AND activity_type = 'daily_challenge' 
+       AND reason LIKE '%daily_challenge%' 
        AND DATE(created_at) = $2::date
        LIMIT 1`,
       [studentId, today]
@@ -1839,7 +1840,7 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       return res.status(400).json({
         error: 'Already completed',
         message: 'You already completed today\'s challenge! Come back tomorrow.',
-        previousXp: alreadyPlayedToday.rows[0].xp_amount || 0
+        previousXp: alreadyPlayedToday.rows[0].amount || 0
       });
     }
     
@@ -1851,7 +1852,7 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
       const xpAwarded = isCorrect ? (frontendXpReward || 50) : 0;
       
-      // Award XP directly to student AND log to xp_logs for persistence
+      // Award XP directly to student AND log to xp_transactions for persistence
       if (isCorrect && xpAwarded > 0) {
         // 1. Update student's total XP
         await client.query(
@@ -1859,11 +1860,12 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
           [xpAwarded, studentId]
         );
         
-        // 2. Insert into xp_logs for persistence and duplicate prevention
+        // 2. Insert into xp_transactions for persistence and duplicate prevention
+        // CRITICAL: Do NOT store string challengeId - just record that daily_challenge happened
         await client.query(
-          `INSERT INTO xp_logs (student_id, activity_type, xp_amount, description, created_at)
-           VALUES ($1::uuid, 'daily_challenge', $2, $3, NOW())`,
-          [studentId, xpAwarded, `Daily Mystery Challenge (${challengeIdStr})`]
+          `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+           VALUES ($1::uuid, $2, 'EARN', 'daily_challenge', NOW())`,
+          [studentId, xpAwarded]
         );
         
         console.log(`✅ [DailyChallenge] Fallback XP PERSISTED: ${xpAwarded} XP to student ${studentId}`);
