@@ -3355,13 +3355,19 @@ export function registerRoutes(app: Express) {
     `);
     const totalEarned = parseInt((earned as any[])[0]?.total || '0', 10);
 
+    const xpEarned = await db.execute(sql`
+      SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
+      WHERE student_id = ${studentId}::uuid AND type = 'EARN'
+    `);
+    const totalXpEarned = parseInt((xpEarned as any[])[0]?.total || '0', 10);
+
     const spent = await db.execute(sql`
       SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
       WHERE student_id = ${studentId}::uuid AND type = 'SPEND'
     `);
     const totalSpent = parseInt((spent as any[])[0]?.total || '0', 10);
 
-    return totalEarned - totalSpent;
+    return totalEarned + totalXpEarned - totalSpent;
   }
 
   // Helper: Weighted random selection

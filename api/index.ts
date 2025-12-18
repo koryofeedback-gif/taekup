@@ -2750,6 +2750,13 @@ async function calculateDojoXp(client: any, studentId: string): Promise<number> 
   );
   const totalEarned = parseInt(earned.rows[0]?.total || '0', 10);
 
+  const xpEarned = await client.query(
+    `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
+     WHERE student_id = $1::uuid AND type = 'EARN'`,
+    [studentId]
+  );
+  const totalXpEarned = parseInt(xpEarned.rows[0]?.total || '0', 10);
+
   const spent = await client.query(
     `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
      WHERE student_id = $1::uuid AND type = 'SPEND'`,
@@ -2757,7 +2764,7 @@ async function calculateDojoXp(client: any, studentId: string): Promise<number> 
   );
   const totalSpent = parseInt(spent.rows[0]?.total || '0', 10);
 
-  return totalEarned - totalSpent;
+  return totalEarned + totalXpEarned - totalSpent;
 }
 
 function selectDojoWheelItem() {
