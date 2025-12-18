@@ -2200,7 +2200,8 @@ async function handleSentChallenges(req: VercelRequest, res: VercelResponse, stu
     return res.json(result.rows);
   } catch (error: any) {
     console.error('[Challenges] Fetch sent error:', error.message);
-    return res.status(500).json({ error: 'Failed to fetch challenges' });
+    // Gracefully return empty array if table doesn't exist or any DB error
+    return res.json([]);
   } finally {
     client.release();
   }
