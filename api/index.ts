@@ -2715,6 +2715,263 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   return res.status(400).json({ error: 'Invalid proofType' });
 }
 
+// ============ VIRTUAL DOJO ENDPOINTS ============
+
+const DOJO_SPIN_COST = 200;
+
+const DOJO_WHEEL_ITEMS = [
+  { name: 'Rice Ball', type: 'FOOD', rarity: 'COMMON', emoji: '🍙', evolutionPoints: 10, weight: 30 },
+  { name: 'Sushi', type: 'FOOD', rarity: 'COMMON', emoji: '🍣', evolutionPoints: 15, weight: 25 },
+  { name: 'Ramen', type: 'FOOD', rarity: 'RARE', emoji: '🍜', evolutionPoints: 25, weight: 15 },
+  { name: 'Golden Apple', type: 'FOOD', rarity: 'EPIC', emoji: '🍎', evolutionPoints: 50, weight: 8 },
+  { name: 'Dragon Fruit', type: 'FOOD', rarity: 'LEGENDARY', emoji: '🐉', evolutionPoints: 100, weight: 2 },
+  { name: 'Bonsai Tree', type: 'DECORATION', rarity: 'COMMON', emoji: '🌳', evolutionPoints: 0, weight: 20 },
+  { name: 'Lucky Cat', type: 'DECORATION', rarity: 'RARE', emoji: '🐱', evolutionPoints: 0, weight: 10 },
+  { name: 'Golden Trophy', type: 'DECORATION', rarity: 'EPIC', emoji: '🏆', evolutionPoints: 0, weight: 5 },
+  { name: 'Crystal Orb', type: 'DECORATION', rarity: 'LEGENDARY', emoji: '🔮', evolutionPoints: 0, weight: 2 },
+];
+
+const DOJO_EVOLUTION_STAGES = [
+  { stage: 'egg', minPoints: 0 },
+  { stage: 'baby', minPoints: 50 },
+  { stage: 'teen', minPoints: 150 },
+  { stage: 'adult', minPoints: 400 },
+  { stage: 'master', minPoints: 1000 },
+];
+
+async function calculateDojoXp(client: any, studentId: string): Promise<number> {
+  const earned = await client.query(
+    `SELECT 
+      COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
+      COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
+      COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0)
+      AS total`,
+    [studentId]
+  );
+  const totalEarned = parseInt(earned.rows[0]?.total || '0', 10);
+
+  const spent = await client.query(
+    `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
+     WHERE student_id = $1::uuid AND type = 'SPEND'`,
+    [studentId]
+  );
+  const totalSpent = parseInt(spent.rows[0]?.total || '0', 10);
+
+  return totalEarned - totalSpent;
+}
+
+function selectDojoWheelItem() {
+  const totalWeight = DOJO_WHEEL_ITEMS.reduce((sum, item) => sum + item.weight, 0);
+  let random = Math.random() * totalWeight;
+  for (const item of DOJO_WHEEL_ITEMS) {
+    random -= item.weight;
+    if (random <= 0) return item;
+  }
+  return DOJO_WHEEL_ITEMS[0];
+}
+
+async function handleDojoState(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const studentId = req.query.studentId as string;
+  if (!studentId) return res.status(400).json({ error: 'studentId is required' });
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) return res.status(400).json({ error: 'Invalid studentId' });
+
+  const client = await pool.connect();
+  try {
+    const xpBalance = await calculateDojoXp(client, studentId);
+
+    let inventory: any[] = [];
+    try {
+      const invResult = await client.query(
+        `SELECT id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points
+         FROM dojo_inventory WHERE student_id = $1::uuid AND quantity > 0`,
+        [studentId]
+      );
+      inventory = invResult.rows.map((item: any) => ({
+        id: item.id,
+        itemName: item.item_name,
+        itemType: item.item_type,
+        itemRarity: item.item_rarity,
+        itemEmoji: item.item_emoji,
+        quantity: item.quantity,
+        evolutionPoints: item.evolution_points,
+      }));
+    } catch (err) {
+      inventory = [];
+    }
+
+    let monster = { stage: 'egg', evolutionPoints: 0, name: 'My Monster' };
+    const monsterResult = await client.query(
+      `SELECT dojo_monster FROM students WHERE id = $1::uuid`,
+      [studentId]
+    );
+    if (monsterResult.rows[0]?.dojo_monster) {
+      monster = monsterResult.rows[0].dojo_monster;
+    }
+
+    return res.json({ xpBalance, inventory, monster });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleDojoSpin(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { studentId } = parseBody(req);
+  if (!studentId) return res.status(400).json({ error: 'studentId is required' });
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) return res.status(400).json({ error: 'Invalid studentId' });
+
+  const client = await pool.connect();
+  try {
+    const currentXp = await calculateDojoXp(client, studentId);
+    if (currentXp < DOJO_SPIN_COST) {
+      return res.status(400).json({ error: `Not enough XP! You have ${currentXp} XP but need ${DOJO_SPIN_COST} XP.` });
+    }
+
+    await client.query(
+      `INSERT INTO xp_transactions (student_id, amount, type, reason)
+       VALUES ($1::uuid, $2, 'SPEND', 'Lucky Wheel spin')`,
+      [studentId, DOJO_SPIN_COST]
+    );
+
+    const wonItem = selectDojoWheelItem();
+
+    const existing = await client.query(
+      `SELECT id, quantity FROM dojo_inventory 
+       WHERE student_id = $1::uuid AND item_name = $2`,
+      [studentId, wonItem.name]
+    );
+
+    if (existing.rows.length > 0) {
+      await client.query(
+        `UPDATE dojo_inventory SET quantity = quantity + 1 WHERE id = $1::uuid`,
+        [existing.rows[0].id]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO dojo_inventory (student_id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points)
+         VALUES ($1::uuid, $2, $3, $4, $5, 1, $6)`,
+        [studentId, wonItem.name, wonItem.type, wonItem.rarity, wonItem.emoji, wonItem.evolutionPoints]
+      );
+    }
+
+    const newXpBalance = await calculateDojoXp(client, studentId);
+    const invResult = await client.query(
+      `SELECT id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points
+       FROM dojo_inventory WHERE student_id = $1::uuid AND quantity > 0`,
+      [studentId]
+    );
+    const inventory = invResult.rows.map((i: any) => ({
+      id: i.id, itemName: i.item_name, itemType: i.item_type, itemRarity: i.item_rarity,
+      itemEmoji: i.item_emoji, quantity: i.quantity, evolutionPoints: i.evolution_points,
+    }));
+
+    console.log(`[Dojo] Spin: ${studentId} won ${wonItem.emoji} ${wonItem.name} (${wonItem.rarity})`);
+
+    return res.json({ item: wonItem, newXpBalance, inventory });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleDojoFeed(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { studentId, itemId } = parseBody(req);
+  if (!studentId || !itemId) return res.status(400).json({ error: 'studentId and itemId are required' });
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId) || !uuidRegex.test(itemId)) {
+    return res.status(400).json({ error: 'Invalid UUID format' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const itemResult = await client.query(
+      `SELECT id, item_type, evolution_points, quantity FROM dojo_inventory 
+       WHERE id = $1::uuid AND student_id = $2::uuid`,
+      [itemId, studentId]
+    );
+
+    if (itemResult.rows.length === 0) return res.status(404).json({ error: 'Item not found' });
+
+    const item = itemResult.rows[0];
+    if (item.item_type !== 'FOOD') return res.status(400).json({ error: 'Only food items can be fed to the monster' });
+    if (item.quantity < 1) return res.status(400).json({ error: 'No items left' });
+
+    await client.query(`UPDATE dojo_inventory SET quantity = quantity - 1 WHERE id = $1::uuid`, [itemId]);
+
+    const monsterResult = await client.query(
+      `SELECT dojo_monster FROM students WHERE id = $1::uuid`,
+      [studentId]
+    );
+
+    let monster = { stage: 'egg', evolutionPoints: 0, name: 'My Monster' };
+    if (monsterResult.rows[0]?.dojo_monster) {
+      monster = monsterResult.rows[0].dojo_monster;
+    }
+
+    monster.evolutionPoints += item.evolution_points;
+
+    const sortedStages = [...DOJO_EVOLUTION_STAGES].reverse();
+    const newStage = sortedStages.find(s => monster.evolutionPoints >= s.minPoints) || DOJO_EVOLUTION_STAGES[0];
+    monster.stage = newStage.stage;
+
+    await client.query(
+      `UPDATE students SET dojo_monster = $1::jsonb WHERE id = $2::uuid`,
+      [JSON.stringify(monster), studentId]
+    );
+
+    const invResult = await client.query(
+      `SELECT id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points
+       FROM dojo_inventory WHERE student_id = $1::uuid AND quantity > 0`,
+      [studentId]
+    );
+    const inventory = invResult.rows.map((i: any) => ({
+      id: i.id, itemName: i.item_name, itemType: i.item_type, itemRarity: i.item_rarity,
+      itemEmoji: i.item_emoji, quantity: i.quantity, evolutionPoints: i.evolution_points,
+    }));
+
+    console.log(`[Dojo] Feed: ${studentId} fed monster +${item.evolution_points} EP, now at ${monster.evolutionPoints} EP (${monster.stage})`);
+
+    return res.json({ monster, inventory });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleDojoDebugAddXP(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { studentId, amount = 1000 } = parseBody(req);
+  if (!studentId) return res.status(400).json({ error: 'studentId is required' });
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) return res.status(400).json({ error: 'Invalid studentId' });
+
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO xp_transactions (student_id, amount, type, reason)
+       VALUES ($1::uuid, $2, 'EARN', 'DEBUG: Test XP added')`,
+      [studentId, amount]
+    );
+
+    const newBalance = await calculateDojoXp(client, studentId);
+    console.log(`[Dojo DEBUG] Added ${amount} XP to student ${studentId}, new balance: ${newBalance}`);
+
+    return res.json({ success: true, xpBalance: newBalance });
+  } finally {
+    client.release();
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -2764,6 +3021,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/habits/check' || path === '/habits/check/') return await handleHabitCheck(req, res);
     if (path === '/habits/status' || path === '/habits/status/') return await handleHabitStatus(req, res);
     if (path === '/xp/sync' || path === '/xp/sync/') return await handleXpSync(req, res);
+    
+    // Virtual Dojo Game
+    if (path === '/dojo/state' || path === '/dojo/state/') return await handleDojoState(req, res);
+    if (path === '/dojo/spin' || path === '/dojo/spin/') return await handleDojoSpin(req, res);
+    if (path === '/dojo/feed' || path === '/dojo/feed/') return await handleDojoFeed(req, res);
+    if (path === '/dojo/debug-add-xp' || path === '/dojo/debug-add-xp/') return await handleDojoDebugAddXP(req, res);
     if (path === '/habits/custom' || path === '/habits/custom/') {
       if (req.method === 'GET') return await handleGetCustomHabits(req, res);
       if (req.method === 'POST') return await handleCreateCustomHabit(req, res);
