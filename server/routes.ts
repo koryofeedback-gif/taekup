@@ -3391,28 +3391,35 @@ export function registerRoutes(app: Express) {
 
       const xpBalance = await calculateTotalXp(studentId);
 
-      const inventoryResult = await db.execute(sql`
-        SELECT id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points
-        FROM dojo_inventory WHERE student_id = ${studentId}::uuid AND quantity > 0
-      `);
-
-      const inventory = (inventoryResult as any[]).map(item => ({
-        id: item.id,
-        itemName: item.item_name,
-        itemType: item.item_type,
-        itemRarity: item.item_rarity,
-        itemEmoji: item.item_emoji,
-        quantity: item.quantity,
-        evolutionPoints: item.evolution_points,
-      }));
+      let inventory: any[] = [];
+      try {
+        const inventoryResult = await db.execute(sql`
+          SELECT id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points
+          FROM dojo_inventory WHERE student_id = ${studentId}::uuid AND quantity > 0
+        `);
+        const rows = Array.isArray(inventoryResult) ? inventoryResult : [];
+        inventory = rows.map(item => ({
+          id: item.id,
+          itemName: item.item_name,
+          itemType: item.item_type,
+          itemRarity: item.item_rarity,
+          itemEmoji: item.item_emoji,
+          quantity: item.quantity,
+          evolutionPoints: item.evolution_points,
+        }));
+      } catch (invErr) {
+        console.log('[Dojo] No inventory found for student, returning empty array');
+        inventory = [];
+      }
 
       const monsterResult = await db.execute(sql`
         SELECT dojo_monster FROM students WHERE id = ${studentId}::uuid
       `);
 
       let monster = { stage: 'egg', evolutionPoints: 0, name: 'My Monster' };
-      if ((monsterResult as any[])[0]?.dojo_monster) {
-        monster = (monsterResult as any[])[0].dojo_monster;
+      const monsterRows = Array.isArray(monsterResult) ? monsterResult : [];
+      if (monsterRows[0]?.dojo_monster) {
+        monster = monsterRows[0].dojo_monster;
       }
 
       res.json({ xpBalance, inventory, monster });
@@ -3570,6 +3577,35 @@ export function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error('[Dojo] Feed error:', error.message);
       res.status(500).json({ error: 'Failed to feed monster' });
+    }
+  });
+
+  // DEBUG: Add test XP for development testing
+  app.post('/api/dojo/debug-add-xp', async (req: Request, res: Response) => {
+    try {
+      const { studentId, amount = 1000 } = req.body;
+
+      if (!studentId) {
+        return res.status(400).json({ error: 'studentId is required' });
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid studentId' });
+      }
+
+      await db.execute(sql`
+        INSERT INTO xp_transactions (student_id, amount, type, reason)
+        VALUES (${studentId}::uuid, ${amount}, 'EARN', 'DEBUG: Test XP added')
+      `);
+
+      const newBalance = await calculateTotalXp(studentId);
+      console.log(`[Dojo DEBUG] Added ${amount} XP to student ${studentId}, new balance: ${newBalance}`);
+
+      res.json({ success: true, xpBalance: newBalance });
+    } catch (error: any) {
+      console.error('[Dojo] Debug add XP error:', error.message);
+      res.status(500).json({ error: 'Failed to add XP' });
     }
   });
 }

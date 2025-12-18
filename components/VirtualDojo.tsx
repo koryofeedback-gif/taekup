@@ -147,6 +147,23 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
     }
   };
 
+  const handleDebugAddXP = async () => {
+    try {
+      const response = await fetch('/api/dojo/debug-add-xp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, amount: 1000 }),
+      });
+      
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      
+      setXpBalance(data.xpBalance);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const getCurrentEvolutionStage = () => {
     const sorted = [...EVOLUTION_STAGES].reverse();
     return sorted.find(s => monster.evolutionPoints >= s.minPoints) || EVOLUTION_STAGES[0];
@@ -428,6 +445,16 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
           </div>
         </div>
       )}
+
+      {/* Debug Button - Bottom of screen */}
+      <div className="fixed bottom-4 left-4 z-50">
+        <button
+          onClick={handleDebugAddXP}
+          className="bg-gray-700/80 hover:bg-gray-600 text-gray-300 text-xs px-3 py-2 rounded-lg border border-gray-500/50 transition"
+        >
+          DEV: Add 1000 XP
+        </button>
+      </div>
     </div>
   );
 }
