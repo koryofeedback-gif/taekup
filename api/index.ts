@@ -2013,6 +2013,70 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
   }
 }
 
+// Quick status check for daily challenge completion (used by frontend fallback)
+async function handleDailyChallengeStatus(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const studentId = req.query.studentId as string;
+  if (!studentId) {
+    return res.status(400).json({ error: 'studentId is required' });
+  }
+  
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId format' });
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+  const client = await pool.connect();
+  
+  try {
+    // Check xp_transactions for today's daily_challenge entry
+    const result = await client.query(
+      `SELECT id, amount FROM xp_transactions 
+       WHERE student_id = $1::uuid 
+       AND reason LIKE '%daily_challenge%' 
+       AND DATE(created_at) = $2::date
+       LIMIT 1`,
+      [studentId, today]
+    );
+    
+    if (result.rows.length > 0) {
+      return res.json({
+        completed: true,
+        alreadyPlayed: true,
+        xpAwarded: result.rows[0].amount || 50,
+        message: 'You already completed today\'s challenge!'
+      });
+    }
+    
+    // Also check challenge_submissions table
+    const submissionResult = await client.query(
+      `SELECT cs.xp_awarded FROM challenge_submissions cs
+       JOIN daily_challenges dc ON cs.challenge_id = dc.id
+       WHERE cs.student_id = $1::uuid AND dc.date = $2
+       LIMIT 1`,
+      [studentId, today]
+    );
+    
+    if (submissionResult.rows.length > 0) {
+      return res.json({
+        completed: true,
+        alreadyPlayed: true,
+        xpAwarded: submissionResult.rows[0].xp_awarded || 50,
+        message: 'You already completed today\'s challenge!'
+      });
+    }
+    
+    return res.json({ completed: false, alreadyPlayed: false });
+  } catch (error: any) {
+    console.error('[DailyChallengeStatus] Error:', error.message);
+    return res.json({ completed: false, alreadyPlayed: false });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleVideoFeedback(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -3138,6 +3202,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Daily Mystery Challenge
     if (path === '/daily-challenge' || path === '/daily-challenge/') return await handleDailyChallenge(req, res);
     if (path === '/daily-challenge/submit' || path === '/daily-challenge/submit/') return await handleDailyChallengeSubmit(req, res);
+    if (path === '/daily-challenge/status' || path === '/daily-challenge/status/') return await handleDailyChallengeStatus(req, res);
     
     // Arena Challenge Submit & History
     if (path === '/challenges/submit' || path === '/challenges/submit/') return await handleChallengeSubmit(req, res);

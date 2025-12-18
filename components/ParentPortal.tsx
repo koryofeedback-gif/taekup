@@ -315,13 +315,32 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 }
             } catch (error) {
                 console.error('[MysteryChallenge] Failed to fetch, using fallback:', error);
-                // Static fallback question with proper UUID format
+                
+                // Before showing fallback, check if user already completed today via a quick status check
+                try {
+                    const statusCheck = await fetch(`/api/daily-challenge/status?studentId=${student.id}`);
+                    const statusResult = await statusCheck.json();
+                    if (statusResult.completed || statusResult.alreadyPlayed) {
+                        console.log('[MysteryChallenge] User already played today (status check)');
+                        setMysteryCompleted(true);
+                        setMysteryXpAwarded(statusResult.xpAwarded || statusResult.previousXp || 50);
+                        setMysteryWasCorrect(true);
+                        setMysteryCompletionMessage('You already completed today\'s challenge!');
+                        setMysterySource('api');
+                        return; // Don't show fallback
+                    }
+                } catch (statusError) {
+                    console.log('[MysteryChallenge] Status check failed, showing fallback');
+                }
+                
+                // Static fallback question with DAILY unique ID (prevents duplicate submissions)
+                const today = new Date().toISOString().split('T')[0];
                 const fallbackChallenge = {
-                    id: '00000000-0000-0000-0000-000000000001',
+                    id: `fallback-${today}-${student.id.slice(0, 8)}`,
                     title: 'Martial Arts Trivia',
                     description: 'Test your knowledge while we reconnect!',
                     type: 'quiz' as const,
-                    xpReward: 10,
+                    xpReward: 50,
                     isStaticFallback: true,
                     quizData: {
                         question: 'What is the traditional bow in martial arts called?',
@@ -449,13 +468,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             
             const result = await response.json();
             
-            // Handle ALREADY_COMPLETED error from backend (security fix)
-            if (result.error === 'Already completed' || result.error === 'ALREADY_COMPLETED') {
+            // Handle ALREADY_COMPLETED error from backend (security fix) - treat as SUCCESS UI
+            if (result.error === 'Already completed' || result.error === 'ALREADY_COMPLETED' || result.message?.includes('already completed')) {
+                console.log('[MysteryChallenge] Already completed - showing success state');
                 setMysteryCompleted(true);
-                setMysteryXpAwarded(result.previousXp || 0);
-                setMysteryWasCorrect(result.wasCorrect || false);
-                setMysteryCompletionMessage(result.message || 'Nice try! You already finished this challenge today.');
+                setMysteryXpAwarded(result.previousXp || 50);
+                setMysteryWasCorrect(true);
+                setMysteryCompletionMessage(result.message || 'You already completed today\'s challenge! Come back tomorrow.');
                 setSelectedQuizAnswer(null);
+                
+                // Update header XP - trigger student refresh
+                const updatedStudent = { ...student, totalPoints: (student.totalPoints || 0) };
+                onUpdateStudent(updatedStudent);
                 return;
             }
             
@@ -473,6 +497,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     wins: prev.wins + (result.isCorrect ? 1 : 0),
                     xp: prev.xp + result.xpAwarded
                 }));
+                
+                // Update header XP - add the newly earned XP to student
+                const newTotalXp = (student.totalPoints || 0) + (result.xpAwarded || 0);
+                const updatedStudent = { ...student, totalPoints: newTotalXp };
+                onUpdateStudent(updatedStudent);
+                console.log('[MysteryChallenge] Updated student XP in header:', newTotalXp);
             }
         } catch (error) {
             console.error('[MysteryChallenge] Submit error:', error);
