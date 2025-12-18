@@ -2252,9 +2252,10 @@ export function registerRoutes(app: Express) {
   app.post('/api/daily-challenge/submit', async (req: Request, res: Response) => {
     try {
       console.log('📥 [DailyChallenge] Received Payload:', JSON.stringify(req.body, null, 2));
+      console.log('🔍 Processing Submission:', { type: typeof req.body.challengeId, id: req.body.challengeId });
       
       // Extract fields - be very lenient with what we accept
-      const { challengeId, studentId, answer, selectedIndex } = req.body;
+      const { challengeId, studentId, answer, selectedIndex, isCorrect: frontendIsCorrect, xpReward: frontendXpReward } = req.body;
       const clubIdRaw = req.body.clubId;
       
       // Only require studentId and challengeId
@@ -2263,24 +2264,53 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'challengeId and studentId are required' });
       }
 
-      // Very lenient UUID validation
+      // UUID validation
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       
+      // studentId MUST be a valid UUID
       if (!uuidRegex.test(String(studentId))) {
         console.error('❌ [DailyChallenge] Invalid studentId format:', studentId);
         return res.status(400).json({ error: 'Invalid studentId format' });
       }
-      if (!uuidRegex.test(String(challengeId))) {
-        console.error('❌ [DailyChallenge] Invalid challengeId format:', challengeId);
-        return res.status(400).json({ error: 'Invalid challengeId format' });
-      }
       
-      // clubId: FULLY OPTIONAL - accept null, undefined, invalid strings, anything
-      // If it's not a valid UUID, just set to null - NO ERRORS
+      // challengeId: Accept UUID OR string starting with "fallback-" or "static-"
+      const challengeIdStr = String(challengeId);
+      const isFallbackChallenge = challengeIdStr.startsWith('fallback-') || challengeIdStr.startsWith('static-') || !uuidRegex.test(challengeIdStr);
+      
+      console.log('📋 [DailyChallenge] Challenge type:', { isFallbackChallenge, challengeIdStr });
+      
+      // clubId: FULLY OPTIONAL
       const validClubId = (clubIdRaw && typeof clubIdRaw === 'string' && uuidRegex.test(clubIdRaw)) ? clubIdRaw : null;
-      console.log('📋 [DailyChallenge] Validated (lenient):', { studentId, challengeId, validClubId, selectedIndex });
+      console.log('📋 [DailyChallenge] Validated (lenient):', { studentId, challengeId: challengeIdStr, validClubId, selectedIndex, isFallbackChallenge });
 
-      // Get challenge details
+      // FALLBACK CHALLENGE HANDLING: Skip DB lookup, trust frontend
+      if (isFallbackChallenge) {
+        console.log('🎯 [DailyChallenge] Processing FALLBACK challenge - skipping DB lookup');
+        
+        // For fallback challenges, trust the frontend's isCorrect or default to true
+        const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
+        const xpAwarded = isCorrect ? (frontendXpReward || 50) : 0;
+        
+        // Award XP directly to student
+        if (isCorrect && xpAwarded > 0) {
+          await db.execute(sql`
+            UPDATE students 
+            SET total_xp = COALESCE(total_xp, 0) + ${xpAwarded}, updated_at = NOW()
+            WHERE id = ${studentId}::uuid
+          `);
+          console.log(`✅ [DailyChallenge] Fallback Submit Success - XP Awarded: ${xpAwarded}`);
+        }
+        
+        return res.json({
+          success: true,
+          isCorrect,
+          xpAwarded,
+          explanation: 'Great job completing the challenge!',
+          message: isCorrect ? `Correct! +${xpAwarded} XP` : 'Not quite! Try again tomorrow.'
+        });
+      }
+
+      // REGULAR CHALLENGE HANDLING: Full DB lookup and validation
       const challengeResult = await db.execute(sql`
         SELECT * FROM daily_challenges WHERE id = ${challengeId}::uuid
       `);
@@ -2301,7 +2331,7 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Already submitted this challenge' });
       }
 
-      // BUG FIX #2: Use the ACTUAL xp_reward from the database, not hardcoded value
+      // Use the ACTUAL xp_reward from the database
       let isCorrect = false;
       const challengeXpReward = challenge.xp_reward || 50;
       let xpAwarded = 0;
@@ -2311,7 +2341,7 @@ export function registerRoutes(app: Express) {
           ? JSON.parse(challenge.quiz_data) 
           : challenge.quiz_data;
         isCorrect = selectedIndex === quizData.correctIndex;
-        xpAwarded = isCorrect ? challengeXpReward : 0; // No XP for wrong answers
+        xpAwarded = isCorrect ? challengeXpReward : 0;
       } else {
         xpAwarded = challengeXpReward;
         isCorrect = true;

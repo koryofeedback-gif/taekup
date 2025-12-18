@@ -414,11 +414,27 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             const sanitizedClubId = student.clubId && uuidRegex.test(student.clubId) ? student.clubId : null;
             
+            // Check if this is a fallback challenge (non-UUID ID)
+            const challengeIdStr = String(mysteryChallenge.id);
+            const isFallbackId = !uuidRegex.test(challengeIdStr);
+            
+            // For fallback challenges, calculate isCorrect locally and send to backend
+            const quizData = mysteryChallenge.quizData;
+            const localIsCorrect = selectedIndex === quizData?.correctIndex;
+            
             const payload: any = {
                 challengeId: mysteryChallenge.id,
                 studentId: student.id,
                 selectedIndex,
             };
+            
+            // For fallback challenges, include isCorrect and xpReward so backend can award XP
+            if (isFallbackId) {
+                payload.isCorrect = localIsCorrect;
+                payload.xpReward = mysteryChallenge.xpReward || 50;
+                console.log('[MysteryChallenge] Fallback challenge detected, including isCorrect:', localIsCorrect);
+            }
+            
             if (sanitizedClubId) {
                 payload.clubId = sanitizedClubId;
             }

@@ -1788,9 +1788,10 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
   
   const body = parseBody(req);
   console.log('📥 [DailyChallenge] Received Payload:', JSON.stringify(body, null, 2));
+  console.log('🔍 Processing Submission:', { type: typeof body.challengeId, id: body.challengeId });
   
   // Extract fields - be very lenient with what we accept
-  const { challengeId, studentId, selectedIndex, answer } = body;
+  const { challengeId, studentId, selectedIndex, answer, isCorrect: frontendIsCorrect, xpReward: frontendXpReward } = body;
   const clubIdRaw = body.clubId;
   
   // Only require studentId and challengeId
@@ -1799,28 +1800,57 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
     return res.status(400).json({ error: 'challengeId and studentId are required' });
   }
 
-  // Very lenient UUID validation - just check format loosely
+  // UUID validation
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
-  // For studentId and challengeId: try to use as-is if valid, otherwise log and reject
+  // studentId MUST be a valid UUID
   if (!uuidRegex.test(String(studentId))) {
     console.error('❌ [DailyChallenge] Invalid studentId format:', studentId);
     return res.status(400).json({ error: 'Invalid studentId format' });
   }
-  if (!uuidRegex.test(String(challengeId))) {
-    console.error('❌ [DailyChallenge] Invalid challengeId format:', challengeId);
-    return res.status(400).json({ error: 'Invalid challengeId format' });
-  }
+  
+  // challengeId: Accept UUID OR string starting with "fallback-" or "static-"
+  const challengeIdStr = String(challengeId);
+  const isFallbackChallenge = challengeIdStr.startsWith('fallback-') || challengeIdStr.startsWith('static-') || !uuidRegex.test(challengeIdStr);
+  const isValidUUID = uuidRegex.test(challengeIdStr);
+  
+  console.log('📋 [DailyChallenge] Challenge type:', { isFallbackChallenge, isValidUUID, challengeIdStr });
   
   // clubId: FULLY OPTIONAL - accept null, undefined, invalid strings, anything
-  // If it's not a valid UUID, just set to null - NO ERRORS
   const validClubId = (clubIdRaw && typeof clubIdRaw === 'string' && uuidRegex.test(clubIdRaw)) ? clubIdRaw : null;
   
-  console.log('📋 [DailyChallenge] Validated (lenient):', { studentId, challengeId, validClubId, selectedIndex });
+  console.log('📋 [DailyChallenge] Validated (lenient):', { studentId, challengeId: challengeIdStr, validClubId, selectedIndex, isFallbackChallenge });
 
   const client = await pool.connect();
   try {
-    // BUG FIX #1: Check for duplicate submission BEFORE processing
+    // FALLBACK CHALLENGE HANDLING: Skip DB lookup, trust frontend
+    if (isFallbackChallenge) {
+      console.log('🎯 [DailyChallenge] Processing FALLBACK challenge - skipping DB lookup');
+      
+      // For fallback challenges, trust the frontend's isCorrect or default to true
+      const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
+      const xpAwarded = isCorrect ? (frontendXpReward || 50) : 0;
+      
+      // Award XP directly to student (no submission record for fallback challenges)
+      if (isCorrect && xpAwarded > 0) {
+        await client.query(
+          `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+          [xpAwarded, studentId]
+        );
+        console.log(`✅ [DailyChallenge] Fallback Submit Success - XP Awarded: ${xpAwarded}`);
+      }
+      
+      return res.json({
+        success: true,
+        isCorrect,
+        xpAwarded,
+        explanation: 'Great job completing the challenge!',
+        message: isCorrect ? `Correct! +${xpAwarded} XP` : 'Not quite! Try again tomorrow.'
+      });
+    }
+
+    // REGULAR CHALLENGE HANDLING: Full DB lookup and validation
+    // Check for duplicate submission BEFORE processing
     const existingSubmission = await client.query(
       `SELECT id, xp_awarded, is_correct FROM challenge_submissions 
        WHERE challenge_id = $1::uuid AND student_id = $2::uuid LIMIT 1`,
@@ -1852,7 +1882,7 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
     const correctIndex = quizData.correctIndex ?? 0;
     const isCorrect = selectedIndex === correctIndex;
     
-    // BUG FIX #2: Use the ACTUAL xp_reward from the database, not hardcoded value
+    // Use the ACTUAL xp_reward from the database
     const challengeXpReward = challenge.xp_reward || 50;
     const xpAwarded = isCorrect ? challengeXpReward : 0;
 
