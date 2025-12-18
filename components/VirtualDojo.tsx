@@ -70,6 +70,8 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
   const [spinResult, setSpinResult] = useState<typeof WHEEL_ITEMS[0] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [feedingItem, setFeedingItem] = useState<string | null>(null);
+  const [feedToast, setFeedToast] = useState<{ ep: number; show: boolean } | null>(null);
+  const [evolveToast, setEvolveToast] = useState<{ newStage: string; emoji: string } | null>(null);
 
   const fetchDojoState = useCallback(async () => {
     try {
@@ -128,6 +130,9 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
     setFeedingItem(itemId);
     setError(null);
     
+    const feedingItemData = inventory.find(i => i.id === itemId);
+    const oldStage = monster.stage;
+    
     try {
       const response = await fetch('/api/dojo/feed', {
         method: 'POST',
@@ -138,6 +143,20 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       
+      const epGained = feedingItemData?.evolutionPoints || 10;
+      setFeedToast({ ep: epGained, show: true });
+      setTimeout(() => setFeedToast(null), 2000);
+      
+      if (data.monster.stage !== oldStage) {
+        const newStageInfo = EVOLUTION_STAGES.find(s => s.stage === data.monster.stage);
+        if (newStageInfo) {
+          setTimeout(() => {
+            setEvolveToast({ newStage: newStageInfo.name, emoji: newStageInfo.emoji });
+            setTimeout(() => setEvolveToast(null), 3000);
+          }, 500);
+        }
+      }
+      
       setMonster(data.monster);
       setInventory(data.inventory);
     } catch (err: any) {
@@ -145,6 +164,10 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
     } finally {
       setFeedingItem(null);
     }
+  };
+
+  const handleEquipDecoration = (itemName: string) => {
+    console.log(`[Dojo] Equipping decoration: ${itemName}`);
   };
 
   const handleDebugAddXP = async () => {
@@ -349,15 +372,25 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
                       <h3 className="font-bold text-gray-700 mb-2 flex items-center gap-2">
                         <Flower2 size={18} /> Decorations
                       </h3>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         {decorItems.map(item => (
                           <div 
                             key={item.id} 
-                            className={`p-3 rounded-lg border-2 text-center ${RARITY_COLORS[item.itemRarity]} ${RARITY_GLOW[item.itemRarity]}`}
+                            className={`p-3 rounded-lg border-2 ${RARITY_COLORS[item.itemRarity]} ${RARITY_GLOW[item.itemRarity]}`}
                           >
-                            <span className="text-3xl">{item.itemEmoji}</span>
-                            <p className="font-medium text-xs mt-1">{item.itemName}</p>
-                            <p className="text-xs opacity-70">×{item.quantity}</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">{item.itemEmoji}</span>
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">{item.itemName}</p>
+                                <p className="text-xs opacity-70">×{item.quantity}</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleEquipDecoration(item.itemName)}
+                              className="mt-2 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-sm py-1 rounded-lg transition"
+                            >
+                              Equip / Place
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -441,6 +474,30 @@ export default function VirtualDojo({ studentId, studentName, onBack }: VirtualD
                   Not enough XP! Earn more through training.
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feed Toast */}
+      {feedToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-full shadow-lg font-bold text-lg">
+            Yum! +{feedToast.ep} EP 🍽️
+          </div>
+        </div>
+      )}
+
+      {/* Evolution Toast */}
+      {evolveToast && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
+          <div className="bg-gradient-to-br from-purple-500 via-pink-500 to-yellow-500 p-1 rounded-3xl animate-pulse">
+            <div className="bg-gray-900 rounded-3xl p-8 text-center">
+              <div className="text-7xl mb-4 animate-bounce">{evolveToast.emoji}</div>
+              <h2 className="text-3xl font-bold text-white mb-2">EVOLUTION!</h2>
+              <p className="text-xl text-cyan-300">
+                Your monster evolved to <span className="font-bold text-yellow-300">{evolveToast.newStage}</span>!
+              </p>
             </div>
           </div>
         </div>
