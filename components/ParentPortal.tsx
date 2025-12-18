@@ -313,13 +313,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 }
             } catch (error) {
                 console.error('[MysteryChallenge] Failed to fetch, using fallback:', error);
-                // Static fallback question
+                // Static fallback question with proper UUID format
                 const fallbackChallenge = {
-                    id: 'static-fallback',
+                    id: '00000000-0000-0000-0000-000000000001',
                     title: 'Martial Arts Trivia',
                     description: 'Test your knowledge while we reconnect!',
                     type: 'quiz' as const,
                     xpReward: 10,
+                    isStaticFallback: true,
                     quizData: {
                         question: 'What is the traditional bow in martial arts called?',
                         options: ['Kyungye (경례)', 'Kick', 'Punch', 'Block'],
@@ -377,12 +378,31 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             studentId: student.id,
             clubId: student.clubId || 'none (home user)',
             challengeId: mysteryChallenge.id,
-            selectedIndex
+            selectedIndex,
+            isStaticFallback: (mysteryChallenge as any).isStaticFallback || false
         });
         
         // Only require student ID - clubId is optional for home users
         if (!student.id) {
             console.error('[MysteryChallenge] Missing student.id - student object:', student);
+            setSubmittingMystery(false);
+            return;
+        }
+        
+        // Handle static fallback challenge locally (no backend call needed)
+        if ((mysteryChallenge as any).isStaticFallback || mysterySource === 'static') {
+            console.log('[MysteryChallenge] Handling static fallback locally');
+            const quizData = mysteryChallenge.quizData;
+            const isCorrect = selectedIndex === quizData?.correctIndex;
+            const xpAwarded = isCorrect ? (mysteryChallenge.xpReward || 10) : 0;
+            
+            setMysteryCompleted(true);
+            setMysteryXpAwarded(xpAwarded);
+            setMysteryWasCorrect(isCorrect);
+            setMysteryCompletionMessage(isCorrect 
+                ? `Correct! +${xpAwarded} XP (offline mode)` 
+                : 'Not quite! Try again tomorrow.');
+            setQuizExplanation(quizData?.explanation || '');
             setSubmittingMystery(false);
             return;
         }
