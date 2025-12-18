@@ -95,6 +95,8 @@ export const students = pgTable('students', {
   premiumStartedAt: timestamp('premium_started_at', { withTimezone: true }),
   premiumCanceledAt: timestamp('premium_canceled_at', { withTimezone: true }),
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+  dojoInventory: jsonb('dojo_inventory').default([]),
+  dojoMonster: jsonb('dojo_monster').default({ stage: 'egg', evolutionPoints: 0, name: 'My Monster' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -618,3 +620,40 @@ export const habitLogs = pgTable('habit_logs', {
 
 export type HabitLog = typeof habitLogs.$inferSelect;
 export type NewHabitLog = typeof habitLogs.$inferInsert;
+
+// =====================================================
+// VIRTUAL DOJO - XP Transactions & Game State
+// =====================================================
+
+export const xpTransactionTypeEnum = pgEnum('xp_transaction_type', ['SPEND', 'EARN', 'REFUND']);
+
+export const xpTransactions = pgTable('xp_transactions', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  amount: integer('amount').notNull(),
+  type: xpTransactionTypeEnum('type').notNull(),
+  reason: varchar('reason', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type XpTransaction = typeof xpTransactions.$inferSelect;
+export type NewXpTransaction = typeof xpTransactions.$inferInsert;
+
+// Dojo inventory item types
+export const dojoItemTypeEnum = pgEnum('dojo_item_type', ['FOOD', 'DECORATION']);
+export const dojoItemRarityEnum = pgEnum('dojo_item_rarity', ['COMMON', 'RARE', 'EPIC', 'LEGENDARY']);
+
+export const dojoInventory = pgTable('dojo_inventory', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  itemName: varchar('item_name', { length: 100 }).notNull(),
+  itemType: dojoItemTypeEnum('item_type').notNull(),
+  itemRarity: dojoItemRarityEnum('item_rarity').default('COMMON'),
+  itemEmoji: varchar('item_emoji', { length: 10 }).default('🎁'),
+  quantity: integer('quantity').default(1),
+  evolutionPoints: integer('evolution_points').default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type DojoInventoryItem = typeof dojoInventory.$inferSelect;
+export type NewDojoInventoryItem = typeof dojoInventory.$inferInsert;

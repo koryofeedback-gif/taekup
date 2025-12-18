@@ -3317,4 +3317,259 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to get family challenge status' });
     }
   });
+
+  // =====================================================
+  // VIRTUAL DOJO - Game Module APIs
+  // =====================================================
+
+  const WHEEL_ITEMS = [
+    { name: 'Rice Ball', type: 'FOOD', rarity: 'COMMON', emoji: '🍙', evolutionPoints: 10, weight: 30 },
+    { name: 'Sushi', type: 'FOOD', rarity: 'COMMON', emoji: '🍣', evolutionPoints: 15, weight: 25 },
+    { name: 'Ramen', type: 'FOOD', rarity: 'RARE', emoji: '🍜', evolutionPoints: 25, weight: 15 },
+    { name: 'Golden Apple', type: 'FOOD', rarity: 'EPIC', emoji: '🍎', evolutionPoints: 50, weight: 8 },
+    { name: 'Dragon Fruit', type: 'FOOD', rarity: 'LEGENDARY', emoji: '🐉', evolutionPoints: 100, weight: 2 },
+    { name: 'Bonsai Tree', type: 'DECORATION', rarity: 'COMMON', emoji: '🌳', evolutionPoints: 0, weight: 20 },
+    { name: 'Lucky Cat', type: 'DECORATION', rarity: 'RARE', emoji: '🐱', evolutionPoints: 0, weight: 10 },
+    { name: 'Golden Trophy', type: 'DECORATION', rarity: 'EPIC', emoji: '🏆', evolutionPoints: 0, weight: 5 },
+    { name: 'Crystal Orb', type: 'DECORATION', rarity: 'LEGENDARY', emoji: '🔮', evolutionPoints: 0, weight: 2 },
+  ];
+
+  const SPIN_COST = 200;
+
+  const EVOLUTION_STAGES = [
+    { stage: 'egg', minPoints: 0 },
+    { stage: 'baby', minPoints: 50 },
+    { stage: 'teen', minPoints: 150 },
+    { stage: 'adult', minPoints: 400 },
+    { stage: 'master', minPoints: 1000 },
+  ];
+
+  // Helper: Calculate total XP (earned - spent)
+  async function calculateTotalXp(studentId: string): Promise<number> {
+    const earned = await db.execute(sql`
+      SELECT 
+        COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = ${studentId}::uuid), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = ${studentId}::uuid), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${studentId}::uuid), 0)
+        AS total
+    `);
+    const totalEarned = parseInt((earned as any[])[0]?.total || '0', 10);
+
+    const spent = await db.execute(sql`
+      SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
+      WHERE student_id = ${studentId}::uuid AND type = 'SPEND'
+    `);
+    const totalSpent = parseInt((spent as any[])[0]?.total || '0', 10);
+
+    return totalEarned - totalSpent;
+  }
+
+  // Helper: Weighted random selection
+  function selectWeightedItem(items: typeof WHEEL_ITEMS) {
+    const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+    let random = Math.random() * totalWeight;
+    for (const item of items) {
+      random -= item.weight;
+      if (random <= 0) return item;
+    }
+    return items[0];
+  }
+
+  // Get Dojo State
+  app.get('/api/dojo/state', async (req: Request, res: Response) => {
+    try {
+      const studentId = req.query.studentId as string;
+
+      if (!studentId) {
+        return res.status(400).json({ error: 'studentId is required' });
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid studentId' });
+      }
+
+      const xpBalance = await calculateTotalXp(studentId);
+
+      const inventoryResult = await db.execute(sql`
+        SELECT id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points
+        FROM dojo_inventory WHERE student_id = ${studentId}::uuid AND quantity > 0
+      `);
+
+      const inventory = (inventoryResult as any[]).map(item => ({
+        id: item.id,
+        itemName: item.item_name,
+        itemType: item.item_type,
+        itemRarity: item.item_rarity,
+        itemEmoji: item.item_emoji,
+        quantity: item.quantity,
+        evolutionPoints: item.evolution_points,
+      }));
+
+      const monsterResult = await db.execute(sql`
+        SELECT dojo_monster FROM students WHERE id = ${studentId}::uuid
+      `);
+
+      let monster = { stage: 'egg', evolutionPoints: 0, name: 'My Monster' };
+      if ((monsterResult as any[])[0]?.dojo_monster) {
+        monster = (monsterResult as any[])[0].dojo_monster;
+      }
+
+      res.json({ xpBalance, inventory, monster });
+    } catch (error: any) {
+      console.error('[Dojo] State error:', error.message);
+      res.status(500).json({ error: 'Failed to get dojo state' });
+    }
+  });
+
+  // Spin Lucky Wheel
+  app.post('/api/dojo/spin', async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.body;
+
+      if (!studentId) {
+        return res.status(400).json({ error: 'studentId is required' });
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid studentId' });
+      }
+
+      const currentXp = await calculateTotalXp(studentId);
+      if (currentXp < SPIN_COST) {
+        return res.status(400).json({ error: `Not enough XP! You have ${currentXp} XP but need ${SPIN_COST} XP.` });
+      }
+
+      await db.execute(sql`
+        INSERT INTO xp_transactions (student_id, amount, type, reason)
+        VALUES (${studentId}::uuid, ${SPIN_COST}, 'SPEND', 'Lucky Wheel spin')
+      `);
+
+      const wonItem = selectWeightedItem(WHEEL_ITEMS);
+
+      const existing = await db.execute(sql`
+        SELECT id, quantity FROM dojo_inventory 
+        WHERE student_id = ${studentId}::uuid AND item_name = ${wonItem.name}
+      `);
+
+      if ((existing as any[]).length > 0) {
+        await db.execute(sql`
+          UPDATE dojo_inventory SET quantity = quantity + 1 
+          WHERE id = ${(existing as any[])[0].id}::uuid
+        `);
+      } else {
+        await db.execute(sql`
+          INSERT INTO dojo_inventory (student_id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points)
+          VALUES (${studentId}::uuid, ${wonItem.name}, ${wonItem.type}, ${wonItem.rarity}, ${wonItem.emoji}, 1, ${wonItem.evolutionPoints})
+        `);
+      }
+
+      const newXpBalance = await calculateTotalXp(studentId);
+
+      const inventoryResult = await db.execute(sql`
+        SELECT id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points
+        FROM dojo_inventory WHERE student_id = ${studentId}::uuid AND quantity > 0
+      `);
+
+      const inventory = (inventoryResult as any[]).map(item => ({
+        id: item.id,
+        itemName: item.item_name,
+        itemType: item.item_type,
+        itemRarity: item.item_rarity,
+        itemEmoji: item.item_emoji,
+        quantity: item.quantity,
+        evolutionPoints: item.evolution_points,
+      }));
+
+      console.log(`[Dojo] Spin: ${studentId} won ${wonItem.name} (${wonItem.rarity}), spent ${SPIN_COST} XP`);
+
+      res.json({
+        item: wonItem,
+        newXpBalance,
+        inventory,
+      });
+    } catch (error: any) {
+      console.error('[Dojo] Spin error:', error.message);
+      res.status(500).json({ error: 'Failed to spin wheel' });
+    }
+  });
+
+  // Feed Monster
+  app.post('/api/dojo/feed', async (req: Request, res: Response) => {
+    try {
+      const { studentId, itemId } = req.body;
+
+      if (!studentId || !itemId) {
+        return res.status(400).json({ error: 'studentId and itemId are required' });
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId) || !uuidRegex.test(itemId)) {
+        return res.status(400).json({ error: 'Invalid UUID format' });
+      }
+
+      const itemResult = await db.execute(sql`
+        SELECT id, item_type, evolution_points, quantity FROM dojo_inventory 
+        WHERE id = ${itemId}::uuid AND student_id = ${studentId}::uuid
+      `);
+
+      if ((itemResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      const item = (itemResult as any[])[0];
+      if (item.item_type !== 'FOOD') {
+        return res.status(400).json({ error: 'Only food items can be fed to the monster' });
+      }
+      if (item.quantity < 1) {
+        return res.status(400).json({ error: 'No items left' });
+      }
+
+      await db.execute(sql`
+        UPDATE dojo_inventory SET quantity = quantity - 1 WHERE id = ${itemId}::uuid
+      `);
+
+      const monsterResult = await db.execute(sql`
+        SELECT dojo_monster FROM students WHERE id = ${studentId}::uuid
+      `);
+
+      let monster = { stage: 'egg', evolutionPoints: 0, name: 'My Monster' };
+      if ((monsterResult as any[])[0]?.dojo_monster) {
+        monster = (monsterResult as any[])[0].dojo_monster;
+      }
+
+      monster.evolutionPoints += item.evolution_points;
+
+      const sortedStages = [...EVOLUTION_STAGES].reverse();
+      const newStage = sortedStages.find(s => monster.evolutionPoints >= s.minPoints) || EVOLUTION_STAGES[0];
+      monster.stage = newStage.stage;
+
+      await db.execute(sql`
+        UPDATE students SET dojo_monster = ${JSON.stringify(monster)}::jsonb WHERE id = ${studentId}::uuid
+      `);
+
+      const inventoryResult = await db.execute(sql`
+        SELECT id, item_name, item_type, item_rarity, item_emoji, quantity, evolution_points
+        FROM dojo_inventory WHERE student_id = ${studentId}::uuid AND quantity > 0
+      `);
+
+      const inventory = (inventoryResult as any[]).map(i => ({
+        id: i.id,
+        itemName: i.item_name,
+        itemType: i.item_type,
+        itemRarity: i.item_rarity,
+        itemEmoji: i.item_emoji,
+        quantity: i.quantity,
+        evolutionPoints: i.evolution_points,
+      }));
+
+      console.log(`[Dojo] Feed: ${studentId} fed monster +${item.evolution_points} EP, now at ${monster.evolutionPoints} EP (${monster.stage})`);
+
+      res.json({ monster, inventory });
+    } catch (error: any) {
+      console.error('[Dojo] Feed error:', error.message);
+      res.status(500).json({ error: 'Failed to feed monster' });
+    }
+  });
 }

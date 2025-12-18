@@ -9,6 +9,7 @@ import { useChallengeRealtime } from '../hooks/useChallengeRealtime';
 import { ChallengeToast } from './ChallengeToast';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { useStudentProgress } from '../hooks/useStudentProgress';
+import VirtualDojo from './VirtualDojo';
 
 interface ParentPortalProps {
     student: Student;
@@ -34,7 +35,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [challengeResult, setChallengeResult] = useState<'pending' | 'win' | 'loss' | null>(null);
     const [isSimulatingChallenge, setIsSimulatingChallenge] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState<string>('');
-    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery'>('arena');
+    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery' | 'dojo'>('arena');
+    const [showVirtualDojo, setShowVirtualDojo] = useState(false);
     const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
     const [challengeHistory, setChallengeHistory] = useState<Array<{
         id: string;
@@ -2540,6 +2542,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         {[
                             { id: 'teams', label: 'Teams', icon: '👥', badge: 0 },
                             { id: 'family', label: 'Family', icon: '👨‍👧', badge: 0 },
+                            { id: 'dojo', label: 'Dojo', icon: '🏯', badge: 0 },
                             { id: 'history', label: 'History', icon: '📜', badge: 0 },
                         ].map(tab => (
                             <button
@@ -3342,6 +3345,28 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 </div>
                             )}
 
+                            {/* VIRTUAL DOJO VIEW */}
+                            {rivalsView === 'dojo' && (
+                                <div className="space-y-4">
+                                    <div className="bg-gradient-to-r from-cyan-800 to-teal-900 p-4 rounded-xl border border-cyan-600 mb-4">
+                                        <h4 className="font-bold text-white flex items-center">
+                                            <span className="mr-2">🏯</span> Virtual Dojo
+                                        </h4>
+                                        <p className="text-xs text-cyan-300">Raise your monster by spending XP!</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowVirtualDojo(true)}
+                                        className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-400 hover:to-teal-500 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-[1.02] flex items-center justify-center gap-3"
+                                    >
+                                        <span className="text-3xl">🥚</span>
+                                        <div className="text-left">
+                                            <p className="text-lg">Enter Virtual Dojo</p>
+                                            <p className="text-xs opacity-80">Spin the wheel, feed your monster!</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            )}
+
                             {/* HISTORY VIEW */}
                             {rivalsView === 'history' && (
                                 <div className="space-y-2">
@@ -4076,6 +4101,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <NavButton icon="🚀" label="Path" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
                 </div>
             </div>
+
+            {/* Virtual Dojo Fullscreen Overlay */}
+            {showVirtualDojo && (
+                <div className="fixed inset-0 z-[100]">
+                    <VirtualDojo 
+                        studentId={student.id} 
+                        studentName={student.name} 
+                        onBack={() => setShowVirtualDojo(false)} 
+                    />
+                </div>
+            )}
         </div>
     );
 };
