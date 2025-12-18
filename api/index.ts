@@ -2574,7 +2574,8 @@ async function handleGetCustomHabits(req: VercelRequest, res: VercelResponse) {
     return res.json({ customHabits: result.rows });
   } catch (error: any) {
     console.error('[HomeDojo] Get custom habits error:', error.message);
-    return res.status(500).json({ error: 'Failed to fetch custom habits' });
+    // Gracefully return empty array if table doesn't exist or any DB error
+    return res.json({ customHabits: [] });
   } finally {
     client.release();
   }
