@@ -21,6 +21,8 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
   const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const decayIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [audioStarted, setAudioStarted] = useState(false);
+
   useEffect(() => {
     ambienceRef.current = new Audio('/assets/sfx_ambience_dojo.wav');
     chargeRef.current = new Audio('/assets/sfx_energy_charge.wav');
@@ -30,7 +32,6 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     if (ambienceRef.current) {
       ambienceRef.current.loop = true;
       ambienceRef.current.volume = 0.3;
-      ambienceRef.current.play().catch(() => {});
     }
     
     return () => {
@@ -41,9 +42,17 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     };
   }, []);
 
+  const startAudioOnInteraction = useCallback(() => {
+    if (!audioStarted && ambienceRef.current) {
+      ambienceRef.current.play().catch(() => {});
+      setAudioStarted(true);
+    }
+  }, [audioStarted]);
+
   const handleEggTap = () => {
     if (isCompleted) return;
     
+    startAudioOnInteraction();
     tapRef.current?.play().catch(() => {});
     
     setShowDustPuff(true);
@@ -56,6 +65,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
   const startHolding = useCallback(() => {
     if (isCompleted) return;
     
+    startAudioOnInteraction();
     setIsHolding(true);
     
     if (decayIntervalRef.current) {
@@ -83,7 +93,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         return newProgress;
       });
     }, 50);
-  }, [isCompleted]);
+  }, [isCompleted, startAudioOnInteraction]);
 
   const stopHolding = useCallback(() => {
     setIsHolding(false);
@@ -320,9 +330,8 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         
         .progress-bar-container {
           position: relative;
-          width: 80%;
-          max-width: 300px;
-          height: 32px;
+          width: 260px;
+          height: 40px;
         }
         .bar-frame {
           position: absolute;
@@ -334,10 +343,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         .bar-fill {
           position: absolute;
           top: 15%;
-          left: 4%;
+          left: 5px;
           height: 70%;
           background: linear-gradient(to right, #eab308, #f97316);
-          border-radius: 2px;
+          border-radius: 4px;
           transition: width 0.1s;
         }
         .bar-text {
@@ -347,9 +356,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           align-items: center;
           justify-content: center;
           color: white;
-          font-size: 12px;
+          font-size: 14px;
           font-weight: bold;
           text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          z-index: 5;
         }
         
         .action-button {
@@ -360,21 +370,25 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           transition: transform 0.1s;
           user-select: none;
           -webkit-tap-highlight-color: transparent;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 260px;
+          height: 60px;
         }
         .action-button:active, .action-button.pressing {
           transform: scale(1.1);
         }
         .button-image {
-          width: 80%;
-          max-width: 280px;
-          height: auto;
-        }
-        .button-text {
           position: absolute;
           inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        .button-text {
+          position: relative;
+          z-index: 10;
           color: white;
           font-weight: bold;
           font-size: 16px;
@@ -395,7 +409,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         /* Egg Container - Sits on top of pedestal */
         .egg-container {
           position: absolute;
-          bottom: 240px;
+          bottom: 290px;
           left: 50%;
           transform: translateX(-50%);
           z-index: 6;

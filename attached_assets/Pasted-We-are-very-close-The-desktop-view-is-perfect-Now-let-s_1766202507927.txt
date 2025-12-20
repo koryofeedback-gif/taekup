@@ -1,0 +1,32 @@
+We are very close! The desktop view is perfect. Now let's fix the specific internal layout bugs visible in the latest mobile test.
+
+Please apply these specific CSS fixes to `App.jsx` and `App.css`:
+
+**1. Fix the Egg Position (It's sinking):**
+The egg is currently overlapping the front of the pedestal. It needs to sit ON TOP of it.
+* **Action:** Increase the `bottom` value of `.egg-image`.
+* *Current estimate:* If pedestal is `bottom: 160px`, set the Egg to **`bottom: 290px;`** (Adjust this so the bottom of the egg touches the flat top of the pedestal).
+
+**2. Fix the Energy Bar Sizing (Mismatch):**
+The "Frame" (`ui_bar_frame.png`) looks too thin/squashed, and the "Fill" (`ui_bar_fill.png`) is overflowing and too thick.
+* **Action:**
+    * Set the `.progress-container` (Frame) to a fixed height/width ratio that matches the image aspect ratio (e.g., `width: 260px; height: 40px;`).
+    * Set the `.progress-fill` (The colored bar) to be **smaller** than the frame. Use `height: 70%;` and `top: 15%;` (vertically centered) and add `left: 5px;` padding so it sits *inside* the stone frame.
+
+**3. Center the Button Text:**
+The text "HOLD TO INFUSE" is not centered over the button image.
+* **Action:**
+    * Ensure the `.action-btn` container uses Flexbox: `display: flex; justify-content: center; align-items: center;`.
+    * Make sure the text is a `<span>` or `<p>` with `z-index: 10` sitting on top of the button image.
+
+**4. Fix Audio (Autoplay Issue):**
+The background ambience stopped playing.
+* **Action:** Browsers block autoplay. Update the logic so that `sfx_ambience_dojo.mp3` starts playing **on the very first interaction** (when the user first touches/clicks the screen or the Hold button), not just on page load. Use a `useEffect` to handle the `audio.play()` promise to catch errors.
+
+**Summary of CSS Tweaks:**
+* **Egg:** Move UP (`bottom: ~290px`).
+* **Bar:** Frame thicker, Fill smaller/padded inside.
+* **Button:** Text perfectly centered.
+* **Audio:** Play on interaction.
+
+Please implement these refinements.
