@@ -1,0 +1,46 @@
+I have successfully cleaned up the file structure. All assets are now in `public/assets/`.
+
+Please write the complete React code for **Level 1: The Awakening Ritual**.
+
+**Here is the exact Asset List (in public/assets/):**
+* **Background:** `bg_dojo_level1.jpg`
+* **Pedestal:** `pedestal_stone.png`
+* **Egg (Start):** `egg_state_dormant.png`
+* **Egg (End of Day 1):** `egg_state_crack_yellow.png`
+* **UI:** `ui_btn_action.png`, `ui_bar_frame.png`, `ui_bar_fill.png`, `ui_panel_bg.png`
+* **VFX:** `vfx_glow_flare.png`, `vfx_dust_puff.png`
+* **Audio:** `sfx_ambience_dojo.mp3`, `sfx_energy_charge.mp3`, `sfx_crack_crisp.mp3`, `sfx_tap_stone.mp3`
+
+**Game Scenario (Day 1 - The Cliffhanger):**
+
+1.  **Visual Composition (Z-Index Layers):**
+    * **Background:** `bg_dojo_level1.jpg` (Full screen, cover).
+    * **Layer 1:** `pedestal_stone.png` (Centered at the bottom-middle).
+    * **Layer 2:** `egg_state_dormant.png` (Placed on top of the pedestal).
+    * **Layer 3:** `vfx_glow_flare.png` (Behind the egg, invisible initially).
+    * **UI Layer:** The "Hold" button and Progress Bar at the bottom.
+
+2.  **Interaction Logic (Hold to Infuse):**
+    * **Tap Feedback:** If the user just *clicks/taps* the egg (without holding button), play `sfx_tap_stone.mp3` and trigger a small "dust puff" animation (`vfx_dust_puff.png`). Show a toast message: "It's dormant. Use your Spirit Energy."
+    * **Hold Button Mechanic:** The user must **HOLD** `ui_btn_action.png`.
+    * **While Holding:**
+        * Play `sfx_energy_charge.mp3` (looping).
+        * Animate the Egg (CSS Shake effect).
+        * Fade in `vfx_glow_flare.png` behind the egg (pulsing).
+        * Fill the Progress Bar (using `ui_bar_fill.png` masked inside `ui_bar_frame.png`).
+    * **On Release:** Stop sound, stop shake, decrease progress bar slowly.
+
+3.  **The Climax (Completion):**
+    * When Progress Bar reaches 100%:
+        * **Sound:** Play `sfx_crack_crisp.mp3` loudly.
+        * **Visual:** Flash the screen white for 200ms (CSS animation).
+        * **State Change:** Swap the egg image from `dormant` to `egg_state_crack_yellow.png`.
+        * **End Message:** Show `ui_panel_bg.png` with text: "A crack appeared! It's reacting... Let it rest until tomorrow."
+        * Disable the button.
+
+**Technical Requirements:**
+* Use `useRef` for audio handling to ensure low latency.
+* Make sure it works on Mobile (support `onTouchStart` and `onTouchEnd`).
+* Ensure the Egg sits naturally on the Pedestal (adjust `bottom` position so it doesn't float).
+
+Please generate the `App.jsx` and `App.css` code.

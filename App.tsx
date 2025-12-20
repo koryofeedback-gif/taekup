@@ -29,6 +29,7 @@ import {
     checkAccountStatus,
 } from './services/subscriptionService';
 import { SEO } from './components/SEO';
+import AwakeningRitual from './components/AwakeningRitual';
 import type { SignupData, WizardData, Student, SubscriptionStatus, SubscriptionPlanId } from './types';
 
 // Wizard Route Component - Handles both fresh signups and returning owners
@@ -779,6 +780,17 @@ const AppContent: React.FC<AppContentProps> = ({
                     <Route
                         path="/super-admin"
                         element={<Navigate to="/super-admin/login" replace />}
+                    />
+
+                    {/* Awakening Ritual Game Test */}
+                    <Route 
+                        path="/awakening" 
+                        element={
+                            <AwakeningRitual 
+                                onBack={() => window.history.back()}
+                                onComplete={() => console.log('Ritual completed!')}
+                            />
+                        } 
                     />
 
                     {/* Catch-all redirect */}
