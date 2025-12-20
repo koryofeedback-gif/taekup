@@ -1,0 +1,59 @@
+Okay, the desktop container looks good now. But the internal layout is broken. The elements are floating unnaturally because their vertical positioning is wrong.
+
+We need to anchor everything from the **BOTTOM** of the screen to stack them correctly on the "floor" of the dojo background.
+
+Here is the precise CSS strategy to fix the placements. Please update the CSS for these elements:
+
+**1. The UI Container (Buttons & Bar - "Stone Keys"):**
+Currently, they are not aligned well.
+* **Fix:** Ensure the UI container is absolutely positioned at the very bottom. Use Flexbox to center them horizontally and stack them vertically with gaps.
+    ```css
+    .ui-container {
+        position: absolute;
+        bottom: 30px; /* Padding from bottom edge */
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column; /* Stack vertically */
+        align-items: center; /* Center horizontally */
+        gap: 20px; /* Space between bar and button */
+        width: 100%; /* Ensure full width for centering */
+    }
+    /* Make sure images inside aren't too big */
+    .ui-bar-frame, .ui-btn-action {
+        width: 80%; /* Adjust width as needed */
+        max-width: 300px;
+    }
+    ```
+
+**2. The Pedestal (Stone Base):**
+Currently, it's floating too high in the middle of the room. It needs to sit on the floor, just above the UI.
+* **Fix:** Lower its position significantly.
+    ```css
+    .pedestal-image {
+        position: absolute;
+        bottom: 160px; /* Sit above the UI elements */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 70%; /* Adjust scale so it looks right on the floor */
+        max-width: 350px;
+        z-index: 5;
+    }
+    ```
+
+**3. The Egg:**
+Currently, it's too low (sinking into the stone). It needs to sit *exactly on top* of the pedestal.
+* **Fix:** Its `bottom` value must be higher than the pedestal's.
+    ```css
+    .egg-image {
+        position: absolute;
+        bottom: 250px; /* Must be higher than pedestal's bottom (160px) + pedestal's approximate height */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50%; /* Egg should be smaller than pedestal */
+        max-width: 250px;
+        z-index: 6; /* Must be on top of pedestal */
+    }
+    ```
+
+**Summary of Action:** Please rewrite the CSS using these `bottom`, `left: 50%`, and `transform: translateX(-50%)` rules to stack the elements correctly from bottom to top: UI -> Pedestal -> Egg.

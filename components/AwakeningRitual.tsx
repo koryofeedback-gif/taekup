@@ -121,141 +121,73 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+    <div className="awakening-screen">
       {/* Game Container - Mobile Portrait Aspect Ratio */}
-      <div 
-        className="relative w-full h-full overflow-hidden"
-        style={{ maxWidth: '450px' }}
-      >
+      <div className="awakening-container">
         {/* Background */}
         <img 
           src="/assets/bg_dojo_level1.jpg" 
           alt="Dojo Background"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="awakening-bg"
         />
         
         {/* Flash Effect */}
-        {showFlash && (
-          <div className="absolute inset-0 bg-white z-50 animate-pulse" />
-        )}
+        {showFlash && <div className="flash-overlay" />}
         
         {/* Back Button */}
         {onBack && (
-          <button 
-            onClick={onBack}
-            className="absolute top-4 left-4 z-40 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-lg backdrop-blur-sm transition-colors"
-          >
+          <button onClick={onBack} className="back-button">
             ← Back
           </button>
         )}
         
         {/* Toast Message */}
         {showToast && !isCompleted && (
-          <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-center animate-fadeIn z-40 w-[90%] max-w-[300px]">
-            <p className="text-sm">It's dormant. Use your Spirit Energy.</p>
-            <p className="text-xs text-cyan-400 mt-1">Hold the button below ↓</p>
+          <div className="toast-message">
+            <p className="toast-text">It's dormant. Use your Spirit Energy.</p>
+            <p className="toast-hint">Hold the button below ↓</p>
           </div>
         )}
         
-        {/* Pedestal - Positioned from bottom */}
-        <div 
-          className="absolute z-10"
-          style={{
-            bottom: '180px',
-            left: '50%',
-            transform: 'translateX(-50%)'
-          }}
-        >
-          <img 
-            src="/assets/pedestal_stone.png"
-            alt="Stone Pedestal"
-            className="w-64 h-auto object-contain"
-          />
-        </div>
-        
-        {/* Egg Container - Positioned to sit ON pedestal */}
-        <div 
-          className="absolute z-20"
-          style={{
-            bottom: '280px',
-            left: '50%',
-            transform: 'translateX(-50%)'
-          }}
-        >
+        {/* Egg - Top layer, sits ON pedestal */}
+        <div className={`egg-container ${isHolding ? 'shaking' : ''}`}>
           {/* Glow Effect */}
-          <div 
-            className={`absolute -inset-16 transition-opacity duration-500 ${
-              isHolding ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{
-              animation: isHolding ? 'pulse 1s ease-in-out infinite' : 'none'
-            }}
-          >
-            <img 
-              src="/assets/vfx_glow_flare.png" 
-              alt=""
-              className="w-full h-full object-contain"
-            />
+          <div className={`glow-effect ${isHolding ? 'visible' : ''}`}>
+            <img src="/assets/vfx_glow_flare.png" alt="" className="glow-image" />
           </div>
           
           {/* Egg */}
-          <div 
+          <img 
+            src={isCompleted ? '/assets/egg_state_crack_yellow.png' : '/assets/egg_state_dormant.png'}
+            alt="Mysterious Egg"
+            className="egg-image"
             onClick={handleEggTap}
-            className={`relative cursor-pointer transition-transform ${
-              isHolding ? 'animate-shake' : ''
-            }`}
-          >
-            <img 
-              src={isCompleted ? '/assets/egg_state_crack_yellow.png' : '/assets/egg_state_dormant.png'}
-              alt="Mysterious Egg"
-              className="w-32 h-40 object-contain relative z-10"
-            />
-            
-            {/* Dust Puff */}
-            {showDustPuff && (
-              <img 
-                src="/assets/vfx_dust_puff.png"
-                alt=""
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 object-contain animate-fadeOut z-20"
-              />
-            )}
-          </div>
+          />
+          
+          {/* Dust Puff */}
+          {showDustPuff && (
+            <img src="/assets/vfx_dust_puff.png" alt="" className="dust-puff" />
+          )}
         </div>
         
-        {/* UI Container - Fixed at bottom, centered */}
+        {/* Pedestal - Sits on floor above UI */}
+        <img 
+          src="/assets/pedestal_stone.png"
+          alt="Stone Pedestal"
+          className="pedestal-image"
+        />
+        
+        {/* UI Container - Bottom layer */}
         {!isCompleted && (
-          <div 
-            className="absolute z-30"
-            style={{
-              bottom: '20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '15px',
-              padding: '0 20px',
-              boxSizing: 'border-box'
-            }}
-          >
+          <div className="ui-container">
             {/* Progress Bar */}
-            <div className="relative w-full max-w-[280px] h-8">
-              <img 
-                src="/assets/ui_bar_frame.png"
-                alt=""
-                className="absolute inset-0 w-full h-full object-fill"
-              />
+            <div className="progress-bar-container">
+              <img src="/assets/ui_bar_frame.png" alt="" className="bar-frame" />
               <div 
-                className="absolute top-[15%] h-[70%] bg-gradient-to-r from-yellow-500 to-orange-500 rounded-sm transition-all duration-100"
-                style={{ 
-                  left: '4%',
-                  width: `${progress * 0.92}%` 
-                }}
+                className="bar-fill"
+                style={{ width: `${progress * 0.92}%` }}
               />
-              <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold drop-shadow-lg">
-                {Math.round(progress)}%
-              </span>
+              <span className="bar-text">{Math.round(progress)}%</span>
             </div>
             
             {/* Hold Button */}
@@ -265,16 +197,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
               onMouseLeave={stopHolding}
               onTouchStart={(e) => { e.preventDefault(); startHolding(); }}
               onTouchEnd={(e) => { e.preventDefault(); stopHolding(); }}
-              className={`relative active:scale-95 transition-transform select-none ${
-                isHolding ? 'scale-110' : ''
-              }`}
+              className={`action-button ${isHolding ? 'pressing' : ''}`}
             >
-              <img 
-                src="/assets/ui_btn_action.png"
-                alt="Hold to Infuse"
-                className="w-56 h-16 object-contain"
-              />
-              <span className="absolute inset-0 flex items-center justify-center text-white font-bold text-base drop-shadow-lg">
+              <img src="/assets/ui_btn_action.png" alt="Hold to Infuse" className="button-image" />
+              <span className="button-text">
                 {isHolding ? 'CHANNELING...' : 'HOLD TO INFUSE'}
               </span>
             </button>
@@ -283,23 +209,14 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         
         {/* Completion Panel */}
         {isCompleted && (
-          <div className="absolute inset-0 flex items-center justify-center z-40 bg-black/50 backdrop-blur-sm animate-fadeIn">
-            <div className="relative w-[90%] max-w-[320px]">
-              <img 
-                src="/assets/ui_panel_bg.png"
-                alt=""
-                className="w-full"
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                <span className="text-4xl mb-4">✨</span>
-                <h2 className="text-xl font-bold text-yellow-400 mb-2">A crack appeared!</h2>
-                <p className="text-white text-sm">
-                  It's reacting... Let it rest until tomorrow.
-                </p>
-                <button 
-                  onClick={onBack}
-                  className="mt-6 bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-400 hover:to-teal-500 text-white font-bold px-6 py-2 rounded-lg transition-colors"
-                >
+          <div className="completion-overlay">
+            <div className="completion-panel">
+              <img src="/assets/ui_panel_bg.png" alt="" className="panel-bg" />
+              <div className="panel-content">
+                <span className="panel-icon">✨</span>
+                <h2 className="panel-title">A crack appeared!</h2>
+                <p className="panel-text">It's reacting... Let it rest until tomorrow.</p>
+                <button onClick={onBack} className="continue-button">
                   Continue
                 </button>
               </div>
@@ -309,10 +226,288 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       </div>
       
       <style>{`
+        .awakening-screen {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          background: black;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .awakening-container {
+          position: relative;
+          width: 100%;
+          max-width: 450px;
+          height: 100vh;
+          overflow: hidden;
+        }
+        
+        .awakening-bg {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        
+        .flash-overlay {
+          position: absolute;
+          inset: 0;
+          background: white;
+          z-index: 50;
+          animation: flash 0.2s ease-out;
+        }
+        
+        .back-button {
+          position: absolute;
+          top: 16px;
+          left: 16px;
+          z-index: 40;
+          background: rgba(0,0,0,0.5);
+          color: white;
+          padding: 8px 16px;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          backdrop-filter: blur(4px);
+          transition: background 0.2s;
+        }
+        .back-button:hover {
+          background: rgba(0,0,0,0.7);
+        }
+        
+        .toast-message {
+          position: absolute;
+          top: 100px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0,0,0,0.8);
+          backdrop-filter: blur(4px);
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          text-align: center;
+          z-index: 40;
+          width: 90%;
+          max-width: 300px;
+          animation: fadeIn 0.3s ease-out;
+        }
+        .toast-text {
+          font-size: 14px;
+          margin: 0;
+        }
+        .toast-hint {
+          font-size: 12px;
+          color: #22d3ee;
+          margin: 8px 0 0 0;
+        }
+        
+        /* UI Container - Anchored to bottom */
+        .ui-container {
+          position: absolute;
+          bottom: 30px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+          width: 100%;
+          z-index: 10;
+        }
+        
+        .progress-bar-container {
+          position: relative;
+          width: 80%;
+          max-width: 300px;
+          height: 32px;
+        }
+        .bar-frame {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: fill;
+        }
+        .bar-fill {
+          position: absolute;
+          top: 15%;
+          left: 4%;
+          height: 70%;
+          background: linear-gradient(to right, #eab308, #f97316);
+          border-radius: 2px;
+          transition: width 0.1s;
+        }
+        .bar-text {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 12px;
+          font-weight: bold;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .action-button {
+          position: relative;
+          border: none;
+          background: none;
+          cursor: pointer;
+          transition: transform 0.1s;
+          user-select: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .action-button:active, .action-button.pressing {
+          transform: scale(1.1);
+        }
+        .button-image {
+          width: 80%;
+          max-width: 280px;
+          height: auto;
+        }
+        .button-text {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+          font-size: 16px;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        /* Pedestal - Sits on floor above UI */
+        .pedestal-image {
+          position: absolute;
+          bottom: 130px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 55%;
+          max-width: 280px;
+          z-index: 5;
+        }
+        
+        /* Egg Container - Sits on top of pedestal */
+        .egg-container {
+          position: absolute;
+          bottom: 240px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 6;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .egg-container.shaking {
+          animation: shake 0.3s ease-in-out infinite;
+        }
+        
+        .egg-image {
+          width: 140px;
+          height: auto;
+          cursor: pointer;
+          position: relative;
+          z-index: 2;
+        }
+        
+        .glow-effect {
+          position: absolute;
+          inset: -60px;
+          opacity: 0;
+          transition: opacity 0.5s;
+          z-index: 1;
+        }
+        .glow-effect.visible {
+          opacity: 1;
+          animation: pulse 1s ease-in-out infinite;
+        }
+        .glow-image {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        
+        .dust-puff {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 120px;
+          height: 120px;
+          object-fit: contain;
+          animation: fadeOut 0.5s ease-out forwards;
+          z-index: 10;
+        }
+        
+        /* Completion Panel */
+        .completion-overlay {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0,0,0,0.5);
+          backdrop-filter: blur(4px);
+          z-index: 40;
+          animation: fadeIn 0.3s ease-out;
+        }
+        .completion-panel {
+          position: relative;
+          width: 90%;
+          max-width: 320px;
+        }
+        .panel-bg {
+          width: 100%;
+        }
+        .panel-content {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 32px;
+          text-align: center;
+        }
+        .panel-icon {
+          font-size: 40px;
+          margin-bottom: 16px;
+        }
+        .panel-title {
+          font-size: 20px;
+          font-weight: bold;
+          color: #facc15;
+          margin: 0 0 8px 0;
+        }
+        .panel-text {
+          font-size: 14px;
+          color: white;
+          margin: 0;
+        }
+        .continue-button {
+          margin-top: 24px;
+          background: linear-gradient(to right, #06b6d4, #0d9488);
+          color: white;
+          font-weight: bold;
+          padding: 10px 24px;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        .continue-button:hover {
+          opacity: 0.9;
+        }
+        
         @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-2px) rotate(-1deg); }
-          20%, 40%, 60%, 80% { transform: translateX(2px) rotate(1deg); }
+          0%, 100% { transform: translateX(-50%); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(calc(-50% - 2px)) rotate(-1deg); }
+          20%, 40%, 60%, 80% { transform: translateX(calc(-50% + 2px)) rotate(1deg); }
         }
         
         @keyframes fadeOut {
@@ -330,16 +525,9 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           50% { opacity: 1; transform: scale(1.1); }
         }
         
-        .animate-shake {
-          animation: shake 0.3s ease-in-out infinite;
-        }
-        
-        .animate-fadeOut {
-          animation: fadeOut 0.5s ease-out forwards;
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out forwards;
+        @keyframes flash {
+          0% { opacity: 1; }
+          100% { opacity: 0; }
         }
       `}</style>
     </div>
