@@ -195,7 +195,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
               <img src="/assets/ui_bar_frame.png" alt="" className="bar-frame" />
               <div 
                 className="bar-fill"
-                style={{ width: `${progress * 0.92}%` }}
+                style={{ width: `${progress * 0.92}%`, right: 'auto' }}
               />
               <span className="bar-text">{Math.round(progress)}%</span>
             </div>
@@ -330,8 +330,8 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         
         .progress-bar-container {
           position: relative;
-          width: 260px;
-          height: 40px;
+          width: 280px;
+          height: 55px;
         }
         .bar-frame {
           position: absolute;
@@ -342,9 +342,11 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         }
         .bar-fill {
           position: absolute;
-          top: 15%;
-          left: 5px;
-          height: 70%;
+          top: 10%;
+          bottom: 10%;
+          left: 4%;
+          right: 4%;
+          height: auto;
           background: linear-gradient(to right, #eab308, #f97316);
           border-radius: 4px;
           transition: width 0.1s;
@@ -373,8 +375,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           display: flex;
           justify-content: center;
           align-items: center;
-          width: 260px;
-          height: 60px;
+          width: 280px;
+          height: 65px;
+          padding: 0;
+          margin: 0;
         }
         .action-button:active, .action-button.pressing {
           transform: scale(1.1);
@@ -384,7 +388,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: contain;
+          object-fit: fill;
         }
         .button-text {
           position: relative;
@@ -393,23 +397,26 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           font-weight: bold;
           font-size: 16px;
           text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          margin: 0;
+          padding: 0;
+          line-height: 1;
         }
         
-        /* Pedestal - Sits on floor above UI */
+        /* Pedestal - Sits on floor above UI (percentage-based) */
         .pedestal-image {
           position: absolute;
-          bottom: 130px;
+          bottom: 18%;
           left: 50%;
           transform: translateX(-50%);
-          width: 55%;
-          max-width: 280px;
+          width: 50%;
+          max-width: 220px;
           z-index: 5;
         }
         
-        /* Egg Container - Sits on top of pedestal */
+        /* Egg Container - Sits on top of pedestal (percentage-based) */
         .egg-container {
           position: absolute;
-          bottom: 290px;
+          bottom: 42%;
           left: 50%;
           transform: translateX(-50%);
           z-index: 6;
@@ -422,7 +429,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         }
         
         .egg-image {
-          width: 140px;
+          width: 120px;
           height: auto;
           cursor: pointer;
           position: relative;
@@ -474,18 +481,20 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           position: relative;
           width: 90%;
           max-width: 320px;
+          background-image: url('/assets/ui_panel_bg.png');
+          background-size: 100% 100%;
+          background-repeat: no-repeat;
+          padding: 24px;
         }
         .panel-bg {
-          width: 100%;
+          display: none;
         }
         .panel-content {
-          position: absolute;
-          inset: 0;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 32px;
+          padding: 20px;
           text-align: center;
         }
         .panel-icon {
