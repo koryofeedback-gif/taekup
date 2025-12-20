@@ -121,28 +121,68 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <img 
-        src="/assets/bg_dojo_level1.jpg" 
-        alt="Dojo Background"
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-      
-      {showFlash && (
-        <div className="absolute inset-0 bg-white z-50 animate-pulse" />
-      )}
-      
-      {onBack && (
-        <button 
-          onClick={onBack}
-          className="absolute top-4 left-4 z-40 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-lg backdrop-blur-sm transition-colors"
+    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+      {/* Game Container - Mobile Portrait Aspect Ratio */}
+      <div 
+        className="relative w-full h-full overflow-hidden"
+        style={{ maxWidth: '450px' }}
+      >
+        {/* Background */}
+        <img 
+          src="/assets/bg_dojo_level1.jpg" 
+          alt="Dojo Background"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        
+        {/* Flash Effect */}
+        {showFlash && (
+          <div className="absolute inset-0 bg-white z-50 animate-pulse" />
+        )}
+        
+        {/* Back Button */}
+        {onBack && (
+          <button 
+            onClick={onBack}
+            className="absolute top-4 left-4 z-40 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-lg backdrop-blur-sm transition-colors"
+          >
+            ← Back
+          </button>
+        )}
+        
+        {/* Toast Message */}
+        {showToast && !isCompleted && (
+          <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-center animate-fadeIn z-40 w-[90%] max-w-[300px]">
+            <p className="text-sm">It's dormant. Use your Spirit Energy.</p>
+            <p className="text-xs text-cyan-400 mt-1">Hold the button below ↓</p>
+          </div>
+        )}
+        
+        {/* Pedestal - Positioned from bottom */}
+        <div 
+          className="absolute z-10"
+          style={{
+            bottom: '180px',
+            left: '50%',
+            transform: 'translateX(-50%)'
+          }}
         >
-          ← Back
-        </button>
-      )}
-      
-      <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 flex flex-col items-center">
-        <div className="relative">
+          <img 
+            src="/assets/pedestal_stone.png"
+            alt="Stone Pedestal"
+            className="w-64 h-auto object-contain"
+          />
+        </div>
+        
+        {/* Egg Container - Positioned to sit ON pedestal */}
+        <div 
+          className="absolute z-20"
+          style={{
+            bottom: '280px',
+            left: '50%',
+            transform: 'translateX(-50%)'
+          }}
+        >
+          {/* Glow Effect */}
           <div 
             className={`absolute -inset-16 transition-opacity duration-500 ${
               isHolding ? 'opacity-100' : 'opacity-0'
@@ -158,6 +198,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
             />
           </div>
           
+          {/* Egg */}
           <div 
             onClick={handleEggTap}
             className={`relative cursor-pointer transition-transform ${
@@ -167,9 +208,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
             <img 
               src={isCompleted ? '/assets/egg_state_crack_yellow.png' : '/assets/egg_state_dormant.png'}
               alt="Mysterious Egg"
-              className="w-40 h-48 object-contain relative z-10"
+              className="w-32 h-40 object-contain relative z-10"
             />
             
+            {/* Dust Puff */}
             {showDustPuff && (
               <img 
                 src="/assets/vfx_dust_puff.png"
@@ -180,83 +222,91 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           </div>
         </div>
         
-        <img 
-          src="/assets/pedestal_stone.png"
-          alt="Stone Pedestal"
-          className="w-64 -mt-4 object-contain"
-        />
-      </div>
-      
-      {showToast && !isCompleted && (
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-center animate-fadeIn z-40">
-          <p className="text-sm">It's dormant. Use your Spirit Energy.</p>
-          <p className="text-xs text-cyan-400 mt-1">Hold the button below ↓</p>
-        </div>
-      )}
-      
-      {!isCompleted && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-30">
-          <div className="relative w-64 h-8">
-            <img 
-              src="/assets/ui_bar_frame.png"
-              alt=""
-              className="absolute inset-0 w-full h-full object-contain"
-            />
-            <div 
-              className="absolute left-[8%] top-[20%] h-[60%] bg-gradient-to-r from-yellow-500 to-orange-500 rounded-sm transition-all duration-100"
-              style={{ width: `${progress * 0.84}%` }}
-            />
-            <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold drop-shadow-lg">
-              {Math.round(progress)}%
-            </span>
-          </div>
-          
-          <button
-            onMouseDown={startHolding}
-            onMouseUp={stopHolding}
-            onMouseLeave={stopHolding}
-            onTouchStart={(e) => { e.preventDefault(); startHolding(); }}
-            onTouchEnd={(e) => { e.preventDefault(); stopHolding(); }}
-            className={`relative active:scale-95 transition-transform select-none ${
-              isHolding ? 'scale-110' : ''
-            }`}
+        {/* UI Container - Fixed at bottom, centered */}
+        {!isCompleted && (
+          <div 
+            className="absolute z-30"
+            style={{
+              bottom: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '15px',
+              padding: '0 20px',
+              boxSizing: 'border-box'
+            }}
           >
-            <img 
-              src="/assets/ui_btn_action.png"
-              alt="Hold to Infuse"
-              className="w-48 h-16 object-contain"
-            />
-            <span className="absolute inset-0 flex items-center justify-center text-white font-bold text-lg drop-shadow-lg">
-              {isHolding ? 'CHANNELING...' : 'HOLD TO INFUSE'}
-            </span>
-          </button>
-        </div>
-      )}
-      
-      {isCompleted && (
-        <div className="absolute inset-0 flex items-center justify-center z-40 bg-black/50 backdrop-blur-sm animate-fadeIn">
-          <div className="relative max-w-sm mx-4">
-            <img 
-              src="/assets/ui_panel_bg.png"
-              alt=""
-              className="w-full"
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-              <span className="text-4xl mb-4">✨</span>
-              <h2 className="text-xl font-bold text-yellow-400 mb-2">A crack appeared!</h2>
-              <p className="text-white text-sm">
-                It's reacting... Let it rest until tomorrow.
-              </p>
-              <button 
-                onClick={onBack}
-                className="mt-6 bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-400 hover:to-teal-500 text-white font-bold px-6 py-2 rounded-lg transition-colors"
-              >
-                Continue
-              </button>
+            {/* Progress Bar */}
+            <div className="relative w-full max-w-[280px] h-8">
+              <img 
+                src="/assets/ui_bar_frame.png"
+                alt=""
+                className="absolute inset-0 w-full h-full object-fill"
+              />
+              <div 
+                className="absolute top-[15%] h-[70%] bg-gradient-to-r from-yellow-500 to-orange-500 rounded-sm transition-all duration-100"
+                style={{ 
+                  left: '4%',
+                  width: `${progress * 0.92}%` 
+                }}
+              />
+              <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold drop-shadow-lg">
+                {Math.round(progress)}%
+              </span>
+            </div>
+            
+            {/* Hold Button */}
+            <button
+              onMouseDown={startHolding}
+              onMouseUp={stopHolding}
+              onMouseLeave={stopHolding}
+              onTouchStart={(e) => { e.preventDefault(); startHolding(); }}
+              onTouchEnd={(e) => { e.preventDefault(); stopHolding(); }}
+              className={`relative active:scale-95 transition-transform select-none ${
+                isHolding ? 'scale-110' : ''
+              }`}
+            >
+              <img 
+                src="/assets/ui_btn_action.png"
+                alt="Hold to Infuse"
+                className="w-56 h-16 object-contain"
+              />
+              <span className="absolute inset-0 flex items-center justify-center text-white font-bold text-base drop-shadow-lg">
+                {isHolding ? 'CHANNELING...' : 'HOLD TO INFUSE'}
+              </span>
+            </button>
+          </div>
+        )}
+        
+        {/* Completion Panel */}
+        {isCompleted && (
+          <div className="absolute inset-0 flex items-center justify-center z-40 bg-black/50 backdrop-blur-sm animate-fadeIn">
+            <div className="relative w-[90%] max-w-[320px]">
+              <img 
+                src="/assets/ui_panel_bg.png"
+                alt=""
+                className="w-full"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                <span className="text-4xl mb-4">✨</span>
+                <h2 className="text-xl font-bold text-yellow-400 mb-2">A crack appeared!</h2>
+                <p className="text-white text-sm">
+                  It's reacting... Let it rest until tomorrow.
+                </p>
+                <button 
+                  onClick={onBack}
+                  className="mt-6 bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-400 hover:to-teal-500 text-white font-bold px-6 py-2 rounded-lg transition-colors"
+                >
+                  Continue
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       
       <style>{`
         @keyframes shake {
