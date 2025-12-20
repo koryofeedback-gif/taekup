@@ -330,8 +330,9 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         
         .progress-bar-container {
           position: relative;
-          width: 280px;
+          width: 300px;
           height: 55px;
+          padding: 0;
         }
         .bar-frame {
           position: absolute;
@@ -342,13 +343,13 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         }
         .bar-fill {
           position: absolute;
-          top: 10%;
-          bottom: 10%;
-          left: 4%;
-          right: 4%;
+          top: 18%;
+          bottom: 18%;
+          left: 5%;
+          right: 5%;
           height: auto;
           background: linear-gradient(to right, #eab308, #f97316);
-          border-radius: 4px;
+          border-radius: 10px;
           transition: width 0.1s;
         }
         .bar-text {
@@ -376,9 +377,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           justify-content: center;
           align-items: center;
           width: 280px;
-          height: 65px;
+          height: 70px;
           padding: 0;
           margin: 0;
+          white-space: nowrap;
         }
         .action-button:active, .action-button.pressing {
           transform: scale(1.1);
@@ -416,7 +418,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         /* Egg Container - Sits on top of pedestal (percentage-based) */
         .egg-container {
           position: absolute;
-          bottom: 42%;
+          bottom: 35%;
           left: 50%;
           transform: translateX(-50%);
           z-index: 6;
@@ -480,11 +482,18 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         .completion-panel {
           position: relative;
           width: 90%;
-          max-width: 320px;
+          max-width: 350px;
+          min-height: 200px;
           background-image: url('/assets/ui_panel_bg.png');
           background-size: 100% 100%;
           background-repeat: no-repeat;
-          padding: 24px;
+          padding: 40px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+          color: #fff;
         }
         .panel-bg {
           display: none;
@@ -494,7 +503,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 20px;
+          padding: 0;
           text-align: center;
         }
         .panel-icon {

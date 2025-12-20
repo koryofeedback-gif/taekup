@@ -1,0 +1,71 @@
+The pedestal placement is now correct, but we have specific sizing and positioning issues remaining.
+
+Please apply these CSS fixes to `App.css`:
+
+**1. Fix Egg Position (LOWER IT):**
+The egg is floating comfortably above the pedestal. It needs to sit ON it.
+* **Action:** Decrease the `bottom` position of the `.egg-image`.
+* *Logic:* If the pedestal is at `bottom: 22%`, the egg should be overlapping it. Try setting the Egg to **`bottom: 26%;`** (lowered from previous high value) to make it look grounded.
+
+**2. Thicken the "Hold" Button:**
+The button is too short, cramping the text.
+* **Action:** Increase the height of `.action-btn`.
+* *CSS:*
+    ```css
+    .action-btn {
+        height: 70px; /* Increased height */
+        width: 280px;
+        background-size: 100% 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /* Ensure text doesn't wrap awkwardly */
+        white-space: nowrap; 
+    }
+    ```
+
+**3. Thicken the Energy Bar (SIGNIFICANTLY):**
+The bar frame is way too thin to hold the liquid.
+* **Action:** Drastically increase the height of `.progress-container`.
+* *CSS:*
+    ```css
+    .progress-container {
+        height: 55px; /* Much thicker stone frame */
+        width: 300px;
+        background-size: 100% 100%;
+        position: relative;
+        padding: 0; /* Remove default padding if any */
+    }
+    .progress-fill {
+        /* Fit inside the new thicker frame */
+        top: 18%; 
+        bottom: 18%; 
+        left: 5%; 
+        right: 5%;
+        height: auto; /* Let top/bottom handle height */
+        border-radius: 10px;
+    }
+    ```
+
+**4. Enlarge the Modal/Popup (The "Crack Appeared" Box):**
+The text is touching the edges of the stone panel.
+* **Action:** Make the modal container larger and add padding.
+* *CSS:*
+    ```css
+    .modal-content {
+        background-image: url('/assets/ui_panel_bg.png');
+        background-size: 100% 100%;
+        width: 90%; /* Wider */
+        max-width: 350px;
+        min-height: 200px; /* Taller */
+        padding: 40px; /* Push text away from stone edges */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        color: #fff; /* Ensure text is readable */
+    }
+    ```
+
+Please update the CSS with these dimensions.
