@@ -34,7 +34,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [challengeResult, setChallengeResult] = useState<'pending' | 'win' | 'loss' | null>(null);
     const [isSimulatingChallenge, setIsSimulatingChallenge] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState<string>('');
-    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'history' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery'>('arena');
+    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery'>('arena');
     const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
     const [challengeHistory, setChallengeHistory] = useState<Array<{
         id: string;
@@ -372,29 +372,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         fetchDailyChallenge();
     }, [student.id, studentBeltName]);
     
-    // Fetch challenge history when History tab is active
-    useEffect(() => {
-        if (rivalsView !== 'history' || !student.id) return;
-        
-        const fetchHistory = async () => {
-            setHistoryLoading(true);
-            try {
-                const response = await fetch(`/api/challenges/history?studentId=${student.id}`);
-                const data = await response.json();
-                if (data.history) {
-                    setChallengeHistory(data.history);
-                }
-            } catch (error) {
-                console.error('[History] Failed to fetch:', error);
-            } finally {
-                setHistoryLoading(false);
-            }
-        };
-        
-        fetchHistory();
-    }, [rivalsView, student.id]);
-
-    // Fetch another student's history for leaderboard viewing
+    // Fetch student's history for leaderboard viewing
     const fetchStudentHistory = async (targetStudent: Student) => {
         setViewingStudentHistory({ student: targetStudent, history: [], loading: true });
         try {
@@ -2591,26 +2569,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     )}
 
                     {/* Navigation Tabs - Row 1 */}
-                    <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
+                    <div className="flex gap-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 p-2 rounded-xl border border-gray-700/50">
                         {[
-                            { id: 'arena', label: 'Arena', icon: '⚔️', badge: 0 },
-                            { id: 'inbox', label: 'Inbox', icon: '📬', badge: totalPendingCount },
-                            { id: 'mystery', label: 'Mystery', icon: '🎁', badge: mysteryCompleted ? 0 : 1 },
-                            { id: 'leaderboard', label: 'Ranks', icon: '🏆', badge: 0 },
+                            { id: 'arena', label: 'Arena', icon: '⚔️', badge: 0, color: 'from-red-600 to-orange-600', glow: 'shadow-red-500/30' },
+                            { id: 'inbox', label: 'Inbox', icon: '📬', badge: totalPendingCount, color: 'from-blue-600 to-cyan-600', glow: 'shadow-blue-500/30' },
+                            { id: 'mystery', label: 'Mystery', icon: '🎁', badge: mysteryCompleted ? 0 : 1, color: 'from-purple-600 to-pink-600', glow: 'shadow-purple-500/30' },
+                            { id: 'leaderboard', label: 'Ranks', icon: '🏆', badge: 0, color: 'from-yellow-600 to-amber-600', glow: 'shadow-yellow-500/30' },
                         ].map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setRivalsView(tab.id as typeof rivalsView)}
-                                className={`flex-1 py-2 px-2 rounded-md text-xs font-bold transition-all relative ${
+                                className={`flex-1 py-2.5 px-2 rounded-lg text-xs font-bold transition-all duration-300 relative transform ${
                                     rivalsView === tab.id 
-                                        ? 'bg-red-600 text-white' 
-                                        : 'text-gray-400 hover:text-white'
+                                        ? `bg-gradient-to-r ${tab.color} text-white shadow-lg ${tab.glow} scale-[1.02]` 
+                                        : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 hover:scale-[1.02]'
                                 }`}
                             >
-                                <span className="mr-1">{tab.icon}</span>
+                                <span className={`mr-1 ${rivalsView === tab.id ? 'animate-bounce' : ''}`} style={{ display: 'inline-block', animationDuration: '1s' }}>{tab.icon}</span>
                                 {tab.label}
                                 {tab.badge > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                                    <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-yellow-500/50 border border-yellow-300">
                                         {tab.badge}
                                     </span>
                                 )}
@@ -2619,25 +2597,24 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                     
                     {/* Navigation Tabs - Row 2 */}
-                    <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
+                    <div className="flex gap-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 p-2 rounded-xl border border-gray-700/50">
                         {[
-                            { id: 'teams', label: 'Teams', icon: '👥', badge: 0 },
-                            { id: 'family', label: 'Family', icon: '👨‍👧', badge: 0 },
-                            { id: 'history', label: 'History', icon: '📜', badge: 0 },
+                            { id: 'teams', label: 'Team Battles', icon: '👥', badge: 0, color: 'from-green-600 to-emerald-600', glow: 'shadow-green-500/30' },
+                            { id: 'family', label: 'Family Mode', icon: '👨‍👧', badge: 0, color: 'from-pink-600 to-rose-600', glow: 'shadow-pink-500/30' },
                         ].map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setRivalsView(tab.id as typeof rivalsView)}
-                                className={`flex-1 py-2 px-2 rounded-md text-xs font-bold transition-all relative ${
+                                className={`flex-1 py-2.5 px-2 rounded-lg text-xs font-bold transition-all duration-300 relative transform ${
                                     rivalsView === tab.id 
-                                        ? 'bg-red-600 text-white' 
-                                        : 'text-gray-400 hover:text-white'
+                                        ? `bg-gradient-to-r ${tab.color} text-white shadow-lg ${tab.glow} scale-[1.02]` 
+                                        : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 hover:scale-[1.02]'
                                 }`}
                             >
-                                <span className="mr-1">{tab.icon}</span>
+                                <span className={`mr-1 ${rivalsView === tab.id ? 'animate-bounce' : ''}`} style={{ display: 'inline-block', animationDuration: '1s' }}>{tab.icon}</span>
                                 {tab.label}
                                 {tab.badge > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                                    <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-yellow-500/50 border border-yellow-300">
                                         {tab.badge}
                                     </span>
                                 )}
@@ -3430,74 +3407,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     )}
                                 </div>
                             )}
-
-                            {/* HISTORY VIEW */}
-                            {rivalsView === 'history' && (
-                                <div className="space-y-2">
-                                    <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 rounded-xl border border-gray-700 mb-4">
-                                        <h4 className="font-bold text-white flex items-center">
-                                            <span className="mr-2">📜</span> Challenge History
-                                        </h4>
-                                        <p className="text-xs text-gray-400">Your recent challenge submissions</p>
-                                    </div>
-                                    
-                                    {historyLoading ? (
-                                        <div className="text-center py-8">
-                                            <div className="text-4xl animate-spin mb-2">⏳</div>
-                                            <p className="text-gray-400 text-sm">Loading history...</p>
-                                        </div>
-                                    ) : challengeHistory.length === 0 ? (
-                                        <p className="text-gray-500 text-center py-8 italic">No challenges yet. Complete your first challenge!</p>
-                                    ) : (
-                                        challengeHistory.map(entry => {
-                                            const date = new Date(entry.completedAt);
-                                            const today = new Date();
-                                            const yesterday = new Date(today);
-                                            yesterday.setDate(yesterday.getDate() - 1);
-                                            
-                                            let dateDisplay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                            if (date.toDateString() === today.toDateString()) dateDisplay = 'Today';
-                                            else if (date.toDateString() === yesterday.toDateString()) dateDisplay = 'Yesterday';
-                                            
-                                            const statusConfig = {
-                                                'PENDING': { badge: '🟡 In Review', color: 'text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/30' },
-                                                'VERIFIED': { badge: '🟢 Verified', color: 'text-green-400', bg: 'bg-green-900/20 border-green-500/30' },
-                                                'COMPLETED': { badge: '✅ Completed', color: 'text-green-400', bg: 'bg-gray-800 border-gray-600' },
-                                            };
-                                            const config = statusConfig[entry.status as keyof typeof statusConfig] || statusConfig['COMPLETED'];
-                                            
-                                            return (
-                                                <div 
-                                                    key={entry.id} 
-                                                    className={`flex items-center justify-between p-3 rounded-xl border ${config.bg}`}
-                                                >
-                                                    <div className="flex items-center">
-                                                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl mr-3">
-                                                            {entry.icon || '⚡'}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-white text-sm">
-                                                                {entry.challengeName}
-                                                                {entry.category === 'Family' && <span className="ml-1 text-pink-400 text-[10px]">(Family)</span>}
-                                                            </p>
-                                                            <p className="text-[10px] text-gray-400">
-                                                                {entry.category} • {dateDisplay} • {entry.proofType === 'VIDEO' ? '📹 Video' : '✓ Trust'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className={`font-bold text-xs ${config.color}`}>
-                                                            {config.badge}
-                                                        </p>
-                                                        <p className="text-[10px] text-yellow-500 font-bold">+{entry.xpAwarded} XP</p>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                            )}
-
 
                             {/* MYSTERY CHALLENGE VIEW - AI-powered Daily Quiz */}
                             {rivalsView === 'mystery' && (
