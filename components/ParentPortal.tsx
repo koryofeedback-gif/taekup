@@ -29,6 +29,53 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [language, setLanguage] = useState(data.language || 'English');
     const [bookedSlots, setBookedSlots] = useState<Record<string, boolean>>({}); // Simulating bookings
     
+    // Fresh leaderboard data from API
+    const [apiLeaderboardData, setApiLeaderboardData] = useState<Array<{id: string; name: string; totalXP: number; monthlyXP: number; belt?: string}>>([]);
+    const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+    
+    // One-time cleanup of stale localStorage cache on mount
+    useEffect(() => {
+        try {
+            const keysToRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('rivals-season-')) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => {
+                console.log('[Cleanup] Removing stale localStorage key:', key);
+                localStorage.removeItem(key);
+            });
+        } catch (err) {
+            console.error('[Cleanup] Failed to clear localStorage:', err);
+        }
+    }, []);
+    
+    // Fetch fresh leaderboard data from API
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            if (!student.clubId) return;
+            setLeaderboardLoading(true);
+            try {
+                const response = await fetch(`/api/leaderboard?clubId=${student.clubId}`);
+                const result = await response.json();
+                if (result.leaderboard) {
+                    setApiLeaderboardData(result.leaderboard);
+                    console.log('[Leaderboard] Fetched fresh data from API:', result.leaderboard.length, 'students');
+                }
+            } catch (err) {
+                console.error('[Leaderboard] Failed to fetch:', err);
+            } finally {
+                setLeaderboardLoading(false);
+            }
+        };
+        fetchLeaderboard();
+        // Refresh every 30 seconds
+        const interval = setInterval(fetchLeaderboard, 30000);
+        return () => clearInterval(interval);
+    }, [student.clubId]);
+    
     // Rivals State
     const [selectedRival, setSelectedRival] = useState<string>('');
     const [challengeResult, setChallengeResult] = useState<'pending' | 'win' | 'loss' | null>(null);
@@ -2342,31 +2389,29 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         
-        // Calculate Monthly XP leaderboard (XP earned this month from performance history)
+        // Calculate Monthly XP leaderboard - USE FRESH API DATA instead of cached performanceHistory
         const monthlyLeaderboard = allStudentsForLeaderboard
             .map(s => {
-                const monthlyXP = (s.performanceHistory || [])
-                    .filter(record => new Date(record.date) >= monthStart)
-                    .reduce((sum, record) => {
-                        const scores = Object.values(record.scores || {});
-                        const classXP = calculateClassXP(scores);
-                        return sum + classXP + (record.bonusPoints || 0);
-                    }, 0);
-                return { ...s, displayXP: monthlyXP, isYou: s.id === student.id };
+                // Find this student's monthly XP from fresh API data
+                const apiStudent = apiLeaderboardData.find(a => a.id === s.id);
+                const freshMonthlyXP = apiStudent?.monthlyXP ?? 0;
+                return { ...s, displayXP: freshMonthlyXP, isYou: s.id === student.id };
             })
             .sort((a, b) => b.displayXP - a.displayXP)
             .map((s, i) => ({ ...s, rank: i + 1 }));
         
-        // Calculate All-Time XP leaderboard (use totalXP or hydrated rivalStats.xp for current student)
+        // Calculate All-Time XP leaderboard - USE FRESH API DATA instead of cached values
         const allTimeLeaderboard = allStudentsForLeaderboard
-            .map(s => ({
-                ...s,
-                // For current student, use hydrated rivalStats.xp; for others use their stored XP
-                displayXP: s.id === student.id 
-                    ? (rivalStats.xp || s.totalXP || s.lifetimeXp || 0)
-                    : (s.totalXP || s.lifetimeXp || s.rivalsStats?.xp || 0),
-                isYou: s.id === student.id
-            }))
+            .map(s => {
+                // Find this student's XP from fresh API data
+                const apiStudent = apiLeaderboardData.find(a => a.id === s.id);
+                const freshXP = apiStudent?.totalXP ?? 0;
+                return {
+                    ...s,
+                    displayXP: freshXP,
+                    isYou: s.id === student.id
+                };
+            })
             .sort((a, b) => b.displayXP - a.displayXP)
             .map((s, i) => ({ ...s, rank: i + 1 }));
         
