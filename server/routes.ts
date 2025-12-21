@@ -427,24 +427,14 @@ export function registerRoutes(app: Express) {
         const student = (existingResult as any[])[0];
         console.log(`[LoginByName] Found existing student: ${student.name} (${student.id}), XP: ${student.total_xp}`);
         
-        // Sync XP from logs
-        const xpResult = await db.execute(sql`
-          SELECT 
-            COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = ${student.id}::uuid), 0) +
-            COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = ${student.id}::uuid), 0) +
-            COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${student.id}::uuid), 0)
-            AS total
-        `);
-        const calculatedXp = parseInt((xpResult as any[])[0]?.total || '0', 10);
-        await db.execute(sql`UPDATE students SET total_xp = ${calculatedXp} WHERE id = ${student.id}::uuid`);
-        
+        // Return student with their current total_xp (single source of truth)
         return res.json({
           success: true,
           isNew: false,
           student: {
             id: student.id,
             name: student.name,
-            totalXp: calculatedXp,
+            totalXp: student.total_xp || 0,
             clubId: student.club_id
           }
         });
@@ -640,25 +630,8 @@ export function registerRoutes(app: Express) {
           }
         }
         
-        // AUTO-SYNC XP: Recalculate total_xp from all XP sources on login
-        if (studentId) {
-          try {
-            const xpResult = await db.execute(sql`
-              SELECT 
-                COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = ${studentId}::uuid), 0) +
-                COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = ${studentId}::uuid), 0) +
-                COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${studentId}::uuid), 0)
-                AS total
-            `);
-            const calculatedXp = parseInt((xpResult as any[])[0]?.total || '0', 10);
-            
-            // Update student's total_xp to match actual logs
-            await db.execute(sql`UPDATE students SET total_xp = ${calculatedXp} WHERE id = ${studentId}::uuid`);
-            console.log('[Login] XP synced for student:', studentId, '-> total_xp:', calculatedXp);
-          } catch (xpError: any) {
-            console.error('[Login] XP sync error (non-fatal):', xpError.message);
-          }
-        }
+        // XP is now managed by unified awardXP service - no sync needed
+        // students.total_xp is the single source of truth
       }
 
       await db.execute(sql`
@@ -1991,14 +1964,9 @@ export function registerRoutes(app: Express) {
         WHERE id = ${videoId}::uuid
       `);
 
-      // Award XP to student if approved
+      // Award XP to student if approved using unified XP service
       if (status === 'approved' && xpAwarded > 0 && studentId) {
-        await db.execute(sql`
-          UPDATE students 
-          SET total_xp = COALESCE(total_xp, 0) + ${xpAwarded}, 
-              updated_at = NOW() 
-          WHERE id = ${studentId}::uuid
-        `);
+        await awardXP(studentId, xpAwarded, 'video', { videoId, type: 'video_verify' });
         console.log('[Videos] Awarded', xpAwarded, 'XP to student', studentId);
       }
 
@@ -3100,41 +3068,33 @@ export function registerRoutes(app: Express) {
   });
 
   // =====================================================
-  // SYNC RIVALS STATS - Persist rival stats to database
+  // SYNC RIVALS STATS - Return current XP from students.total_xp (single source of truth)
   // =====================================================
   app.post('/api/students/:id/sync-rivals', async (req: Request, res: Response) => {
     try {
       const studentId = req.params.id;
-      const { xp, wins, losses, streak } = req.body;
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(studentId)) {
         return res.status(400).json({ error: 'Invalid student ID format' });
       }
 
-      // Calculate actual XP from all sources (source of truth)
-      const xpResult = await db.execute(sql`
-        SELECT 
-          COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = ${studentId}::uuid), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = ${studentId}::uuid), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${studentId}::uuid AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED')), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM content_views WHERE student_id = ${studentId}::uuid AND completed = true), 0)
-          AS total
+      // Read current total_xp from students table (single source of truth)
+      const studentResult = await db.execute(sql`
+        SELECT COALESCE(total_xp, 0) as total_xp FROM students WHERE id = ${studentId}::uuid
       `);
-      const calculatedXp = parseInt((xpResult as any[])[0]?.total || '0', 10);
+      
+      if ((studentResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+      
+      const currentXp = parseInt((studentResult as any[])[0]?.total_xp || '0', 10);
 
-      // Update the student's total_xp to match actual XP from logs
-      await db.execute(sql`
-        UPDATE students 
-        SET total_xp = ${calculatedXp}, updated_at = NOW()
-        WHERE id = ${studentId}::uuid
-      `);
-
-      console.log(`[SyncRivals] Updated student ${studentId}: total_xp = ${calculatedXp} (from logs)`);
+      console.log(`[SyncRivals] Returning current XP for student ${studentId}: ${currentXp}`);
 
       res.json({ 
         success: true, 
-        totalXp: calculatedXp,
+        totalXp: currentXp,
         message: 'Rivals stats synced successfully'
       });
     } catch (error: any) {
