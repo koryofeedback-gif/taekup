@@ -273,11 +273,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         onUpdateStudent(updatedStudent);
         
-        // Also persist to database via API
+        // Also sync with database to get accurate XP from all sources
         try {
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             if (uuidRegex.test(student.id)) {
-                await fetch(`/api/students/${student.id}/sync-rivals`, {
+                const response = await fetch(`/api/students/${student.id}/sync-rivals`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -287,6 +287,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         streak: rivalStats.streak
                     })
                 });
+                const result = await response.json();
+                if (result.success && typeof result.totalXp === 'number') {
+                    // Update local state and shared state with database truth if different
+                    if (result.totalXp !== rivalStats.xp) {
+                        console.log(`[SyncRivals] Updated XP from ${rivalStats.xp} to ${result.totalXp} (database truth)`);
+                        setRivalStats(prev => ({ ...prev, xp: result.totalXp }));
+                        // Re-update shared student state with correct XP
+                        onUpdateStudent({
+                            ...student,
+                            rivalsStats: { ...rivalsStatsToSync, xp: result.totalXp },
+                            totalXP: result.totalXp,
+                            completedContentIds: localCompletedIds,
+                            totalPoints: localTotalPoints
+                        });
+                    }
+                }
             }
         } catch (err) {
             console.error('[SyncRivals] Failed to persist to database:', err);

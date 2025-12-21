@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Student, WizardData } from '../types';
 import { calculateClassXP } from '../services/gamificationService';
 
@@ -14,63 +14,81 @@ interface ChallengeHistoryEntry {
     completedAt: string;
 }
 
+interface ApiLeaderboardEntry {
+    id: string;
+    name: string;
+    belt: string;
+    stripes: number;
+    totalXP: number;
+    monthlyXP: number;
+    rank: number;
+}
+
 interface CoachLeaderboardProps {
     students: Student[];
     data: WizardData;
     clubId?: string;
 }
 
-export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, data }) => {
+export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, data, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('alltime');
+    const [apiLeaderboard, setApiLeaderboard] = useState<ApiLeaderboardEntry[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
     const [viewingStudentHistory, setViewingStudentHistory] = useState<{
         student: Student | null;
         history: ChallengeHistoryEntry[];
         loading: boolean;
     }>({ student: null, history: [], loading: false });
 
-    // EXACT COPY FROM PARENT DASHBOARD - use data.students
-    const allStudentsForLeaderboard = data.students;
+    // Fetch fresh leaderboard data from API (database source of truth)
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            if (!clubId) return;
+            setIsLoading(true);
+            try {
+                const response = await fetch(`/api/leaderboard?clubId=${clubId}`);
+                const result = await response.json();
+                if (result.leaderboard) {
+                    setApiLeaderboard(result.leaderboard);
+                }
+            } catch (error) {
+                console.error('[CoachLeaderboard] Failed to fetch leaderboard:', error);
+            }
+            setIsLoading(false);
+        };
+        fetchLeaderboard();
+        // Refresh every 30 seconds to catch updates
+        const interval = setInterval(fetchLeaderboard, 30000);
+        return () => clearInterval(interval);
+    }, [clubId]);
 
-    // Get start of current month for monthly XP calculation
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Use API data for all-time leaderboard (database source of truth)
+    const allTimeLeaderboard = apiLeaderboard.map((s, i) => ({
+        ...s,
+        displayXP: s.totalXP,
+        rank: i + 1
+    }));
 
-    // EXACT COPY: Calculate Monthly XP leaderboard (XP earned this month from performance history)
-    const monthlyLeaderboard = allStudentsForLeaderboard
-        .map(s => {
-            const monthlyXP = (s.performanceHistory || [])
-                .filter(record => new Date(record.date) >= monthStart)
-                .reduce((sum, record) => {
-                    const scores = Object.values(record.scores || {});
-                    const classXP = calculateClassXP(scores);
-                    return sum + classXP + (record.bonusPoints || 0);
-                }, 0);
-            return { ...s, displayXP: monthlyXP };
-        })
-        .sort((a, b) => b.displayXP - a.displayXP)
-        .map((s, i) => ({ ...s, rank: i + 1 }));
-
-    // EXACT COPY: Calculate All-Time XP leaderboard
-    // For Coach, there's no "current student" - all students use the same logic as "other students" in Parent
-    const allTimeLeaderboard = allStudentsForLeaderboard
-        .map(s => ({
+    // Monthly leaderboard from API data
+    const monthlyLeaderboard = [...apiLeaderboard]
+        .sort((a, b) => b.monthlyXP - a.monthlyXP)
+        .map((s, i) => ({
             ...s,
-            // Same as Parent Dashboard for other students - check rivalsStats.xp FIRST (this is where live XP is stored)
-            displayXP: s.rivalsStats?.xp || s.totalXP || s.lifetimeXp || 0
-        }))
-        .sort((a, b) => b.displayXP - a.displayXP)
-        .map((s, i) => ({ ...s, rank: i + 1 }));
+            displayXP: s.monthlyXP,
+            rank: i + 1
+        }));
 
-    // Select which leaderboard to display - EXACT COPY
+    // Select which leaderboard to display
     const leaderboard = leaderboardMode === 'monthly' ? monthlyLeaderboard : allTimeLeaderboard;
 
-    const fetchStudentHistory = async (targetStudent: Student) => {
-        setViewingStudentHistory({ student: targetStudent, history: [], loading: true });
+    const fetchStudentHistory = async (targetPlayer: { id: string; name: string; belt: string }) => {
+        const studentPlaceholder = { id: targetPlayer.id, name: targetPlayer.name } as Student;
+        setViewingStudentHistory({ student: studentPlaceholder, history: [], loading: true });
         try {
-            const response = await fetch(`/api/challenges/history?studentId=${targetStudent.id}`);
+            const response = await fetch(`/api/challenges/history?studentId=${targetPlayer.id}`);
             const result = await response.json();
             setViewingStudentHistory({
-                student: targetStudent,
+                student: studentPlaceholder,
                 history: result.history || [],
                 loading: false
             });
@@ -116,9 +134,14 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                 </p>
             </div>
 
-            {/* EXACT COPY OF PARENT DASHBOARD LEADERBOARD RENDERING */}
+            {/* Leaderboard with loading state */}
             <div className="space-y-3">
-                {leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
+                {isLoading && apiLeaderboard.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700">
+                        <div className="text-5xl mb-3 animate-bounce">⏳</div>
+                        <p className="text-gray-400">Loading leaderboard...</p>
+                    </div>
+                ) : leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
                     <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700">
                         <div className="text-5xl mb-3">🥋</div>
                         <p className="text-gray-400">
@@ -147,7 +170,7 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                                 <div>
                                     <p className="font-bold text-white text-lg">{player.name}</p>
                                     <p className="text-sm text-gray-500">
-                                        {data.belts.find(b => b.id === player.beltId)?.name || 'Student'} • Click to view history
+                                        {player.belt || 'Student'} • Click to view history
                                     </p>
                                 </div>
                             </div>

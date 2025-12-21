@@ -3025,32 +3025,40 @@ export function registerRoutes(app: Express) {
         WHERE club_id = ${clubId}::uuid 
       `);
 
-      // Calculate TOTAL XP directly from challenge submissions (all-time)
+      // Calculate TOTAL XP from ALL sources (same as sync-rivals endpoint)
       const totalXpData = await db.execute(sql`
-        SELECT student_id, COALESCE(SUM(xp_awarded), 0) as total_xp
-        FROM challenge_submissions
-        WHERE club_id = ${clubId}::uuid
-        AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED')
-        GROUP BY student_id
+        SELECT 
+          s.id as student_id,
+          COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = s.id), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = s.id), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = s.id AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED')), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM content_views WHERE student_id = s.id AND completed = true), 0)
+          AS total_xp
+        FROM students s
+        WHERE s.club_id = ${clubId}::uuid
       `);
       const totalXpMap = new Map((totalXpData as any[]).map(r => [r.student_id, parseInt(r.total_xp) || 0]));
 
-      // Calculate monthly XP from challenge submissions this month
+      // Calculate monthly XP from ALL sources this month
       const monthStart = new Date();
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
+      const monthStartStr = monthStart.toISOString();
 
       const monthlyXpData = await db.execute(sql`
-        SELECT student_id, COALESCE(SUM(xp_awarded), 0) as monthly_xp
-        FROM challenge_submissions
-        WHERE club_id = ${clubId}::uuid
-        AND created_at >= ${monthStart.toISOString()}
-        AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED')
-        GROUP BY student_id
+        SELECT 
+          s.id as student_id,
+          COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = s.id AND created_at >= ${monthStartStr}::timestamp), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = s.id AND created_at >= ${monthStartStr}::timestamp), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = s.id AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED') AND created_at >= ${monthStartStr}::timestamp), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM content_views WHERE student_id = s.id AND completed = true AND created_at >= ${monthStartStr}::timestamp), 0)
+          AS monthly_xp
+        FROM students s
+        WHERE s.club_id = ${clubId}::uuid
       `);
       const monthlyXpMap = new Map((monthlyXpData as any[]).map(r => [r.student_id, parseInt(r.monthly_xp) || 0]));
 
-      // Build leaderboard with fresh XP from challenge submissions
+      // Build leaderboard with fresh XP from all sources
       const leaderboard = (students as any[]).map(s => ({
         id: s.id,
         name: s.name,
@@ -3062,7 +3070,7 @@ export function registerRoutes(app: Express) {
       .sort((a, b) => b.totalXP - a.totalXP)
       .map((s, index) => ({ ...s, rank: index + 1 }));
 
-      console.log('[Leaderboard] Returning fresh data:', leaderboard.map(s => ({ name: s.name, xp: s.totalXP })));
+      console.log('[Leaderboard] Returning fresh data from all sources:', leaderboard.map(s => ({ name: s.name, xp: s.totalXP })));
 
       res.json({ leaderboard });
     } catch (error: any) {
@@ -3089,7 +3097,7 @@ export function registerRoutes(app: Express) {
         SELECT 
           COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = ${studentId}::uuid), 0) +
           COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = ${studentId}::uuid), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${studentId}::uuid AND status IN ('VERIFIED', 'COMPLETED')), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${studentId}::uuid AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED')), 0) +
           COALESCE((SELECT SUM(xp_awarded) FROM content_views WHERE student_id = ${studentId}::uuid AND completed = true), 0)
           AS total
       `);
