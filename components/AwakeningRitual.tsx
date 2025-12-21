@@ -7,13 +7,12 @@ interface AwakeningRitualProps {
 
 type TrainingType = 'power' | 'technique' | 'neutral';
 type GameLevel = 1 | 2 | 3;
+type SwipeDirection = 'up' | 'down' | 'left' | 'right';
 
 const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack }) => {
   const [level, setLevel] = useState<GameLevel>(1);
   const [progress, setProgress] = useState(0);
-  const [isHolding, setIsHolding] = useState(false);
   const [trainingType, setTrainingType] = useState<TrainingType>('neutral');
-  const [tapCount, setTapCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', message: '', showInput: false });
   const [guardianName, setGuardianName] = useState('');
@@ -22,20 +21,48 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
   const [isHatched, setIsHatched] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(true);
   const [screenShake, setScreenShake] = useState(false);
-  const [milestoneHit, setMilestoneHit] = useState<number[]>([]);
+  
+  // Level 1: Breath Sync state
+  const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale' | 'waiting'>('waiting');
+  const [isHolding, setIsHolding] = useState(false);
+  const [combo, setCombo] = useState(0);
+  const [showComboText, setShowComboText] = useState(false);
+  const [breathProgress, setBreathProgress] = useState(0);
+  const [breathTargetZone, setBreathTargetZone] = useState(false);
+  const [breathSuccess, setBreathSuccess] = useState<'perfect' | 'good' | 'miss' | null>(null);
+  
+  // Level 2: Pulse Alignment state
+  const [currentPrompt, setCurrentPrompt] = useState<SwipeDirection | 'tap' | 'hold' | null>(null);
+  const [promptQueue, setPromptQueue] = useState<(SwipeDirection | 'tap' | 'hold')[]>([]);
+  const [promptActive, setPromptActive] = useState(false);
+  const [promptResult, setPromptResult] = useState<'success' | 'fail' | null>(null);
+  const [promptTimeLeft, setPromptTimeLeft] = useState(100);
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  
+  // Level 3: Spirit Sigils state
+  const [sigilSequence, setSigilSequence] = useState<('tap' | 'hold' | 'swipe')[]>([]);
+  const [sigilPhase, setSigilPhase] = useState<'memorize' | 'execute' | 'waiting'>('waiting');
+  const [sigilIndex, setSigilIndex] = useState(0);
+  const [displaySigilIndex, setDisplaySigilIndex] = useState(0);
+  const [sigilResult, setSigilResult] = useState<'success' | 'fail' | null>(null);
+  const [sigilRound, setSigilRound] = useState(1);
   
   const ambienceRef = useRef<HTMLAudioElement | null>(null);
   const chargeRef = useRef<HTMLAudioElement | null>(null);
   const heartbeatRef = useRef<HTMLAudioElement | null>(null);
   const crackRef = useRef<HTMLAudioElement | null>(null);
   const hatchRef = useRef<HTMLAudioElement | null>(null);
+  const successRef = useRef<HTMLAudioElement | null>(null);
   
-  const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const decayIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const breathIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const promptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const sigilTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [audioStarted, setAudioStarted] = useState(false);
 
   const MAX_PROGRESS = 300;
-  const TAPS_REQUIRED = 20;
+  const BREATH_CYCLE_DURATION = 3000;
+  const PROMPT_WINDOW = 1500;
+  const SIGIL_DISPLAY_TIME = 800;
 
   useEffect(() => {
     ambienceRef.current = new Audio('/assets/sfx_ambience_dojo.wav');
@@ -43,6 +70,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     heartbeatRef.current = new Audio('/assets/sfx_heartbeat_low.wav');
     crackRef.current = new Audio('/assets/sfx_crack_crisp.wav');
     hatchRef.current = new Audio('/assets/sfx_hatch_poof.mp3');
+    successRef.current = new Audio('/assets/sfx_creature_cute.wav');
     
     if (ambienceRef.current) {
       ambienceRef.current.loop = true;
@@ -53,10 +81,133 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       ambienceRef.current?.pause();
       chargeRef.current?.pause();
       heartbeatRef.current?.pause();
-      if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
-      if (decayIntervalRef.current) clearInterval(decayIntervalRef.current);
+      if (breathIntervalRef.current) clearInterval(breathIntervalRef.current);
+      if (promptTimeoutRef.current) clearTimeout(promptTimeoutRef.current);
+      if (sigilTimeoutRef.current) clearTimeout(sigilTimeoutRef.current);
     };
   }, []);
+
+  // Level 1: Breath Sync - Start breathing cycle
+  useEffect(() => {
+    if (level !== 1 || dayCompleted) return;
+    
+    let phase: 'inhale' | 'exhale' = 'inhale';
+    let progressVal = 0;
+    
+    const runBreathCycle = () => {
+      phase = 'inhale';
+      setBreathPhase('inhale');
+      progressVal = 0;
+      
+      const tick = setInterval(() => {
+        progressVal += 2;
+        setBreathProgress(progressVal);
+        
+        // Target zone is 40-60%
+        setBreathTargetZone(progressVal >= 40 && progressVal <= 60);
+        
+        if (progressVal >= 100) {
+          clearInterval(tick);
+          phase = 'exhale';
+          setBreathPhase('exhale');
+          
+          // Check if player was holding during target zone
+          setTimeout(() => {
+            setBreathPhase('waiting');
+            setBreathProgress(0);
+            setBreathTargetZone(false);
+          }, 500);
+        }
+      }, BREATH_CYCLE_DURATION / 50);
+      
+      return tick;
+    };
+    
+    const cycle = runBreathCycle();
+    const mainInterval = setInterval(() => {
+      runBreathCycle();
+    }, BREATH_CYCLE_DURATION + 1000);
+    
+    breathIntervalRef.current = mainInterval;
+    
+    return () => {
+      clearInterval(cycle);
+      clearInterval(mainInterval);
+    };
+  }, [level, dayCompleted]);
+
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const promptIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Level 2: Pulse Alignment - Generate prompts
+  useEffect(() => {
+    if (level !== 2 || dayCompleted) return;
+    
+    const generatePrompt = () => {
+      const prompts: (SwipeDirection | 'tap' | 'hold')[] = ['up', 'down', 'left', 'right', 'tap'];
+      const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+      
+      setCurrentPrompt(randomPrompt);
+      setPromptActive(true);
+      setPromptTimeLeft(100);
+      setPromptResult(null);
+      
+      let timeLeft = 100;
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      
+      countdownRef.current = setInterval(() => {
+        timeLeft -= 5;
+        setPromptTimeLeft(timeLeft);
+        
+        if (timeLeft <= 0) {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          countdownRef.current = null;
+          handlePromptMiss();
+        }
+      }, PROMPT_WINDOW / 20);
+    };
+    
+    promptIntervalRef.current = setInterval(generatePrompt, 2500);
+    generatePrompt();
+    
+    return () => {
+      if (promptIntervalRef.current) clearInterval(promptIntervalRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
+    };
+  }, [level, dayCompleted]);
+
+  // Level 3: Spirit Sigils - Generate and display sequence
+  const startSigilRound = useCallback(() => {
+    const length = Math.min(sigilRound + 2, 6);
+    const types: ('tap' | 'hold' | 'swipe')[] = ['tap', 'hold', 'swipe'];
+    const sequence = Array.from({ length }, () => types[Math.floor(Math.random() * types.length)]);
+    
+    setSigilSequence(sequence);
+    setSigilPhase('memorize');
+    setDisplaySigilIndex(0);
+    setSigilIndex(0);
+    
+    // Display each sigil one by one
+    let idx = 0;
+    const showNext = () => {
+      if (idx < sequence.length) {
+        setDisplaySigilIndex(idx);
+        idx++;
+        sigilTimeoutRef.current = setTimeout(showNext, SIGIL_DISPLAY_TIME);
+      } else {
+        setSigilPhase('execute');
+      }
+    };
+    
+    sigilTimeoutRef.current = setTimeout(showNext, 500);
+  }, [sigilRound]);
+
+  useEffect(() => {
+    if (level !== 3 || dayCompleted || sigilPhase !== 'waiting') return;
+    startSigilRound();
+  }, [level, dayCompleted, sigilPhase, startSigilRound]);
 
   const startAudioOnInteraction = useCallback(() => {
     if (!audioStarted && ambienceRef.current) {
@@ -102,107 +253,185 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     setTimeout(() => setScreenShake(false), 300);
   };
 
-  const checkMilestone = (newProgress: number) => {
-    const milestones = [75, 150, 225];
-    milestones.forEach(milestone => {
-      if (newProgress >= milestone && !milestoneHit.includes(milestone)) {
-        setMilestoneHit(prev => [...prev, milestone]);
-        triggerScreenShake();
-        crackRef.current?.play().catch(() => {});
+  const addProgress = (amount: number) => {
+    setProgress(prev => {
+      const newProgress = Math.min(prev + amount, MAX_PROGRESS);
+      if (newProgress >= MAX_PROGRESS) {
+        triggerLevelComplete();
       }
+      return newProgress;
     });
   };
 
-  const startHolding = useCallback(() => {
-    if (dayCompleted || level === 3) return;
-    
+  // Level 1: Handle breath sync interaction
+  const handleBreathHoldStart = () => {
+    if (level !== 1 || dayCompleted) return;
     startAudioOnInteraction();
     setIsHolding(true);
-    
-    if (decayIntervalRef.current) {
-      clearInterval(decayIntervalRef.current);
-      decayIntervalRef.current = null;
-    }
-    
-    if (level === 1 && chargeRef.current) {
-      chargeRef.current.currentTime = 0;
-      chargeRef.current.loop = true;
-      chargeRef.current.play().catch(() => {});
-    }
-    
-    if (level === 2 && heartbeatRef.current) {
-      heartbeatRef.current.currentTime = 0;
-      heartbeatRef.current.loop = true;
-      heartbeatRef.current.playbackRate = 0.5;
-      heartbeatRef.current.play().catch(() => {});
-    }
-    
-    holdIntervalRef.current = setInterval(() => {
-      setProgress(prev => {
-        const increment = level === 1 ? 1 : 1.2;
-        const newProgress = Math.min(prev + increment, MAX_PROGRESS);
-        
-        checkMilestone(newProgress);
-        
-        if (level === 2 && heartbeatRef.current) {
-          const rate = 0.5 + (newProgress / MAX_PROGRESS) * 1.5;
-          heartbeatRef.current.playbackRate = Math.min(rate, 2);
-        }
-        
-        if (newProgress >= MAX_PROGRESS) {
-          if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
-          chargeRef.current?.pause();
-          heartbeatRef.current?.pause();
-          triggerLevelComplete();
-          return MAX_PROGRESS;
-        }
-        
-        return newProgress;
-      });
-    }, 100);
-  }, [dayCompleted, level, startAudioOnInteraction, milestoneHit]);
+    chargeRef.current?.play().catch(() => {});
+  };
 
-  const stopHolding = useCallback(() => {
+  const handleBreathHoldEnd = () => {
+    if (level !== 1 || dayCompleted) return;
     setIsHolding(false);
-    
-    if (holdIntervalRef.current) {
-      clearInterval(holdIntervalRef.current);
-      holdIntervalRef.current = null;
-    }
-    
     chargeRef.current?.pause();
-    heartbeatRef.current?.pause();
     
-    if (!dayCompleted && progress < MAX_PROGRESS) {
-      decayIntervalRef.current = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = Math.max(prev - 3, 0);
-          if (newProgress <= 0) {
-            if (decayIntervalRef.current) clearInterval(decayIntervalRef.current);
-          }
-          return newProgress;
-        });
-      }, 50);
+    if (breathTargetZone && breathPhase === 'inhale') {
+      // Perfect timing!
+      const newCombo = combo + 1;
+      setCombo(newCombo);
+      setBreathSuccess('perfect');
+      setShowComboText(true);
+      
+      const bonus = Math.min(newCombo, 5) * 5;
+      addProgress(20 + bonus);
+      
+      successRef.current?.play().catch(() => {});
+      triggerScreenShake();
+      
+      setTimeout(() => {
+        setBreathSuccess(null);
+        setShowComboText(false);
+      }, 800);
+    } else if (breathPhase === 'inhale') {
+      // Close but not perfect
+      setBreathSuccess('good');
+      setCombo(0);
+      addProgress(10);
+      
+      setTimeout(() => setBreathSuccess(null), 500);
+    } else {
+      // Missed
+      setBreathSuccess('miss');
+      setCombo(0);
+      
+      setTimeout(() => setBreathSuccess(null), 500);
     }
-  }, [dayCompleted, progress]);
+  };
 
-  const handleTap = () => {
-    if (level !== 3 || dayCompleted || isHatched) return;
+  // Level 2: Handle prompt responses
+  const handlePromptMiss = useCallback(() => {
+    if (!promptActive) return;
     
-    startAudioOnInteraction();
-    crackRef.current?.play().catch(() => {});
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+    
+    setPromptResult('fail');
+    setPromptActive(false);
+    setCurrentPrompt(null);
+    setCombo(0);
+  }, [promptActive]);
+
+  const handlePromptSuccess = useCallback(() => {
+    if (!promptActive) return;
+    
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+    
+    setPromptResult('success');
+    setPromptActive(false);
+    setCurrentPrompt(null);
+    
+    setCombo(prev => {
+      const newCombo = prev + 1;
+      setShowComboText(true);
+      
+      const bonus = Math.min(newCombo, 5) * 3;
+      addProgress(15 + bonus);
+      
+      return newCombo;
+    });
+    
+    successRef.current?.play().catch(() => {});
     triggerScreenShake();
     
-    setTapCount(prev => {
-      const newCount = prev + 1;
-      setProgress((newCount / TAPS_REQUIRED) * MAX_PROGRESS);
+    setTimeout(() => {
+      setPromptResult(null);
+      setShowComboText(false);
+    }, 500);
+  }, [promptActive]);
+
+  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+    startAudioOnInteraction();
+    
+    if (level === 2 && promptActive && currentPrompt) {
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      setTouchStart({ x: clientX, y: clientY });
       
-      if (newCount >= TAPS_REQUIRED) {
-        triggerHatch();
+      if (currentPrompt === 'tap') {
+        handlePromptSuccess();
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent | React.MouseEvent) => {
+    if (level === 2 && touchStart && promptActive && currentPrompt) {
+      const clientX = 'changedTouches' in e ? e.changedTouches[0].clientX : e.clientX;
+      const clientY = 'changedTouches' in e ? e.changedTouches[0].clientY : e.clientY;
+      
+      const dx = clientX - touchStart.x;
+      const dy = clientY - touchStart.y;
+      const threshold = 40;
+      
+      let swipeDir: SwipeDirection | null = null;
+      
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+        swipeDir = dx > 0 ? 'right' : 'left';
+      } else if (Math.abs(dy) > threshold) {
+        swipeDir = dy > 0 ? 'down' : 'up';
       }
       
-      return newCount;
-    });
+      if (swipeDir && swipeDir === currentPrompt) {
+        handlePromptSuccess();
+      }
+      
+      setTouchStart(null);
+    }
+    setIsHolding(false);
+  };
+
+  // Level 3: Handle sigil input
+  const handleSigilInput = (type: 'tap' | 'hold' | 'swipe') => {
+    if (level !== 3 || sigilPhase !== 'execute' || dayCompleted) return;
+    startAudioOnInteraction();
+    
+    if (sigilSequence[sigilIndex] === type) {
+      setSigilResult('success');
+      successRef.current?.play().catch(() => {});
+      
+      const newIndex = sigilIndex + 1;
+      setSigilIndex(newIndex);
+      
+      if (newIndex >= sigilSequence.length) {
+        // Round complete!
+        addProgress(30 + sigilRound * 10);
+        triggerScreenShake();
+        
+        setTimeout(() => {
+          setSigilResult(null);
+          if (progress + 30 + sigilRound * 10 < MAX_PROGRESS) {
+            setSigilRound(prev => prev + 1);
+            setSigilPhase('waiting');
+          }
+        }, 800);
+      } else {
+        setTimeout(() => setSigilResult(null), 300);
+      }
+    } else {
+      // Wrong input - restart round
+      setSigilResult('fail');
+      crackRef.current?.play().catch(() => {});
+      
+      setTimeout(() => {
+        setSigilResult(null);
+        setSigilPhase('waiting');
+      }, 1000);
+    }
   };
 
   const triggerLevelComplete = () => {
@@ -213,7 +442,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       
       setModalContent({
         title: '✨ Something Moved!',
-        message: 'The egg is tired. Come back tomorrow.',
+        message: 'You mastered the breath of awakening. The egg stirs with new energy. Return tomorrow.',
         showInput: false
       });
       setShowModal(true);
@@ -225,11 +454,13 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       
       setModalContent({
         title: '💓 Ready to Hatch!',
-        message: 'The shell is weak. Prepare for the final strike tomorrow.',
+        message: 'The spirit within responds to your rhythm. One final challenge awaits.',
         showInput: false
       });
       setShowModal(true);
       setDayCompleted(true);
+    } else if (level === 3) {
+      triggerHatch();
     }
   };
 
@@ -243,7 +474,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       
       setModalContent({
         title: '🐣 The Guardian is Awake!',
-        message: 'What is its name?',
+        message: 'You have awakened a spirit guardian. What shall you name it?',
         showInput: true
       });
       setShowModal(true);
@@ -265,8 +496,9 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       setLevel((prev) => (prev + 1) as GameLevel);
       setProgress(0);
       setDayCompleted(false);
-      setTapCount(0);
-      setMilestoneHit([]);
+      setCombo(0);
+      setSigilRound(1);
+      setSigilPhase('waiting');
     }
   };
 
@@ -278,23 +510,38 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
   const resetDay = () => {
     setProgress(0);
     setDayCompleted(false);
-    setTapCount(0);
+    setCombo(0);
     setShowModal(false);
     setIsHatched(false);
-    setMilestoneHit([]);
-  };
-
-  const getButtonText = () => {
-    if (dayCompleted) return 'COMPLETED';
-    if (level === 3) return 'TAP TO BREAK';
-    return 'HOLD TO INFUSE';
+    setSigilRound(1);
+    setSigilPhase('waiting');
   };
 
   const getLevelTitle = () => {
     switch (level) {
-      case 1: return 'Day 1: The Awakening';
-      case 2: return 'Day 2: The Pulse';
-      case 3: return 'Day 3: The Hatching';
+      case 1: return 'Day 1: Breath Sync';
+      case 2: return 'Day 2: Pulse Alignment';
+      case 3: return 'Day 3: Spirit Sigils';
+    }
+  };
+
+  const getPromptIcon = (prompt: SwipeDirection | 'tap' | 'hold' | null) => {
+    switch (prompt) {
+      case 'up': return '⬆️';
+      case 'down': return '⬇️';
+      case 'left': return '⬅️';
+      case 'right': return '➡️';
+      case 'tap': return '👆';
+      case 'hold': return '✊';
+      default: return '';
+    }
+  };
+
+  const getSigilIcon = (type: 'tap' | 'hold' | 'swipe') => {
+    switch (type) {
+      case 'tap': return '👆';
+      case 'hold': return '✊';
+      case 'swipe': return '👋';
     }
   };
 
@@ -317,6 +564,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           margin: 0 auto;
           overflow: hidden;
           background: #050505;
+          touch-action: none;
         }
         
         .game-container.screen-shake {
@@ -366,20 +614,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         }
         
         @keyframes float-up {
-          0% {
-            transform: translateY(100vh) scale(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-100px) scale(1);
-            opacity: 0;
-          }
+          0% { transform: translateY(100vh) scale(0); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(-100px) scale(1); opacity: 0; }
         }
         
         .particle.charging {
@@ -400,10 +638,6 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           cursor: pointer;
           z-index: 20;
           font-size: 14px;
-          transition: all 0.2s;
-        }
-        .back-button:hover {
-          background: rgba(0,0,0,0.8);
         }
         
         .level-indicator {
@@ -439,11 +673,11 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         
         .scene-wrapper {
           position: absolute;
-          bottom: 15%;
+          bottom: 20%;
           left: 50%;
           transform: translateX(-50%);
           width: 300px;
-          height: 400px;
+          height: 350px;
           display: flex;
           justify-content: center;
           align-items: flex-end;
@@ -453,18 +687,18 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         .pedestal-image {
           position: absolute;
           bottom: 0;
-          width: 220px;
+          width: 200px;
           z-index: 5;
           filter: drop-shadow(0 10px 25px rgba(0,0,0,0.9));
         }
         
         .vfx-glow {
           position: absolute;
-          bottom: 80px;
+          bottom: 60px;
           left: 50%;
           transform: translateX(-50%);
-          width: 300px;
-          height: 300px;
+          width: 280px;
+          height: 280px;
           border-radius: 50%;
           z-index: 4;
           opacity: 0;
@@ -495,9 +729,9 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         
         .egg-container {
           position: absolute;
-          bottom: 60px;
-          width: 180px;
-          height: 240px;
+          bottom: 50px;
+          width: 160px;
+          height: 220px;
           z-index: 6;
           display: flex;
           justify-content: center;
@@ -541,15 +775,15 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         .egg-image {
           width: 100%;
           height: auto;
-          transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          transition: all 0.2s;
           filter: drop-shadow(0 0 15px rgba(0,0,0,0.6));
           cursor: pointer;
         }
         
         .baby-character {
           position: absolute;
-          bottom: 120px;
-          width: 160px;
+          bottom: 100px;
+          width: 140px;
           height: auto;
           z-index: 7;
           animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -563,15 +797,286 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
         
+        /* Breath Sync UI */
+        .breath-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 280px;
+          height: 280px;
+          border-radius: 50%;
+          border: 4px solid rgba(255,255,255,0.2);
+          z-index: 15;
+          pointer-events: none;
+        }
+        
+        .breath-progress-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 280px;
+          height: 280px;
+          border-radius: 50%;
+          z-index: 16;
+          pointer-events: none;
+        }
+        
+        .breath-progress-ring svg {
+          width: 100%;
+          height: 100%;
+          transform: rotate(-90deg);
+        }
+        
+        .breath-progress-ring circle {
+          fill: none;
+          stroke-width: 8;
+          stroke-linecap: round;
+        }
+        
+        .breath-progress-ring .bg-circle {
+          stroke: rgba(255,255,255,0.1);
+        }
+        
+        .breath-progress-ring .progress-circle {
+          stroke: #22d3ee;
+          transition: stroke-dashoffset 0.1s;
+        }
+        
+        .breath-progress-ring .progress-circle.target-zone {
+          stroke: #22c55e;
+          filter: drop-shadow(0 0 10px #22c55e);
+        }
+        
+        .breath-instruction {
+          position: absolute;
+          top: 55%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: white;
+          font-size: 18px;
+          font-weight: bold;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+          z-index: 17;
+          text-align: center;
+        }
+        
+        .breath-instruction.inhale {
+          color: #22d3ee;
+        }
+        
+        .breath-instruction.target {
+          color: #22c55e;
+          animation: pulse-text 0.3s infinite alternate;
+        }
+        
+        @keyframes pulse-text {
+          0% { transform: translate(-50%, -50%) scale(1); }
+          100% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        .combo-display {
+          position: absolute;
+          top: 35%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: #fbbf24;
+          font-size: 32px;
+          font-weight: bold;
+          text-shadow: 0 2px 10px rgba(251, 191, 36, 0.5);
+          z-index: 18;
+          animation: combo-pop 0.5s ease-out;
+        }
+        
+        @keyframes combo-pop {
+          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.2); }
+          100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        .result-feedback {
+          position: absolute;
+          top: 40%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 48px;
+          z-index: 19;
+          animation: result-pop 0.5s ease-out;
+        }
+        
+        @keyframes result-pop {
+          0% { transform: translate(-50%, -50%) scale(0); }
+          50% { transform: translate(-50%, -50%) scale(1.3); }
+          100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        /* Prompt UI (Level 2) */
+        .prompt-display {
+          position: absolute;
+          top: 30%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 120px;
+          height: 120px;
+          background: rgba(0,0,0,0.8);
+          border: 4px solid #22d3ee;
+          border-radius: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 20;
+          animation: prompt-appear 0.2s ease-out;
+        }
+        
+        .prompt-display.success {
+          border-color: #22c55e;
+          background: rgba(34, 197, 94, 0.3);
+        }
+        
+        .prompt-display.fail {
+          border-color: #ef4444;
+          background: rgba(239, 68, 68, 0.3);
+        }
+        
+        @keyframes prompt-appear {
+          0% { transform: translate(-50%, -50%) scale(0); }
+          100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .prompt-icon {
+          font-size: 48px;
+        }
+        
+        .prompt-timer {
+          position: absolute;
+          bottom: -8px;
+          width: 80%;
+          height: 6px;
+          background: rgba(255,255,255,0.2);
+          border-radius: 3px;
+          overflow: hidden;
+        }
+        
+        .prompt-timer-fill {
+          height: 100%;
+          background: #22d3ee;
+          transition: width 0.05s linear;
+        }
+        
+        /* Sigil UI (Level 3) */
+        .sigil-display {
+          position: absolute;
+          top: 20%;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 16px;
+          z-index: 20;
+        }
+        
+        .sigil-item {
+          width: 60px;
+          height: 60px;
+          background: rgba(0,0,0,0.6);
+          border: 3px solid rgba(255,255,255,0.3);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+          transition: all 0.2s;
+        }
+        
+        .sigil-item.active {
+          border-color: #22d3ee;
+          background: rgba(34, 211, 238, 0.2);
+          transform: scale(1.1);
+        }
+        
+        .sigil-item.complete {
+          border-color: #22c55e;
+          background: rgba(34, 197, 94, 0.3);
+        }
+        
+        .sigil-item.current {
+          border-color: #fbbf24;
+          animation: sigil-pulse 0.5s infinite alternate;
+        }
+        
+        @keyframes sigil-pulse {
+          0% { box-shadow: 0 0 10px rgba(251, 191, 36, 0.3); }
+          100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.6); }
+        }
+        
+        .sigil-buttons {
+          position: absolute;
+          bottom: 8%;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 16px;
+          z-index: 20;
+        }
+        
+        .sigil-btn {
+          width: 80px;
+          height: 80px;
+          background: rgba(0,0,0,0.7);
+          border: 3px solid #22d3ee;
+          border-radius: 50%;
+          color: white;
+          font-size: 14px;
+          font-weight: bold;
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          transition: all 0.1s;
+        }
+        
+        .sigil-btn:active {
+          transform: scale(0.9);
+          background: rgba(34, 211, 238, 0.3);
+        }
+        
+        .sigil-btn-icon {
+          font-size: 28px;
+        }
+        
+        .sigil-phase-text {
+          position: absolute;
+          top: 12%;
+          left: 50%;
+          transform: translateX(-50%);
+          color: white;
+          font-size: 16px;
+          font-weight: bold;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+          z-index: 21;
+        }
+        
+        .sigil-phase-text.memorize {
+          color: #fbbf24;
+        }
+        
+        .sigil-phase-text.execute {
+          color: #22c55e;
+        }
+        
+        /* Progress Bar */
         .ui-container {
           position: absolute;
-          bottom: 30px;
+          bottom: 5%;
           left: 50%;
           transform: translateX(-50%);
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 16px;
+          gap: 12px;
           width: 100%;
           z-index: 10;
         }
@@ -579,7 +1084,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         .progress-container {
           position: relative;
           width: 280px;
-          height: 45px;
+          height: 40px;
           opacity: 0.95;
         }
         
@@ -600,7 +1105,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           border-radius: 6px;
           box-shadow: 0 0 15px rgba(255, 136, 0, 0.6);
           z-index: 1;
-          transition: width 0.1s linear;
+          transition: width 0.2s;
         }
         
         .bar-fill.high {
@@ -621,51 +1126,23 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           z-index: 5;
         }
         
-        .action-button {
-          position: relative;
-          width: 240px;
-          height: 75px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          z-index: 20;
-          transition: all 0.1s;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        
-        .action-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        
-        .action-button img {
+        /* Level 1 Hold Button */
+        .hold-area {
           position: absolute;
           inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          filter: drop-shadow(0 5px 15px rgba(0,0,0,0.6));
-          transition: all 0.1s;
+          z-index: 8;
+          cursor: pointer;
         }
         
-        .action-button:active:not(:disabled) {
-          transform: scale(0.95);
-        }
-        
-        .action-button:active:not(:disabled) img {
-          filter: brightness(0.8) drop-shadow(0 3px 10px rgba(0,0,0,0.6));
-        }
-        
-        .button-text {
-          position: relative;
-          z-index: 10;
-          color: white;
-          font-weight: bold;
-          font-size: 16px;
-          text-shadow: 0 2px 6px rgba(0,0,0,0.8);
-          letter-spacing: 1px;
+        .hold-hint {
+          position: absolute;
+          bottom: 18%;
+          left: 50%;
+          transform: translateX(-50%);
+          color: rgba(255,255,255,0.7);
+          font-size: 14px;
+          text-align: center;
+          z-index: 9;
         }
         
         .modal-overlay {
@@ -684,11 +1161,11 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           position: relative;
           width: 90%;
           max-width: 350px;
-          min-height: 220px;
+          min-height: 200px;
           background-image: url('/assets/ui_panel_bg.png');
           background-size: 100% 100%;
           background-repeat: no-repeat;
-          padding: 45px;
+          padding: 40px;
           display: flex;
           flex-direction: column;
           justify-content: center;
@@ -704,34 +1181,30 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         }
         
         .modal-title {
-          font-size: 24px;
+          font-size: 22px;
           font-weight: bold;
           margin-bottom: 16px;
           text-shadow: 0 2px 6px rgba(0,0,0,0.6);
         }
         
         .modal-message {
-          font-size: 16px;
+          font-size: 15px;
           margin-bottom: 24px;
-          line-height: 1.6;
+          line-height: 1.5;
           opacity: 0.9;
         }
         
         .modal-input {
           width: 100%;
-          padding: 14px;
+          padding: 12px;
           font-size: 16px;
           border: 2px solid #22d3ee;
           border-radius: 10px;
           background: rgba(0,0,0,0.6);
           color: white;
           text-align: center;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
           outline: none;
-          transition: border-color 0.2s;
-        }
-        .modal-input:focus {
-          border-color: #06b6d4;
         }
         .modal-input::placeholder {
           color: rgba(255,255,255,0.5);
@@ -741,21 +1214,15 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           background: linear-gradient(135deg, #22d3ee, #06b6d4);
           border: none;
           color: white;
-          padding: 14px 40px;
+          padding: 12px 36px;
           border-radius: 10px;
           font-size: 16px;
           font-weight: bold;
           cursor: pointer;
           transition: all 0.2s;
-          box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
-        }
-        .modal-button:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(34, 211, 238, 0.4);
         }
         .modal-button:disabled {
           opacity: 0.5;
-          cursor: not-allowed;
         }
         
         .dev-panel {
@@ -765,13 +1232,12 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           background: rgba(0,0,0,0.9);
           border: 1px solid #333;
           border-radius: 10px;
-          padding: 14px;
+          padding: 12px;
           z-index: 100;
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          font-size: 11px;
-          backdrop-filter: blur(4px);
+          gap: 6px;
+          font-size: 10px;
         }
         
         .dev-panel-title {
@@ -779,7 +1245,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           font-weight: bold;
           text-align: center;
           border-bottom: 1px solid #333;
-          padding-bottom: 8px;
+          padding-bottom: 6px;
           margin-bottom: 4px;
           display: flex;
           justify-content: space-between;
@@ -790,34 +1256,20 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           background: #222;
           border: 1px solid #444;
           color: white;
-          padding: 8px 12px;
+          padding: 6px 10px;
           border-radius: 6px;
           cursor: pointer;
-          font-size: 11px;
-          transition: all 0.2s;
+          font-size: 10px;
         }
-        .dev-btn:hover {
-          background: #333;
-          border-color: #555;
-        }
-        .dev-btn.red {
-          background: #7f1d1d;
-          border-color: #dc2626;
-        }
-        .dev-btn.blue {
-          background: #1e3a8a;
-          border-color: #3b82f6;
-        }
-        .dev-btn.green {
-          background: #166534;
-          border-color: #22c55e;
-        }
+        .dev-btn.red { background: #7f1d1d; border-color: #dc2626; }
+        .dev-btn.blue { background: #1e3a8a; border-color: #3b82f6; }
+        .dev-btn.green { background: #166534; border-color: #22c55e; }
         
         .dev-status {
           color: #666;
-          font-size: 10px;
+          font-size: 9px;
           text-align: center;
-          padding-top: 8px;
+          padding-top: 6px;
           border-top: 1px solid #333;
         }
         
@@ -828,7 +1280,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           background: rgba(0,0,0,0.8);
           border: 1px solid #333;
           color: #22d3ee;
-          padding: 6px 10px;
+          padding: 4px 8px;
           border-radius: 6px;
           cursor: pointer;
           font-size: 10px;
@@ -841,12 +1293,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         }
       `}</style>
 
-      <img 
-        src="/assets/bg_dojo_level1.jpg" 
-        alt="" 
-        className="bg-image"
-      />
-      
+      <img src="/assets/bg_dojo_level1.jpg" alt="" className="bg-image" />
       <div className="vignette-overlay" />
       
       {particles.map(p => (
@@ -865,89 +1312,162 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       
       {showFlash && <div className="flash-overlay" />}
       
-      <button className="back-button" onClick={onBack}>
-        ← Back
-      </button>
-      
-      <div className="level-indicator">
-        {getLevelTitle()}
-      </div>
+      <button className="back-button" onClick={onBack}>← Back</button>
+      <div className="level-indicator">{getLevelTitle()}</div>
       
       {!showDevPanel && (
-        <button className="dev-toggle" onClick={() => setShowDevPanel(true)}>
-          🛠️ DEV
-        </button>
+        <button className="dev-toggle" onClick={() => setShowDevPanel(true)}>🛠️</button>
       )}
       
       {showDevPanel && (
         <div className="dev-panel">
           <div className="dev-panel-title">
-            <span>🛠️ Dev Panel</span>
-            <button 
-              style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 14 }}
-              onClick={() => setShowDevPanel(false)}
-            >✕</button>
+            <span>🛠️ Dev</span>
+            <button style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }} onClick={() => setShowDevPanel(false)}>✕</button>
           </div>
-          
-          <button className="dev-btn green" onClick={simulateFullProgress}>
-            ⚡ Simulate: 300 XP
-          </button>
-          
-          <button 
-            className={`dev-btn ${trainingType === 'power' ? 'red' : ''}`}
-            onClick={() => setTrainingType('power')}
-          >
-            🔴 Set Type: Power/Red
-          </button>
-          
-          <button 
-            className={`dev-btn ${trainingType === 'technique' ? 'blue' : ''}`}
-            onClick={() => setTrainingType('technique')}
-          >
-            🔵 Set Type: Tech/Blue
-          </button>
-          
-          <button className="dev-btn" onClick={resetDay}>
-            🔄 Reset Day
-          </button>
-          
-          <button className="dev-btn" onClick={advanceToNextDay} disabled={level >= 3}>
-            ➡️ Next Day
-          </button>
-          
+          <button className="dev-btn green" onClick={simulateFullProgress}>⚡ Max XP</button>
+          <button className={`dev-btn ${trainingType === 'power' ? 'red' : ''}`} onClick={() => setTrainingType('power')}>🔴 Power</button>
+          <button className={`dev-btn ${trainingType === 'technique' ? 'blue' : ''}`} onClick={() => setTrainingType('technique')}>🔵 Tech</button>
+          <button className="dev-btn" onClick={resetDay}>🔄 Reset</button>
+          <button className="dev-btn" onClick={advanceToNextDay} disabled={level >= 3}>➡️ Next</button>
           <div className="dev-status">
-            Level: {level} | Type: {trainingType}
-            <br />
-            Progress: {Math.round(progress)}/{MAX_PROGRESS}
-            {level === 3 && <><br />Taps: {tapCount}/{TAPS_REQUIRED}</>}
+            L{level} | {Math.round(progress)}/{MAX_PROGRESS}
+            {level === 1 && ` | x${combo}`}
           </div>
         </div>
       )}
-      
-      <div className="scene-wrapper">
+
+      {/* Level 1: Breath Sync UI */}
+      {level === 1 && !dayCompleted && (
+        <>
+          <div 
+            className="hold-area"
+            onMouseDown={handleBreathHoldStart}
+            onMouseUp={handleBreathHoldEnd}
+            onMouseLeave={handleBreathHoldEnd}
+            onTouchStart={handleBreathHoldStart}
+            onTouchEnd={handleBreathHoldEnd}
+          />
+          
+          <div className="breath-progress-ring">
+            <svg viewBox="0 0 100 100">
+              <circle className="bg-circle" cx="50" cy="50" r="45" />
+              <circle 
+                className={`progress-circle ${breathTargetZone ? 'target-zone' : ''}`}
+                cx="50" cy="50" r="45"
+                strokeDasharray={`${breathProgress * 2.83} 283`}
+              />
+            </svg>
+          </div>
+          
+          <div className={`breath-instruction ${breathTargetZone ? 'target' : breathPhase}`}>
+            {breathPhase === 'inhale' && !breathTargetZone && 'Wait...'}
+            {breathTargetZone && (isHolding ? '✨ PERFECT!' : 'HOLD NOW!')}
+            {breathPhase === 'exhale' && 'Release...'}
+            {breathPhase === 'waiting' && 'Get ready...'}
+          </div>
+          
+          {showComboText && combo > 1 && (
+            <div className="combo-display">x{combo} Combo!</div>
+          )}
+          
+          {breathSuccess && (
+            <div className="result-feedback">
+              {breathSuccess === 'perfect' && '⭐'}
+              {breathSuccess === 'good' && '✓'}
+              {breathSuccess === 'miss' && '✗'}
+            </div>
+          )}
+          
+          <div className="hold-hint">
+            Hold anywhere when the ring turns green
+          </div>
+        </>
+      )}
+
+      {/* Level 2: Pulse Alignment UI */}
+      {level === 2 && !dayCompleted && (
         <div 
-          className={`vfx-glow ${isHolding || progress > 0 ? 'active' : ''} ${getGlowClass()}`}
-        />
-        
+          className="hold-area"
+          onMouseDown={handleTouchStart}
+          onMouseUp={handleTouchEnd}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {currentPrompt && (
+            <div className={`prompt-display ${promptResult || ''}`}>
+              <span className="prompt-icon">{getPromptIcon(currentPrompt)}</span>
+              <div className="prompt-timer">
+                <div className="prompt-timer-fill" style={{ width: `${promptTimeLeft}%` }} />
+              </div>
+            </div>
+          )}
+          
+          {showComboText && combo > 1 && (
+            <div className="combo-display">x{combo} Combo!</div>
+          )}
+        </div>
+      )}
+
+      {/* Level 3: Spirit Sigils UI */}
+      {level === 3 && !dayCompleted && !isHatched && (
+        <>
+          <div className={`sigil-phase-text ${sigilPhase}`}>
+            {sigilPhase === 'memorize' && '👁️ Memorize the pattern...'}
+            {sigilPhase === 'execute' && '⚡ Repeat the sequence!'}
+          </div>
+          
+          <div className="sigil-display">
+            {sigilSequence.map((sigil, idx) => (
+              <div 
+                key={idx} 
+                className={`sigil-item ${
+                  sigilPhase === 'memorize' && displaySigilIndex === idx ? 'active' : ''
+                } ${sigilPhase === 'execute' && idx < sigilIndex ? 'complete' : ''
+                } ${sigilPhase === 'execute' && idx === sigilIndex ? 'current' : ''}`}
+              >
+                {(sigilPhase === 'memorize' && displaySigilIndex >= idx) || sigilPhase === 'execute' 
+                  ? getSigilIcon(sigil) 
+                  : '?'}
+              </div>
+            ))}
+          </div>
+          
+          {sigilPhase === 'execute' && (
+            <div className="sigil-buttons">
+              <button className="sigil-btn" onClick={() => handleSigilInput('tap')}>
+                <span className="sigil-btn-icon">👆</span>
+                TAP
+              </button>
+              <button className="sigil-btn" onClick={() => handleSigilInput('hold')}>
+                <span className="sigil-btn-icon">✊</span>
+                HOLD
+              </button>
+              <button className="sigil-btn" onClick={() => handleSigilInput('swipe')}>
+                <span className="sigil-btn-icon">👋</span>
+                SWIPE
+              </button>
+            </div>
+          )}
+          
+          {sigilResult && (
+            <div className="result-feedback">
+              {sigilResult === 'success' ? '✓' : '✗'}
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="scene-wrapper">
+        <div className={`vfx-glow ${progress > 0 || isHolding ? 'active' : ''} ${getGlowClass()}`} />
         <img src="/assets/pedestal_stone.png" alt="Pedestal" className="pedestal-image" />
         
-        <div 
-          className={`egg-container ${isHolding ? 'charging' : ''} ${level === 3 && !isHatched && !dayCompleted ? 'shaking' : ''}`}
-          onClick={level === 3 ? handleTap : undefined}
-        >
-          <img 
-            src={getEggImage()} 
-            alt="Egg" 
-            className="egg-image"
-          />
+        <div className={`egg-container ${isHolding && level === 1 ? 'charging' : ''} ${level === 3 && sigilPhase === 'execute' ? 'shaking' : ''}`}>
+          <img src={getEggImage()} alt="Egg" className="egg-image" />
         </div>
         
         {isHatched && (
-          <img 
-            src="/assets/char_baby_guardian.png" 
-            alt="Baby Guardian" 
-            className="baby-character"
-          />
+          <img src="/assets/char_baby_guardian.png" alt="Baby Guardian" className="baby-character" />
         )}
       </div>
       
@@ -958,24 +1478,8 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
             className={`bar-fill ${(progress / MAX_PROGRESS) >= 0.75 ? 'high' : ''}`}
             style={{ width: `${(progress / MAX_PROGRESS) * 94}%` }}
           />
-          <span className="bar-text">
-            {level === 3 ? `${tapCount}/${TAPS_REQUIRED}` : `${Math.round(progress)}/${MAX_PROGRESS}`}
-          </span>
+          <span className="bar-text">{Math.round(progress)}/{MAX_PROGRESS}</span>
         </div>
-        
-        <button
-          className="action-button"
-          onMouseDown={level !== 3 ? startHolding : undefined}
-          onMouseUp={level !== 3 ? stopHolding : undefined}
-          onMouseLeave={level !== 3 ? stopHolding : undefined}
-          onTouchStart={level !== 3 ? startHolding : undefined}
-          onTouchEnd={level !== 3 ? stopHolding : undefined}
-          onClick={level === 3 ? handleTap : undefined}
-          disabled={dayCompleted}
-        >
-          <img src="/assets/ui_btn_action.png" alt="" />
-          <span className="button-text">{getButtonText()}</span>
-        </button>
       </div>
       
       {showModal && (
@@ -1000,7 +1504,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
               onClick={handleModalClose}
               disabled={modalContent.showInput && !guardianName.trim()}
             >
-              {modalContent.showInput ? '✨ Awaken!' : 'Okay'}
+              {modalContent.showInput ? '✨ Awaken!' : 'Continue'}
             </button>
           </div>
         </div>
