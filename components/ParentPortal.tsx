@@ -629,16 +629,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     // Solo Arena submission (Trust vs Video)
     const submitSoloChallenge = async (proofType: 'TRUST' | 'VIDEO', videoUrl?: string, challengeXp?: number) => {
-        console.log('[SoloArena] Submit called:', { selectedChallenge, studentId: student.id, proofType, challengeXp });
-        
-        if (!selectedChallenge || !student.id) {
-            console.log('[SoloArena] Missing selectedChallenge or student.id');
-            return;
-        }
+        if (!selectedChallenge || !student.id) return;
         
         // STRICT 1x daily limit - check frontend first
         if (isChallengeCompletedToday(selectedChallenge)) {
-            console.log('[SoloArena] Challenge already completed today (localStorage):', selectedChallenge);
             setSoloResult({
                 success: false,
                 message: 'Daily Mission Complete! You can earn XP for this challenge again tomorrow.',
