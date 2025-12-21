@@ -37,9 +37,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     useEffect(() => {
         try {
             const keysToRemove: string[] = [];
+            const today = new Date().toISOString().split('T')[0];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith('rivals-season-')) {
+                    keysToRemove.push(key);
+                }
+                // Also clean up old arena cache entries (not from today)
+                if (key && key.startsWith('arena-') && !key.endsWith(today)) {
                     keysToRemove.push(key);
                 }
             }
@@ -624,10 +629,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     // Solo Arena submission (Trust vs Video)
     const submitSoloChallenge = async (proofType: 'TRUST' | 'VIDEO', videoUrl?: string, challengeXp?: number) => {
-        if (!selectedChallenge || !student.id) return;
+        console.log('[SoloArena] Submit called:', { selectedChallenge, studentId: student.id, proofType, challengeXp });
+        
+        if (!selectedChallenge || !student.id) {
+            console.log('[SoloArena] Missing selectedChallenge or student.id');
+            return;
+        }
         
         // STRICT 1x daily limit - check frontend first
         if (isChallengeCompletedToday(selectedChallenge)) {
+            console.log('[SoloArena] Challenge already completed today (localStorage):', selectedChallenge);
             setSoloResult({
                 success: false,
                 message: 'Daily Mission Complete! You can earn XP for this challenge again tomorrow.',

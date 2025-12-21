@@ -19,7 +19,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 // UNIFIED XP SERVICE - Single source of truth for XP
 // =====================================================
 // All XP awards go through this function to ensure students.total_xp is always accurate
-async function awardXP(studentId: string, xpAmount: number, source: 'arena' | 'home_dojo' | 'mystery' | 'family' | 'content' | 'pvp', metadata?: object): Promise<{ success: boolean; newTotal: number }> {
+async function awardXP(studentId: string, xpAmount: number, source: 'arena' | 'home_dojo' | 'mystery' | 'family' | 'content' | 'pvp' | 'video', metadata?: object): Promise<{ success: boolean; newTotal: number }> {
   if (!studentId || xpAmount <= 0) {
     return { success: false, newTotal: 0 };
   }
