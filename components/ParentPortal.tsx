@@ -3391,15 +3391,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     ) : (
                                         leaderboard.filter(p => p.displayXP > 0).map((player) => {
                                             const fullStudent = data.students.find(s => s.id === player.id);
+                                            const canViewHistory = player.isYou;
                                             return (
                                             <div 
                                                 key={player.id} 
-                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer hover:scale-[1.02] ${
+                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
                                                     player.isYou 
-                                                        ? 'bg-cyan-900/30 border-cyan-500/50 hover:border-cyan-400' 
-                                                        : 'bg-gray-800 border-gray-700 hover:border-purple-500/50'
+                                                        ? 'bg-cyan-900/30 border-cyan-500/50 hover:border-cyan-400 cursor-pointer hover:scale-[1.02]' 
+                                                        : 'bg-gray-800 border-gray-700'
                                                 }`}
-                                                onClick={() => fullStudent && fetchStudentHistory(fullStudent)}
+                                                onClick={() => canViewHistory && fullStudent && fetchStudentHistory(fullStudent)}
                                             >
                                                 <div className="flex items-center">
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mr-3 ${
@@ -3415,13 +3416,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             {player.name} {player.isYou && '(You)'}
                                                         </p>
                                                         <p className="text-[10px] text-gray-500">
-                                                            {data.belts.find(b => b.id === player.beltId)?.name || 'Student'} • Tap to view history
+                                                            {data.belts.find(b => b.id === player.beltId)?.name || 'Student'}{player.isYou && ' • Tap to view history'}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right flex items-center gap-2">
                                                     <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} XP</p>
-                                                    <span className="text-gray-500 text-xs">→</span>
+                                                    {player.isYou && <span className="text-gray-500 text-xs">→</span>}
                                                 </div>
                                             </div>
                                         );
