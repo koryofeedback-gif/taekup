@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { Student, WizardData } from '../types';
+import { calculateClassXP } from '../services/gamificationService';
 
 interface ChallengeHistoryEntry {
     id: string;
@@ -13,98 +14,59 @@ interface ChallengeHistoryEntry {
     completedAt: string;
 }
 
-interface LeaderboardEntry {
-    id: string;
-    name: string;
-    belt: string;
-    stripes: number;
-    totalXP: number;
-    monthlyXP: number;
-    rank: number;
-    displayXP: number;
-}
-
 interface CoachLeaderboardProps {
     students: Student[];
     data: WizardData;
     clubId?: string;
 }
 
-export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, data, clubId: propClubId }) => {
+export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, data }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
-    const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
-    const [loading, setLoading] = useState(true);
     const [viewingStudentHistory, setViewingStudentHistory] = useState<{
         student: Student | null;
         history: ChallengeHistoryEntry[];
         loading: boolean;
     }>({ student: null, history: [], loading: false });
 
-    // Fetch fresh leaderboard data from API
-    useEffect(() => {
-        const fetchLeaderboard = async () => {
-            // Try multiple sources for clubId
-            const clubId = propClubId 
-                || localStorage.getItem('taekup_club_id') 
-                || sessionStorage.getItem('impersonate_clubId')
-                || students[0]?.clubId;  // Fallback to first student's clubId
-                
-            if (!clubId) {
-                console.log('[Leaderboard] No clubId available, falling back to local data');
-                // Fallback to using students prop data
-                const fallbackData = students.map(s => ({
-                    id: s.id,
-                    name: s.name,
-                    belt: data.belts.find(b => b.id === s.beltId)?.name || 'Student',
-                    stripes: s.stripes || 0,
-                    totalXP: s.rivalsStats?.xp || s.totalXP || s.lifetimeXp || 0,
-                    monthlyXP: 0,
-                    rank: 0,
-                    displayXP: 0
-                }));
-                setLeaderboardData(fallbackData);
-                setLoading(false);
-                return;
-            }
-            console.log('[Leaderboard] Fetching data for clubId:', clubId);
+    // Use exact same logic as Parent Dashboard
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-            try {
-                const response = await fetch(`/api/leaderboard?clubId=${clubId}`);
-                const result = await response.json();
-                if (result.leaderboard) {
-                    setLeaderboardData(result.leaderboard.map((s: any) => ({
-                        ...s,
-                        displayXP: leaderboardMode === 'monthly' ? s.monthlyXP : s.totalXP
-                    })));
-                }
-            } catch (error) {
-                console.error('[Leaderboard] Failed to fetch:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    // Calculate Monthly XP leaderboard (XP earned this month from performance history)
+    const monthlyLeaderboard = students
+        .map(s => {
+            const monthlyXP = (s.performanceHistory || [])
+                .filter(record => new Date(record.date) >= monthStart)
+                .reduce((sum, record) => {
+                    const scores = Object.values(record.scores || {});
+                    const classXP = calculateClassXP(scores);
+                    return sum + classXP + (record.bonusPoints || 0);
+                }, 0);
+            return { ...s, displayXP: monthlyXP };
+        })
+        .sort((a, b) => b.displayXP - a.displayXP)
+        .map((s, i) => ({ ...s, rank: i + 1 }));
 
-        fetchLeaderboard();
-    }, [leaderboardMode, propClubId, students, data.belts]);
-
-    // Sort and assign ranks based on current mode
-    const leaderboard = [...leaderboardData]
+    // Calculate All-Time XP leaderboard (same logic as Parent Dashboard)
+    const allTimeLeaderboard = students
         .map(s => ({
             ...s,
-            displayXP: leaderboardMode === 'monthly' ? s.monthlyXP : s.totalXP
+            // Use rivalsStats.xp first (challenge XP), then totalXP, then lifetimeXp
+            displayXP: s.rivalsStats?.xp || s.totalXP || s.lifetimeXp || 0
         }))
         .sort((a, b) => b.displayXP - a.displayXP)
         .map((s, i) => ({ ...s, rank: i + 1 }));
 
-    const fetchStudentHistory = async (entry: LeaderboardEntry) => {
-        // Convert LeaderboardEntry to minimal Student-like object for display
-        const studentForDisplay = { id: entry.id, name: entry.name, belt: entry.belt } as any;
-        setViewingStudentHistory({ student: studentForDisplay, history: [], loading: true });
+    // Select which leaderboard to display
+    const leaderboard = leaderboardMode === 'monthly' ? monthlyLeaderboard : allTimeLeaderboard;
+
+    const fetchStudentHistory = async (targetStudent: Student) => {
+        setViewingStudentHistory({ student: targetStudent, history: [], loading: true });
         try {
-            const response = await fetch(`/api/challenges/history?studentId=${entry.id}`);
+            const response = await fetch(`/api/challenges/history?studentId=${targetStudent.id}`);
             const result = await response.json();
             setViewingStudentHistory({
-                student: studentForDisplay,
+                student: targetStudent,
                 history: result.history || [],
                 loading: false
             });
@@ -180,7 +142,7 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                                 <div>
                                     <p className="font-bold text-white text-lg">{player.name}</p>
                                     <p className="text-sm text-gray-500">
-                                        {player.belt || 'Student'} • Click to view history
+                                        {data.belts.find(b => b.id === player.beltId)?.name || 'Student'} • Click to view history
                                     </p>
                                 </div>
                             </div>
@@ -219,50 +181,53 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                         <div className="p-5 overflow-y-auto max-h-[60vh] space-y-3">
                             {viewingStudentHistory.loading ? (
                                 <div className="text-center py-16">
-                                    <div className="text-5xl animate-spin mb-4">⏳</div>
-                                    <p className="text-gray-400">Loading history...</p>
+                                    <div className="text-4xl animate-bounce mb-4">⏳</div>
+                                    <p className="text-gray-400">Loading challenge history...</p>
                                 </div>
                             ) : viewingStudentHistory.history.length === 0 ? (
                                 <div className="text-center py-16">
                                     <div className="text-5xl mb-4">🥋</div>
-                                    <p className="text-gray-400">No challenge history yet</p>
-                                    <p className="text-gray-500 text-sm mt-2">This student hasn't completed any challenges.</p>
+                                    <p className="text-gray-400 font-medium">No challenges completed yet</p>
+                                    <p className="text-gray-500 text-sm mt-2">This student hasn't submitted any challenges</p>
                                 </div>
                             ) : (
-                                viewingStudentHistory.history.map(entry => {
-                                    const date = new Date(entry.completedAt);
-                                    const dateDisplay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                    
-                                    const statusConfig: Record<string, { badge: string; color: string; bg: string }> = {
-                                        'PENDING': { badge: '🟡 In Review', color: 'text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/30' },
-                                        'VERIFIED': { badge: '🟢 Verified', color: 'text-green-400', bg: 'bg-green-900/20 border-green-500/30' },
-                                        'COMPLETED': { badge: '✅ Completed', color: 'text-green-400', bg: 'bg-gray-800 border-gray-600' },
-                                    };
-                                    const config = statusConfig[entry.status] || statusConfig['COMPLETED'];
-                                    
-                                    return (
-                                        <div 
-                                            key={entry.id} 
-                                            className={`flex items-center justify-between p-4 rounded-xl border ${config.bg}`}
-                                        >
-                                            <div className="flex items-center">
-                                                <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-2xl mr-4">
-                                                    {entry.icon || '⚡'}
-                                                </div>
+                                viewingStudentHistory.history.map((entry, idx) => (
+                                    <div key={entry.id || idx} className="bg-gray-800/70 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-2xl">{entry.icon || '🏆'}</div>
                                                 <div>
                                                     <p className="font-bold text-white">{entry.challengeName}</p>
-                                                    <p className="text-sm text-gray-400">
-                                                        {entry.category} • {dateDisplay} • {entry.proofType === 'VIDEO' ? '📹 Video' : '✓ Trust'}
-                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                                            entry.category === 'Power' ? 'bg-red-900/50 text-red-300' :
+                                                            entry.category === 'Technique' ? 'bg-blue-900/50 text-blue-300' :
+                                                            entry.category === 'Flexibility' ? 'bg-purple-900/50 text-purple-300' :
+                                                            'bg-gray-700 text-gray-300'
+                                                        }`}>
+                                                            {entry.category}
+                                                        </span>
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                                            entry.status === 'VERIFIED' ? 'bg-green-900/50 text-green-300' :
+                                                            entry.status === 'PENDING' ? 'bg-yellow-900/50 text-yellow-300' :
+                                                            entry.status === 'REJECTED' ? 'bg-red-900/50 text-red-300' :
+                                                            'bg-cyan-900/50 text-cyan-300'
+                                                        }`}>
+                                                            {entry.status}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">{entry.proofType}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className={`font-bold text-sm ${config.color}`}>{config.badge}</p>
-                                                <p className="text-sm text-yellow-500 font-bold">+{entry.xpAwarded} XP</p>
+                                                <p className="font-bold text-green-400">+{entry.xpAwarded} XP</p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {new Date(entry.completedAt).toLocaleDateString()}
+                                                </p>
                                             </div>
                                         </div>
-                                    );
-                                })
+                                    </div>
+                                ))
                             )}
                         </div>
                     </div>
