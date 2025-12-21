@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Student, WizardData } from '../types';
 import { calculateClassXP } from '../services/gamificationService';
 
@@ -20,15 +20,57 @@ interface CoachLeaderboardProps {
     clubId?: string;
 }
 
-export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, data }) => {
+export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, data, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
+    const [freshXPData, setFreshXPData] = useState<Record<string, number>>({});
+    const [loading, setLoading] = useState(true);
     const [viewingStudentHistory, setViewingStudentHistory] = useState<{
         student: Student | null;
         history: ChallengeHistoryEntry[];
         loading: boolean;
     }>({ student: null, history: [], loading: false });
 
-    // Use exact same logic as Parent Dashboard
+    // Fetch fresh XP data from database on mount
+    useEffect(() => {
+        const fetchFreshXP = async () => {
+            setLoading(true);
+            try {
+                // Fetch fresh rival stats for all students
+                const xpMap: Record<string, number> = {};
+                
+                // Fetch each student's challenge history to get total XP
+                await Promise.all(students.map(async (student) => {
+                    try {
+                        const response = await fetch(`/api/challenges/history?studentId=${student.id}`);
+                        const result = await response.json();
+                        const history = result.history || [];
+                        // Sum all XP from verified challenges
+                        const totalXP = history
+                            .filter((h: ChallengeHistoryEntry) => h.status === 'VERIFIED' || h.status === 'APPROVED')
+                            .reduce((sum: number, h: ChallengeHistoryEntry) => sum + (h.xpAwarded || 0), 0);
+                        xpMap[student.id] = totalXP;
+                    } catch (err) {
+                        // Fallback to stored XP
+                        xpMap[student.id] = student.rivalsStats?.xp || student.totalXP || student.lifetimeXp || 0;
+                    }
+                }));
+                
+                console.log('[CoachLeaderboard] Fresh XP data:', xpMap);
+                setFreshXPData(xpMap);
+            } catch (error) {
+                console.error('[CoachLeaderboard] Failed to fetch fresh XP:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        if (students.length > 0) {
+            fetchFreshXP();
+        } else {
+            setLoading(false);
+        }
+    }, [students]);
+
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -47,12 +89,14 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
         .sort((a, b) => b.displayXP - a.displayXP)
         .map((s, i) => ({ ...s, rank: i + 1 }));
 
-    // Calculate All-Time XP leaderboard (same logic as Parent Dashboard)
+    // Calculate All-Time XP leaderboard using fresh data from database
     const allTimeLeaderboard = students
         .map(s => ({
             ...s,
-            // Use rivalsStats.xp first (challenge XP), then totalXP, then lifetimeXp
-            displayXP: s.rivalsStats?.xp || s.totalXP || s.lifetimeXp || 0
+            // Use freshly fetched XP if available, otherwise fallback to stored values
+            displayXP: freshXPData[s.id] !== undefined 
+                ? freshXPData[s.id] 
+                : (s.rivalsStats?.xp || s.totalXP || s.lifetimeXp || 0)
         }))
         .sort((a, b) => b.displayXP - a.displayXP)
         .map((s, i) => ({ ...s, rank: i + 1 }));
@@ -75,6 +119,17 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
             setViewingStudentHistory(prev => ({ ...prev, loading: false }));
         }
     };
+
+    if (loading) {
+        return (
+            <div className="p-6">
+                <div className="text-center py-16">
+                    <div className="text-5xl animate-bounce mb-4">🏆</div>
+                    <p className="text-gray-400">Loading leaderboard...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6">
