@@ -5,7 +5,6 @@ import { generateParentFeedback, generatePromotionMessage, generateLessonPlan } 
 import { generateLessonPlanGPT } from '../services/openaiService';
 import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
-import { CoachLeaderboard } from './CoachLeaderboard';
 import { calculateClassPTS, calculateClassXP } from '../services/gamificationService';
 
 // --- TYPE DEFINITIONS ---
@@ -953,7 +952,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const [certificateData, setCertificateData] = useState<{show: boolean, student: Student | null, newBelt: string}>({ show: false, student: null, newBelt: '' });
     
     // Navigation State
-    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'planner' | 'challenges' | 'videos' | 'leaderboard'>('grading');
+    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'planner' | 'challenges' | 'videos'>('grading');
     const [isAddEventOpen, setIsAddEventOpen] = useState(false);
     const [showChallengeBuilder, setShowChallengeBuilder] = useState(false);
 
@@ -1702,7 +1701,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         <div className="flex flex-wrap justify-between items-center">
                             <div>
                                 <h1 className="text-xl font-bold text-white">
-                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : activeView === 'leaderboard' ? '🏆 Leaderboard' : '🎬 Video Review'}
+                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : '🎬 Video Review'}
                                 </h1>
                                 <p className="text-sm text-gray-400">👤 Coach {coachName} | 🏫 {data.clubName}</p>
                             </div>
@@ -1739,12 +1738,6 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'challenges' ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                                 >
                                     🏆 Challenges
-                                </button>
-                                <button 
-                                    onClick={() => setActiveView('leaderboard')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'leaderboard' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                                >
-                                    📊 Leaderboard
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('videos')}
@@ -2116,11 +2109,6 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 )}
                             </div>
                         </div>
-                    )}
-
-                    {/* LEADERBOARD VIEW */}
-                    {activeView === 'leaderboard' && (
-                        <CoachLeaderboard students={students} belts={data.belts} />
                     )}
 
                     {/* VIDEOS VIEW */}

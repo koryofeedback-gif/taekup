@@ -49,6 +49,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         completedAt: string;
     }>>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [viewingStudentHistory, setViewingStudentHistory] = useState<{
+        student: Student | null;
+        history: Array<{
+            id: string;
+            challengeName: string;
+            icon: string;
+            category: string;
+            status: string;
+            proofType: string;
+            xpAwarded: number;
+            completedAt: string;
+        }>;
+        loading: boolean;
+    }>({ student: null, history: [], loading: false });
     const [rivalStats, setRivalStats] = useState(() => {
         // Initialize from student's saved stats or use defaults
         if (student.rivalsStats) {
@@ -379,6 +393,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         fetchHistory();
     }, [rivalsView, student.id]);
+
+    // Fetch another student's history for leaderboard viewing
+    const fetchStudentHistory = async (targetStudent: Student) => {
+        setViewingStudentHistory({ student: targetStudent, history: [], loading: true });
+        try {
+            const response = await fetch(`/api/challenges/history?studentId=${targetStudent.id}`);
+            const data = await response.json();
+            setViewingStudentHistory({
+                student: targetStudent,
+                history: data.history || [],
+                loading: false
+            });
+        } catch (error) {
+            console.error('[History] Failed to fetch student history:', error);
+            setViewingStudentHistory(prev => ({ ...prev, loading: false }));
+        }
+    };
     
     // Submit Mystery Challenge answer
     const submitMysteryChallenge = async (selectedIndex: number) => {
@@ -3358,14 +3389,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 : 'No XP recorded yet. Complete challenges to rank up!'}
                                         </p>
                                     ) : (
-                                        leaderboard.filter(p => p.displayXP > 0).map((player) => (
+                                        leaderboard.filter(p => p.displayXP > 0).map((player) => {
+                                            const fullStudent = data.students.find(s => s.id === player.id);
+                                            return (
                                             <div 
                                                 key={player.id} 
-                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer hover:scale-[1.02] ${
                                                     player.isYou 
-                                                        ? 'bg-cyan-900/30 border-cyan-500/50' 
-                                                        : 'bg-gray-800 border-gray-700'
+                                                        ? 'bg-cyan-900/30 border-cyan-500/50 hover:border-cyan-400' 
+                                                        : 'bg-gray-800 border-gray-700 hover:border-purple-500/50'
                                                 }`}
+                                                onClick={() => fullStudent && fetchStudentHistory(fullStudent)}
                                             >
                                                 <div className="flex items-center">
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mr-3 ${
@@ -3381,15 +3415,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             {player.name} {player.isYou && '(You)'}
                                                         </p>
                                                         <p className="text-[10px] text-gray-500">
-                                                            {data.belts.find(b => b.id === player.beltId)?.name || 'Student'}
+                                                            {data.belts.find(b => b.id === player.beltId)?.name || 'Student'} • Tap to view history
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
+                                                <div className="text-right flex items-center gap-2">
                                                     <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} XP</p>
+                                                    <span className="text-gray-500 text-xs">→</span>
                                                 </div>
                                             </div>
-                                        ))
+                                        );
+                                        })
                                     )}
                                 </div>
                             )}
@@ -4115,6 +4151,80 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {activeTab === 'rivals' && renderRivals()}
                 {activeTab === 'home-dojo' && renderHomeDojo()}
             </div>
+
+            {/* Student History Modal */}
+            {viewingStudentHistory.student && (
+                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingStudentHistory({ student: null, history: [], loading: false })}>
+                    <div className="bg-gray-900 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden border border-gray-700 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 p-4 border-b border-gray-700">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <span>📜</span> {viewingStudentHistory.student.name}'s History
+                                    </h3>
+                                    <p className="text-xs text-gray-400">Challenge submissions and achievements</p>
+                                </div>
+                                <button 
+                                    onClick={() => setViewingStudentHistory({ student: null, history: [], loading: false })}
+                                    className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="p-4 overflow-y-auto max-h-[60vh] space-y-2">
+                            {viewingStudentHistory.loading ? (
+                                <div className="text-center py-12">
+                                    <div className="text-4xl animate-spin mb-3">⏳</div>
+                                    <p className="text-gray-400 text-sm">Loading history...</p>
+                                </div>
+                            ) : viewingStudentHistory.history.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <div className="text-4xl mb-3">🥋</div>
+                                    <p className="text-gray-400 text-sm">No challenge history yet</p>
+                                    <p className="text-gray-500 text-xs mt-1">Complete challenges to build your history!</p>
+                                </div>
+                            ) : (
+                                viewingStudentHistory.history.map(entry => {
+                                    const date = new Date(entry.completedAt);
+                                    const dateDisplay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                    
+                                    const statusConfig: Record<string, { badge: string; color: string; bg: string }> = {
+                                        'PENDING': { badge: '🟡 In Review', color: 'text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/30' },
+                                        'VERIFIED': { badge: '🟢 Verified', color: 'text-green-400', bg: 'bg-green-900/20 border-green-500/30' },
+                                        'COMPLETED': { badge: '✅ Completed', color: 'text-green-400', bg: 'bg-gray-800 border-gray-600' },
+                                    };
+                                    const config = statusConfig[entry.status] || statusConfig['COMPLETED'];
+                                    
+                                    return (
+                                        <div 
+                                            key={entry.id} 
+                                            className={`flex items-center justify-between p-3 rounded-xl border ${config.bg}`}
+                                        >
+                                            <div className="flex items-center">
+                                                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl mr-3">
+                                                    {entry.icon || '⚡'}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-white text-sm">{entry.challengeName}</p>
+                                                    <p className="text-[10px] text-gray-400">
+                                                        {entry.category} • {dateDisplay} • {entry.proofType === 'VIDEO' ? '📹 Video' : '✓ Trust'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className={`font-bold text-xs ${config.color}`}>{config.badge}</p>
+                                                <p className="text-[10px] text-yellow-500 font-bold">+{entry.xpAwarded} XP</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Bottom Navigation */}
             <div className="fixed bottom-0 w-full max-w-md bg-gray-800 border-t border-gray-700 pb-safe z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
