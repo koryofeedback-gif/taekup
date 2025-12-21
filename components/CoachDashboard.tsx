@@ -2296,7 +2296,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                     {/* LEADERBOARD VIEW */}
                     {activeView === 'leaderboard' && (
-                        <CoachLeaderboard students={students} data={data} />
+                        <CoachLeaderboard students={students} data={data} clubId={clubId} />
                     )}
 
                     {/* Footer Actions (Only for Grading View) */}

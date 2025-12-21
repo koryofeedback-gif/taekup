@@ -27,9 +27,10 @@ interface LeaderboardEntry {
 interface CoachLeaderboardProps {
     students: Student[];
     data: WizardData;
+    clubId?: string;
 }
 
-export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, data }) => {
+export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, data, clubId: propClubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -42,11 +43,30 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
     // Fetch fresh leaderboard data from API
     useEffect(() => {
         const fetchLeaderboard = async () => {
-            const clubId = localStorage.getItem('taekup_club_id') || sessionStorage.getItem('impersonate_clubId');
+            // Try multiple sources for clubId
+            const clubId = propClubId 
+                || localStorage.getItem('taekup_club_id') 
+                || sessionStorage.getItem('impersonate_clubId')
+                || students[0]?.clubId;  // Fallback to first student's clubId
+                
             if (!clubId) {
+                console.log('[Leaderboard] No clubId available, falling back to local data');
+                // Fallback to using students prop data
+                const fallbackData = students.map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    belt: data.belts.find(b => b.id === s.beltId)?.name || 'Student',
+                    stripes: s.stripes || 0,
+                    totalXP: s.rivalsStats?.xp || s.totalXP || s.lifetimeXp || 0,
+                    monthlyXP: 0,
+                    rank: 0,
+                    displayXP: 0
+                }));
+                setLeaderboardData(fallbackData);
                 setLoading(false);
                 return;
             }
+            console.log('[Leaderboard] Fetching data for clubId:', clubId);
 
             try {
                 const response = await fetch(`/api/leaderboard?clubId=${clubId}`);
@@ -65,7 +85,7 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
         };
 
         fetchLeaderboard();
-    }, [leaderboardMode]);
+    }, [leaderboardMode, propClubId, students, data.belts]);
 
     // Sort and assign ranks based on current mode
     const leaderboard = [...leaderboardData]
