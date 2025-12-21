@@ -952,7 +952,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const [certificateData, setCertificateData] = useState<{show: boolean, student: Student | null, newBelt: string}>({ show: false, student: null, newBelt: '' });
     
     // Navigation State
-    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'sparring' | 'planner' | 'challenges' | 'videos'>('grading');
+    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'planner' | 'challenges' | 'videos'>('grading');
     const [isAddEventOpen, setIsAddEventOpen] = useState(false);
     const [showChallengeBuilder, setShowChallengeBuilder] = useState(false);
 
@@ -1701,7 +1701,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         <div className="flex flex-wrap justify-between items-center">
                             <div>
                                 <h1 className="text-xl font-bold text-white">
-                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : activeView === 'videos' ? '🎬 Video Review' : `🥊 Sparring Tracker`}
+                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : '🎬 Video Review'}
                                 </h1>
                                 <p className="text-sm text-gray-400">👤 Coach {coachName} | 🏫 {data.clubName}</p>
                             </div>
@@ -1726,12 +1726,6 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'planner' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                                 >
                                     🧠 Plan
-                                </button>
-                                <button 
-                                    onClick={() => setActiveView('sparring')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'sparring' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                                >
-                                    🥊 Sparring
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('schedule')}
@@ -1946,60 +1940,6 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         </div>
                     ) : activeView === 'planner' ? (
                         <LessonPlanner data={data} />
-                    ) : activeView === 'sparring' ? (
-                        // SPARRING VIEW
-                        <div className="p-6 min-h-[500px] bg-gray-900 flex flex-col">
-                            {/* Match Setup */}
-                            <div className="flex justify-center items-center space-x-8 mb-8">
-                                <div className="w-1/3 bg-red-900/20 p-4 rounded-lg border border-red-600/50">
-                                    <label className="block text-red-400 font-bold mb-2 text-center">RED FIGHTER</label>
-                                    <select value={fighter1} onChange={e => setFighter1(e.target.value)} className="w-full bg-gray-800 text-white border border-gray-700 rounded p-2">
-                                        <option value="">Select Fighter</option>
-                                        {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="text-2xl font-black text-white italic">VS</div>
-                                <div className="w-1/3 bg-blue-900/20 p-4 rounded-lg border border-blue-600/50">
-                                    <label className="block text-sky-300 font-bold mb-2 text-center">BLUE FIGHTER</label>
-                                    <select value={fighter2} onChange={e => setFighter2(e.target.value)} className="w-full bg-gray-800 text-white border border-gray-700 rounded p-2">
-                                        <option value="">Select Fighter</option>
-                                        {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Controls */}
-                            {fighter1 && fighter2 ? (
-                                <div className="grid grid-cols-2 gap-12 flex-1">
-                                    {/* Red Controls */}
-                                    <div className="space-y-4">
-                                        <button onClick={() => updateSparringStats(1, 'head')} className="w-full h-20 bg-red-600 hover:bg-red-500 text-white font-black text-2xl rounded-xl shadow-lg active:scale-95 transition-transform">HEAD KICK ({sparringSession.f1Stats.head})</button>
-                                        <button onClick={() => updateSparringStats(1, 'body')} className="w-full h-16 bg-red-700 hover:bg-red-600 text-white font-bold text-xl rounded-xl shadow-lg active:scale-95 transition-transform">BODY KICK ({sparringSession.f1Stats.body})</button>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button onClick={() => updateSparringStats(1, 'punch')} className="h-16 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl">PUNCH ({sparringSession.f1Stats.punches})</button>
-                                            <button onClick={() => updateSparringStats(1, 'takedown')} className="h-16 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl">TAKEDOWN ({sparringSession.f1Stats.takedowns})</button>
-                                        </div>
-                                    </div>
-                                    {/* Blue Controls */}
-                                    <div className="space-y-4">
-                                        <button onClick={() => updateSparringStats(2, 'head')} className="w-full h-20 bg-sky-500 hover:bg-sky-400 text-white font-black text-2xl rounded-xl shadow-lg active:scale-95 transition-transform">HEAD KICK ({sparringSession.f2Stats.head})</button>
-                                        <button onClick={() => updateSparringStats(2, 'body')} className="w-full h-16 bg-blue-700 hover:bg-sky-500 text-white font-bold text-xl rounded-xl shadow-lg active:scale-95 transition-transform">BODY KICK ({sparringSession.f2Stats.body})</button>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button onClick={() => updateSparringStats(2, 'punch')} className="h-16 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl">PUNCH ({sparringSession.f2Stats.punches})</button>
-                                            <button onClick={() => updateSparringStats(2, 'takedown')} className="h-16 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl">TAKEDOWN ({sparringSession.f2Stats.takedowns})</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center h-48 text-gray-500 italic">Select two fighters to start recording stats.</div>
-                            )}
-
-                            <div className="mt-8 flex justify-center">
-                                <button onClick={finishSparringMatch} disabled={!fighter1 || !fighter2} className="bg-green-600 hover:bg-green-500 disabled:bg-gray-700 text-white font-bold py-4 px-12 rounded-full text-xl shadow-2xl hover:scale-105 transition-all">
-                                    💾 SAVE MATCH
-                                </button>
-                            </div>
-                        </div>
                     ) : activeView === 'schedule' ? (
                         // SCHEDULE VIEW
                         <div className="p-6 space-y-8">
