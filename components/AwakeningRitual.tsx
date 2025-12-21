@@ -21,6 +21,8 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
   const [showFlash, setShowFlash] = useState(false);
   const [isHatched, setIsHatched] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(true);
+  const [screenShake, setScreenShake] = useState(false);
+  const [milestoneHit, setMilestoneHit] = useState<number[]>([]);
   
   const ambienceRef = useRef<HTMLAudioElement | null>(null);
   const chargeRef = useRef<HTMLAudioElement | null>(null);
@@ -87,6 +89,30 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     }
   };
 
+  const getGlowClass = () => {
+    const percentage = (progress / MAX_PROGRESS) * 100;
+    if (percentage >= 75) return 'high';
+    if (percentage >= 40) return 'medium';
+    if (percentage > 0) return 'low';
+    return '';
+  };
+
+  const triggerScreenShake = () => {
+    setScreenShake(true);
+    setTimeout(() => setScreenShake(false), 300);
+  };
+
+  const checkMilestone = (newProgress: number) => {
+    const milestones = [75, 150, 225];
+    milestones.forEach(milestone => {
+      if (newProgress >= milestone && !milestoneHit.includes(milestone)) {
+        setMilestoneHit(prev => [...prev, milestone]);
+        triggerScreenShake();
+        crackRef.current?.play().catch(() => {});
+      }
+    });
+  };
+
   const startHolding = useCallback(() => {
     if (dayCompleted || level === 3) return;
     
@@ -115,6 +141,8 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       setProgress(prev => {
         const newProgress = Math.min(prev + 3, MAX_PROGRESS);
         
+        checkMilestone(newProgress);
+        
         if (level === 2 && heartbeatRef.current) {
           const rate = 0.5 + (newProgress / MAX_PROGRESS) * 1.5;
           heartbeatRef.current.playbackRate = Math.min(rate, 2);
@@ -131,7 +159,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         return newProgress;
       });
     }, 50);
-  }, [dayCompleted, level, startAudioOnInteraction]);
+  }, [dayCompleted, level, startAudioOnInteraction, milestoneHit]);
 
   const stopHolding = useCallback(() => {
     setIsHolding(false);
@@ -162,6 +190,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     
     startAudioOnInteraction();
     crackRef.current?.play().catch(() => {});
+    triggerScreenShake();
     
     setTapCount(prev => {
       const newCount = prev + 1;
@@ -179,7 +208,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     if (level === 1) {
       crackRef.current?.play().catch(() => {});
       setShowFlash(true);
-      setTimeout(() => setShowFlash(false), 200);
+      setTimeout(() => setShowFlash(false), 500);
       
       setModalContent({
         title: '✨ Something Moved!',
@@ -218,7 +247,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       });
       setShowModal(true);
       setDayCompleted(true);
-    }, 500);
+    }, 800);
   };
 
   const handleModalClose = () => {
@@ -236,6 +265,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       setProgress(0);
       setDayCompleted(false);
       setTapCount(0);
+      setMilestoneHit([]);
     }
   };
 
@@ -250,6 +280,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     setTapCount(0);
     setShowModal(false);
     setIsHatched(false);
+    setMilestoneHit([]);
   };
 
   const getButtonText = () => {
@@ -266,32 +297,100 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     }
   };
 
+  const particles = Array.from({ length: 15 }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    delay: Math.random() * 10,
+    duration: 8 + Math.random() * 6,
+    size: 2 + Math.random() * 4
+  }));
+
   return (
-    <div className="ritual-container">
+    <div className={`game-container ${screenShake ? 'screen-shake' : ''}`}>
       <style>{`
-        .ritual-container {
+        .game-container {
           position: relative;
           width: 100%;
           height: 100vh;
           max-width: 450px;
           margin: 0 auto;
           overflow: hidden;
-          background: #000;
+          background: #050505;
         }
         
-        .dojo-background {
+        .game-container.screen-shake {
+          animation: screen-rumble 0.3s ease-out;
+        }
+        
+        @keyframes screen-rumble {
+          0%, 100% { transform: translate(0, 0); }
+          20% { transform: translate(-4px, 3px); }
+          40% { transform: translate(4px, -3px); }
+          60% { transform: translate(-3px, -2px); }
+          80% { transform: translate(3px, 2px); }
+        }
+        
+        .bg-image {
+          position: absolute;
+          width: 110%;
+          height: 110%;
+          top: -5%;
+          left: -5%;
+          object-fit: cover;
+          z-index: 0;
+          animation: camera-breathe 20s infinite alternate ease-in-out;
+          filter: brightness(0.6);
+        }
+        
+        @keyframes camera-breathe {
+          0% { transform: scale(1) translate(0, 0); }
+          100% { transform: scale(1.05) translate(-10px, -5px); }
+        }
+        
+        .vignette-overlay {
           position: absolute;
           inset: 0;
-          background-image: url('/assets/bg_dojo_level1.jpg');
-          background-size: cover;
-          background-position: center;
+          background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.85) 95%);
+          z-index: 1;
+          pointer-events: none;
+        }
+        
+        .particle {
+          position: absolute;
+          background: rgba(255, 255, 255, 0.4);
+          border-radius: 50%;
+          z-index: 2;
+          pointer-events: none;
+          animation: float-up linear infinite;
+        }
+        
+        @keyframes float-up {
+          0% {
+            transform: translateY(100vh) scale(0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100px) scale(1);
+            opacity: 0;
+          }
+        }
+        
+        .particle.charging {
+          background: rgba(255, 200, 0, 0.6);
+          box-shadow: 0 0 6px rgba(255, 200, 0, 0.8);
         }
         
         .back-button {
           position: absolute;
           top: 16px;
           left: 16px;
-          background: rgba(0,0,0,0.5);
+          background: rgba(0,0,0,0.6);
           backdrop-filter: blur(4px);
           border: none;
           color: white;
@@ -300,6 +399,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           cursor: pointer;
           z-index: 20;
           font-size: 14px;
+          transition: all 0.2s;
+        }
+        .back-button:hover {
+          background: rgba(0,0,0,0.8);
         }
         
         .level-indicator {
@@ -316,19 +419,147 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           font-weight: bold;
           z-index: 20;
           text-align: center;
+          border: 1px solid rgba(255,255,255,0.1);
         }
         
         .flash-overlay {
           position: absolute;
           inset: 0;
           background: white;
-          opacity: 0;
-          pointer-events: none;
           z-index: 50;
-          transition: opacity 0.2s;
+          pointer-events: none;
+          animation: flash-fade 1.5s forwards ease-out;
         }
-        .flash-overlay.visible {
+        
+        @keyframes flash-fade {
+          0% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+        
+        .scene-wrapper {
+          position: absolute;
+          bottom: 15%;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 300px;
+          height: 400px;
+          display: flex;
+          justify-content: center;
+          align-items: flex-end;
+          z-index: 5;
+        }
+        
+        .pedestal-image {
+          position: absolute;
+          bottom: 0;
+          width: 220px;
+          z-index: 5;
+          filter: drop-shadow(0 10px 25px rgba(0,0,0,0.9));
+        }
+        
+        .vfx-glow {
+          position: absolute;
+          bottom: 80px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 300px;
+          height: 300px;
+          border-radius: 50%;
+          z-index: 4;
+          opacity: 0;
+          transition: opacity 0.3s, background 0.3s;
+          mix-blend-mode: screen;
+          pointer-events: none;
+        }
+        
+        .vfx-glow.active {
           opacity: 1;
+          animation: glow-pulse 0.5s infinite alternate;
+        }
+        
+        .vfx-glow.low {
+          background: radial-gradient(circle, rgba(100, 200, 255, 0.4) 0%, transparent 70%);
+        }
+        .vfx-glow.medium {
+          background: radial-gradient(circle, rgba(255, 200, 0, 0.5) 0%, transparent 70%);
+        }
+        .vfx-glow.high {
+          background: radial-gradient(circle, rgba(255, 100, 0, 0.6) 0%, transparent 70%);
+        }
+        
+        @keyframes glow-pulse {
+          0% { transform: translateX(-50%) scale(1); opacity: 0.8; }
+          100% { transform: translateX(-50%) scale(1.15); opacity: 1; }
+        }
+        
+        .egg-container {
+          position: absolute;
+          bottom: 60px;
+          width: 180px;
+          height: 240px;
+          z-index: 6;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          animation: egg-float 4s infinite ease-in-out;
+        }
+        
+        @keyframes egg-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        
+        .egg-container.charging {
+          animation: egg-shake 0.1s infinite;
+        }
+        
+        .egg-container.charging .egg-image {
+          filter: brightness(1.3) drop-shadow(0 0 20px rgba(255, 200, 0, 0.8));
+        }
+        
+        .egg-container.shaking {
+          animation: egg-shake-intense 0.1s infinite;
+        }
+        
+        @keyframes egg-shake {
+          0% { transform: translate(1px, 1px) rotate(0deg); }
+          25% { transform: translate(-1px, -2px) rotate(-1deg); }
+          50% { transform: translate(-2px, 0px) rotate(1deg); }
+          75% { transform: translate(2px, 2px) rotate(0deg); }
+          100% { transform: translate(1px, -1px) rotate(1deg); }
+        }
+        
+        @keyframes egg-shake-intense {
+          0% { transform: translate(2px, 2px) rotate(0deg); }
+          25% { transform: translate(-3px, -3px) rotate(-2deg); }
+          50% { transform: translate(-4px, 0px) rotate(2deg); }
+          75% { transform: translate(4px, 3px) rotate(0deg); }
+          100% { transform: translate(2px, -2px) rotate(2deg); }
+        }
+        
+        .egg-image {
+          width: 100%;
+          height: auto;
+          transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          filter: drop-shadow(0 0 15px rgba(0,0,0,0.6));
+          cursor: pointer;
+        }
+        
+        .baby-character {
+          position: absolute;
+          bottom: 120px;
+          width: 160px;
+          height: auto;
+          z-index: 7;
+          animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+          filter: drop-shadow(0 5px 20px rgba(0,0,0,0.5));
+        }
+        
+        @keyframes bounceIn {
+          0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+          50% { transform: scale(1.2) rotate(5deg); }
+          70% { transform: scale(0.9) rotate(-3deg); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
         
         .ui-container {
@@ -339,34 +570,43 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 20px;
+          gap: 16px;
           width: 100%;
           z-index: 10;
         }
         
-        .progress-bar-container {
+        .progress-container {
           position: relative;
-          width: 300px;
-          height: 55px;
-          padding: 0;
+          width: 280px;
+          height: 45px;
+          opacity: 0.95;
         }
+        
         .bar-frame {
           position: absolute;
-          inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: fill;
+          z-index: 2;
+          filter: drop-shadow(0 3px 8px rgba(0,0,0,0.8));
         }
+        
         .bar-fill {
           position: absolute;
-          top: 18%;
-          bottom: 18%;
-          left: 5%;
-          height: auto;
-          background: linear-gradient(to right, #eab308, #f97316);
-          border-radius: 10px;
-          transition: width 0.1s;
+          top: 14%;
+          left: 3%;
+          height: 72%;
+          background: linear-gradient(90deg, #ff8800, #ffcc00);
+          border-radius: 6px;
+          box-shadow: 0 0 15px rgba(255, 136, 0, 0.6);
+          z-index: 1;
+          transition: width 0.1s linear;
         }
+        
+        .bar-fill.high {
+          background: linear-gradient(90deg, #ff4400, #ff8800);
+          box-shadow: 0 0 20px rgba(255, 68, 0, 0.8);
+        }
+        
         .bar-text {
           position: absolute;
           inset: 0;
@@ -376,105 +616,55 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           color: white;
           font-size: 14px;
           font-weight: bold;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          text-shadow: 0 2px 4px rgba(0,0,0,0.8);
           z-index: 5;
         }
         
         .action-button {
           position: relative;
-          border: none;
+          width: 240px;
+          height: 75px;
           background: none;
+          border: none;
           cursor: pointer;
-          transition: transform 0.1s;
-          user-select: none;
-          -webkit-tap-highlight-color: transparent;
+          z-index: 20;
+          transition: all 0.1s;
           display: flex;
           justify-content: center;
           align-items: center;
-          width: 280px;
-          height: 70px;
-          padding: 0;
-          margin: 0;
-          white-space: nowrap;
         }
-        .action-button:active, .action-button.pressing {
-          transform: scale(1.1);
-        }
+        
         .action-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
-        .button-image {
+        
+        .action-button img {
           position: absolute;
           inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: fill;
+          object-fit: contain;
+          filter: drop-shadow(0 5px 15px rgba(0,0,0,0.6));
+          transition: all 0.1s;
         }
+        
+        .action-button:active:not(:disabled) {
+          transform: scale(0.95);
+        }
+        
+        .action-button:active:not(:disabled) img {
+          filter: brightness(0.8) drop-shadow(0 3px 10px rgba(0,0,0,0.6));
+        }
+        
         .button-text {
           position: relative;
           z-index: 10;
           color: white;
           font-weight: bold;
           font-size: 16px;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-          margin: 0;
-          padding: 0;
-          line-height: 1;
-        }
-        
-        .pedestal-image {
-          position: absolute;
-          bottom: 18%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 50%;
-          max-width: 220px;
-          z-index: 5;
-        }
-        
-        .egg-container {
-          position: absolute;
-          bottom: 35%;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 6;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .egg-container.shaking {
-          animation: shake 0.15s ease-in-out infinite;
-        }
-        
-        .egg-image {
-          width: 120px;
-          height: auto;
-          cursor: pointer;
-          position: relative;
-          z-index: 2;
-        }
-        
-        .baby-character {
-          position: absolute;
-          bottom: 40%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 150px;
-          height: auto;
-          z-index: 7;
-          animation: bounceIn 0.5s ease-out;
-        }
-        
-        @keyframes shake {
-          0%, 100% { transform: translateX(-50%) rotate(-2deg); }
-          50% { transform: translateX(-50%) rotate(2deg); }
-        }
-        
-        @keyframes bounceIn {
-          0% { transform: translateX(-50%) scale(0); opacity: 0; }
-          50% { transform: translateX(-50%) scale(1.2); }
-          100% { transform: translateX(-50%) scale(1); opacity: 1; }
+          text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+          letter-spacing: 1px;
         }
         
         .modal-overlay {
@@ -483,70 +673,88 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(0,0,0,0.7);
-          backdrop-filter: blur(4px);
+          background: rgba(0,0,0,0.8);
+          backdrop-filter: blur(8px);
           z-index: 40;
-          animation: fadeIn 0.3s ease-out;
+          animation: fadeIn 0.4s ease-out;
         }
         
         .modal-content {
           position: relative;
           width: 90%;
           max-width: 350px;
-          min-height: 200px;
+          min-height: 220px;
           background-image: url('/assets/ui_panel_bg.png');
           background-size: 100% 100%;
           background-repeat: no-repeat;
-          padding: 40px;
+          padding: 45px;
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
           text-align: center;
           color: #fff;
+          animation: modalBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        @keyframes modalBounce {
+          0% { transform: scale(0.8); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
         }
         
         .modal-title {
           font-size: 24px;
           font-weight: bold;
           margin-bottom: 16px;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          text-shadow: 0 2px 6px rgba(0,0,0,0.6);
         }
         
         .modal-message {
           font-size: 16px;
-          margin-bottom: 20px;
-          line-height: 1.5;
+          margin-bottom: 24px;
+          line-height: 1.6;
+          opacity: 0.9;
         }
         
         .modal-input {
           width: 100%;
-          padding: 12px;
+          padding: 14px;
           font-size: 16px;
           border: 2px solid #22d3ee;
-          border-radius: 8px;
-          background: rgba(0,0,0,0.5);
+          border-radius: 10px;
+          background: rgba(0,0,0,0.6);
           color: white;
           text-align: center;
-          margin-bottom: 16px;
+          margin-bottom: 20px;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .modal-input:focus {
+          border-color: #06b6d4;
         }
         .modal-input::placeholder {
           color: rgba(255,255,255,0.5);
         }
         
         .modal-button {
-          background: linear-gradient(to right, #22d3ee, #06b6d4);
+          background: linear-gradient(135deg, #22d3ee, #06b6d4);
           border: none;
           color: white;
-          padding: 12px 32px;
-          border-radius: 8px;
+          padding: 14px 40px;
+          border-radius: 10px;
           font-size: 16px;
           font-weight: bold;
           cursor: pointer;
-          transition: transform 0.1s;
+          transition: all 0.2s;
+          box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
         }
-        .modal-button:hover {
-          transform: scale(1.05);
+        .modal-button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(34, 211, 238, 0.4);
+        }
+        .modal-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
         
         .dev-panel {
@@ -554,40 +762,45 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           top: 60px;
           right: 8px;
           background: rgba(0,0,0,0.9);
-          border: 1px solid #444;
-          border-radius: 8px;
-          padding: 12px;
+          border: 1px solid #333;
+          border-radius: 10px;
+          padding: 14px;
           z-index: 100;
           display: flex;
           flex-direction: column;
           gap: 8px;
           font-size: 11px;
+          backdrop-filter: blur(4px);
         }
         
         .dev-panel-title {
           color: #22d3ee;
           font-weight: bold;
           text-align: center;
-          border-bottom: 1px solid #444;
+          border-bottom: 1px solid #333;
           padding-bottom: 8px;
           margin-bottom: 4px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
         }
         
         .dev-btn {
-          background: #333;
-          border: 1px solid #555;
+          background: #222;
+          border: 1px solid #444;
           color: white;
-          padding: 6px 10px;
-          border-radius: 4px;
+          padding: 8px 12px;
+          border-radius: 6px;
           cursor: pointer;
           font-size: 11px;
-          transition: background 0.2s;
+          transition: all 0.2s;
         }
         .dev-btn:hover {
-          background: #444;
+          background: #333;
+          border-color: #555;
         }
         .dev-btn.red {
-          background: #991b1b;
+          background: #7f1d1d;
           border-color: #dc2626;
         }
         .dev-btn.blue {
@@ -600,9 +813,11 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         }
         
         .dev-status {
-          color: #888;
+          color: #666;
           font-size: 10px;
           text-align: center;
+          padding-top: 8px;
+          border-top: 1px solid #333;
         }
         
         .dev-toggle {
@@ -610,10 +825,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           top: 60px;
           right: 8px;
           background: rgba(0,0,0,0.8);
-          border: 1px solid #444;
+          border: 1px solid #333;
           color: #22d3ee;
-          padding: 4px 8px;
-          border-radius: 4px;
+          padding: 6px 10px;
+          border-radius: 6px;
           cursor: pointer;
           font-size: 10px;
           z-index: 99;
@@ -625,9 +840,29 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         }
       `}</style>
 
-      <div className="dojo-background" />
+      <img 
+        src="/assets/bg_dojo_level1.jpg" 
+        alt="" 
+        className="bg-image"
+      />
       
-      <div className={`flash-overlay ${showFlash ? 'visible' : ''}`} />
+      <div className="vignette-overlay" />
+      
+      {particles.map(p => (
+        <div
+          key={p.id}
+          className={`particle ${isHolding ? 'charging' : ''}`}
+          style={{
+            left: `${p.left}%`,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`
+          }}
+        />
+      ))}
+      
+      {showFlash && <div className="flash-overlay" />}
       
       <button className="back-button" onClick={onBack}>
         ← Back
@@ -639,44 +874,44 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       
       {!showDevPanel && (
         <button className="dev-toggle" onClick={() => setShowDevPanel(true)}>
-          DEV
+          🛠️ DEV
         </button>
       )}
       
       {showDevPanel && (
         <div className="dev-panel">
           <div className="dev-panel-title">
-            🛠️ Dev Panel
+            <span>🛠️ Dev Panel</span>
             <button 
-              style={{ marginLeft: 8, background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 14 }}
               onClick={() => setShowDevPanel(false)}
             >✕</button>
           </div>
           
           <button className="dev-btn green" onClick={simulateFullProgress}>
-            Simulate: 300 XP
+            ⚡ Simulate: 300 XP
           </button>
           
           <button 
             className={`dev-btn ${trainingType === 'power' ? 'red' : ''}`}
             onClick={() => setTrainingType('power')}
           >
-            Set Type: Power/Red
+            🔴 Set Type: Power/Red
           </button>
           
           <button 
             className={`dev-btn ${trainingType === 'technique' ? 'blue' : ''}`}
             onClick={() => setTrainingType('technique')}
           >
-            Set Type: Tech/Blue
+            🔵 Set Type: Tech/Blue
           </button>
           
           <button className="dev-btn" onClick={resetDay}>
-            Reset Day
+            🔄 Reset Day
           </button>
           
           <button className="dev-btn" onClick={advanceToNextDay} disabled={level >= 3}>
-            Next Day →
+            ➡️ Next Day
           </button>
           
           <div className="dev-status">
@@ -688,33 +923,39 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         </div>
       )}
       
-      <img src="/assets/pedestal_stone.png" alt="Pedestal" className="pedestal-image" />
-      
-      <div 
-        className={`egg-container ${level === 3 && !isHatched && !dayCompleted ? 'shaking' : ''}`}
-        onClick={level === 3 ? handleTap : undefined}
-      >
-        <img 
-          src={getEggImage()} 
-          alt="Egg" 
-          className="egg-image"
+      <div className="scene-wrapper">
+        <div 
+          className={`vfx-glow ${isHolding || progress > 0 ? 'active' : ''} ${getGlowClass()}`}
         />
+        
+        <img src="/assets/pedestal_stone.png" alt="Pedestal" className="pedestal-image" />
+        
+        <div 
+          className={`egg-container ${isHolding ? 'charging' : ''} ${level === 3 && !isHatched && !dayCompleted ? 'shaking' : ''}`}
+          onClick={level === 3 ? handleTap : undefined}
+        >
+          <img 
+            src={getEggImage()} 
+            alt="Egg" 
+            className="egg-image"
+          />
+        </div>
+        
+        {isHatched && (
+          <img 
+            src="/assets/char_baby_guardian.png" 
+            alt="Baby Guardian" 
+            className="baby-character"
+          />
+        )}
       </div>
       
-      {isHatched && (
-        <img 
-          src="/assets/char_baby_guardian.png" 
-          alt="Baby Guardian" 
-          className="baby-character"
-        />
-      )}
-      
       <div className="ui-container">
-        <div className="progress-bar-container">
+        <div className="progress-container">
           <img src="/assets/ui_bar_frame.png" alt="" className="bar-frame" />
           <div 
-            className="bar-fill"
-            style={{ width: `${(progress / MAX_PROGRESS) * 90}%`, right: 'auto' }}
+            className={`bar-fill ${(progress / MAX_PROGRESS) >= 0.75 ? 'high' : ''}`}
+            style={{ width: `${(progress / MAX_PROGRESS) * 94}%` }}
           />
           <span className="bar-text">
             {level === 3 ? `${tapCount}/${TAPS_REQUIRED}` : `${Math.round(progress)}/${MAX_PROGRESS}`}
@@ -722,7 +963,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         </div>
         
         <button
-          className={`action-button ${isHolding ? 'pressing' : ''}`}
+          className="action-button"
           onMouseDown={level !== 3 ? startHolding : undefined}
           onMouseUp={level !== 3 ? stopHolding : undefined}
           onMouseLeave={level !== 3 ? stopHolding : undefined}
@@ -731,7 +972,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           onClick={level === 3 ? handleTap : undefined}
           disabled={dayCompleted}
         >
-          <img src="/assets/ui_btn_action.png" alt="" className="button-image" />
+          <img src="/assets/ui_btn_action.png" alt="" />
           <span className="button-text">{getButtonText()}</span>
         </button>
       </div>
@@ -758,7 +999,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
               onClick={handleModalClose}
               disabled={modalContent.showInput && !guardianName.trim()}
             >
-              {modalContent.showInput ? 'Awaken!' : 'Okay'}
+              {modalContent.showInput ? '✨ Awaken!' : 'Okay'}
             </button>
           </div>
         </div>
