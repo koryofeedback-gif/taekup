@@ -139,7 +139,8 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     
     holdIntervalRef.current = setInterval(() => {
       setProgress(prev => {
-        const newProgress = Math.min(prev + 3, MAX_PROGRESS);
+        const increment = level === 1 ? 1 : 1.2;
+        const newProgress = Math.min(prev + increment, MAX_PROGRESS);
         
         checkMilestone(newProgress);
         
@@ -158,7 +159,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         
         return newProgress;
       });
-    }, 50);
+    }, 100);
   }, [dayCompleted, level, startAudioOnInteraction, milestoneHit]);
 
   const stopHolding = useCallback(() => {
@@ -175,13 +176,13 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     if (!dayCompleted && progress < MAX_PROGRESS) {
       decayIntervalRef.current = setInterval(() => {
         setProgress(prev => {
-          const newProgress = Math.max(prev - 2, 0);
+          const newProgress = Math.max(prev - 3, 0);
           if (newProgress <= 0) {
             if (decayIntervalRef.current) clearInterval(decayIntervalRef.current);
           }
           return newProgress;
         });
-      }, 100);
+      }, 50);
     }
   }, [dayCompleted, progress]);
 
