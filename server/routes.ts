@@ -3004,7 +3004,7 @@ export function registerRoutes(app: Express) {
   });
 
   // =====================================================
-  // LEADERBOARD - FRESH XP DATA
+  // LEADERBOARD - FRESH XP DATA (calculated from challenge submissions)
   // =====================================================
   app.get('/api/leaderboard', async (req: Request, res: Response) => {
     try {
@@ -3019,12 +3019,21 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Invalid clubId format' });
       }
 
-      // Fetch all students with their current total_xp from database
+      // Fetch all students
       const students = await db.execute(sql`
-        SELECT id, name, belt, total_xp, stripes FROM students 
+        SELECT id, name, belt, stripes FROM students 
         WHERE club_id = ${clubId}::uuid 
-        ORDER BY total_xp DESC
       `);
+
+      // Calculate TOTAL XP directly from challenge submissions (all-time)
+      const totalXpData = await db.execute(sql`
+        SELECT student_id, COALESCE(SUM(xp_awarded), 0) as total_xp
+        FROM challenge_submissions
+        WHERE club_id = ${clubId}::uuid
+        AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED')
+        GROUP BY student_id
+      `);
+      const totalXpMap = new Map((totalXpData as any[]).map(r => [r.student_id, parseInt(r.total_xp) || 0]));
 
       // Calculate monthly XP from challenge submissions this month
       const monthStart = new Date();
@@ -3036,21 +3045,24 @@ export function registerRoutes(app: Express) {
         FROM challenge_submissions
         WHERE club_id = ${clubId}::uuid
         AND created_at >= ${monthStart.toISOString()}
-        AND status IN ('VERIFIED', 'COMPLETED')
+        AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED')
         GROUP BY student_id
       `);
-
       const monthlyXpMap = new Map((monthlyXpData as any[]).map(r => [r.student_id, parseInt(r.monthly_xp) || 0]));
 
-      const leaderboard = (students as any[]).map((s, index) => ({
+      // Build leaderboard with fresh XP from challenge submissions
+      const leaderboard = (students as any[]).map(s => ({
         id: s.id,
         name: s.name,
         belt: s.belt,
         stripes: s.stripes || 0,
-        totalXP: s.total_xp || 0,
-        monthlyXP: monthlyXpMap.get(s.id) || 0,
-        rank: index + 1
-      }));
+        totalXP: totalXpMap.get(s.id) || 0,
+        monthlyXP: monthlyXpMap.get(s.id) || 0
+      }))
+      .sort((a, b) => b.totalXP - a.totalXP)
+      .map((s, index) => ({ ...s, rank: index + 1 }));
+
+      console.log('[Leaderboard] Returning fresh data:', leaderboard.map(s => ({ name: s.name, xp: s.totalXP })));
 
       res.json({ leaderboard });
     } catch (error: any) {
