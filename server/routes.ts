@@ -3037,7 +3037,7 @@ export function registerRoutes(app: Express) {
   });
 
   // =====================================================
-  // LEADERBOARD - FRESH XP DATA (calculated from challenge submissions)
+  // LEADERBOARD - SIMPLE: Read directly from students.total_xp (single source of truth)
   // =====================================================
   app.get('/api/leaderboard', async (req: Request, res: Response) => {
     try {
@@ -3052,27 +3052,14 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Invalid clubId format' });
       }
 
-      // Fetch all students
+      // Fetch all students with their total_xp (single source of truth)
       const students = await db.execute(sql`
-        SELECT id, name, belt, stripes FROM students 
+        SELECT id, name, belt, stripes, COALESCE(total_xp, 0) as total_xp 
+        FROM students 
         WHERE club_id = ${clubId}::uuid 
       `);
 
-      // Calculate TOTAL XP from ALL sources (same as sync-rivals endpoint)
-      const totalXpData = await db.execute(sql`
-        SELECT 
-          s.id as student_id,
-          COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = s.id), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = s.id), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = s.id AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED')), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM content_views WHERE student_id = s.id AND completed = true), 0)
-          AS total_xp
-        FROM students s
-        WHERE s.club_id = ${clubId}::uuid
-      `);
-      const totalXpMap = new Map((totalXpData as any[]).map(r => [r.student_id, parseInt(r.total_xp) || 0]));
-
-      // Calculate monthly XP from ALL sources this month
+      // Calculate monthly XP from log tables (since we need date filtering)
       const monthStart = new Date();
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
@@ -3083,7 +3070,7 @@ export function registerRoutes(app: Express) {
           s.id as student_id,
           COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = s.id AND created_at >= ${monthStartStr}::timestamp), 0) +
           COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = s.id AND created_at >= ${monthStartStr}::timestamp), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = s.id AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED') AND created_at >= ${monthStartStr}::timestamp), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = s.id AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED') AND completed_at >= ${monthStartStr}::timestamp), 0) +
           COALESCE((SELECT SUM(xp_awarded) FROM content_views WHERE student_id = s.id AND completed = true AND created_at >= ${monthStartStr}::timestamp), 0)
           AS monthly_xp
         FROM students s
@@ -3091,19 +3078,19 @@ export function registerRoutes(app: Express) {
       `);
       const monthlyXpMap = new Map((monthlyXpData as any[]).map(r => [r.student_id, parseInt(r.monthly_xp) || 0]));
 
-      // Build leaderboard with fresh XP from all sources
+      // Build leaderboard: totalXP from students table, monthlyXP from logs
       const leaderboard = (students as any[]).map(s => ({
         id: s.id,
         name: s.name,
         belt: s.belt,
         stripes: s.stripes || 0,
-        totalXP: totalXpMap.get(s.id) || 0,
+        totalXP: parseInt(s.total_xp) || 0,
         monthlyXP: monthlyXpMap.get(s.id) || 0
       }))
       .sort((a, b) => b.totalXP - a.totalXP)
       .map((s, index) => ({ ...s, rank: index + 1 }));
 
-      console.log('[Leaderboard] Returning fresh data from all sources:', leaderboard.map(s => ({ name: s.name, xp: s.totalXP })));
+      console.log('[Leaderboard] Using students.total_xp as source of truth:', leaderboard.map(s => ({ name: s.name, xp: s.totalXP })));
 
       res.json({ leaderboard });
     } catch (error: any) {
