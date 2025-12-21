@@ -1,0 +1,28 @@
+[HomeDojo] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1 valid UUID: true
+index-D5GIO_N1.js:193 [MysteryChallenge] Submitting with: {studentId: '1bf1fb68-7ed9-4204-a511-9184a5ed0ac1', clubId: 'none (home user)', challengeId: 'fallback-1766360233499', selectedIndex: 1, isStaticFallback: false}
+index-D5GIO_N1.js:193 [MysteryChallenge] Fallback challenge detected, including isCorrect: true
+index-D5GIO_N1.js:193 [MysteryChallenge] Sending sanitized payload: {challengeId: 'fallback-1766360233499', studentId: '1bf1fb68-7ed9-4204-a511-9184a5ed0ac1', selectedIndex: 1, isCorrect: true, xpReward: 50}
+index-D5GIO_N1.js:193 [HomeDojo] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1 valid UUID: true
+index-D5GIO_N1.js:193  POST https://www.mytaek.com/api/daily-challenge/submit 400 (Bad Request)
+Uo @ index-D5GIO_N1.js:193
+onClick @ index-D5GIO_N1.js:200
+r2 @ index-D5GIO_N1.js:37
+a2 @ index-D5GIO_N1.js:37
+n2 @ index-D5GIO_N1.js:37
+rm @ index-D5GIO_N1.js:37
+my @ index-D5GIO_N1.js:37
+(anonymous) @ index-D5GIO_N1.js:37
+sh @ index-D5GIO_N1.js:40
+Bg @ index-D5GIO_N1.js:37
+Cd @ index-D5GIO_N1.js:37
+Fx @ index-D5GIO_N1.js:37
+w2 @ index-D5GIO_N1.js:37Understand this error
+index-D5GIO_N1.js:193 [MysteryChallenge] Already completed - showing success state
+index-D5GIO_N1.js:381 [ParentPortal] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1
+index-D5GIO_N1.js:193 [HomeDojo] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1 valid UUID: true
+2index-D5GIO_N1.js:193 [HomeDojo] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1 valid UUID: true
+2index-D5GIO_N1.js:193 [HomeDojo] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1 valid UUID: true
+index-D5GIO_N1.js:193 [HomeDojo] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1 valid UUID: true
+index-D5GIO_N1.js:193 [HomeDojo] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1 valid UUID: true
+index-D5GIO_N1.js:381 [ParentPortal] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1
+2index-D5GIO_N1.js:193 [HomeDojo] Using student ID: 1bf1fb68-7ed9-4204-a511-9184a5ed0ac1 valid UUID: 
