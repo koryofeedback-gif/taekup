@@ -372,6 +372,28 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         fetchDailyChallenge();
     }, [student.id, studentBeltName]);
     
+    // Fetch own student's history for badge calculations when viewing Rivals
+    useEffect(() => {
+        if (activeTab !== 'rivals' || !student.id) return;
+        
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(student.id)) return;
+        
+        const fetchOwnHistory = async () => {
+            try {
+                const response = await fetch(`/api/challenges/history?studentId=${student.id}`);
+                const data = await response.json();
+                if (data.history) {
+                    setChallengeHistory(data.history);
+                }
+            } catch (error) {
+                console.error('[History] Failed to fetch own history:', error);
+            }
+        };
+        
+        fetchOwnHistory();
+    }, [activeTab, student.id]);
+    
     // Fetch student's history for leaderboard viewing
     const fetchStudentHistory = async (targetStudent: Student) => {
         setViewingStudentHistory({ student: targetStudent, history: [], loading: true });
@@ -2419,14 +2441,35 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             { id: 'w3', name: 'Perfect Form', description: 'Win Forms Accuracy with 90%+', icon: '🎯', reward: '200 XP + Master Badge', progress: 0, total: 1, endsIn: '3 days' },
         ];
 
-        // Available Badges
+        // Calculate category wins from challenge history (uses own history loaded on Rivals tab)
+        const categoryCounts = challengeHistory.reduce((acc, entry) => {
+            if (entry.status === 'VERIFIED' || entry.status === 'COMPLETED') {
+                const cat = entry.category?.toLowerCase() || '';
+                if (cat.includes('power') || cat.includes('strength')) acc.power++;
+                else if (cat.includes('technique') || cat.includes('speed')) acc.technique++;
+                else if (cat.includes('flexibility') || cat.includes('flex')) acc.flexibility++;
+                acc.total++;
+            }
+            return acc;
+        }, { power: 0, technique: 0, flexibility: 0, total: 0 });
+        
+        // Use rivalStats wins as fallback if no history loaded
+        const totalWins = categoryCounts.total > 0 ? categoryCounts.total : rivalStats.wins;
+        const powerWins = categoryCounts.power;
+        const techniqueWins = categoryCounts.technique;
+        const flexibilityWins = categoryCounts.flexibility;
+        
+        // Check if #1 on leaderboard
+        const isChampion = leaderboard.length > 0 && leaderboard[0]?.isYou;
+
+        // Available Badges - calculated from real data
         const allBadges = [
-            { id: 'iron_fist', name: 'Iron Fist', icon: '🥊', description: 'Win 10 Strength challenges', earned: rivalStats.wins >= 10 },
-            { id: 'lightning', name: 'Lightning', icon: '⚡', description: 'Win 5 Speed challenges', earned: false },
-            { id: 'flexible', name: 'Flex Master', icon: '🧘', description: 'Win 5 Flexibility challenges', earned: true },
-            { id: 'warrior', name: 'Warrior Spirit', icon: '⚔️', description: 'Win 20 total challenges', earned: rivalStats.wins >= 12 },
-            { id: 'streak5', name: 'On Fire', icon: '🔥', description: '5 win streak', earned: rivalStats.streak >= 5 },
-            { id: 'champion', name: 'Champion', icon: '👑', description: 'Reach #1 on leaderboard', earned: false },
+            { id: 'iron_fist', name: 'Iron Fist', icon: '🥊', description: 'Win 10 Power challenges', earned: powerWins >= 10, progress: powerWins, target: 10 },
+            { id: 'lightning', name: 'Lightning', icon: '⚡', description: 'Win 5 Technique challenges', earned: techniqueWins >= 5, progress: techniqueWins, target: 5 },
+            { id: 'flexible', name: 'Flex Master', icon: '🧘', description: 'Win 5 Flexibility challenges', earned: flexibilityWins >= 5, progress: flexibilityWins, target: 5 },
+            { id: 'warrior', name: 'Warrior Spirit', icon: '⚔️', description: 'Win 20 total challenges', earned: totalWins >= 20, progress: totalWins, target: 20 },
+            { id: 'streak5', name: 'On Fire', icon: '🔥', description: '5 win streak', earned: rivalStats.streak >= 5, progress: rivalStats.streak, target: 5 },
+            { id: 'champion', name: 'Champion', icon: '👑', description: 'Reach #1 on leaderboard', earned: isChampion, progress: isChampion ? 1 : 0, target: 1 },
         ];
 
         const handleSendChallenge = async () => {
