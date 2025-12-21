@@ -249,7 +249,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     } = useStudentProgress({ student, onUpdateStudent });
     
     // Sync rivals stats to student record whenever they change
-    const syncRivalsStats = useCallback(() => {
+    const syncRivalsStats = useCallback(async () => {
         if (!onUpdateStudent) return;
         
         const rivalsStatsToSync: RivalsStats = {
@@ -272,6 +272,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         };
         
         onUpdateStudent(updatedStudent);
+        
+        // Also persist to database via API
+        try {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (uuidRegex.test(student.id)) {
+                await fetch(`/api/students/${student.id}/sync-rivals`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        xp: rivalStats.xp,
+                        wins: rivalStats.wins,
+                        losses: rivalStats.losses,
+                        streak: rivalStats.streak
+                    })
+                });
+            }
+        } catch (err) {
+            console.error('[SyncRivals] Failed to persist to database:', err);
+        }
     }, [rivalStats, dailyStreak, lastChallengeDate, teamBattlesWon, familyChallengesCompleted, mysteryBoxCompleted, student, onUpdateStudent, localCompletedIds, localTotalPoints]);
     
     // Sync when non-curriculum stats change

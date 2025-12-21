@@ -3072,6 +3072,50 @@ export function registerRoutes(app: Express) {
   });
 
   // =====================================================
+  // SYNC RIVALS STATS - Persist rival stats to database
+  // =====================================================
+  app.post('/api/students/:id/sync-rivals', async (req: Request, res: Response) => {
+    try {
+      const studentId = req.params.id;
+      const { xp, wins, losses, streak } = req.body;
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid student ID format' });
+      }
+
+      // Calculate actual XP from all sources (source of truth)
+      const xpResult = await db.execute(sql`
+        SELECT 
+          COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = ${studentId}::uuid), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = ${studentId}::uuid), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = ${studentId}::uuid AND status IN ('VERIFIED', 'COMPLETED')), 0) +
+          COALESCE((SELECT SUM(xp_awarded) FROM content_views WHERE student_id = ${studentId}::uuid AND completed = true), 0)
+          AS total
+      `);
+      const calculatedXp = parseInt((xpResult as any[])[0]?.total || '0', 10);
+
+      // Update the student's total_xp to match actual XP from logs
+      await db.execute(sql`
+        UPDATE students 
+        SET total_xp = ${calculatedXp}, updated_at = NOW()
+        WHERE id = ${studentId}::uuid
+      `);
+
+      console.log(`[SyncRivals] Updated student ${studentId}: total_xp = ${calculatedXp} (from logs)`);
+
+      res.json({ 
+        success: true, 
+        totalXp: calculatedXp,
+        message: 'Rivals stats synced successfully'
+      });
+    } catch (error: any) {
+      console.error('[SyncRivals] Error:', error.message);
+      res.status(500).json({ error: 'Failed to sync rivals stats' });
+    }
+  });
+
+  // =====================================================
   // HOME DOJO - HABIT TRACKING
   // =====================================================
   const HABIT_XP = 10;
