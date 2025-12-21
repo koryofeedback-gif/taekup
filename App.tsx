@@ -782,16 +782,8 @@ const AppContent: React.FC<AppContentProps> = ({
                         element={<Navigate to="/super-admin/login" replace />}
                     />
 
-                    {/* Awakening Ritual Game Test */}
-                    <Route 
-                        path="/awakening" 
-                        element={
-                            <AwakeningRitual 
-                                onBack={() => window.history.back()}
-                                onComplete={() => console.log('Ritual completed!')}
-                            />
-                        } 
-                    />
+                    {/* Awakening Ritual redirect to main page */}
+                    <Route path="/awakening" element={<Navigate to="/" replace />} />
 
                     {/* Catch-all redirect */}
                     <Route path="*" element={<Navigate to="/" replace />} />
