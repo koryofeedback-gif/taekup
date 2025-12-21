@@ -1,33 +1,46 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface AwakeningRitualProps {
-  onComplete?: () => void;
+  onComplete?: (guardianName: string, guardianType: 'power' | 'technique') => void;
   onBack?: () => void;
 }
 
+type TrainingType = 'power' | 'technique' | 'neutral';
+type GameLevel = 1 | 2 | 3;
+
 const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack }) => {
+  const [level, setLevel] = useState<GameLevel>(1);
   const [progress, setProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [showDustPuff, setShowDustPuff] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [trainingType, setTrainingType] = useState<TrainingType>('neutral');
+  const [tapCount, setTapCount] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: '', message: '', showInput: false });
+  const [guardianName, setGuardianName] = useState('');
+  const [dayCompleted, setDayCompleted] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
+  const [isHatched, setIsHatched] = useState(false);
+  const [showDevPanel, setShowDevPanel] = useState(true);
   
   const ambienceRef = useRef<HTMLAudioElement | null>(null);
   const chargeRef = useRef<HTMLAudioElement | null>(null);
-  const tapRef = useRef<HTMLAudioElement | null>(null);
+  const heartbeatRef = useRef<HTMLAudioElement | null>(null);
   const crackRef = useRef<HTMLAudioElement | null>(null);
+  const hatchRef = useRef<HTMLAudioElement | null>(null);
   
   const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const decayIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
   const [audioStarted, setAudioStarted] = useState(false);
+
+  const MAX_PROGRESS = 300;
+  const TAPS_REQUIRED = 20;
 
   useEffect(() => {
     ambienceRef.current = new Audio('/assets/sfx_ambience_dojo.wav');
     chargeRef.current = new Audio('/assets/sfx_energy_charge.wav');
-    tapRef.current = new Audio('/assets/sfx_tap_stone.wav');
+    heartbeatRef.current = new Audio('/assets/sfx_heartbeat_low.wav');
     crackRef.current = new Audio('/assets/sfx_crack_crisp.wav');
+    hatchRef.current = new Audio('/assets/sfx_hatch_poof.mp3');
     
     if (ambienceRef.current) {
       ambienceRef.current.loop = true;
@@ -37,6 +50,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     return () => {
       ambienceRef.current?.pause();
       chargeRef.current?.pause();
+      heartbeatRef.current?.pause();
       if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
       if (decayIntervalRef.current) clearInterval(decayIntervalRef.current);
     };
@@ -49,21 +63,32 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     }
   }, [audioStarted]);
 
-  const handleEggTap = () => {
-    if (isCompleted) return;
+  const getEggImage = () => {
+    if (isHatched) {
+      return '/assets/egg_state_broken.png';
+    }
     
-    startAudioOnInteraction();
-    tapRef.current?.play().catch(() => {});
-    
-    setShowDustPuff(true);
-    setTimeout(() => setShowDustPuff(false), 500);
-    
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2000);
+    switch (level) {
+      case 1:
+        if (progress >= MAX_PROGRESS) {
+          return '/assets/egg_state_crack_yellow.png';
+        }
+        return '/assets/egg_state_dormant.png';
+      case 2:
+        if (trainingType === 'power') return '/assets/egg_state_crack_red.png';
+        if (trainingType === 'technique') return '/assets/egg_state_crack_blue.png';
+        return '/assets/egg_state_crack_yellow.png';
+      case 3:
+        if (trainingType === 'power') return '/assets/egg_state_crack_red.png';
+        if (trainingType === 'technique') return '/assets/egg_state_crack_blue.png';
+        return '/assets/egg_state_crack_yellow.png';
+      default:
+        return '/assets/egg_state_dormant.png';
+    }
   };
 
   const startHolding = useCallback(() => {
-    if (isCompleted) return;
+    if (dayCompleted || level === 3) return;
     
     startAudioOnInteraction();
     setIsHolding(true);
@@ -73,27 +98,40 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
       decayIntervalRef.current = null;
     }
     
-    if (chargeRef.current) {
+    if (level === 1 && chargeRef.current) {
       chargeRef.current.currentTime = 0;
       chargeRef.current.loop = true;
       chargeRef.current.play().catch(() => {});
     }
     
+    if (level === 2 && heartbeatRef.current) {
+      heartbeatRef.current.currentTime = 0;
+      heartbeatRef.current.loop = true;
+      heartbeatRef.current.playbackRate = 0.5;
+      heartbeatRef.current.play().catch(() => {});
+    }
+    
     holdIntervalRef.current = setInterval(() => {
       setProgress(prev => {
-        const newProgress = Math.min(prev + 2, 100);
+        const newProgress = Math.min(prev + 3, MAX_PROGRESS);
         
-        if (newProgress >= 100) {
+        if (level === 2 && heartbeatRef.current) {
+          const rate = 0.5 + (newProgress / MAX_PROGRESS) * 1.5;
+          heartbeatRef.current.playbackRate = Math.min(rate, 2);
+        }
+        
+        if (newProgress >= MAX_PROGRESS) {
           if (holdIntervalRef.current) clearInterval(holdIntervalRef.current);
           chargeRef.current?.pause();
-          triggerCompletion();
-          return 100;
+          heartbeatRef.current?.pause();
+          triggerLevelComplete();
+          return MAX_PROGRESS;
         }
         
         return newProgress;
       });
     }, 50);
-  }, [isCompleted, startAudioOnInteraction]);
+  }, [dayCompleted, level, startAudioOnInteraction]);
 
   const stopHolding = useCallback(() => {
     setIsHolding(false);
@@ -104,11 +142,12 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
     }
     
     chargeRef.current?.pause();
+    heartbeatRef.current?.pause();
     
-    if (!isCompleted && progress < 100) {
+    if (!dayCompleted && progress < MAX_PROGRESS) {
       decayIntervalRef.current = setInterval(() => {
         setProgress(prev => {
-          const newProgress = Math.max(prev - 1, 0);
+          const newProgress = Math.max(prev - 2, 0);
           if (newProgress <= 0) {
             if (decayIntervalRef.current) clearInterval(decayIntervalRef.current);
           }
@@ -116,205 +155,182 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         });
       }, 100);
     }
-  }, [isCompleted, progress]);
+  }, [dayCompleted, progress]);
 
-  const triggerCompletion = () => {
+  const handleTap = () => {
+    if (level !== 3 || dayCompleted || isHatched) return;
+    
+    startAudioOnInteraction();
     crackRef.current?.play().catch(() => {});
     
+    setTapCount(prev => {
+      const newCount = prev + 1;
+      setProgress((newCount / TAPS_REQUIRED) * MAX_PROGRESS);
+      
+      if (newCount >= TAPS_REQUIRED) {
+        triggerHatch();
+      }
+      
+      return newCount;
+    });
+  };
+
+  const triggerLevelComplete = () => {
+    if (level === 1) {
+      crackRef.current?.play().catch(() => {});
+      setShowFlash(true);
+      setTimeout(() => setShowFlash(false), 200);
+      
+      setModalContent({
+        title: '✨ Something Moved!',
+        message: 'The egg is tired. Come back tomorrow.',
+        showInput: false
+      });
+      setShowModal(true);
+      setDayCompleted(true);
+    } else if (level === 2) {
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+      }
+      
+      setModalContent({
+        title: '💓 Ready to Hatch!',
+        message: 'The shell is weak. Prepare for the final strike tomorrow.',
+        showInput: false
+      });
+      setShowModal(true);
+      setDayCompleted(true);
+    }
+  };
+
+  const triggerHatch = () => {
+    hatchRef.current?.play().catch(() => {});
+    
     setShowFlash(true);
-    setTimeout(() => setShowFlash(false), 200);
+    setTimeout(() => {
+      setShowFlash(false);
+      setIsHatched(true);
+      
+      setModalContent({
+        title: '🐣 The Guardian is Awake!',
+        message: 'What is its name?',
+        showInput: true
+      });
+      setShowModal(true);
+      setDayCompleted(true);
+    }, 500);
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
     
-    setIsCompleted(true);
-    setIsHolding(false);
-    
-    onComplete?.();
+    if (isHatched && guardianName.trim()) {
+      const type = trainingType === 'power' ? 'power' : 'technique';
+      onComplete?.(guardianName.trim(), type);
+    }
+  };
+
+  const advanceToNextDay = () => {
+    if (level < 3) {
+      setLevel((prev) => (prev + 1) as GameLevel);
+      setProgress(0);
+      setDayCompleted(false);
+      setTapCount(0);
+    }
+  };
+
+  const simulateFullProgress = () => {
+    setProgress(MAX_PROGRESS);
+    triggerLevelComplete();
+  };
+
+  const resetDay = () => {
+    setProgress(0);
+    setDayCompleted(false);
+    setTapCount(0);
+    setShowModal(false);
+    setIsHatched(false);
+  };
+
+  const getButtonText = () => {
+    if (dayCompleted) return 'COMPLETED';
+    if (level === 3) return 'TAP TO BREAK';
+    return 'HOLD TO INFUSE';
+  };
+
+  const getLevelTitle = () => {
+    switch (level) {
+      case 1: return 'Day 1: The Awakening';
+      case 2: return 'Day 2: The Pulse';
+      case 3: return 'Day 3: The Hatching';
+    }
   };
 
   return (
-    <div className="awakening-screen">
-      {/* Game Container - Mobile Portrait Aspect Ratio */}
-      <div className="awakening-container">
-        {/* Background */}
-        <img 
-          src="/assets/bg_dojo_level1.jpg" 
-          alt="Dojo Background"
-          className="awakening-bg"
-        />
-        
-        {/* Flash Effect */}
-        {showFlash && <div className="flash-overlay" />}
-        
-        {/* Back Button */}
-        {onBack && (
-          <button onClick={onBack} className="back-button">
-            ← Back
-          </button>
-        )}
-        
-        {/* Toast Message */}
-        {showToast && !isCompleted && (
-          <div className="toast-message">
-            <p className="toast-text">It's dormant. Use your Spirit Energy.</p>
-            <p className="toast-hint">Hold the button below ↓</p>
-          </div>
-        )}
-        
-        {/* Egg - Top layer, sits ON pedestal */}
-        <div className={`egg-container ${isHolding ? 'shaking' : ''}`}>
-          {/* Glow Effect */}
-          <div className={`glow-effect ${isHolding ? 'visible' : ''}`}>
-            <img src="/assets/vfx_glow_flare.png" alt="" className="glow-image" />
-          </div>
-          
-          {/* Egg */}
-          <img 
-            src={isCompleted ? '/assets/egg_state_crack_yellow.png' : '/assets/egg_state_dormant.png'}
-            alt="Mysterious Egg"
-            className="egg-image"
-            onClick={handleEggTap}
-          />
-          
-          {/* Dust Puff */}
-          {showDustPuff && (
-            <img src="/assets/vfx_dust_puff.png" alt="" className="dust-puff" />
-          )}
-        </div>
-        
-        {/* Pedestal - Sits on floor above UI */}
-        <img 
-          src="/assets/pedestal_stone.png"
-          alt="Stone Pedestal"
-          className="pedestal-image"
-        />
-        
-        {/* UI Container - Bottom layer */}
-        {!isCompleted && (
-          <div className="ui-container">
-            {/* Progress Bar */}
-            <div className="progress-bar-container">
-              <img src="/assets/ui_bar_frame.png" alt="" className="bar-frame" />
-              <div 
-                className="bar-fill"
-                style={{ width: `${progress * 0.92}%`, right: 'auto' }}
-              />
-              <span className="bar-text">{Math.round(progress)}%</span>
-            </div>
-            
-            {/* Hold Button */}
-            <button
-              onMouseDown={startHolding}
-              onMouseUp={stopHolding}
-              onMouseLeave={stopHolding}
-              onTouchStart={(e) => { e.preventDefault(); startHolding(); }}
-              onTouchEnd={(e) => { e.preventDefault(); stopHolding(); }}
-              className={`action-button ${isHolding ? 'pressing' : ''}`}
-            >
-              <img src="/assets/ui_btn_action.png" alt="Hold to Infuse" className="button-image" />
-              <span className="button-text">
-                {isHolding ? 'CHANNELING...' : 'HOLD TO INFUSE'}
-              </span>
-            </button>
-          </div>
-        )}
-        
-        {/* Completion Panel */}
-        {isCompleted && (
-          <div className="completion-overlay">
-            <div className="completion-panel">
-              <img src="/assets/ui_panel_bg.png" alt="" className="panel-bg" />
-              <div className="panel-content">
-                <span className="panel-icon">✨</span>
-                <h2 className="panel-title">A crack appeared!</h2>
-                <p className="panel-text">It's reacting... Let it rest until tomorrow.</p>
-                <button onClick={onBack} className="continue-button">
-                  Continue
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      
+    <div className="ritual-container">
       <style>{`
-        .awakening-screen {
-          position: fixed;
-          inset: 0;
-          z-index: 50;
-          background: black;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .awakening-container {
+        .ritual-container {
           position: relative;
           width: 100%;
-          max-width: 450px;
           height: 100vh;
+          max-width: 450px;
+          margin: 0 auto;
           overflow: hidden;
+          background: #000;
         }
         
-        .awakening-bg {
+        .dojo-background {
           position: absolute;
           inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        
-        .flash-overlay {
-          position: absolute;
-          inset: 0;
-          background: white;
-          z-index: 50;
-          animation: flash 0.2s ease-out;
+          background-image: url('/assets/bg_dojo_level1.jpg');
+          background-size: cover;
+          background-position: center;
         }
         
         .back-button {
           position: absolute;
           top: 16px;
           left: 16px;
-          z-index: 40;
           background: rgba(0,0,0,0.5);
+          backdrop-filter: blur(4px);
+          border: none;
           color: white;
           padding: 8px 16px;
           border-radius: 8px;
-          border: none;
           cursor: pointer;
-          backdrop-filter: blur(4px);
-          transition: background 0.2s;
-        }
-        .back-button:hover {
-          background: rgba(0,0,0,0.7);
+          z-index: 20;
+          font-size: 14px;
         }
         
-        .toast-message {
+        .level-indicator {
           position: absolute;
-          top: 100px;
+          top: 16px;
           left: 50%;
           transform: translateX(-50%);
-          background: rgba(0,0,0,0.8);
+          background: rgba(0,0,0,0.7);
           backdrop-filter: blur(4px);
           color: white;
-          padding: 16px 24px;
-          border-radius: 12px;
-          text-align: center;
-          z-index: 40;
-          width: 90%;
-          max-width: 300px;
-          animation: fadeIn 0.3s ease-out;
-        }
-        .toast-text {
+          padding: 8px 20px;
+          border-radius: 20px;
           font-size: 14px;
-          margin: 0;
-        }
-        .toast-hint {
-          font-size: 12px;
-          color: #22d3ee;
-          margin: 8px 0 0 0;
+          font-weight: bold;
+          z-index: 20;
+          text-align: center;
         }
         
-        /* UI Container - Anchored to bottom */
+        .flash-overlay {
+          position: absolute;
+          inset: 0;
+          background: white;
+          opacity: 0;
+          pointer-events: none;
+          z-index: 50;
+          transition: opacity 0.2s;
+        }
+        .flash-overlay.visible {
+          opacity: 1;
+        }
+        
         .ui-container {
           position: absolute;
           bottom: 30px;
@@ -346,7 +362,6 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           top: 18%;
           bottom: 18%;
           left: 5%;
-          right: 5%;
           height: auto;
           background: linear-gradient(to right, #eab308, #f97316);
           border-radius: 10px;
@@ -385,6 +400,10 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
         .action-button:active, .action-button.pressing {
           transform: scale(1.1);
         }
+        .action-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
         .button-image {
           position: absolute;
           inset: 0;
@@ -404,7 +423,6 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           line-height: 1;
         }
         
-        /* Pedestal - Sits on floor above UI (percentage-based) */
         .pedestal-image {
           position: absolute;
           bottom: 18%;
@@ -415,7 +433,6 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           z-index: 5;
         }
         
-        /* Egg Container - Sits on top of pedestal (percentage-based) */
         .egg-container {
           position: absolute;
           bottom: 35%;
@@ -427,7 +444,7 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           justify-content: center;
         }
         .egg-container.shaking {
-          animation: shake 0.3s ease-in-out infinite;
+          animation: shake 0.15s ease-in-out infinite;
         }
         
         .egg-image {
@@ -438,48 +455,41 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           z-index: 2;
         }
         
-        .glow-effect {
+        .baby-character {
           position: absolute;
-          inset: -60px;
-          opacity: 0;
-          transition: opacity 0.5s;
-          z-index: 1;
-        }
-        .glow-effect.visible {
-          opacity: 1;
-          animation: pulse 1s ease-in-out infinite;
-        }
-        .glow-image {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-        
-        .dust-puff {
-          position: absolute;
-          top: 50%;
+          bottom: 40%;
           left: 50%;
-          transform: translate(-50%, -50%);
-          width: 120px;
-          height: 120px;
-          object-fit: contain;
-          animation: fadeOut 0.5s ease-out forwards;
-          z-index: 10;
+          transform: translateX(-50%);
+          width: 150px;
+          height: auto;
+          z-index: 7;
+          animation: bounceIn 0.5s ease-out;
         }
         
-        /* Completion Panel */
-        .completion-overlay {
+        @keyframes shake {
+          0%, 100% { transform: translateX(-50%) rotate(-2deg); }
+          50% { transform: translateX(-50%) rotate(2deg); }
+        }
+        
+        @keyframes bounceIn {
+          0% { transform: translateX(-50%) scale(0); opacity: 0; }
+          50% { transform: translateX(-50%) scale(1.2); }
+          100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+        
+        .modal-overlay {
           position: absolute;
           inset: 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(0,0,0,0.5);
+          background: rgba(0,0,0,0.7);
           backdrop-filter: blur(4px);
           z-index: 40;
           animation: fadeIn 0.3s ease-out;
         }
-        .completion-panel {
+        
+        .modal-content {
           position: relative;
           width: 90%;
           max-width: 350px;
@@ -495,73 +505,264 @@ const AwakeningRitual: React.FC<AwakeningRitualProps> = ({ onComplete, onBack })
           text-align: center;
           color: #fff;
         }
-        .panel-bg {
-          display: none;
+        
+        .modal-title {
+          font-size: 24px;
+          font-weight: bold;
+          margin-bottom: 16px;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
-        .panel-content {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 0;
+        
+        .modal-message {
+          font-size: 16px;
+          margin-bottom: 20px;
+          line-height: 1.5;
+        }
+        
+        .modal-input {
+          width: 100%;
+          padding: 12px;
+          font-size: 16px;
+          border: 2px solid #22d3ee;
+          border-radius: 8px;
+          background: rgba(0,0,0,0.5);
+          color: white;
           text-align: center;
-        }
-        .panel-icon {
-          font-size: 40px;
           margin-bottom: 16px;
         }
-        .panel-title {
-          font-size: 20px;
-          font-weight: bold;
-          color: #facc15;
-          margin: 0 0 8px 0;
+        .modal-input::placeholder {
+          color: rgba(255,255,255,0.5);
         }
-        .panel-text {
-          font-size: 14px;
-          color: white;
-          margin: 0;
-        }
-        .continue-button {
-          margin-top: 24px;
-          background: linear-gradient(to right, #06b6d4, #0d9488);
-          color: white;
-          font-weight: bold;
-          padding: 10px 24px;
-          border-radius: 8px;
+        
+        .modal-button {
+          background: linear-gradient(to right, #22d3ee, #06b6d4);
           border: none;
+          color: white;
+          padding: 12px 32px;
+          border-radius: 8px;
+          font-size: 16px;
+          font-weight: bold;
           cursor: pointer;
-          transition: opacity 0.2s;
+          transition: transform 0.1s;
         }
-        .continue-button:hover {
-          opacity: 0.9;
-        }
-        
-        @keyframes shake {
-          0%, 100% { transform: translateX(-50%); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(calc(-50% - 2px)) rotate(-1deg); }
-          20%, 40%, 60%, 80% { transform: translateX(calc(-50% + 2px)) rotate(1deg); }
+        .modal-button:hover {
+          transform: scale(1.05);
         }
         
-        @keyframes fadeOut {
-          0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
-          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        .dev-panel {
+          position: absolute;
+          top: 60px;
+          right: 8px;
+          background: rgba(0,0,0,0.9);
+          border: 1px solid #444;
+          border-radius: 8px;
+          padding: 12px;
+          z-index: 100;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          font-size: 11px;
+        }
+        
+        .dev-panel-title {
+          color: #22d3ee;
+          font-weight: bold;
+          text-align: center;
+          border-bottom: 1px solid #444;
+          padding-bottom: 8px;
+          margin-bottom: 4px;
+        }
+        
+        .dev-btn {
+          background: #333;
+          border: 1px solid #555;
+          color: white;
+          padding: 6px 10px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 11px;
+          transition: background 0.2s;
+        }
+        .dev-btn:hover {
+          background: #444;
+        }
+        .dev-btn.red {
+          background: #991b1b;
+          border-color: #dc2626;
+        }
+        .dev-btn.blue {
+          background: #1e3a8a;
+          border-color: #3b82f6;
+        }
+        .dev-btn.green {
+          background: #166534;
+          border-color: #22c55e;
+        }
+        
+        .dev-status {
+          color: #888;
+          font-size: 10px;
+          text-align: center;
+        }
+        
+        .dev-toggle {
+          position: absolute;
+          top: 60px;
+          right: 8px;
+          background: rgba(0,0,0,0.8);
+          border: 1px solid #444;
+          color: #22d3ee;
+          padding: 4px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 10px;
+          z-index: 99;
         }
         
         @keyframes fadeIn {
-          0% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        
-        @keyframes pulse {
-          0%, 100% { opacity: 0.6; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.1); }
-        }
-        
-        @keyframes flash {
-          0% { opacity: 1; }
-          100% { opacity: 0; }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
+
+      <div className="dojo-background" />
+      
+      <div className={`flash-overlay ${showFlash ? 'visible' : ''}`} />
+      
+      <button className="back-button" onClick={onBack}>
+        ← Back
+      </button>
+      
+      <div className="level-indicator">
+        {getLevelTitle()}
+      </div>
+      
+      {!showDevPanel && (
+        <button className="dev-toggle" onClick={() => setShowDevPanel(true)}>
+          DEV
+        </button>
+      )}
+      
+      {showDevPanel && (
+        <div className="dev-panel">
+          <div className="dev-panel-title">
+            🛠️ Dev Panel
+            <button 
+              style={{ marginLeft: 8, background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}
+              onClick={() => setShowDevPanel(false)}
+            >✕</button>
+          </div>
+          
+          <button className="dev-btn green" onClick={simulateFullProgress}>
+            Simulate: 300 XP
+          </button>
+          
+          <button 
+            className={`dev-btn ${trainingType === 'power' ? 'red' : ''}`}
+            onClick={() => setTrainingType('power')}
+          >
+            Set Type: Power/Red
+          </button>
+          
+          <button 
+            className={`dev-btn ${trainingType === 'technique' ? 'blue' : ''}`}
+            onClick={() => setTrainingType('technique')}
+          >
+            Set Type: Tech/Blue
+          </button>
+          
+          <button className="dev-btn" onClick={resetDay}>
+            Reset Day
+          </button>
+          
+          <button className="dev-btn" onClick={advanceToNextDay} disabled={level >= 3}>
+            Next Day →
+          </button>
+          
+          <div className="dev-status">
+            Level: {level} | Type: {trainingType}
+            <br />
+            Progress: {Math.round(progress)}/{MAX_PROGRESS}
+            {level === 3 && <><br />Taps: {tapCount}/{TAPS_REQUIRED}</>}
+          </div>
+        </div>
+      )}
+      
+      <img src="/assets/pedestal_stone.png" alt="Pedestal" className="pedestal-image" />
+      
+      <div 
+        className={`egg-container ${level === 3 && !isHatched && !dayCompleted ? 'shaking' : ''}`}
+        onClick={level === 3 ? handleTap : undefined}
+      >
+        <img 
+          src={getEggImage()} 
+          alt="Egg" 
+          className="egg-image"
+        />
+      </div>
+      
+      {isHatched && (
+        <img 
+          src="/assets/char_baby_guardian.png" 
+          alt="Baby Guardian" 
+          className="baby-character"
+        />
+      )}
+      
+      <div className="ui-container">
+        <div className="progress-bar-container">
+          <img src="/assets/ui_bar_frame.png" alt="" className="bar-frame" />
+          <div 
+            className="bar-fill"
+            style={{ width: `${(progress / MAX_PROGRESS) * 90}%`, right: 'auto' }}
+          />
+          <span className="bar-text">
+            {level === 3 ? `${tapCount}/${TAPS_REQUIRED}` : `${Math.round(progress)}/${MAX_PROGRESS}`}
+          </span>
+        </div>
+        
+        <button
+          className={`action-button ${isHolding ? 'pressing' : ''}`}
+          onMouseDown={level !== 3 ? startHolding : undefined}
+          onMouseUp={level !== 3 ? stopHolding : undefined}
+          onMouseLeave={level !== 3 ? stopHolding : undefined}
+          onTouchStart={level !== 3 ? startHolding : undefined}
+          onTouchEnd={level !== 3 ? stopHolding : undefined}
+          onClick={level === 3 ? handleTap : undefined}
+          disabled={dayCompleted}
+        >
+          <img src="/assets/ui_btn_action.png" alt="" className="button-image" />
+          <span className="button-text">{getButtonText()}</span>
+        </button>
+      </div>
+      
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-title">{modalContent.title}</div>
+            <div className="modal-message">{modalContent.message}</div>
+            
+            {modalContent.showInput && (
+              <input
+                type="text"
+                className="modal-input"
+                placeholder="Enter guardian name..."
+                value={guardianName}
+                onChange={(e) => setGuardianName(e.target.value)}
+                autoFocus
+              />
+            )}
+            
+            <button 
+              className="modal-button"
+              onClick={handleModalClose}
+              disabled={modalContent.showInput && !guardianName.trim()}
+            >
+              {modalContent.showInput ? 'Awaken!' : 'Okay'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

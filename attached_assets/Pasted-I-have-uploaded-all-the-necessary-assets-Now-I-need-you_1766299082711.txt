@@ -1,0 +1,55 @@
+I have uploaded all the necessary assets. Now, I need you to implement the full Game Logic for Levels 1, 2, and 3 based on the "Spirit Guardian" design.
+
+Please update `App.jsx` (and create a separate `GameLogic.js` if needed) to handle this exact flow.
+
+### 🛠️ IMPORTANT: Developer Testing Panel
+Since I cannot do real workouts right now, please create a temporary **"Dev Panel"** (a small box in the corner) with these buttons so I can test the logic immediately:
+1.  `[Simulate: 300 XP]` (Fills the bar instantly)
+2.  `[Set Type: Power/Red]` (Sets training type to Red)
+3.  `[Set Type: Tech/Blue]` (Sets training type to Blue)
+4.  `[Reset Day]` (Resets the bar to 0)
+
+---
+
+### 🟢 Level 1: The Awakening (Day 1)
+* **Visual:** Show `egg_dormant.png`.
+* **Logic:**
+    * User holds the "HOLD TO INFUSE" button.
+    * Play `sfx_charge.mp3` looping while holding.
+    * Fill the progress bar from 0 to 300.
+* **Completion (When bar hits 300):**
+    * Play `sfx_crack.mp3`.
+    * Change image to `egg_crack_yellow.png`.
+    * Show Modal: "Something moved! The egg is tired. Come back tomorrow."
+    * Button in modal: "Okay" (Disables the game for "today").
+
+### 🔵🔴 Level 2: The Pulse (Day 2)
+* **Visual:**
+    * If I clicked `[Set Type: Power/Red]` -> Show `egg_crack_red.png`.
+    * If I clicked `[Set Type: Tech/Blue]` -> Show `egg_crack_blue.png`.
+    * (Default if nothing clicked: `egg_crack_yellow.png`).
+* **Logic:**
+    * User holds button to fill bar again (0 to 300).
+    * Play `sfx_heartbeat.mp3` (speed increases as bar fills).
+* **Completion:**
+    * Vibrate device (if supported).
+    * Show Modal: "Ready to Hatch! The shell is weak. Prepare for the final strike tomorrow."
+
+### 🐣 Level 3: The Hatching (Day 3)
+* **Visual:** The egg (Red or Blue) should be shaking (CSS animation).
+* **Interaction Change:**
+    * Button text changes to **"TAP TO BREAK"**.
+    * User must TAP (click) the egg/button 20 times rapidly.
+* **Completion:**
+    * Play `sfx_hatch.mp3`.
+    * **Flash effect:** White screen overlay fades out.
+    * **Result:** Show `char_baby.png` sitting on top of `egg_broken.png`.
+    * Show Final Modal: "The Guardian is Awake! What is its name?" with an input field.
+
+### CSS & Styling Notes
+* Use the `bg_dojo.jpg` as the background.
+* Ensure the Egg sits perfectly on the Pedestal.
+* The Progress Bar needs to be styled with `ui_bar_frame.png` and `ui_bar_fill.png`.
+* Ensure the "Hold" button uses `ui_btn_hold.png`.
+
+Please write the complete code. I want to test the RED/BLUE logic using the Dev Panel buttons.
