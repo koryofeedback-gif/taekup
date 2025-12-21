@@ -2775,6 +2775,58 @@ async function handleFamilyChallengeStatus(req: VercelRequest, res: VercelRespon
   }
 }
 
+async function handleSyncRivals(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const logsResult = await client.query(
+      `SELECT 
+        COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0)
+        AS total`,
+      [studentId]
+    );
+    const logsXp = parseInt(logsResult.rows[0]?.total || '0', 10);
+
+    const earnedResult = await client.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
+       WHERE student_id = $1::uuid AND type = 'EARN'`,
+      [studentId]
+    );
+    const earnedXp = parseInt(earnedResult.rows[0]?.total || '0', 10);
+
+    const spentResult = await client.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
+       WHERE student_id = $1::uuid AND type = 'SPEND'`,
+      [studentId]
+    );
+    const spentXp = parseInt(spentResult.rows[0]?.total || '0', 10);
+
+    const calculatedXp = logsXp + earnedXp - spentXp;
+
+    await client.query(
+      `UPDATE students SET total_xp = $1, updated_at = NOW() WHERE id = $2::uuid`,
+      [calculatedXp, studentId]
+    );
+
+    console.log(`[SyncRivals] Student ${studentId}: logsXp=${logsXp} + earnedXp=${earnedXp} - spentXp=${spentXp} = totalXp=${calculatedXp}`);
+
+    return res.json({ success: true, totalXp: calculatedXp, message: 'Rivals stats synced successfully' });
+  } catch (error: any) {
+    console.error('[SyncRivals] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to sync rivals stats' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -3251,6 +3303,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const linkParentMatch = path.match(/^\/students\/([^/]+)\/link-parent\/?$/);
     if (linkParentMatch) return await handleLinkParent(req, res, linkParentMatch[1]);
+    
+    const syncRivalsMatch = path.match(/^\/students\/([^/]+)\/sync-rivals\/?$/);
+    if (syncRivalsMatch) return await handleSyncRivals(req, res, syncRivalsMatch[1]);
 
     // Video endpoints
     if (path === '/videos/presigned-upload' || path === '/videos/presigned-upload/') return await handlePresignedUpload(req, res);
