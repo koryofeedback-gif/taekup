@@ -50,7 +50,8 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
         return students
             .map(s => ({
                 ...s,
-                displayXP: s.totalXP || s.lifetimeXp || s.rivalsStats?.xp || 0
+                // Prioritize rivalsStats.xp (from challenges) over totalXP - matches Parent Dashboard
+                displayXP: s.rivalsStats?.xp || s.totalXP || s.lifetimeXp || 0
             }))
             .sort((a, b) => b.displayXP - a.displayXP)
             .map((s, i) => ({ ...s, rank: i + 1 }));
