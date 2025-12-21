@@ -15,6 +15,58 @@ let cachedProducts: any[] | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+// =====================================================
+// UNIFIED XP SERVICE - Single source of truth for XP
+// =====================================================
+// All XP awards go through this function to ensure students.total_xp is always accurate
+async function awardXP(studentId: string, xpAmount: number, source: 'arena' | 'home_dojo' | 'mystery' | 'family' | 'content' | 'pvp', metadata?: object): Promise<{ success: boolean; newTotal: number }> {
+  if (!studentId || xpAmount <= 0) {
+    return { success: false, newTotal: 0 };
+  }
+  
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    console.warn('[XP] Invalid student ID format:', studentId);
+    return { success: false, newTotal: 0 };
+  }
+  
+  try {
+    // Atomically increment total_xp and return the new value
+    const result = await db.execute(sql`
+      UPDATE students 
+      SET total_xp = COALESCE(total_xp, 0) + ${xpAmount}, updated_at = NOW()
+      WHERE id = ${studentId}::uuid
+      RETURNING total_xp
+    `);
+    
+    const newTotal = (result as any[])[0]?.total_xp || 0;
+    console.log(`[XP] Awarded ${xpAmount} XP to student ${studentId} (source: ${source}) -> new total: ${newTotal}`);
+    
+    return { success: true, newTotal };
+  } catch (error) {
+    console.error('[XP] Failed to award XP:', error);
+    return { success: false, newTotal: 0 };
+  }
+}
+
+// Get student's current total XP from database (single source of truth)
+async function getStudentXP(studentId: string): Promise<number> {
+  if (!studentId) return 0;
+  
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) return 0;
+  
+  try {
+    const result = await db.execute(sql`
+      SELECT total_xp FROM students WHERE id = ${studentId}::uuid
+    `);
+    return (result as any[])[0]?.total_xp || 0;
+  } catch (error) {
+    console.error('[XP] Failed to get XP:', error);
+    return 0;
+  }
+}
+
 // Generate deterministic UUID from challenge type string (since challenges are hardcoded, not in DB)
 function generateChallengeUUID(challengeType: string): string {
   const hash = crypto.createHash('sha256').update(`taekup-challenge-${challengeType}`).digest('hex');
@@ -2311,17 +2363,12 @@ export function registerRoutes(app: Express) {
         const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
         const xpAwarded = isCorrect ? (frontendXpReward || 50) : 0;
         
-        // Award XP directly to student AND log to xp_transactions for persistence
+        // Award XP using unified XP service and log to xp_transactions for persistence
         if (isCorrect && xpAwarded > 0) {
-          // 1. Update student's total XP
-          await db.execute(sql`
-            UPDATE students 
-            SET total_xp = COALESCE(total_xp, 0) + ${xpAwarded}, updated_at = NOW()
-            WHERE id = ${studentId}::uuid
-          `);
+          // 1. Award XP using unified service (single source of truth)
+          await awardXP(studentId, xpAwarded, 'mystery', { isFallback: true });
           
           // 2. Insert into xp_transactions for persistence and duplicate prevention
-          // CRITICAL: Do NOT store string challengeId - just record that daily_challenge happened
           await db.execute(sql`
             INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
             VALUES (${studentId}::uuid, ${xpAwarded}, 'EARN', 'daily_challenge', NOW())
@@ -2383,12 +2430,10 @@ export function registerRoutes(app: Express) {
         VALUES (${challengeId}::uuid, ${studentId}::uuid, ${validClubId ? sql`${validClubId}::uuid` : sql`NULL`}, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
       `);
 
-      // Award XP to student
-      await db.execute(sql`
-        UPDATE students 
-        SET total_xp = COALESCE(total_xp, 0) + ${xpAwarded}, updated_at = NOW()
-        WHERE id = ${studentId}::uuid
-      `);
+      // Award XP using unified XP service (single source of truth)
+      if (xpAwarded > 0) {
+        await awardXP(studentId, xpAwarded, 'mystery', { challengeId, isCorrect });
+      }
 
       console.log(`✅ [DailyChallenge] Submit Success - XP Awarded: ${xpAwarded}`);
 
@@ -2573,11 +2618,8 @@ export function registerRoutes(app: Express) {
             VALUES (${challengeUUID}::uuid, ${studentId}::uuid, ${validClubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'COMPLETED', 'TRUST', ${finalXp}, NOW())
           `);
 
-          // Award XP instantly
-          await db.execute(sql`
-            UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${finalXp}, updated_at = NOW()
-            WHERE id = ${studentId}::uuid
-          `);
+          // Award XP using unified XP service (single source of truth)
+          await awardXP(studentId, finalXp, 'arena', { challengeType, proofType: 'TRUST' });
 
         console.log(`[Arena] Trust submission for "${challengeType}": +${finalXp} XP (${count + 1}/${TRUST_PER_CHALLENGE_LIMIT} today)`);
 
@@ -2853,11 +2895,9 @@ export function registerRoutes(app: Express) {
           winnerId = challenge.opponent_id;
           loserId = challenge.student_id;
         } else {
-          // Tie - both get participation XP
-          await db.execute(sql`
-            UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${PVP_LOSE_XP}, updated_at = NOW()
-            WHERE id IN (${challenge.student_id}::uuid, ${challenge.opponent_id}::uuid)
-          `);
+          // Tie - both get participation XP using unified XP service
+          await awardXP(challenge.student_id, PVP_LOSE_XP, 'pvp', { result: 'TIE' });
+          await awardXP(challenge.opponent_id, PVP_LOSE_XP, 'pvp', { result: 'TIE' });
           await db.execute(sql`
             UPDATE challenge_submissions SET status = 'COMPLETED', xp_awarded = ${PVP_LOSE_XP}
             WHERE id = ${challengeId}::uuid
@@ -2872,15 +2912,9 @@ export function registerRoutes(app: Express) {
           });
         }
 
-        // Award XP
-        await db.execute(sql`
-          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${PVP_WIN_XP}, updated_at = NOW()
-          WHERE id = ${winnerId}::uuid
-        `);
-        await db.execute(sql`
-          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${PVP_LOSE_XP}, updated_at = NOW()
-          WHERE id = ${loserId}::uuid
-        `);
+        // Award XP using unified XP service
+        await awardXP(winnerId, PVP_WIN_XP, 'pvp', { result: 'WIN' });
+        await awardXP(loserId, PVP_LOSE_XP, 'pvp', { result: 'LOSS' });
         await db.execute(sql`
           UPDATE challenge_submissions SET status = 'COMPLETED', xp_awarded = ${PVP_WIN_XP}
           WHERE id = ${challengeId}::uuid
@@ -2969,10 +3003,9 @@ export function registerRoutes(app: Express) {
           UPDATE challenge_submissions SET status = 'VERIFIED'
           WHERE id = ${submissionId}::uuid
         `);
-        await db.execute(sql`
-          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpToAward}, updated_at = NOW()
-          WHERE id = ${submission.student_id}::uuid
-        `);
+        
+        // Award XP using unified XP service
+        await awardXP(submission.student_id, xpToAward, 'arena', { proofType: 'VIDEO', verified: true });
 
         console.log(`[Arena] Video verified for ${submission.student_id}: +${xpToAward} XP`);
 
@@ -3189,15 +3222,12 @@ export function registerRoutes(app: Express) {
 
       let newTotalXp = 0;
       if (xpToAward > 0) {
-        // Update total_xp in students table (the correct column)
-        const updateResult = await db.execute(sql`
-          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpToAward}, updated_at = NOW() WHERE id = ${studentId}::uuid RETURNING total_xp
-        `);
-        newTotalXp = (updateResult as any[])[0]?.total_xp || 0;
+        // Award XP using unified XP service
+        const xpResult = await awardXP(studentId, xpToAward, 'home_dojo', { habitName });
+        newTotalXp = xpResult.newTotal;
         console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total_xp: ${newTotalXp}`);
       } else {
-        const currentXp = await db.execute(sql`SELECT total_xp FROM students WHERE id = ${studentId}::uuid`);
-        newTotalXp = (currentXp as any[])[0]?.total_xp || 0;
+        newTotalXp = await getStudentXP(studentId);
         console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
       }
 
@@ -3439,14 +3469,9 @@ export function registerRoutes(app: Express) {
         VALUES (${studentId}::uuid, ${challengeId}, ${xp}, ${today}::date)
       `);
 
-      // Update student's total_xp
-      const updateResult = await db.execute(sql`
-        UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xp}, updated_at = NOW()
-        WHERE id = ${studentId}::uuid
-        RETURNING total_xp
-      `);
-
-      const newTotalXp = (updateResult as any[])[0]?.total_xp || 0;
+      // Award XP using unified XP service
+      const xpResult = await awardXP(studentId, xp, 'family', { challengeId, won });
+      const newTotalXp = xpResult.newTotal;
 
       console.log(`[FamilyChallenge] "${challengeId}" completed: +${xp} XP, won: ${won}, new total_xp: ${newTotalXp}`);
 
