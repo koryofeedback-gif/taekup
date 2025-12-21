@@ -1,6 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Student, WizardData } from '../types';
-import { calculateClassXP } from '../services/gamificationService';
 
 interface ChallengeHistoryEntry {
     id: string;
@@ -14,6 +13,17 @@ interface ChallengeHistoryEntry {
     completedAt: string;
 }
 
+interface LeaderboardEntry {
+    id: string;
+    name: string;
+    belt: string;
+    stripes: number;
+    totalXP: number;
+    monthlyXP: number;
+    rank: number;
+    displayXP: number;
+}
+
 interface CoachLeaderboardProps {
     students: Student[];
     data: WizardData;
@@ -21,52 +31,61 @@ interface CoachLeaderboardProps {
 
 export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, data }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
+    const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
+    const [loading, setLoading] = useState(true);
     const [viewingStudentHistory, setViewingStudentHistory] = useState<{
         student: Student | null;
         history: ChallengeHistoryEntry[];
         loading: boolean;
     }>({ student: null, history: [], loading: false });
 
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Fetch fresh leaderboard data from API
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            const clubId = localStorage.getItem('taekup_club_id') || sessionStorage.getItem('impersonate_clubId');
+            if (!clubId) {
+                setLoading(false);
+                return;
+            }
 
-    const monthlyLeaderboard = useMemo(() => {
-        return students
-            .map(s => {
-                const monthlyXP = (s.performanceHistory || [])
-                    .filter(record => new Date(record.date) >= monthStart)
-                    .reduce((sum, record) => {
-                        const scores = Object.values(record.scores || {});
-                        const classXP = calculateClassXP(scores);
-                        return sum + classXP + (record.bonusPoints || 0);
-                    }, 0);
-                return { ...s, displayXP: monthlyXP };
-            })
-            .sort((a, b) => b.displayXP - a.displayXP)
-            .map((s, i) => ({ ...s, rank: i + 1 }));
-    }, [students, monthStart]);
+            try {
+                const response = await fetch(`/api/leaderboard?clubId=${clubId}`);
+                const result = await response.json();
+                if (result.leaderboard) {
+                    setLeaderboardData(result.leaderboard.map((s: any) => ({
+                        ...s,
+                        displayXP: leaderboardMode === 'monthly' ? s.monthlyXP : s.totalXP
+                    })));
+                }
+            } catch (error) {
+                console.error('[Leaderboard] Failed to fetch:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const allTimeLeaderboard = useMemo(() => {
-        return students
-            .map(s => ({
-                ...s,
-                // Prioritize rivalsStats.xp (from challenges) over totalXP - matches Parent Dashboard
-                displayXP: s.rivalsStats?.xp || s.totalXP || s.lifetimeXp || 0
-            }))
-            .sort((a, b) => b.displayXP - a.displayXP)
-            .map((s, i) => ({ ...s, rank: i + 1 }));
-    }, [students]);
+        fetchLeaderboard();
+    }, [leaderboardMode]);
 
-    const leaderboard = leaderboardMode === 'monthly' ? monthlyLeaderboard : allTimeLeaderboard;
+    // Sort and assign ranks based on current mode
+    const leaderboard = [...leaderboardData]
+        .map(s => ({
+            ...s,
+            displayXP: leaderboardMode === 'monthly' ? s.monthlyXP : s.totalXP
+        }))
+        .sort((a, b) => b.displayXP - a.displayXP)
+        .map((s, i) => ({ ...s, rank: i + 1 }));
 
-    const fetchStudentHistory = async (targetStudent: Student) => {
-        setViewingStudentHistory({ student: targetStudent, history: [], loading: true });
+    const fetchStudentHistory = async (entry: LeaderboardEntry) => {
+        // Convert LeaderboardEntry to minimal Student-like object for display
+        const studentForDisplay = { id: entry.id, name: entry.name, belt: entry.belt } as any;
+        setViewingStudentHistory({ student: studentForDisplay, history: [], loading: true });
         try {
-            const response = await fetch(`/api/challenges/history?studentId=${targetStudent.id}`);
-            const data = await response.json();
+            const response = await fetch(`/api/challenges/history?studentId=${entry.id}`);
+            const result = await response.json();
             setViewingStudentHistory({
-                student: targetStudent,
-                history: data.history || [],
+                student: studentForDisplay,
+                history: result.history || [],
                 loading: false
             });
         } catch (error) {
@@ -141,7 +160,7 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                                 <div>
                                     <p className="font-bold text-white text-lg">{player.name}</p>
                                     <p className="text-sm text-gray-500">
-                                        {data.belts.find(b => b.id === player.beltId)?.name || 'Student'} • Click to view history
+                                        {player.belt || 'Student'} • Click to view history
                                     </p>
                                 </div>
                             </div>

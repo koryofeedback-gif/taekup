@@ -3004,6 +3004,62 @@ export function registerRoutes(app: Express) {
   });
 
   // =====================================================
+  // LEADERBOARD - FRESH XP DATA
+  // =====================================================
+  app.get('/api/leaderboard', async (req: Request, res: Response) => {
+    try {
+      const clubId = req.query.clubId as string;
+      
+      if (!clubId) {
+        return res.status(400).json({ error: 'clubId is required' });
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(clubId)) {
+        return res.status(400).json({ error: 'Invalid clubId format' });
+      }
+
+      // Fetch all students with their current total_xp from database
+      const students = await db.execute(sql`
+        SELECT id, name, belt, total_xp, stripes FROM students 
+        WHERE club_id = ${clubId}::uuid 
+        ORDER BY total_xp DESC
+      `);
+
+      // Calculate monthly XP from challenge submissions this month
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+
+      const monthlyXpData = await db.execute(sql`
+        SELECT student_id, COALESCE(SUM(xp_awarded), 0) as monthly_xp
+        FROM challenge_submissions
+        WHERE club_id = ${clubId}::uuid
+        AND created_at >= ${monthStart.toISOString()}
+        AND status IN ('VERIFIED', 'COMPLETED')
+        GROUP BY student_id
+      `);
+
+      const monthlyXpMap = new Map((monthlyXpData as any[]).map(r => [r.student_id, parseInt(r.monthly_xp) || 0]));
+
+      const leaderboard = (students as any[]).map((s, index) => ({
+        id: s.id,
+        name: s.name,
+        belt: s.belt,
+        stripes: s.stripes || 0,
+        totalXP: s.total_xp || 0,
+        monthlyXP: monthlyXpMap.get(s.id) || 0,
+        rank: index + 1
+      }));
+
+      res.json({ leaderboard });
+    } catch (error: any) {
+      console.error('[Leaderboard] Error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    }
+  });
+
+  // =====================================================
   // HOME DOJO - HABIT TRACKING
   // =====================================================
   const HABIT_XP = 10;
