@@ -876,6 +876,32 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+async function handleStudentDelete(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'DELETE') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    // Check student exists
+    const check = await client.query('SELECT id, name FROM students WHERE id = $1::uuid', [studentId]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    // Delete the student (cascade will handle related records)
+    await client.query('DELETE FROM students WHERE id = $1::uuid', [studentId]);
+    
+    console.log(`[StudentDelete] Deleted student ${studentId}: ${check.rows[0].name}`);
+    return res.status(200).json({ success: true, deleted: studentId });
+  } catch (error: any) {
+    console.error('[StudentDelete] Error:', error);
+    return res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleStudentUpdate(req: VercelRequest, res: VercelResponse, studentId: string) {
   if (req.method !== 'PATCH' && req.method !== 'PUT') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -3388,10 +3414,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/students/by-email' || path === '/students/by-email/') return await handleGetStudentByEmail(req, res);
     
-    // Student update by ID
-    const studentUpdateMatch = path.match(/^\/students\/([^/]+)\/?$/);
-    if (studentUpdateMatch && (req.method === 'PATCH' || req.method === 'PUT')) {
-      return await handleStudentUpdate(req, res, studentUpdateMatch[1]);
+    // Student update/delete by ID
+    const studentIdMatch = path.match(/^\/students\/([^/]+)\/?$/);
+    if (studentIdMatch) {
+      if (req.method === 'PATCH' || req.method === 'PUT') {
+        return await handleStudentUpdate(req, res, studentIdMatch[1]);
+      }
+      if (req.method === 'DELETE') {
+        return await handleStudentDelete(req, res, studentIdMatch[1]);
+      }
     }
     if (path === '/students/by-name' || path === '/students/by-name/') return await handleGetStudentByName(req, res);
     if (path === '/students/first' || path === '/students/first/') return await handleGetFirstStudent(req, res);

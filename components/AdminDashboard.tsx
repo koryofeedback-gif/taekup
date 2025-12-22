@@ -230,9 +230,25 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
         return matchName && matchLoc && matchClass && matchBelt;
     });
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if(confirm('Are you sure? This cannot be undone.')) {
-            onUpdateData({ students: data.students.filter(s => s.id !== id) });
+            try {
+                const response = await fetch(`/api/students/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete student');
+                }
+                
+                // Update local state on success
+                onUpdateData({ students: data.students.filter(s => s.id !== id) });
+            } catch (err: any) {
+                console.error('Failed to delete student:', err);
+                alert(err.message || 'Failed to delete student');
+            }
         }
     }
 
