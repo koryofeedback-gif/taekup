@@ -2791,6 +2791,68 @@ async function handleFamilyChallengeStatus(req: VercelRequest, res: VercelRespon
   }
 }
 
+async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const clubId = req.query.clubId as string;
+  
+  if (!clubId) {
+    return res.status(400).json({ error: 'clubId is required' });
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(clubId)) {
+    return res.status(400).json({ error: 'Invalid clubId format' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const studentsResult = await client.query(
+      `SELECT id, name, belt, stripes, COALESCE(total_xp, 0) as total_xp 
+       FROM students WHERE club_id = $1::uuid`,
+      [clubId]
+    );
+
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const monthStartStr = monthStart.toISOString();
+
+    const monthlyXpResult = await client.query(`
+      SELECT 
+        s.id as student_id,
+        COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = s.id AND created_at >= $2::timestamp), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = s.id AND created_at >= $2::timestamp), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = s.id AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED') AND completed_at >= $2::timestamp), 0) +
+        COALESCE((SELECT SUM(amount) FROM xp_transactions WHERE student_id = s.id AND type = 'EARN' AND created_at >= $2::timestamp), 0)
+        AS monthly_xp
+      FROM students s WHERE s.club_id = $1::uuid
+    `, [clubId, monthStartStr]);
+
+    const monthlyXpMap = new Map(monthlyXpResult.rows.map((r: any) => [r.student_id, parseInt(r.monthly_xp) || 0]));
+
+    const leaderboard = studentsResult.rows.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      belt: s.belt,
+      stripes: s.stripes || 0,
+      totalXP: parseInt(s.total_xp) || 0,
+      monthlyXP: monthlyXpMap.get(s.id) || 0
+    }))
+    .sort((a: any, b: any) => b.totalXP - a.totalXP)
+    .map((s: any, index: number) => ({ ...s, rank: index + 1 }));
+
+    console.log('[Leaderboard] Fetched:', leaderboard.length, 'students');
+
+    return res.json({ leaderboard });
+  } catch (error: any) {
+    console.error('[Leaderboard] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleSyncRivals(req: VercelRequest, res: VercelResponse, studentId: string) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -3288,6 +3350,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const sentChallengesMatch = path.match(/^\/challenges\/sent\/([^/]+)\/?$/);
     if (sentChallengesMatch) return await handleSentChallenges(req, res, sentChallengesMatch[1]);
+    
+    // Leaderboard
+    if (path === '/leaderboard' || path === '/leaderboard/') return await handleLeaderboard(req, res);
     
     // Home Dojo - Habit Tracking
     if (path === '/habits/check' || path === '/habits/check/') return await handleHabitCheck(req, res);
