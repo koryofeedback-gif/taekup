@@ -32,6 +32,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Fresh leaderboard data from API
     const [apiLeaderboardData, setApiLeaderboardData] = useState<Array<{id: string; name: string; totalXP: number; monthlyXP: number; belt?: string}>>([]);
     const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+    const [serverTotalXP, setServerTotalXP] = useState<number>(0);
     
     // One-time cleanup of stale localStorage cache on mount
     useEffect(() => {
@@ -80,6 +81,28 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const interval = setInterval(fetchLeaderboard, 30000);
         return () => clearInterval(interval);
     }, [student.clubId]);
+    
+    // Fetch total XP directly from server as single source of truth
+    useEffect(() => {
+        const fetchServerXP = async () => {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!student.id || !uuidRegex.test(student.id)) return;
+            try {
+                const response = await fetch(`/api/habits/status?studentId=${student.id}`);
+                const result = await response.json();
+                if (typeof result.totalXp === 'number') {
+                    setServerTotalXP(result.totalXp);
+                    console.log('[ServerXP] Fetched total XP:', result.totalXp);
+                }
+            } catch (err) {
+                console.error('[ServerXP] Failed to fetch:', err);
+            }
+        };
+        fetchServerXP();
+        // Refresh every 10 seconds
+        const interval = setInterval(fetchServerXP, 10000);
+        return () => clearInterval(interval);
+    }, [student.id]);
     
     // Rivals State
     const [selectedRival, setSelectedRival] = useState<string>('');
@@ -2667,7 +2690,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="text-[10px] text-gray-400 uppercase">Rank</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-2xl font-black text-purple-400">{apiLeaderboardData.find(s => s.id === student.id)?.totalXP ?? 0}</div>
+                                <div className="text-2xl font-black text-purple-400">{serverTotalXP || apiLeaderboardData.find(s => s.id === student.id)?.totalXP || 0}</div>
                                 <div className="text-[10px] text-gray-400 uppercase">Total XP</div>
                             </div>
                             <div className="text-center">
