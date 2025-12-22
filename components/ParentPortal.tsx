@@ -30,7 +30,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [bookedSlots, setBookedSlots] = useState<Record<string, boolean>>({}); // Simulating bookings
     
     // Fresh leaderboard data from API
-    const [apiLeaderboardData, setApiLeaderboardData] = useState<Array<{id: string; name: string; totalXP: number; monthlyXP: number; belt?: string}>>([]);
+    const [apiLeaderboardData, setApiLeaderboardData] = useState<Array<{id: string; name: string; totalXP: number; monthlyXP: number; belt?: string; stripes?: number}>>([]);
     const [leaderboardLoading, setLeaderboardLoading] = useState(false);
     const [serverTotalXP, setServerTotalXP] = useState<number>(0);
     
@@ -2431,15 +2431,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const renderRivals = () => {
         const classmates = data.students.filter(s => s.id !== student.id);
         
-        // For home users (no club), ensure current student appears in leaderboard
-        // Use apiLeaderboardData if available, otherwise create entry from serverTotalXP
-        let allStudentsForLeaderboard = data.students.length > 0 ? data.students : [];
+        // Use API leaderboard data (all club students) as primary source
+        // This ensures we show ALL students in the club, not just parent's linked students
+        let allStudentsForLeaderboard: Array<any> = apiLeaderboardData.length > 0 
+            ? apiLeaderboardData.map(s => ({
+                id: s.id,
+                name: s.name,
+                belt: s.belt || student.belt,
+                beltId: student.beltId, // Use current student's belt as fallback for display
+                totalXP: s.totalXP,
+                monthlyXP: s.monthlyXP
+            }))
+            : data.students;
         
-        // If current student not in list, add them (handles home users)
+        // If current student not in list, add them (handles edge cases)
         if (!allStudentsForLeaderboard.find(s => s.id === student.id)) {
             allStudentsForLeaderboard = [{
                 ...student,
-                totalXP: serverTotalXP || 0
+                totalXP: serverTotalXP || 0,
+                monthlyXP: serverTotalXP || 0
             } as any, ...allStudentsForLeaderboard];
         }
         
