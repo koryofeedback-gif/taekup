@@ -675,6 +675,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         setSoloResult(null);
         
         try {
+            // Get challenge name for storage
+            const challengeInfo = getChallengeInfo(selectedChallenge);
+            
             const response = await fetch('/api/challenges/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -682,6 +685,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     studentId: student.id,
                     clubId: student.clubId,
                     challengeType: selectedChallenge,
+                    challengeName: challengeInfo.name,
                     score: parseInt(soloScore) || 0,
                     proofType,
                     videoUrl,
