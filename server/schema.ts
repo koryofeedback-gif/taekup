@@ -84,6 +84,8 @@ export const students = pgTable('students', {
   parentEmail: varchar('parent_email', { length: 255 }),
   parentName: varchar('parent_name', { length: 255 }),
   parentPhone: varchar('parent_phone', { length: 50 }),
+  location: varchar('location', { length: 255 }),
+  assignedClass: varchar('assigned_class', { length: 255 }),
   belt: varchar('belt', { length: 50 }).default('White'),
   stripes: integer('stripes').default(0),
   birthdate: timestamp('birthdate', { withTimezone: true }),

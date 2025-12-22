@@ -93,7 +93,7 @@ function getGeminiClient(): GoogleGenerativeAI | null {
 
 function setCorsHeaders(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
@@ -871,6 +871,78 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
   } catch (error: any) {
     console.error('[AddStudent] Error:', error.message);
     return res.status(500).json({ error: 'Failed to add student' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleStudentUpdate(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'PATCH' && req.method !== 'PUT') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  
+  const { name, belt, stripes, location, assignedClass, parentName, parentEmail } = parseBody(req);
+  
+  const client = await pool.connect();
+  try {
+    // Verify student exists
+    const studentCheck = await client.query('SELECT id, club_id FROM students WHERE id = $1::uuid', [studentId]);
+    if (studentCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    // Build dynamic update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+    
+    if (name !== undefined) {
+      updates.push(`name = $${paramIndex++}`);
+      values.push(name);
+    }
+    if (belt !== undefined) {
+      updates.push(`belt = $${paramIndex++}`);
+      values.push(belt);
+    }
+    if (stripes !== undefined) {
+      updates.push(`stripes = $${paramIndex++}`);
+      values.push(stripes);
+    }
+    if (location !== undefined) {
+      updates.push(`location = $${paramIndex++}`);
+      values.push(location);
+    }
+    if (assignedClass !== undefined) {
+      updates.push(`assigned_class = $${paramIndex++}`);
+      values.push(assignedClass);
+    }
+    if (parentName !== undefined) {
+      updates.push(`parent_name = $${paramIndex++}`);
+      values.push(parentName);
+    }
+    if (parentEmail !== undefined) {
+      updates.push(`parent_email = $${paramIndex++}`);
+      values.push(parentEmail);
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    updates.push(`updated_at = NOW()`);
+    values.push(studentId);
+    
+    const result = await client.query(
+      `UPDATE students SET ${updates.join(', ')} WHERE id = $${paramIndex}::uuid 
+       RETURNING id, name, belt, stripes, location, assigned_class, parent_name, parent_email`,
+      values
+    );
+    
+    console.log(`[StudentUpdate] Updated student ${studentId}:`, result.rows[0]);
+    return res.status(200).json({ success: true, student: result.rows[0] });
+  } catch (error: any) {
+    console.error('[StudentUpdate] Error:', error);
+    return res.status(500).json({ error: error.message });
   } finally {
     client.release();
   }
@@ -3307,6 +3379,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (customHabitDeleteMatch) return await handleDeleteCustomHabit(req, res, customHabitDeleteMatch[1]);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/students/by-email' || path === '/students/by-email/') return await handleGetStudentByEmail(req, res);
+    
+    // Student update by ID
+    const studentUpdateMatch = path.match(/^\/students\/([^/]+)\/?$/);
+    if (studentUpdateMatch && (req.method === 'PATCH' || req.method === 'PUT')) {
+      return await handleStudentUpdate(req, res, studentUpdateMatch[1]);
+    }
     if (path === '/students/by-name' || path === '/students/by-name/') return await handleGetStudentByName(req, res);
     if (path === '/students/first' || path === '/students/first/') return await handleGetFirstStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);

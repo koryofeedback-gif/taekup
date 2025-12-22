@@ -2756,15 +2756,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             />
                         </div>
                         <button 
-                            onClick={() => {
+                            onClick={async () => {
                                 if (!editingStudentId) return;
-                                const updatedStudents = data.students.map(s => 
-                                    s.id === editingStudentId ? { ...s, ...tempStudent } : s
-                                );
-                                onUpdateData({ students: updatedStudents });
-                                setModalType(null);
-                                setEditingStudentId(null);
-                                setTempStudent({});
+                                try {
+                                    // Get belt name from beltId for API
+                                    const beltName = tempStudent.beltId ? data.belts.find(b => b.id === tempStudent.beltId)?.name : undefined;
+                                    
+                                    const response = await fetch(`/api/students/${editingStudentId}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            name: tempStudent.name,
+                                            belt: beltName,
+                                            stripes: tempStudent.stripes,
+                                            location: tempStudent.location,
+                                            assignedClass: tempStudent.assignedClass,
+                                            parentName: tempStudent.parentName,
+                                            parentEmail: tempStudent.parentEmail
+                                        })
+                                    });
+                                    
+                                    if (!response.ok) {
+                                        const error = await response.json();
+                                        throw new Error(error.error || 'Failed to update student');
+                                    }
+                                    
+                                    // Update local state on success
+                                    const updatedStudents = data.students.map(s => 
+                                        s.id === editingStudentId ? { ...s, ...tempStudent } : s
+                                    );
+                                    onUpdateData({ students: updatedStudents });
+                                    setModalType(null);
+                                    setEditingStudentId(null);
+                                    setTempStudent({});
+                                } catch (err: any) {
+                                    console.error('Failed to update student:', err);
+                                    alert(err.message || 'Failed to save changes');
+                                }
                             }} 
                             className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded"
                         >
