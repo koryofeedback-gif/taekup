@@ -1021,6 +1021,39 @@ async function handleStudentUpdate(req: VercelRequest, res: VercelResponse, stud
   }
 }
 
+async function handleStudentGrading(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'PATCH') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  
+  const { totalPoints, lifetimeXp } = parseBody(req);
+  
+  if (!studentId) {
+    return res.status(400).json({ error: 'Student ID is required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE students SET 
+        total_points = COALESCE($1, total_points),
+        total_xp = COALESCE($2, total_xp),
+        last_class_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $3::uuid`,
+      [totalPoints, lifetimeXp, studentId]
+    );
+
+    console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[Grading] Update error:', error.message);
+    return res.status(500).json({ error: 'Failed to update student grading data' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleGetStudentByEmail(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -3370,6 +3403,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (customHabitDeleteMatch) return await handleDeleteCustomHabit(req, res, customHabitDeleteMatch[1]);
     if (path === '/students' || path === '/students/') return await handleAddStudent(req, res);
     if (path === '/students/by-email' || path === '/students/by-email/') return await handleGetStudentByEmail(req, res);
+    
+    // Student grading endpoint (must be before generic student ID match)
+    const studentGradingMatch = path.match(/^\/students\/([^/]+)\/grading\/?$/);
+    if (studentGradingMatch) return await handleStudentGrading(req, res, studentGradingMatch[1]);
     
     // Student update/delete by ID
     const studentIdMatch = path.match(/^\/students\/([^/]+)\/?$/);
