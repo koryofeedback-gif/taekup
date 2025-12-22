@@ -680,21 +680,25 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
                belt = COALESCE($3, belt),
                birthdate = COALESCE($4::timestamptz, birthdate),
                total_points = COALESCE($5, total_points),
+               location = COALESCE($6, location),
+               assigned_class = COALESCE($7, assigned_class),
                updated_at = NOW()
-             WHERE id = $6::uuid`,
+             WHERE id = $8::uuid`,
             [
               student.parentName || null,
               student.parentPhone || null,
               student.beltId || 'white',
               student.birthday ? student.birthday + 'T00:00:00Z' : null,
               student.totalPoints || 0,
+              student.location || null,
+              student.assignedClass || null,
               studentId
             ]
           );
         } else {
           const insertResult = await client.query(
-            `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, created_at)
-             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, NOW())
+            `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, location, assigned_class, created_at)
+             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9, $10, NOW())
              RETURNING id`,
             [
               clubId, 
@@ -704,7 +708,9 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
               student.parentPhone || null,
               student.beltId || 'white',
               student.birthday ? student.birthday + 'T00:00:00Z' : null,
-              student.totalPoints || 0
+              student.totalPoints || 0,
+              student.location || null,
+              student.assignedClass || null
             ]
           );
           studentId = insertResult.rows[0]?.id;
@@ -810,7 +816,7 @@ async function handleWelcomeEmail(req: VercelRequest, res: VercelResponse) {
 
 async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate } = parseBody(req);
+  const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, location, assignedClass } = parseBody(req);
 
   if (!clubId || !name) {
     return res.status(400).json({ error: 'Club ID and student name are required' });
@@ -826,10 +832,10 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     if (!club) return res.status(404).json({ error: 'Club not found' });
 
     const studentResult = await client.query(
-      `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, created_at)
-       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, NOW())
-       RETURNING id, name, parent_email, parent_name, belt`,
-      [clubId, name, parentEmail || null, parentName || null, parentPhone || null, belt || 'White', birthdate ? birthdate + 'T00:00:00Z' : null]
+      `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, location, assigned_class, created_at)
+       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9, NOW())
+       RETURNING id, name, parent_email, parent_name, belt, location, assigned_class`,
+      [clubId, name, parentEmail || null, parentName || null, parentPhone || null, belt || 'White', birthdate ? birthdate + 'T00:00:00Z' : null, location || null, assignedClass || null]
     );
     const student = studentResult.rows[0];
 
