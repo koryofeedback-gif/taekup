@@ -2286,7 +2286,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         parentPhone: tempStudent.parentPhone,
                         parentPassword: tempStudent.parentPassword,
                         belt: belt?.name || 'White',
-                        birthdate: tempStudent.birthday
+                        birthdate: tempStudent.birthday,
+                        location: tempStudent.location || data.branchNames?.[0] || 'Main Location',
+                        assignedClass: tempStudent.assignedClass || 'General'
                     })
                 });
                 const result = await response.json();
