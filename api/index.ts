@@ -1755,6 +1755,10 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_cs_challenge ON challenge_submissions(challenge_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_cs_answer ON challenge_submissions(answer)`);
     
+    // Add location and assigned_class columns to students table
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS location VARCHAR(255)`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS assigned_class VARCHAR(255)`);
+    
     // Create daily_challenges table if missing
     await client.query(`
       CREATE TABLE IF NOT EXISTS daily_challenges (
