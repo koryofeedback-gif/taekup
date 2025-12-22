@@ -218,6 +218,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             
             if (result.success) {
                 setCompletedFamilyToday(prev => [...prev, challengeId]);
+                // Update serverTotalXP immediately for header display
+                if (typeof result.newTotalXp === 'number') {
+                    setServerTotalXP(result.newTotalXp);
+                    setRivalStats(prev => ({ ...prev, xp: result.newTotalXp }));
+                    console.log('[FamilyChallenge] XP updated:', result.newTotalXp);
+                }
                 return { success: true, xpAwarded: result.xpAwarded, newTotalXp: result.newTotalXp };
             }
             
@@ -630,18 +636,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 setQuizExplanation(result.explanation || '');
                 setMysteryBoxCompletedCount(prev => prev + 1);
                 
-                // Update local stats
-                setRivalStats(prev => ({
-                    ...prev,
-                    wins: prev.wins + (result.isCorrect ? 1 : 0),
-                    xp: prev.xp + result.xpAwarded
-                }));
-                
-                // Update header XP - add the newly earned XP to student
-                const newTotalXp = (student.totalPoints || 0) + (result.xpAwarded || 0);
-                const updatedStudent = { ...student, totalPoints: newTotalXp };
-                onUpdateStudent(updatedStudent);
-                console.log('[MysteryChallenge] Updated student XP in header:', newTotalXp);
+                // Update local stats and serverTotalXP for header display
+                const xpEarned = result.xpAwarded || 0;
+                if (typeof result.newTotalXp === 'number') {
+                    setServerTotalXP(result.newTotalXp);
+                    setRivalStats(prev => ({ ...prev, wins: prev.wins + (result.isCorrect ? 1 : 0), xp: result.newTotalXp }));
+                } else {
+                    setServerTotalXP(prev => prev + xpEarned);
+                    setRivalStats(prev => ({ ...prev, wins: prev.wins + (result.isCorrect ? 1 : 0), xp: prev.xp + xpEarned }));
+                }
+                console.log('[MysteryChallenge] XP updated: +', xpEarned);
             }
         } catch (error) {
             console.error('[MysteryChallenge] Submit error:', error);
@@ -702,17 +706,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 // Mark as completed in localStorage (1x daily limit)
                 markChallengeCompleted(selectedChallenge);
                 
+                const xpEarned = result.xpAwarded || result.earned_xp || 0;
                 setSoloResult({
                     success: true,
                     message: result.message,
-                    xp: result.xpAwarded || result.earned_xp || 0
+                    xp: xpEarned
                 });
                 
-                if (proofType === 'TRUST') {
-                    setRivalStats(prev => ({
-                        ...prev,
-                        xp: prev.xp + (result.xpAwarded || result.earned_xp || 0)
-                    }));
+                // Update XP display immediately (add earned XP to current total)
+                if (xpEarned > 0) {
+                    if (typeof result.newTotalXp === 'number') {
+                        setServerTotalXP(result.newTotalXp);
+                        setRivalStats(prev => ({ ...prev, xp: result.newTotalXp }));
+                    } else {
+                        setServerTotalXP(prev => prev + xpEarned);
+                        setRivalStats(prev => ({ ...prev, xp: prev.xp + xpEarned }));
+                    }
+                    console.log('[Arena] XP updated: +', xpEarned);
                 }
                 
                 setSoloScore('');
@@ -1058,9 +1068,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 // Sync with actual values from server (source of truth)
                 setHabitXpToday(apiData.dailyXpEarned || 0);
                 setAtDailyLimit(apiData.atDailyLimit || false);
-                // Update header XP from server's newTotalXp (lifetime_xp)
+                // Update header XP from server's newTotalXp (single source of truth)
                 if (typeof apiData.newTotalXp === 'number') {
                     setRivalStats(prev => ({ ...prev, xp: apiData.newTotalXp }));
+                    setServerTotalXP(apiData.newTotalXp);
                     console.log('[HomeDojo] XP synced from server:', apiData.newTotalXp, 'Daily:', apiData.dailyXpEarned, '/', apiData.dailyXpCap);
                 }
             } else if (apiData.alreadyCompleted) {
