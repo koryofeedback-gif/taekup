@@ -2300,11 +2300,19 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
 
     const history = result.rows.map(row => {
       const challengeType = row.challenge_type || 'unknown';
-      const meta = CHALLENGE_METADATA[challengeType] || { 
-        name: challengeType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()), 
-        icon: '⚡', 
-        category: 'General' 
-      };
+      let meta = CHALLENGE_METADATA[challengeType];
+      if (!meta) {
+        // For custom challenges, show friendly name instead of ugly ID
+        if (challengeType.startsWith('custom_')) {
+          meta = { name: 'Custom Challenge', icon: '⭐', category: 'Coach Picks' };
+        } else {
+          meta = { 
+            name: challengeType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()), 
+            icon: '⚡', 
+            category: 'General' 
+          };
+        }
+      }
 
       return {
         id: row.id,
