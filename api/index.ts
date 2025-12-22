@@ -889,7 +889,16 @@ async function handleStudentDelete(req: VercelRequest, res: VercelResponse, stud
       return res.status(404).json({ error: 'Student not found' });
     }
     
-    // Delete the student (cascade will handle related records)
+    // Delete related records first (in order to avoid foreign key constraints)
+    await client.query('DELETE FROM habit_logs WHERE student_id = $1::uuid', [studentId]);
+    await client.query('DELETE FROM challenge_submissions WHERE student_id = $1::uuid', [studentId]);
+    await client.query('DELETE FROM class_feedback WHERE student_id = $1::uuid', [studentId]);
+    await client.query('DELETE FROM promotions WHERE student_id = $1::uuid', [studentId]);
+    try { await client.query('DELETE FROM challenge_videos WHERE student_id = $1::uuid', [studentId]); } catch (e) { /* may not exist */ }
+    try { await client.query('DELETE FROM family_challenge_completions WHERE student_id = $1::uuid', [studentId]); } catch (e) { /* may not exist */ }
+    try { await client.query('DELETE FROM daily_challenge_completions WHERE student_id = $1::uuid', [studentId]); } catch (e) { /* may not exist */ }
+    
+    // Now delete the student
     await client.query('DELETE FROM students WHERE id = $1::uuid', [studentId]);
     
     console.log(`[StudentDelete] Deleted student ${studentId}: ${check.rows[0].name}`);
