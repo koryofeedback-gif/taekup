@@ -897,6 +897,9 @@ async function handleStudentDelete(req: VercelRequest, res: VercelResponse, stud
     try { await client.query('DELETE FROM challenge_videos WHERE student_id = $1::uuid', [studentId]); } catch (e) { /* may not exist */ }
     try { await client.query('DELETE FROM family_challenge_completions WHERE student_id = $1::uuid', [studentId]); } catch (e) { /* may not exist */ }
     try { await client.query('DELETE FROM daily_challenge_completions WHERE student_id = $1::uuid', [studentId]); } catch (e) { /* may not exist */ }
+    try { await client.query('DELETE FROM family_logs WHERE student_id = $1::uuid', [studentId]); } catch (e) { /* may not exist */ }
+    try { await client.query('DELETE FROM custom_habits WHERE student_id = $1::uuid', [studentId]); } catch (e) { /* may not exist */ }
+    try { await client.query('DELETE FROM challenges WHERE from_student_id = $1 OR to_student_id = $1', [studentId]); } catch (e) { /* may not exist */ }
     
     // Now delete the student
     await client.query('DELETE FROM students WHERE id = $1::uuid', [studentId]);
