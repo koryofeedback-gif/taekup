@@ -208,7 +208,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
     );
 }
 
-const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void, onViewPortal?: (id: string) => void }> = ({ data, onUpdateData, onOpenModal, onViewPortal }) => {
+const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void, onViewPortal?: (id: string) => void, onEditStudent?: (student: Student) => void }> = ({ data, onUpdateData, onOpenModal, onViewPortal, onEditStudent }) => {
     const [search, setSearch] = useState('');
     const [locationFilter, setLocationFilter] = useState('All Locations');
     const [classFilter, setClassFilter] = useState('All Classes');
@@ -306,6 +306,11 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                 </td>
                                 <td className="px-6 py-4">{new Date(s.joinDate).toLocaleDateString()}</td>
                                 <td className="px-6 py-4 text-right space-x-3">
+                                    {onEditStudent && (
+                                        <button onClick={() => onEditStudent(s)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs" title="Edit Student">
+                                            Edit
+                                        </button>
+                                    )}
                                     {onViewPortal && (
                                         <button onClick={() => onViewPortal(s.id)} className="text-sky-300 hover:text-blue-300 font-bold text-xs" title="View as Parent">
                                             👁️ Portal
@@ -2011,6 +2016,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     
     // Temporary state for forms
     const [tempStudent, setTempStudent] = useState<Partial<Student>>({});
+    const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
     const [tempCoach, setTempCoach] = useState<Partial<Coach>>({});
     const [tempClass, setTempClass] = useState<Partial<ScheduleItem>>({});
     const [tempEvent, setTempEvent] = useState<Partial<CalendarEvent>>({});
@@ -2497,7 +2503,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
                 <div className="p-6 md:p-12 max-w-7xl mx-auto">
                     {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} />}
-                    {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} />}
+                    {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} />}
                     {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
                     {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
                     {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
@@ -2667,6 +2673,104 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             </button>
                         </div>
                     )}
+                </Modal>
+            )}
+
+            {modalType === 'editStudent' && editingStudentId && (
+                <Modal title="Edit Student" onClose={() => { setModalType(null); setEditingStudentId(null); setTempStudent({}); }}>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 mb-1">Name</label>
+                            <input 
+                                type="text" 
+                                value={tempStudent.name || ''} 
+                                className="w-full bg-gray-700 rounded p-2 text-white" 
+                                onChange={e => setTempStudent({...tempStudent, name: e.target.value})} 
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 mb-1">Belt</label>
+                                <select 
+                                    className="w-full bg-gray-700 rounded p-2 text-white" 
+                                    value={tempStudent.beltId || ''}
+                                    onChange={e => setTempStudent({...tempStudent, beltId: e.target.value})}
+                                >
+                                    <option value="">Select Belt</option>
+                                    {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 mb-1">Stripes</label>
+                                <input 
+                                    type="number" 
+                                    value={tempStudent.stripes ?? 0} 
+                                    className="w-full bg-gray-700 rounded p-2 text-white" 
+                                    onChange={e => setTempStudent({...tempStudent, stripes: parseInt(e.target.value) || 0})} 
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 mb-1">Location</label>
+                                <select 
+                                    className="w-full bg-gray-700 rounded p-2 text-white" 
+                                    value={tempStudent.location || ''}
+                                    onChange={e => setTempStudent({...tempStudent, location: e.target.value, assignedClass: ''})}
+                                >
+                                    <option value="">Select Location</option>
+                                    {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 mb-1">Class</label>
+                                <select 
+                                    className="w-full bg-gray-700 rounded p-2 text-white" 
+                                    value={tempStudent.assignedClass || ''}
+                                    onChange={e => setTempStudent({...tempStudent, assignedClass: e.target.value})}
+                                >
+                                    <option value="">Select Class</option>
+                                    {(() => {
+                                        const loc = tempStudent.location || '';
+                                        const classes = loc ? (data.locationClasses?.[loc] || []) : (data.classes || []);
+                                        return classes.map(c => <option key={c} value={c}>{c}</option>);
+                                    })()}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="border-t border-gray-600 pt-4">
+                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent Info</p>
+                            <input 
+                                type="text" 
+                                placeholder="Parent Name" 
+                                value={tempStudent.parentName || ''} 
+                                className="w-full bg-gray-700 rounded p-2 text-white mb-2" 
+                                onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} 
+                            />
+                            <input 
+                                type="email" 
+                                placeholder="Parent Email" 
+                                value={tempStudent.parentEmail || ''} 
+                                className="w-full bg-gray-700 rounded p-2 text-white" 
+                                onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} 
+                            />
+                        </div>
+                        <button 
+                            onClick={() => {
+                                if (!editingStudentId) return;
+                                const updatedStudents = data.students.map(s => 
+                                    s.id === editingStudentId ? { ...s, ...tempStudent } : s
+                                );
+                                onUpdateData({ students: updatedStudents });
+                                setModalType(null);
+                                setEditingStudentId(null);
+                                setTempStudent({});
+                            }} 
+                            className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
                 </Modal>
             )}
 
