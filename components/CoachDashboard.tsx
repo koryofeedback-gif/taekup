@@ -106,27 +106,17 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ students, belts }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
     
-    // Get start of current month for filtering
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    // Mode 1: Monthly Effort - SUM of points earned from class logs this month
+    // Mode 1: Monthly Effort - Use lifetimeXp (XP from grading, normalized)
     const monthlyEffortStudents = useMemo(() => {
         return [...students]
-            .map(student => {
-                const monthlyPTS = (student.performanceHistory || [])
-                    .filter(record => new Date(record.date) >= monthStart)
-                    .reduce((sum, record) => {
-                        const scores = Object.values(record.scores || {});
-                        const classPTS = calculateClassPTS(scores);
-                        return sum + classPTS + (record.bonusPoints || 0);
-                    }, 0);
-                return { ...student, displayPTS: monthlyPTS };
-            })
-            .sort((a, b) => b.displayPTS - a.displayPTS)
-            .filter(s => s.displayPTS > 0)
+            .map(student => ({
+                ...student,
+                displayXP: student.lifetimeXp || student.totalXP || 0
+            }))
+            .sort((a, b) => b.displayXP - a.displayXP)
+            .filter(s => s.displayXP > 0)
             .slice(0, 3);
-    }, [students, monthStart.getTime()]);
+    }, [students]);
     
     // Mode 2: Belt Progress - Live current_stripe_points (totalPoints)
     const beltProgressStudents = useMemo(() => {
@@ -231,12 +221,14 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                     </div>
                 </div>
                 <p className="text-xs text-gray-500 mb-2">
-                    {leaderboardMode === 'effort' ? 'Points earned this month' : 'Current stripe progress'}
+                    {leaderboardMode === 'effort' ? 'XP earned (Dojang Rivals)' : 'Current stripe progress'}
                 </p>
                 <div className="space-y-3">
                     {topStudents.map((s, i) => {
                         const belt = belts.find(b => b.id === s.beltId);
                         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
+                        const displayValue = leaderboardMode === 'effort' ? (s as any).displayXP : s.displayPTS;
+                        const displayLabel = leaderboardMode === 'effort' ? 'XP' : 'PTS';
                         return (
                             <div key={s.id} className="flex items-center justify-between bg-gray-800 p-2 rounded border border-gray-700">
                                 <div className="flex items-center">
@@ -246,13 +238,13 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ stude
                                         <p className="text-xs text-gray-400">{belt?.name}</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-bold text-sky-300">{s.displayPTS} PTS</span>
+                                <span className={`text-sm font-bold ${leaderboardMode === 'effort' ? 'text-purple-400' : 'text-sky-300'}`}>{displayValue} {displayLabel}</span>
                             </div>
                         )
                     })}
                     {topStudents.length === 0 && (
                         <p className="text-sm text-gray-500 italic">
-                            {leaderboardMode === 'effort' ? 'No activity this month.' : 'No students with points yet.'}
+                            {leaderboardMode === 'effort' ? 'No XP earned yet.' : 'No students with points yet.'}
                         </p>
                     )}
                 </div>
