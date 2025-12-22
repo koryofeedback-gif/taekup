@@ -210,8 +210,8 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
                     <InfoLine label="Gender" value={student.gender} />
                     <InfoLine label="Location" value={student.location} />
                     <InfoLine label="Assigned Class" value={student.assignedClass} />
-                    <InfoLine label="Join Date" value={new Date(student.joinDate).toLocaleDateString()} />
-                    <InfoLine label="Attendance" value={`${student.attendanceCount} classes`} />
+                    <InfoLine label="Join Date" value={student.joinDate ? new Date(student.joinDate).toLocaleDateString() : 'N/A'} />
+                    <InfoLine label="Attendance" value={`${student.attendanceCount ?? 0} classes`} />
                     <InfoLine label="Medical Info" value={student.medicalInfo || 'None'} />
                     <div className="border-t border-gray-700 pt-2 mt-2">
                         <h4 className="text-xs font-bold text-gray-500 uppercase mb-1">Parent Info</h4>
