@@ -18,6 +18,10 @@ export const SCORE_VALUES = {
   RED: 0,
 } as const;
 
+// Fixed limits for grading bonuses (prevents cheating for world rankings)
+export const MAX_COACH_BONUS = 2;
+export const MAX_HOMEWORK_BONUS = 2;
+
 /**
  * Challenge Tier System (Anti-Cheat Logic)
  * 
@@ -142,6 +146,66 @@ export function calculateClassXP(scores: (number | null | undefined)[]): number 
 }
 
 export const MAX_CLASS_XP = 100;
+
+/**
+ * Calculate Grading XP - Fair Normalized Method with Bonus/Homework
+ * 
+ * This ensures XP is fair across all sports regardless of grading item count.
+ * Bonus and homework points are included in the normalization.
+ * 
+ * Formula: (earned / possible) × 100
+ * 
+ * Where:
+ * - earned = sum of scores + coachBonus + homework
+ * - possible = (items × 2) + MAX_COACH_BONUS (if enabled) + MAX_HOMEWORK_BONUS (if enabled)
+ * 
+ * @param scores - Array of score values (Green=2, Yellow=1, Red=0)
+ * @param coachBonus - Coach bonus points awarded (capped at MAX_COACH_BONUS)
+ * @param homework - Homework points awarded (capped at MAX_HOMEWORK_BONUS)
+ * @param coachBonusEnabled - Whether coach bonus feature is enabled for this club
+ * @param homeworkEnabled - Whether homework feature is enabled for this club
+ * @returns Normalized XP value (0-100)
+ * 
+ * @example
+ * // 4 items all green (8), bonus 2, homework 1, both features enabled
+ * // earned = 8 + 2 + 1 = 11
+ * // possible = 8 + 2 + 2 = 12
+ * // XP = (11/12) × 100 = 92
+ * calculateGradingXP([2,2,2,2], 2, 1, true, true) // returns 92
+ */
+export function calculateGradingXP(
+  scores: (number | null | undefined)[],
+  coachBonus: number = 0,
+  homework: number = 0,
+  coachBonusEnabled: boolean = false,
+  homeworkEnabled: boolean = false
+): number {
+  const validScores = scores.filter((s): s is number => s !== null && s !== undefined);
+  
+  if (validScores.length === 0) {
+    return 0;
+  }
+  
+  // Cap bonus/homework at max values
+  const cappedBonus = Math.min(coachBonus, MAX_COACH_BONUS);
+  const cappedHomework = Math.min(homework, MAX_HOMEWORK_BONUS);
+  
+  // Calculate earned points
+  const earnedScores = validScores.reduce((sum, score) => sum + score, 0);
+  const earnedTotal = earnedScores + cappedBonus + cappedHomework;
+  
+  // Calculate possible points (include bonus/homework max only if feature is enabled)
+  const maxScores = validScores.length * SCORE_VALUES.GREEN;
+  const maxBonus = coachBonusEnabled ? MAX_COACH_BONUS : 0;
+  const maxHomework = homeworkEnabled ? MAX_HOMEWORK_BONUS : 0;
+  const possibleTotal = maxScores + maxBonus + maxHomework;
+  
+  // Avoid division by zero
+  if (possibleTotal === 0) return 0;
+  
+  // Normalize to 0-100 scale
+  return Math.round((earnedTotal / possibleTotal) * 100);
+}
 
 /**
  * Calculate PTS with bonus points

@@ -6,7 +6,7 @@ import { generateLessonPlanGPT } from '../services/openaiService';
 import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
 import { CoachLeaderboard } from './CoachLeaderboard';
-import { calculateClassPTS, calculateClassXP } from '../services/gamificationService';
+import { calculateClassPTS, calculateGradingXP, MAX_COACH_BONUS, MAX_HOMEWORK_BONUS } from '../services/gamificationService';
 
 // --- TYPE DEFINITIONS ---
 type SessionScores = Record<string, Record<string, number | null>>;
@@ -1140,11 +1140,11 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     };
     
     const handleBonusChange = (studentId: string, points: number) => {
-        setBonusPoints(prev => ({...prev, [studentId]: Math.max(0, points)}));
+        setBonusPoints(prev => ({...prev, [studentId]: Math.min(MAX_COACH_BONUS, Math.max(0, points))}));
     };
 
     const handleHomeworkChange = (studentId: string, points: number) => {
-        setHomeworkPoints(prev => ({...prev, [studentId]: Math.max(0, points)}));
+        setHomeworkPoints(prev => ({...prev, [studentId]: Math.min(MAX_HOMEWORK_BONUS, Math.max(0, points))}));
     };
 
     const handleBulkScore = (score: number | null) => {
@@ -1227,15 +1227,22 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             if (!attendance[student.id]) return student;
 
             const studentScores = sessionScores[student.id] || {};
-            const studentBonus = bonusPoints[student.id] || 0;
-            const studentHomework = homeworkPoints[student.id] || 0;
+            const studentBonus = Math.min(bonusPoints[student.id] || 0, MAX_COACH_BONUS);
+            const studentHomework = Math.min(homeworkPoints[student.id] || 0, MAX_HOMEWORK_BONUS);
             
             // Calculate raw PTS for stripe progress + normalized XP for Dojang Rivals
             const scoresArray = Object.values(studentScores);
             const classPTS = calculateClassPTS(scoresArray);
-            const classXP = calculateClassXP(scoresArray);
             const sessionTotal = classPTS + studentBonus + studentHomework;
-            const sessionXP = classXP + studentBonus + studentHomework;
+            
+            // Calculate fair normalized XP (includes bonus/homework in the formula)
+            const gradingXP = calculateGradingXP(
+                scoresArray,
+                studentBonus,
+                studentHomework,
+                data.coachBonus || false,
+                data.homeworkBonus || false
+            );
             
             if (sessionTotal === 0 && Object.values(studentScores).every(s => s === null)) return student;
 
@@ -1266,12 +1273,12 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
             // Calculate new lifetimeXp (normalized XP for Dojang Rivals - never resets)
             const lifetimeXpBefore = student.lifetimeXp || 0;
-            const lifetimeXpAfter = lifetimeXpBefore + classXP; // Only add normalized classXP (bonuses are for PTS)
+            const lifetimeXpAfter = lifetimeXpBefore + gradingXP; // Fair normalized XP with bonus/homework
 
             return { 
                 ...student, 
                 totalPoints: totalPointsAfter,
-                lifetimeXp: lifetimeXpAfter, // Add normalized XP for Dojang Rivals
+                lifetimeXp: lifetimeXpAfter, // Fair normalized XP for Dojang Rivals
                 attendanceCount: (student.attendanceCount || 0) + 1,
                 performanceHistory: [...(student.performanceHistory || []), newPerformanceRecord],
                 feedbackHistory: newFeedbackRecord ? [...(student.feedbackHistory || []), newFeedbackRecord] : (student.feedbackHistory || []),
@@ -1394,8 +1401,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     
     const calculateRowData = (student: Student) => {
         const studentScores = sessionScores[student.id] || {};
-        const studentBonus = bonusPoints[student.id] || 0;
-        const studentHomework = homeworkPoints[student.id] || 0;
+        const studentBonus = Math.min(bonusPoints[student.id] || 0, MAX_COACH_BONUS);
+        const studentHomework = Math.min(homeworkPoints[student.id] || 0, MAX_HOMEWORK_BONUS);
         
         // Calculate raw PTS for stripe progress (display in grading table)
         const scoresArray = attendance[student.id] ? Object.values(studentScores) : [];
