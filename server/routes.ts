@@ -3027,22 +3027,18 @@ export function registerRoutes(app: Express) {
         WHERE club_id = ${clubId}::uuid 
       `);
 
-      // Calculate monthly XP from log tables (since we need date filtering)
+      // Calculate monthly XP from xp_transactions (the audit log)
       const monthStart = new Date();
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
       const monthStartStr = monthStart.toISOString();
 
       const monthlyXpData = await db.execute(sql`
-        SELECT 
-          s.id as student_id,
-          COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = s.id AND created_at >= ${monthStartStr}::timestamp), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = s.id AND created_at >= ${monthStartStr}::timestamp), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = s.id AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED') AND completed_at >= ${monthStartStr}::timestamp), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM content_views WHERE student_id = s.id AND completed = true AND created_at >= ${monthStartStr}::timestamp), 0)
-          AS monthly_xp
-        FROM students s
-        WHERE s.club_id = ${clubId}::uuid
+        SELECT student_id, COALESCE(SUM(amount), 0) as monthly_xp
+        FROM xp_transactions 
+        WHERE student_id IN (SELECT id FROM students WHERE club_id = ${clubId}::uuid)
+          AND type = 'EARN' AND created_at >= ${monthStartStr}::timestamp
+        GROUP BY student_id
       `);
       const monthlyXpMap = new Map((monthlyXpData as any[]).map(r => [r.student_id, parseInt(r.monthly_xp) || 0]));
 
