@@ -1409,7 +1409,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         if (customChallenge) {
             return { name: customChallenge.name, category: 'Coach Picks' };
         }
-        return allChallenges[challengeId] || { name: challengeId, category: 'Power' };
+        // If it's a custom challenge ID but not in loaded data, show friendly name
+        if (challengeId.startsWith('custom_')) {
+            return { name: 'Custom Challenge', category: 'Coach Picks' };
+        }
+        return allChallenges[challengeId] || { name: challengeId, category: 'General' };
     };
 
     const handleVideoUpload = async () => {
