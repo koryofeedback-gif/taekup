@@ -2860,9 +2860,16 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    const studentsResult = await client.query(
-      `SELECT id, name, belt, stripes, COALESCE(total_xp, 0) as total_xp 
-       FROM students WHERE club_id = $1::uuid`,
+    // Calculate REAL total XP from all sources for each student
+    const studentsResult = await client.query(`
+      SELECT 
+        s.id, s.name, s.belt, s.stripes,
+        COALESCE(s.total_xp, 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = s.id), 0) +
+        COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = s.id), 0) +
+        COALESCE((SELECT SUM(amount) FROM xp_transactions WHERE student_id = s.id AND type = 'EARN'), 0)
+        AS calculated_total_xp
+      FROM students s WHERE s.club_id = $1::uuid`,
       [clubId]
     );
 
@@ -2889,7 +2896,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
       name: s.name,
       belt: s.belt,
       stripes: s.stripes || 0,
-      totalXP: parseInt(s.total_xp) || 0,
+      totalXP: parseInt(s.calculated_total_xp) || 0,
       monthlyXP: monthlyXpMap.get(s.id) || 0
     }))
     .sort((a: any, b: any) => b.totalXP - a.totalXP)
