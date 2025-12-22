@@ -2422,29 +2422,46 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     const renderRivals = () => {
         const classmates = data.students.filter(s => s.id !== student.id);
-        const allStudentsForLeaderboard = data.students;
+        
+        // For home users (no club), ensure current student appears in leaderboard
+        // Use apiLeaderboardData if available, otherwise create entry from serverTotalXP
+        let allStudentsForLeaderboard = data.students.length > 0 ? data.students : [];
+        
+        // If current student not in list, add them (handles home users)
+        if (!allStudentsForLeaderboard.find(s => s.id === student.id)) {
+            allStudentsForLeaderboard = [{
+                ...student,
+                totalXP: serverTotalXP || 0
+            } as any, ...allStudentsForLeaderboard];
+        }
         
         // Get start of current month for monthly XP calculation
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         
-        // Calculate Monthly XP leaderboard - USE FRESH API DATA instead of cached performanceHistory
+        // Calculate Monthly XP leaderboard - USE FRESH API DATA or serverTotalXP
         const monthlyLeaderboard = allStudentsForLeaderboard
             .map(s => {
                 // Find this student's monthly XP from fresh API data
                 const apiStudent = apiLeaderboardData.find(a => a.id === s.id);
-                const freshMonthlyXP = apiStudent?.monthlyXP ?? 0;
+                // For current user, use serverTotalXP as fallback for monthly (approximation for home users)
+                const freshMonthlyXP = s.id === student.id 
+                    ? (apiStudent?.monthlyXP ?? serverTotalXP ?? 0)
+                    : (apiStudent?.monthlyXP ?? 0);
                 return { ...s, displayXP: freshMonthlyXP, isYou: s.id === student.id };
             })
             .sort((a, b) => b.displayXP - a.displayXP)
             .map((s, i) => ({ ...s, rank: i + 1 }));
         
-        // Calculate All-Time XP leaderboard - USE FRESH API DATA instead of cached values
+        // Calculate All-Time XP leaderboard - USE FRESH API DATA or serverTotalXP
         const allTimeLeaderboard = allStudentsForLeaderboard
             .map(s => {
                 // Find this student's XP from fresh API data
                 const apiStudent = apiLeaderboardData.find(a => a.id === s.id);
-                const freshXP = apiStudent?.totalXP ?? 0;
+                // For current user, use serverTotalXP as primary source
+                const freshXP = s.id === student.id 
+                    ? (serverTotalXP || apiStudent?.totalXP || 0)
+                    : (apiStudent?.totalXP ?? 0);
                 return {
                     ...s,
                     displayXP: freshXP,
