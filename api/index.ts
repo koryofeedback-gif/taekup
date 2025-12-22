@@ -885,6 +885,10 @@ async function handleStudentUpdate(req: VercelRequest, res: VercelResponse, stud
   
   const client = await pool.connect();
   try {
+    // Auto-migrate: add columns if they don't exist
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS location VARCHAR(255)`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS assigned_class VARCHAR(255)`);
+    
     // Verify student exists
     const studentCheck = await client.query('SELECT id, club_id FROM students WHERE id = $1::uuid', [studentId]);
     if (studentCheck.rows.length === 0) {
