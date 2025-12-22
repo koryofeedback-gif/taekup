@@ -320,7 +320,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                     <div className="text-white">{s.location}</div>
                                     <div className="text-xs text-gray-500">{s.assignedClass}</div>
                                 </td>
-                                <td className="px-6 py-4">{new Date(s.joinDate).toLocaleDateString()}</td>
+                                <td className="px-6 py-4">{s.joinDate ? new Date(s.joinDate).toLocaleDateString() : 'N/A'}</td>
                                 <td className="px-6 py-4 text-right space-x-3">
                                     {onEditStudent && (
                                         <button onClick={() => onEditStudent(s)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs" title="Edit Student">
