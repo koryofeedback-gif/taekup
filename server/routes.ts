@@ -557,7 +557,7 @@ export function registerRoutes(app: Express) {
             birthday: s.birthdate,
             totalXP: s.total_xp || 0,
             totalPoints: s.total_points || 0,
-            lifetimeXp: s.lifetime_xp || 0,
+            lifetimeXp: s.total_xp || 0,
             currentStreak: 0,
             stripeCount: s.stripes || 0,
             performanceHistory: [],
