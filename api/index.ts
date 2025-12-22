@@ -101,6 +101,29 @@ function parseBody(req: VercelRequest) {
   return typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
 }
 
+// UNIFIED XP HELPER - Single source of truth for all XP changes
+async function applyXpDelta(client: any, studentId: string, amount: number, reason: string): Promise<number> {
+  if (amount === 0) return 0;
+  
+  // Update students.total_xp (THE SINGLE SOURCE OF TRUTH)
+  const result = await client.query(
+    `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() 
+     WHERE id = $2::uuid RETURNING total_xp`,
+    [amount, studentId]
+  );
+  
+  // Log to xp_transactions for audit trail only
+  await client.query(
+    `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+     VALUES ($1::uuid, $2, $3, $4, NOW())`,
+    [studentId, Math.abs(amount), amount > 0 ? 'EARN' : 'SPEND', reason]
+  );
+  
+  const newTotal = result.rows[0]?.total_xp || 0;
+  console.log(`[XP] ${amount > 0 ? '+' : ''}${amount} XP to ${studentId} (${reason}) → Total: ${newTotal}`);
+  return newTotal;
+}
+
 async function handleLogin(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -1502,12 +1525,9 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
     
     const video = result.rows[0];
     
-    // If approved, award XP to student
+    // If approved, award XP using unified helper
     if (status === 'approved' && xpAwarded > 0) {
-      await client.query(
-        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
-        [xpAwarded, video.student_id]
-      );
+      await applyXpDelta(client, video.student_id, xpAwarded, 'video_approved');
     }
     
     return res.json({ success: true, video: result.rows[0] });
@@ -1966,23 +1986,9 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
       const xpAwarded = isCorrect ? (frontendXpReward || 50) : 0;
       
-      // Award XP directly to student AND log to xp_transactions for persistence
+      // Award XP using unified helper
       if (isCorrect && xpAwarded > 0) {
-        // 1. Update student's total XP
-        await client.query(
-          `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
-          [xpAwarded, studentId]
-        );
-        
-        // 2. Insert into xp_transactions for persistence and duplicate prevention
-        // CRITICAL: Do NOT store string challengeId - just record that daily_challenge happened
-        await client.query(
-          `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-           VALUES ($1::uuid, $2, 'EARN', 'daily_challenge', NOW())`,
-          [studentId, xpAwarded]
-        );
-        
-        console.log(`✅ [DailyChallenge] Fallback XP PERSISTED: ${xpAwarded} XP to student ${studentId}`);
+        await applyXpDelta(client, studentId, xpAwarded, 'daily_challenge');
       }
       
       return res.json({
@@ -2039,12 +2045,9 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       [challengeId, studentId, validClubId, answer || String(selectedIndex), isCorrect, xpAwarded]
     );
 
-    // Update student XP if correct
+    // Update student XP using unified helper
     if (isCorrect && xpAwarded > 0) {
-      await client.query(
-        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
-        [xpAwarded, studentId]
-      );
+      await applyXpDelta(client, studentId, xpAwarded, 'daily_challenge');
     }
 
     console.log(`✅ [DailyChallenge] Submit Success - XP Awarded: ${xpAwarded}`);
@@ -2779,13 +2782,8 @@ async function handleFamilyChallengeSubmit(req: VercelRequest, res: VercelRespon
       [studentId, challengeId, xp, today]
     );
 
-    // Update student's total_xp
-    const updateResult = await client.query(
-      `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid RETURNING total_xp`,
-      [xp, studentId]
-    );
-
-    const newTotalXp = updateResult.rows[0]?.total_xp || 0;
+    // Update student's total_xp using unified helper
+    const newTotalXp = await applyXpDelta(client, studentId, xp, 'family_challenge');
 
     console.log(`[FamilyChallenge] "${challengeId}" completed: +${xp} XP, won: ${won}, new total_xp: ${newTotalXp}`);
 
@@ -2860,16 +2858,10 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    // Calculate REAL total XP from all sources for each student
+    // SIMPLE: Just read from students.total_xp (the single source of truth)
     const studentsResult = await client.query(`
-      SELECT 
-        s.id, s.name, s.belt, s.stripes,
-        COALESCE(s.total_xp, 0) +
-        COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = s.id), 0) +
-        COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = s.id), 0) +
-        COALESCE((SELECT SUM(amount) FROM xp_transactions WHERE student_id = s.id AND type = 'EARN'), 0)
-        AS calculated_total_xp
-      FROM students s WHERE s.club_id = $1::uuid`,
+      SELECT id, name, belt, stripes, COALESCE(total_xp, 0) as total_xp
+      FROM students WHERE club_id = $1::uuid`,
       [clubId]
     );
 
@@ -2878,15 +2870,13 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
     monthStart.setHours(0, 0, 0, 0);
     const monthStartStr = monthStart.toISOString();
 
+    // Monthly XP from xp_transactions only (audit log)
     const monthlyXpResult = await client.query(`
-      SELECT 
-        s.id as student_id,
-        COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = s.id AND created_at >= $2::timestamp), 0) +
-        COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = s.id AND created_at >= $2::timestamp), 0) +
-        COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = s.id AND status IN ('VERIFIED', 'COMPLETED', 'APPROVED') AND completed_at >= $2::timestamp), 0) +
-        COALESCE((SELECT SUM(amount) FROM xp_transactions WHERE student_id = s.id AND type = 'EARN' AND created_at >= $2::timestamp), 0)
-        AS monthly_xp
-      FROM students s WHERE s.club_id = $1::uuid
+      SELECT student_id, COALESCE(SUM(amount), 0) as monthly_xp
+      FROM xp_transactions 
+      WHERE student_id IN (SELECT id FROM students WHERE club_id = $1::uuid)
+        AND type = 'EARN' AND created_at >= $2::timestamp
+      GROUP BY student_id
     `, [clubId, monthStartStr]);
 
     const monthlyXpMap = new Map(monthlyXpResult.rows.map((r: any) => [r.student_id, parseInt(r.monthly_xp) || 0]));
@@ -2896,7 +2886,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
       name: s.name,
       belt: s.belt,
       stripes: s.stripes || 0,
-      totalXP: parseInt(s.calculated_total_xp) || 0,
+      totalXP: parseInt(s.total_xp) || 0,
       monthlyXP: monthlyXpMap.get(s.id) || 0
     }))
     .sort((a: any, b: any) => b.totalXP - a.totalXP)
@@ -3029,11 +3019,8 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
         [challengeUUID, studentId, validClubId, challengeType, score || 0, finalXp]
       );
 
-      // Award XP
-      await client.query(
-        `UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
-        [finalXp, studentId]
-      );
+      // Award XP using unified helper
+      await applyXpDelta(client, studentId, finalXp, 'arena_challenge');
 
       console.log(`[Arena] Trust submission for "${challengeType}": +${finalXp} XP (${count + 1}/${TRUST_PER_CHALLENGE_LIMIT} today)`);
 
