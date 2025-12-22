@@ -169,48 +169,13 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
         }
       }
       
-      // AUTO-SYNC XP: Recalculate total_xp from all XP sources on login (including xp_transactions!)
+      // Read current total_xp (single source of truth - do NOT recalculate)
       if (studentId) {
-        try {
-          // Get XP from legacy logs
-          const logsResult = await client.query(
-            `SELECT 
-              COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
-              COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
-              COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0)
-              AS total`,
-            [studentId]
-          );
-          const logsXp = parseInt(logsResult.rows[0]?.total || '0', 10);
-          
-          // Get XP from xp_transactions (EARN entries like daily_challenge)
-          const earnedResult = await client.query(
-            `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
-             WHERE student_id = $1::uuid AND type = 'EARN'`,
-            [studentId]
-          );
-          const earnedXp = parseInt(earnedResult.rows[0]?.total || '0', 10);
-          
-          // Get XP spent from xp_transactions (SPEND entries like wheel spins)
-          const spentResult = await client.query(
-            `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
-             WHERE student_id = $1::uuid AND type = 'SPEND'`,
-            [studentId]
-          );
-          const spentXp = parseInt(spentResult.rows[0]?.total || '0', 10);
-          
-          // Total = logs + earned - spent
-          const calculatedXp = logsXp + earnedXp - spentXp;
-          
-          // Update student's total_xp to match actual logs
-          await client.query(
-            `UPDATE students SET total_xp = $1 WHERE id = $2::uuid`,
-            [calculatedXp, studentId]
-          );
-          console.log('[Login] XP synced for student:', studentId, '-> logsXp:', logsXp, '+ earnedXp:', earnedXp, '- spentXp:', spentXp, '= total_xp:', calculatedXp);
-        } catch (xpError: any) {
-          console.error('[Login] XP sync error (non-fatal):', xpError.message);
-        }
+        const xpResult = await client.query(
+          `SELECT COALESCE(total_xp, 0) as total_xp FROM students WHERE id = $1::uuid`,
+          [studentId]
+        );
+        console.log('[Login] Student XP:', studentId, '-> total_xp:', xpResult.rows[0]?.total_xp || 0);
       }
     }
 
@@ -245,40 +210,10 @@ async function handleLoginByName(req: VercelRequest, res: VercelResponse) {
     );
     
     if (existingResult.rows.length > 0) {
-      // Step B: Found existing student - return their ID
+      // Step B: Found existing student - return their current XP (single source of truth)
       const student = existingResult.rows[0];
-      console.log(`[LoginByName] Found existing student: ${student.name} (${student.id}), XP: ${student.total_xp}`);
-      
-      // Sync XP from ALL sources (including xp_transactions!)
-      const logsResult = await client.query(
-        `SELECT 
-          COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
-          COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0)
-          AS total`,
-        [student.id]
-      );
-      const logsXp = parseInt(logsResult.rows[0]?.total || '0', 10);
-      
-      // Get XP from xp_transactions (EARN entries like daily_challenge)
-      const earnedResult = await client.query(
-        `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
-         WHERE student_id = $1::uuid AND type = 'EARN'`,
-        [student.id]
-      );
-      const earnedXp = parseInt(earnedResult.rows[0]?.total || '0', 10);
-      
-      // Get XP spent from xp_transactions (SPEND entries)
-      const spentResult = await client.query(
-        `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
-         WHERE student_id = $1::uuid AND type = 'SPEND'`,
-        [student.id]
-      );
-      const spentXp = parseInt(spentResult.rows[0]?.total || '0', 10);
-      
-      const calculatedXp = logsXp + earnedXp - spentXp;
-      await client.query(`UPDATE students SET total_xp = $1 WHERE id = $2::uuid`, [calculatedXp, student.id]);
-      console.log('[LoginByName] XP synced:', student.id, '-> logsXp:', logsXp, '+ earnedXp:', earnedXp, '- spentXp:', spentXp, '= total:', calculatedXp);
+      const currentXp = parseInt(student.total_xp || '0', 10);
+      console.log(`[LoginByName] Found existing student: ${student.name} (${student.id}), XP: ${currentXp}`);
       
       return res.json({
         success: true,
@@ -286,7 +221,7 @@ async function handleLoginByName(req: VercelRequest, res: VercelResponse) {
         student: {
           id: student.id,
           name: student.name,
-          totalXp: calculatedXp,
+          totalXp: currentXp,
           clubId: student.club_id
         }
       });
