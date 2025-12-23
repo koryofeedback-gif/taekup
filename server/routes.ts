@@ -1279,7 +1279,7 @@ export function registerRoutes(app: Express) {
   app.patch('/api/students/:id/grading', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { totalPoints, lifetimeXp, attendanceCount } = req.body;
+      const { totalPoints, lifetimeXp, sessionXp } = req.body;
       
       if (!id) {
         return res.status(400).json({ error: 'Student ID is required' });
@@ -1293,6 +1293,16 @@ export function registerRoutes(app: Express) {
           updated_at = NOW()
         WHERE id = ${id}::uuid
       `);
+
+      // Log XP transaction for monthly tracking (if XP was earned this session)
+      const xpEarned = sessionXp || 0;
+      if (xpEarned > 0) {
+        await db.execute(sql`
+          INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+          VALUES (${id}::uuid, ${xpEarned}, 'EARN', 'Class grading', NOW())
+        `);
+        console.log('[Grading] Logged XP transaction:', id, '+', xpEarned, 'XP');
+      }
 
       console.log('[Grading] Updated student:', id, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
       res.json({ success: true });

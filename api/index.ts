@@ -1026,7 +1026,7 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
-  const { totalPoints, lifetimeXp } = parseBody(req);
+  const { totalPoints, lifetimeXp, sessionXp } = parseBody(req);
   
   if (!studentId) {
     return res.status(400).json({ error: 'Student ID is required' });
@@ -1043,6 +1043,17 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
       WHERE id = $3::uuid`,
       [totalPoints, lifetimeXp, studentId]
     );
+
+    // Log XP transaction for monthly tracking (if XP was earned this session)
+    const xpEarned = sessionXp || 0;
+    if (xpEarned > 0) {
+      await client.query(
+        `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+         VALUES ($1::uuid, $2, 'EARN', 'Class grading', NOW())`,
+        [studentId, xpEarned]
+      );
+      console.log('[Grading] Logged XP transaction:', studentId, '+', xpEarned, 'XP');
+    }
 
     console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
     return res.json({ success: true });

@@ -1279,6 +1279,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 ...student, 
                 totalPoints: totalPointsAfter,
                 lifetimeXp: lifetimeXpAfter, // Fair normalized XP for Dojang Rivals
+                sessionXp: gradingXP, // Store session XP for API call
                 attendanceCount: (student.attendanceCount || 0) + 1,
                 performanceHistory: [...(student.performanceHistory || []), newPerformanceRecord],
                 feedbackHistory: newFeedbackRecord ? [...(student.feedbackHistory || []), newFeedbackRecord] : (student.feedbackHistory || []),
@@ -1289,7 +1290,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         setStudents(updatedStudents);
         resetDashboard();
 
-        // Persist grading data to database (totalPoints + lifetimeXp)
+        // Persist grading data to database (totalPoints + lifetimeXp + sessionXp for monthly tracking)
         updatedStudents.forEach(async (student) => {
             if (attendance[student.id]) {
                 try {
@@ -1298,7 +1299,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             totalPoints: student.totalPoints,
-                            lifetimeXp: student.lifetimeXp
+                            lifetimeXp: student.lifetimeXp,
+                            sessionXp: (student as any).sessionXp || 0
                         })
                     });
                 } catch (err) {
