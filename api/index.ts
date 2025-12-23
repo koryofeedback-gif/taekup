@@ -3209,31 +3209,12 @@ const DOJO_EVOLUTION_STAGES = [
 ];
 
 async function calculateDojoXp(client: any, studentId: string): Promise<number> {
-  const earned = await client.query(
-    `SELECT 
-      COALESCE((SELECT SUM(xp_awarded) FROM habit_logs WHERE student_id = $1::uuid), 0) +
-      COALESCE((SELECT SUM(xp_awarded) FROM family_logs WHERE student_id = $1::uuid), 0) +
-      COALESCE((SELECT SUM(xp_awarded) FROM challenge_submissions WHERE student_id = $1::uuid), 0)
-      AS total`,
+  // Use students.total_xp as the single source of truth
+  const result = await client.query(
+    `SELECT COALESCE(total_xp, 0) as total_xp FROM students WHERE id = $1::uuid`,
     [studentId]
   );
-  const totalEarned = parseInt(earned.rows[0]?.total || '0', 10);
-
-  const xpEarned = await client.query(
-    `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
-     WHERE student_id = $1::uuid AND type = 'EARN'`,
-    [studentId]
-  );
-  const totalXpEarned = parseInt(xpEarned.rows[0]?.total || '0', 10);
-
-  const spent = await client.query(
-    `SELECT COALESCE(SUM(amount), 0) AS total FROM xp_transactions 
-     WHERE student_id = $1::uuid AND type = 'SPEND'`,
-    [studentId]
-  );
-  const totalSpent = parseInt(spent.rows[0]?.total || '0', 10);
-
-  return totalEarned + totalXpEarned - totalSpent;
+  return parseInt(result.rows[0]?.total_xp || '0', 10);
 }
 
 function selectDojoWheelItem() {
@@ -3305,16 +3286,19 @@ async function handleDojoSpin(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    const currentXp = await calculateDojoXp(client, studentId);
+    // Check current XP from students.total_xp (single source of truth)
+    const xpResult = await client.query(
+      `SELECT COALESCE(total_xp, 0) as total_xp FROM students WHERE id = $1::uuid`,
+      [studentId]
+    );
+    const currentXp = parseInt(xpResult.rows[0]?.total_xp || '0', 10);
+    
     if (currentXp < DOJO_SPIN_COST) {
       return res.status(400).json({ error: `Not enough XP! You have ${currentXp} XP but need ${DOJO_SPIN_COST} XP.` });
     }
 
-    await client.query(
-      `INSERT INTO xp_transactions (student_id, amount, type, reason)
-       VALUES ($1::uuid, $2, 'SPEND', 'Lucky Wheel spin')`,
-      [studentId, DOJO_SPIN_COST]
-    );
+    // Use unified helper to update BOTH students.total_xp AND log transaction
+    await applyXpDelta(client, studentId, -DOJO_SPIN_COST, 'Lucky Wheel spin');
 
     const wonItem = selectDojoWheelItem();
 
@@ -3433,16 +3417,12 @@ async function handleDojoDebugAddXP(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    await client.query(
-      `INSERT INTO xp_transactions (student_id, amount, type, reason)
-       VALUES ($1::uuid, $2, 'EARN', 'DEBUG: Test XP added')`,
-      [studentId, amount]
-    );
+    // Use unified helper to update BOTH students.total_xp AND log transaction
+    const newTotal = await applyXpDelta(client, studentId, amount, 'DEBUG: Test XP added');
 
-    const newBalance = await calculateDojoXp(client, studentId);
-    console.log(`[Dojo DEBUG] Added ${amount} XP to student ${studentId}, new balance: ${newBalance}`);
+    console.log(`[Dojo DEBUG] Added ${amount} XP to student ${studentId}, new total_xp: ${newTotal}`);
 
-    return res.json({ success: true, xpBalance: newBalance });
+    return res.json({ success: true, xpBalance: newTotal });
   } finally {
     client.release();
   }
