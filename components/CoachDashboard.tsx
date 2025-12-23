@@ -6,6 +6,7 @@ import { generateLessonPlanGPT } from '../services/openaiService';
 import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
 import { CoachLeaderboard } from './CoachLeaderboard';
+import { WorldRankings } from './WorldRankings';
 import { calculateClassPTS, calculateGradingXP, MAX_COACH_BONUS, MAX_HOMEWORK_BONUS } from '../services/gamificationService';
 
 // --- TYPE DEFINITIONS ---
@@ -967,7 +968,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const [certificateData, setCertificateData] = useState<{show: boolean, student: Student | null, newBelt: string}>({ show: false, student: null, newBelt: '' });
     
     // Navigation State
-    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'planner' | 'challenges' | 'videos' | 'leaderboard'>('grading');
+    const [activeView, setActiveView] = useState<'grading' | 'schedule' | 'planner' | 'challenges' | 'videos' | 'leaderboard' | 'world-rankings'>('grading');
     const [isAddEventOpen, setIsAddEventOpen] = useState(false);
     const [showChallengeBuilder, setShowChallengeBuilder] = useState(false);
 
@@ -1737,7 +1738,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         <div className="flex flex-wrap justify-between items-center">
                             <div>
                                 <h1 className="text-xl font-bold text-white">
-                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : activeView === 'leaderboard' ? '🏆 Leaderboard' : '🎬 Video Review'}
+                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : activeView === 'leaderboard' ? '🏆 Leaderboard' : activeView === 'world-rankings' ? '🌍 World Rankings' : '🎬 Video Review'}
                                 </h1>
                                 <p className="text-sm text-gray-400">👤 Coach {coachName} | 🏫 {data.clubName}</p>
                             </div>
@@ -1791,6 +1792,12 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'leaderboard' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                                 >
                                     🏆 Leaderboard
+                                </button>
+                                <button 
+                                    onClick={() => setActiveView('world-rankings')}
+                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'world-rankings' ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                >
+                                    🌍 World Rankings
                                 </button>
                                 {userType === 'owner' && onGoToAdmin && (
                                     <button onClick={onGoToAdmin} className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 text-sm rounded-md transition-colors">⬅️ Admin</button>
@@ -2332,6 +2339,13 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     {/* LEADERBOARD VIEW */}
                     {activeView === 'leaderboard' && (
                         <CoachLeaderboard students={students} data={data} clubId={clubId} />
+                    )}
+
+                    {/* WORLD RANKINGS VIEW */}
+                    {activeView === 'world-rankings' && (
+                        <div className="-mx-4 -my-4">
+                            <WorldRankings clubId={clubId} />
+                        </div>
                     )}
 
                     {/* Footer Actions (Only for Grading View) */}
