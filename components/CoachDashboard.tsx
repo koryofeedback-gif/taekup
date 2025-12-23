@@ -103,30 +103,44 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
     );
 };
 
-const InsightSidebar: React.FC<{ students: Student[], belts: any[] }> = ({ students, belts }) => {
+const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string }> = ({ students, belts, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
+    const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
     
-    // Get start of current month for filtering
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Fetch monthly PTS from API (persisted in database)
+    useEffect(() => {
+        if (!clubId) return;
+        const fetchMonthlyPTS = async () => {
+            try {
+                const response = await fetch(`/api/leaderboard?clubId=${clubId}`);
+                const result = await response.json();
+                if (result.leaderboard) {
+                    const ptsMap = new Map<string, number>();
+                    result.leaderboard.forEach((s: any) => {
+                        ptsMap.set(s.id, s.monthlyPTS || 0);
+                    });
+                    setApiMonthlyPTS(ptsMap);
+                }
+            } catch (error) {
+                console.error('[InsightSidebar] Failed to fetch monthly PTS:', error);
+            }
+        };
+        fetchMonthlyPTS();
+        const interval = setInterval(fetchMonthlyPTS, 30000);
+        return () => clearInterval(interval);
+    }, [clubId]);
     
-    // Mode 1: Monthly Effort - SUM of points earned from class logs this month
+    // Mode 1: Monthly Effort - Use API data for persisted PTS (survives logout)
     const monthlyEffortStudents = useMemo(() => {
         return [...students]
             .map(student => {
-                const monthlyPTS = (student.performanceHistory || [])
-                    .filter(record => new Date(record.date) >= monthStart)
-                    .reduce((sum, record) => {
-                        const scores = Object.values(record.scores || {});
-                        const classPTS = calculateClassPTS(scores);
-                        return sum + classPTS + (record.bonusPoints || 0);
-                    }, 0);
+                const monthlyPTS = apiMonthlyPTS.get(student.id) || 0;
                 return { ...student, displayPTS: monthlyPTS };
             })
             .sort((a, b) => b.displayPTS - a.displayPTS)
             .filter(s => s.displayPTS > 0)
             .slice(0, 3);
-    }, [students, monthStart.getTime()]);
+    }, [students, apiMonthlyPTS]);
     
     // Mode 2: Belt Progress - Live current_stripe_points (totalPoints)
     const beltProgressStudents = useMemo(() => {
@@ -1280,6 +1294,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 totalPoints: totalPointsAfter,
                 lifetimeXp: lifetimeXpAfter, // Fair normalized XP for Dojang Rivals
                 sessionXp: gradingXP, // Store session XP for API call
+                sessionPts: sessionTotal, // Store session PTS for monthly effort tracking
                 attendanceCount: (student.attendanceCount || 0) + 1,
                 performanceHistory: [...(student.performanceHistory || []), newPerformanceRecord],
                 feedbackHistory: newFeedbackRecord ? [...(student.feedbackHistory || []), newFeedbackRecord] : (student.feedbackHistory || []),
@@ -1300,7 +1315,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         body: JSON.stringify({
                             totalPoints: student.totalPoints,
                             lifetimeXp: student.lifetimeXp,
-                            sessionXp: (student as any).sessionXp || 0
+                            sessionXp: (student as any).sessionXp || 0,
+                            sessionPts: (student as any).sessionPts || 0
                         })
                     });
                 } catch (err) {
@@ -2322,7 +2338,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                 {/* SIDEBAR AREA (Keep visible) */}
                 <div className="lg:col-span-1">
-                    <InsightSidebar students={filteredStudents} belts={data.belts} />
+                    <InsightSidebar students={filteredStudents} belts={data.belts} clubId={clubId} />
                 </div>
             </div>
             

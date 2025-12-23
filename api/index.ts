@@ -1026,7 +1026,7 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
-  const { totalPoints, lifetimeXp, sessionXp } = parseBody(req);
+  const { totalPoints, lifetimeXp, sessionXp, sessionPts } = parseBody(req);
   
   if (!studentId) {
     return res.status(400).json({ error: 'Student ID is required' });
@@ -1044,7 +1044,7 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
       [totalPoints, lifetimeXp, studentId]
     );
 
-    // Log XP transaction for monthly tracking (if XP was earned this session)
+    // Log XP transaction for monthly leaderboard tracking
     const xpEarned = sessionXp || 0;
     if (xpEarned > 0) {
       await client.query(
@@ -1053,6 +1053,17 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
         [studentId, xpEarned]
       );
       console.log('[Grading] Logged XP transaction:', studentId, '+', xpEarned, 'XP');
+    }
+
+    // Log PTS transaction for monthly effort widget tracking
+    const ptsEarned = sessionPts || 0;
+    if (ptsEarned > 0) {
+      await client.query(
+        `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+         VALUES ($1::uuid, $2, 'PTS_EARN', 'Class grading PTS', NOW())`,
+        [studentId, ptsEarned]
+      );
+      console.log('[Grading] Logged PTS transaction:', studentId, '+', ptsEarned, 'PTS');
     }
 
     console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
@@ -2901,7 +2912,17 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
       GROUP BY student_id
     `, [clubId, monthStartStr]);
 
+    // Monthly PTS from xp_transactions (PTS_EARN type)
+    const monthlyPtsResult = await client.query(`
+      SELECT student_id, COALESCE(SUM(amount), 0) as monthly_pts
+      FROM xp_transactions 
+      WHERE student_id IN (SELECT id FROM students WHERE club_id = $1::uuid)
+        AND type = 'PTS_EARN' AND created_at >= $2::timestamp
+      GROUP BY student_id
+    `, [clubId, monthStartStr]);
+
     const monthlyXpMap = new Map(monthlyXpResult.rows.map((r: any) => [r.student_id, parseInt(r.monthly_xp) || 0]));
+    const monthlyPtsMap = new Map(monthlyPtsResult.rows.map((r: any) => [r.student_id, parseInt(r.monthly_pts) || 0]));
 
     const leaderboard = studentsResult.rows.map((s: any) => ({
       id: s.id,
@@ -2909,7 +2930,8 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
       belt: s.belt,
       stripes: s.stripes || 0,
       totalXP: parseInt(s.total_xp) || 0,
-      monthlyXP: monthlyXpMap.get(s.id) || 0
+      monthlyXP: monthlyXpMap.get(s.id) || 0,
+      monthlyPTS: monthlyPtsMap.get(s.id) || 0
     }))
     .sort((a: any, b: any) => b.totalXP - a.totalXP)
     .map((s: any, index: number) => ({ ...s, rank: index + 1 }));

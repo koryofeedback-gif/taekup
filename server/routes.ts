@@ -1279,7 +1279,7 @@ export function registerRoutes(app: Express) {
   app.patch('/api/students/:id/grading', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { totalPoints, lifetimeXp, sessionXp } = req.body;
+      const { totalPoints, lifetimeXp, sessionXp, sessionPts } = req.body;
       
       if (!id) {
         return res.status(400).json({ error: 'Student ID is required' });
@@ -1294,7 +1294,7 @@ export function registerRoutes(app: Express) {
         WHERE id = ${id}::uuid
       `);
 
-      // Log XP transaction for monthly tracking (if XP was earned this session)
+      // Log XP transaction for monthly leaderboard tracking
       const xpEarned = sessionXp || 0;
       if (xpEarned > 0) {
         await db.execute(sql`
@@ -1302,6 +1302,16 @@ export function registerRoutes(app: Express) {
           VALUES (${id}::uuid, ${xpEarned}, 'EARN', 'Class grading', NOW())
         `);
         console.log('[Grading] Logged XP transaction:', id, '+', xpEarned, 'XP');
+      }
+
+      // Log PTS transaction for monthly effort widget tracking
+      const ptsEarned = sessionPts || 0;
+      if (ptsEarned > 0) {
+        await db.execute(sql`
+          INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+          VALUES (${id}::uuid, ${ptsEarned}, 'PTS_EARN', 'Class grading PTS', NOW())
+        `);
+        console.log('[Grading] Logged PTS transaction:', id, '+', ptsEarned, 'PTS');
       }
 
       console.log('[Grading] Updated student:', id, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
@@ -3052,14 +3062,25 @@ export function registerRoutes(app: Express) {
       `);
       const monthlyXpMap = new Map((monthlyXpData as any[]).map(r => [r.student_id, parseInt(r.monthly_xp) || 0]));
 
-      // Build leaderboard: totalXP from students table, monthlyXP from logs
+      // Calculate monthly PTS from xp_transactions (PTS_EARN type)
+      const monthlyPtsData = await db.execute(sql`
+        SELECT student_id, COALESCE(SUM(amount), 0) as monthly_pts
+        FROM xp_transactions 
+        WHERE student_id IN (SELECT id FROM students WHERE club_id = ${clubId}::uuid)
+          AND type = 'PTS_EARN' AND created_at >= ${monthStartStr}::timestamp
+        GROUP BY student_id
+      `);
+      const monthlyPtsMap = new Map((monthlyPtsData as any[]).map(r => [r.student_id, parseInt(r.monthly_pts) || 0]));
+
+      // Build leaderboard: totalXP from students table, monthlyXP and monthlyPTS from logs
       const leaderboard = (students as any[]).map(s => ({
         id: s.id,
         name: s.name,
         belt: s.belt,
         stripes: s.stripes || 0,
         totalXP: parseInt(s.total_xp) || 0,
-        monthlyXP: monthlyXpMap.get(s.id) || 0
+        monthlyXP: monthlyXpMap.get(s.id) || 0,
+        monthlyPTS: monthlyPtsMap.get(s.id) || 0
       }))
       .sort((a, b) => b.totalXP - a.totalXP)
       .map((s, index) => ({ ...s, rank: index + 1 }));
