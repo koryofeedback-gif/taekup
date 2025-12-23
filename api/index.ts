@@ -1259,9 +1259,6 @@ async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachI
   const body = parseBody(req);
   const { name, email, location, assignedClasses } = body;
 
-  console.log('[UpdateCoach] Request body:', JSON.stringify(body));
-  console.log('[UpdateCoach] coachId:', coachId);
-
   // Ensure assignedClasses is a valid array of strings
   let classesArray: string[] = [];
   if (Array.isArray(assignedClasses)) {
@@ -1277,24 +1274,44 @@ async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachI
     );
     
     if (checkResult.rows.length === 0) {
-      console.log('[UpdateCoach] Coach not found:', coachId);
       return res.status(404).json({ error: 'Coach not found' });
     }
 
-    const result = await client.query(
-      `UPDATE coaches SET 
-        name = COALESCE($1, name),
-        email = COALESCE($2, email),
-        location = $3,
-        assigned_classes = $4,
-        updated_at = NOW()
-       WHERE id = $5::uuid
-       RETURNING id, name, email, location, assigned_classes`,
-      [name || null, email || null, location || null, classesArray, coachId]
-    );
+    // Check if location column exists
+    const columnCheck = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'coaches' AND column_name = 'location'
+    `);
+    const hasLocationColumn = columnCheck.rows.length > 0;
+
+    let result;
+    if (hasLocationColumn) {
+      result = await client.query(
+        `UPDATE coaches SET 
+          name = COALESCE($1, name),
+          email = COALESCE($2, email),
+          location = $3,
+          assigned_classes = $4,
+          updated_at = NOW()
+         WHERE id = $5::uuid
+         RETURNING id, name, email, location, assigned_classes`,
+        [name || null, email || null, location || null, classesArray, coachId]
+      );
+    } else {
+      // Fallback: update without location column
+      result = await client.query(
+        `UPDATE coaches SET 
+          name = COALESCE($1, name),
+          email = COALESCE($2, email),
+          assigned_classes = $3,
+          updated_at = NOW()
+         WHERE id = $4::uuid
+         RETURNING id, name, email, assigned_classes`,
+        [name || null, email || null, classesArray, coachId]
+      );
+    }
 
     const coach = result.rows[0];
-    console.log('[UpdateCoach] Updated coach:', coachId, 'result:', JSON.stringify(coach));
     return res.json({
       success: true,
       coach: {
@@ -1306,7 +1323,7 @@ async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachI
       }
     });
   } catch (error: any) {
-    console.error('[UpdateCoach] Error:', error.message, 'Stack:', error.stack);
+    console.error('[UpdateCoach] Error:', error.message);
     return res.status(500).json({ error: 'Failed to update coach', details: error.message });
   } finally {
     client.release();
