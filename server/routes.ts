@@ -338,7 +338,7 @@ export function registerRoutes(app: Express) {
       `);
 
       const coachesResult = await db.execute(sql`
-        SELECT id, name, email
+        SELECT id, name, email, location, assigned_classes
         FROM coaches WHERE club_id = ${clubId}::uuid AND is_active = true
       `);
 

@@ -344,10 +344,25 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     )
 }
 
-const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void }> = ({ data, onUpdateData, onOpenModal }) => {
-    const handleDelete = (id: string) => {
-        if(confirm('Remove this coach? They will lose access immediately.')) {
-            onUpdateData({ coaches: data.coaches.filter(c => c.id !== id) });
+const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void, onEditCoach?: (coach: any) => void }> = ({ data, onUpdateData, onOpenModal, onEditCoach }) => {
+    const [deleting, setDeleting] = useState<string | null>(null);
+
+    const handleDelete = async (id: string) => {
+        if(!confirm('Remove this coach? They will lose access immediately.')) return;
+        
+        setDeleting(id);
+        try {
+            const response = await fetch(`/api/coaches/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                onUpdateData({ coaches: data.coaches.filter(c => c.id !== id) });
+            } else {
+                alert('Failed to remove coach');
+            }
+        } catch (error) {
+            console.error('Delete coach error:', error);
+            alert('Failed to remove coach');
+        } finally {
+            setDeleting(null);
         }
     }
 
@@ -386,10 +401,19 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                             <tr key={c.id} className="hover:bg-gray-700/50">
                                 <td className="px-6 py-4 font-medium text-white">{c.name}</td>
                                 <td className="px-6 py-4">{c.email}</td>
-                                <td className="px-6 py-4">{c.location}</td>
+                                <td className="px-6 py-4">{c.location || '-'}</td>
                                 <td className="px-6 py-4 text-xs">{c.assignedClasses?.join(', ') || 'None'}</td>
-                                <td className="px-6 py-4 text-right">
-                                    <button onClick={() => handleDelete(c.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">Remove</button>
+                                <td className="px-6 py-4 text-right space-x-3">
+                                    {onEditCoach && (
+                                        <button onClick={() => onEditCoach(c)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs">Edit</button>
+                                    )}
+                                    <button 
+                                        onClick={() => handleDelete(c.id)} 
+                                        disabled={deleting === c.id}
+                                        className="text-red-400 hover:text-red-300 font-bold text-xs disabled:opacity-50"
+                                    >
+                                        {deleting === c.id ? 'Removing...' : 'Remove'}
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -2034,6 +2058,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [tempStudent, setTempStudent] = useState<Partial<Student>>({});
     const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
     const [tempCoach, setTempCoach] = useState<Partial<Coach>>({});
+    const [editingCoachId, setEditingCoachId] = useState<string | null>(null);
     const [tempClass, setTempClass] = useState<Partial<ScheduleItem>>({});
     const [tempEvent, setTempEvent] = useState<Partial<CalendarEvent>>({});
     const [tempPrivate, setTempPrivate] = useState<{coachName: string, date: string, time: string, price: number}>({coachName: '', date: '', time: '', price: 50});
@@ -2522,7 +2547,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 <div className="p-6 md:p-12 max-w-7xl mx-auto">
                     {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} />}
                     {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} />}
-                    {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
+                    {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
                     {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
                     {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} />}
@@ -2843,6 +2868,92 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple classes</p>
                         </div>
                         <button onClick={handleAddCoach} className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded">Add Coach</button>
+                    </div>
+                </Modal>
+            )}
+
+            {modalType === 'editCoach' && editingCoachId && (
+                <Modal title="Edit Coach" onClose={() => { setModalType(null); setEditingCoachId(null); setTempCoach({}); }}>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 mb-1">Name</label>
+                            <input 
+                                type="text" 
+                                value={tempCoach.name || ''} 
+                                className="w-full bg-gray-700 rounded p-2 text-white" 
+                                onChange={e => setTempCoach({...tempCoach, name: e.target.value})} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 mb-1">Email</label>
+                            <input 
+                                type="email" 
+                                value={tempCoach.email || ''} 
+                                className="w-full bg-gray-700 rounded p-2 text-white" 
+                                onChange={e => setTempCoach({...tempCoach, email: e.target.value})} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 mb-1">Main Location</label>
+                            <select 
+                                className="w-full bg-gray-700 rounded p-2 text-white" 
+                                value={tempCoach.location || ''}
+                                onChange={e => setTempCoach({...tempCoach, location: e.target.value})}
+                            >
+                                <option value="">Select Location</option>
+                                {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 mb-1">Assigned Classes</label>
+                            <select 
+                                multiple 
+                                className="w-full bg-gray-700 rounded p-2 text-white h-24" 
+                                value={tempCoach.assignedClasses || []}
+                                onChange={e => setTempCoach({...tempCoach, assignedClasses: Array.from(e.target.selectedOptions, option => option.value)})}
+                            >
+                                {((tempCoach.location ? data.locationClasses?.[tempCoach.location] : []) || data.classes || []).map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple classes</p>
+                        </div>
+                        <button 
+                            onClick={async () => {
+                                if (!editingCoachId) return;
+                                try {
+                                    const response = await fetch(`/api/coaches/${editingCoachId}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            name: tempCoach.name,
+                                            email: tempCoach.email,
+                                            location: tempCoach.location,
+                                            assignedClasses: tempCoach.assignedClasses
+                                        })
+                                    });
+                                    
+                                    if (!response.ok) {
+                                        const error = await response.json();
+                                        throw new Error(error.error || 'Failed to update coach');
+                                    }
+                                    
+                                    const updatedCoaches = data.coaches.map(c => 
+                                        c.id === editingCoachId ? { ...c, ...tempCoach } : c
+                                    );
+                                    onUpdateData({ coaches: updatedCoaches });
+                                    setModalType(null);
+                                    setEditingCoachId(null);
+                                    setTempCoach({});
+                                } catch (err: any) {
+                                    console.error('Failed to update coach:', err);
+                                    alert(err.message || 'Failed to save changes');
+                                }
+                            }} 
+                            className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded"
+                        >
+                            Save Changes
+                        </button>
                     </div>
                 </Modal>
             )}

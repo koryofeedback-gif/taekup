@@ -489,7 +489,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
     );
 
     const coachesResult = await client.query(
-      `SELECT id, name, email
+      `SELECT id, name, email, location, assigned_classes
        FROM coaches WHERE club_id = $1::uuid AND is_active = true`,
       [clubId]
     );
@@ -640,15 +640,15 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
           
           if (existingCoach.rows.length > 0) {
             await client.query(
-              `UPDATE coaches SET user_id = $1::uuid, name = $2, is_active = true, updated_at = NOW()
-               WHERE id = $3::uuid`,
-              [userId, coach.name, existingCoach.rows[0].id]
+              `UPDATE coaches SET user_id = $1::uuid, name = $2, location = $3, assigned_classes = $4, is_active = true, updated_at = NOW()
+               WHERE id = $5::uuid`,
+              [userId, coach.name, coach.location || null, coach.assignedClasses || [], existingCoach.rows[0].id]
             );
           } else {
             await client.query(
-              `INSERT INTO coaches (club_id, user_id, name, email, is_active, created_at)
-               VALUES ($1::uuid, $2::uuid, $3, $4, true, NOW())`,
-              [clubId, userId, coach.name, coachEmail]
+              `INSERT INTO coaches (club_id, user_id, name, email, location, assigned_classes, is_active, created_at)
+               VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, true, NOW())`,
+              [clubId, userId, coach.name, coachEmail, coach.location || null, coach.assignedClasses || []]
             );
           }
           
@@ -1212,15 +1212,15 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
     
     if (existingCoach.rows.length > 0) {
       await client.query(
-        `UPDATE coaches SET name = $1, club_id = $2::uuid, is_active = true, invite_sent_at = NOW()
+        `UPDATE coaches SET name = $1, club_id = $2::uuid, location = $5, assigned_classes = $6, is_active = true, invite_sent_at = NOW()
          WHERE email = $3`,
-        [name, clubId, email]
+        [name, clubId, email, location || null, assignedClasses || []]
       );
     } else {
       await client.query(
-        `INSERT INTO coaches (id, club_id, user_id, name, email, is_active, invite_sent_at, created_at)
-         VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3, $4, true, NOW(), NOW())`,
-        [clubId, userId, name, email]
+        `INSERT INTO coaches (id, club_id, user_id, name, email, location, assigned_classes, is_active, invite_sent_at, created_at)
+         VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3, $4, $5, $6, true, NOW(), NOW())`,
+        [clubId, userId, name, email, location || null, assignedClasses || []]
       );
     }
 
@@ -1247,6 +1247,82 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
   } catch (error: any) {
     console.error('[InviteCoach] Error:', error.message);
     return res.status(500).json({ error: 'Failed to invite coach' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachId: string) {
+  if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
+  const { name, email, location, assignedClasses } = parseBody(req);
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `UPDATE coaches SET 
+        name = COALESCE($1, name),
+        email = COALESCE($2, email),
+        location = $3,
+        assigned_classes = $4,
+        updated_at = NOW()
+       WHERE id = $5::uuid
+       RETURNING id, name, email, location, assigned_classes`,
+      [name, email, location || null, assignedClasses || [], coachId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Coach not found' });
+    }
+
+    const coach = result.rows[0];
+    console.log('[UpdateCoach] Updated coach:', coachId);
+    return res.json({
+      success: true,
+      coach: {
+        id: coach.id,
+        name: coach.name,
+        email: coach.email,
+        location: coach.location || '',
+        assignedClasses: coach.assigned_classes || []
+      }
+    });
+  } catch (error: any) {
+    console.error('[UpdateCoach] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to update coach' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleDeleteCoach(req: VercelRequest, res: VercelResponse, coachId: string) {
+  if (req.method !== 'DELETE') return res.status(405).json({ error: 'Method not allowed' });
+
+  const client = await pool.connect();
+  try {
+    // Soft delete - set is_active = false
+    const result = await client.query(
+      `UPDATE coaches SET is_active = false, updated_at = NOW() WHERE id = $1::uuid RETURNING id, email`,
+      [coachId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Coach not found' });
+    }
+
+    // Also deactivate the user account
+    const coachEmail = result.rows[0].email;
+    if (coachEmail) {
+      await client.query(
+        `UPDATE users SET is_active = false, updated_at = NOW() WHERE email = $1`,
+        [coachEmail]
+      );
+    }
+
+    console.log('[DeleteCoach] Deleted coach:', coachId);
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[DeleteCoach] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to delete coach' });
   } finally {
     client.release();
   }
@@ -3457,6 +3533,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/students/by-name' || path === '/students/by-name/') return await handleGetStudentByName(req, res);
     if (path === '/students/first' || path === '/students/first/') return await handleGetFirstStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
+    
+    // Coach update/delete by ID
+    const coachIdMatch = path.match(/^\/coaches\/([^/]+)\/?$/);
+    if (coachIdMatch) {
+      if (req.method === 'PATCH' || req.method === 'PUT') {
+        return await handleUpdateCoach(req, res, coachIdMatch[1]);
+      }
+      if (req.method === 'DELETE') {
+        return await handleDeleteCoach(req, res, coachIdMatch[1]);
+      }
+    }
     
     // Club data routes
     if (path === '/club/save-wizard-data' || path === '/club/save-wizard-data/') return await handleSaveWizardData(req, res);
