@@ -1734,77 +1734,111 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 {/* MAIN TABLE AREA */}
                 <div className="lg:col-span-3 bg-gray-800/50 rounded-lg border border-gray-700 shadow-2xl">
                     {/* Header */}
-                    <div className="p-4 bg-gray-800 rounded-t-lg border-b border-gray-700 space-y-4">
-                        <div className="flex flex-wrap justify-between items-center">
-                            <div>
-                                <h1 className="text-xl font-bold text-white">
-                                    {activeView === 'grading' ? `🗓️ Today's Class` : activeView === 'schedule' ? `📅 My Schedule` : activeView === 'planner' ? '🧠 Class Planner' : activeView === 'challenges' ? '🏆 Challenge Builder' : activeView === 'leaderboard' ? '🏆 Leaderboard' : activeView === 'world-rankings' ? '🌍 World Rankings' : '🎬 Video Review'}
-                                </h1>
-                                <p className="text-sm text-gray-400">👤 Coach {coachName} | 🏫 {data.clubName}</p>
+                    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-t-xl border-b border-gray-700/50 overflow-hidden">
+                        {/* Top Bar - Title & Actions */}
+                        <div className="px-6 py-4 flex flex-wrap justify-between items-center border-b border-gray-700/30">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                                    <span className="text-2xl">
+                                        {activeView === 'grading' ? '📋' : activeView === 'schedule' ? '📅' : activeView === 'planner' ? '🧠' : activeView === 'challenges' ? '🏆' : activeView === 'leaderboard' ? '🥇' : activeView === 'world-rankings' ? '🌍' : '🎬'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-white">
+                                        {activeView === 'grading' ? `Today's Class` : activeView === 'schedule' ? `My Schedule` : activeView === 'planner' ? 'Class Planner' : activeView === 'challenges' ? 'Challenge Builder' : activeView === 'leaderboard' ? 'Leaderboard' : activeView === 'world-rankings' ? 'World Rankings' : 'Video Review'}
+                                    </h1>
+                                    <p className="text-sm text-gray-400 flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span> Coach {coachName}</span>
+                                        <span className="text-gray-600">|</span>
+                                        <span>{data.clubName}</span>
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex space-x-2">
+                            <div className="flex items-center gap-2">
                                 {/* SENSEI VOICE BUTTON */}
                                 <button 
                                     onClick={toggleVoiceMode}
-                                    className={`px-4 py-2 rounded-full text-sm font-bold transition-all shadow-lg border ${isVoiceActive ? 'bg-cyan-500 text-black border-cyan-400 animate-pulse' : 'bg-gray-900 text-cyan-400 border-cyan-500/50 hover:bg-gray-800'}`}
+                                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${isVoiceActive ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-gray-900 shadow-lg shadow-cyan-500/40 animate-pulse' : 'bg-gray-800/80 text-cyan-400 border border-cyan-500/30 hover:border-cyan-400 hover:bg-gray-700/80'}`}
                                     title="Hands-Free Grading"
                                 >
-                                    {isVoiceActive ? '🎙️ LISTENING...' : '🎙️ Sensei Voice'}
-                                </button>
-
-                                <button 
-                                    onClick={() => setActiveView('grading')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'grading' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                                >
-                                    📋 Grading
-                                </button>
-                                <button 
-                                    onClick={() => setActiveView('planner')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'planner' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                                >
-                                    🧠 Plan
-                                </button>
-                                <button 
-                                    onClick={() => setActiveView('schedule')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'schedule' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                                >
-                                    📅 Schedule
-                                </button>
-                                <button 
-                                    onClick={() => setActiveView('challenges')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'challenges' ? 'bg-cyan-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                                >
-                                    🏆 Challenges
-                                </button>
-                                <button 
-                                    onClick={() => setActiveView('videos')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors relative ${activeView === 'videos' ? 'bg-orange-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                                >
-                                    🎬 Videos
-                                    {pendingVideos.length > 0 && (
-                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                                            {pendingVideos.length}
-                                        </span>
-                                    )}
-                                </button>
-                                <button 
-                                    onClick={() => setActiveView('leaderboard')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'leaderboard' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                                >
-                                    🏆 Leaderboard
-                                </button>
-                                <button 
-                                    onClick={() => setActiveView('world-rankings')}
-                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${activeView === 'world-rankings' ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-                                >
-                                    🌍 World Rankings
+                                    <span className="text-lg">🎙️</span>
+                                    {isVoiceActive ? 'LISTENING...' : 'Sensei Voice'}
                                 </button>
                                 {userType === 'owner' && onGoToAdmin && (
-                                    <button onClick={onGoToAdmin} className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 text-sm rounded-md transition-colors">⬅️ Admin</button>
+                                    <button onClick={onGoToAdmin} className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gray-800/80 text-gray-300 border border-gray-600/50 hover:border-cyan-500/50 hover:text-cyan-400 transition-all duration-300 flex items-center gap-2">
+                                        <span>⬅️</span> Admin
+                                    </button>
                                 )}
-                                <button onClick={onBack} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 text-sm rounded-md transition-colors">🚪 Logout</button>
+                                <button onClick={onBack} className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 hover:border-red-400 transition-all duration-300 flex items-center gap-2">
+                                    <span>🚪</span> Logout
+                                </button>
                             </div>
                         </div>
+                        
+                        {/* Navigation Tabs */}
+                        <div className="px-4 py-3 flex flex-wrap items-center gap-2 bg-gray-800/30">
+                            <button 
+                                onClick={() => setActiveView('grading')}
+                                className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeView === 'grading' ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/30' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700/60 border border-transparent hover:border-gray-600/50'}`}
+                            >
+                                <span className={`text-lg transition-transform duration-300 ${activeView === 'grading' ? 'scale-110' : 'group-hover:scale-110'}`}>📋</span>
+                                Grading
+                            </button>
+                            <button 
+                                onClick={() => setActiveView('planner')}
+                                className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeView === 'planner' ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg shadow-purple-500/30' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700/60 border border-transparent hover:border-gray-600/50'}`}
+                            >
+                                <span className={`text-lg transition-transform duration-300 ${activeView === 'planner' ? 'scale-110' : 'group-hover:scale-110'}`}>🧠</span>
+                                Plan
+                            </button>
+                            <button 
+                                onClick={() => setActiveView('schedule')}
+                                className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeView === 'schedule' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700/60 border border-transparent hover:border-gray-600/50'}`}
+                            >
+                                <span className={`text-lg transition-transform duration-300 ${activeView === 'schedule' ? 'scale-110' : 'group-hover:scale-110'}`}>📅</span>
+                                Schedule
+                            </button>
+                            <button 
+                                onClick={() => setActiveView('challenges')}
+                                className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeView === 'challenges' ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/30' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700/60 border border-transparent hover:border-gray-600/50'}`}
+                            >
+                                <span className={`text-lg transition-transform duration-300 ${activeView === 'challenges' ? 'scale-110' : 'group-hover:scale-110'}`}>🏆</span>
+                                Challenges
+                            </button>
+                            <button 
+                                onClick={() => setActiveView('videos')}
+                                className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeView === 'videos' ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700/60 border border-transparent hover:border-gray-600/50'}`}
+                            >
+                                <span className={`text-lg transition-transform duration-300 ${activeView === 'videos' ? 'scale-110' : 'group-hover:scale-110'}`}>🎬</span>
+                                Videos
+                                {pendingVideos.length > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg shadow-red-500/50">
+                                        {pendingVideos.length}
+                                    </span>
+                                )}
+                            </button>
+                            
+                            <div className="w-px h-6 bg-gray-700/50 mx-1"></div>
+                            
+                            <button 
+                                onClick={() => setActiveView('leaderboard')}
+                                className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeView === 'leaderboard' ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-gray-900 shadow-lg shadow-yellow-500/30' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700/60 border border-transparent hover:border-gray-600/50'}`}
+                            >
+                                <span className={`text-lg transition-transform duration-300 ${activeView === 'leaderboard' ? 'scale-110' : 'group-hover:scale-110'}`}>🥇</span>
+                                Leaderboard
+                            </button>
+                            <button 
+                                onClick={() => setActiveView('world-rankings')}
+                                className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeView === 'world-rankings' ? 'bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white shadow-lg shadow-cyan-500/30' : 'bg-gray-800/60 text-gray-400 hover:text-white hover:bg-gray-700/60 border border-transparent hover:border-gray-600/50'}`}
+                            >
+                                <span className={`text-lg transition-transform duration-300 ${activeView === 'world-rankings' ? 'scale-110' : 'group-hover:scale-110'}`}>🌍</span>
+                                World Rankings
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Content Area with Filters */}
+                    <div className="p-4 space-y-4">
                         
                         {/* Filters (Only for Grading View) */}
                         {activeView === 'grading' && (
