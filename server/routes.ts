@@ -4056,10 +4056,17 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Student ID is required' });
       }
 
+      // Validate and clamp scorePercentage to 0-100
+      const rawScore = Number(scorePercentage);
+      if (isNaN(rawScore)) {
+        return res.status(400).json({ error: 'scorePercentage must be a valid number' });
+      }
+      const clampedScore = Math.max(0, Math.min(100, rawScore));
+
       // Calculate Global XP using the anti-cheat formula
       const attendanceXp = 20; // Fixed XP for showing up
-      const performanceXp = Math.round((scorePercentage / 100) * 30); // Max 30 based on performance
-      const sessionGlobalXp = attendanceXp + performanceXp; // Max 50 per session
+      const performanceXp = Math.round((clampedScore / 100) * 30); // Max 30 based on performance
+      const sessionGlobalXp = Math.min(50, attendanceXp + performanceXp); // Enforce 50 XP cap
 
       // Check if already graded today (daily cap)
       const todayStart = new Date();
