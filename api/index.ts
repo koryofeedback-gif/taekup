@@ -1037,18 +1037,20 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
 
   const client = await pool.connect();
   try {
+    // Use sessionXp to INCREMENT total_xp (single source of truth)
+    const xpEarned = sessionXp || 0;
+    
     await client.query(
       `UPDATE students SET 
         total_points = COALESCE($1, total_points),
-        total_xp = COALESCE($2, total_xp),
+        total_xp = COALESCE(total_xp, 0) + $2,
         last_class_at = NOW(),
         updated_at = NOW()
       WHERE id = $3::uuid`,
-      [totalPoints, lifetimeXp, studentId]
+      [totalPoints, xpEarned, studentId]
     );
 
     // Log XP transaction for monthly leaderboard tracking
-    const xpEarned = sessionXp || 0;
     if (xpEarned > 0) {
       await client.query(
         `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)

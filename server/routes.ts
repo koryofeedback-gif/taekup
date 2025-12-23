@@ -1287,17 +1287,19 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Student ID is required' });
       }
 
+      // Use sessionXp to INCREMENT total_xp (single source of truth)
+      const xpEarned = sessionXp || 0;
+      
       await db.execute(sql`
         UPDATE students SET 
           total_points = COALESCE(${totalPoints}, total_points),
-          total_xp = COALESCE(${lifetimeXp}, total_xp),
+          total_xp = COALESCE(total_xp, 0) + ${xpEarned},
           last_class_at = NOW(),
           updated_at = NOW()
         WHERE id = ${id}::uuid
       `);
 
       // Log XP transaction for monthly leaderboard tracking
-      const xpEarned = sessionXp || 0;
       if (xpEarned > 0) {
         await db.execute(sql`
           INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
