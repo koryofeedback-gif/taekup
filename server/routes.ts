@@ -3871,4 +3871,277 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to add XP' });
     }
   });
+
+  // =====================================================
+  // WORLD RANKINGS - Global Leaderboard System
+  // =====================================================
+
+  // Get world rankings with filters
+  app.get('/api/world-rankings', async (req: Request, res: Response) => {
+    try {
+      const { category = 'students', sport, country, limit = 100, offset = 0 } = req.query;
+
+      if (category === 'students') {
+        // Get top students globally (from clubs that opted in)
+        let query = sql`
+          SELECT 
+            s.id,
+            s.name,
+            s.belt,
+            s.global_xp,
+            s.world_rank,
+            s.previous_world_rank,
+            c.name as club_name,
+            c.art_type as sport,
+            c.country,
+            c.city
+          FROM students s
+          JOIN clubs c ON s.club_id = c.id
+          WHERE c.world_rankings_enabled = true
+            AND c.status = 'active'
+            AND COALESCE(s.global_xp, 0) > 0
+        `;
+
+        if (sport && sport !== 'all') {
+          query = sql`${query} AND c.art_type = ${sport}`;
+        }
+        if (country && country !== 'all') {
+          query = sql`${query} AND c.country = ${country}`;
+        }
+
+        query = sql`${query} ORDER BY COALESCE(s.global_xp, 0) DESC LIMIT ${Number(limit)} OFFSET ${Number(offset)}`;
+
+        const result = await db.execute(query);
+        
+        // Add rank position
+        const rankings = (result as any[]).map((r, index) => ({
+          rank: Number(offset) + index + 1,
+          id: r.id,
+          name: r.name,
+          belt: r.belt,
+          globalXp: r.global_xp || 0,
+          previousRank: r.previous_world_rank,
+          clubName: r.club_name,
+          sport: r.sport,
+          country: r.country,
+          city: r.city,
+          rankChange: r.previous_world_rank ? r.previous_world_rank - (Number(offset) + index + 1) : null
+        }));
+
+        res.json({ category: 'students', rankings, total: rankings.length });
+      } else if (category === 'clubs') {
+        // Get top clubs globally (aggregate of student global_xp, normalized by count)
+        let query = sql`
+          SELECT 
+            c.id,
+            c.name,
+            c.art_type as sport,
+            c.country,
+            c.city,
+            c.global_score,
+            COUNT(s.id) as student_count,
+            COALESCE(SUM(s.global_xp), 0) as total_global_xp,
+            CASE WHEN COUNT(s.id) > 0 THEN COALESCE(SUM(s.global_xp), 0) / COUNT(s.id) ELSE 0 END as avg_global_xp
+          FROM clubs c
+          LEFT JOIN students s ON s.club_id = c.id
+          WHERE c.world_rankings_enabled = true
+            AND c.status = 'active'
+          GROUP BY c.id, c.name, c.art_type, c.country, c.city, c.global_score
+          HAVING COUNT(s.id) > 0
+        `;
+
+        if (sport && sport !== 'all') {
+          query = sql`
+            SELECT * FROM (${query}) sub WHERE sport = ${sport}
+          `;
+        }
+
+        const orderQuery = sql`
+          SELECT * FROM (${query}) ranked
+          ORDER BY avg_global_xp DESC
+          LIMIT ${Number(limit)} OFFSET ${Number(offset)}
+        `;
+
+        const result = await db.execute(orderQuery);
+        
+        const rankings = (result as any[]).map((r, index) => ({
+          rank: Number(offset) + index + 1,
+          id: r.id,
+          name: r.name,
+          sport: r.sport,
+          country: r.country,
+          city: r.city,
+          studentCount: Number(r.student_count),
+          totalGlobalXp: Number(r.total_global_xp),
+          avgGlobalXp: Math.round(Number(r.avg_global_xp)),
+          globalScore: r.global_score || 0
+        }));
+
+        res.json({ category: 'clubs', rankings, total: rankings.length });
+      } else {
+        res.status(400).json({ error: 'Invalid category. Use "students" or "clubs"' });
+      }
+    } catch (error: any) {
+      console.error('[World Rankings] Error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch world rankings' });
+    }
+  });
+
+  // Get available sports (martial arts types) for filter
+  app.get('/api/world-rankings/sports', async (req: Request, res: Response) => {
+    try {
+      const result = await db.execute(sql`
+        SELECT DISTINCT art_type FROM clubs 
+        WHERE art_type IS NOT NULL AND art_type != ''
+        ORDER BY art_type
+      `);
+      
+      const sports = (result as any[]).map(r => r.art_type);
+      res.json({ sports });
+    } catch (error: any) {
+      console.error('[World Rankings] Sports error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch sports' });
+    }
+  });
+
+  // Get available countries for filter
+  app.get('/api/world-rankings/countries', async (req: Request, res: Response) => {
+    try {
+      const result = await db.execute(sql`
+        SELECT DISTINCT country FROM clubs 
+        WHERE country IS NOT NULL AND country != ''
+        ORDER BY country
+      `);
+      
+      const countries = (result as any[]).map(r => r.country);
+      res.json({ countries });
+    } catch (error: any) {
+      console.error('[World Rankings] Countries error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch countries' });
+    }
+  });
+
+  // Toggle world rankings opt-in for a club
+  app.patch('/api/clubs/:clubId/world-rankings', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      const { enabled } = req.body;
+
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ error: 'enabled must be a boolean' });
+      }
+
+      await db.execute(sql`
+        UPDATE clubs 
+        SET world_rankings_enabled = ${enabled}, updated_at = NOW()
+        WHERE id = ${clubId}::uuid
+      `);
+
+      console.log(`[World Rankings] Club ${clubId} opt-${enabled ? 'in' : 'out'}`);
+      res.json({ success: true, enabled });
+    } catch (error: any) {
+      console.error('[World Rankings] Toggle error:', error.message);
+      res.status(500).json({ error: 'Failed to update world rankings setting' });
+    }
+  });
+
+  // Calculate Global XP for a grading session
+  // Formula: 20 (attendance) + (score% × 30) = max 50 XP per session
+  app.post('/api/students/:id/global-xp', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { scorePercentage } = req.body; // 0-100 percentage
+
+      if (!id) {
+        return res.status(400).json({ error: 'Student ID is required' });
+      }
+
+      // Calculate Global XP using the anti-cheat formula
+      const attendanceXp = 20; // Fixed XP for showing up
+      const performanceXp = Math.round((scorePercentage / 100) * 30); // Max 30 based on performance
+      const sessionGlobalXp = attendanceXp + performanceXp; // Max 50 per session
+
+      // Check if already graded today (daily cap)
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      
+      const existingToday = await db.execute(sql`
+        SELECT COUNT(*) as count FROM xp_transactions 
+        WHERE student_id = ${id}::uuid 
+          AND reason = 'Global grading'
+          AND created_at >= ${todayStart.toISOString()}::timestamptz
+      `);
+      
+      const alreadyGraded = Number((existingToday as any[])[0]?.count || 0) > 0;
+
+      if (alreadyGraded) {
+        // Already earned global XP today - skip for world rankings
+        return res.json({ 
+          success: true, 
+          globalXpAwarded: 0, 
+          message: 'Daily global XP cap reached',
+          alreadyGraded: true 
+        });
+      }
+
+      // Award global XP
+      await db.execute(sql`
+        UPDATE students 
+        SET global_xp = COALESCE(global_xp, 0) + ${sessionGlobalXp}, updated_at = NOW()
+        WHERE id = ${id}::uuid
+      `);
+
+      // Log the global XP transaction
+      await db.execute(sql`
+        INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+        VALUES (${id}::uuid, ${sessionGlobalXp}, 'EARN', 'Global grading', NOW())
+      `);
+
+      console.log(`[Global XP] Student ${id}: +${sessionGlobalXp} (attendance: ${attendanceXp}, performance: ${performanceXp})`);
+
+      res.json({ 
+        success: true, 
+        globalXpAwarded: sessionGlobalXp,
+        breakdown: { attendance: attendanceXp, performance: performanceXp }
+      });
+    } catch (error: any) {
+      console.error('[Global XP] Error:', error.message);
+      res.status(500).json({ error: 'Failed to award global XP' });
+    }
+  });
+
+  // Get world rankings stats summary
+  app.get('/api/world-rankings/stats', async (req: Request, res: Response) => {
+    try {
+      const clubsResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM clubs WHERE world_rankings_enabled = true AND status = 'active'
+      `);
+      
+      const studentsResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE c.world_rankings_enabled = true AND c.status = 'active'
+      `);
+      
+      const sportsResult = await db.execute(sql`
+        SELECT COUNT(DISTINCT art_type) as count FROM clubs 
+        WHERE world_rankings_enabled = true AND art_type IS NOT NULL
+      `);
+
+      const countriesResult = await db.execute(sql`
+        SELECT COUNT(DISTINCT country) as count FROM clubs 
+        WHERE world_rankings_enabled = true AND country IS NOT NULL
+      `);
+
+      res.json({
+        participatingClubs: Number((clubsResult as any[])[0]?.count || 0),
+        totalStudents: Number((studentsResult as any[])[0]?.count || 0),
+        sportsRepresented: Number((sportsResult as any[])[0]?.count || 0),
+        countriesRepresented: Number((countriesResult as any[])[0]?.count || 0)
+      });
+    } catch (error: any) {
+      console.error('[World Rankings] Stats error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+  });
 }
