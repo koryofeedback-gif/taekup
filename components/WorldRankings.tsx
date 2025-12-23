@@ -215,8 +215,8 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
           </p>
         </div>
 
-        {/* Stats Bar */}
-        {stats && (
+        {/* Stats Bar - Only show when there's actual data */}
+        {stats && stats.participatingClubs > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-4 text-center">
               <Building2 className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
@@ -438,8 +438,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
 
         {/* Footer Note */}
         <div className="mt-8 text-center text-sm text-slate-500">
-          <p>Rankings are calculated using standardized Global XP to ensure fairness across all clubs.</p>
-          <p className="mt-1">Global XP Formula: 20 (attendance) + (performance% × 30) per session, with daily caps to prevent inflation.</p>
+          <p>Rankings are calculated using standardized scoring to ensure fairness across all clubs.</p>
         </div>
       </div>
     </div>
