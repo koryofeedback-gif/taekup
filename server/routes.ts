@@ -265,9 +265,10 @@ export function registerRoutes(app: Express) {
             `);
           } else {
             const birthdateValue = student.birthday ? student.birthday + 'T00:00:00Z' : null;
+            const joinDateValue = student.joinDate ? new Date(student.joinDate).toISOString() : new Date().toISOString();
             const insertResult = await db.execute(sql`
-              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, total_xp, created_at)
-              VALUES (${clubId}::uuid, ${student.name}, ${parentEmail}, ${student.parentName || null}, ${student.parentPhone || null}, ${student.beltId || 'white'}, ${birthdateValue}::timestamptz, ${student.totalPoints || 0}, ${student.lifetimeXp || 0}, NOW())
+              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, total_xp, join_date, created_at)
+              VALUES (${clubId}::uuid, ${student.name}, ${parentEmail}, ${student.parentName || null}, ${student.parentPhone || null}, ${student.beltId || 'white'}, ${birthdateValue}::timestamptz, ${student.totalPoints || 0}, ${student.lifetimeXp || 0}, ${joinDateValue}::timestamptz, NOW())
               RETURNING id
             `);
             studentId = (insertResult as any[])[0]?.id;
@@ -332,7 +333,7 @@ export function registerRoutes(app: Express) {
 
       const studentsResult = await db.execute(sql`
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-               total_points, total_xp, stripes
+               total_points, total_xp, stripes, join_date, created_at
         FROM students WHERE club_id = ${clubId}::uuid
       `);
 
@@ -361,6 +362,7 @@ export function registerRoutes(app: Express) {
         parentPhone: s.parent_phone,
         beltId: getBeltIdFromName(s.belt),
         birthday: s.birthdate,
+        joinDate: s.join_date || s.created_at || new Date().toISOString(),
         totalXP: s.total_xp || 0,
         totalPoints: s.total_points || 0,
         lifetimeXp: s.total_xp || 0,
