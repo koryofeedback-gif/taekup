@@ -39,6 +39,30 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
         history: ChallengeHistoryEntry[];
         loading: boolean;
     }>({ student: null, history: [], loading: false });
+    
+    // Location and Class Filters
+    const [activeLocationFilter, setActiveLocationFilter] = useState('all');
+    const [activeClassFilter, setActiveClassFilter] = useState('all');
+    
+    // Get available locations
+    const locations = data.branchNames && data.branchNames.length > 0 ? data.branchNames : ['Main Location'];
+    
+    // Get available classes for selected filter location
+    const availableClasses = React.useMemo(() => {
+        if (activeLocationFilter === 'all') {
+            const allClasses = new Set<string>();
+            if (data.locationClasses) {
+                Object.values(data.locationClasses).forEach(classes => {
+                    classes.forEach(c => allClasses.add(c));
+                });
+            }
+            if (data.classes) {
+                data.classes.forEach(c => allClasses.add(c));
+            }
+            return Array.from(allClasses);
+        }
+        return data.locationClasses?.[activeLocationFilter] || data.classes || [];
+    }, [activeLocationFilter, data.locationClasses, data.classes]);
 
     // Fetch fresh leaderboard data from API (database source of truth)
     useEffect(() => {
@@ -62,11 +86,22 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
         return () => clearInterval(interval);
     }, [clubId]);
 
+    // Create a lookup map for student location/class data
+    const studentDataMap = React.useMemo(() => {
+        const map = new Map<string, { location?: string; assignedClass?: string }>();
+        students.forEach(s => {
+            map.set(s.id, { location: s.location, assignedClass: s.assignedClass });
+        });
+        return map;
+    }, [students]);
+
     // Use API data for all-time leaderboard (database source of truth)
     const allTimeLeaderboard = apiLeaderboard.map((s, i) => ({
         ...s,
         displayXP: s.totalXP,
-        rank: i + 1
+        rank: i + 1,
+        location: studentDataMap.get(s.id)?.location,
+        assignedClass: studentDataMap.get(s.id)?.assignedClass
     }));
 
     // Monthly leaderboard from API data
@@ -75,11 +110,24 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
         .map((s, i) => ({
             ...s,
             displayXP: s.monthlyXP,
-            rank: i + 1
+            rank: i + 1,
+            location: studentDataMap.get(s.id)?.location,
+            assignedClass: studentDataMap.get(s.id)?.assignedClass
         }));
 
-    // Select which leaderboard to display
-    const leaderboard = leaderboardMode === 'monthly' ? monthlyLeaderboard : allTimeLeaderboard;
+    // Filter by location and class
+    const filterLeaderboard = (list: typeof allTimeLeaderboard) => {
+        return list.filter(player => {
+            const locationMatch = activeLocationFilter === 'all' || player.location === activeLocationFilter;
+            const classMatch = activeClassFilter === 'all' || player.assignedClass === activeClassFilter;
+            return locationMatch && classMatch;
+        }).map((p, i) => ({ ...p, rank: i + 1 })); // Re-rank after filtering
+    };
+
+    // Select which leaderboard to display (filtered)
+    const leaderboard = leaderboardMode === 'monthly' 
+        ? filterLeaderboard(monthlyLeaderboard) 
+        : filterLeaderboard(allTimeLeaderboard);
 
     const fetchStudentHistory = async (targetPlayer: { id: string; name: string; belt: string }) => {
         const studentPlaceholder = { id: targetPlayer.id, name: targetPlayer.name } as Student;
@@ -127,10 +175,43 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                         >All-Time</button>
                     </div>
                 </div>
-                <p className="text-xs text-gray-400">
+                
+                {/* Location and Class Filters */}
+                <div className="flex flex-wrap gap-3 mt-4">
+                    <div className="flex items-center">
+                        <label className="text-xs font-medium text-gray-400 mr-2">Location:</label>
+                        <select 
+                            value={activeLocationFilter} 
+                            onChange={(e) => {
+                                setActiveLocationFilter(e.target.value);
+                                setActiveClassFilter('all');
+                            }}
+                            className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-purple-500 focus:border-purple-500"
+                        >
+                            <option value="all">All Locations</option>
+                            {locations.map(l => <option key={l} value={l}>{l}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex items-center">
+                        <label className="text-xs font-medium text-gray-400 mr-2">Class:</label>
+                        <select 
+                            value={activeClassFilter} 
+                            onChange={e => setActiveClassFilter(e.target.value)} 
+                            className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-purple-500 focus:border-purple-500"
+                            disabled={availableClasses.length === 0}
+                        >
+                            <option value="all">All Classes</option>
+                            {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                </div>
+                
+                <p className="text-xs text-gray-400 mt-3">
                     {leaderboardMode === 'monthly' 
                         ? 'XP earned this month - fresh competition!' 
                         : 'Lifetime XP - legends of the dojo'}
+                    {(activeLocationFilter !== 'all' || activeClassFilter !== 'all') && 
+                        ` (Filtered: ${leaderboard.length} students)`}
                 </p>
             </div>
 
