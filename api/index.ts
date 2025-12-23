@@ -1253,7 +1253,7 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachId: string) {
-  if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'PATCH' && req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
   const { name, email, location, assignedClasses } = parseBody(req);
 
   const client = await pool.connect();
