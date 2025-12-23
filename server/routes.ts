@@ -1558,6 +1558,75 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Update coach
+  app.patch('/api/coaches/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { name, email, location, assignedClasses } = req.body;
+
+      const result = await db.execute(sql`
+        UPDATE coaches SET 
+          name = COALESCE(${name}, name),
+          email = COALESCE(${email}, email),
+          location = ${location || null},
+          assigned_classes = ${assignedClasses || []},
+          updated_at = NOW()
+        WHERE id = ${id}::uuid
+        RETURNING id, name, email, location, assigned_classes
+      `);
+
+      if ((result as any[]).length === 0) {
+        return res.status(404).json({ error: 'Coach not found' });
+      }
+
+      const coach = (result as any[])[0];
+      console.log('[UpdateCoach] Updated coach:', id);
+      res.json({
+        success: true,
+        coach: {
+          id: coach.id,
+          name: coach.name,
+          email: coach.email,
+          location: coach.location || '',
+          assignedClasses: coach.assigned_classes || []
+        }
+      });
+    } catch (error: any) {
+      console.error('[UpdateCoach] Error:', error.message);
+      res.status(500).json({ error: 'Failed to update coach' });
+    }
+  });
+
+  // Delete coach (soft delete)
+  app.delete('/api/coaches/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      const result = await db.execute(sql`
+        UPDATE coaches SET is_active = false, updated_at = NOW() 
+        WHERE id = ${id}::uuid 
+        RETURNING id, email
+      `);
+
+      if ((result as any[]).length === 0) {
+        return res.status(404).json({ error: 'Coach not found' });
+      }
+
+      const coachEmail = (result as any[])[0].email;
+      if (coachEmail) {
+        await db.execute(sql`
+          UPDATE users SET is_active = false, updated_at = NOW() WHERE email = ${coachEmail}
+        `);
+      }
+
+      console.log('[DeleteCoach] Deleted coach:', id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[DeleteCoach] Error:', error.message);
+      res.status(500).json({ error: 'Failed to delete coach' });
+    }
+  });
+
   app.put('/api/students/:id/link-parent', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
