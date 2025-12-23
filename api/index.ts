@@ -1256,31 +1256,45 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
 
 async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachId: string) {
   if (req.method !== 'PATCH' && req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
-  const { name, email, location, assignedClasses } = parseBody(req);
+  const body = parseBody(req);
+  const { name, email, location, assignedClasses } = body;
 
-  // Ensure assignedClasses is a valid array
-  const classesArray = Array.isArray(assignedClasses) ? assignedClasses : [];
+  console.log('[UpdateCoach] Request body:', JSON.stringify(body));
+  console.log('[UpdateCoach] coachId:', coachId);
+
+  // Ensure assignedClasses is a valid array of strings
+  let classesArray: string[] = [];
+  if (Array.isArray(assignedClasses)) {
+    classesArray = assignedClasses.filter((c: any) => typeof c === 'string');
+  }
 
   const client = await pool.connect();
   try {
+    // First check if coach exists
+    const checkResult = await client.query(
+      `SELECT id FROM coaches WHERE id = $1::uuid`,
+      [coachId]
+    );
+    
+    if (checkResult.rows.length === 0) {
+      console.log('[UpdateCoach] Coach not found:', coachId);
+      return res.status(404).json({ error: 'Coach not found' });
+    }
+
     const result = await client.query(
       `UPDATE coaches SET 
         name = COALESCE($1, name),
         email = COALESCE($2, email),
         location = $3,
-        assigned_classes = $4::text[],
+        assigned_classes = $4,
         updated_at = NOW()
        WHERE id = $5::uuid
        RETURNING id, name, email, location, assigned_classes`,
       [name || null, email || null, location || null, classesArray, coachId]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Coach not found' });
-    }
-
     const coach = result.rows[0];
-    console.log('[UpdateCoach] Updated coach:', coachId);
+    console.log('[UpdateCoach] Updated coach:', coachId, 'result:', JSON.stringify(coach));
     return res.json({
       success: true,
       coach: {
@@ -1292,8 +1306,8 @@ async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachI
       }
     });
   } catch (error: any) {
-    console.error('[UpdateCoach] Error:', error.message);
-    return res.status(500).json({ error: 'Failed to update coach' });
+    console.error('[UpdateCoach] Error:', error.message, 'Stack:', error.stack);
+    return res.status(500).json({ error: 'Failed to update coach', details: error.message });
   } finally {
     client.release();
   }
