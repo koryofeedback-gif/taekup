@@ -1277,39 +1277,43 @@ async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachI
       return res.status(404).json({ error: 'Coach not found' });
     }
 
-    // Check if location column exists
+    // Check which columns exist
     const columnCheck = await client.query(`
       SELECT column_name FROM information_schema.columns 
-      WHERE table_name = 'coaches' AND column_name = 'location'
+      WHERE table_name = 'coaches' AND column_name IN ('location', 'assigned_classes')
     `);
-    const hasLocationColumn = columnCheck.rows.length > 0;
+    const existingColumns = columnCheck.rows.map((r: any) => r.column_name);
+    const hasLocation = existingColumns.includes('location');
+    const hasAssignedClasses = existingColumns.includes('assigned_classes');
 
-    let result;
-    if (hasLocationColumn) {
-      result = await client.query(
-        `UPDATE coaches SET 
-          name = COALESCE($1, name),
-          email = COALESCE($2, email),
-          location = $3,
-          assigned_classes = $4,
-          updated_at = NOW()
-         WHERE id = $5::uuid
-         RETURNING id, name, email, location, assigned_classes`,
-        [name || null, email || null, location || null, classesArray, coachId]
-      );
-    } else {
-      // Fallback: update without location column
-      result = await client.query(
-        `UPDATE coaches SET 
-          name = COALESCE($1, name),
-          email = COALESCE($2, email),
-          assigned_classes = $3,
-          updated_at = NOW()
-         WHERE id = $4::uuid
-         RETURNING id, name, email, assigned_classes`,
-        [name || null, email || null, classesArray, coachId]
-      );
+    // Build dynamic query based on available columns
+    let setClauses = ['name = COALESCE($1, name)', 'email = COALESCE($2, email)', 'updated_at = NOW()'];
+    let returnClauses = ['id', 'name', 'email'];
+    let params: any[] = [name || null, email || null];
+    let paramIndex = 3;
+
+    if (hasLocation) {
+      setClauses.push(`location = $${paramIndex}`);
+      returnClauses.push('location');
+      params.push(location || null);
+      paramIndex++;
     }
+
+    if (hasAssignedClasses) {
+      setClauses.push(`assigned_classes = $${paramIndex}`);
+      returnClauses.push('assigned_classes');
+      params.push(classesArray);
+      paramIndex++;
+    }
+
+    params.push(coachId);
+
+    const result = await client.query(
+      `UPDATE coaches SET ${setClauses.join(', ')}
+       WHERE id = $${paramIndex}::uuid
+       RETURNING ${returnClauses.join(', ')}`,
+      params
+    );
 
     const coach = result.rows[0];
     return res.json({
