@@ -215,31 +215,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
           </p>
         </div>
 
-        {/* Stats Bar - Only show when there's actual data */}
-        {stats && stats.participatingClubs > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-4 text-center">
-              <Building2 className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{stats.participatingClubs}</div>
-              <div className="text-sm text-slate-400">Clubs</div>
-            </div>
-            <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-4 text-center">
-              <Users className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{stats.totalStudents.toLocaleString()}</div>
-              <div className="text-sm text-slate-400">Athletes</div>
-            </div>
-            <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-4 text-center">
-              <Trophy className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{stats.sportsRepresented}</div>
-              <div className="text-sm text-slate-400">Sports</div>
-            </div>
-            <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-4 text-center">
-              <Flag className="w-6 h-6 text-green-400 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{stats.countriesRepresented}</div>
-              <div className="text-sm text-slate-400">Countries</div>
-            </div>
-          </div>
-        )}
+        {/* Stats Bar - Hidden until platform reaches significant scale */}
 
         {/* Category Tabs */}
         <div className="flex gap-2 mb-6">
