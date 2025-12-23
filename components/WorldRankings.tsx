@@ -92,9 +92,16 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
         
         setSports(sportsData.sports || []);
         setCountries(countriesData.countries || []);
-        setStats(statsData);
+        // Only set stats if it has the expected properties (not an error response)
+        if (statsData && typeof statsData.totalStudents === 'number') {
+          setStats(statsData);
+        } else {
+          setStats({ participatingClubs: 0, totalStudents: 0, sportsRepresented: 0, countriesRepresented: 0 });
+        }
       } catch (err) {
         console.error('Failed to fetch filters:', err);
+        // Set default stats on error
+        setStats({ participatingClubs: 0, totalStudents: 0, sportsRepresented: 0, countriesRepresented: 0 });
       }
     };
     fetchFilters();
