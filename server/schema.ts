@@ -24,6 +24,8 @@ export const clubs = pgTable('clubs', {
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
   stripeConnectAccountId: varchar('stripe_connect_account_id', { length: 255 }),
   wizardData: jsonb('wizard_data'),
+  worldRankingsEnabled: boolean('world_rankings_enabled').default(false),
+  globalScore: integer('global_score').default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -93,6 +95,9 @@ export const students = pgTable('students', {
   lastClassAt: timestamp('last_class_at', { withTimezone: true }),
   currentStripePoints: integer('current_stripe_points').default(0),
   lifetimeXp: integer('lifetime_xp').default(0),
+  globalXp: integer('global_xp').default(0),
+  worldRank: integer('world_rank'),
+  previousWorldRank: integer('previous_world_rank'),
   premiumStatus: premiumStatusEnum('premium_status').default('none'),
   premiumStartedAt: timestamp('premium_started_at', { withTimezone: true }),
   premiumCanceledAt: timestamp('premium_canceled_at', { withTimezone: true }),
@@ -659,3 +664,26 @@ export const dojoInventory = pgTable('dojo_inventory', {
 
 export type DojoInventoryItem = typeof dojoInventory.$inferSelect;
 export type NewDojoInventoryItem = typeof dojoInventory.$inferInsert;
+
+// =====================================================
+// WORLD RANKINGS - Global Leaderboard System
+// =====================================================
+
+export const worldRankingEntityTypeEnum = pgEnum('world_ranking_entity_type', ['student', 'club', 'coach']);
+
+export const worldRankings = pgTable('world_rankings', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  entityType: worldRankingEntityTypeEnum('entity_type').notNull(),
+  entityId: uuid('entity_id').notNull(),
+  sport: varchar('sport', { length: 100 }),
+  country: varchar('country', { length: 100 }),
+  rank: integer('rank').notNull(),
+  previousRank: integer('previous_rank'),
+  score: integer('score').notNull().default(0),
+  period: varchar('period', { length: 20 }).default('weekly'),
+  snapshotAt: timestamp('snapshot_at', { withTimezone: true }).defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type WorldRanking = typeof worldRankings.$inferSelect;
+export type NewWorldRanking = typeof worldRankings.$inferInsert;
