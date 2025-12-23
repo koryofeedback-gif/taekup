@@ -1308,17 +1308,27 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         // Persist grading data to database (totalPoints + lifetimeXp + sessionXp for monthly tracking)
         updatedStudents.forEach(async (student) => {
             if (attendance[student.id]) {
+                // Extract session values from the updated student object
+                const studentAny = student as any;
+                const sessionXpValue = studentAny.sessionXp || 0;
+                const sessionPtsValue = studentAny.sessionPts || 0;
+                
+                console.log('[Grading] Persisting for', student.name, '- sessionXp:', sessionXpValue, 'sessionPts:', sessionPtsValue);
+                
                 try {
-                    await fetch(`/api/students/${student.id}/grading`, {
+                    const response = await fetch(`/api/students/${student.id}/grading`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             totalPoints: student.totalPoints,
                             lifetimeXp: student.lifetimeXp,
-                            sessionXp: (student as any).sessionXp || 0,
-                            sessionPts: (student as any).sessionPts || 0
+                            sessionXp: sessionXpValue,
+                            sessionPts: sessionPtsValue
                         })
                     });
+                    if (!response.ok) {
+                        console.error('[Grading] API error for', student.name, ':', await response.text());
+                    }
                 } catch (err) {
                     console.error('Failed to persist grading for student:', student.id, err);
                 }
