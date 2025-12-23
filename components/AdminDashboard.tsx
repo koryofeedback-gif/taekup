@@ -713,6 +713,40 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             </span>
                         </div>
                     </div>
+                    
+                    {/* World Rankings Opt-In */}
+                    <div className="bg-gradient-to-r from-cyan-900/30 to-purple-900/30 p-4 rounded-lg border border-cyan-700/50">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">🌍</span>
+                                <div>
+                                    <label className="block text-sm font-bold text-white">World Rankings</label>
+                                    <p className="text-xs text-gray-400">Enable to participate in global martial arts rankings</p>
+                                </div>
+                            </div>
+                            <ToggleSwitch 
+                                checked={data.worldRankingsEnabled || false} 
+                                onChange={() => onUpdateData({ worldRankingsEnabled: !data.worldRankingsEnabled })}
+                            />
+                        </div>
+                        {data.worldRankingsEnabled && (
+                            <div className="mt-4 pt-4 border-t border-gray-700">
+                                <div className="bg-gray-800/50 rounded-lg p-3">
+                                    <h4 className="text-sm font-bold text-cyan-300 mb-2">How it works:</h4>
+                                    <ul className="text-xs text-gray-400 space-y-1">
+                                        <li>• Students earn Global XP using a standardized formula (fair across all clubs)</li>
+                                        <li>• Rankings update weekly and show positions by sport and country</li>
+                                        <li>• Your club and students will appear in public leaderboards</li>
+                                        <li>• Only rank positions are shown (not raw XP values)</li>
+                                    </ul>
+                                </div>
+                                <div className="mt-3 flex items-center gap-2 text-xs text-cyan-400">
+                                    <span>✓</span>
+                                    <span>Your club is participating in World Rankings</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 

@@ -3488,6 +3488,305 @@ async function handleDojoDebugAddXP(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// =====================================================
+// WORLD RANKINGS - Global Leaderboard System
+// =====================================================
+
+async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const url = new URL(req.url || '', `http://${req.headers.host}`);
+  const category = url.searchParams.get('category') || 'students';
+  const sport = url.searchParams.get('sport');
+  const country = url.searchParams.get('country');
+  const limit = Number(url.searchParams.get('limit') || 100);
+  const offset = Number(url.searchParams.get('offset') || 0);
+
+  const client = await pool.connect();
+  try {
+    if (category === 'students') {
+      let query = `
+        SELECT 
+          s.id,
+          s.name,
+          s.belt,
+          COALESCE(s.global_xp, 0) as global_xp,
+          s.world_rank,
+          s.previous_world_rank,
+          c.name as club_name,
+          c.art_type as sport,
+          c.country,
+          c.city
+        FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE c.world_rankings_enabled = true
+          AND c.status = 'active'
+          AND COALESCE(s.global_xp, 0) > 0
+      `;
+      const params: any[] = [];
+      let paramCount = 0;
+
+      if (sport && sport !== 'all') {
+        paramCount++;
+        query += ` AND c.art_type = $${paramCount}`;
+        params.push(sport);
+      }
+      if (country && country !== 'all') {
+        paramCount++;
+        query += ` AND c.country = $${paramCount}`;
+        params.push(country);
+      }
+
+      query += ` ORDER BY COALESCE(s.global_xp, 0) DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+      params.push(limit, offset);
+
+      const result = await client.query(query, params);
+      
+      const rankings = result.rows.map((r: any, index: number) => ({
+        rank: offset + index + 1,
+        id: r.id,
+        name: r.name,
+        belt: r.belt,
+        globalXp: Number(r.global_xp) || 0,
+        previousRank: r.previous_world_rank,
+        clubName: r.club_name,
+        sport: r.sport,
+        country: r.country,
+        city: r.city,
+        rankChange: r.previous_world_rank ? r.previous_world_rank - (offset + index + 1) : null
+      }));
+
+      return res.json({ category: 'students', rankings, total: rankings.length });
+    } else if (category === 'clubs') {
+      let query = `
+        SELECT 
+          c.id,
+          c.name,
+          c.art_type as sport,
+          c.country,
+          c.city,
+          c.global_score,
+          COUNT(s.id) as student_count,
+          COALESCE(SUM(s.global_xp), 0) as total_global_xp,
+          CASE WHEN COUNT(s.id) > 0 THEN COALESCE(SUM(s.global_xp), 0) / COUNT(s.id) ELSE 0 END as avg_global_xp
+        FROM clubs c
+        LEFT JOIN students s ON s.club_id = c.id
+        WHERE c.world_rankings_enabled = true
+          AND c.status = 'active'
+        GROUP BY c.id, c.name, c.art_type, c.country, c.city, c.global_score
+        HAVING COUNT(s.id) > 0
+      `;
+      const params: any[] = [];
+
+      if (sport && sport !== 'all') {
+        params.push(sport);
+        query = `SELECT * FROM (${query}) sub WHERE sport = $1`;
+      }
+
+      query = `SELECT * FROM (${query}) ranked ORDER BY avg_global_xp DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      params.push(limit, offset);
+
+      const result = await client.query(query, params);
+      
+      const rankings = result.rows.map((r: any, index: number) => ({
+        rank: offset + index + 1,
+        id: r.id,
+        name: r.name,
+        sport: r.sport,
+        country: r.country,
+        city: r.city,
+        studentCount: Number(r.student_count),
+        totalGlobalXp: Number(r.total_global_xp),
+        avgGlobalXp: Math.round(Number(r.avg_global_xp)),
+        globalScore: r.global_score || 0
+      }));
+
+      return res.json({ category: 'clubs', rankings, total: rankings.length });
+    } else {
+      return res.status(400).json({ error: 'Invalid category. Use "students" or "clubs"' });
+    }
+  } catch (error: any) {
+    console.error('[World Rankings] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch world rankings' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleWorldRankingsSports(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT DISTINCT art_type FROM clubs 
+      WHERE art_type IS NOT NULL AND art_type != ''
+      ORDER BY art_type
+    `);
+    
+    const sports = result.rows.map((r: any) => r.art_type);
+    return res.json({ sports });
+  } catch (error: any) {
+    console.error('[World Rankings] Sports error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch sports' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleWorldRankingsCountries(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT DISTINCT country FROM clubs 
+      WHERE country IS NOT NULL AND country != ''
+      ORDER BY country
+    `);
+    
+    const countries = result.rows.map((r: any) => r.country);
+    return res.json({ countries });
+  } catch (error: any) {
+    console.error('[World Rankings] Countries error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch countries' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleWorldRankingsStats(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const client = await pool.connect();
+  try {
+    const clubsResult = await client.query(`
+      SELECT COUNT(*) as count FROM clubs WHERE world_rankings_enabled = true AND status = 'active'
+    `);
+    
+    const studentsResult = await client.query(`
+      SELECT COUNT(*) as count FROM students s
+      JOIN clubs c ON s.club_id = c.id
+      WHERE c.world_rankings_enabled = true AND c.status = 'active'
+    `);
+    
+    const sportsResult = await client.query(`
+      SELECT COUNT(DISTINCT art_type) as count FROM clubs 
+      WHERE world_rankings_enabled = true AND art_type IS NOT NULL
+    `);
+
+    const countriesResult = await client.query(`
+      SELECT COUNT(DISTINCT country) as count FROM clubs 
+      WHERE world_rankings_enabled = true AND country IS NOT NULL
+    `);
+
+    return res.json({
+      participatingClubs: Number(clubsResult.rows[0]?.count || 0),
+      totalStudents: Number(studentsResult.rows[0]?.count || 0),
+      sportsRepresented: Number(sportsResult.rows[0]?.count || 0),
+      countriesRepresented: Number(countriesResult.rows[0]?.count || 0)
+    });
+  } catch (error: any) {
+    console.error('[World Rankings] Stats error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch stats' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleClubWorldRankingsToggle(req: VercelRequest, res: VercelResponse, clubId: string) {
+  if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { enabled } = parseBody(req);
+
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ error: 'enabled must be a boolean' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      UPDATE clubs 
+      SET world_rankings_enabled = $1, updated_at = NOW()
+      WHERE id = $2::uuid
+    `, [enabled, clubId]);
+
+    console.log(`[World Rankings] Club ${clubId} opt-${enabled ? 'in' : 'out'}`);
+    return res.json({ success: true, enabled });
+  } catch (error: any) {
+    console.error('[World Rankings] Toggle error:', error.message);
+    return res.status(500).json({ error: 'Failed to update world rankings setting' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleStudentGlobalXp(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { scorePercentage } = parseBody(req);
+
+  if (!studentId) {
+    return res.status(400).json({ error: 'Student ID is required' });
+  }
+
+  // Calculate Global XP using the anti-cheat formula
+  const attendanceXp = 20; // Fixed XP for showing up
+  const performanceXp = Math.round((scorePercentage / 100) * 30); // Max 30 based on performance
+  const sessionGlobalXp = attendanceXp + performanceXp; // Max 50 per session
+
+  const client = await pool.connect();
+  try {
+    // Check if already graded today (daily cap)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const existingToday = await client.query(`
+      SELECT COUNT(*) as count FROM xp_transactions 
+      WHERE student_id = $1::uuid 
+        AND reason = 'Global grading'
+        AND created_at >= $2::timestamptz
+    `, [studentId, todayStart.toISOString()]);
+    
+    const alreadyGraded = Number(existingToday.rows[0]?.count || 0) > 0;
+
+    if (alreadyGraded) {
+      return res.json({ 
+        success: true, 
+        globalXpAwarded: 0, 
+        message: 'Daily global XP cap reached',
+        alreadyGraded: true 
+      });
+    }
+
+    // Award global XP
+    await client.query(`
+      UPDATE students 
+      SET global_xp = COALESCE(global_xp, 0) + $1, updated_at = NOW()
+      WHERE id = $2::uuid
+    `, [sessionGlobalXp, studentId]);
+
+    // Log the global XP transaction
+    await client.query(`
+      INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+      VALUES ($1::uuid, $2, 'EARN', 'Global grading', NOW())
+    `, [studentId, sessionGlobalXp]);
+
+    console.log(`[Global XP] Student ${studentId}: +${sessionGlobalXp} (attendance: ${attendanceXp}, performance: ${performanceXp})`);
+
+    return res.json({ 
+      success: true, 
+      globalXpAwarded: sessionGlobalXp,
+      breakdown: { attendance: attendanceXp, performance: performanceXp }
+    });
+  } catch (error: any) {
+    console.error('[Global XP] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to award global XP' });
+  } finally {
+    client.release();
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -3615,6 +3914,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const voteVideoMatch = path.match(/^\/videos\/([^/]+)\/vote\/?$/);
     if (voteVideoMatch) return await handleVoteVideo(req, res, voteVideoMatch[1]);
+
+    // World Rankings endpoints
+    if (path === '/world-rankings' || path === '/world-rankings/') return await handleWorldRankings(req, res);
+    if (path === '/world-rankings/sports' || path === '/world-rankings/sports/') return await handleWorldRankingsSports(req, res);
+    if (path === '/world-rankings/countries' || path === '/world-rankings/countries/') return await handleWorldRankingsCountries(req, res);
+    if (path === '/world-rankings/stats' || path === '/world-rankings/stats/') return await handleWorldRankingsStats(req, res);
+    
+    const clubWorldRankingsMatch = path.match(/^\/clubs\/([^/]+)\/world-rankings\/?$/);
+    if (clubWorldRankingsMatch) return await handleClubWorldRankingsToggle(req, res, clubWorldRankingsMatch[1]);
+    
+    const studentGlobalXpMatch = path.match(/^\/students\/([^/]+)\/global-xp\/?$/);
+    if (studentGlobalXpMatch) return await handleStudentGlobalXp(req, res, studentGlobalXpMatch[1]);
 
     return res.status(404).json({ error: 'Not found', path });
   } catch (error: any) {

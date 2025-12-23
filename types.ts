@@ -337,6 +337,8 @@ export interface WizardData {
   // Holiday Schedule for Time Machine accuracy
   holidaySchedule: HolidayScheduleType;
   customHolidayWeeks?: number; // Only used when holidaySchedule is 'custom'
+  // World Rankings participation
+  worldRankingsEnabled?: boolean;
   // Selected subscription plan index for Profit Engine Simulator
   selectedPlanIndex?: number;
 }
