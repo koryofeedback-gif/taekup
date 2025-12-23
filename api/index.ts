@@ -1063,12 +1063,32 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
     // Log PTS transaction for monthly effort widget tracking
     const ptsEarned = sessionPts || 0;
     if (ptsEarned > 0) {
-      await client.query(
-        `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-         VALUES ($1::uuid, $2, 'PTS_EARN', 'Class grading PTS', NOW())`,
-        [studentId, ptsEarned]
-      );
-      console.log('[Grading] Logged PTS transaction:', studentId, '+', ptsEarned, 'PTS');
+      try {
+        // Try to add PTS_EARN enum value if it doesn't exist (safe ALTER)
+        await client.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'PTS_EARN' 
+              AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'xp_transaction_type')) THEN
+              ALTER TYPE xp_transaction_type ADD VALUE 'PTS_EARN';
+            END IF;
+          END
+          $$;
+        `);
+      } catch (enumError: any) {
+        console.log('[Grading] PTS_EARN enum check (may already exist):', enumError.message);
+      }
+      
+      try {
+        await client.query(
+          `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+           VALUES ($1::uuid, $2, 'PTS_EARN', 'Class grading PTS', NOW())`,
+          [studentId, ptsEarned]
+        );
+        console.log('[Grading] Logged PTS transaction:', studentId, '+', ptsEarned, 'PTS');
+      } catch (ptsError: any) {
+        console.error('[Grading] Failed to log PTS transaction:', ptsError.message);
+      }
     }
 
     console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
