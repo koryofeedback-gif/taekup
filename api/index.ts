@@ -1258,6 +1258,9 @@ async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachI
   if (req.method !== 'PATCH' && req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
   const { name, email, location, assignedClasses } = parseBody(req);
 
+  // Ensure assignedClasses is a valid array
+  const classesArray = Array.isArray(assignedClasses) ? assignedClasses : [];
+
   const client = await pool.connect();
   try {
     const result = await client.query(
@@ -1265,11 +1268,11 @@ async function handleUpdateCoach(req: VercelRequest, res: VercelResponse, coachI
         name = COALESCE($1, name),
         email = COALESCE($2, email),
         location = $3,
-        assigned_classes = $4,
+        assigned_classes = $4::text[],
         updated_at = NOW()
        WHERE id = $5::uuid
        RETURNING id, name, email, location, assigned_classes`,
-      [name, email, location || null, assignedClasses || [], coachId]
+      [name || null, email || null, location || null, classesArray, coachId]
     );
 
     if (result.rows.length === 0) {

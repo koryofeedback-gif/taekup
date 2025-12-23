@@ -1566,12 +1566,15 @@ export function registerRoutes(app: Express) {
       const { id } = req.params;
       const { name, email, location, assignedClasses } = req.body;
 
+      // Ensure assignedClasses is a valid array
+      const classesArray = Array.isArray(assignedClasses) ? assignedClasses : [];
+
       const result = await db.execute(sql`
         UPDATE coaches SET 
-          name = COALESCE(${name}, name),
-          email = COALESCE(${email}, email),
+          name = COALESCE(${name || null}, name),
+          email = COALESCE(${email || null}, email),
           location = ${location || null},
-          assigned_classes = ${assignedClasses || []},
+          assigned_classes = ${classesArray}::text[],
           updated_at = NOW()
         WHERE id = ${id}::uuid
         RETURNING id, name, email, location, assigned_classes
