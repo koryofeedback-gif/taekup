@@ -16,6 +16,10 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
 - **Backend**: Express.js with TypeScript, PostgreSQL (Neon for production), Drizzle ORM, RESTful API architecture.
 - **AI Integration**: Dual AI architecture utilizing GPT-4o for complex tasks like TaekBot conversations and class planning, and Google Gemini for cost-optimized routine tasks.
 - **Gamification**: "Dojang Rivals" system includes challenge categories (Power, Technique, Flexibility), 19 original challenges, an XP system with various reward actions, and special features like Team Battles and Leaderboards.
+- **Dual XP System**:
+    - **Local XP**: Unlimited bonus/homework points for coaches to reward students generously within their club
+    - **Global XP**: Capped at 2 bonus + 2 homework points for World Rankings fairness
+    - **Daily Limit**: Global XP submissions limited to 1x per day per student to prevent gaming
 - **Belt Systems**: Supports 11 martial arts (WT, ITF, Karate, BJJ, Judo, Hapkido, Tang Soo Do, Aikido, Krav Maga, Kung Fu) plus custom belt configurations. Includes an AI-powered "Black Belt Time Machine" for promotion predictions.
 - **AI Features**:
     - **TaekBot**: Conversational AI assistant for martial arts, context-aware, multi-language.
