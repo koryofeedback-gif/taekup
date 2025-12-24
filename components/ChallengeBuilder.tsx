@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { CustomChallenge, ChallengeCategory, ChallengeType } from '../types';
-import { CHALLENGE_TIERS, ChallengeTierKey, isValidTierSelection } from '../services/gamificationService';
+import { CHALLENGE_TIERS, ChallengeTierKey, isValidTierSelection, getBaseXp, ChallengeTypeKey } from '../services/gamificationService';
 
 interface ChallengeBuilderProps {
     coachId: string;
@@ -124,8 +124,8 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
             return;
         }
 
-        // Get fixed XP from the selected tier (Anti-Cheat: no custom XP values)
-        const tierInfo = CHALLENGE_TIERS[selectedTier];
+        // Get base XP from the challenge type + tier (category-based value hierarchy)
+        const baseXp = getBaseXp(challengeType as ChallengeTypeKey, selectedTier);
         const tierLabelMap: Record<ChallengeTierKey, CustomChallenge['difficulty']> = {
             'EASY': 'Easy', 'MEDIUM': 'Medium', 'HARD': 'Hard', 'EPIC': 'Expert'
         };
@@ -136,7 +136,7 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
             description: description.trim(),
             category,
             icon,
-            xp: tierInfo.xp, // Fixed XP based on tier - cannot be modified
+            xp: baseXp, // Base XP based on challenge type + tier (Free/Trust value)
             videoUrl: videoUrl.trim() || undefined,
             demoVideoUrl: demoVideoUrl.trim() || undefined,
             challengeType,
@@ -345,13 +345,14 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
 
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-bold text-gray-400 mb-2">
-                                        Difficulty Tier (Fixed XP)
+                                        Difficulty Tier (Base XP)
                                     </label>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {TIER_OPTIONS.map(({ key, tier }) => {
                                             const isEpic = key === 'EPIC';
                                             const isDisabled = isEpic && !isWeeklyChallenge;
                                             const isSelected = selectedTier === key;
+                                            const baseXp = getBaseXp(challengeType as ChallengeTypeKey, key);
                                             
                                             return (
                                                 <button
@@ -369,7 +370,7 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                                                 >
                                                     <div className="text-2xl mb-1">{tier.icon}</div>
                                                     <div className="font-bold text-white">{tier.label}</div>
-                                                    <div className="text-xl font-bold text-cyan-400">+{tier.xp} XP</div>
+                                                    <div className="text-xl font-bold text-cyan-400">+{baseXp} XP</div>
                                                     <div className="text-xs text-gray-400 mt-1">{tier.description}</div>
                                                     {isEpic && (
                                                         <div className="absolute top-1 right-1 text-xs bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">
@@ -381,7 +382,9 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                                         })}
                                     </div>
                                     <p className="text-xs text-gray-500 mt-2">
-                                        XP values are fixed to ensure fair gameplay across all clubs
+                                        {challengeType === 'coach_pick' 
+                                            ? 'Technical drills reward dedicated training'
+                                            : 'Fitness challenges build overall strength'}
                                     </p>
                                 </div>
                             </div>
@@ -513,7 +516,7 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                                                 {CHALLENGE_TIERS[selectedTier].icon} {CHALLENGE_TIERS[selectedTier].label}
                                             </span>
                                             <span className="text-cyan-400 text-sm font-bold">
-                                                +{CHALLENGE_TIERS[selectedTier].xp} XP
+                                                +{getBaseXp(challengeType as ChallengeTypeKey, selectedTier)} XP
                                             </span>
                                         </div>
                                     </div>

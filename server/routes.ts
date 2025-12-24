@@ -10,7 +10,7 @@ import * as emailAutomation from './services/emailAutomationService';
 import { db } from './db';
 import { sql } from 'drizzle-orm';
 import s3Storage from './services/s3StorageService';
-import { calculateArenaGlobalScore, type ChallengeTypeKey, type ChallengeTierKey } from '../services/gamificationService';
+import { calculateArenaGlobalScore, calculateLocalXp, type ChallengeTypeKey, type ChallengeTierKey } from '../services/gamificationService';
 
 let cachedProducts: any[] | null = null;
 let cacheTimestamp: number = 0;
@@ -2525,7 +2525,7 @@ export function registerRoutes(app: Express) {
   const PVP_WIN_XP = 75;
   const PVP_LOSE_XP = 15;
   const TRUST_PER_CHALLENGE_LIMIT = 1; // STRICT: 1 time per challenge per day (anti-XP farming)
-  const VIDEO_XP_MULTIPLIER = 2; // Video proof earns 2x XP
+  // VIDEO_XP_MULTIPLIER removed - now using calculateLocalXp from gamificationService
 
   // Challenge metadata mapping
   const CHALLENGE_METADATA: Record<string, { name: string; icon: string; category: string }> = {
@@ -2610,7 +2610,8 @@ export function registerRoutes(app: Express) {
   // Unified challenge submission endpoint
   app.post('/api/challenges/submit', async (req: Request, res: Response) => {
     try {
-      const { studentId, clubId, challengeType, score, proofType, videoUrl, challengeXp, challengeCategoryType, challengeDifficulty } = req.body;
+      const { studentId, challengeType, score, proofType, videoUrl, challengeCategoryType, challengeDifficulty } = req.body;
+      // Note: challengeXp is intentionally ignored - XP is calculated server-side using the secure matrix
       
       // Validate required fields
       if (!studentId || !challengeType) {
@@ -2627,16 +2628,15 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Invalid student ID format' });
       }
       
-      // Calculate XP based on proof type (Local Club XP)
-      const baseXp = challengeXp || 15; // Use passed XP or default
-      const finalXp = proofType === 'VIDEO' ? baseXp * VIDEO_XP_MULTIPLIER : baseXp;
-      
-      // Calculate Global Rank Score using the shared helper (single source of truth)
+      // Calculate XP using shared helper (single source of truth for Local XP matrix)
       const catType: ChallengeTypeKey = challengeCategoryType === 'coach_pick' ? 'coach_pick' : 'general';
       const difficulty: ChallengeTierKey = (['EASY', 'MEDIUM', 'HARD', 'EPIC'].includes(challengeDifficulty) ? challengeDifficulty : 'EASY') as ChallengeTierKey;
       const hasVideoProof = proofType === 'VIDEO';
       
-      // Use shared calculateArenaGlobalScore helper for consistent scoring
+      // Calculate Local XP using category-based value hierarchy (single source of truth)
+      const finalXp = calculateLocalXp(catType, difficulty, hasVideoProof);
+      
+      // Calculate Global Rank Score using the shared helper (single source of truth)
       const globalRankPoints = calculateArenaGlobalScore(catType, difficulty, hasVideoProof);
 
       const today = new Date().toISOString().split('T')[0];

@@ -35,11 +35,69 @@ export const MAX_HOMEWORK_BONUS = 2;
  * This prevents XP inflation and maintains balance across all clubs.
  */
 export const CHALLENGE_TIERS = {
-  EASY: { tier: 1, label: 'Easy', xp: 15, description: 'Quick tasks, basic drills', icon: '🌱' },
-  MEDIUM: { tier: 2, label: 'Medium', xp: 30, description: 'Standard drills, moderate effort', icon: '⚡' },
-  HARD: { tier: 3, label: 'Hard', xp: 60, description: 'Intense workouts, high difficulty', icon: '🔥' },
-  EPIC: { tier: 4, label: 'Epic', xp: 100, description: 'Weekly special challenge only', icon: '🏆', weeklyOnly: true },
+  EASY: { tier: 1, label: 'Easy', description: 'Quick tasks, basic drills', icon: '🌱' },
+  MEDIUM: { tier: 2, label: 'Medium', description: 'Standard drills, moderate effort', icon: '⚡' },
+  HARD: { tier: 3, label: 'Hard', description: 'Intense workouts, high difficulty', icon: '🔥' },
+  EPIC: { tier: 4, label: 'Epic', description: 'Weekly special challenge only', icon: '🏆', weeklyOnly: true },
 } as const;
+
+/**
+ * Local XP Matrix - Category-Based Value Hierarchy
+ * 
+ * Rules:
+ * - Physical Class Cap: 100 XP
+ * - Coach Picks (Premium/Video): Matches Class Cap (max 100 XP)
+ * - General/Fitness (Premium/Video): Half of Class Cap (max 50 XP)
+ * - Free/Trust Users: 50% of Premium/Video score
+ * 
+ * This hierarchy prioritizes technical training over general fitness.
+ */
+export const CHALLENGE_XP_MATRIX = {
+  coach_pick: {
+    EASY:   { freeXp: 10, premiumXp: 20 },
+    MEDIUM: { freeXp: 20, premiumXp: 40 },
+    HARD:   { freeXp: 35, premiumXp: 70 },
+    EPIC:   { freeXp: 50, premiumXp: 100 },
+  },
+  general: {
+    EASY:   { freeXp: 5,  premiumXp: 10 },
+    MEDIUM: { freeXp: 10, premiumXp: 20 },
+    HARD:   { freeXp: 15, premiumXp: 30 },
+    EPIC:   { freeXp: 25, premiumXp: 50 },
+  },
+} as const;
+
+/**
+ * Get Base (Free/Trust) XP for a challenge
+ * This is displayed in the Coach's Challenge Builder UI
+ */
+export function getBaseXp(challengeType: ChallengeTypeKey, tier: ChallengeTierKey): number {
+  return CHALLENGE_XP_MATRIX[challengeType][tier].freeXp;
+}
+
+/**
+ * Get Premium (Video) XP for a challenge
+ * Applied when student submits with video proof
+ */
+export function getPremiumXp(challengeType: ChallengeTypeKey, tier: ChallengeTierKey): number {
+  return CHALLENGE_XP_MATRIX[challengeType][tier].premiumXp;
+}
+
+/**
+ * Calculate Local XP for a challenge submission
+ * @param challengeType - 'coach_pick' or 'general'
+ * @param tier - Difficulty tier (EASY, MEDIUM, HARD, EPIC)
+ * @param hasVideoProof - Whether video proof was provided (premium = 2x XP)
+ * @returns Local XP to award
+ */
+export function calculateLocalXp(
+  challengeType: ChallengeTypeKey,
+  tier: ChallengeTierKey,
+  hasVideoProof: boolean
+): number {
+  const matrix = CHALLENGE_XP_MATRIX[challengeType][tier];
+  return hasVideoProof ? matrix.premiumXp : matrix.freeXp;
+}
 
 export type ChallengeTierKey = keyof typeof CHALLENGE_TIERS;
 
@@ -87,12 +145,13 @@ export function calculateArenaGlobalScore(
 }
 
 /**
- * Get XP value for a challenge tier
+ * Get XP value for a challenge tier (deprecated - use getBaseXp/getPremiumXp instead)
+ * Returns the Coach Pick free XP value for backward compatibility
  * @param tier - The difficulty tier key
- * @returns XP value for that tier
+ * @returns XP value for that tier (Coach Pick base value)
  */
 export function getChallengeTierXP(tier: ChallengeTierKey): number {
-  return CHALLENGE_TIERS[tier].xp;
+  return CHALLENGE_XP_MATRIX.coach_pick[tier].freeXp;
 }
 
 /**

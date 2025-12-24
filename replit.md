@@ -17,9 +17,13 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
 - **AI Integration**: Dual AI architecture utilizing GPT-4o for complex tasks like TaekBot conversations and class planning, and Google Gemini for cost-optimized routine tasks.
 - **Gamification**: "Dojang Rivals" system includes challenge categories (Power, Technique, Flexibility), 19 original challenges, an XP system with various reward actions, and special features like Team Battles and Leaderboards.
 - **Dual XP System**:
-    - **Local XP**: Unlimited bonus/homework points for coaches to reward students generously within their club
+    - **Local XP**: Category-based value hierarchy prioritizing technical training over general fitness
     - **Global XP**: Capped at 2 bonus + 2 homework points for World Rankings fairness
     - **Daily Limit**: Global XP submissions limited to 1x per day per student to prevent gaming
+- **Local XP Value Hierarchy** (Physical Class Cap = 100 XP):
+    - **Coach Picks** (Technical): EASY 10/20, MEDIUM 20/40, HARD 35/70, EPIC 50/100 XP (Free/Premium)
+    - **General/Fitness**: EASY 5/10, MEDIUM 10/20, HARD 15/30, EPIC 25/50 XP (Free/Premium)
+    - Premium users earn 2x XP with video proof; UI shows base (free) values only
 - **Arena Global Score Matrix**: Two-tier anti-cheat system for World Rankings:
     - **Coach Picks** (Technical challenges): Higher point values - EASY 1/5, MEDIUM 3/15, HARD 5/25, EPIC 10/35 (noVideo/withVideo)
     - **General/Fitness**: Lower point values - EASY 1/3, MEDIUM 2/5, HARD 3/10, EPIC 5/15 (noVideo/withVideo)
