@@ -2871,56 +2871,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                         ))}
                                         {allBadges.filter(b => b.earned).length === 0 && (
-                                            <p className="text-gray-500 text-xs italic">Win challenges to earn badges!</p>
+                                            <p className="text-gray-500 text-xs italic">Complete challenges to earn badges!</p>
                                         )}
                                     </div>
 
-                                    {/* Select Opponent with Fair Matchmaking - Pro Design */}
-                                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-5 rounded-2xl border border-gray-700 shadow-xl">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="font-bold text-white text-lg flex items-center">
-                                                <span className="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center mr-3">👤</span>
-                                                Choose Opponent
-                                            </h4>
-                                        </div>
-                                        <div className="flex items-center gap-2 mb-4 p-2 bg-green-900/20 rounded-lg border border-green-700/30">
-                                            <span className="w-6 h-6 bg-green-600/30 rounded-full flex items-center justify-center">
-                                                <span className="text-green-400 text-xs">⚖️</span>
-                                            </span>
-                                            <div>
-                                                <span className="text-green-400 text-xs font-bold">Fair Match</span>
-                                                <span className="text-gray-400 text-xs ml-1">• {studentBeltTier} tier</span>
-                                                <span className="text-gray-500 text-xs ml-1">({fairMatchClassmates.length} available)</span>
-                                            </div>
-                                        </div>
-                                        <select 
-                                            value={selectedRival} 
-                                            onChange={e => setSelectedRival(e.target.value)}
-                                            className="w-full bg-gray-800 text-white p-4 rounded-xl border-2 border-gray-600 text-sm font-medium focus:border-blue-500 focus:outline-none transition-colors cursor-pointer"
-                                        >
-                                            <option value="">Select Opponent...</option>
-                                            {fairMatchClassmates.length > 0 && (
-                                                <optgroup label="⚖️ Fair Match (Same Tier)">
-                                                    {fairMatchClassmates.map(c => (
-                                                        <option key={c.id} value={c.id}>
-                                                            {c.name} • {data.belts.find(b => b.id === c.beltId)?.name}
-                                                        </option>
-                                                    ))}
-                                                </optgroup>
-                                            )}
-                                            {classmates.filter(c => !fairMatchClassmates.includes(c)).length > 0 && (
-                                                <optgroup label="All Others">
-                                                    {classmates.filter(c => !fairMatchClassmates.includes(c)).map(c => (
-                                                        <option key={c.id} value={c.id}>
-                                                            {c.name} • {data.belts.find(b => b.id === c.beltId)?.name}
-                                                        </option>
-                                                    ))}
-                                                </optgroup>
-                                            )}
-                                        </select>
-                                    </div>
-
-                                    {/* Challenge Categories - Pro Design */}
+                                    {/* Challenge Categories - Solo Mode First */}
                                     <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-5 rounded-2xl border border-gray-700 shadow-xl">
                                         <div className="flex items-center justify-between mb-4">
                                             <h4 className="font-bold text-white text-lg flex items-center">
@@ -3201,40 +3156,55 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                     )}
 
-                                    {/* OR Divider */}
-                                    <div className="flex items-center gap-4 my-2">
-                                        <div className="flex-1 h-px bg-gray-700"></div>
-                                        <span className="text-gray-500 text-xs font-bold">OR CHALLENGE A RIVAL</span>
-                                        <div className="flex-1 h-px bg-gray-700"></div>
-                                    </div>
-
-                                    {/* Send Challenge Button - Pro Design */}
-                                    <button 
-                                        onClick={handleSendChallenge}
-                                        disabled={!selectedRival || !selectedChallenge}
-                                        className={`w-full py-4 rounded-2xl shadow-xl transform active:scale-[0.98] transition-all text-lg font-black uppercase tracking-wide ${
-                                            !selectedRival || !selectedChallenge
-                                                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                                                : 'bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white hover:from-red-500 hover:via-red-400 hover:to-orange-400 shadow-red-900/50'
-                                        }`}
-                                    >
-                                        {!selectedRival ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <span className="w-5 h-5 border-2 border-gray-500 rounded-full"></span>
-                                                Select Opponent
-                                            </span>
-                                        ) : !selectedChallenge ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <span className="w-5 h-5 border-2 border-gray-500 rounded-full"></span>
-                                                Select Challenge
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <span className="text-xl">⚔️</span>
-                                                Send Challenge
-                                            </span>
-                                        )}
-                                    </button>
+                                    {/* VS Mode - Challenge a Friend (Secondary) */}
+                                    {selectedChallenge && classmates.length > 0 && (
+                                        <div className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 p-4 rounded-2xl border border-gray-700/50">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <span className="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center">⚔️</span>
+                                                <div>
+                                                    <h4 className="font-bold text-white text-sm">Challenge a Friend</h4>
+                                                    <p className="text-gray-500 text-xs">Optional: compete with a classmate</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 mb-3 p-2 bg-green-900/20 rounded-lg border border-green-700/30">
+                                                <span className="text-green-400 text-xs">⚖️</span>
+                                                <span className="text-gray-400 text-xs">{studentBeltTier} tier • {fairMatchClassmates.length} fair matches</span>
+                                            </div>
+                                            <select 
+                                                value={selectedRival} 
+                                                onChange={e => setSelectedRival(e.target.value)}
+                                                className="w-full bg-gray-800 text-white p-3 rounded-xl border border-gray-600 text-sm focus:border-blue-500 focus:outline-none"
+                                            >
+                                                <option value="">Solo Mode (no opponent)</option>
+                                                {fairMatchClassmates.length > 0 && (
+                                                    <optgroup label="Fair Match (Same Tier)">
+                                                        {fairMatchClassmates.map(c => (
+                                                            <option key={c.id} value={c.id}>
+                                                                {c.name} • {data.belts.find(b => b.id === c.beltId)?.name}
+                                                            </option>
+                                                        ))}
+                                                    </optgroup>
+                                                )}
+                                                {classmates.filter(c => !fairMatchClassmates.includes(c)).length > 0 && (
+                                                    <optgroup label="All Others">
+                                                        {classmates.filter(c => !fairMatchClassmates.includes(c)).map(c => (
+                                                            <option key={c.id} value={c.id}>
+                                                                {c.name} • {data.belts.find(b => b.id === c.beltId)?.name}
+                                                            </option>
+                                                        ))}
+                                                    </optgroup>
+                                                )}
+                                            </select>
+                                            {selectedRival && (
+                                                <button 
+                                                    onClick={handleSendChallenge}
+                                                    className="w-full mt-3 py-3 rounded-xl font-bold bg-gradient-to-r from-red-600 to-orange-500 text-white hover:from-red-500 hover:to-orange-400 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <span>⚔️</span> Send Challenge to {classmates.find(c => c.id === selectedRival)?.name}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                     
                                     {/* Challenge Sent Confirmation */}
                                     {challengeSent && (
