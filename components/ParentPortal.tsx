@@ -2437,8 +2437,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             ? apiLeaderboardData.map(s => ({
                 id: s.id,
                 name: s.name,
-                belt: s.belt || student.belt,
-                beltId: student.beltId, // Use current student's belt as fallback for display
+                belt: s.belt || data.belts.find(b => b.id === student.beltId)?.name || 'Unknown',
+                beltId: student.beltId,
                 totalXP: s.totalXP,
                 monthlyXP: s.monthlyXP
             }))
@@ -2518,20 +2518,46 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         });
         
         // Challenge Categories - Consolidated to 3 (Power, Technique, Flexibility)
+        const coachPickChallenges = activeCustomChallenges.filter(c => c.challengeType === 'coach_pick' || (!c.challengeType && c.category !== 'Custom'));
+        const generalCustomChallenges = activeCustomChallenges.filter(c => c.challengeType === 'general' || (c.challengeType === undefined && c.category === 'Custom'));
+        
         const challengeCategories = [
-            ...(activeCustomChallenges.length > 0 ? [{
+            ...(coachPickChallenges.length > 0 ? [{
                 name: 'Coach Picks',
-                icon: '🏆',
-                color: 'cyan',
-                challenges: activeCustomChallenges.map(c => ({
+                icon: '🥋',
+                color: 'amber',
+                isFeatured: true,
+                challenges: coachPickChallenges.map(c => ({
                     id: c.id,
                     name: c.name,
                     icon: c.icon,
                     xp: c.xp,
                     isCoachChallenge: true,
+                    challengeType: 'coach_pick' as const,
+                    demoVideoUrl: c.demoVideoUrl,
                     videoUrl: c.videoUrl,
                     description: c.description,
-                    weeklyChallenge: c.weeklyChallenge
+                    weeklyChallenge: c.weeklyChallenge,
+                    difficulty: c.difficulty
+                }))
+            }] : []),
+            ...(generalCustomChallenges.length > 0 ? [{
+                name: 'General',
+                icon: '💪',
+                color: 'blue',
+                isFeatured: false,
+                challenges: generalCustomChallenges.map(c => ({
+                    id: c.id,
+                    name: c.name,
+                    icon: c.icon,
+                    xp: c.xp,
+                    isCoachChallenge: true,
+                    challengeType: 'general' as const,
+                    demoVideoUrl: c.demoVideoUrl,
+                    videoUrl: c.videoUrl,
+                    description: c.description,
+                    weeklyChallenge: c.weeklyChallenge,
+                    difficulty: c.difficulty
                 }))
             }] : []),
             {
@@ -2895,22 +2921,35 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             )}
                                         </div>
                                         
-                                        {challengeCategories.map((category, catIdx) => (
-                                            <div key={category.name} className={`${catIdx > 0 ? 'mt-5 pt-5 border-t border-gray-700/50' : ''}`}>
+                                        {challengeCategories.map((category, catIdx) => {
+                                            const isFeatured = (category as any).isFeatured;
+                                            return (
+                                            <div key={category.name} className={`${catIdx > 0 ? 'mt-5 pt-5 border-t border-gray-700/50' : ''} ${
+                                                isFeatured ? 'bg-gradient-to-br from-amber-900/20 to-amber-950/10 -mx-5 px-5 py-4 rounded-xl border border-amber-500/30' : ''
+                                            }`}>
                                                 <div className="flex items-center mb-3">
                                                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2 ${
+                                                        isFeatured ? 'bg-amber-900/50 ring-1 ring-amber-500/50' :
                                                         category.name === 'Power' ? 'bg-red-900/50' :
                                                         category.name === 'Technique' ? 'bg-blue-900/50' :
-                                                        category.name === 'Flexibility' ? 'bg-purple-900/50' : 'bg-cyan-900/50'
+                                                        category.name === 'Flexibility' ? 'bg-purple-900/50' : 
+                                                        category.name === 'General' ? 'bg-blue-900/50' : 'bg-cyan-900/50'
                                                     }`}>
                                                         <span className="text-base">{category.icon}</span>
                                                     </div>
-                                                    <span className="text-sm font-bold text-gray-300">{category.name}</span>
+                                                    <span className={`text-sm font-bold ${isFeatured ? 'text-amber-300' : 'text-gray-300'}`}>{category.name}</span>
+                                                    {isFeatured && (
+                                                        <span className="ml-2 text-[9px] bg-gradient-to-r from-amber-500 to-yellow-500 text-black px-1.5 py-0.5 rounded-full font-bold">
+                                                            FEATURED
+                                                        </span>
+                                                    )}
                                                     <span className="ml-2 text-[10px] text-gray-500">({category.challenges.length})</span>
                                                 </div>
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                                     {category.challenges.map(challenge => {
                                                         const isCompleted = isChallengeCompletedToday(challenge.id);
+                                                        const challengeData = challenge as any;
+                                                        const isCoachPick = challengeData.challengeType === 'coach_pick' || isFeatured;
                                                         return (
                                                         <button
                                                             key={challenge.id}
@@ -2920,8 +2959,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 isCompleted
                                                                     ? 'bg-green-900/30 border-green-600/50 opacity-60 cursor-not-allowed'
                                                                     : selectedChallenge === challenge.id
-                                                                    ? 'bg-gradient-to-br from-red-900/60 to-red-950/60 border-red-500 shadow-lg shadow-red-900/30 scale-[1.02]'
-                                                                    : 'bg-gray-800/50 border-gray-700/50 hover:border-gray-500 hover:bg-gray-700/50'
+                                                                    ? isCoachPick
+                                                                        ? 'bg-gradient-to-br from-amber-900/60 to-amber-950/60 border-amber-500 shadow-lg shadow-amber-900/30 scale-[1.02]'
+                                                                        : 'bg-gradient-to-br from-red-900/60 to-red-950/60 border-red-500 shadow-lg shadow-red-900/30 scale-[1.02]'
+                                                                    : isCoachPick
+                                                                        ? 'bg-amber-900/20 border-amber-700/50 hover:border-amber-500 hover:bg-amber-800/30'
+                                                                        : 'bg-gray-800/50 border-gray-700/50 hover:border-gray-500 hover:bg-gray-700/50'
                                                             }`}
                                                         >
                                                             {isCompleted ? (
@@ -2929,8 +2972,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     <span className="text-white text-[10px]">✓</span>
                                                                 </div>
                                                             ) : selectedChallenge === challenge.id && (
-                                                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                                                                <div className={`absolute -top-1 -right-1 w-5 h-5 ${isCoachPick ? 'bg-amber-500' : 'bg-red-500'} rounded-full flex items-center justify-center`}>
                                                                     <span className="text-white text-[10px]">✓</span>
+                                                                </div>
+                                                            )}
+                                                            {isCoachPick && !isCompleted && (
+                                                                <div className="absolute -top-1 -left-1 text-[9px] bg-amber-500 text-black px-1 rounded font-bold">
+                                                                    ⭐
                                                                 </div>
                                                             )}
                                                             <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform">{challenge.icon}</div>
@@ -2940,34 +2988,75 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     {isCompleted ? 'Done ✓' : `+${challenge.xp} XP`}
                                                                 </span>
                                                             </div>
+                                                            {challengeData.demoVideoUrl && (
+                                                                <div className="mt-1 text-[9px] text-cyan-400">📺 Has Demo</div>
+                                                            )}
                                                         </button>
                                                         );
                                                     })}
                                                 </div>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
 
                                     {/* Solo Challenge Submission */}
-                                    {selectedChallenge && (
-                                        <div className="bg-gradient-to-b from-green-900/40 to-gray-900 p-5 rounded-2xl border border-green-500/50 shadow-xl">
+                                    {selectedChallenge && (() => {
+                                        const selectedChallengeObj = challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge) as any;
+                                        const isCoachPickChallenge = selectedChallengeObj?.challengeType === 'coach_pick' || selectedChallengeObj?.isCoachChallenge;
+                                        const demoVideoLink = selectedChallengeObj?.demoVideoUrl;
+                                        
+                                        return (
+                                        <div className={`p-5 rounded-2xl border shadow-xl ${
+                                            isCoachPickChallenge 
+                                                ? 'bg-gradient-to-b from-amber-900/40 to-gray-900 border-amber-500/50' 
+                                                : 'bg-gradient-to-b from-green-900/40 to-gray-900 border-green-500/50'
+                                        }`}>
                                             <div className="flex items-center justify-between mb-4">
                                                 <h4 className="font-bold text-white text-lg flex items-center">
-                                                    <span className="w-8 h-8 bg-green-600/30 rounded-lg flex items-center justify-center mr-3">🏋️</span>
-                                                    Solo Practice
+                                                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
+                                                        isCoachPickChallenge ? 'bg-amber-600/30' : 'bg-green-600/30'
+                                                    }`}>
+                                                        {isCoachPickChallenge ? '🥋' : '🏋️'}
+                                                    </span>
+                                                    {isCoachPickChallenge ? 'Coach Pick Challenge' : 'Solo Practice'}
                                                 </h4>
                                                 <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${
                                                     isChallengeCompletedToday(selectedChallenge) 
                                                         ? 'bg-green-600 text-white' 
-                                                        : 'bg-gray-700 text-gray-300'
+                                                        : isCoachPickChallenge
+                                                            ? 'bg-amber-700 text-amber-200'
+                                                            : 'bg-gray-700 text-gray-300'
                                                 }`}>
-                                                    {isChallengeCompletedToday(selectedChallenge) ? '✅ Completed' : 'Daily Mission'}
+                                                    {isChallengeCompletedToday(selectedChallenge) ? '✅ Completed' : isCoachPickChallenge ? '⭐ High Value' : 'Daily Mission'}
                                                 </span>
                                             </div>
                                             
                                             <p className="text-gray-400 text-sm mb-4">
-                                                {challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge)?.description || 'Complete this challenge solo and earn XP!'}
+                                                {selectedChallengeObj?.description || 'Complete this challenge solo and earn XP!'}
                                             </p>
+                                            
+                                            {demoVideoLink && (
+                                                <div className="mb-4 p-3 bg-cyan-900/30 rounded-xl border border-cyan-500/30">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xl">📺</span>
+                                                            <div>
+                                                                <p className="text-cyan-300 text-sm font-bold">Watch Demo First!</p>
+                                                                <p className="text-gray-400 text-xs">Learn the proper technique before attempting</p>
+                                                            </div>
+                                                        </div>
+                                                        <a 
+                                                            href={demoVideoLink}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                                                        >
+                                                            ▶️ Watch
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
                                             
                                             {/* Score Input */}
                                             <div className="mb-4">
@@ -3053,7 +3142,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 </div>
                                             )}
                                         </div>
-                                    )}
+                                        );
+                                    })()}
 
                                     {/* Upgrade to Premium Modal */}
                                     {showUpgradeModal && (
