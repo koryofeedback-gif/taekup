@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { CustomChallenge, ChallengeCategory, ChallengeType } from '../types';
-import { CHALLENGE_TIERS, ChallengeTierKey, isValidTierSelection, ARENA_GLOBAL_SCORE_MATRIX } from '../services/gamificationService';
+import { CHALLENGE_TIERS, ChallengeTierKey, isValidTierSelection } from '../services/gamificationService';
 
 interface ChallengeBuilderProps {
     coachId: string;
@@ -40,9 +40,9 @@ const MEASUREMENT_TYPES: { value: CustomChallenge['measurementType']; label: str
     { value: 'score', label: 'Score (Points)', units: ['points', 'accuracy %'] },
 ];
 
-const CHALLENGE_TYPE_OPTIONS: { value: ChallengeType; label: string; description: string; icon: string; color: string }[] = [
-    { value: 'coach_pick', label: 'Coach Pick', description: 'Technical martial arts drills (Forms, Kicks) - High value for rankings', icon: '🥋', color: 'amber' },
-    { value: 'general', label: 'General/Fitness', description: 'General exercises (Pushups, Plank) - Lower value for rankings', icon: '💪', color: 'blue' },
+const CHALLENGE_TYPE_OPTIONS: { value: ChallengeType; label: string; description: string; icon: string; color: string; badge: string }[] = [
+    { value: 'coach_pick', label: 'Coach Pick', description: 'Technical martial arts drills (Forms, Kicks, Stances)', icon: '🥋', color: 'amber', badge: 'High Ranking Impact 🏆' },
+    { value: 'general', label: 'General/Fitness', description: 'General exercises (Pushups, Plank, Cardio)', icon: '💪', color: 'blue', badge: 'Standard Fitness ⚡' },
 ];
 
 export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
@@ -272,12 +272,11 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-400 mb-2">
-                                    Challenge Type (World Rankings Value)
+                                    Challenge Type
                                 </label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {CHALLENGE_TYPE_OPTIONS.map(opt => {
                                         const isSelected = challengeType === opt.value;
-                                        const scores = ARENA_GLOBAL_SCORE_MATRIX[opt.value][selectedTier];
                                         return (
                                             <button
                                                 key={opt.value}
@@ -296,29 +295,20 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                                                         <span className={`font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>
                                                             {opt.label}
                                                         </span>
-                                                        {opt.value === 'coach_pick' && (
-                                                            <span className="ml-2 text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
-                                                                Featured
-                                                            </span>
-                                                        )}
                                                     </div>
                                                 </div>
                                                 <p className="text-xs text-gray-400 mb-2">{opt.description}</p>
-                                                <div className="flex gap-4 text-xs">
-                                                    <span className="text-gray-500">
-                                                        No Video: <span className="text-gray-300 font-bold">{scores.noVideo} pts</span>
-                                                    </span>
-                                                    <span className="text-green-400">
-                                                        With Video: <span className="font-bold">{scores.withVideo} pts</span>
-                                                    </span>
+                                                <div className={`text-xs font-bold px-2 py-1 rounded-full inline-block ${
+                                                    opt.value === 'coach_pick' 
+                                                        ? 'bg-amber-500/20 text-amber-400' 
+                                                        : 'bg-blue-500/20 text-blue-400'
+                                                }`}>
+                                                    {opt.badge}
                                                 </div>
                                             </button>
                                         );
                                     })}
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Coach Picks (technical drills) earn more World Ranking points than General/Fitness challenges
-                                </p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
