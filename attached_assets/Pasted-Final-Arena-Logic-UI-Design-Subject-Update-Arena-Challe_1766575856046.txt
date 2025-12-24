@@ -1,0 +1,50 @@
+Final Arena Logic & UI Design
+Subject: Update Arena Challenges Logic (Coach Picks vs. General) and UI Improvements
+
+I need you to apply a specific business logic to the Arena section. We are separating challenges into two distinct categories with different value systems for the Global Ranking.
+
+1. The Logic: "Technical" vs. "Fitness" We are introducing a tiered scoring system.
+
+Local XP: Remains high and generous for all challenges (to keep students motivated).
+
+Global Rank Score: Must be calculated based on the type of challenge (Technical vs. Fitness) and whether Video Proof is provided.
+
+Please implement the following scoring matrix for the Global Rank Score:
+
+Category A: Coach Picks (High Value) These are technical martial arts drills (e.g., Forms, Kicks). They carry the most weight.
+
+Logic: A "Coach Pick" with video proof is nearly as valuable as a physical class.
+
+Global Score Mapping:
+
+Easy: 1 pt (No Video) / 5 pts (With Video)
+
+Medium: 3 pts (No Video) / 15 pts (With Video)
+
+Hard: 5 pts (No Video) / 25 pts (With Video)
+
+Epic: 10 pts (No Video) / 35 pts (With Video)
+
+Category B: General/Fitness Challenges (Lower Value) These are general exercises (e.g., Pushups, Plank). Good for fitness, but less important than technique.
+
+Logic: These are capped lower to prevent students from spamming fitness drills to outrank technical students.
+
+Global Score Mapping:
+
+Easy: 1 pt (No Video) / 3 pts (With Video)
+
+Medium: 2 pts (No Video) / 5 pts (With Video)
+
+Hard: 3 pts (No Video) / 10 pts (With Video)
+
+Epic: 5 pts (No Video) / 15 pts (With Video)
+
+2. UI/UX Requirement: Visual Distinction In the Arena page, users must clearly see the difference between these two categories:
+
+Coach Picks: These should look premium and distinct. Maybe place them at the top in a "Featured" section, or give them a special border/glow (e.g., Gold or Team Color). They are the "Must-Do" tasks.
+
+General Challenges: These can remain in the standard grid layout.
+
+3. UI Requirement: Instructional Video Link When a Coach creates a challenge (or when viewing a System Challenge), there must be a field for "Demo Video URL" (e.g., YouTube/Vimeo link).
+
+Student View: When a student opens a challenge card to perform it, they should see this link or an embedded player button to watch how to perform the move correctly before recording themselves.

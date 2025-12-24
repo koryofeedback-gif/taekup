@@ -44,6 +44,49 @@ export const CHALLENGE_TIERS = {
 export type ChallengeTierKey = keyof typeof CHALLENGE_TIERS;
 
 /**
+ * Arena Global Score Matrix
+ * 
+ * Two-tier system for World Rankings fairness:
+ * - Coach Picks (Technical): Higher value - nearly as valuable as physical class when with video
+ * - General/Fitness: Lower value - prevents spamming fitness drills to outrank technical students
+ * 
+ * Video proof multiplier strongly encouraged for anti-cheat
+ */
+export const ARENA_GLOBAL_SCORE_MATRIX = {
+  coach_pick: {
+    EASY:   { noVideo: 1,  withVideo: 5 },
+    MEDIUM: { noVideo: 3,  withVideo: 15 },
+    HARD:   { noVideo: 5,  withVideo: 25 },
+    EPIC:   { noVideo: 10, withVideo: 35 },
+  },
+  general: {
+    EASY:   { noVideo: 1,  withVideo: 3 },
+    MEDIUM: { noVideo: 2,  withVideo: 5 },
+    HARD:   { noVideo: 3,  withVideo: 10 },
+    EPIC:   { noVideo: 5,  withVideo: 15 },
+  },
+} as const;
+
+export type ChallengeTypeKey = keyof typeof ARENA_GLOBAL_SCORE_MATRIX;
+
+/**
+ * Calculate Global Rank Score for Arena challenge submissions
+ * @param challengeType - 'coach_pick' (technical) or 'general' (fitness)
+ * @param difficulty - Challenge difficulty tier
+ * @param hasVideoProof - Whether video proof was provided
+ * @returns Global rank score points
+ */
+export function calculateArenaGlobalScore(
+  challengeType: ChallengeTypeKey,
+  difficulty: ChallengeTierKey,
+  hasVideoProof: boolean
+): number {
+  const matrix = ARENA_GLOBAL_SCORE_MATRIX[challengeType];
+  const tierScores = matrix[difficulty];
+  return hasVideoProof ? tierScores.withVideo : tierScores.noVideo;
+}
+
+/**
  * Get XP value for a challenge tier
  * @param tier - The difficulty tier key
  * @returns XP value for that tier

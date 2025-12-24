@@ -144,6 +144,8 @@ export interface Challenge {
 
 export type ChallengeCategory = 'Power' | 'Technique' | 'Flexibility' | 'Custom';
 
+export type ChallengeType = 'coach_pick' | 'general';
+
 export interface CustomChallenge {
     id: string;
     name: string;
@@ -152,6 +154,7 @@ export interface CustomChallenge {
     icon: string;
     xp: number;
     videoUrl?: string;
+    demoVideoUrl?: string;
     difficulty: 'Easy' | 'Medium' | 'Hard' | 'Expert';
     measurementType: 'count' | 'time' | 'distance' | 'score';
     measurementUnit: string;
@@ -162,6 +165,7 @@ export interface CustomChallenge {
     targetAudience: 'all' | 'beginners' | 'intermediate' | 'advanced';
     weeklyChallenge?: boolean;
     expiresAt?: string;
+    challengeType?: ChallengeType;
 }
 
 export interface LifeSkill {
