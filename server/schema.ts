@@ -552,6 +552,8 @@ export const dailyChallenges = pgTable('daily_challenges', {
 export const challengeModeEnum = pgEnum('challenge_mode', ['SOLO', 'PVP']);
 export const challengeStatusEnum = pgEnum('challenge_status', ['PENDING', 'PENDING_OPPONENT', 'ACTIVE', 'COMPLETED', 'VERIFIED', 'REJECTED']);
 export const proofTypeEnum = pgEnum('proof_type', ['TRUST', 'VIDEO']);
+export const challengeCategoryTypeEnum = pgEnum('challenge_category_type', ['coach_pick', 'general']);
+export const challengeDifficultyEnum = pgEnum('challenge_difficulty', ['EASY', 'MEDIUM', 'HARD', 'EPIC']);
 
 export const challengeSubmissions = pgTable('challenge_submissions', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -569,6 +571,10 @@ export const challengeSubmissions = pgTable('challenge_submissions', {
   proofType: proofTypeEnum('proof_type').default('TRUST'),
   videoUrl: text('video_url'),
   score: integer('score').default(0),
+  // Global Rank fields for World Rankings
+  challengeCategoryType: challengeCategoryTypeEnum('challenge_category_type'),
+  challengeDifficulty: challengeDifficultyEnum('challenge_difficulty'),
+  globalRankPoints: integer('global_rank_points').default(0),
 });
 
 export type DailyChallenge = typeof dailyChallenges.$inferSelect;

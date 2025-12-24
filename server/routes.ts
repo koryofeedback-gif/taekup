@@ -10,6 +10,7 @@ import * as emailAutomation from './services/emailAutomationService';
 import { db } from './db';
 import { sql } from 'drizzle-orm';
 import s3Storage from './services/s3StorageService';
+import { calculateArenaGlobalScore, type ChallengeTypeKey, type ChallengeTierKey } from '../services/gamificationService';
 
 let cachedProducts: any[] | null = null;
 let cacheTimestamp: number = 0;
@@ -2609,7 +2610,7 @@ export function registerRoutes(app: Express) {
   // Unified challenge submission endpoint
   app.post('/api/challenges/submit', async (req: Request, res: Response) => {
     try {
-      const { studentId, clubId, challengeType, score, proofType, videoUrl, challengeXp } = req.body;
+      const { studentId, clubId, challengeType, score, proofType, videoUrl, challengeXp, challengeCategoryType, challengeDifficulty } = req.body;
       
       // Validate required fields
       if (!studentId || !challengeType) {
@@ -2626,9 +2627,17 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Invalid student ID format' });
       }
       
-      // Calculate XP based on proof type
+      // Calculate XP based on proof type (Local Club XP)
       const baseXp = challengeXp || 15; // Use passed XP or default
       const finalXp = proofType === 'VIDEO' ? baseXp * VIDEO_XP_MULTIPLIER : baseXp;
+      
+      // Calculate Global Rank Score using the shared helper (single source of truth)
+      const catType: ChallengeTypeKey = challengeCategoryType === 'coach_pick' ? 'coach_pick' : 'general';
+      const difficulty: ChallengeTierKey = (['EASY', 'MEDIUM', 'HARD', 'EPIC'].includes(challengeDifficulty) ? challengeDifficulty : 'EASY') as ChallengeTierKey;
+      const hasVideoProof = proofType === 'VIDEO';
+      
+      // Use shared calculateArenaGlobalScore helper for consistent scoring
+      const globalRankPoints = calculateArenaGlobalScore(catType, difficulty, hasVideoProof);
 
       const today = new Date().toISOString().split('T')[0];
 
@@ -2676,24 +2685,34 @@ export function registerRoutes(app: Express) {
         }
 
           // Create TRUST submission - instant XP with deterministic challenge_id
+          // Include Global Rank metadata for World Rankings
           const challengeUUID = generateChallengeUUID(challengeType);
           await db.execute(sql`
-            INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, completed_at)
-            VALUES (${challengeUUID}::uuid, ${studentId}::uuid, ${validClubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'COMPLETED', 'TRUST', ${finalXp}, NOW())
+            INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, challenge_category_type, challenge_difficulty, global_rank_points, completed_at)
+            VALUES (${challengeUUID}::uuid, ${studentId}::uuid, ${validClubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'COMPLETED', 'TRUST', ${finalXp}, ${catType}::challenge_category_type, ${difficulty}::challenge_difficulty, ${globalRankPoints}, NOW())
           `);
 
           // Award XP using unified XP service (single source of truth)
           await awardXP(studentId, finalXp, 'arena', { challengeType, proofType: 'TRUST' });
+          
+          // Award Global Rank Points (for World Rankings)
+          await db.execute(sql`
+            UPDATE students 
+            SET global_xp = COALESCE(global_xp, 0) + ${globalRankPoints},
+                updated_at = NOW()
+            WHERE id = ${studentId}::uuid
+          `);
 
-        console.log(`[Arena] Trust submission for "${challengeType}": +${finalXp} XP (${count + 1}/${TRUST_PER_CHALLENGE_LIMIT} today)`);
+        console.log(`[Arena] Trust submission for "${challengeType}" (${catType}/${difficulty}): +${finalXp} XP, +${globalRankPoints} Global Rank Points (${count + 1}/${TRUST_PER_CHALLENGE_LIMIT} today)`);
 
         return res.json({
           success: true,
           status: 'COMPLETED',
           xpAwarded: finalXp,
           earned_xp: finalXp,
+          globalRankPoints,
           remainingForChallenge: TRUST_PER_CHALLENGE_LIMIT - count - 1,
-          message: `Challenge completed! +${finalXp} XP earned.`
+          message: `Challenge completed! +${finalXp} XP earned. +${globalRankPoints} World Rank points!`
         });
       }
 
@@ -2722,21 +2741,23 @@ export function registerRoutes(app: Express) {
         }
 
         // Store pending XP in xp_awarded field (to be used when verified) with deterministic challenge_id
+        // Include Global Rank metadata for World Rankings verification
         const challengeUUID = generateChallengeUUID(challengeType);
         await db.execute(sql`
-          INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
-          VALUES (${challengeUUID}::uuid, ${studentId}::uuid, ${validClubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'PENDING', 'VIDEO', ${videoUrl}, ${finalXp}, NOW())
+          INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, challenge_category_type, challenge_difficulty, global_rank_points, completed_at)
+          VALUES (${challengeUUID}::uuid, ${studentId}::uuid, ${validClubId}::uuid, ${challengeType}, ${score || 0}, 'SOLO', 'PENDING', 'VIDEO', ${videoUrl}, ${finalXp}, ${catType}::challenge_category_type, ${difficulty}::challenge_difficulty, ${globalRankPoints}, NOW())
         `);
 
-        console.log(`[Arena] Video submission for "${challengeType}" pending verification (pending: ${finalXp} XP)`);
+        console.log(`[Arena] Video submission for "${challengeType}" (${catType}/${difficulty}) pending verification (pending: ${finalXp} XP, ${globalRankPoints} Global Rank Points)`);
 
         return res.json({
           success: true,
           status: 'PENDING',
           xpAwarded: 0,
           pendingXp: finalXp,
+          pendingGlobalRankPoints: globalRankPoints,
           earned_xp: 0,
-          message: `Video submitted! You'll earn ${finalXp} XP when your coach verifies it.`
+          message: `Video submitted! You'll earn ${finalXp} XP and ${globalRankPoints} World Rank points when your coach verifies it.`
         });
       }
 
@@ -3063,6 +3084,10 @@ export function registerRoutes(app: Express) {
         // Approve - award the XP that was stored in the submission when created
         const xpToAward = submission.xp_awarded || 30; // Fallback to 30 (15 base * 2) for legacy submissions
         
+        // Use stored Global Rank Points from submission (calculated at submit time)
+        // This ensures accurate matrix values for coach_pick vs general and correct difficulty
+        const globalRankPoints = submission.global_rank_points || 3; // Fallback to EASY general with video for legacy
+        
         await db.execute(sql`
           UPDATE challenge_submissions SET status = 'VERIFIED'
           WHERE id = ${submissionId}::uuid
@@ -3070,14 +3095,23 @@ export function registerRoutes(app: Express) {
         
         // Award XP using unified XP service
         await awardXP(submission.student_id, xpToAward, 'arena', { proofType: 'VIDEO', verified: true });
+        
+        // Award Global Rank Points (for World Rankings)
+        await db.execute(sql`
+          UPDATE students 
+          SET global_xp = COALESCE(global_xp, 0) + ${globalRankPoints},
+              updated_at = NOW()
+          WHERE id = ${submission.student_id}::uuid
+        `);
 
-        console.log(`[Arena] Video verified for ${submission.student_id}: +${xpToAward} XP`);
+        console.log(`[Arena] Video verified for ${submission.student_id}: +${xpToAward} XP, +${globalRankPoints} Global Rank Points (${submission.challenge_category_type}/${submission.challenge_difficulty})`);
 
         res.json({
           success: true,
           status: 'VERIFIED',
           xpAwarded: xpToAward,
-          message: `Video verified! +${xpToAward} XP awarded to student.`
+          globalRankPoints,
+          message: `Video verified! +${xpToAward} XP and +${globalRankPoints} World Rank points awarded.`
         });
       } else {
         // Reject

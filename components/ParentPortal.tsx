@@ -671,6 +671,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Use passed XP or default to 15
         const xpValue = challengeXp || 15;
         
+        // Get challenge metadata for Global Score calculation
+        const selectedChallengeData = challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge) as any;
+        // Properly detect coach_pick - check explicit type first, then infer from category
+        const isFeaturedCategory = challengeCategories.find(c => c.challenges.some(ch => ch.id === selectedChallenge) && (c as any).isFeatured);
+        const challengeCategoryType = selectedChallengeData?.challengeType === 'coach_pick' || isFeaturedCategory 
+            ? 'coach_pick' 
+            : 'general';
+        // Normalize difficulty to uppercase ENUM keys (EASY, MEDIUM, HARD, EPIC)
+        const rawDifficulty = (selectedChallengeData?.difficulty || 'easy').toString().toUpperCase();
+        const challengeDifficulty = ['EASY', 'MEDIUM', 'HARD', 'EPIC'].includes(rawDifficulty) ? rawDifficulty : 'EASY';
+        
         setSoloSubmitting(true);
         setSoloResult(null);
         
@@ -690,6 +701,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     proofType,
                     videoUrl,
                     challengeXp: xpValue,
+                    challengeCategoryType,
+                    challengeDifficulty,
                 })
             });
             
