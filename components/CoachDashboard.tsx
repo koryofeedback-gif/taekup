@@ -7,7 +7,7 @@ import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
 import { CoachLeaderboard } from './CoachLeaderboard';
 import { WorldRankings } from './WorldRankings';
-import { calculateClassPTS, calculateGradingXP, MAX_COACH_BONUS, MAX_HOMEWORK_BONUS } from '../services/gamificationService';
+import { calculateClassPTS, calculateGradingXP, calculateGlobalGradingXP } from '../services/gamificationService';
 
 // --- TYPE DEFINITIONS ---
 type SessionScores = Record<string, Record<string, number | null>>;
@@ -1155,11 +1155,13 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     };
     
     const handleBonusChange = (studentId: string, points: number) => {
-        setBonusPoints(prev => ({...prev, [studentId]: Math.min(MAX_COACH_BONUS, Math.max(0, points))}));
+        // No cap for local XP - coaches can give unlimited bonus points
+        setBonusPoints(prev => ({...prev, [studentId]: Math.max(0, points)}));
     };
 
     const handleHomeworkChange = (studentId: string, points: number) => {
-        setHomeworkPoints(prev => ({...prev, [studentId]: Math.min(MAX_HOMEWORK_BONUS, Math.max(0, points))}));
+        // No cap for local XP - coaches can give unlimited homework points
+        setHomeworkPoints(prev => ({...prev, [studentId]: Math.max(0, points)}));
     };
 
     const handleBulkScore = (score: number | null) => {
@@ -1242,16 +1244,25 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             if (!attendance[student.id]) return student;
 
             const studentScores = sessionScores[student.id] || {};
-            const studentBonus = Math.min(bonusPoints[student.id] || 0, MAX_COACH_BONUS);
-            const studentHomework = Math.min(homeworkPoints[student.id] || 0, MAX_HOMEWORK_BONUS);
+            const studentBonus = bonusPoints[student.id] || 0; // No cap for local
+            const studentHomework = homeworkPoints[student.id] || 0; // No cap for local
             
             // Calculate raw PTS for stripe progress + normalized XP for Dojang Rivals
             const scoresArray = Object.values(studentScores);
             const classPTS = calculateClassPTS(scoresArray);
             const sessionTotal = classPTS + studentBonus + studentHomework;
             
-            // Calculate fair normalized XP (includes bonus/homework in the formula)
+            // Calculate LOCAL XP (includes bonus/homework - NO caps for generosity)
             const gradingXP = calculateGradingXP(
+                scoresArray,
+                studentBonus,
+                studentHomework,
+                data.coachBonus || false,
+                data.homeworkBonus || false
+            );
+            
+            // Calculate GLOBAL XP (capped bonus/homework at 2 each for World Rankings fairness)
+            const globalGradingXP = calculateGlobalGradingXP(
                 scoresArray,
                 studentBonus,
                 studentHomework,
@@ -1294,7 +1305,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 ...student, 
                 totalPoints: totalPointsAfter,
                 lifetimeXp: lifetimeXpAfter, // Fair normalized XP for Dojang Rivals
-                sessionXp: gradingXP, // Store session XP for API call
+                sessionXp: gradingXP, // Store session XP for API call (local - uncapped)
+                sessionGlobalXp: globalGradingXP, // Store global XP for World Rankings (capped bonus/homework)
                 sessionPts: sessionTotal, // Store session PTS for monthly effort tracking
                 attendanceCount: (student.attendanceCount || 0) + 1,
                 performanceHistory: [...(student.performanceHistory || []), newPerformanceRecord],
@@ -1312,11 +1324,13 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 // Extract session values from the updated student object
                 const studentAny = student as any;
                 const sessionXpValue = studentAny.sessionXp || 0;
+                const sessionGlobalXpValue = studentAny.sessionGlobalXp || 0;
                 const sessionPtsValue = studentAny.sessionPts || 0;
                 
-                console.log('[Grading] Persisting for', student.name, '- sessionXp:', sessionXpValue, 'sessionPts:', sessionPtsValue);
+                console.log('[Grading] Persisting for', student.name, '- localXP:', sessionXpValue, 'globalXP:', sessionGlobalXpValue, 'PTS:', sessionPtsValue);
                 
                 try {
+                    // 1. Save local grading data
                     const response = await fetch(`/api/students/${student.id}/grading`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
@@ -1329,6 +1343,27 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     });
                     if (!response.ok) {
                         console.error('[Grading] API error for', student.name, ':', await response.text());
+                    }
+                    
+                    // 2. Submit Global XP for World Rankings (uses capped bonus/homework, 1x/day limit enforced by backend)
+                    if (data.worldRankingsEnabled && sessionGlobalXpValue > 0) {
+                        try {
+                            const globalResponse = await fetch(`/api/students/${student.id}/global-xp`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    scorePercentage: sessionGlobalXpValue // Already calculated with capped bonus/homework
+                                })
+                            });
+                            const globalResult = await globalResponse.json();
+                            if (globalResult.alreadyGraded) {
+                                console.log('[Global XP] Already submitted today for', student.name);
+                            } else if (globalResult.globalXpAwarded > 0) {
+                                console.log('[Global XP] Awarded', globalResult.globalXpAwarded, 'to', student.name);
+                            }
+                        } catch (globalErr) {
+                            console.error('[Global XP] Error for', student.name, globalErr);
+                        }
                     }
                 } catch (err) {
                     console.error('Failed to persist grading for student:', student.id, err);
@@ -1430,8 +1465,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     
     const calculateRowData = (student: Student) => {
         const studentScores = sessionScores[student.id] || {};
-        const studentBonus = Math.min(bonusPoints[student.id] || 0, MAX_COACH_BONUS);
-        const studentHomework = Math.min(homeworkPoints[student.id] || 0, MAX_HOMEWORK_BONUS);
+        const studentBonus = bonusPoints[student.id] || 0; // No cap for local display
+        const studentHomework = homeworkPoints[student.id] || 0; // No cap for local display
         
         // Calculate raw PTS for stripe progress (display in grading table)
         const scoresArray = attendance[student.id] ? Object.values(studentScores) : [];

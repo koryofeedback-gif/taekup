@@ -18,7 +18,12 @@ export const SCORE_VALUES = {
   RED: 0,
 } as const;
 
-// Fixed limits for grading bonuses (prevents cheating for world rankings)
+// Local XP: No limits - coaches can give as many bonus points as they want for their club
+// Global XP (World Rankings): Capped at 2 to prevent inflation
+export const GLOBAL_MAX_COACH_BONUS = 2;
+export const GLOBAL_MAX_HOMEWORK_BONUS = 2;
+
+// Backward compatibility exports (deprecated - use GLOBAL_ versions for world rankings)
 export const MAX_COACH_BONUS = 2;
 export const MAX_HOMEWORK_BONUS = 2;
 
@@ -148,30 +153,29 @@ export function calculateClassXP(scores: (number | null | undefined)[]): number 
 export const MAX_CLASS_XP = 100;
 
 /**
- * Calculate Grading XP - Fair Normalized Method with Bonus/Homework
+ * Calculate Grading XP for LOCAL use - No caps on bonus/homework
  * 
- * This ensures XP is fair across all sports regardless of grading item count.
- * Bonus and homework points are included in the normalization.
+ * Coaches can award unlimited bonus/homework points within their own club.
+ * This allows generous rewards for student effort without affecting world rankings.
  * 
  * Formula: (earned / possible) × 100
  * 
  * Where:
- * - earned = sum of scores + coachBonus + homework
- * - possible = (items × 2) + MAX_COACH_BONUS (if enabled) + MAX_HOMEWORK_BONUS (if enabled)
+ * - earned = sum of scores + coachBonus + homework (NO CAPS)
+ * - possible = (items × 2) + coachBonus + homework (uses actual values given)
  * 
  * @param scores - Array of score values (Green=2, Yellow=1, Red=0)
- * @param coachBonus - Coach bonus points awarded (capped at MAX_COACH_BONUS)
- * @param homework - Homework points awarded (capped at MAX_HOMEWORK_BONUS)
+ * @param coachBonus - Coach bonus points awarded (NO LIMIT for local)
+ * @param homework - Homework points awarded (NO LIMIT for local)
  * @param coachBonusEnabled - Whether coach bonus feature is enabled for this club
  * @param homeworkEnabled - Whether homework feature is enabled for this club
  * @returns Normalized XP value (0-100)
  * 
  * @example
- * // 4 items all green (8), bonus 2, homework 1, both features enabled
- * // earned = 8 + 2 + 1 = 11
- * // possible = 8 + 2 + 2 = 12
- * // XP = (11/12) × 100 = 92
- * calculateGradingXP([2,2,2,2], 2, 1, true, true) // returns 92
+ * // Coach gives 15 bonus, 10 homework - ALL count for local XP
+ * // 4 items all green (8) + 15 bonus + 10 homework = 33 earned
+ * // possible = 8 + 15 + 10 = 33
+ * // XP = 100 (perfect score with generous bonuses)
  */
 export function calculateGradingXP(
   scores: (number | null | undefined)[],
@@ -186,18 +190,75 @@ export function calculateGradingXP(
     return 0;
   }
   
-  // Cap bonus/homework at max values
-  const cappedBonus = Math.min(coachBonus, MAX_COACH_BONUS);
-  const cappedHomework = Math.min(homework, MAX_HOMEWORK_BONUS);
+  // LOCAL XP: Use raw values - no caps!
+  const actualBonus = coachBonusEnabled ? coachBonus : 0;
+  const actualHomework = homeworkEnabled ? homework : 0;
   
-  // Calculate earned points
+  // Calculate earned points (raw values)
   const earnedScores = validScores.reduce((sum, score) => sum + score, 0);
-  const earnedTotal = earnedScores + cappedBonus + cappedHomework;
+  const earnedTotal = earnedScores + actualBonus + actualHomework;
   
-  // Calculate possible points (include bonus/homework max only if feature is enabled)
+  // Calculate possible points (use actual bonus/homework given as the max)
   const maxScores = validScores.length * SCORE_VALUES.GREEN;
-  const maxBonus = coachBonusEnabled ? MAX_COACH_BONUS : 0;
-  const maxHomework = homeworkEnabled ? MAX_HOMEWORK_BONUS : 0;
+  const possibleTotal = maxScores + actualBonus + actualHomework;
+  
+  // Avoid division by zero
+  if (possibleTotal === 0) return 0;
+  
+  // Normalize to 0-100 scale
+  return Math.round((earnedTotal / possibleTotal) * 100);
+}
+
+/**
+ * Calculate Global XP for WORLD RANKINGS - Capped bonus/homework
+ * 
+ * For fairness in world rankings, bonus and homework are CAPPED at 2 each.
+ * This prevents coaches from inflating world rankings by giving excessive bonuses.
+ * 
+ * Formula: (earned / possible) × 100
+ * 
+ * Where:
+ * - earned = sum of scores + min(coachBonus, 2) + min(homework, 2)
+ * - possible = (items × 2) + 2 (if bonus enabled) + 2 (if homework enabled)
+ * 
+ * @param scores - Array of score values (Green=2, Yellow=1, Red=0)
+ * @param coachBonus - Coach bonus points (CAPPED AT 2 for global)
+ * @param homework - Homework points (CAPPED AT 2 for global)
+ * @param coachBonusEnabled - Whether coach bonus feature is enabled for this club
+ * @param homeworkEnabled - Whether homework feature is enabled for this club
+ * @returns Normalized XP value (0-100) for world rankings
+ * 
+ * @example
+ * // Coach gives 15 bonus, 10 homework - only 2+2 count for GLOBAL
+ * // 4 items all green (8) + 2 (capped bonus) + 2 (capped homework) = 12 earned
+ * // possible = 8 + 2 + 2 = 12
+ * // Global XP = 100
+ */
+export function calculateGlobalGradingXP(
+  scores: (number | null | undefined)[],
+  coachBonus: number = 0,
+  homework: number = 0,
+  coachBonusEnabled: boolean = false,
+  homeworkEnabled: boolean = false
+): number {
+  const validScores = scores.filter((s): s is number => s !== null && s !== undefined);
+  
+  if (validScores.length === 0) {
+    return 0;
+  }
+  
+  // GLOBAL XP: Cap bonus/homework at 2 each for fairness
+  const cappedBonus = Math.min(coachBonus, GLOBAL_MAX_COACH_BONUS);
+  const cappedHomework = Math.min(homework, GLOBAL_MAX_HOMEWORK_BONUS);
+  
+  // Calculate earned points (with caps)
+  const earnedScores = validScores.reduce((sum, score) => sum + score, 0);
+  const earnedTotal = earnedScores + (coachBonusEnabled ? cappedBonus : 0) + (homeworkEnabled ? cappedHomework : 0);
+  
+  // Calculate possible points (max 2 for bonus/homework)
+  const maxScores = validScores.length * SCORE_VALUES.GREEN;
+  const maxBonus = coachBonusEnabled ? GLOBAL_MAX_COACH_BONUS : 0;
+  const maxHomework = homeworkEnabled ? GLOBAL_MAX_HOMEWORK_BONUS : 0;
   const possibleTotal = maxScores + maxBonus + maxHomework;
   
   // Avoid division by zero
