@@ -20,6 +20,11 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **Local XP**: Unlimited bonus/homework points for coaches to reward students generously within their club
     - **Global XP**: Capped at 2 bonus + 2 homework points for World Rankings fairness
     - **Daily Limit**: Global XP submissions limited to 1x per day per student to prevent gaming
+- **Arena Global Score Matrix**: Two-tier anti-cheat system for World Rankings:
+    - **Coach Picks** (Technical challenges): Higher point values - EASY 1/5, MEDIUM 3/15, HARD 5/25, EPIC 10/35 (noVideo/withVideo)
+    - **General/Fitness**: Lower point values - EASY 1/3, MEDIUM 2/5, HARD 3/10, EPIC 5/15 (noVideo/withVideo)
+    - **Video Proof Multiplier**: 3x-7x more Global Rank points for video submissions vs trust-based
+    - **Featured Coach Picks**: Premium gold/amber styling in Arena UI with demo video links
 - **Belt Systems**: Supports 11 martial arts (WT, ITF, Karate, BJJ, Judo, Hapkido, Tang Soo Do, Aikido, Krav Maga, Kung Fu) plus custom belt configurations. Includes an AI-powered "Black Belt Time Machine" for promotion predictions.
 - **AI Features**:
     - **TaekBot**: Conversational AI assistant for martial arts, context-aware, multi-language.
