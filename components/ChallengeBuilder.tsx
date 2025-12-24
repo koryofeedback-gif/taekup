@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { CustomChallenge, ChallengeCategory } from '../types';
-import { CHALLENGE_TIERS, ChallengeTierKey, isValidTierSelection } from '../services/gamificationService';
+import type { CustomChallenge, ChallengeCategory, ChallengeType } from '../types';
+import { CHALLENGE_TIERS, ChallengeTierKey, isValidTierSelection, ARENA_GLOBAL_SCORE_MATRIX } from '../services/gamificationService';
 
 interface ChallengeBuilderProps {
     coachId: string;
@@ -40,6 +40,11 @@ const MEASUREMENT_TYPES: { value: CustomChallenge['measurementType']; label: str
     { value: 'score', label: 'Score (Points)', units: ['points', 'accuracy %'] },
 ];
 
+const CHALLENGE_TYPE_OPTIONS: { value: ChallengeType; label: string; description: string; icon: string; color: string }[] = [
+    { value: 'coach_pick', label: 'Coach Pick', description: 'Technical martial arts drills (Forms, Kicks) - High value for rankings', icon: '🥋', color: 'amber' },
+    { value: 'general', label: 'General/Fitness', description: 'General exercises (Pushups, Plank) - Lower value for rankings', icon: '💪', color: 'blue' },
+];
+
 export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
     coachId,
     coachName,
@@ -58,6 +63,8 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
     const [icon, setIcon] = useState('💪');
     const [selectedTier, setSelectedTier] = useState<ChallengeTierKey>('MEDIUM');
     const [videoUrl, setVideoUrl] = useState('');
+    const [demoVideoUrl, setDemoVideoUrl] = useState('');
+    const [challengeType, setChallengeType] = useState<ChallengeType>('coach_pick');
     const [measurementType, setMeasurementType] = useState<CustomChallenge['measurementType']>('count');
     const [measurementUnit, setMeasurementUnit] = useState('reps');
     const [targetAudience, setTargetAudience] = useState<CustomChallenge['targetAudience']>('all');
@@ -78,6 +85,8 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
         setIcon('💪');
         setSelectedTier('MEDIUM');
         setVideoUrl('');
+        setDemoVideoUrl('');
+        setChallengeType('coach_pick');
         setMeasurementType('count');
         setMeasurementUnit('reps');
         setTargetAudience('all');
@@ -97,6 +106,8 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
         };
         setSelectedTier(tierMap[challenge.difficulty] || 'MEDIUM');
         setVideoUrl(challenge.videoUrl || '');
+        setDemoVideoUrl(challenge.demoVideoUrl || '');
+        setChallengeType(challenge.challengeType || 'general');
         setMeasurementType(challenge.measurementType);
         setMeasurementUnit(challenge.measurementUnit);
         setTargetAudience(challenge.targetAudience);
@@ -127,6 +138,8 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
             icon,
             xp: tierInfo.xp, // Fixed XP based on tier - cannot be modified
             videoUrl: videoUrl.trim() || undefined,
+            demoVideoUrl: demoVideoUrl.trim() || undefined,
+            challengeType,
             difficulty: tierLabelMap[selectedTier],
             measurementType,
             measurementUnit,
@@ -257,6 +270,57 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                                 />
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-bold text-gray-400 mb-2">
+                                    Challenge Type (World Rankings Value)
+                                </label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {CHALLENGE_TYPE_OPTIONS.map(opt => {
+                                        const isSelected = challengeType === opt.value;
+                                        const scores = ARENA_GLOBAL_SCORE_MATRIX[opt.value][selectedTier];
+                                        return (
+                                            <button
+                                                key={opt.value}
+                                                onClick={() => setChallengeType(opt.value)}
+                                                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                                                    isSelected
+                                                        ? opt.value === 'coach_pick'
+                                                            ? 'border-amber-500 bg-amber-900/20 ring-2 ring-amber-500/30'
+                                                            : 'border-blue-500 bg-blue-900/20 ring-2 ring-blue-500/30'
+                                                        : 'border-gray-700 hover:border-gray-500 bg-gray-800/50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className="text-2xl">{opt.icon}</span>
+                                                    <div>
+                                                        <span className={`font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                                            {opt.label}
+                                                        </span>
+                                                        {opt.value === 'coach_pick' && (
+                                                            <span className="ml-2 text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
+                                                                Featured
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-gray-400 mb-2">{opt.description}</p>
+                                                <div className="flex gap-4 text-xs">
+                                                    <span className="text-gray-500">
+                                                        No Video: <span className="text-gray-300 font-bold">{scores.noVideo} pts</span>
+                                                    </span>
+                                                    <span className="text-green-400">
+                                                        With Video: <span className="font-bold">{scores.withVideo} pts</span>
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Coach Picks (technical drills) earn more World Ranking points than General/Fitness challenges
+                                </p>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-400 mb-2">
@@ -377,17 +441,17 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-400 mb-2">
-                                    Demo Video URL (Optional)
+                                    📺 Demo Video URL (Instructional)
                                 </label>
                                 <input
                                     type="url"
-                                    value={videoUrl}
-                                    onChange={(e) => setVideoUrl(e.target.value)}
+                                    value={demoVideoUrl}
+                                    onChange={(e) => setDemoVideoUrl(e.target.value)}
                                     placeholder="https://youtube.com/watch?v=..."
                                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Add a YouTube link to show students how to perform this challenge
+                                    Add a YouTube/Vimeo link to show students how to perform this challenge correctly before they attempt it
                                 </p>
                             </div>
 
@@ -444,7 +508,14 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                                             )}
                                         </div>
                                         <p className="text-gray-400 text-sm">{description || 'Challenge description...'}</p>
-                                        <div className="flex items-center gap-3 mt-1">
+                                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                                challengeType === 'coach_pick' 
+                                                    ? 'bg-amber-500/20 text-amber-400' 
+                                                    : 'bg-blue-500/20 text-blue-400'
+                                            }`}>
+                                                {challengeType === 'coach_pick' ? '🥋 Coach Pick' : '💪 General'}
+                                            </span>
                                             <span className={`text-xs px-2 py-0.5 rounded-full bg-${getCategoryColor(category)}-500/20 text-${getCategoryColor(category)}-400`}>
                                                 {category}
                                             </span>
