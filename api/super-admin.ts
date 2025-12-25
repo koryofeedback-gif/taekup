@@ -1872,6 +1872,110 @@ function getDefaultBelts(artType: string) {
   return beltSystems[artType] || beltSystems['Taekwondo'];
 }
 
+// Daily Training (Gauntlet) Management Handlers
+async function handleGauntletChallenges(req: VercelRequest, res: VercelResponse) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: auth.error });
+  }
+  
+  try {
+    const db = getDb();
+    const challenges = await db`
+      SELECT * FROM gauntlet_challenges 
+      ORDER BY 
+        CASE day_of_week 
+          WHEN 'MONDAY' THEN 1 
+          WHEN 'TUESDAY' THEN 2 
+          WHEN 'WEDNESDAY' THEN 3 
+          WHEN 'THURSDAY' THEN 4 
+          WHEN 'FRIDAY' THEN 5 
+          WHEN 'SATURDAY' THEN 6 
+          WHEN 'SUNDAY' THEN 7 
+        END,
+        display_order ASC
+    `;
+    
+    return res.json({ challenges });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Gauntlet challenges error:', error);
+    return res.status(500).json({ error: 'Failed to fetch challenges' });
+  }
+}
+
+async function handleGauntletChallengeUpdate(req: VercelRequest, res: VercelResponse, challengeId: string) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: auth.error });
+  }
+  
+  if (req.method !== 'PATCH') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  
+  try {
+    const db = getDb();
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const { name, description, icon, demo_video_url, is_active } = body;
+    
+    console.log('[SuperAdmin] Updating gauntlet challenge:', challengeId, body);
+    
+    // Build update query dynamically
+    const updates: string[] = [];
+    const values: any[] = [];
+    
+    if (name !== undefined) {
+      updates.push(`name = $${updates.length + 1}`);
+      values.push(name);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${updates.length + 1}`);
+      values.push(description);
+    }
+    if (icon !== undefined) {
+      updates.push(`icon = $${updates.length + 1}`);
+      values.push(icon);
+    }
+    if (demo_video_url !== undefined) {
+      updates.push(`demo_video_url = $${updates.length + 1}`);
+      values.push(demo_video_url || null);
+    }
+    if (is_active !== undefined) {
+      updates.push(`is_active = $${updates.length + 1}`);
+      values.push(is_active);
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    // Use template literal with postgres.js for each field
+    if (name !== undefined) {
+      await db`UPDATE gauntlet_challenges SET name = ${name} WHERE id = ${challengeId}::uuid`;
+    }
+    if (description !== undefined) {
+      await db`UPDATE gauntlet_challenges SET description = ${description} WHERE id = ${challengeId}::uuid`;
+    }
+    if (icon !== undefined) {
+      await db`UPDATE gauntlet_challenges SET icon = ${icon} WHERE id = ${challengeId}::uuid`;
+    }
+    if (demo_video_url !== undefined) {
+      await db`UPDATE gauntlet_challenges SET demo_video_url = ${demo_video_url || null} WHERE id = ${challengeId}::uuid`;
+    }
+    if (is_active !== undefined) {
+      await db`UPDATE gauntlet_challenges SET is_active = ${is_active} WHERE id = ${challengeId}::uuid`;
+    }
+    
+    // Fetch updated challenge
+    const updated = await db`SELECT * FROM gauntlet_challenges WHERE id = ${challengeId}::uuid`;
+    
+    return res.json({ success: true, challenge: updated[0] });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Update gauntlet challenge error:', error);
+    return res.status(500).json({ error: 'Failed to update challenge: ' + error.message });
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   
@@ -2006,6 +2110,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path.startsWith('/automations/') || path.startsWith('automations/')) {
       const automationId = path.replace('/automations/', '').replace('automations/', '').replace('/', '');
       return handleAutomationToggle(req, res, automationId);
+    }
+    
+    // Daily Training (Gauntlet) Management
+    if (path === '/gauntlet-challenges' || path === '/gauntlet-challenges/' || path === 'gauntlet-challenges') {
+      return handleGauntletChallenges(req, res);
+    }
+    
+    // Handle /gauntlet-challenges/:id for PATCH
+    if (path.startsWith('/gauntlet-challenges/') || path.startsWith('gauntlet-challenges/')) {
+      const challengeId = path.replace('/gauntlet-challenges/', '').replace('gauntlet-challenges/', '').replace('/', '');
+      return handleGauntletChallengeUpdate(req, res, challengeId);
     }
     
     return res.status(404).json({ error: 'Route not found', path, url, queryPath });
