@@ -2476,6 +2476,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     coachId={coachName}
                     coachName={coachName}
                     existingChallenges={data.customChallenges || []}
+                    belts={data.belts || []}
                     onSaveChallenge={handleSaveChallenge}
                     onDeleteChallenge={handleDeleteChallenge}
                     onToggleChallenge={handleToggleChallenge}

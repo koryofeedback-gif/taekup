@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import type { CustomChallenge, ChallengeCategory, ChallengeType } from '../types';
+import type { CustomChallenge, ChallengeCategory, ChallengeType, Belt } from '../types';
 import { CHALLENGE_TIERS, ChallengeTierKey, isValidTierSelection, getBaseXp, ChallengeTypeKey } from '../services/gamificationService';
 
 interface ChallengeBuilderProps {
     coachId: string;
     coachName: string;
     existingChallenges: CustomChallenge[];
+    belts: Belt[];
     onSaveChallenge: (challenge: CustomChallenge) => void;
     onDeleteChallenge: (challengeId: string) => void;
     onToggleChallenge: (challengeId: string, isActive: boolean) => void;
@@ -49,6 +50,7 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
     coachId,
     coachName,
     existingChallenges,
+    belts,
     onSaveChallenge,
     onDeleteChallenge,
     onToggleChallenge,
@@ -412,17 +414,32 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-400 mb-2">
-                                        Target Audience
+                                        Target Audience (Belt Level)
                                     </label>
                                     <select
                                         value={targetAudience}
                                         onChange={(e) => setTargetAudience(e.target.value as CustomChallenge['targetAudience'])}
                                         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none"
                                     >
-                                        <option value="all">All Students</option>
-                                        <option value="beginners">Beginners (White-Yellow)</option>
-                                        <option value="intermediate">Intermediate (Green-Blue)</option>
-                                        <option value="advanced">Advanced (Red-Black)</option>
+                                        <option value="all">All Belt Levels</option>
+                                        {belts.length > 0 && (
+                                            <>
+                                                <optgroup label="Individual Belts">
+                                                    {belts.map((belt: Belt) => (
+                                                        <option key={belt.id} value={belt.id}>
+                                                            {belt.name}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                                {belts.length >= 4 && (
+                                                    <optgroup label="Belt Groups">
+                                                        <option value="beginners">Beginners ({belts.slice(0, Math.ceil(belts.length / 3)).map(b => b.name.split(' ')[0]).join('-')})</option>
+                                                        <option value="intermediate">Intermediate ({belts.slice(Math.ceil(belts.length / 3), Math.ceil(belts.length * 2 / 3)).map(b => b.name.split(' ')[0]).join('-')})</option>
+                                                        <option value="advanced">Advanced ({belts.slice(Math.ceil(belts.length * 2 / 3)).map(b => b.name.split(' ')[0]).join('-')})</option>
+                                                    </optgroup>
+                                                )}
+                                            </>
+                                        )}
                                     </select>
                                 </div>
 
