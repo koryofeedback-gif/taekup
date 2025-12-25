@@ -2669,7 +2669,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }] : []),
             ...(generalCustomChallenges.length > 0 ? [{
                 name: 'General',
-                icon: '💪',
+                icon: '🏋️',
                 color: 'blue',
                 isFeatured: false,
                 challenges: generalCustomChallenges.map(c => ({
@@ -2988,6 +2988,99 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         )}
                                     </div>
 
+                                    {/* Challenge Categories - Coach Picks & Custom */}
+                                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-5 rounded-2xl border border-gray-700 shadow-xl">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="font-bold text-white text-lg flex items-center">
+                                                <span className="w-8 h-8 bg-red-600/20 rounded-lg flex items-center justify-center mr-3">🎮</span>
+                                                Select Challenge
+                                            </h4>
+                                            {hasPremiumAccess && (
+                                                <span className="text-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-bold">
+                                                    ✓ Video Proof
+                                                </span>
+                                            )}
+                                        </div>
+                                        
+                                        {challengeCategories.map((category, catIdx) => {
+                                            const isFeatured = (category as any).isFeatured;
+                                            return (
+                                            <div key={category.name} className={`${catIdx > 0 ? 'mt-5 pt-5 border-t border-gray-700/50' : ''} ${
+                                                isFeatured ? 'bg-gradient-to-br from-amber-900/20 to-amber-950/10 -mx-5 px-5 py-4 rounded-xl border border-amber-500/30' : ''
+                                            }`}>
+                                                <div className="flex items-center mb-3">
+                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2 ${
+                                                        isFeatured ? 'bg-amber-900/50 ring-1 ring-amber-500/50' :
+                                                        category.name === 'Power' ? 'bg-red-900/50' :
+                                                        category.name === 'Technique' ? 'bg-blue-900/50' :
+                                                        category.name === 'Flexibility' ? 'bg-purple-900/50' : 
+                                                        category.name === 'General' ? 'bg-blue-900/50' : 'bg-cyan-900/50'
+                                                    }`}>
+                                                        <span className="text-base">{category.icon}</span>
+                                                    </div>
+                                                    <span className={`text-sm font-bold ${isFeatured ? 'text-amber-300' : 'text-gray-300'}`}>{category.name}</span>
+                                                    {isFeatured && (
+                                                        <span className="ml-2 text-[9px] bg-gradient-to-r from-amber-500 to-yellow-500 text-black px-1.5 py-0.5 rounded-full font-bold">
+                                                            FEATURED
+                                                        </span>
+                                                    )}
+                                                    <span className="ml-2 text-[10px] text-gray-500">({category.challenges.length})</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                    {category.challenges.map(challenge => {
+                                                        const isCompleted = isChallengeCompletedToday(challenge.id);
+                                                        const challengeData = challenge as any;
+                                                        const isCoachPick = challengeData.challengeType === 'coach_pick' || isFeatured;
+                                                        return (
+                                                        <button
+                                                            key={challenge.id}
+                                                            onClick={() => !isCompleted && setSelectedChallenge(challenge.id)}
+                                                            disabled={isCompleted}
+                                                            className={`group relative p-3 rounded-xl text-center transition-all duration-200 border-2 ${
+                                                                isCompleted
+                                                                    ? 'bg-green-900/30 border-green-600/50 opacity-60 cursor-not-allowed'
+                                                                    : selectedChallenge === challenge.id
+                                                                    ? isCoachPick
+                                                                        ? 'bg-gradient-to-br from-amber-900/60 to-amber-950/60 border-amber-500 shadow-lg shadow-amber-900/30 scale-[1.02]'
+                                                                        : 'bg-gradient-to-br from-red-900/60 to-red-950/60 border-red-500 shadow-lg shadow-red-900/30 scale-[1.02]'
+                                                                    : isCoachPick
+                                                                        ? 'bg-amber-900/20 border-amber-700/50 hover:border-amber-500 hover:bg-amber-800/30'
+                                                                        : 'bg-gray-800/50 border-gray-700/50 hover:border-gray-500 hover:bg-gray-700/50'
+                                                            }`}
+                                                        >
+                                                            {isCompleted ? (
+                                                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                                                    <span className="text-white text-[10px]">✓</span>
+                                                                </div>
+                                                            ) : selectedChallenge === challenge.id && (
+                                                                <div className={`absolute -top-1 -right-1 w-5 h-5 ${isCoachPick ? 'bg-amber-500' : 'bg-red-500'} rounded-full flex items-center justify-center`}>
+                                                                    <span className="text-white text-[10px]">✓</span>
+                                                                </div>
+                                                            )}
+                                                            {isCoachPick && !isCompleted && (
+                                                                <div className="absolute -top-1 -left-1 text-[9px] bg-amber-500 text-black px-1 rounded font-bold">
+                                                                    ⭐
+                                                                </div>
+                                                            )}
+                                                            <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform">{challenge.icon}</div>
+                                                            <div className="text-xs font-semibold text-gray-200 leading-tight">{challenge.name}</div>
+                                                            <div className="mt-1 inline-block px-2 py-0.5 bg-yellow-900/30 rounded-full">
+                                                                <span className="text-[10px] font-bold text-yellow-400">
+                                                                    {isCompleted ? 'Done ✓' : `+${challenge.xp} XP`}
+                                                                </span>
+                                                            </div>
+                                                            {challengeData.demoVideoUrl && (
+                                                                <div className="mt-1 text-[9px] text-cyan-400">📺 Has Demo</div>
+                                                            )}
+                                                        </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                            );
+                                        })}
+                                    </div>
+
                                     {/* WARRIOR'S GAUNTLET - Today's Challenges */}
                                     {gauntletData && gauntletData.challenges && gauntletData.challenges.length > 0 && (
                                         <div className="bg-gradient-to-b from-orange-900/30 to-gray-900 p-5 rounded-2xl border border-orange-500/50 shadow-xl">
@@ -3146,99 +3239,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                         </div>
                                     )}
-
-                                    {/* Challenge Categories - Coach Picks & Custom */}
-                                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-5 rounded-2xl border border-gray-700 shadow-xl">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h4 className="font-bold text-white text-lg flex items-center">
-                                                <span className="w-8 h-8 bg-red-600/20 rounded-lg flex items-center justify-center mr-3">🎮</span>
-                                                Select Challenge
-                                            </h4>
-                                            {hasPremiumAccess && (
-                                                <span className="text-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-bold">
-                                                    ✓ Video Proof
-                                                </span>
-                                            )}
-                                        </div>
-                                        
-                                        {challengeCategories.map((category, catIdx) => {
-                                            const isFeatured = (category as any).isFeatured;
-                                            return (
-                                            <div key={category.name} className={`${catIdx > 0 ? 'mt-5 pt-5 border-t border-gray-700/50' : ''} ${
-                                                isFeatured ? 'bg-gradient-to-br from-amber-900/20 to-amber-950/10 -mx-5 px-5 py-4 rounded-xl border border-amber-500/30' : ''
-                                            }`}>
-                                                <div className="flex items-center mb-3">
-                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2 ${
-                                                        isFeatured ? 'bg-amber-900/50 ring-1 ring-amber-500/50' :
-                                                        category.name === 'Power' ? 'bg-red-900/50' :
-                                                        category.name === 'Technique' ? 'bg-blue-900/50' :
-                                                        category.name === 'Flexibility' ? 'bg-purple-900/50' : 
-                                                        category.name === 'General' ? 'bg-blue-900/50' : 'bg-cyan-900/50'
-                                                    }`}>
-                                                        <span className="text-base">{category.icon}</span>
-                                                    </div>
-                                                    <span className={`text-sm font-bold ${isFeatured ? 'text-amber-300' : 'text-gray-300'}`}>{category.name}</span>
-                                                    {isFeatured && (
-                                                        <span className="ml-2 text-[9px] bg-gradient-to-r from-amber-500 to-yellow-500 text-black px-1.5 py-0.5 rounded-full font-bold">
-                                                            FEATURED
-                                                        </span>
-                                                    )}
-                                                    <span className="ml-2 text-[10px] text-gray-500">({category.challenges.length})</span>
-                                                </div>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                    {category.challenges.map(challenge => {
-                                                        const isCompleted = isChallengeCompletedToday(challenge.id);
-                                                        const challengeData = challenge as any;
-                                                        const isCoachPick = challengeData.challengeType === 'coach_pick' || isFeatured;
-                                                        return (
-                                                        <button
-                                                            key={challenge.id}
-                                                            onClick={() => !isCompleted && setSelectedChallenge(challenge.id)}
-                                                            disabled={isCompleted}
-                                                            className={`group relative p-3 rounded-xl text-center transition-all duration-200 border-2 ${
-                                                                isCompleted
-                                                                    ? 'bg-green-900/30 border-green-600/50 opacity-60 cursor-not-allowed'
-                                                                    : selectedChallenge === challenge.id
-                                                                    ? isCoachPick
-                                                                        ? 'bg-gradient-to-br from-amber-900/60 to-amber-950/60 border-amber-500 shadow-lg shadow-amber-900/30 scale-[1.02]'
-                                                                        : 'bg-gradient-to-br from-red-900/60 to-red-950/60 border-red-500 shadow-lg shadow-red-900/30 scale-[1.02]'
-                                                                    : isCoachPick
-                                                                        ? 'bg-amber-900/20 border-amber-700/50 hover:border-amber-500 hover:bg-amber-800/30'
-                                                                        : 'bg-gray-800/50 border-gray-700/50 hover:border-gray-500 hover:bg-gray-700/50'
-                                                            }`}
-                                                        >
-                                                            {isCompleted ? (
-                                                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                                                                    <span className="text-white text-[10px]">✓</span>
-                                                                </div>
-                                                            ) : selectedChallenge === challenge.id && (
-                                                                <div className={`absolute -top-1 -right-1 w-5 h-5 ${isCoachPick ? 'bg-amber-500' : 'bg-red-500'} rounded-full flex items-center justify-center`}>
-                                                                    <span className="text-white text-[10px]">✓</span>
-                                                                </div>
-                                                            )}
-                                                            {isCoachPick && !isCompleted && (
-                                                                <div className="absolute -top-1 -left-1 text-[9px] bg-amber-500 text-black px-1 rounded font-bold">
-                                                                    ⭐
-                                                                </div>
-                                                            )}
-                                                            <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform">{challenge.icon}</div>
-                                                            <div className="text-xs font-semibold text-gray-200 leading-tight">{challenge.name}</div>
-                                                            <div className="mt-1 inline-block px-2 py-0.5 bg-yellow-900/30 rounded-full">
-                                                                <span className="text-[10px] font-bold text-yellow-400">
-                                                                    {isCompleted ? 'Done ✓' : `+${challenge.xp} XP`}
-                                                                </span>
-                                                            </div>
-                                                            {challengeData.demoVideoUrl && (
-                                                                <div className="mt-1 text-[9px] text-cyan-400">📺 Has Demo</div>
-                                                            )}
-                                                        </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                            );
-                                        })}
-                                    </div>
 
                                     {/* Solo Challenge Submission */}
                                     {selectedChallenge && (() => {
