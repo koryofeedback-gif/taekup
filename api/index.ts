@@ -2323,17 +2323,9 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
       )
     `);
     
-    // NUCLEAR RESET - Clear ALL dependencies in correct order
-    // Step 1: Clear video votes (depends on videos)
-    try { await client.query(`DELETE FROM challenge_video_votes`); } catch (e) { /* may not exist */ }
-    // Step 2: Clear videos (depends on challenges)
-    try { await client.query(`DELETE FROM challenge_videos`); } catch (e) { /* may not exist */ }
-    // Step 3: Clear submissions
-    await client.query(`DELETE FROM challenge_submissions`);
-    try { await client.query(`DELETE FROM arena_submissions`); } catch (e) { /* may not exist */ }
-    // Step 4: Now clear the challenges themselves
-    try { await client.query(`DELETE FROM challenges`); } catch (e) { /* may not exist */ }
-    await client.query(`DELETE FROM arena_challenges`);
+    // Reset arena challenges only (preserve user videos and submissions)
+    // Only clear system-default arena challenges, not user content
+    await client.query(`DELETE FROM arena_challenges WHERE is_system_default = true`);
     
     // Insert fresh GPP challenges into ARENA_CHALLENGES table (what /api/challenges/arena reads)
     const seedChallenges = [
