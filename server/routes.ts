@@ -3299,6 +3299,21 @@ export function registerRoutes(app: Express) {
           UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${localXp}, global_xp = COALESCE(global_xp, 0) + ${globalPoints}
           WHERE id = ${studentId}::uuid
         `);
+      } else {
+        // VIDEO submissions: Also insert into challenge_videos for coach review queue
+        const studentClubResult = await db.execute(sql`
+          SELECT club_id FROM students WHERE id = ${studentId}::uuid
+        `);
+        const studentClubId = (studentClubResult as any[])[0]?.club_id;
+        
+        if (studentClubId && videoUrl) {
+          await db.execute(sql`
+            INSERT INTO challenge_videos 
+            (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, xp_awarded, created_at, updated_at)
+            VALUES (${studentId}::uuid, ${studentClubId}::uuid, ${challengeId}, ${challenge.name}, 'Daily Training', ${videoUrl}, '', ${score}, 'pending', ${localXp}, NOW(), NOW())
+          `);
+          console.log(`[Gauntlet] Video added to coach review queue for ${challenge.name}`);
+        }
       }
       
       console.log(`[Gauntlet] Submission: ${challenge.name} by ${studentId} - Score: ${score}, XP: ${isVideoProof ? 0 : localXp}, Global: ${isVideoProof ? 0 : globalPoints}, NewPB: ${isNewPB}, Pending: ${isVideoProof}`);

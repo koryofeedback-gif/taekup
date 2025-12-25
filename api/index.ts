@@ -4003,7 +4003,7 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
   const body = parseBody(req);
-  const { challengeId, studentId, score, proofType } = body;
+  const { challengeId, studentId, score, proofType, videoUrl } = body;
   
   if (!challengeId || !studentId || score === undefined) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -4081,6 +4081,21 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
       await client.query(`
         UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid
       `, [globalPoints, studentId]);
+    } else {
+      // VIDEO submissions: Also insert into challenge_videos for coach review queue
+      const studentClubResult = await client.query(`
+        SELECT club_id FROM students WHERE id = $1::uuid
+      `, [studentId]);
+      const studentClubId = studentClubResult.rows[0]?.club_id;
+      
+      if (studentClubId && videoUrl) {
+        await client.query(`
+          INSERT INTO challenge_videos 
+          (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, xp_awarded, created_at, updated_at)
+          VALUES ($1::uuid, $2::uuid, $3, $4, 'Daily Training', $5, '', $6, 'pending', $7, NOW(), NOW())
+        `, [studentId, studentClubId, challengeId, challenge.name, videoUrl, score, localXp]);
+        console.log(`[Gauntlet Submit] Video added to coach review queue for ${challenge.name}`);
+      }
     }
     
     const newTotalResult = await client.query(`
