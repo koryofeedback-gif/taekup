@@ -1649,8 +1649,8 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
         `UPDATE students 
          SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
              trust_tier = CASE 
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1 THEN 'trusted'
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2 THEN 'verified'
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1::integer THEN 'trusted'
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2::integer THEN 'verified'
                ELSE COALESCE(trust_tier, 'unverified')
              END,
              updated_at = NOW()
@@ -1885,8 +1885,8 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
         `UPDATE students 
          SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
              trust_tier = CASE 
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1 THEN 'trusted'
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2 THEN 'verified'
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1::integer THEN 'trusted'
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2::integer THEN 'verified'
                ELSE COALESCE(trust_tier, 'unverified')
              END,
              updated_at = NOW()
