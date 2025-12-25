@@ -3289,7 +3289,7 @@ export function registerRoutes(app: Express) {
       // Insert submission
       await db.execute(sql`
         INSERT INTO gauntlet_submissions 
-        (challenge_id, student_id, score, proof_type, video_url, xp_awarded, global_rank_points, is_personal_best, week_number)
+        (challenge_id, student_id, score, proof_type, video_url, local_xp_awarded, global_points_awarded, is_personal_best, week_number)
         VALUES (${challengeId}::uuid, ${studentId}::uuid, ${score}, ${proofType || 'TRUST'}::proof_type, ${videoUrl || null}, ${localXp}, ${globalPoints}, ${isNewPB}, ${weekNumber})
       `);
       
