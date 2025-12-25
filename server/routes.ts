@@ -2030,12 +2030,19 @@ export function registerRoutes(app: Express) {
       `);
 
       // Convert to proxy URLs for video streaming
-      const videosWithProxyUrls = (videos as any[]).map((video: any) => ({
-        ...video,
-        video_url: video.video_key 
-          ? `/api/videos/stream/${encodeURIComponent(video.video_key)}`
-          : video.video_url
-      }));
+      const videosWithProxyUrls = (videos as any[]).map((video: any) => {
+        let videoKey = video.video_key;
+        // Extract key from URL if video_key is empty but video_url exists
+        if (!videoKey && video.video_url && video.video_url.includes('idrivee2.com/')) {
+          videoKey = video.video_url.split('idrivee2.com/')[1];
+        }
+        return {
+          ...video,
+          video_url: videoKey 
+            ? `/api/videos/stream/${encodeURIComponent(videoKey)}`
+            : video.video_url
+        };
+      });
 
       res.json(videosWithProxyUrls);
     } catch (error: any) {
@@ -2061,12 +2068,19 @@ export function registerRoutes(app: Express) {
       `);
 
       // Convert to proxy URLs for video streaming
-      const videosWithProxyUrls = (videos as any[]).map((video: any) => ({
-        ...video,
-        video_url: video.video_key 
-          ? `/api/videos/stream/${encodeURIComponent(video.video_key)}`
-          : video.video_url
-      }));
+      const videosWithProxyUrls = (videos as any[]).map((video: any) => {
+        let videoKey = video.video_key;
+        // Extract key from URL if video_key is empty but video_url exists
+        if (!videoKey && video.video_url && video.video_url.includes('idrivee2.com/')) {
+          videoKey = video.video_url.split('idrivee2.com/')[1];
+        }
+        return {
+          ...video,
+          video_url: videoKey 
+            ? `/api/videos/stream/${encodeURIComponent(videoKey)}`
+            : video.video_url
+        };
+      });
 
       res.json(videosWithProxyUrls);
     } catch (error: any) {
@@ -3089,12 +3103,19 @@ export function registerRoutes(app: Express) {
       `);
 
       // Convert video URLs to proxy URLs
-      const pendingWithProxyUrls = (pending as any[]).map((row: any) => ({
-        ...row,
-        video_url: row.video_key 
-          ? `/api/videos/stream/${encodeURIComponent(row.video_key)}`
-          : row.video_url
-      }));
+      const pendingWithProxyUrls = (pending as any[]).map((row: any) => {
+        let videoKey = row.video_key;
+        // Extract key from URL if video_key is empty but video_url exists
+        if (!videoKey && row.video_url && row.video_url.includes('idrivee2.com/')) {
+          videoKey = row.video_url.split('idrivee2.com/')[1];
+        }
+        return {
+          ...row,
+          video_url: videoKey 
+            ? `/api/videos/stream/${encodeURIComponent(videoKey)}`
+            : row.video_url
+        };
+      });
 
       res.json(pendingWithProxyUrls);
     } catch (error: any) {
