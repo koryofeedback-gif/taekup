@@ -1952,6 +1952,23 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Invalid club ID format. Please log out and log back in.' });
       }
 
+      // Check if already submitted video for this challenge today (prevent duplicates)
+      const today = new Date().toISOString().split('T')[0];
+      const existingVideoResult = await db.execute(sql`
+        SELECT id FROM challenge_videos 
+        WHERE student_id = ${studentId}::uuid AND challenge_id = ${challengeId}
+        AND DATE(created_at) = ${today}::date
+      `);
+      
+      if ((existingVideoResult as any[]).length > 0) {
+        console.log('[Videos] Duplicate submission blocked for student:', studentId, 'challenge:', challengeId);
+        return res.status(429).json({
+          error: 'Already submitted',
+          message: 'You already submitted a video for this challenge today. Try again tomorrow!',
+          alreadyCompleted: true
+        });
+      }
+
       const result = await db.execute(sql`
         INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, created_at, updated_at)
         VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeId}, ${challengeName || ''}, ${challengeCategory || ''}, ${videoUrl}, ${videoKey || ''}, ${score || 0}, 'pending', NOW(), NOW())
