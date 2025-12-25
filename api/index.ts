@@ -1895,10 +1895,10 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
   try {
     const result = await client.query(
       `UPDATE challenge_videos 
-       SET status = $1, coach_notes = $2, xp_awarded = $3, verified_at = CASE WHEN $1 = 'approved' THEN NOW() ELSE verified_at END, updated_at = NOW()
-       WHERE id = $4::uuid
+       SET status = $1::text, coach_notes = $2, xp_awarded = $3::integer, verified_at = CASE WHEN $4::text = 'approved' THEN NOW() ELSE verified_at END, updated_at = NOW()
+       WHERE id = $5::uuid
        RETURNING *`,
-      [status, coachNotes || '', finalXpAwarded, videoId]
+      [status, coachNotes || '', finalXpAwarded, status, videoId]
     );
     
     if (result.rows.length === 0) {
