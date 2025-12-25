@@ -4069,8 +4069,8 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
     await client.query(`
       INSERT INTO gauntlet_submissions 
       (challenge_id, student_id, week_number, score, proof_type, xp_awarded, global_rank_points, is_personal_best)
-      VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8)
-    `, [challengeId, studentId, weekNumber, score, proofType, localXp, globalPoints, isNewPB]);
+      VALUES ($1::uuid, $2::uuid, $3, $4, $5::proof_type, $6, $7, $8)
+    `, [challengeId, studentId, weekNumber, score, proofType || 'TRUST', localXp, globalPoints, isNewPB]);
     
     await client.query(`
       UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1 WHERE id = $2::uuid

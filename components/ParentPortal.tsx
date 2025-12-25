@@ -3129,9 +3129,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                             className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
                                                                         />
                                                                         {challenge.personalBest !== null && (
-                                                                            <p className="text-yellow-400 text-xs mt-1">
-                                                                                Beat your PB: {challenge.personalBest}
-                                                                            </p>
+                                                                            <div className="bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-2 mt-2">
+                                                                                <p className="text-yellow-400 text-sm font-bold">
+                                                                                    🏆 Last time: {challenge.personalBest} {challenge.score_type.toLowerCase()}
+                                                                                </p>
+                                                                                <p className="text-yellow-300/80 text-xs mt-0.5">
+                                                                                    Think you can beat your record this week?
+                                                                                </p>
+                                                                            </div>
                                                                         )}
                                                                     </div>
                                                                     
@@ -3169,21 +3174,35 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     </div>
                                                                     
                                                                     {gauntletResult && (
-                                                                        <div className={`mt-3 p-3 rounded-lg text-center ${
+                                                                        <div className={`mt-3 p-4 rounded-xl text-center ${
                                                                             gauntletResult.success
                                                                                 ? gauntletResult.isNewPB
-                                                                                    ? 'bg-yellow-900/50 border border-yellow-500'
+                                                                                    ? 'bg-gradient-to-br from-yellow-900/70 to-orange-900/70 border-2 border-yellow-500 shadow-lg shadow-yellow-500/20'
                                                                                     : 'bg-green-900/50 border border-green-500'
                                                                                 : 'bg-red-900/50 border border-red-500'
                                                                         }`}>
-                                                                            <span className="text-2xl">{gauntletResult.isNewPB ? '🏆' : gauntletResult.success ? '✅' : '❌'}</span>
-                                                                            <p className={`font-bold mt-1 ${
-                                                                                gauntletResult.isNewPB ? 'text-yellow-400' : gauntletResult.success ? 'text-green-400' : 'text-red-400'
-                                                                            }`}>
-                                                                                {gauntletResult.message}
-                                                                            </p>
+                                                                            {gauntletResult.isNewPB ? (
+                                                                                <>
+                                                                                    <div className="text-4xl mb-2">🏆🔥🏆</div>
+                                                                                    <p className="text-yellow-400 font-black text-lg animate-pulse">
+                                                                                        NEW PERSONAL BEST!
+                                                                                    </p>
+                                                                                    <p className="text-yellow-300 text-sm mt-1">
+                                                                                        You crushed your old record!
+                                                                                    </p>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <span className="text-2xl">{gauntletResult.success ? '✅' : '❌'}</span>
+                                                                                    <p className={`font-bold mt-1 ${
+                                                                                        gauntletResult.success ? 'text-green-400' : 'text-red-400'
+                                                                                    }`}>
+                                                                                        {gauntletResult.message}
+                                                                                    </p>
+                                                                                </>
+                                                                            )}
                                                                             {gauntletResult.xp > 0 && (
-                                                                                <p className="text-yellow-400 font-black">+{gauntletResult.xp} XP!</p>
+                                                                                <p className="text-yellow-400 font-black text-xl mt-2">+{gauntletResult.xp} XP!</p>
                                                                             )}
                                                                         </div>
                                                                     )}
