@@ -3301,15 +3301,19 @@ export function registerRoutes(app: Express) {
         `);
       }
       
-      console.log(`[Gauntlet] Submission: ${challenge.name} by ${studentId} - Score: ${score}, XP: ${localXp}, Global: ${globalPoints}, NewPB: ${isNewPB}`);
+      console.log(`[Gauntlet] Submission: ${challenge.name} by ${studentId} - Score: ${score}, XP: ${isVideoProof ? 0 : localXp}, Global: ${isVideoProof ? 0 : globalPoints}, NewPB: ${isNewPB}, Pending: ${isVideoProof}`);
       
       res.json({
         success: true,
-        xpAwarded: localXp,
-        globalRankPoints: globalPoints,
+        xpAwarded: isVideoProof ? 0 : localXp,
+        pendingXp: isVideoProof ? localXp : 0,
+        globalRankPoints: isVideoProof ? 0 : globalPoints,
+        pendingGlobalRankPoints: isVideoProof ? globalPoints : 0,
         isNewPersonalBest: isNewPB,
         previousBest: existingPB?.best_score || null,
-        message: isNewPB ? 'New Personal Best!' : 'Challenge completed!',
+        message: isVideoProof 
+          ? `Video submitted! You'll earn ${localXp} XP when verified by your coach.`
+          : (isNewPB ? 'New Personal Best!' : 'Challenge completed!'),
         pendingVerification: isVideoProof,
       });
     } catch (error: any) {

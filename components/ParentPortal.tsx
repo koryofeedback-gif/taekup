@@ -184,7 +184,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         success: boolean;
         message: string;
         xp: number;
+        pendingXp?: number;
         isNewPB: boolean;
+        pendingVerification?: boolean;
     } | null>(null);
     
     // Team Battle State
@@ -1608,10 +1610,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setGauntletResult({
                         success: true,
                         message: result.message,
-                        xp: result.xpAwarded,
+                        xp: result.pendingVerification ? 0 : result.xpAwarded,
+                        pendingXp: result.pendingXp || 0,
                         isNewPB: result.isNewPersonalBest,
+                        pendingVerification: result.pendingVerification,
                     });
-                    setServerTotalXP(prev => prev + result.xpAwarded);
+                    
+                    // Only update XP if not pending verification
+                    if (!result.pendingVerification && result.xpAwarded > 0) {
+                        setServerTotalXP(prev => prev + result.xpAwarded);
+                    }
                     
                     // Refresh gauntlet data
                     const refreshResponse = await fetch(`/api/gauntlet/today?studentId=${student.id}`);
@@ -3250,6 +3258,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                             )}
                                                                             {gauntletResult.xp > 0 && (
                                                                                 <p className="text-yellow-400 font-black text-xl mt-2">+{gauntletResult.xp} XP!</p>
+                                                                            )}
+                                                                            {gauntletResult.pendingVerification && gauntletResult.pendingXp && gauntletResult.pendingXp > 0 && (
+                                                                                <p className="text-purple-400 font-bold text-sm mt-2">⏳ +{gauntletResult.pendingXp} XP pending coach verification</p>
                                                                             )}
                                                                         </div>
                                                                     )}

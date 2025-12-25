@@ -4072,24 +4072,34 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8)
     `, [challengeId, studentId, weekNumber, score, proofType || 'TRUST', localXp, globalPoints, isNewPB]);
     
-    await client.query(`
-      UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1 WHERE id = $2::uuid
-    `, [localXp, studentId]);
-    
-    await client.query(`
-      UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid
-    `, [globalPoints, studentId]);
+    // Only award XP immediately for TRUST submissions - VIDEO requires coach verification
+    if (!isVideoProof) {
+      await client.query(`
+        UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1 WHERE id = $2::uuid
+      `, [localXp, studentId]);
+      
+      await client.query(`
+        UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid
+      `, [globalPoints, studentId]);
+    }
     
     const newTotalResult = await client.query(`
       SELECT total_xp FROM students WHERE id = $1::uuid
     `, [studentId]);
     
+    console.log(`[Gauntlet Submit] ${challenge.name} by ${studentId} - Score: ${score}, XP: ${isVideoProof ? 0 : localXp}, Pending: ${isVideoProof}`);
+    
     return res.json({
       success: true,
-      xpAwarded: localXp,
-      globalPointsAwarded: globalPoints,
+      xpAwarded: isVideoProof ? 0 : localXp,
+      pendingXp: isVideoProof ? localXp : 0,
+      globalPointsAwarded: isVideoProof ? 0 : globalPoints,
+      pendingGlobalPoints: isVideoProof ? globalPoints : 0,
       isNewPersonalBest: isNewPB,
-      message: isNewPB ? 'New Personal Best!' : 'Challenge completed!',
+      pendingVerification: isVideoProof,
+      message: isVideoProof 
+        ? `Video submitted! You'll earn ${localXp} XP when verified by your coach.`
+        : (isNewPB ? 'New Personal Best!' : 'Challenge completed!'),
       newTotalXp: newTotalResult.rows[0]?.total_xp || 0,
     });
   } catch (error: any) {
