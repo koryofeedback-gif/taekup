@@ -1551,6 +1551,25 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
+    // CRITICAL: Check if already submitted video for this challenge today (prevent duplicates)
+    // Use Postgres DATE_TRUNC in UTC to avoid timezone mismatch
+    const existingVideoResult = await client.query(
+      `SELECT id FROM challenge_videos 
+       WHERE student_id = $1::uuid AND challenge_id = $2
+       AND created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')`,
+      [studentId, challengeId]
+    );
+    
+    if (existingVideoResult.rows.length > 0) {
+      console.log('[Videos] Duplicate submission blocked for student:', studentId, 'challenge:', challengeId);
+      client.release();
+      return res.status(429).json({
+        error: 'Already submitted',
+        message: 'You already submitted a video for this challenge today. Try again tomorrow!',
+        alreadyCompleted: true
+      });
+    }
+
     // AI Pre-Screening: Check for suspicious patterns
     let aiFlag = 'green'; // Default: looks good
     let aiFlagReason = '';
