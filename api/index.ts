@@ -4068,7 +4068,7 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
     
     await client.query(`
       INSERT INTO gauntlet_submissions 
-      (challenge_id, student_id, week_number, score, proof_type, local_xp_awarded, global_points_awarded, is_personal_best)
+      (challenge_id, student_id, week_number, score, proof_type, xp_awarded, global_rank_points, is_personal_best)
       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8)
     `, [challengeId, studentId, weekNumber, score, proofType, localXp, globalPoints, isNewPB]);
     
