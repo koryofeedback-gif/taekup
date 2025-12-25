@@ -3794,6 +3794,183 @@ async function handleStudentGlobalXp(req: VercelRequest, res: VercelResponse, st
   }
 }
 
+// =====================================================
+// WARRIOR'S GAUNTLET HANDLERS
+// =====================================================
+
+async function handleGauntletToday(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const studentId = req.query.studentId as string;
+  
+  const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  const today = days[new Date().getDay()];
+  
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const weekNumber = Math.ceil((((now.getTime() - startOfYear.getTime()) / 86400000) + startOfYear.getDay() + 1) / 7);
+  
+  const client = await pool.connect();
+  try {
+    const challengesResult = await client.query(`
+      SELECT * FROM gauntlet_challenges 
+      WHERE day_of_week = $1 AND is_active = true
+      ORDER BY display_order ASC
+    `, [today]);
+    
+    const challenges = challengesResult.rows;
+    
+    let personalBests: any[] = [];
+    let thisWeekSubmissions: any[] = [];
+    
+    if (studentId && challenges.length > 0) {
+      const challengeIds = challenges.map(c => c.id);
+      
+      const pbResult = await client.query(`
+        SELECT challenge_id, best_score, has_video_proof 
+        FROM gauntlet_personal_bests 
+        WHERE student_id = $1::uuid 
+        AND challenge_id = ANY($2::uuid[])
+      `, [studentId, challengeIds]);
+      personalBests = pbResult.rows;
+      
+      const submissionsResult = await client.query(`
+        SELECT challenge_id, score, proof_type, is_personal_best 
+        FROM gauntlet_submissions 
+        WHERE student_id = $1::uuid 
+        AND week_number = $2
+        AND challenge_id = ANY($3::uuid[])
+      `, [studentId, weekNumber, challengeIds]);
+      thisWeekSubmissions = submissionsResult.rows;
+    }
+    
+    const pbMap = new Map(personalBests.map(pb => [pb.challenge_id, pb]));
+    const submittedMap = new Map(thisWeekSubmissions.map(s => [s.challenge_id, s]));
+    
+    const enrichedChallenges = challenges.map(c => ({
+      ...c,
+      personalBest: pbMap.get(c.id)?.best_score || null,
+      pbHasVideo: pbMap.get(c.id)?.has_video_proof || false,
+      submittedThisWeek: submittedMap.has(c.id),
+      thisWeekScore: submittedMap.get(c.id)?.score || null,
+      thisWeekProofType: submittedMap.get(c.id)?.proof_type || null,
+    }));
+    
+    return res.json({
+      dayOfWeek: today,
+      dayTheme: challenges[0]?.day_theme || 'Training',
+      weekNumber,
+      challenges: enrichedChallenges,
+    });
+  } catch (error: any) {
+    console.error('[Gauntlet] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch gauntlet challenges' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const body = parseBody(req);
+  const { challengeId, studentId, score, proofType } = body;
+  
+  if (!challengeId || !studentId || score === undefined) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const weekNumber = Math.ceil((((now.getTime() - startOfYear.getTime()) / 86400000) + startOfYear.getDay() + 1) / 7);
+  
+  const client = await pool.connect();
+  try {
+    const existingSubmission = await client.query(`
+      SELECT id FROM gauntlet_submissions 
+      WHERE challenge_id = $1::uuid AND student_id = $2::uuid AND week_number = $3
+    `, [challengeId, studentId, weekNumber]);
+    
+    if (existingSubmission.rows.length > 0) {
+      return res.json({ limitReached: true, message: 'Already completed this week' });
+    }
+    
+    const challengeResult = await client.query(`
+      SELECT * FROM gauntlet_challenges WHERE id = $1::uuid
+    `, [challengeId]);
+    
+    const challenge = challengeResult.rows[0];
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+    
+    const isVideoProof = proofType === 'VIDEO';
+    const localXp = isVideoProof ? 40 : 20;
+    const globalPoints = isVideoProof ? 15 : 5;
+    
+    const pbResult = await client.query(`
+      SELECT id, best_score FROM gauntlet_personal_bests 
+      WHERE challenge_id = $1::uuid AND student_id = $2::uuid
+    `, [challengeId, studentId]);
+    
+    const existingPB = pbResult.rows[0];
+    let isNewPB = false;
+    
+    if (!existingPB) {
+      isNewPB = true;
+      await client.query(`
+        INSERT INTO gauntlet_personal_bests (challenge_id, student_id, best_score, has_video_proof)
+        VALUES ($1::uuid, $2::uuid, $3, $4)
+      `, [challengeId, studentId, score, isVideoProof]);
+    } else {
+      const isBetter = challenge.sort_order === 'DESC' 
+        ? score > existingPB.best_score 
+        : score < existingPB.best_score;
+      
+      if (isBetter) {
+        isNewPB = true;
+        await client.query(`
+          UPDATE gauntlet_personal_bests 
+          SET best_score = $1, achieved_at = NOW(), has_video_proof = $2
+          WHERE id = $3::uuid
+        `, [score, isVideoProof, existingPB.id]);
+      }
+    }
+    
+    await client.query(`
+      INSERT INTO gauntlet_submissions 
+      (challenge_id, student_id, week_number, score, proof_type, local_xp_awarded, global_points_awarded, is_personal_best)
+      VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8)
+    `, [challengeId, studentId, weekNumber, score, proofType, localXp, globalPoints, isNewPB]);
+    
+    await client.query(`
+      UPDATE students SET total_xp = COALESCE(total_xp, 0) + $1 WHERE id = $2::uuid
+    `, [localXp, studentId]);
+    
+    await client.query(`
+      UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid
+    `, [globalPoints, studentId]);
+    
+    const newTotalResult = await client.query(`
+      SELECT total_xp FROM students WHERE id = $1::uuid
+    `, [studentId]);
+    
+    return res.json({
+      success: true,
+      xpAwarded: localXp,
+      globalPointsAwarded: globalPoints,
+      isNewPersonalBest: isNewPB,
+      message: isNewPB ? 'New Personal Best!' : 'Challenge completed!',
+      newTotalXp: newTotalResult.rows[0]?.total_xp || 0,
+    });
+  } catch (error: any) {
+    console.error('[Gauntlet Submit] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to submit gauntlet challenge' });
+  } finally {
+    client.release();
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -3824,6 +4001,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/daily-challenge' || path === '/daily-challenge/') return await handleDailyChallenge(req, res);
     if (path === '/daily-challenge/submit' || path === '/daily-challenge/submit/') return await handleDailyChallengeSubmit(req, res);
     if (path === '/daily-challenge/status' || path === '/daily-challenge/status/') return await handleDailyChallengeStatus(req, res);
+    
+    // Warrior's Gauntlet
+    if (path === '/gauntlet/today' || path === '/gauntlet/today/') return await handleGauntletToday(req, res);
+    if (path === '/gauntlet/submit' || path === '/gauntlet/submit/') return await handleGauntletSubmit(req, res);
     
     // Arena Challenge Submit & History
     if (path === '/challenges/submit' || path === '/challenges/submit/') return await handleChallengeSubmit(req, res);
