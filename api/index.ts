@@ -2778,6 +2778,125 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
 }
 
 // =====================================================
+// COACH VERIFICATION QUEUE
+// =====================================================
+
+// GET /api/challenges/pending-verification/:clubId
+async function handlePendingVerification(req: VercelRequest, res: VercelResponse, clubId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT cs.*, 
+              s.name as student_name, s.belt as student_belt
+       FROM challenge_submissions cs
+       JOIN students s ON cs.student_id = s.id
+       WHERE cs.club_id = $1::uuid 
+       AND cs.proof_type = 'VIDEO'
+       AND cs.status = 'PENDING'
+       ORDER BY cs.completed_at ASC`,
+      [clubId]
+    );
+
+    // Convert video URLs to proxy URLs
+    const pendingWithProxyUrls = result.rows.map((row: any) => ({
+      ...row,
+      video_url: row.video_key 
+        ? `/api/videos/stream/${encodeURIComponent(row.video_key)}`
+        : row.video_url
+    }));
+
+    return res.json(pendingWithProxyUrls);
+  } catch (error: any) {
+    console.error('[Arena] Pending verification error:', error.message);
+    return res.status(500).json({ error: 'Failed to get pending verifications' });
+  } finally {
+    client.release();
+  }
+}
+
+// POST /api/challenges/verify
+async function handleChallengeVerify(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { submissionId, verified, coachId } = parseBody(req);
+  
+  if (!submissionId || verified === undefined) {
+    return res.status(400).json({ error: 'submissionId and verified are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    // Get submission
+    const subResult = await client.query(
+      `SELECT * FROM challenge_submissions WHERE id = $1::uuid`,
+      [submissionId]
+    );
+
+    if (subResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    const submission = subResult.rows[0];
+
+    if (submission.status !== 'PENDING') {
+      return res.status(400).json({ error: 'Submission is not pending verification' });
+    }
+
+    if (verified) {
+      // Approve - award the XP that was stored in the submission when created
+      const xpToAward = submission.xp_awarded || 30;
+      const globalRankPoints = submission.global_rank_points || 3;
+      
+      await client.query(
+        `UPDATE challenge_submissions SET status = 'VERIFIED' WHERE id = $1::uuid`,
+        [submissionId]
+      );
+      
+      // Award XP to student
+      await client.query(
+        `UPDATE students 
+         SET total_xp = COALESCE(total_xp, 0) + $1,
+             global_xp = COALESCE(global_xp, 0) + $2,
+             updated_at = NOW()
+         WHERE id = $3::uuid`,
+        [xpToAward, globalRankPoints, submission.student_id]
+      );
+
+      console.log(`[Arena] Video verified for ${submission.student_id}: +${xpToAward} XP, +${globalRankPoints} Global Rank Points`);
+
+      return res.json({
+        success: true,
+        status: 'VERIFIED',
+        xpAwarded: xpToAward,
+        globalRankPoints,
+        message: `Video verified! +${xpToAward} XP and +${globalRankPoints} World Rank points awarded.`
+      });
+    } else {
+      // Reject
+      await client.query(
+        `UPDATE challenge_submissions SET status = 'REJECTED' WHERE id = $1::uuid`,
+        [submissionId]
+      );
+
+      console.log(`[Arena] Video rejected for ${submission.student_id}`);
+
+      return res.json({
+        success: true,
+        status: 'REJECTED',
+        message: 'Submission rejected.'
+      });
+    }
+  } catch (error: any) {
+    console.error('[Arena] Verify error:', error.message);
+    return res.status(500).json({ error: 'Failed to verify submission' });
+  } finally {
+    client.release();
+  }
+}
+
+// =====================================================
 // HOME DOJO - HABIT TRACKING
 // =====================================================
 const HABIT_XP = 10;
@@ -4387,6 +4506,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const sentChallengesMatch = path.match(/^\/challenges\/sent\/([^/]+)\/?$/);
     if (sentChallengesMatch) return await handleSentChallenges(req, res, sentChallengesMatch[1]);
+    
+    // Coach Verification Queue
+    const pendingVerificationMatch = path.match(/^\/challenges\/pending-verification\/([^/]+)\/?$/);
+    if (pendingVerificationMatch) return await handlePendingVerification(req, res, pendingVerificationMatch[1]);
+    
+    if (path === '/challenges/verify' || path === '/challenges/verify/') return await handleChallengeVerify(req, res);
     
     // Leaderboard
     if (path === '/leaderboard' || path === '/leaderboard/') return await handleLeaderboard(req, res);

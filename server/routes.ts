@@ -3079,8 +3079,7 @@ export function registerRoutes(app: Express) {
 
       const pending = await db.execute(sql`
         SELECT cs.*, 
-               s.first_name, s.last_name, s.current_belt,
-               s.profile_image_url
+               s.name as student_name, s.belt as student_belt
         FROM challenge_submissions cs
         JOIN students s ON cs.student_id = s.id
         WHERE cs.club_id = ${clubId}::uuid 
@@ -3089,7 +3088,15 @@ export function registerRoutes(app: Express) {
         ORDER BY cs.completed_at ASC
       `);
 
-      res.json(pending);
+      // Convert video URLs to proxy URLs
+      const pendingWithProxyUrls = (pending as any[]).map((row: any) => ({
+        ...row,
+        video_url: row.video_key 
+          ? `/api/videos/stream/${encodeURIComponent(row.video_key)}`
+          : row.video_url
+      }));
+
+      res.json(pendingWithProxyUrls);
     } catch (error: any) {
       console.error('[Arena] Pending verification error:', error.message);
       res.status(500).json({ error: 'Failed to get pending verifications' });
