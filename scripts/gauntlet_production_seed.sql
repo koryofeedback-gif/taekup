@@ -21,10 +21,14 @@ CREATE TABLE IF NOT EXISTS gauntlet_challenges (
     score_type VARCHAR(20) NOT NULL DEFAULT 'REPS',
     sort_order VARCHAR(4) NOT NULL DEFAULT 'DESC',
     target_value INTEGER,
+    demo_video_url TEXT,
     is_active BOOLEAN DEFAULT true,
     display_order INTEGER DEFAULT 1,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add demo_video_url column if table already exists
+ALTER TABLE gauntlet_challenges ADD COLUMN IF NOT EXISTS demo_video_url TEXT;
 
 -- Step 3: Create gauntlet_submissions table
 CREATE TABLE IF NOT EXISTS gauntlet_submissions (

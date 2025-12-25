@@ -169,6 +169,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             score_type: string;
             sort_order: string;
             target_value: number | null;
+            demo_video_url: string | null;
             personalBest: number | null;
             pbHasVideo: boolean;
             submittedThisWeek: boolean;
@@ -3038,7 +3039,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         <span className="text-2xl">⚔️</span>
                                                     </span>
                                                     <div>
-                                                        <h4 className="font-black text-white text-lg">Warrior's Gauntlet</h4>
+                                                        <h4 className="font-black text-white text-lg">Daily Training</h4>
                                                         <p className="text-orange-300 text-xs font-bold">
                                                             {gauntletData.dayTheme} {gauntletData.dayOfWeek.charAt(0) + gauntletData.dayOfWeek.slice(1).toLowerCase()}
                                                         </p>
@@ -3076,7 +3077,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <div>
                                                                             <h5 className="font-bold text-white">{challenge.name}</h5>
                                                                             <p className="text-gray-400 text-xs mt-1">{challenge.description}</p>
-                                                                            <div className="flex items-center gap-2 mt-2">
+                                                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
                                                                                 <span className="text-[10px] bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
                                                                                     {challenge.score_type} • {sortLabel}
                                                                                 </span>
@@ -3084,6 +3085,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                     <span className="text-[10px] bg-yellow-900/50 text-yellow-400 px-2 py-0.5 rounded font-bold">
                                                                                         PB: {challenge.personalBest} {challenge.pbHasVideo && '🥇'}
                                                                                     </span>
+                                                                                )}
+                                                                                {challenge.demo_video_url && (
+                                                                                    <a 
+                                                                                        href={challenge.demo_video_url}
+                                                                                        target="_blank"
+                                                                                        rel="noopener noreferrer"
+                                                                                        onClick={(e) => e.stopPropagation()}
+                                                                                        className="text-[10px] bg-cyan-900/50 text-cyan-400 px-2 py-0.5 rounded font-bold hover:bg-cyan-800/50 transition-colors"
+                                                                                    >
+                                                                                        📺 Watch Demo
+                                                                                    </a>
                                                                                 )}
                                                                             </div>
                                                                         </div>
