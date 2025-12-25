@@ -1626,13 +1626,15 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     })
                 });
             } else {
+                // Use the pre-stored XP value from the video (prevents XP inflation)
+                const fixedXp = video.xp_awarded || 40;
                 response = await fetch(`/api/videos/${video.id}/verify`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         status: 'approved',
                         coachNotes: coachVideoNotes,
-                        xpAwarded: xpToAward
+                        xpAwarded: fixedXp
                     })
                 });
             }
@@ -2373,17 +2375,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                                         )}
                                                                     </button>
                                                                 </div>
-                                                                <div className="flex items-center gap-3">
-                                                                    <label className="text-sm text-gray-400">XP Award:</label>
-                                                                    <input 
-                                                                        type="number"
-                                                                        value={xpToAward}
-                                                                        onChange={(e) => setXpToAward(Math.max(0, parseInt(e.target.value) || 0))}
-                                                                        className="w-20 bg-gray-700 text-green-400 font-bold p-2 rounded-lg border border-gray-600 text-center"
-                                                                        min="0"
-                                                                        max="500"
-                                                                    />
-                                                                    <span className="text-green-400 font-bold">XP</span>
+                                                                <div className="flex items-center gap-3 bg-gray-700/50 p-2 rounded-lg">
+                                                                    <span className="text-sm text-gray-400">XP Award:</span>
+                                                                    <span className="text-green-400 font-bold text-lg">{video.xp_awarded || 40} XP</span>
+                                                                    <span className="text-gray-500 text-xs">(fixed)</span>
                                                                 </div>
                                                                 <div className="flex gap-2">
                                                                     <button 
