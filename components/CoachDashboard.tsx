@@ -981,6 +981,11 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const [isLoadingVideos, setIsLoadingVideos] = useState(false);
     const [isProcessingVideo, setIsProcessingVideo] = useState(false);
     const [isGeneratingVideoFeedback, setIsGeneratingVideoFeedback] = useState(false);
+    // Batch Review Mode state
+    const [batchMode, setBatchMode] = useState(false);
+    const [focusedVideoIndex, setFocusedVideoIndex] = useState(0);
+    const [approvedCount, setApprovedCount] = useState(0);
+    const [rejectedCount, setRejectedCount] = useState(0);
 
     // Focus Mode and Notes History State
     const [focusMode, setFocusMode] = useState(false);
@@ -1608,6 +1613,100 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             fetchPendingVideos();
         }
     }, [activeView]);
+
+    // Batch Review Keyboard Shortcuts
+    useEffect(() => {
+        if (!batchMode || activeView !== 'videos' || pendingVideos.length === 0) return;
+        
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Ignore if typing in an input
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            
+            const currentVideo = pendingVideos[focusedVideoIndex];
+            if (!currentVideo) return;
+            
+            switch (e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    handleBatchApprove(currentVideo);
+                    break;
+                case 'KeyX':
+                    e.preventDefault();
+                    handleBatchReject(currentVideo);
+                    break;
+                case 'ArrowRight':
+                case 'KeyN':
+                    e.preventDefault();
+                    setFocusedVideoIndex(prev => Math.min(prev + 1, pendingVideos.length - 1));
+                    break;
+                case 'ArrowLeft':
+                case 'KeyP':
+                    e.preventDefault();
+                    setFocusedVideoIndex(prev => Math.max(prev - 1, 0));
+                    break;
+                case 'Escape':
+                    setBatchMode(false);
+                    break;
+            }
+        };
+        
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [batchMode, activeView, pendingVideos, focusedVideoIndex]);
+
+    // Batch approve helper (quick approve without notes)
+    const handleBatchApprove = async (video: any) => {
+        if (isProcessingVideo) return;
+        setIsProcessingVideo(true);
+        try {
+            const fixedXp = video.xp_awarded || 40;
+            const response = await fetch(`/api/videos/${video.id}/verify`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'approved',
+                    coachNotes: '',
+                    xpAwarded: fixedXp
+                })
+            });
+            if (response.ok) {
+                setPendingVideos(prev => prev.filter(v => v.id !== video.id));
+                setApprovedCount(prev => prev + 1);
+                // Move to next video or stay at end
+                setFocusedVideoIndex(prev => Math.min(prev, Math.max(0, pendingVideos.length - 2)));
+            }
+        } catch (error) {
+            console.error('[Batch] Failed to approve:', error);
+        } finally {
+            setIsProcessingVideo(false);
+        }
+    };
+
+    // Batch reject helper (quick reject without notes)
+    const handleBatchReject = async (video: any) => {
+        if (isProcessingVideo) return;
+        setIsProcessingVideo(true);
+        try {
+            const response = await fetch(`/api/videos/${video.id}/verify`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'rejected',
+                    coachNotes: '',
+                    xpAwarded: 0
+                })
+            });
+            if (response.ok) {
+                setPendingVideos(prev => prev.filter(v => v.id !== video.id));
+                setRejectedCount(prev => prev + 1);
+                setFocusedVideoIndex(prev => Math.min(prev, Math.max(0, pendingVideos.length - 2)));
+            }
+        } catch (error) {
+            console.error('[Batch] Failed to reject:', error);
+        } finally {
+            setIsProcessingVideo(false);
+        }
+    };
 
     const handleApproveVideo = async (video: any) => {
         console.log('[Videos] Approving video:', video.id, 'source:', video.source);
@@ -2265,24 +2364,113 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     {activeView === 'videos' && (
                         <div className="p-6">
                             <div className="space-y-6">
-                                {/* Stats Cards */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div className="bg-gradient-to-br from-orange-900/40 to-orange-800/20 rounded-xl p-6 border border-orange-500/30 text-center">
-                                        <div className="text-4xl mb-2">📹</div>
-                                        <div className="text-3xl font-black text-orange-400">{pendingVideos.length}</div>
-                                        <div className="text-gray-400 text-sm">Pending Review</div>
-                                    </div>
-                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
-                                        <div className="text-4xl mb-2">✅</div>
-                                        <div className="text-3xl font-black text-green-400">-</div>
-                                        <div className="text-gray-400 text-sm">Approved Today</div>
-                                    </div>
-                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
-                                        <div className="text-4xl mb-2">⭐</div>
-                                        <div className="text-3xl font-black text-yellow-400">-</div>
-                                        <div className="text-gray-400 text-sm">XP Awarded</div>
+                                {/* Feature Explainer Panel */}
+                                <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 rounded-xl p-4 border border-indigo-500/30">
+                                    <div className="flex items-start gap-4">
+                                        <span className="text-3xl">🤖</span>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-white mb-2">Smart Video Review System</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                                <div className="bg-gray-800/50 rounded-lg p-3">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-green-400">⭐</span>
+                                                        <span className="font-bold text-white">Trust Tiers</span>
+                                                    </div>
+                                                    <p className="text-gray-400 text-xs">
+                                                        Students with 10+ approved videos become <span className="text-green-400">Verified</span> and get instant XP. Only 1-in-10 are spot-checked.
+                                                    </p>
+                                                </div>
+                                                <div className="bg-gray-800/50 rounded-lg p-3">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-cyan-400">⚡</span>
+                                                        <span className="font-bold text-white">Speed Mode</span>
+                                                    </div>
+                                                    <p className="text-gray-400 text-xs">
+                                                        Use keyboard shortcuts in Speed Mode: <kbd className="bg-gray-700 px-1 rounded text-xs">SPACE</kbd>=Approve, <kbd className="bg-gray-700 px-1 rounded text-xs">X</kbd>=Reject
+                                                    </p>
+                                                </div>
+                                                <div className="bg-gray-800/50 rounded-lg p-3">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-yellow-400">🔍</span>
+                                                        <span className="font-bold text-white">AI Flags</span>
+                                                    </div>
+                                                    <p className="text-gray-400 text-xs">
+                                                        <span className="text-red-400">Red</span>=duplicates, <span className="text-yellow-400">Yellow</span>=suspicious patterns. Auto-flagged for your review.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Stats Cards + Batch Mode Toggle */}
+                                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                                    <div className="flex gap-4 flex-wrap">
+                                        <div className="bg-gradient-to-br from-orange-900/40 to-orange-800/20 rounded-xl px-6 py-4 border border-orange-500/30 flex items-center gap-3">
+                                            <span className="text-2xl">📹</span>
+                                            <div>
+                                                <div className="text-2xl font-black text-orange-400">{pendingVideos.length}</div>
+                                                <div className="text-gray-400 text-xs">Pending</div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-gray-800 rounded-xl px-6 py-4 border border-gray-700 flex items-center gap-3">
+                                            <span className="text-2xl">✅</span>
+                                            <div>
+                                                <div className="text-2xl font-black text-green-400">{approvedCount}</div>
+                                                <div className="text-gray-400 text-xs">Approved</div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-gray-800 rounded-xl px-6 py-4 border border-gray-700 flex items-center gap-3">
+                                            <span className="text-2xl">❌</span>
+                                            <div>
+                                                <div className="text-2xl font-black text-red-400">{rejectedCount}</div>
+                                                <div className="text-gray-400 text-xs">Rejected</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Batch Mode Toggle */}
+                                    <button
+                                        onClick={() => {
+                                            setBatchMode(!batchMode);
+                                            setFocusedVideoIndex(0);
+                                        }}
+                                        className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${
+                                            batchMode 
+                                                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30' 
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                        }`}
+                                    >
+                                        <span>⚡</span>
+                                        {batchMode ? 'Exit Speed Mode' : 'Speed Review Mode'}
+                                    </button>
+                                </div>
+
+                                {/* Batch Mode Instructions */}
+                                {batchMode && pendingVideos.length > 0 && (
+                                    <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-xl p-4 border border-cyan-500/30">
+                                        <div className="flex items-center justify-between flex-wrap gap-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-cyan-400 font-bold">Keyboard Shortcuts:</div>
+                                                <div className="flex gap-3">
+                                                    <kbd className="bg-gray-800 px-3 py-1 rounded text-green-400 font-mono text-sm border border-gray-600">SPACE</kbd>
+                                                    <span className="text-gray-400">= Approve</span>
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <kbd className="bg-gray-800 px-3 py-1 rounded text-red-400 font-mono text-sm border border-gray-600">X</kbd>
+                                                    <span className="text-gray-400">= Reject</span>
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <kbd className="bg-gray-800 px-3 py-1 rounded text-gray-300 font-mono text-sm border border-gray-600">← →</kbd>
+                                                    <span className="text-gray-400">= Navigate</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-gray-400 text-sm">
+                                                Video {focusedVideoIndex + 1} of {pendingVideos.length}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Video Queue */}
                                 {isLoadingVideos ? (
@@ -2295,17 +2483,154 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         <div className="text-7xl mb-4">🎬</div>
                                         <h3 className="text-2xl font-bold text-white mb-2">No Videos to Review</h3>
                                         <p className="text-gray-400 max-w-md mx-auto">
-                                            When students submit video proofs for Dojang Rivals challenges, they'll appear here for your review.
+                                            When students submit video proofs for challenges, they'll appear here for your review.
+                                        </p>
+                                        <p className="text-cyan-400 text-sm mt-4">
+                                            Verified students get instant XP - only spot-checks need review!
                                         </p>
                                     </div>
+                                ) : batchMode ? (
+                                    /* BATCH MODE - Thumbnail Grid with focused video */
+                                    <div className="space-y-4">
+                                        {/* Thumbnail Grid */}
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                                            {pendingVideos.map((video, index) => (
+                                                <button
+                                                    key={video.id}
+                                                    onClick={() => setFocusedVideoIndex(index)}
+                                                    className={`relative aspect-video rounded-lg overflow-hidden transition-all ${
+                                                        index === focusedVideoIndex 
+                                                            ? 'ring-4 ring-cyan-500 scale-105 z-10' 
+                                                            : 'opacity-60 hover:opacity-100'
+                                                    } ${video.ai_flag === 'red' ? 'ring-2 ring-red-500' : video.ai_flag === 'yellow' ? 'ring-2 ring-yellow-500' : ''}`}
+                                                >
+                                                    <video 
+                                                        src={video.video_url}
+                                                        className="w-full h-full object-cover"
+                                                        muted
+                                                    />
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-1">
+                                                        <span className="text-white text-xs truncate block">{video.student_name?.split(' ')[0]}</span>
+                                                    </div>
+                                                    {video.ai_flag === 'red' && (
+                                                        <div className="absolute top-1 left-1 bg-red-500 text-white text-xs px-1 rounded font-bold" title={video.ai_flag_reason}>
+                                                            ⚠️
+                                                        </div>
+                                                    )}
+                                                    {video.ai_flag === 'yellow' && (
+                                                        <div className="absolute top-1 left-1 bg-yellow-500 text-black text-xs px-1 rounded font-bold" title={video.ai_flag_reason}>
+                                                            ⚡
+                                                        </div>
+                                                    )}
+                                                    {video.is_spot_check && (
+                                                        <div className="absolute top-1 right-1 bg-cyan-500 text-white text-xs px-1 rounded font-bold">
+                                                            🔍
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Focused Video - Large Preview */}
+                                        {pendingVideos[focusedVideoIndex] && (
+                                            <div className="bg-gray-800 rounded-xl border-2 border-cyan-500 overflow-hidden">
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                                                    {/* Video Player */}
+                                                    <div className="relative bg-black aspect-video">
+                                                        <video 
+                                                            key={pendingVideos[focusedVideoIndex].id}
+                                                            src={pendingVideos[focusedVideoIndex].video_url}
+                                                            className="w-full h-full object-contain"
+                                                            controls
+                                                            autoPlay
+                                                            playsInline
+                                                        />
+                                                    </div>
+                                                    
+                                                    {/* Quick Info + Actions */}
+                                                    <div className="p-6 flex flex-col justify-between">
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-4 flex-wrap">
+                                                                <h4 className="text-2xl font-bold text-white">{pendingVideos[focusedVideoIndex].student_name}</h4>
+                                                                {pendingVideos[focusedVideoIndex].ai_flag === 'red' && (
+                                                                    <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full font-bold border border-red-500/50">
+                                                                        ⚠️ {pendingVideos[focusedVideoIndex].ai_flag_reason || 'Flagged'}
+                                                                    </span>
+                                                                )}
+                                                                {pendingVideos[focusedVideoIndex].ai_flag === 'yellow' && (
+                                                                    <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded-full font-bold border border-yellow-500/50">
+                                                                        ⚡ {pendingVideos[focusedVideoIndex].ai_flag_reason || 'Review'}
+                                                                    </span>
+                                                                )}
+                                                                {pendingVideos[focusedVideoIndex].is_spot_check && (
+                                                                    <span className="bg-cyan-500/20 text-cyan-400 text-xs px-2 py-1 rounded-full font-bold">
+                                                                        🔍 Spot Check
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-gray-400 mb-2">{pendingVideos[focusedVideoIndex].student_belt} Belt</p>
+                                                            <div className="bg-gray-900/50 rounded-lg p-4">
+                                                                <p className="text-white font-medium mb-1">{pendingVideos[focusedVideoIndex].challenge_name || 'Challenge'}</p>
+                                                                <p className="text-gray-500 text-sm">{pendingVideos[focusedVideoIndex].challenge_category}</p>
+                                                            </div>
+                                                            <div className="mt-4 flex items-center gap-2">
+                                                                <span className="text-gray-400">XP Award:</span>
+                                                                <span className="text-green-400 font-bold text-xl">{pendingVideos[focusedVideoIndex].xp_awarded || 40} XP</span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {/* Quick Action Buttons */}
+                                                        <div className="flex gap-3 mt-6">
+                                                            <button
+                                                                onClick={() => handleBatchApprove(pendingVideos[focusedVideoIndex])}
+                                                                disabled={isProcessingVideo}
+                                                                className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 text-lg"
+                                                            >
+                                                                {isProcessingVideo ? '...' : '✅ Approve (Space)'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleBatchReject(pendingVideos[focusedVideoIndex])}
+                                                                disabled={isProcessingVideo}
+                                                                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 text-lg"
+                                                            >
+                                                                {isProcessingVideo ? '...' : '❌ Reject (X)'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 ) : (
+                                    /* NORMAL MODE - Standard video cards */
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                             <span className="text-orange-400">●</span> Pending Video Submissions
                                         </h3>
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                             {pendingVideos.map(video => (
-                                                <div key={video.id} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-orange-500/50 transition-all">
+                                                <div key={video.id} className={`bg-gray-800 rounded-xl border overflow-hidden hover:border-orange-500/50 transition-all ${
+                                                    video.ai_flag === 'red' ? 'border-red-500' :
+                                                    video.ai_flag === 'yellow' ? 'border-yellow-500' :
+                                                    video.is_spot_check ? 'border-cyan-500/50' : 'border-gray-700'
+                                                }`}>
+                                                    {/* AI Flag Badges */}
+                                                    {video.ai_flag === 'red' && (
+                                                        <div className="bg-red-500/20 text-red-400 text-xs font-bold px-4 py-1 text-center">
+                                                            ⚠️ {video.ai_flag_reason || 'Flagged for Review'}
+                                                        </div>
+                                                    )}
+                                                    {video.ai_flag === 'yellow' && (
+                                                        <div className="bg-yellow-500/20 text-yellow-400 text-xs font-bold px-4 py-1 text-center">
+                                                            ⚡ {video.ai_flag_reason || 'Requires Attention'}
+                                                        </div>
+                                                    )}
+                                                    {/* Spot Check Badge - show for green-flagged or no-flag spot checks */}
+                                                    {video.is_spot_check && (!video.ai_flag || video.ai_flag === 'green') && (
+                                                        <div className="bg-cyan-500/20 text-cyan-400 text-xs font-bold px-4 py-1 text-center">
+                                                            🔍 Random Spot Check - Verified Student
+                                                        </div>
+                                                    )}
                                                     {/* Video Preview */}
                                                     <div className="relative bg-black aspect-video">
                                                         <video 

@@ -1538,7 +1538,7 @@ async function handlePresignedUpload(req: VercelRequest, res: VercelResponse) {
 async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
-  const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, score, xpAwarded } = parseBody(req);
+  const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, score, xpAwarded, videoDuration } = parseBody(req);
   
   if (!studentId || !clubId || !challengeId || !videoUrl) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -1546,6 +1546,46 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
+    // AI Pre-Screening: Check for suspicious patterns
+    let aiFlag = 'green'; // Default: looks good
+    let aiFlagReason = '';
+    
+    // Check 1: Duplicate video detection (same videoKey in last 7 days)
+    if (videoKey) {
+      const duplicateCheck = await client.query(
+        `SELECT id FROM challenge_videos 
+         WHERE video_key = $1 AND created_at > NOW() - INTERVAL '7 days'
+         LIMIT 1`,
+        [videoKey]
+      );
+      if (duplicateCheck.rows.length > 0) {
+        aiFlag = 'red';
+        aiFlagReason = 'Duplicate video detected';
+        console.log(`[AI-Screen] RED FLAG: Duplicate video for student ${studentId}`);
+      }
+    }
+    
+    // Check 2: Rate limiting (more than 5 videos in 1 hour = suspicious)
+    if (aiFlag !== 'red') {
+      const rateCheck = await client.query(
+        `SELECT COUNT(*) as count FROM challenge_videos 
+         WHERE student_id = $1::uuid AND created_at > NOW() - INTERVAL '1 hour'`,
+        [studentId]
+      );
+      if (parseInt(rateCheck.rows[0]?.count || '0') >= 5) {
+        aiFlag = 'yellow';
+        aiFlagReason = 'High submission rate';
+        console.log(`[AI-Screen] YELLOW FLAG: High rate for student ${studentId}`);
+      }
+    }
+    
+    // Check 3: Video duration too short (less than 3 seconds)
+    if (aiFlag === 'green' && videoDuration && videoDuration < 3) {
+      aiFlag = 'yellow';
+      aiFlagReason = 'Video very short';
+      console.log(`[AI-Screen] YELLOW FLAG: Short video (${videoDuration}s) for student ${studentId}`);
+    }
+    
     // Check student's trust tier for auto-approval logic
     const studentResult = await client.query(
       `SELECT trust_tier, video_approval_streak FROM students WHERE id = $1::uuid`,
@@ -1558,8 +1598,17 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
     let autoApproved = false;
     let finalXpAwarded = 0;
     
-    // Trust Tier Auto-Approve Logic
-    if (trustTier === 'verified' || trustTier === 'trusted') {
+    // AI Flags override auto-approval
+    if (aiFlag === 'red') {
+      // Red flag = always require manual review
+      status = 'pending';
+      console.log(`[TrustTier] Red flag override - manual review required for ${studentId}`);
+    } else if (aiFlag === 'yellow') {
+      // Yellow flag = require review even for verified students
+      status = 'pending';
+      console.log(`[TrustTier] Yellow flag - review required for ${studentId}`);
+    } else if (trustTier === 'verified' || trustTier === 'trusted') {
+      // Trust Tier Auto-Approve Logic (only for green-flagged videos)
       // Random spot-check (1 in 10)
       const randomNum = Math.floor(Math.random() * SPOT_CHECK_RATIO);
       if (randomNum === 0) {
@@ -1583,25 +1632,30 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
     }
     
     const result = await client.query(
-      `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, is_spot_check, auto_approved, xp_awarded, created_at, updated_at)
-       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+      `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, is_spot_check, auto_approved, xp_awarded, ai_flag, ai_flag_reason, video_duration, verified_at, created_at, updated_at)
+       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
        RETURNING id`,
-      [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, isSpotCheck, autoApproved, finalXpAwarded]
+      [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, isSpotCheck, autoApproved, finalXpAwarded, aiFlag, aiFlagReason, videoDuration || null, autoApproved ? new Date() : null]
     );
     
     const video = result.rows[0];
     
-    // If auto-approved, award XP immediately
+    // If auto-approved, award XP immediately and update trust tier
     if (autoApproved && finalXpAwarded > 0) {
       await applyXpDelta(client, studentId, finalXpAwarded, 'video_auto_approved');
       
-      // Increment approval streak for auto-approved videos
+      // Increment approval streak and upgrade trust tier if thresholds met
       await client.query(
         `UPDATE students 
          SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
+             trust_tier = CASE 
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1 THEN 'trusted'
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2 THEN 'verified'
+               ELSE COALESCE(trust_tier, 'unverified')
+             END,
              updated_at = NOW()
-         WHERE id = $1::uuid`,
-        [studentId]
+         WHERE id = $3::uuid`,
+        [TRUST_TIER_TRUSTED_THRESHOLD, TRUST_TIER_VERIFIED_THRESHOLD, studentId]
       );
     }
     
@@ -1611,7 +1665,9 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
       autoApproved,
       isSpotCheck,
       xpAwarded: finalXpAwarded,
-      trustTier
+      trustTier,
+      aiFlag,
+      aiFlagReason
     });
   } catch (error: any) {
     console.error('[Videos] Create error:', error.message);
@@ -1805,13 +1861,14 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
   }
   
   const client = await pool.connect();
+  const finalXpAwarded = xpAwarded || 40; // Default to 40 XP if not specified
   try {
     const result = await client.query(
       `UPDATE challenge_videos 
-       SET status = $1, coach_notes = $2, xp_awarded = $3, verified_at = NOW(), updated_at = NOW()
+       SET status = $1, coach_notes = $2, xp_awarded = $3, verified_at = CASE WHEN $1 = 'approved' THEN NOW() ELSE verified_at END, updated_at = NOW()
        WHERE id = $4::uuid
        RETURNING *`,
-      [status, coachNotes || '', xpAwarded || 0, videoId]
+      [status, coachNotes || '', finalXpAwarded, videoId]
     );
     
     if (result.rows.length === 0) {
@@ -1823,13 +1880,14 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
     // Update Trust Tier based on approval/rejection
     if (status === 'approved') {
       // Increment approval streak and possibly upgrade trust tier
+      // Handle NULL trust_tier by treating it as 'unverified'
       const studentResult = await client.query(
         `UPDATE students 
          SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
              trust_tier = CASE 
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1 AND trust_tier = 'verified' THEN 'trusted'
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2 AND trust_tier = 'unverified' THEN 'verified'
-               ELSE trust_tier
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1 THEN 'trusted'
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2 THEN 'verified'
+               ELSE COALESCE(trust_tier, 'unverified')
              END,
              updated_at = NOW()
          WHERE id = $3::uuid
@@ -1842,8 +1900,8 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
       console.log(`[TrustTier] Student ${video.student_id} approved: streak=${newStreak}, tier=${newTier}`);
       
       // Award XP using unified helper
-      if (xpAwarded > 0) {
-        await applyXpDelta(client, video.student_id, xpAwarded, 'video_approved');
+      if (finalXpAwarded > 0) {
+        await applyXpDelta(client, video.student_id, finalXpAwarded, 'video_approved');
       }
     } else if (status === 'rejected') {
       // Reset streak, increment rejection count, downgrade trust tier
