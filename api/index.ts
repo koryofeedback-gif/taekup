@@ -1591,13 +1591,18 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
       console.log(`[AI-Screen] YELLOW FLAG: Short video (${videoDuration}s) for student ${studentId}`);
     }
     
-    // Check student's trust tier for auto-approval logic
-    const studentResult = await client.query(
-      `SELECT trust_tier, video_approval_streak FROM students WHERE id = $1::uuid`,
-      [studentId]
-    );
+    // Check student's trust tier for auto-approval logic (optional - columns may not exist)
+    let trustTier = 'unverified';
+    try {
+      const studentResult = await client.query(
+        `SELECT trust_tier, video_approval_streak FROM students WHERE id = $1::uuid`,
+        [studentId]
+      );
+      trustTier = studentResult.rows[0]?.trust_tier || 'unverified';
+    } catch (tierError: any) {
+      console.log(`[TrustTier] Trust tier columns not available: ${tierError.message}`);
+    }
     
-    const trustTier = studentResult.rows[0]?.trust_tier || 'unverified';
     let status = 'pending';
     let isSpotCheck = false;
     let autoApproved = false;
@@ -1622,11 +1627,13 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
         status = 'pending';
         console.log(`[TrustTier] Spot-check triggered for student ${studentId}`);
         
-        // Update last spot-check timestamp
-        await client.query(
-          `UPDATE students SET last_spot_check_at = NOW() WHERE id = $1::uuid`,
-          [studentId]
-        );
+        // Update last spot-check timestamp (optional - column may not exist)
+        try {
+          await client.query(
+            `UPDATE students SET last_spot_check_at = NOW() WHERE id = $1::uuid`,
+            [studentId]
+          );
+        } catch (e) { /* column may not exist */ }
       } else {
         // Auto-approve - student is trusted
         status = 'approved';
@@ -1649,19 +1656,23 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
     if (autoApproved && finalXpAwarded > 0) {
       await applyXpDelta(client, studentId, finalXpAwarded, 'video_auto_approved');
       
-      // Increment approval streak and upgrade trust tier if thresholds met
-      await client.query(
-        `UPDATE students 
-         SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
-             trust_tier = CASE 
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1::integer THEN 'trusted'
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2::integer THEN 'verified'
-               ELSE COALESCE(trust_tier, 'unverified')
-             END,
-             updated_at = NOW()
-         WHERE id = $3::uuid`,
-        [TRUST_TIER_TRUSTED_THRESHOLD, TRUST_TIER_VERIFIED_THRESHOLD, studentId]
-      );
+      // Increment approval streak and upgrade trust tier if thresholds met (optional - columns may not exist)
+      try {
+        await client.query(
+          `UPDATE students 
+           SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
+               trust_tier = CASE 
+                 WHEN COALESCE(video_approval_streak, 0) + 1 >= $1::integer THEN 'trusted'
+                 WHEN COALESCE(video_approval_streak, 0) + 1 >= $2::integer THEN 'verified'
+                 ELSE COALESCE(trust_tier, 'unverified')
+               END,
+               updated_at = NOW()
+           WHERE id = $3::uuid`,
+          [TRUST_TIER_TRUSTED_THRESHOLD, TRUST_TIER_VERIFIED_THRESHOLD, studentId]
+        );
+      } catch (tierError: any) {
+        console.log(`[TrustTier] Skipping trust tier update: ${tierError.message}`);
+      }
     }
     
     return res.json({ 
