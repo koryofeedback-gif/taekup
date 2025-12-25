@@ -89,9 +89,24 @@ export async function checkVideoExists(key: string): Promise<boolean> {
   }
 }
 
+export async function getObject(key: string) {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    });
+    
+    return await s3Client.send(command);
+  } catch (error) {
+    console.error('Error getting object:', error);
+    return null;
+  }
+}
+
 export default {
   getPresignedUploadUrl,
   getPresignedDownloadUrl,
   deleteVideo,
   checkVideoExists,
+  getObject,
 };

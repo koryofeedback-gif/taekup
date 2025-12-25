@@ -1993,6 +1993,30 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Video streaming proxy endpoint
+  app.get('/api/videos/stream/*videoKey', async (req: Request, res: Response) => {
+    try {
+      const videoKeyParts = req.params.videoKey as unknown as string[];
+      const videoKey = decodeURIComponent(videoKeyParts.join('/'));
+      
+      const result = await s3Storage.getObject(videoKey);
+      if (!result || !result.Body) {
+        return res.status(404).json({ error: 'Video not found' });
+      }
+      
+      res.setHeader('Content-Type', result.ContentType || 'video/mp4');
+      res.setHeader('Content-Length', result.ContentLength || 0);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      
+      const stream = result.Body as NodeJS.ReadableStream;
+      stream.pipe(res);
+    } catch (error: any) {
+      console.error('[Videos] Stream error:', error.message);
+      res.status(500).json({ error: 'Failed to stream video' });
+    }
+  });
+
   app.get('/api/videos/pending/:clubId', async (req: Request, res: Response) => {
     try {
       const { clubId } = req.params;
@@ -2005,7 +2029,15 @@ export function registerRoutes(app: Express) {
         ORDER BY cv.created_at DESC
       `);
 
-      res.json(videos);
+      // Convert to proxy URLs for video streaming
+      const videosWithProxyUrls = (videos as any[]).map((video: any) => ({
+        ...video,
+        video_url: video.video_key 
+          ? `/api/videos/stream/${encodeURIComponent(video.video_key)}`
+          : video.video_url
+      }));
+
+      res.json(videosWithProxyUrls);
     } catch (error: any) {
       console.error('[Videos] Fetch pending error:', error.message);
       res.status(500).json({ error: 'Failed to get pending videos' });
@@ -2028,7 +2060,15 @@ export function registerRoutes(app: Express) {
         ORDER BY cv.vote_count DESC, cv.created_at DESC
       `);
 
-      res.json(videos);
+      // Convert to proxy URLs for video streaming
+      const videosWithProxyUrls = (videos as any[]).map((video: any) => ({
+        ...video,
+        video_url: video.video_key 
+          ? `/api/videos/stream/${encodeURIComponent(video.video_key)}`
+          : video.video_url
+      }));
+
+      res.json(videosWithProxyUrls);
     } catch (error: any) {
       console.error('[Videos] Fetch approved error:', error.message);
       res.status(500).json({ error: 'Failed to get approved videos' });

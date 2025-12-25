@@ -1486,9 +1486,14 @@ function getS3Client(): S3Client | null {
   if (!process.env.IDRIVE_E2_ACCESS_KEY || !process.env.IDRIVE_E2_SECRET_KEY || !process.env.IDRIVE_E2_ENDPOINT) {
     return null;
   }
+  // Extract region from endpoint (e.g., s3.eu-west-4.idrivee2.com -> eu-west-4)
+  const endpoint = process.env.IDRIVE_E2_ENDPOINT;
+  const regionMatch = endpoint.match(/s3\.([^.]+)\.idrivee2\.com/);
+  const region = regionMatch ? regionMatch[1] : 'us-east-1';
+  
   return new S3Client({
-    endpoint: `https://${process.env.IDRIVE_E2_ENDPOINT}`,
-    region: 'us-east-1',
+    endpoint: `https://${endpoint}`,
+    region: region,
     credentials: {
       accessKeyId: process.env.IDRIVE_E2_ACCESS_KEY,
       secretAccessKey: process.env.IDRIVE_E2_SECRET_KEY,
@@ -1715,28 +1720,18 @@ async function handleGetPendingVideos(req: VercelRequest, res: VercelResponse, c
       [clubId]
     );
     
-    // Generate presigned URLs for each video (7 days = 604800 seconds max)
-    const s3Client = getS3Client();
-    const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
-    
-    const videosWithSignedUrls = await Promise.all(result.rows.map(async (video) => {
-      if (s3Client && bucketName && video.video_key) {
-        try {
-          const command = new GetObjectCommand({
-            Bucket: bucketName,
-            Key: video.video_key,
-          });
-          const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 604800 });
-          return { ...video, video_url: signedUrl };
-        } catch (e) {
-          console.error('[Videos] Failed to generate signed URL:', e);
-          return video;
-        }
+    // Use proxy URLs for video streaming (avoids presigned URL issues with iDrive E2)
+    const videosWithProxyUrls = result.rows.map((video) => {
+      if (video.video_key) {
+        return { 
+          ...video, 
+          video_url: `/api/videos/stream/${encodeURIComponent(video.video_key)}` 
+        };
       }
       return video;
-    }));
+    });
     
-    return res.json(videosWithSignedUrls);
+    return res.json(videosWithProxyUrls);
   } catch (error: any) {
     console.error('[Videos] Fetch pending error:', error.message);
     return res.status(500).json({ error: 'Failed to get pending videos' });
@@ -1762,23 +1757,11 @@ async function handleGetApprovedVideos(req: VercelRequest, res: VercelResponse, 
       [clubId]
     );
     
-    const s3Client = getS3Client();
-    const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
-    
     const videosWithData = await Promise.all(result.rows.map(async (video) => {
-      let videoUrl = video.video_url;
-      
-      if (s3Client && bucketName && video.video_key) {
-        try {
-          const command = new GetObjectCommand({
-            Bucket: bucketName,
-            Key: video.video_key,
-          });
-          videoUrl = await getSignedUrl(s3Client, command, { expiresIn: 604800 });
-        } catch (e) {
-          console.error('[Videos] Failed to generate signed URL:', e);
-        }
-      }
+      // Use proxy URL for video streaming
+      let videoUrl = video.video_key 
+        ? `/api/videos/stream/${encodeURIComponent(video.video_key)}`
+        : video.video_url;
       
       let hasVoted = false;
       if (studentId) {
@@ -1802,6 +1785,43 @@ async function handleGetApprovedVideos(req: VercelRequest, res: VercelResponse, 
     return res.status(500).json({ error: 'Failed to get approved videos' });
   } finally {
     client.release();
+  }
+}
+
+async function handleVideoStream(req: VercelRequest, res: VercelResponse, videoKey: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const s3Client = getS3Client();
+  const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
+  
+  if (!s3Client || !bucketName) {
+    return res.status(500).json({ error: 'Video storage not configured' });
+  }
+  
+  try {
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: videoKey,
+    });
+    
+    const response = await s3Client.send(command);
+    
+    if (!response.Body) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    // Set headers for video streaming
+    res.setHeader('Content-Type', response.ContentType || 'video/mp4');
+    res.setHeader('Content-Length', response.ContentLength || 0);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    
+    // Stream the video body
+    const stream = response.Body as NodeJS.ReadableStream;
+    stream.pipe(res as any);
+  } catch (error: any) {
+    console.error('[Videos] Stream error:', error.message);
+    return res.status(500).json({ error: 'Failed to stream video' });
   }
 }
 
@@ -4449,6 +4469,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const voteVideoMatch = path.match(/^\/videos\/([^/]+)\/vote\/?$/);
     if (voteVideoMatch) return await handleVoteVideo(req, res, voteVideoMatch[1]);
+    
+    const videoStreamMatch = path.match(/^\/videos\/stream\/(.+)$/);
+    if (videoStreamMatch) return await handleVideoStream(req, res, decodeURIComponent(videoStreamMatch[1]));
 
     // World Rankings endpoints
     if (path === '/world-rankings' || path === '/world-rankings/') return await handleWorldRankings(req, res);
