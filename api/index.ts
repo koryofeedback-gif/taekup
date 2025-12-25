@@ -3547,17 +3547,17 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
 
   const baseXp = challengeXp || 15;
   const finalXp = proofType === 'VIDEO' ? baseXp * VIDEO_XP_MULTIPLIER : baseXp;
-  const today = new Date().toISOString().split('T')[0];
 
   if (proofType === 'TRUST') {
     const client = await pool.connect();
     try {
       // Check per-challenge daily limit
+      // Use Postgres DATE_TRUNC in UTC to avoid timezone mismatch with JS Date
       const countResult = await client.query(
         `SELECT COUNT(*) as count FROM challenge_submissions 
          WHERE student_id = $1::uuid AND answer = $2 AND proof_type = 'TRUST' 
-         AND DATE(completed_at) = $3::date`,
-        [studentId, challengeType, today]
+         AND completed_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')`,
+        [studentId, challengeType]
       );
 
       const count = parseInt(countResult.rows[0]?.count || '0');
@@ -3616,11 +3616,12 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
     const client = await pool.connect();
     try {
       // Check if already submitted video for this challenge today (prevent duplicates)
+      // Use Postgres DATE_TRUNC in UTC to avoid timezone mismatch with JS Date
       const existingVideoResult = await client.query(
         `SELECT id FROM challenge_submissions 
          WHERE student_id = $1::uuid AND answer = $2 AND proof_type = 'VIDEO'
-         AND DATE(completed_at) = $3::date`,
-        [studentId, challengeType, today]
+         AND completed_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')`,
+        [studentId, challengeType]
       );
       
       if (existingVideoResult.rows.length > 0) {
