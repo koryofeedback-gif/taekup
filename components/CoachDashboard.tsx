@@ -2505,10 +2505,11 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     } ${video.ai_flag === 'red' ? 'ring-2 ring-red-500' : video.ai_flag === 'yellow' ? 'ring-2 ring-yellow-500' : ''}`}
                                                 >
                                                     <video 
-                                                        src={video.video_url + '#t=0.5'}
+                                                        src={video.video_url}
                                                         className="w-full h-full object-cover"
                                                         muted
-                                                        preload="metadata"
+                                                        preload="auto"
+                                                        playsInline
                                                     />
                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-1 flex items-center justify-between">
                                                         <span className="text-white text-xs truncate">{video.student_name?.split(' ')[0]}</span>
