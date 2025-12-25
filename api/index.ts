@@ -2863,8 +2863,8 @@ async function handleChallengeVerify(req: VercelRequest, res: VercelResponse) {
 
     if (verified) {
       // Approve - award the XP that was stored in the submission when created
-      const xpToAward = submission.xp_awarded || 30;
-      const globalRankPoints = submission.global_rank_points || 3;
+      const xpToAward = parseInt(submission.xp_awarded) || 30;
+      const globalRankPoints = parseInt(submission.global_rank_points) || 3;
       
       await client.query(
         `UPDATE challenge_submissions SET status = 'VERIFIED' WHERE id = $1::uuid`,
@@ -2874,8 +2874,8 @@ async function handleChallengeVerify(req: VercelRequest, res: VercelResponse) {
       // Award XP to student
       await client.query(
         `UPDATE students 
-         SET total_xp = COALESCE(total_xp, 0) + $1,
-             global_xp = COALESCE(global_xp, 0) + $2,
+         SET total_xp = COALESCE(total_xp, 0) + $1::integer,
+             global_xp = COALESCE(global_xp, 0) + $2::integer,
              updated_at = NOW()
          WHERE id = $3::uuid`,
         [xpToAward, globalRankPoints, submission.student_id]

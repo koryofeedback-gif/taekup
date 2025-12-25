@@ -3150,11 +3150,11 @@ export function registerRoutes(app: Express) {
 
       if (verified) {
         // Approve - award the XP that was stored in the submission when created
-        const xpToAward = submission.xp_awarded || 30; // Fallback to 30 (15 base * 2) for legacy submissions
+        const xpToAward = parseInt(submission.xp_awarded) || 30; // Fallback to 30 (15 base * 2) for legacy submissions
         
         // Use stored Global Rank Points from submission (calculated at submit time)
         // This ensures accurate matrix values for coach_pick vs general and correct difficulty
-        const globalRankPoints = submission.global_rank_points || 3; // Fallback to EASY general with video for legacy
+        const globalRankPoints = parseInt(submission.global_rank_points) || 3; // Fallback to EASY general with video for legacy
         
         await db.execute(sql`
           UPDATE challenge_submissions SET status = 'VERIFIED'
@@ -3167,7 +3167,7 @@ export function registerRoutes(app: Express) {
         // Award Global Rank Points (for World Rankings)
         await db.execute(sql`
           UPDATE students 
-          SET global_xp = COALESCE(global_xp, 0) + ${globalRankPoints},
+          SET global_xp = COALESCE(global_xp, 0) + ${globalRankPoints}::integer,
               updated_at = NOW()
           WHERE id = ${submission.student_id}::uuid
         `);
