@@ -2555,7 +2555,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }
 
     const renderRivals = () => {
-        const classmates = data.students.filter(s => s.id !== student.id);
+        const classmates = (data.students || []).filter(s => s.id !== student.id);
         
         // Use API leaderboard data (all club students) as primary source
         // This ensures we show ALL students in the club, not just parent's linked students
@@ -2563,12 +2563,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             ? apiLeaderboardData.map(s => ({
                 id: s.id,
                 name: s.name,
-                belt: s.belt || data.belts.find(b => b.id === student.beltId)?.name || 'Unknown',
+                belt: s.belt || (data.belts || []).find(b => b.id === student.beltId)?.name || 'Unknown',
                 beltId: student.beltId,
                 totalXP: s.totalXP,
                 monthlyXP: s.monthlyXP
             }))
-            : data.students;
+            : (data.students || []);
         
         // If current student not in list, add them (handles edge cases)
         if (!allStudentsForLeaderboard.find(s => s.id === student.id)) {
@@ -2989,7 +2989,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     </div>
 
                                     {/* WARRIOR'S GAUNTLET - Today's Challenges */}
-                                    {gauntletData && gauntletData.challenges.length > 0 && (
+                                    {gauntletData && gauntletData.challenges && gauntletData.challenges.length > 0 && (
                                         <div className="bg-gradient-to-b from-orange-900/30 to-gray-900 p-5 rounded-2xl border border-orange-500/50 shadow-xl">
                                             <div className="flex items-center justify-between mb-4">
                                                 <div className="flex items-center">
