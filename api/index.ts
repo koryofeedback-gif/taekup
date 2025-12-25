@@ -4069,7 +4069,7 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
     await client.query(`
       INSERT INTO gauntlet_submissions 
       (challenge_id, student_id, week_number, score, proof_type, xp_awarded, global_rank_points, is_personal_best)
-      VALUES ($1::uuid, $2::uuid, $3, $4, $5::proof_type, $6, $7, $8)
+      VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8)
     `, [challengeId, studentId, weekNumber, score, proofType || 'TRUST', localXp, globalPoints, isNewPB]);
     
     await client.query(`
@@ -4093,8 +4093,8 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
       newTotalXp: newTotalResult.rows[0]?.total_xp || 0,
     });
   } catch (error: any) {
-    console.error('[Gauntlet Submit] Error:', error.message);
-    return res.status(500).json({ error: 'Failed to submit gauntlet challenge' });
+    console.error('[Gauntlet Submit] Error:', error.message, error.stack);
+    return res.status(500).json({ error: 'Failed to submit gauntlet challenge', details: error.message });
   } finally {
     client.release();
   }
