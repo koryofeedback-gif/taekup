@@ -94,7 +94,37 @@ function getGeminiClient(): GoogleGenerativeAI | null {
 function setCorsHeaders(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+// Super Admin token verification
+async function verifySuperAdminToken(req: VercelRequest): Promise<{ valid: boolean; email?: string }> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { valid: false };
+  }
+  
+  const token = authHeader.substring(7);
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT email, expires_at FROM super_admin_sessions 
+       WHERE token = $1 AND expires_at > NOW()
+       LIMIT 1`,
+      [token]
+    );
+    
+    if (result.rows.length === 0) {
+      return { valid: false };
+    }
+    
+    return { valid: true, email: result.rows[0].email };
+  } catch (err) {
+    console.error('[SuperAdmin] Token verify error:', err);
+    return { valid: false };
+  } finally {
+    client.release();
+  }
 }
 
 function parseBody(req: VercelRequest) {
@@ -3795,6 +3825,105 @@ async function handleStudentGlobalXp(req: VercelRequest, res: VercelResponse, st
 }
 
 // =====================================================
+// SUPER ADMIN - DAILY TRAINING MANAGEMENT
+// =====================================================
+
+async function handleSuperAdminGauntletChallenges(req: VercelRequest, res: VercelResponse) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: 'Unauthorized - Invalid or expired token' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT * FROM gauntlet_challenges 
+      ORDER BY 
+        CASE day_of_week 
+          WHEN 'MONDAY' THEN 1 
+          WHEN 'TUESDAY' THEN 2 
+          WHEN 'WEDNESDAY' THEN 3 
+          WHEN 'THURSDAY' THEN 4 
+          WHEN 'FRIDAY' THEN 5 
+          WHEN 'SATURDAY' THEN 6 
+          WHEN 'SUNDAY' THEN 7 
+        END,
+        display_order ASC
+    `);
+    
+    return res.json({ challenges: result.rows });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Gauntlet challenges error:', error);
+    return res.status(500).json({ error: 'Failed to fetch challenges' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleSuperAdminGauntletChallengeUpdate(req: VercelRequest, res: VercelResponse, challengeId: string) {
+  if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: 'Unauthorized - Invalid or expired token' });
+  }
+  
+  const { name, description, icon, demo_video_url, is_active } = parseBody(req);
+  
+  const client = await pool.connect();
+  try {
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+    
+    if (name !== undefined) {
+      updates.push(`name = $${paramCount++}`);
+      values.push(name);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description);
+    }
+    if (icon !== undefined) {
+      updates.push(`icon = $${paramCount++}`);
+      values.push(icon);
+    }
+    if (demo_video_url !== undefined) {
+      updates.push(`demo_video_url = $${paramCount++}`);
+      values.push(demo_video_url || null);
+    }
+    if (is_active !== undefined) {
+      updates.push(`is_active = $${paramCount++}`);
+      values.push(is_active);
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    values.push(challengeId);
+    const query = `UPDATE gauntlet_challenges SET ${updates.join(', ')} WHERE id = $${paramCount}::uuid`;
+    
+    await client.query(query, values);
+    
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Update gauntlet challenge error:', error);
+    return res.status(500).json({ error: 'Failed to update challenge' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleSuperAdminVerify(req: VercelRequest, res: VercelResponse) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  return res.json({ valid: true, email: auth.email });
+}
+
+// =====================================================
 // WARRIOR'S GAUNTLET HANDLERS
 // =====================================================
 
@@ -3996,6 +4125,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     // Database setup (admin only)
     if (path === '/admin/db-setup' || path === '/admin/db-setup/') return await handleDbSetup(req, res);
+    
+    // Super Admin routes
+    if (path === '/super-admin/verify' || path === '/super-admin/verify/') return await handleSuperAdminVerify(req, res);
+    if (path === '/super-admin/gauntlet-challenges' || path === '/super-admin/gauntlet-challenges/') return await handleSuperAdminGauntletChallenges(req, res);
+    
+    const superAdminGauntletMatch = path.match(/^\/super-admin\/gauntlet-challenges\/([^/]+)\/?$/);
+    if (superAdminGauntletMatch) return await handleSuperAdminGauntletChallengeUpdate(req, res, superAdminGauntletMatch[1]);
     
     // Daily Mystery Challenge
     if (path === '/daily-challenge' || path === '/daily-challenge/') return await handleDailyChallenge(req, res);
