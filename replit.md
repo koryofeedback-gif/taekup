@@ -52,6 +52,16 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **Analytics**: Track views, completions, revenue metrics, content performance by belt level
     - **Monetization**: Free vs premium content, XP rewards for completion (10-100 XP per item)
 - **Coach Dashboard**: Handles grading, attendance, AI lesson planning, sparring tracking, challenge building, and personal schedule.
+    - **Trust Tier System**: Students earn verification status after 10+ consecutive approved videos, enabling auto-XP with 1-in-10 spot-check sampling
+        - **Unverified**: Default tier, all videos require coach review
+        - **Verified**: 10+ approvals, videos auto-approved (green AI flag only), 1-in-10 spot-checked
+        - **Trusted**: 25+ approvals, higher trust level for consistent performers
+        - Rejection resets streak to 0 and tier to Unverified
+    - **AI Pre-Screening**: Automatic flagging of suspicious video submissions
+        - **Red Flag**: Duplicate video detected (same file within 7 days)
+        - **Yellow Flag**: High submission rate (5+ in 1 hour) or very short video (<3 seconds)
+        - AI flags override auto-approval, forcing manual coach review
+    - **Speed Review Mode**: Batch video review with keyboard shortcuts (Space=Approve, X=Reject, arrows=navigate)
 - **Parent Portal**: Tracks student journey, provides AI insights, practice curriculum with XP completion tracking, booking, gamification (Rivals), daily habits (Home Dojo), and digital student cards.
 - **Super Admin Dashboard**: Platform-wide management, including KPIs, club/parent management, payment history, revenue analytics, activity feed, health scores, email tools, CSV exports, and impersonation. New advanced analytics dashboard with cohort analysis, onboarding funnel, churn analysis, payment recovery, MRR goals, and automations.
 - **Email System**: Integration with SendGrid for automated (welcome, trial reminders) and transactional emails (coach invites, password resets, promotions, attendance alerts, birthday wishes, revenue reports).
