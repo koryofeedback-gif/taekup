@@ -180,6 +180,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [selectedGauntletChallenge, setSelectedGauntletChallenge] = useState<string | null>(null);
     const [gauntletScore, setGauntletScore] = useState('');
     const [gauntletSubmitting, setGauntletSubmitting] = useState(false);
+    const gauntletSubmitRef = useRef(false); // Prevent double-click race condition
     const [gauntletResult, setGauntletResult] = useState<{
         success: boolean;
         message: string;
@@ -327,6 +328,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [soloScore, setSoloScore] = useState<string>('');
     const [remainingTrustSubmissions, setRemainingTrustSubmissions] = useState(3);
     const [soloSubmitting, setSoloSubmitting] = useState(false);
+    const soloSubmitRef = useRef(false); // Prevent double-click race condition
+    const videoUploadRef = useRef(false); // Prevent double video upload
     const [soloResult, setSoloResult] = useState<{ success: boolean; message: string; xp: number } | null>(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     
@@ -710,6 +713,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const submitGauntletChallenge = async (proofType: 'TRUST' | 'VIDEO') => {
         if (!selectedGauntletChallenge || !student.id || !gauntletScore) return;
         
+        // Prevent double-click race condition
+        if (gauntletSubmitRef.current) return;
+        gauntletSubmitRef.current = true;
+        
         setGauntletSubmitting(true);
         setGauntletResult(null);
         
@@ -768,6 +775,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             });
         } finally {
             setGauntletSubmitting(false);
+            gauntletSubmitRef.current = false;
         }
     };
 
@@ -775,8 +783,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const submitSoloChallenge = async (proofType: 'TRUST' | 'VIDEO', videoUrl?: string, challengeXp?: number) => {
         if (!selectedChallenge || !student.id) return;
         
+        // Prevent double-click race condition
+        if (soloSubmitRef.current) return;
+        soloSubmitRef.current = true;
+        
         // STRICT 1x daily limit - check frontend first
         if (isChallengeCompletedToday(selectedChallenge)) {
+            soloSubmitRef.current = false; // Reset ref on early return
             setSoloResult({
                 success: false,
                 message: 'Daily Mission Complete! You can earn XP for this challenge again tomorrow.',
@@ -879,12 +892,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             });
         } finally {
             setSoloSubmitting(false);
+            soloSubmitRef.current = false;
         }
     };
     
     // Video upload for solo arena
     const handleSoloVideoUpload = async () => {
         if (!videoFile || !selectedChallenge) return;
+        
+        // Prevent double-click race condition during upload
+        if (videoUploadRef.current || isUploadingVideo) return;
+        videoUploadRef.current = true;
         
         setIsUploadingVideo(true);
         setVideoUploadError(null);
@@ -921,6 +939,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             setVideoUploadError('Failed to upload video. Please try again.');
         } finally {
             setIsUploadingVideo(false);
+            videoUploadRef.current = false;
         }
     };
     
@@ -1554,6 +1573,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const challengeIdToUse = gauntletVideoMode ? selectedGauntletChallenge : selectedChallenge;
         if (!videoFile || !challengeIdToUse) return;
         
+        // Prevent double-click race condition during upload
+        if (videoUploadRef.current || isUploadingVideo) return;
+        videoUploadRef.current = true;
+        
         setIsUploadingVideo(true);
         setVideoUploadProgress(0);
         setVideoUploadError(null);
@@ -1680,6 +1703,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             setVideoUploadError(error.message || 'Upload failed');
         } finally {
             setIsUploadingVideo(false);
+            videoUploadRef.current = false;
         }
     };
 
@@ -3036,7 +3060,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         return (
                                                         <button
                                                             key={challenge.id}
-                                                            onClick={() => !isCompleted && setSelectedChallenge(challenge.id)}
+                                                            onClick={() => {
+                                                            if (isCompleted) return;
+                                                            setSoloResult(null); // Clear stale result from previous challenge
+                                                            setSelectedChallenge(challenge.id);
+                                                        }}
                                                             disabled={isCompleted}
                                                             className={`group relative p-3 rounded-xl text-center transition-all duration-200 border-2 ${
                                                                 isCompleted
@@ -3114,7 +3142,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     return (
                                                         <div key={challenge.id}>
                                                             <button
-                                                                onClick={() => !isCompleted && setSelectedGauntletChallenge(isSelected ? null : challenge.id)}
+                                                                onClick={() => {
+                                                                    if (isCompleted) return;
+                                                                    setGauntletResult(null); // Clear stale result from previous challenge
+                                                                    setSelectedGauntletChallenge(isSelected ? null : challenge.id);
+                                                                }}
                                                                 disabled={isCompleted}
                                                                 className={`w-full p-4 rounded-xl text-left transition-all border-2 ${
                                                                     isCompleted
@@ -3379,6 +3411,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             <button
                                                                 onClick={() => {
                                                                     if (hasPremiumAccess) {
+                                                                        setVideoScore(soloScore); // Pass score to video upload modal
                                                                         setShowVideoUpload(true);
                                                                     } else {
                                                                         setShowUpgradeModal(true);
@@ -3587,24 +3620,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             ? gauntletData?.challenges?.find((c: any) => c.id === selectedGauntletChallenge)?.name || 'Daily Training Challenge'
                                                             : challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge)?.name || 'Unknown Challenge'}
                                                     </p>
-                                                    {gauntletVideoMode && (
-                                                        <p className="text-orange-400 text-sm mt-1">Score: {videoScore}</p>
+                                                    {videoScore && (
+                                                        <p className={`text-sm mt-1 ${gauntletVideoMode ? 'text-orange-400' : 'text-green-400'}`}>
+                                                            ✅ Score: {videoScore}
+                                                        </p>
                                                     )}
                                                 </div>
-
-                                                {/* Score Input - only for Arena challenges */}
-                                                {!gauntletVideoMode && (
-                                                    <div className="mb-4">
-                                                        <label className="text-gray-400 text-xs block mb-2">Your Score (reps, seconds, etc.)</label>
-                                                        <input
-                                                            type="number"
-                                                            value={videoScore}
-                                                            onChange={(e) => setVideoScore(e.target.value)}
-                                                            placeholder="Enter your score..."
-                                                            className="w-full bg-gray-800 text-white text-xl font-bold text-center p-3 rounded-xl border border-gray-600 focus:border-purple-500 focus:outline-none"
-                                                        />
-                                                    </div>
-                                                )}
 
                                                 {/* File Upload Area */}
                                                 <div 
