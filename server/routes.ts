@@ -3135,6 +3135,239 @@ export function registerRoutes(app: Express) {
   });
 
   // =====================================================
+  // WARRIOR'S GAUNTLET - 7-Day Fixed Challenge Rotation
+  // =====================================================
+  
+  // Get today's gauntlet challenges
+  app.get('/api/gauntlet/today', async (req: Request, res: Response) => {
+    try {
+      const studentId = req.query.studentId as string;
+      
+      // Get current day of week
+      const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+      const today = days[new Date().getDay()];
+      
+      // Get current week number (for tracking weekly resets)
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const weekNumber = Math.ceil((((now.getTime() - startOfYear.getTime()) / 86400000) + startOfYear.getDay() + 1) / 7);
+      
+      // Fetch today's challenges
+      const challenges = await db.execute(sql`
+        SELECT * FROM gauntlet_challenges 
+        WHERE day_of_week = ${today}::gauntlet_day AND is_active = true
+        ORDER BY display_order ASC
+      `);
+      
+      // Get student's personal bests for these challenges
+      let personalBests: any[] = [];
+      let thisWeekSubmissions: any[] = [];
+      
+      if (studentId) {
+        const challengeIds = (challenges as any[]).map(c => c.id);
+        
+        if (challengeIds.length > 0) {
+          personalBests = await db.execute(sql`
+            SELECT challenge_id, best_score, has_video_proof 
+            FROM gauntlet_personal_bests 
+            WHERE student_id = ${studentId}::uuid 
+            AND challenge_id = ANY(${challengeIds}::uuid[])
+          `) as any[];
+          
+          thisWeekSubmissions = await db.execute(sql`
+            SELECT challenge_id, score, proof_type, is_personal_best 
+            FROM gauntlet_submissions 
+            WHERE student_id = ${studentId}::uuid 
+            AND week_number = ${weekNumber}
+            AND challenge_id = ANY(${challengeIds}::uuid[])
+          `) as any[];
+        }
+      }
+      
+      // Map personal bests to challenges
+      const pbMap = new Map(personalBests.map(pb => [pb.challenge_id, pb]));
+      const submittedMap = new Map(thisWeekSubmissions.map(s => [s.challenge_id, s]));
+      
+      const enrichedChallenges = (challenges as any[]).map(c => ({
+        ...c,
+        personalBest: pbMap.get(c.id)?.best_score || null,
+        pbHasVideo: pbMap.get(c.id)?.has_video_proof || false,
+        submittedThisWeek: submittedMap.has(c.id),
+        thisWeekScore: submittedMap.get(c.id)?.score || null,
+        thisWeekProofType: submittedMap.get(c.id)?.proof_type || null,
+      }));
+      
+      res.json({
+        dayOfWeek: today,
+        dayTheme: (challenges as any[])[0]?.day_theme || 'Training',
+        weekNumber,
+        challenges: enrichedChallenges,
+      });
+    } catch (error: any) {
+      console.error('[Gauntlet] Error fetching today challenges:', error.message);
+      res.status(500).json({ error: 'Failed to fetch gauntlet challenges' });
+    }
+  });
+  
+  // Submit gauntlet challenge (with PB tracking)
+  app.post('/api/gauntlet/submit', async (req: Request, res: Response) => {
+    try {
+      const { challengeId, studentId, score, proofType, videoUrl } = req.body;
+      
+      if (!challengeId || !studentId || score === undefined) {
+        return res.status(400).json({ error: 'challengeId, studentId, and score are required' });
+      }
+      
+      // Get challenge info
+      const challengeResult = await db.execute(sql`
+        SELECT * FROM gauntlet_challenges WHERE id = ${challengeId}::uuid
+      `);
+      
+      if ((challengeResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Challenge not found' });
+      }
+      
+      const challenge = (challengeResult as any[])[0];
+      
+      // Calculate week number
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const weekNumber = Math.ceil((((now.getTime() - startOfYear.getTime()) / 86400000) + startOfYear.getDay() + 1) / 7);
+      
+      // Check if already submitted this week
+      const existingSubmission = await db.execute(sql`
+        SELECT id FROM gauntlet_submissions 
+        WHERE challenge_id = ${challengeId}::uuid 
+        AND student_id = ${studentId}::uuid 
+        AND week_number = ${weekNumber}
+      `);
+      
+      if ((existingSubmission as any[]).length > 0) {
+        return res.status(429).json({ error: 'Already submitted this challenge this week', limitReached: true });
+      }
+      
+      // Calculate XP and Global Points (Gauntlet-specific scoring)
+      const isVideoProof = proofType === 'VIDEO';
+      const localXp = isVideoProof ? 40 : 20;      // Fixed: Trust=20, Video=40
+      const globalPoints = isVideoProof ? 15 : 5;  // Fixed: Trust=5, Video=15
+      
+      // Check/update personal best
+      const pbResult = await db.execute(sql`
+        SELECT id, best_score FROM gauntlet_personal_bests 
+        WHERE challenge_id = ${challengeId}::uuid AND student_id = ${studentId}::uuid
+      `);
+      
+      const existingPB = (pbResult as any[])[0];
+      let isNewPB = false;
+      
+      // Determine if new score is better (depends on sort order)
+      if (!existingPB) {
+        // First submission - always a PB
+        isNewPB = true;
+        await db.execute(sql`
+          INSERT INTO gauntlet_personal_bests (challenge_id, student_id, best_score, has_video_proof)
+          VALUES (${challengeId}::uuid, ${studentId}::uuid, ${score}, ${isVideoProof})
+        `);
+      } else {
+        // Compare based on sort order
+        const isBetter = challenge.sort_order === 'DESC' 
+          ? score > existingPB.best_score 
+          : score < existingPB.best_score;
+        
+        if (isBetter) {
+          isNewPB = true;
+          await db.execute(sql`
+            UPDATE gauntlet_personal_bests 
+            SET best_score = ${score}, achieved_at = NOW(), has_video_proof = ${isVideoProof}
+            WHERE id = ${existingPB.id}::uuid
+          `);
+        }
+      }
+      
+      // Insert submission
+      await db.execute(sql`
+        INSERT INTO gauntlet_submissions 
+        (challenge_id, student_id, score, proof_type, video_url, xp_awarded, global_rank_points, is_personal_best, week_number)
+        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${score}, ${proofType || 'TRUST'}::proof_type, ${videoUrl || null}, ${localXp}, ${globalPoints}, ${isNewPB}, ${weekNumber})
+      `);
+      
+      // Award XP immediately for trust submissions, pending for video
+      if (!isVideoProof) {
+        await db.execute(sql`
+          UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${localXp}, global_xp = COALESCE(global_xp, 0) + ${globalPoints}
+          WHERE id = ${studentId}::uuid
+        `);
+      }
+      
+      console.log(`[Gauntlet] Submission: ${challenge.name} by ${studentId} - Score: ${score}, XP: ${localXp}, Global: ${globalPoints}, NewPB: ${isNewPB}`);
+      
+      res.json({
+        success: true,
+        xpAwarded: localXp,
+        globalRankPoints: globalPoints,
+        isNewPersonalBest: isNewPB,
+        previousBest: existingPB?.best_score || null,
+        message: isNewPB ? 'New Personal Best!' : 'Challenge completed!',
+        pendingVerification: isVideoProof,
+      });
+    } catch (error: any) {
+      console.error('[Gauntlet] Submit error:', error.message);
+      res.status(500).json({ error: 'Failed to submit challenge' });
+    }
+  });
+  
+  // Get gauntlet leaderboard for a challenge
+  app.get('/api/gauntlet/leaderboard/:challengeId', async (req: Request, res: Response) => {
+    try {
+      const { challengeId } = req.params;
+      const scope = req.query.scope as string || 'global'; // 'global' or 'club'
+      const clubId = req.query.clubId as string;
+      
+      // Get challenge info for sort order
+      const challengeResult = await db.execute(sql`
+        SELECT sort_order FROM gauntlet_challenges WHERE id = ${challengeId}::uuid
+      `);
+      
+      if ((challengeResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Challenge not found' });
+      }
+      
+      const sortOrder = (challengeResult as any[])[0].sort_order;
+      const orderDirection = sortOrder === 'DESC' ? 'DESC' : 'ASC';
+      
+      // Get top scores from personal bests
+      let leaderboard: any[];
+      
+      if (scope === 'club' && clubId) {
+        leaderboard = await db.execute(sql`
+          SELECT pb.best_score, pb.has_video_proof, pb.achieved_at,
+                 s.name, s.belt, s.profile_image_url
+          FROM gauntlet_personal_bests pb
+          JOIN students s ON pb.student_id = s.id
+          WHERE pb.challenge_id = ${challengeId}::uuid AND s.club_id = ${clubId}::uuid
+          ORDER BY pb.best_score ${sql.raw(orderDirection)}
+          LIMIT 50
+        `) as any[];
+      } else {
+        leaderboard = await db.execute(sql`
+          SELECT pb.best_score, pb.has_video_proof, pb.achieved_at,
+                 s.name, s.belt, s.profile_image_url
+          FROM gauntlet_personal_bests pb
+          JOIN students s ON pb.student_id = s.id
+          WHERE pb.challenge_id = ${challengeId}::uuid
+          ORDER BY pb.best_score ${sql.raw(orderDirection)}
+          LIMIT 100
+        `) as any[];
+      }
+      
+      res.json({ leaderboard });
+    } catch (error: any) {
+      console.error('[Gauntlet] Leaderboard error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    }
+  });
+
+  // =====================================================
   // LEADERBOARD - SIMPLE: Read directly from students.total_xp (single source of truth)
   // =====================================================
   app.get('/api/leaderboard', async (req: Request, res: Response) => {

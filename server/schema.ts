@@ -693,3 +693,56 @@ export const worldRankings = pgTable('world_rankings', {
 
 export type WorldRanking = typeof worldRankings.$inferSelect;
 export type NewWorldRanking = typeof worldRankings.$inferInsert;
+
+// =====================================================
+// WARRIOR'S GAUNTLET - 7-Day Fixed Challenge Rotation
+// =====================================================
+
+export const gauntletDayEnum = pgEnum('gauntlet_day', ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']);
+export const gauntletScoreTypeEnum = pgEnum('gauntlet_score_type', ['REPS', 'TIME', 'DISTANCE', 'COUNT', 'SETS']);
+export const gauntletSortOrderEnum = pgEnum('gauntlet_sort_order', ['ASC', 'DESC']);
+
+export const gauntletChallenges = pgTable('gauntlet_challenges', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  dayOfWeek: gauntletDayEnum('day_of_week').notNull(),
+  dayTheme: varchar('day_theme', { length: 50 }).notNull(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  icon: varchar('icon', { length: 10 }).default('💪'),
+  scoreType: gauntletScoreTypeEnum('score_type').notNull(),
+  sortOrder: gauntletSortOrderEnum('sort_order').notNull(),
+  targetValue: integer('target_value'),
+  isActive: boolean('is_active').default(true),
+  displayOrder: integer('display_order').default(1),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const gauntletSubmissions = pgTable('gauntlet_submissions', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  challengeId: uuid('challenge_id').references(() => gauntletChallenges.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  score: integer('score').notNull(),
+  proofType: proofTypeEnum('proof_type').default('TRUST'),
+  videoUrl: text('video_url'),
+  xpAwarded: integer('xp_awarded').default(0),
+  globalRankPoints: integer('global_rank_points').default(0),
+  isPersonalBest: boolean('is_personal_best').default(false),
+  weekNumber: integer('week_number').notNull(),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }).defaultNow(),
+});
+
+export const gauntletPersonalBests = pgTable('gauntlet_personal_bests', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  challengeId: uuid('challenge_id').references(() => gauntletChallenges.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  bestScore: integer('best_score').notNull(),
+  achievedAt: timestamp('achieved_at', { withTimezone: true }).defaultNow(),
+  hasVideoProof: boolean('has_video_proof').default(false),
+});
+
+export type GauntletChallenge = typeof gauntletChallenges.$inferSelect;
+export type NewGauntletChallenge = typeof gauntletChallenges.$inferInsert;
+export type GauntletSubmission = typeof gauntletSubmissions.$inferSelect;
+export type NewGauntletSubmission = typeof gauntletSubmissions.$inferInsert;
+export type GauntletPersonalBest = typeof gauntletPersonalBests.$inferSelect;
+export type NewGauntletPersonalBest = typeof gauntletPersonalBests.$inferInsert;

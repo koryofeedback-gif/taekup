@@ -156,6 +156,36 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [familyChallengesCompleted, setFamilyChallengesCompleted] = useState(student.rivalsStats?.familyChallengesCompleted || 0);
     const [mysteryBoxCompleted, setMysteryBoxCompletedCount] = useState(student.rivalsStats?.mysteryBoxCompleted || 0);
     
+    // Warrior's Gauntlet State
+    const [gauntletData, setGauntletData] = useState<{
+        dayOfWeek: string;
+        dayTheme: string;
+        weekNumber: number;
+        challenges: Array<{
+            id: string;
+            name: string;
+            description: string;
+            icon: string;
+            score_type: string;
+            sort_order: string;
+            target_value: number | null;
+            personalBest: number | null;
+            pbHasVideo: boolean;
+            submittedThisWeek: boolean;
+            thisWeekScore: number | null;
+        }>;
+    } | null>(null);
+    const [gauntletLoading, setGauntletLoading] = useState(false);
+    const [selectedGauntletChallenge, setSelectedGauntletChallenge] = useState<string | null>(null);
+    const [gauntletScore, setGauntletScore] = useState('');
+    const [gauntletSubmitting, setGauntletSubmitting] = useState(false);
+    const [gauntletResult, setGauntletResult] = useState<{
+        success: boolean;
+        message: string;
+        xp: number;
+        isNewPB: boolean;
+    } | null>(null);
+    
     // Team Battle State
     const [myTeam, setMyTeam] = useState<string[]>([]);
     const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
@@ -651,6 +681,89 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             console.error('[MysteryChallenge] Submit error:', error);
         } finally {
             setSubmittingMystery(false);
+        }
+    };
+
+    // Fetch Warrior's Gauntlet data
+    useEffect(() => {
+        const fetchGauntlet = async () => {
+            if (!student.id) return;
+            setGauntletLoading(true);
+            try {
+                const response = await fetch(`/api/gauntlet/today?studentId=${student.id}`);
+                const result = await response.json();
+                setGauntletData(result);
+            } catch (err) {
+                console.error('[Gauntlet] Failed to fetch:', err);
+            } finally {
+                setGauntletLoading(false);
+            }
+        };
+        fetchGauntlet();
+    }, [student.id]);
+    
+    // Submit Gauntlet Challenge
+    const submitGauntletChallenge = async (proofType: 'TRUST' | 'VIDEO') => {
+        if (!selectedGauntletChallenge || !student.id || !gauntletScore) return;
+        
+        setGauntletSubmitting(true);
+        setGauntletResult(null);
+        
+        try {
+            const response = await fetch('/api/gauntlet/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    challengeId: selectedGauntletChallenge,
+                    studentId: student.id,
+                    score: parseInt(gauntletScore),
+                    proofType,
+                }),
+            });
+            
+            const result = await response.json();
+            
+            if (result.limitReached) {
+                setGauntletResult({
+                    success: false,
+                    message: 'Already completed this week! Come back next week.',
+                    xp: 0,
+                    isNewPB: false,
+                });
+                return;
+            }
+            
+            if (result.success) {
+                setGauntletResult({
+                    success: true,
+                    message: result.message,
+                    xp: result.xpAwarded,
+                    isNewPB: result.isNewPersonalBest,
+                });
+                
+                // Update server XP
+                if (!result.pendingVerification) {
+                    setServerTotalXP(prev => prev + result.xpAwarded);
+                }
+                
+                // Refresh gauntlet data
+                const refreshResponse = await fetch(`/api/gauntlet/today?studentId=${student.id}`);
+                const refreshResult = await refreshResponse.json();
+                setGauntletData(refreshResult);
+                
+                // Reset form
+                setGauntletScore('');
+            }
+        } catch (error) {
+            console.error('[Gauntlet] Submit error:', error);
+            setGauntletResult({
+                success: false,
+                message: 'Failed to submit. Please try again.',
+                xp: 0,
+                isNewPB: false,
+            });
+        } finally {
+            setGauntletSubmitting(false);
         }
     };
 
@@ -2875,7 +2988,166 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         )}
                                     </div>
 
-                                    {/* Challenge Categories - Solo Mode First */}
+                                    {/* WARRIOR'S GAUNTLET - Today's Challenges */}
+                                    {gauntletData && gauntletData.challenges.length > 0 && (
+                                        <div className="bg-gradient-to-b from-orange-900/30 to-gray-900 p-5 rounded-2xl border border-orange-500/50 shadow-xl">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="flex items-center">
+                                                    <span className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center mr-3 shadow-lg">
+                                                        <span className="text-2xl">⚔️</span>
+                                                    </span>
+                                                    <div>
+                                                        <h4 className="font-black text-white text-lg">Warrior's Gauntlet</h4>
+                                                        <p className="text-orange-300 text-xs font-bold">
+                                                            {gauntletData.dayTheme} {gauntletData.dayOfWeek.charAt(0) + gauntletData.dayOfWeek.slice(1).toLowerCase()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[10px] bg-orange-600 text-white px-2 py-1 rounded-full font-bold">
+                                                        Week {gauntletData.weekNumber}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 gap-3">
+                                                {gauntletData.challenges.map((challenge, idx) => {
+                                                    const isSelected = selectedGauntletChallenge === challenge.id;
+                                                    const isCompleted = challenge.submittedThisWeek;
+                                                    const sortLabel = challenge.sort_order === 'ASC' ? 'Lower is better' : 'Higher is better';
+                                                    
+                                                    return (
+                                                        <div key={challenge.id}>
+                                                            <button
+                                                                onClick={() => !isCompleted && setSelectedGauntletChallenge(isSelected ? null : challenge.id)}
+                                                                disabled={isCompleted}
+                                                                className={`w-full p-4 rounded-xl text-left transition-all border-2 ${
+                                                                    isCompleted
+                                                                        ? 'bg-green-900/30 border-green-600/50 opacity-70'
+                                                                        : isSelected
+                                                                        ? 'bg-gradient-to-r from-orange-900/60 to-red-900/60 border-orange-500 shadow-lg scale-[1.01]'
+                                                                        : 'bg-gray-800/60 border-gray-700 hover:border-orange-500/50'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-start justify-between">
+                                                                    <div className="flex items-start gap-3">
+                                                                        <span className="text-3xl">{challenge.icon}</span>
+                                                                        <div>
+                                                                            <h5 className="font-bold text-white">{challenge.name}</h5>
+                                                                            <p className="text-gray-400 text-xs mt-1">{challenge.description}</p>
+                                                                            <div className="flex items-center gap-2 mt-2">
+                                                                                <span className="text-[10px] bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
+                                                                                    {challenge.score_type} • {sortLabel}
+                                                                                </span>
+                                                                                {challenge.personalBest !== null && (
+                                                                                    <span className="text-[10px] bg-yellow-900/50 text-yellow-400 px-2 py-0.5 rounded font-bold">
+                                                                                        PB: {challenge.personalBest} {challenge.pbHasVideo && '🥇'}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        {isCompleted ? (
+                                                                            <div className="flex flex-col items-end">
+                                                                                <span className="text-green-400 text-sm font-bold">Done ✓</span>
+                                                                                <span className="text-gray-500 text-xs">Score: {challenge.thisWeekScore}</span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="flex flex-col items-end">
+                                                                                <span className="text-yellow-400 text-sm font-bold">+20 XP</span>
+                                                                                <span className="text-gray-500 text-[10px]">+40 with video</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </button>
+                                                            
+                                                            {/* Submission Form (inline when selected) */}
+                                                            {isSelected && !isCompleted && (
+                                                                <div className="mt-3 p-4 bg-gray-800/80 rounded-xl border border-orange-500/30">
+                                                                    <div className="mb-3">
+                                                                        <label className="text-gray-400 text-xs mb-1 block">Your Score</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            value={gauntletScore}
+                                                                            onChange={e => setGauntletScore(e.target.value)}
+                                                                            placeholder={`Enter your ${challenge.score_type.toLowerCase()}...`}
+                                                                            className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
+                                                                        />
+                                                                        {challenge.personalBest !== null && (
+                                                                            <p className="text-yellow-400 text-xs mt-1">
+                                                                                Beat your PB: {challenge.personalBest}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    
+                                                                    <div className="grid grid-cols-2 gap-2">
+                                                                        <button
+                                                                            onClick={() => submitGauntletChallenge('TRUST')}
+                                                                            disabled={!gauntletScore || gauntletSubmitting}
+                                                                            className={`py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-1 ${
+                                                                                gauntletScore && !gauntletSubmitting
+                                                                                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-500 hover:to-emerald-500'
+                                                                                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                                                            }`}
+                                                                        >
+                                                                            {gauntletSubmitting ? '...' : '✓ Trust +20 XP'}
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                if (!hasPremiumAccess) {
+                                                                                    setShowUpgradeModal(true);
+                                                                                } else {
+                                                                                    submitGauntletChallenge('VIDEO');
+                                                                                }
+                                                                            }}
+                                                                            disabled={!gauntletScore || gauntletSubmitting}
+                                                                            className={`py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-1 ${
+                                                                                gauntletScore && !gauntletSubmitting
+                                                                                    ? hasPremiumAccess
+                                                                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500'
+                                                                                        : 'bg-gray-700 border border-purple-500/50 text-purple-400'
+                                                                                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                                                            }`}
+                                                                        >
+                                                                            {!hasPremiumAccess && '🔒 '}📹 Video +40 XP
+                                                                        </button>
+                                                                    </div>
+                                                                    
+                                                                    {gauntletResult && (
+                                                                        <div className={`mt-3 p-3 rounded-lg text-center ${
+                                                                            gauntletResult.success
+                                                                                ? gauntletResult.isNewPB
+                                                                                    ? 'bg-yellow-900/50 border border-yellow-500'
+                                                                                    : 'bg-green-900/50 border border-green-500'
+                                                                                : 'bg-red-900/50 border border-red-500'
+                                                                        }`}>
+                                                                            <span className="text-2xl">{gauntletResult.isNewPB ? '🏆' : gauntletResult.success ? '✅' : '❌'}</span>
+                                                                            <p className={`font-bold mt-1 ${
+                                                                                gauntletResult.isNewPB ? 'text-yellow-400' : gauntletResult.success ? 'text-green-400' : 'text-red-400'
+                                                                            }`}>
+                                                                                {gauntletResult.message}
+                                                                            </p>
+                                                                            {gauntletResult.xp > 0 && (
+                                                                                <p className="text-yellow-400 font-black">+{gauntletResult.xp} XP!</p>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            
+                                            <div className="mt-4 pt-3 border-t border-orange-900/50 text-center">
+                                                <p className="text-gray-500 text-xs">Resets weekly • Beat your personal best each week!</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Challenge Categories - Coach Picks & Custom */}
                                     <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-5 rounded-2xl border border-gray-700 shadow-xl">
                                         <div className="flex items-center justify-between mb-4">
                                             <h4 className="font-bold text-white text-lg flex items-center">

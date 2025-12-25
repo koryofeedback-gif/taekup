@@ -29,6 +29,12 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **General/Fitness**: Lower point values - EASY 1/3, MEDIUM 2/5, HARD 3/10, EPIC 5/15 (noVideo/withVideo)
     - **Video Proof Multiplier**: 3x-7x more Global Rank points for video submissions vs trust-based
     - **Featured Coach Picks**: Premium gold/amber styling in Arena UI with demo video links
+- **Warrior's Gauntlet**: Fixed 7-day rotation fitness challenge system:
+    - **14 Challenges**: 2 per day (Monday=Engine, Tuesday=Foundation, Wednesday=Evasion, Thursday=Explosion, Friday=Animal, Saturday=Defense, Sunday=Flow)
+    - **Scoring Matrix**: Trust = 20 XP / 5 Global, Video = 40 XP / 15 Global
+    - **Personal Best Tracking**: PB comparison based on sort_order (ASC for time, DESC for reps)
+    - **Weekly Reset**: Challenges can be replayed each week, week_number tracking
+    - **Premium Lock**: Video submissions require premium subscription
 - **Belt Systems**: Supports 11 martial arts (WT, ITF, Karate, BJJ, Judo, Hapkido, Tang Soo Do, Aikido, Krav Maga, Kung Fu) plus custom belt configurations. Includes an AI-powered "Black Belt Time Machine" for promotion predictions.
 - **AI Features**:
     - **TaekBot**: Conversational AI assistant for martial arts, context-aware, multi-language.

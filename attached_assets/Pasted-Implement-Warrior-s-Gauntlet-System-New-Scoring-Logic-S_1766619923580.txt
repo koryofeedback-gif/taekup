@@ -1,0 +1,64 @@
+Implement "Warrior's Gauntlet" System & New Scoring Logic
+Subject: Overhaul Arena/General Section with Fixed 7-Day Cycle & New XP Matrix
+
+Context: We are replacing the random/custom General challenges with a fixed, professional 7-day rotation called "The Warrior's Gauntlet". These are System Challenges (creator_id = NULL) available to all users globally.
+
+1. Database Seeding (The Content) Please seed the challenges table with these 14 fixed challenges. Map them to the specific Day of the Week. Note on Sorting: ASC means Lower is Better (Time), DESC means Higher is Better (Reps).
+
+MONDAY (Engine):
+
+Burpee AMRAP (7 min) | Type: Reps | Sort: DESC
+
+Dead Hang Pull-Ups | Type: Reps | Sort: DESC
+
+TUESDAY (Foundation): 3. Hindu Squats (100 reps) | Type: Time | Sort: ASC (Faster is better) 4. Knuckle Push-Ups (2 min) | Type: Reps | Sort: DESC
+
+WEDNESDAY (Evasion): 5. Shuttle Runs (Suicide Mile) | Type: Time | Sort: ASC 6. Hardstyle Plank | Type: Time | Sort: DESC (Longer is better)
+
+THURSDAY (Explosion): 7. Broad Jumps (Max Dist) | Type: Distance | Sort: DESC 8. Hanging Leg Raises (to 50) | Type: Sets/Count | Sort: ASC (Fewer sets is better)
+
+FRIDAY (Animal): 9. Bear Crawl (5 min) | Type: Distance | Sort: DESC 10. Wall Sit | Type: Time | Sort: DESC
+
+SATURDAY (Defense): 11. The Sprawl (Tabata Score) | Type: Reps | Sort: DESC 12. Walking Lunges (400m) | Type: Time | Sort: ASC
+
+SUNDAY (Flow): 13. Jump Rope (Misses in 10m) | Type: Count | Sort: ASC (Lower is better) 14. Wrestler's Bridge | Type: Time | Sort: DESC
+
+2. The New Scoring Matrix (Local vs. Global) Update the submitChallenge backend logic to apply these exact fixed values for General Challenges. Do not use the old difficulty multipliers for these.
+
+Scenario A: Trust System (No Video / Free User)
+
+Local XP: 20 XP (Fixed)
+
+Global Rank Score: 5 Points
+
+Scenario B: Video Proof (Premium User)
+
+Local XP: 40 XP (Fixed - 2x Boost)
+
+Global Rank Score: 15 Points (3x Boost)
+
+3. Frontend Logic & Premium Features
+
+Daily Rotation: On the Arena page, ONLY display the 2 challenges corresponding to the current Day of the Week.
+
+Infinite Replayability: Users can submit these every week.
+
+Personal Best (PB): Fetch the user's best previous score for this challenge. Display: "Beat your PB: [X]".
+
+Premium Lock:
+
+The "Submit Video (+40 XP)" button must be LOCKED 🔒 for Free users.
+
+Clicking it opens the Premium Upsell Modal.
+
+Verification Badge:
+
+In Leaderboards, if a record has a video (Premium), display a Gold "Verified" Badge 🥇.
+
+Trust System records get a standard Grey checkmark.
+
+4. Backend "Best Score" Logic When saving a new submission for these recurring challenges:
+
+Compare the new score with the user's existing personal_best in the database.
+
+If New Score > Personal Best (or < for timed events), trigger a "New Record!" celebration event in the UI.
