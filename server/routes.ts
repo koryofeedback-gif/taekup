@@ -3167,11 +3167,13 @@ export function registerRoutes(app: Express) {
         const challengeIds = (challenges as any[]).map(c => c.id);
         
         if (challengeIds.length > 0) {
+          const idsArray = `{${challengeIds.join(',')}}`;
+          
           personalBests = await db.execute(sql`
             SELECT challenge_id, best_score, has_video_proof 
             FROM gauntlet_personal_bests 
             WHERE student_id = ${studentId}::uuid 
-            AND challenge_id = ANY(${challengeIds}::uuid[])
+            AND challenge_id = ANY(${idsArray}::uuid[])
           `) as any[];
           
           thisWeekSubmissions = await db.execute(sql`
@@ -3179,7 +3181,7 @@ export function registerRoutes(app: Express) {
             FROM gauntlet_submissions 
             WHERE student_id = ${studentId}::uuid 
             AND week_number = ${weekNumber}
-            AND challenge_id = ANY(${challengeIds}::uuid[])
+            AND challenge_id = ANY(${idsArray}::uuid[])
           `) as any[];
         }
       }
