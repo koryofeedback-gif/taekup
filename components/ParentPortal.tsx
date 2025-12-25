@@ -3227,42 +3227,43 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                             {!hasPremiumAccess && '🔒 '}📹 Video +40 XP
                                                                         </button>
                                                                     </div>
-                                                                    
-                                                                    {gauntletResult && (
-                                                                        <div className={`mt-3 p-4 rounded-xl text-center ${
-                                                                            gauntletResult.success
-                                                                                ? gauntletResult.isNewPB
-                                                                                    ? 'bg-gradient-to-br from-yellow-900/70 to-orange-900/70 border-2 border-yellow-500 shadow-lg shadow-yellow-500/20'
-                                                                                    : 'bg-green-900/50 border border-green-500'
-                                                                                : 'bg-red-900/50 border border-red-500'
-                                                                        }`}>
-                                                                            {gauntletResult.isNewPB ? (
-                                                                                <>
-                                                                                    <div className="text-4xl mb-2">🏆🔥🏆</div>
-                                                                                    <p className="text-yellow-400 font-black text-lg animate-pulse">
-                                                                                        NEW PERSONAL BEST!
-                                                                                    </p>
-                                                                                    <p className="text-yellow-300 text-sm mt-1">
-                                                                                        You crushed your old record!
-                                                                                    </p>
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <span className="text-2xl">{gauntletResult.success ? '✅' : '❌'}</span>
-                                                                                    <p className={`font-bold mt-1 ${
-                                                                                        gauntletResult.success ? 'text-green-400' : 'text-red-400'
-                                                                                    }`}>
-                                                                                        {gauntletResult.message}
-                                                                                    </p>
-                                                                                </>
-                                                                            )}
-                                                                            {gauntletResult.xp > 0 && (
-                                                                                <p className="text-yellow-400 font-black text-xl mt-2">+{gauntletResult.xp} XP!</p>
-                                                                            )}
-                                                                            {gauntletResult.pendingVerification && gauntletResult.pendingXp && gauntletResult.pendingXp > 0 && (
-                                                                                <p className="text-purple-400 font-bold text-sm mt-2">⏳ +{gauntletResult.pendingXp} XP pending coach verification</p>
-                                                                            )}
-                                                                        </div>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {/* Success/Result Message - shown even after completion */}
+                                                            {isSelected && gauntletResult && (
+                                                                <div className={`mt-3 p-4 rounded-xl text-center ${
+                                                                    gauntletResult.success
+                                                                        ? gauntletResult.isNewPB
+                                                                            ? 'bg-gradient-to-br from-yellow-900/70 to-orange-900/70 border-2 border-yellow-500 shadow-lg shadow-yellow-500/20'
+                                                                            : 'bg-green-900/50 border border-green-500'
+                                                                        : 'bg-red-900/50 border border-red-500'
+                                                                }`}>
+                                                                    {gauntletResult.isNewPB ? (
+                                                                        <>
+                                                                            <div className="text-4xl mb-2">🏆🔥🏆</div>
+                                                                            <p className="text-yellow-400 font-black text-lg animate-pulse">
+                                                                                NEW PERSONAL BEST!
+                                                                            </p>
+                                                                            <p className="text-yellow-300 text-sm mt-1">
+                                                                                You crushed your old record!
+                                                                            </p>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <span className="text-2xl">{gauntletResult.success ? '✅' : '❌'}</span>
+                                                                            <p className={`font-bold mt-1 ${
+                                                                                gauntletResult.success ? 'text-green-400' : 'text-red-400'
+                                                                            }`}>
+                                                                                {gauntletResult.message}
+                                                                            </p>
+                                                                        </>
+                                                                    )}
+                                                                    {gauntletResult.xp > 0 && (
+                                                                        <p className="text-yellow-400 font-black text-xl mt-2">+{gauntletResult.xp} XP!</p>
+                                                                    )}
+                                                                    {gauntletResult.pendingVerification && gauntletResult.pendingXp && gauntletResult.pendingXp > 0 && (
+                                                                        <p className="text-purple-400 font-bold text-sm mt-2">⏳ +{gauntletResult.pendingXp} XP pending coach verification</p>
                                                                     )}
                                                                 </div>
                                                             )}
