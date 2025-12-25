@@ -104,6 +104,11 @@ export const students = pgTable('students', {
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
   dojoInventory: jsonb('dojo_inventory').default([]),
   dojoMonster: jsonb('dojo_monster').default({ stage: 'egg', evolutionPoints: 0, name: 'My Monster' }),
+  // Trust Tier System for video verification
+  trustTier: varchar('trust_tier', { length: 20 }).default('unverified'), // 'unverified', 'verified', 'trusted'
+  videoApprovalStreak: integer('video_approval_streak').default(0), // Consecutive approved videos
+  videoRejectionCount: integer('video_rejection_count').default(0), // Total rejected videos (for demotion)
+  lastSpotCheckAt: timestamp('last_spot_check_at', { withTimezone: true }), // Last random spot-check
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -504,6 +509,12 @@ export const challengeVideos = pgTable('challenge_videos', {
   verifiedAt: timestamp('verified_at', { withTimezone: true }),
   xpAwarded: integer('xp_awarded').default(0),
   voteCount: integer('vote_count').default(0),
+  // Trust Tier & AI Pre-Screening
+  isSpotCheck: boolean('is_spot_check').default(false), // Random spot-check for verified students
+  autoApproved: boolean('auto_approved').default(false), // Auto-approved due to trust tier
+  aiFlag: varchar('ai_flag', { length: 50 }), // 'green', 'yellow', 'red' - AI pre-screening result
+  aiFlagReason: varchar('ai_flag_reason', { length: 255 }), // Reason for AI flag
+  videoDuration: integer('video_duration'), // Video length in seconds (for AI screening)
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

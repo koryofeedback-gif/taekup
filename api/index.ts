@@ -16,6 +16,11 @@ const pool = new Pool({
   max: 5
 });
 
+// Trust Tier thresholds for video auto-approval
+const TRUST_TIER_VERIFIED_THRESHOLD = 10; // 10 consecutive approvals = verified
+const TRUST_TIER_TRUSTED_THRESHOLD = 25; // 25 consecutive approvals = trusted
+const SPOT_CHECK_RATIO = 10; // 1 in 10 videos are spot-checked for verified students
+
 // Generate deterministic UUID from challenge type string (since challenges are hardcoded, not in DB)
 function generateChallengeUUID(challengeType: string): string {
   const hash = crypto.createHash('sha256').update(`taekup-challenge-${challengeType}`).digest('hex');
@@ -1533,7 +1538,7 @@ async function handlePresignedUpload(req: VercelRequest, res: VercelResponse) {
 async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
-  const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, score } = parseBody(req);
+  const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, score, xpAwarded } = parseBody(req);
   
   if (!studentId || !clubId || !challengeId || !videoUrl) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -1541,15 +1546,73 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
+    // Check student's trust tier for auto-approval logic
+    const studentResult = await client.query(
+      `SELECT trust_tier, video_approval_streak FROM students WHERE id = $1::uuid`,
+      [studentId]
+    );
+    
+    const trustTier = studentResult.rows[0]?.trust_tier || 'unverified';
+    let status = 'pending';
+    let isSpotCheck = false;
+    let autoApproved = false;
+    let finalXpAwarded = 0;
+    
+    // Trust Tier Auto-Approve Logic
+    if (trustTier === 'verified' || trustTier === 'trusted') {
+      // Random spot-check (1 in 10)
+      const randomNum = Math.floor(Math.random() * SPOT_CHECK_RATIO);
+      if (randomNum === 0) {
+        // This is a spot-check - keep pending for coach review
+        isSpotCheck = true;
+        status = 'pending';
+        console.log(`[TrustTier] Spot-check triggered for student ${studentId}`);
+        
+        // Update last spot-check timestamp
+        await client.query(
+          `UPDATE students SET last_spot_check_at = NOW() WHERE id = $1::uuid`,
+          [studentId]
+        );
+      } else {
+        // Auto-approve - student is trusted
+        status = 'approved';
+        autoApproved = true;
+        finalXpAwarded = xpAwarded || 40; // Default XP for video
+        console.log(`[TrustTier] Auto-approved video for ${trustTier} student ${studentId}`);
+      }
+    }
+    
     const result = await client.query(
-      `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, created_at, updated_at)
-       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, 'pending', NOW(), NOW())
+      `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, is_spot_check, auto_approved, xp_awarded, created_at, updated_at)
+       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
        RETURNING id`,
-      [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0]
+      [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, isSpotCheck, autoApproved, finalXpAwarded]
     );
     
     const video = result.rows[0];
-    return res.json({ success: true, videoId: video?.id });
+    
+    // If auto-approved, award XP immediately
+    if (autoApproved && finalXpAwarded > 0) {
+      await applyXpDelta(client, studentId, finalXpAwarded, 'video_auto_approved');
+      
+      // Increment approval streak for auto-approved videos
+      await client.query(
+        `UPDATE students 
+         SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
+             updated_at = NOW()
+         WHERE id = $1::uuid`,
+        [studentId]
+      );
+    }
+    
+    return res.json({ 
+      success: true, 
+      videoId: video?.id,
+      autoApproved,
+      isSpotCheck,
+      xpAwarded: finalXpAwarded,
+      trustTier
+    });
   } catch (error: any) {
     console.error('[Videos] Create error:', error.message);
     return res.status(500).json({ error: 'Failed to save video record' });
@@ -1757,9 +1820,43 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
     
     const video = result.rows[0];
     
-    // If approved, award XP using unified helper
-    if (status === 'approved' && xpAwarded > 0) {
-      await applyXpDelta(client, video.student_id, xpAwarded, 'video_approved');
+    // Update Trust Tier based on approval/rejection
+    if (status === 'approved') {
+      // Increment approval streak and possibly upgrade trust tier
+      const studentResult = await client.query(
+        `UPDATE students 
+         SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
+             trust_tier = CASE 
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1 AND trust_tier = 'verified' THEN 'trusted'
+               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2 AND trust_tier = 'unverified' THEN 'verified'
+               ELSE trust_tier
+             END,
+             updated_at = NOW()
+         WHERE id = $3::uuid
+         RETURNING trust_tier, video_approval_streak`,
+        [TRUST_TIER_TRUSTED_THRESHOLD, TRUST_TIER_VERIFIED_THRESHOLD, video.student_id]
+      );
+      
+      const newTier = studentResult.rows[0]?.trust_tier;
+      const newStreak = studentResult.rows[0]?.video_approval_streak;
+      console.log(`[TrustTier] Student ${video.student_id} approved: streak=${newStreak}, tier=${newTier}`);
+      
+      // Award XP using unified helper
+      if (xpAwarded > 0) {
+        await applyXpDelta(client, video.student_id, xpAwarded, 'video_approved');
+      }
+    } else if (status === 'rejected') {
+      // Reset streak, increment rejection count, downgrade trust tier
+      await client.query(
+        `UPDATE students 
+         SET video_approval_streak = 0,
+             video_rejection_count = COALESCE(video_rejection_count, 0) + 1,
+             trust_tier = 'unverified',
+             updated_at = NOW()
+         WHERE id = $1::uuid`,
+        [video.student_id]
+      );
+      console.log(`[TrustTier] Student ${video.student_id} rejected: tier downgraded to unverified`);
     }
     
     return res.json({ success: true, video: result.rows[0] });
