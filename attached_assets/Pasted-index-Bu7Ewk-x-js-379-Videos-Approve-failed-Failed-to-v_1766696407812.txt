@@ -1,0 +1,50 @@
+index-Bu7Ewk-x.js:379 [Videos] Approve failed: Failed to verify video
+ol @ index-Bu7Ewk-x.js:379Understand this error
+index-Bu7Ewk-x.js:379 [Videos] Approving video: 59835512-3141-40db-a24a-343dc3290a71 source: undefined
+index-Bu7Ewk-x.js:379  PUT https://www.mytaek.com/api/videos/59835512-3141-40db-a24a-343dc3290a71/verify 500 (Internal Server Error)
+ol @ index-Bu7Ewk-x.js:379
+onClick @ index-Bu7Ewk-x.js:386
+R2 @ index-Bu7Ewk-x.js:37
+L2 @ index-Bu7Ewk-x.js:37
+O2 @ index-Bu7Ewk-x.js:37
+Nm @ index-Bu7Ewk-x.js:37
+Uy @ index-Bu7Ewk-x.js:37
+(anonymous) @ index-Bu7Ewk-x.js:37
+vh @ index-Bu7Ewk-x.js:40
+uy @ index-Bu7Ewk-x.js:37
+Ud @ index-Bu7Ewk-x.js:37
+Xx @ index-Bu7Ewk-x.js:37
+Z2 @ index-Bu7Ewk-x.js:37Understand this error
+index-Bu7Ewk-x.js:379 [Videos] Approve response: 500 {error: 'Failed to verify video'}
+index-Bu7Ewk-x.js:379 [Videos] Approve failed: Failed to verify video
+ol @ index-Bu7Ewk-x.js:379
+await in ol
+onClick @ index-Bu7Ewk-x.js:386
+R2 @ index-Bu7Ewk-x.js:37
+L2 @ index-Bu7Ewk-x.js:37
+O2 @ index-Bu7Ewk-x.js:37
+Nm @ index-Bu7Ewk-x.js:37
+Uy @ index-Bu7Ewk-x.js:37
+(anonymous) @ index-Bu7Ewk-x.js:37
+vh @ index-Bu7Ewk-x.js:40
+uy @ index-Bu7Ewk-x.js:37
+Ud @ index-Bu7Ewk-x.js:37
+Xx @ index-Bu7Ewk-x.js:37
+Z2 @ index-Bu7Ewk-x.js:37Understand this error
+index-Bu7Ewk-x.js:379 [Videos] Approving video: 59835512-3141-40db-a24a-343dc3290a71 source: undefined
+index-Bu7Ewk-x.js:379  PUT https://www.mytaek.com/api/videos/59835512-3141-40db-a24a-343dc3290a71/verify 500 (Internal Server Error)
+ol @ index-Bu7Ewk-x.js:379
+onClick @ index-Bu7Ewk-x.js:386
+R2 @ index-Bu7Ewk-x.js:37
+L2 @ index-Bu7Ewk-x.js:37
+O2 @ index-Bu7Ewk-x.js:37
+Nm @ index-Bu7Ewk-x.js:37
+Uy @ index-Bu7Ewk-x.js:37
+(anonymous) @ index-Bu7Ewk-x.js:37
+vh @ index-Bu7Ewk-x.js:40
+uy @ index-Bu7Ewk-x.js:37
+Ud @ index-Bu7Ewk-x.js:37
+Xx @ index-Bu7Ewk-x.js:37
+Z2 @ index-Bu7Ewk-x.js:37Understand this error
+index-Bu7Ewk-x.js:379 [Videos] Approve response: 500 {error: 'Failed to verify video'}
+index-Bu7Ewk-x.js:379 [Videos] Approve failed: Failed to verify video

@@ -1950,8 +1950,8 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
     
     return res.json({ success: true, video: result.rows[0] });
   } catch (error: any) {
-    console.error('[Videos] Verify error:', error.message);
-    return res.status(500).json({ error: 'Failed to verify video' });
+    console.error('[Videos] Verify error:', error.message, error.stack);
+    return res.status(500).json({ error: 'Failed to verify video', details: error.message });
   } finally {
     client.release();
   }
