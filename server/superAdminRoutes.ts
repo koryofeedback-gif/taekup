@@ -1536,4 +1536,76 @@ router.patch('/automations/:id', verifySuperAdmin, async (req: Request, res: Res
   }
 });
 
+// =====================================================
+// DAILY TRAINING (GAUNTLET) MANAGEMENT
+// =====================================================
+
+// Get all gauntlet challenges
+router.get('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const challenges = await db.execute(sql`
+      SELECT * FROM gauntlet_challenges 
+      ORDER BY 
+        CASE day_of_week 
+          WHEN 'MONDAY' THEN 1 
+          WHEN 'TUESDAY' THEN 2 
+          WHEN 'WEDNESDAY' THEN 3 
+          WHEN 'THURSDAY' THEN 4 
+          WHEN 'FRIDAY' THEN 5 
+          WHEN 'SATURDAY' THEN 6 
+          WHEN 'SUNDAY' THEN 7 
+        END,
+        display_order ASC
+    `);
+    
+    res.json({ challenges });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Gauntlet challenges error:', error);
+    res.status(500).json({ error: 'Failed to fetch challenges' });
+  }
+});
+
+// Update a gauntlet challenge
+router.patch('/gauntlet-challenges/:id', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, description, icon, demo_video_url, is_active } = req.body;
+    
+    console.log('[SuperAdmin] Updating gauntlet challenge:', id, { name, description, icon, demo_video_url, is_active });
+    
+    // Build SQL update fragments using sql template
+    const setClauses: ReturnType<typeof sql>[] = [];
+    
+    if (name !== undefined) {
+      setClauses.push(sql`name = ${name}`);
+    }
+    if (description !== undefined) {
+      setClauses.push(sql`description = ${description}`);
+    }
+    if (icon !== undefined) {
+      setClauses.push(sql`icon = ${icon}`);
+    }
+    if (demo_video_url !== undefined) {
+      setClauses.push(sql`demo_video_url = ${demo_video_url || null}`);
+    }
+    if (is_active !== undefined) {
+      setClauses.push(sql`is_active = ${is_active}`);
+    }
+    
+    if (setClauses.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    // Join SET clauses with commas using sql.join
+    const setClause = sql.join(setClauses, sql`, `);
+    
+    await db.execute(sql`UPDATE gauntlet_challenges SET ${setClause} WHERE id = ${id}::uuid`);
+    
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Update gauntlet challenge error:', error);
+    res.status(500).json({ error: 'Failed to update challenge' });
+  }
+});
+
 export { router as superAdminRouter, verifySuperAdmin };

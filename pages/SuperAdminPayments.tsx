@@ -154,6 +154,7 @@ export const SuperAdminPayments: React.FC<SuperAdminPaymentsProps> = ({ token, o
             <Link to="/super-admin/parents" className="text-gray-400 hover:text-white">Parents</Link>
             <Link to="/super-admin/payments" className="text-purple-400 font-medium">Payments</Link>
             <Link to="/super-admin/analytics" className="text-gray-400 hover:text-white">Analytics</Link>
+            <Link to="/super-admin/training" className="text-gray-400 hover:text-white">Training</Link>
             <button
               onClick={onLogout}
               className="flex items-center gap-2 text-gray-400 hover:text-white"
