@@ -3596,6 +3596,22 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
 
     const client = await pool.connect();
     try {
+      // Check if already submitted video for this challenge today (prevent duplicates)
+      const existingVideoResult = await client.query(
+        `SELECT id FROM challenge_submissions 
+         WHERE student_id = $1::uuid AND answer = $2 AND proof_type = 'VIDEO'
+         AND DATE(completed_at) = $3::date`,
+        [studentId, challengeType, today]
+      );
+      
+      if (existingVideoResult.rows.length > 0) {
+        return res.status(429).json({
+          error: 'Already submitted',
+          message: 'You already submitted a video for this challenge today. Try again tomorrow!',
+          alreadyCompleted: true
+        });
+      }
+
       const studentResult = await client.query(
         `SELECT s.id, s.club_id, s.premium_status, c.parent_premium_enabled
          FROM students s LEFT JOIN clubs c ON s.club_id = c.id
