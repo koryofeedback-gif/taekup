@@ -1543,6 +1543,7 @@ router.patch('/automations/:id', verifySuperAdmin, async (req: Request, res: Res
 // Get all gauntlet challenges
 router.get('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
+    console.log('[SuperAdmin] Fetching gauntlet challenges...');
     const challenges = await db.execute(sql`
       SELECT * FROM gauntlet_challenges 
       ORDER BY 
@@ -1558,6 +1559,7 @@ router.get('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: R
         display_order ASC
     `);
     
+    console.log('[SuperAdmin] Found', (challenges as any[]).length, 'challenges');
     res.json({ challenges });
   } catch (error: any) {
     console.error('[SuperAdmin] Gauntlet challenges error:', error);
