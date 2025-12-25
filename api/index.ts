@@ -1715,7 +1715,7 @@ async function handleGetPendingVideos(req: VercelRequest, res: VercelResponse, c
       [clubId]
     );
     
-    // Generate presigned URLs for each video
+    // Generate presigned URLs for each video (7 days = 604800 seconds max)
     const s3Client = getS3Client();
     const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
     
@@ -1726,7 +1726,7 @@ async function handleGetPendingVideos(req: VercelRequest, res: VercelResponse, c
             Bucket: bucketName,
             Key: video.video_key,
           });
-          const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+          const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 604800 });
           return { ...video, video_url: signedUrl };
         } catch (e) {
           console.error('[Videos] Failed to generate signed URL:', e);
@@ -1774,7 +1774,7 @@ async function handleGetApprovedVideos(req: VercelRequest, res: VercelResponse, 
             Bucket: bucketName,
             Key: video.video_key,
           });
-          videoUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+          videoUrl = await getSignedUrl(s3Client, command, { expiresIn: 604800 });
         } catch (e) {
           console.error('[Videos] Failed to generate signed URL:', e);
         }
