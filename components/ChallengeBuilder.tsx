@@ -40,9 +40,9 @@ const MEASUREMENT_TYPES: { value: CustomChallenge['measurementType']; label: str
     { value: 'score', label: 'Score (Points)', units: ['points', 'accuracy %'] },
 ];
 
+// Removed General/Fitness option - all coach-created challenges are Coach Picks for higher XP value
 const CHALLENGE_TYPE_OPTIONS: { value: ChallengeType; label: string; description: string; icon: string; color: string; badge: string }[] = [
-    { value: 'coach_pick', label: 'Coach Pick', description: 'Technical martial arts drills (Forms, Kicks, Stances)', icon: '🥋', color: 'amber', badge: 'High Ranking Impact 🏆' },
-    { value: 'general', label: 'General/Fitness', description: 'General exercises (Pushups, Plank, Cardio)', icon: '💪', color: 'blue', badge: 'Standard Fitness ⚡' },
+    { value: 'coach_pick', label: 'Coach Pick', description: 'Custom challenges created by you for your students', icon: '🥋', color: 'amber', badge: 'High Value Challenge 🏆' },
 ];
 
 export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
@@ -270,46 +270,7 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-bold text-gray-400 mb-2">
-                                    Challenge Type
-                                </label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {CHALLENGE_TYPE_OPTIONS.map(opt => {
-                                        const isSelected = challengeType === opt.value;
-                                        return (
-                                            <button
-                                                key={opt.value}
-                                                onClick={() => setChallengeType(opt.value)}
-                                                className={`p-4 rounded-xl border-2 transition-all text-left ${
-                                                    isSelected
-                                                        ? opt.value === 'coach_pick'
-                                                            ? 'border-amber-500 bg-amber-900/20 ring-2 ring-amber-500/30'
-                                                            : 'border-blue-500 bg-blue-900/20 ring-2 ring-blue-500/30'
-                                                        : 'border-gray-700 hover:border-gray-500 bg-gray-800/50'
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <span className="text-2xl">{opt.icon}</span>
-                                                    <div>
-                                                        <span className={`font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>
-                                                            {opt.label}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <p className="text-xs text-gray-400 mb-2">{opt.description}</p>
-                                                <div className={`text-xs font-bold px-2 py-1 rounded-full inline-block ${
-                                                    opt.value === 'coach_pick' 
-                                                        ? 'bg-amber-500/20 text-amber-400' 
-                                                        : 'bg-blue-500/20 text-blue-400'
-                                                }`}>
-                                                    {opt.badge}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            {/* Challenge Type selector removed - all coach challenges are Coach Pick type */}
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
