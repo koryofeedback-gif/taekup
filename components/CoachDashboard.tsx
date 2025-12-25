@@ -2505,12 +2505,18 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     } ${video.ai_flag === 'red' ? 'ring-2 ring-red-500' : video.ai_flag === 'yellow' ? 'ring-2 ring-yellow-500' : ''}`}
                                                 >
                                                     <video 
-                                                        src={video.video_url}
+                                                        src={video.video_url + '#t=0.5'}
                                                         className="w-full h-full object-cover"
                                                         muted
+                                                        preload="metadata"
                                                     />
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-1">
-                                                        <span className="text-white text-xs truncate block">{video.student_name?.split(' ')[0]}</span>
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-1 flex items-center justify-between">
+                                                        <span className="text-white text-xs truncate">{video.student_name?.split(' ')[0]}</span>
+                                                        {video.video_duration && (
+                                                            <span className={`text-xs ${video.video_duration < 3 ? 'text-yellow-400' : 'text-gray-300'}`}>
+                                                                {video.video_duration < 60 ? `${Math.round(video.video_duration)}s` : `${Math.floor(video.video_duration / 60)}m`}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {video.ai_flag === 'red' && (
                                                         <div className="absolute top-1 left-1 bg-red-500 text-white text-xs px-1 rounded font-bold" title={video.ai_flag_reason}>
@@ -2571,7 +2577,19 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                             <p className="text-gray-400 mb-2">{pendingVideos[focusedVideoIndex].student_belt} Belt</p>
                                                             <div className="bg-gray-900/50 rounded-lg p-4">
                                                                 <p className="text-white font-medium mb-1">{pendingVideos[focusedVideoIndex].challenge_name || 'Challenge'}</p>
-                                                                <p className="text-gray-500 text-sm">{pendingVideos[focusedVideoIndex].challenge_category}</p>
+                                                                <div className="flex items-center gap-2 text-sm">
+                                                                    <span className="text-gray-500">{pendingVideos[focusedVideoIndex].challenge_category}</span>
+                                                                    {pendingVideos[focusedVideoIndex].video_duration && (
+                                                                        <>
+                                                                            <span className="text-gray-600">•</span>
+                                                                            <span className={pendingVideos[focusedVideoIndex].video_duration < 3 ? 'text-yellow-400 font-bold' : 'text-gray-400'}>
+                                                                                {pendingVideos[focusedVideoIndex].video_duration < 60 
+                                                                                    ? `${Math.round(pendingVideos[focusedVideoIndex].video_duration)}s` 
+                                                                                    : `${Math.floor(pendingVideos[focusedVideoIndex].video_duration / 60)}m ${Math.round(pendingVideos[focusedVideoIndex].video_duration % 60)}s`}
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                             <div className="mt-4 flex items-center gap-2">
                                                                 <span className="text-gray-400">XP Award:</span>
@@ -2670,6 +2688,16 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                                 </span>
                                                                 <span>•</span>
                                                                 <span>{new Date(video.created_at).toLocaleDateString()}</span>
+                                                                {video.video_duration && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <span className={video.video_duration < 3 ? 'text-yellow-400' : ''}>
+                                                                            {video.video_duration < 60 
+                                                                                ? `${Math.round(video.video_duration)}s` 
+                                                                                : `${Math.floor(video.video_duration / 60)}m ${Math.round(video.video_duration % 60)}s`}
+                                                                        </span>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </div>
 

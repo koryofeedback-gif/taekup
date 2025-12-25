@@ -1915,6 +1915,37 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
         [video.student_id]
       );
       console.log(`[TrustTier] Student ${video.student_id} rejected: tier downgraded to unverified`);
+      
+      // Send parent notification email about rejection
+      try {
+        const parentResult = await client.query(
+          `SELECT p.email, p.name as parent_name, s.name as student_name 
+           FROM parents p
+           JOIN students s ON s.parent_id = p.id
+           WHERE s.id = $1::uuid`,
+          [video.student_id]
+        );
+        
+        if (parentResult.rows.length > 0 && parentResult.rows[0].email) {
+          const parent = parentResult.rows[0];
+          const challengeName = video.challenge_name || 'Challenge';
+          const coachFeedback = coachNotes || 'Please review the submission requirements and try again.';
+          
+          await sendTemplateEmail(
+            parent.email,
+            'd-video-rejection-notification',
+            {
+              parent_name: parent.parent_name || 'Parent',
+              student_name: parent.student_name || 'Your child',
+              challenge_name: challengeName,
+              coach_feedback: coachFeedback
+            }
+          );
+          console.log(`[Email] Sent rejection notification to parent ${parent.email} for student ${video.student_id}`);
+        }
+      } catch (emailError: any) {
+        console.error('[Email] Failed to send rejection notification:', emailError.message);
+      }
     }
     
     return res.json({ success: true, video: result.rows[0] });
