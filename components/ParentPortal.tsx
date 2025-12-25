@@ -307,6 +307,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [isUploadingVideo, setIsUploadingVideo] = useState(false);
     const [videoUploadError, setVideoUploadError] = useState<string | null>(null);
     const [videoScore, setVideoScore] = useState<string>('');
+    const [gauntletVideoMode, setGauntletVideoMode] = useState(false);
     const [myVideos, setMyVideos] = useState<Array<{
         id: string;
         challengeId: string;
@@ -1548,7 +1549,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     };
 
     const handleVideoUpload = async () => {
-        if (!videoFile || !selectedChallenge) return;
+        const challengeIdToUse = gauntletVideoMode ? selectedGauntletChallenge : selectedChallenge;
+        if (!videoFile || !challengeIdToUse) return;
         
         setIsUploadingVideo(true);
         setVideoUploadProgress(0);
@@ -1560,7 +1562,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     studentId: student.id,
-                    challengeId: selectedChallenge,
+                    challengeId: challengeIdToUse,
                     filename: videoFile.name,
                     contentType: videoFile.type
                 })
@@ -1585,42 +1587,85 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
             setVideoUploadProgress(80);
 
-            const challengeInfo = getChallengeInfo(selectedChallenge);
-            const clubId = localStorage.getItem('taekup_club_id');
-            
-            if (!clubId) {
-                throw new Error('Club information not found. Please log in again.');
+            if (gauntletVideoMode) {
+                // Submit gauntlet challenge with VIDEO proof type
+                const gauntletResponse = await fetch('/api/gauntlet/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        challengeId: selectedGauntletChallenge,
+                        studentId: student.id,
+                        score: parseInt(videoScore),
+                        proofType: 'VIDEO',
+                        videoUrl: publicUrl,
+                    }),
+                });
+                
+                const result = await gauntletResponse.json();
+                setVideoUploadProgress(100);
+                
+                if (result.success) {
+                    setGauntletResult({
+                        success: true,
+                        message: result.message,
+                        xp: result.xpAwarded,
+                        isNewPB: result.isNewPersonalBest,
+                    });
+                    setServerTotalXP(prev => prev + result.xpAwarded);
+                    
+                    // Refresh gauntlet data
+                    const refreshResponse = await fetch(`/api/gauntlet/today?studentId=${student.id}`);
+                    const refreshResult = await refreshResponse.json();
+                    setGauntletData(refreshResult);
+                }
+                
+                setTimeout(() => {
+                    setShowVideoUpload(false);
+                    setVideoFile(null);
+                    setVideoUploadProgress(0);
+                    setVideoScore('');
+                    setGauntletVideoMode(false);
+                    setGauntletScore('');
+                }, 1000);
+            } else {
+                // Original Arena video submission logic
+                const challengeInfo = getChallengeInfo(selectedChallenge);
+                const clubId = localStorage.getItem('taekup_club_id');
+                
+                if (!clubId) {
+                    throw new Error('Club information not found. Please log in again.');
+                }
+
+                const saveResponse = await fetch('/api/videos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        studentId: student.id,
+                        clubId: clubId,
+                        challengeId: selectedChallenge,
+                        challengeName: challengeInfo.name,
+                        challengeCategory: challengeInfo.category,
+                        videoUrl: publicUrl,
+                        videoKey: key,
+                        score: parseInt(videoScore) || 0
+                    })
+                });
+
+                if (!saveResponse.ok) {
+                    throw new Error('Failed to save video record');
+                }
+
+                setVideoUploadProgress(100);
+                
+                setTimeout(() => {
+                    setShowVideoUpload(false);
+                    setVideoFile(null);
+                    setVideoUploadProgress(0);
+                    setVideoScore('');
+                    setSelectedChallenge('');
+                    fetchMyVideos();
+                }, 1000);
             }
-
-            const saveResponse = await fetch('/api/videos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    studentId: student.id,
-                    clubId: clubId,
-                    challengeId: selectedChallenge,
-                    challengeName: challengeInfo.name,
-                    challengeCategory: challengeInfo.category,
-                    videoUrl: publicUrl,
-                    videoKey: key,
-                    score: parseInt(videoScore) || 0
-                })
-            });
-
-            if (!saveResponse.ok) {
-                throw new Error('Failed to save video record');
-            }
-
-            setVideoUploadProgress(100);
-            
-            setTimeout(() => {
-                setShowVideoUpload(false);
-                setVideoFile(null);
-                setVideoUploadProgress(0);
-                setVideoScore('');
-                setSelectedChallenge('');
-                fetchMyVideos();
-            }, 1000);
 
         } catch (error: any) {
             console.error('Video upload error:', error);
@@ -3157,7 +3202,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                 if (!hasPremiumAccess) {
                                                                                     setShowUpgradeModal(true);
                                                                                 } else {
-                                                                                    submitGauntletChallenge('VIDEO');
+                                                                                    setGauntletVideoMode(true);
+                                                                                    setVideoScore(gauntletScore);
+                                                                                    setShowVideoUpload(true);
                                                                                 }
                                                                             }}
                                                                             disabled={!gauntletScore || gauntletSubmitting}
@@ -3512,6 +3559,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             setShowVideoUpload(false);
                                                             setVideoFile(null);
                                                             setVideoUploadError(null);
+                                                            setGauntletVideoMode(false);
                                                         }}
                                                         className="text-gray-400 hover:text-white text-2xl"
                                                     >
@@ -3523,21 +3571,28 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <div className="bg-gray-800 rounded-xl p-4 mb-4">
                                                     <p className="text-gray-400 text-xs mb-1">Submitting for:</p>
                                                     <p className="text-white font-bold">
-                                                        {challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge)?.name || 'Unknown Challenge'}
+                                                        {gauntletVideoMode 
+                                                            ? gauntletData?.challenges?.find((c: any) => c.id === selectedGauntletChallenge)?.name || 'Daily Training Challenge'
+                                                            : challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge)?.name || 'Unknown Challenge'}
                                                     </p>
+                                                    {gauntletVideoMode && (
+                                                        <p className="text-orange-400 text-sm mt-1">Score: {videoScore}</p>
+                                                    )}
                                                 </div>
 
-                                                {/* Score Input */}
-                                                <div className="mb-4">
-                                                    <label className="text-gray-400 text-xs block mb-2">Your Score (reps, seconds, etc.)</label>
-                                                    <input
-                                                        type="number"
-                                                        value={videoScore}
-                                                        onChange={(e) => setVideoScore(e.target.value)}
-                                                        placeholder="Enter your score..."
-                                                        className="w-full bg-gray-800 text-white text-xl font-bold text-center p-3 rounded-xl border border-gray-600 focus:border-purple-500 focus:outline-none"
-                                                    />
-                                                </div>
+                                                {/* Score Input - only for Arena challenges */}
+                                                {!gauntletVideoMode && (
+                                                    <div className="mb-4">
+                                                        <label className="text-gray-400 text-xs block mb-2">Your Score (reps, seconds, etc.)</label>
+                                                        <input
+                                                            type="number"
+                                                            value={videoScore}
+                                                            onChange={(e) => setVideoScore(e.target.value)}
+                                                            placeholder="Enter your score..."
+                                                            className="w-full bg-gray-800 text-white text-xl font-bold text-center p-3 rounded-xl border border-gray-600 focus:border-purple-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                )}
 
                                                 {/* File Upload Area */}
                                                 <div 
