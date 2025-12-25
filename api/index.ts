@@ -1907,44 +1907,52 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
     
     const video = result.rows[0];
     
-    // Update Trust Tier based on approval/rejection
+    // Update Trust Tier based on approval/rejection (optional - columns may not exist in all environments)
     if (status === 'approved') {
-      // Increment approval streak and possibly upgrade trust tier
-      // Handle NULL trust_tier by treating it as 'unverified'
-      const studentResult = await client.query(
-        `UPDATE students 
-         SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
-             trust_tier = CASE 
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $1::integer THEN 'trusted'
-               WHEN COALESCE(video_approval_streak, 0) + 1 >= $2::integer THEN 'verified'
-               ELSE COALESCE(trust_tier, 'unverified')
-             END,
-             updated_at = NOW()
-         WHERE id = $3::uuid
-         RETURNING trust_tier, video_approval_streak`,
-        [TRUST_TIER_TRUSTED_THRESHOLD, TRUST_TIER_VERIFIED_THRESHOLD, video.student_id]
-      );
-      
-      const newTier = studentResult.rows[0]?.trust_tier;
-      const newStreak = studentResult.rows[0]?.video_approval_streak;
-      console.log(`[TrustTier] Student ${video.student_id} approved: streak=${newStreak}, tier=${newTier}`);
+      try {
+        // Increment approval streak and possibly upgrade trust tier
+        const studentResult = await client.query(
+          `UPDATE students 
+           SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
+               trust_tier = CASE 
+                 WHEN COALESCE(video_approval_streak, 0) + 1 >= $1::integer THEN 'trusted'
+                 WHEN COALESCE(video_approval_streak, 0) + 1 >= $2::integer THEN 'verified'
+                 ELSE COALESCE(trust_tier, 'unverified')
+               END,
+               updated_at = NOW()
+           WHERE id = $3::uuid
+           RETURNING trust_tier, video_approval_streak`,
+          [TRUST_TIER_TRUSTED_THRESHOLD, TRUST_TIER_VERIFIED_THRESHOLD, video.student_id]
+        );
+        
+        const newTier = studentResult.rows[0]?.trust_tier;
+        const newStreak = studentResult.rows[0]?.video_approval_streak;
+        console.log(`[TrustTier] Student ${video.student_id} approved: streak=${newStreak}, tier=${newTier}`);
+      } catch (tierError: any) {
+        // Trust tier columns may not exist - just log and continue
+        console.log(`[TrustTier] Skipping trust tier update (columns may not exist): ${tierError.message}`);
+      }
       
       // Award XP using unified helper
       if (finalXpAwarded > 0) {
         await applyXpDelta(client, video.student_id, finalXpAwarded, 'video_approved');
       }
     } else if (status === 'rejected') {
-      // Reset streak, increment rejection count, downgrade trust tier
-      await client.query(
-        `UPDATE students 
-         SET video_approval_streak = 0,
-             video_rejection_count = COALESCE(video_rejection_count, 0) + 1,
-             trust_tier = 'unverified',
-             updated_at = NOW()
-         WHERE id = $1::uuid`,
-        [video.student_id]
-      );
-      console.log(`[TrustTier] Student ${video.student_id} rejected: tier downgraded to unverified`);
+      try {
+        // Reset streak, increment rejection count, downgrade trust tier
+        await client.query(
+          `UPDATE students 
+           SET video_approval_streak = 0,
+               video_rejection_count = COALESCE(video_rejection_count, 0) + 1,
+               trust_tier = 'unverified',
+               updated_at = NOW()
+           WHERE id = $1::uuid`,
+          [video.student_id]
+        );
+        console.log(`[TrustTier] Student ${video.student_id} rejected: tier downgraded to unverified`);
+      } catch (tierError: any) {
+        console.log(`[TrustTier] Skipping trust tier update (columns may not exist): ${tierError.message}`);
+      }
       
       // Send parent notification email about rejection
       try {
