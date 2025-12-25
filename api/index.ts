@@ -3594,11 +3594,29 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
       }
 
       const challengeUUID = generateChallengeUUID(challengeType);
+      
+      // Extract video key from URL for proxy streaming
+      let videoKey = '';
+      if (videoUrl && videoUrl.includes('idrivee2.com/')) {
+        videoKey = videoUrl.split('idrivee2.com/')[1] || '';
+      }
+      
       await client.query(
         `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
          VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'PENDING', 'VIDEO', $6, $7, NOW())`,
         [challengeUUID, studentId, student.club_id, challengeType, score || 0, videoUrl, finalXp]
       );
+      
+      // Also add to challenge_videos for coach review queue
+      const friendlyName = challengeType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+      await client.query(
+        `INSERT INTO challenge_videos 
+         (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, xp_awarded, created_at, updated_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, 'Coach Pick', $5, $6, $7, 'pending', $8, NOW(), NOW())`,
+        [studentId, student.club_id, challengeUUID, friendlyName, videoUrl, videoKey, score || 0, finalXp]
+      );
+      
+      console.log(`[Arena] Coach Pick video submitted for "${challengeType}" - added to coach review queue`);
 
       return res.json({
         success: true,
@@ -4386,9 +4404,11 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
     
     const existingPB = pbResult.rows[0];
     let isNewPB = false;
+    let isFirstSubmission = false;
     
     if (!existingPB) {
-      isNewPB = true;
+      // First submission - store as baseline, don't show "broke record"
+      isFirstSubmission = true;
       await client.query(`
         INSERT INTO gauntlet_personal_bests (challenge_id, student_id, best_score, has_video_proof)
         VALUES ($1::uuid, $2::uuid, $3, $4)
@@ -4399,7 +4419,7 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
         : score < existingPB.best_score;
       
       if (isBetter) {
-        isNewPB = true;
+        isNewPB = true; // Only true when actually beating a previous record
         await client.query(`
           UPDATE gauntlet_personal_bests 
           SET best_score = $1, achieved_at = NOW(), has_video_proof = $2
@@ -4446,6 +4466,16 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
     
     console.log(`[Gauntlet Submit] ${challenge.name} by ${studentId} - Score: ${score}, XP: ${isVideoProof ? 0 : localXp}, Pending: ${isVideoProof}`);
     
+    // Determine the appropriate message
+    let message = 'Challenge completed!';
+    if (isVideoProof) {
+      message = `Video submitted! You'll earn ${localXp} XP when verified by your coach.`;
+    } else if (isNewPB) {
+      message = 'New Personal Best! You broke your previous record!';
+    } else if (isFirstSubmission) {
+      message = 'First attempt recorded! This is your baseline to beat.';
+    }
+    
     return res.json({
       success: true,
       xpAwarded: isVideoProof ? 0 : localXp,
@@ -4453,10 +4483,9 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
       globalPointsAwarded: isVideoProof ? 0 : globalPoints,
       pendingGlobalPoints: isVideoProof ? globalPoints : 0,
       isNewPersonalBest: isNewPB,
+      isFirstSubmission,
       pendingVerification: isVideoProof,
-      message: isVideoProof 
-        ? `Video submitted! You'll earn ${localXp} XP when verified by your coach.`
-        : (isNewPB ? 'New Personal Best!' : 'Challenge completed!'),
+      message,
       newTotalXp: newTotalResult.rows[0]?.total_xp || 0,
     });
   } catch (error: any) {
