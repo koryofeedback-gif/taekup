@@ -2776,6 +2776,21 @@ export function registerRoutes(app: Express) {
           return res.status(400).json({ error: 'videoUrl is required for video proof' });
         }
 
+        // Check if already submitted video for this challenge today (prevent duplicates)
+        const existingVideoResult = await db.execute(sql`
+          SELECT id FROM challenge_submissions 
+          WHERE student_id = ${studentId}::uuid AND answer = ${challengeType} AND proof_type = 'VIDEO'
+          AND DATE(completed_at) = ${today}::date
+        `);
+        
+        if ((existingVideoResult as any[]).length > 0) {
+          return res.status(429).json({
+            error: 'Already submitted',
+            message: 'You already submitted a video for this challenge today. Try again tomorrow!',
+            alreadyCompleted: true
+          });
+        }
+
         // Check premium access
         const studentCheck = await db.execute(sql`
           SELECT s.id, s.club_id, s.premium_status, c.parent_premium_enabled
