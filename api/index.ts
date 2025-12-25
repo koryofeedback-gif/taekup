@@ -1643,14 +1643,27 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
       }
     }
     
-    const result = await client.query(
-      `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, is_spot_check, auto_approved, xp_awarded, ai_flag, ai_flag_reason, video_duration, verified_at, created_at, updated_at)
-       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
-       RETURNING id`,
-      [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, isSpotCheck, autoApproved, finalXpAwarded, aiFlag, aiFlagReason, videoDuration || null, autoApproved ? new Date() : null]
-    );
-    
-    const video = result.rows[0];
+    // Try full INSERT with all columns, fallback to basic INSERT if columns don't exist
+    let video;
+    try {
+      const result = await client.query(
+        `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, is_spot_check, auto_approved, xp_awarded, ai_flag, ai_flag_reason, video_duration, verified_at, created_at, updated_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
+         RETURNING id`,
+        [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, isSpotCheck, autoApproved, finalXpAwarded, aiFlag, aiFlagReason, videoDuration || null, autoApproved ? new Date() : null]
+      );
+      video = result.rows[0];
+    } catch (insertError: any) {
+      console.log(`[Videos] Full insert failed, using basic insert: ${insertError.message}`);
+      // Fallback to basic INSERT without newer columns
+      const result = await client.query(
+        `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, xp_awarded, created_at, updated_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+         RETURNING id`,
+        [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, finalXpAwarded]
+      );
+      video = result.rows[0];
+    }
     
     // If auto-approved, award XP immediately and update trust tier
     if (autoApproved && finalXpAwarded > 0) {
