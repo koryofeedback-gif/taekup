@@ -1953,11 +1953,11 @@ export function registerRoutes(app: Express) {
       }
 
       // Check if already submitted video for this challenge today (prevent duplicates)
-      const today = new Date().toISOString().split('T')[0];
+      // Compare both timestamps in UTC to avoid timezone mismatch
       const existingVideoResult = await db.execute(sql`
         SELECT id FROM challenge_videos 
         WHERE student_id = ${studentId}::uuid AND challenge_id = ${challengeId}
-        AND DATE(created_at) = ${today}::date
+        AND created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
       `);
       
       if ((existingVideoResult as any[]).length > 0) {
