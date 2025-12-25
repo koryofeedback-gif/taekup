@@ -2473,17 +2473,17 @@ export function registerRoutes(app: Express) {
 
       // BUG FIX: Check if user already completed a daily challenge TODAY (prevents infinite XP exploit)
       // Use xp_transactions table (correct table name) with reason containing 'daily_challenge'
-      const today = new Date().toISOString().split('T')[0];
+      // Use Postgres DATE_TRUNC in UTC to avoid timezone mismatch with JS Date
       const alreadyPlayedToday = await db.execute(sql`
         SELECT id, amount FROM xp_transactions 
         WHERE student_id = ${studentId}::uuid 
         AND reason LIKE '%daily_challenge%' 
-        AND DATE(created_at) = ${today}::date
+        AND created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
         LIMIT 1
       `);
       
       if ((alreadyPlayedToday as any[]).length > 0) {
-        console.log('⛔ [DailyChallenge] Already played today - blocking duplicate:', { studentId, today });
+        console.log('⛔ [DailyChallenge] Already played today - blocking duplicate:', { studentId });
         return res.status(400).json({
           error: 'Already completed',
           message: 'You already completed today\'s challenge! Come back tomorrow.',
@@ -2737,12 +2737,13 @@ export function registerRoutes(app: Express) {
       // TRUST submissions: Check PER-CHALLENGE daily limit (anti-cheat)
       if (proofType === 'TRUST') {
         // Count submissions for THIS SPECIFIC challenge today
+        // Use Postgres DATE_TRUNC in UTC to avoid timezone mismatch with JS Date
         const challengeDailyCount = await db.execute(sql`
           SELECT COUNT(*) as count FROM challenge_submissions 
           WHERE student_id = ${studentId}::uuid 
           AND answer = ${challengeType}
           AND proof_type = 'TRUST' 
-          AND DATE(completed_at) = ${today}::date
+          AND completed_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
         `);
         
         const count = parseInt((challengeDailyCount as any[])[0]?.count || '0');
@@ -2794,10 +2795,11 @@ export function registerRoutes(app: Express) {
         }
 
         // Check if already submitted video for this challenge today (prevent duplicates)
+        // Use Postgres DATE_TRUNC in UTC to avoid timezone mismatch with JS Date
         const existingVideoResult = await db.execute(sql`
           SELECT id FROM challenge_submissions 
           WHERE student_id = ${studentId}::uuid AND answer = ${challengeType} AND proof_type = 'VIDEO'
-          AND DATE(completed_at) = ${today}::date
+          AND completed_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
         `);
         
         if ((existingVideoResult as any[]).length > 0) {
