@@ -2126,28 +2126,35 @@ The question should be age-appropriate, educational, and related to martial arts
 
 Return ONLY valid JSON, no markdown.`;
 
-  // Try Gemini first (using latest stable model)
+  // Try Gemini first with multiple model fallbacks
   if (gemini) {
-    try {
-      const model = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const result = await model.generateContent(prompt);
-      const text = result.response.text().replace(/```json\n?|\n?```/g, '').trim();
-      const parsed = JSON.parse(text);
-      return {
-        title: parsed.title || "Daily Challenge",
-        description: parsed.description || "Test your martial arts knowledge!",
-        type: 'quiz',
-        xpReward: 25,
-        quizData: {
-          question: parsed.question,
-          options: parsed.options,
-          correctIndex: parsed.correctIndex,
-          explanation: parsed.explanation
-        }
-      };
-    } catch (e: any) {
-      console.log('[DailyChallenge] Gemini failed:', e.message);
+    const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];
+    for (const modelName of geminiModels) {
+      try {
+        console.log(`[DailyChallenge] Trying Gemini model: ${modelName}`);
+        const model = gemini.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text().replace(/```json\n?|\n?```/g, '').trim();
+        const parsed = JSON.parse(text);
+        console.log(`[DailyChallenge] Gemini ${modelName} succeeded`);
+        return {
+          title: parsed.title || "Daily Challenge",
+          description: parsed.description || "Test your martial arts knowledge!",
+          type: 'quiz',
+          xpReward: 15,
+          quizData: {
+            question: parsed.question,
+            options: parsed.options,
+            correctIndex: parsed.correctIndex,
+            explanation: parsed.explanation
+          }
+        };
+      } catch (e: any) {
+        console.log(`[DailyChallenge] Gemini ${modelName} failed:`, e.message);
+      }
     }
+  } else {
+    console.log('[DailyChallenge] No Gemini client available (GOOGLE_API_KEY missing?)');
   }
 
   // Fallback to OpenAI
