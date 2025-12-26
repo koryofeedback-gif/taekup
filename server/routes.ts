@@ -2030,12 +2030,21 @@ export function registerRoutes(app: Express) {
       }
 
       // First submission today - INSERT new record with hash and AI flag
-      const result = await db.execute(sql`
-        INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, video_hash, score, status, ai_flag, ai_flag_reason, created_at, updated_at)
-        VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeId}, ${challengeName || ''}, ${challengeCategory || ''}, ${videoUrl}, ${videoKey || ''}, ${videoHash || null}, ${score || 0}, 'pending', ${aiFlag}, ${aiFlagReason || null}, NOW(), NOW())
-        RETURNING id
-      `);
+      console.log('[Videos] Inserting record:', { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl: videoUrl?.substring(0, 50), videoKey: videoKey?.substring(0, 30), videoHash: videoHash?.substring(0, 8), aiFlag });
+      
+      let result;
+      try {
+        result = await db.execute(sql`
+          INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, video_hash, score, status, ai_flag, ai_flag_reason, created_at, updated_at)
+          VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeId}, ${challengeName || ''}, ${challengeCategory || ''}, ${videoUrl}, ${videoKey || ''}, ${videoHash || null}, ${score || 0}, 'pending', ${aiFlag}, ${aiFlagReason || null}, NOW(), NOW())
+          RETURNING id
+        `);
+      } catch (insertErr: any) {
+        console.error('[Videos] INSERT failed:', insertErr.message);
+        throw insertErr;
+      }
       const video = (result as any[])[0];
+      console.log('[Videos] Insert successful, id:', video?.id);
       
       // Send email notification to coaches
       try {
