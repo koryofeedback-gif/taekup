@@ -1895,12 +1895,52 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/videos/presigned-upload', async (req: Request, res: Response) => {
     try {
-      const { studentId, challengeId, filename, contentType } = req.body;
+      const { studentId, challengeId, filename, contentType, isGauntlet } = req.body;
       
-      console.log('[Videos] Presigned upload request:', { studentId, challengeId, filename, contentType });
+      console.log('[Videos] Presigned upload request:', { studentId, challengeId, filename, contentType, isGauntlet });
       
       if (!studentId || !challengeId || !filename) {
         return res.status(400).json({ error: 'studentId, challengeId, and filename are required' });
+      }
+
+      // CHECK LIMITS BEFORE generating upload URL (prevents orphaned uploads)
+      if (isGauntlet) {
+        // Gauntlet: Check weekly limit using gauntlet_submissions table
+        const now = new Date();
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        const weekNumber = Math.ceil((((now.getTime() - startOfYear.getTime()) / 86400000) + startOfYear.getDay() + 1) / 7);
+        
+        const existingSubmission = await db.execute(sql`
+          SELECT id FROM gauntlet_submissions 
+          WHERE challenge_id = ${challengeId}::uuid 
+          AND student_id = ${studentId}::uuid 
+          AND week_number = ${weekNumber}
+        `);
+        
+        if ((existingSubmission as any[]).length > 0) {
+          console.log('[Videos] Gauntlet weekly limit reached:', { studentId, challengeId, weekNumber });
+          return res.status(429).json({
+            error: 'Already completed',
+            message: 'You already completed this challenge this week. Come back next week!',
+            limitReached: true
+          });
+        }
+      } else {
+        // Arena: Check daily limit using challenge_videos table
+        const existingVideoResult = await db.execute(sql`
+          SELECT id FROM challenge_videos 
+          WHERE student_id = ${studentId}::uuid AND challenge_id = ${challengeId}
+          AND created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
+        `);
+        
+        if ((existingVideoResult as any[]).length > 0) {
+          console.log('[Videos] Arena daily limit reached:', { studentId, challengeId });
+          return res.status(429).json({
+            error: 'Already submitted',
+            message: 'You already uploaded a video for this challenge today. Try again tomorrow!',
+            limitReached: true
+          });
+        }
       }
 
       // Check if S3 credentials are configured

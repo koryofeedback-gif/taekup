@@ -1626,12 +1626,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     studentId: student.id,
                     challengeId: challengeIdToUse,
                     filename: videoFile.name,
-                    contentType: videoFile.type
+                    contentType: videoFile.type,
+                    isGauntlet: gauntletVideoMode
                 })
             });
 
             if (!presignedResponse.ok) {
                 const errorData = await presignedResponse.json().catch(() => ({}));
+                // Show limit-specific error message
+                if (errorData.limitReached) {
+                    throw new Error(errorData.message || 'Limit reached');
+                }
                 throw new Error(errorData.error || 'Failed to get upload URL');
             }
 
