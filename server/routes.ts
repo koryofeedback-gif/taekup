@@ -2566,28 +2566,34 @@ export function registerRoutes(app: Express) {
         
         // For fallback challenges, trust the frontend's isCorrect or default to true
         const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
-        const xpAwarded = isCorrect ? (frontendXpReward || 50) : 0;
         
-        // Award XP using unified XP service and log to xp_transactions for persistence
-        if (isCorrect && xpAwarded > 0) {
-          // 1. Award XP using unified service (single source of truth)
-          await awardXP(studentId, xpAwarded, 'mystery', { isFallback: true });
-          
-          // 2. Insert into xp_transactions for persistence and duplicate prevention
-          await db.execute(sql`
-            INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-            VALUES (${studentId}::uuid, ${xpAwarded}, 'EARN', 'daily_challenge', NOW())
-          `);
-          
-          console.log(`✅ [DailyChallenge] Fallback XP PERSISTED: ${xpAwarded} XP to student ${studentId}`);
-        }
+        // Daily Mystery XP values: Correct=15 Local/3 Global, Wrong=5 Local/1 Global
+        const localXp = isCorrect ? 15 : 5;
+        const globalXp = isCorrect ? 3 : 1;
+        
+        // 1. Award Local XP using unified service (single source of truth)
+        await awardXP(studentId, localXp, 'mystery', { isFallback: true });
+        
+        // 2. Insert into xp_transactions for persistence and duplicate prevention
+        await db.execute(sql`
+          INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+          VALUES (${studentId}::uuid, ${localXp}, 'EARN', 'daily_challenge', NOW())
+        `);
+        
+        // 3. Award Global XP
+        await db.execute(sql`
+          UPDATE students SET global_rank_points = COALESCE(global_rank_points, 0) + ${globalXp} WHERE id = ${studentId}::uuid
+        `);
+        
+        console.log(`✅ [DailyChallenge] Fallback XP PERSISTED: Local=${localXp}, Global=${globalXp} to student ${studentId}`);
         
         return res.json({
           success: true,
           isCorrect,
-          xpAwarded,
+          xpAwarded: localXp,
+          globalXp,
           explanation: 'Great job completing the challenge!',
-          message: isCorrect ? `Correct! +${xpAwarded} XP` : 'Not quite! Try again tomorrow.'
+          message: isCorrect ? `Correct! +${localXp} XP (+${globalXp} Global)` : `Not quite! +${localXp} XP (+${globalXp} Global) for trying!`
         });
       }
 
@@ -2612,44 +2618,47 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Already submitted this challenge' });
       }
 
-      // Use the ACTUAL xp_reward from the database
+      // Daily Mystery XP values: Correct=15 Local/3 Global, Wrong=5 Local/1 Global
       let isCorrect = false;
-      const challengeXpReward = challenge.xp_reward || 50;
-      let xpAwarded = 0;
       
       if (challenge.type === 'quiz' && challenge.quiz_data) {
         const quizData = typeof challenge.quiz_data === 'string' 
           ? JSON.parse(challenge.quiz_data) 
           : challenge.quiz_data;
         isCorrect = selectedIndex === quizData.correctIndex;
-        xpAwarded = isCorrect ? challengeXpReward : 0;
       } else {
-        xpAwarded = challengeXpReward;
         isCorrect = true;
       }
+      
+      const localXp = isCorrect ? 15 : 5;
+      const globalXp = isCorrect ? 3 : 1;
 
       // Create submission (clubId is optional for home users)
-      console.log('💾 [DailyChallenge] Inserting submission:', { challengeId, studentId, validClubId, isCorrect, xpAwarded });
+      console.log('💾 [DailyChallenge] Inserting submission:', { challengeId, studentId, validClubId, isCorrect, localXp, globalXp });
       await db.execute(sql`
         INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded, completed_at)
-        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${validClubId ? sql`${validClubId}::uuid` : sql`NULL`}, ${answer || String(selectedIndex)}, ${isCorrect}, ${xpAwarded}, NOW())
+        VALUES (${challengeId}::uuid, ${studentId}::uuid, ${validClubId ? sql`${validClubId}::uuid` : sql`NULL`}, ${answer || String(selectedIndex)}, ${isCorrect}, ${localXp}, NOW())
       `);
 
-      // Award XP using unified XP service (single source of truth)
-      if (xpAwarded > 0) {
-        await awardXP(studentId, xpAwarded, 'mystery', { challengeId, isCorrect });
-      }
+      // Award Local XP using unified XP service (single source of truth)
+      await awardXP(studentId, localXp, 'mystery', { challengeId, isCorrect });
+      
+      // Award Global XP
+      await db.execute(sql`
+        UPDATE students SET global_rank_points = COALESCE(global_rank_points, 0) + ${globalXp} WHERE id = ${studentId}::uuid
+      `);
 
-      console.log(`✅ [DailyChallenge] Submit Success - XP Awarded: ${xpAwarded}`);
+      console.log(`✅ [DailyChallenge] Submit Success - Local XP: ${localXp}, Global XP: ${globalXp}`);
 
       res.json({
         success: true,
         isCorrect,
-        xpAwarded,
+        xpAwarded: localXp,
+        globalXp,
         explanation: challenge.quiz_data?.explanation || null,
         message: isCorrect 
-          ? `Excellent! You earned ${xpAwarded} XP!` 
-          : `Good try! You earned ${xpAwarded} XP for participating.`
+          ? `Correct! +${localXp} XP (+${globalXp} Global)` 
+          : `Not quite! +${localXp} XP (+${globalXp} Global) for trying.`
       });
     } catch (error: any) {
       console.error('❌ DAILY CHALLENGE ERROR:', error);

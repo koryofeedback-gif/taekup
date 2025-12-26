@@ -2526,19 +2526,27 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       
       // For fallback challenges, trust the frontend's isCorrect or default to true
       const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
-      const xpAwarded = isCorrect ? (frontendXpReward || 50) : 0;
       
-      // Award XP using unified helper
-      if (isCorrect && xpAwarded > 0) {
-        await applyXpDelta(client, studentId, xpAwarded, 'daily_challenge');
-      }
+      // Daily Mystery XP values: Correct=15 Local/3 Global, Wrong=5 Local/1 Global
+      const localXp = isCorrect ? 15 : 5;
+      const globalXp = isCorrect ? 3 : 1;
+      
+      // Award Local XP using unified helper
+      await applyXpDelta(client, studentId, localXp, 'daily_challenge');
+      
+      // Award Global XP
+      await client.query(
+        `UPDATE students SET global_rank_points = COALESCE(global_rank_points, 0) + $1 WHERE id = $2::uuid`,
+        [globalXp, studentId]
+      );
       
       return res.json({
         success: true,
         isCorrect,
-        xpAwarded,
+        xpAwarded: localXp,
+        globalXp,
         explanation: 'Great job completing the challenge!',
-        message: isCorrect ? `Correct! +${xpAwarded} XP` : 'Not quite! Try again tomorrow.'
+        message: isCorrect ? `Correct! +${localXp} XP (+${globalXp} Global)` : `Not quite! +${localXp} XP (+${globalXp} Global) for trying!`
       });
     }
 
@@ -2575,32 +2583,37 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
     const correctIndex = quizData.correctIndex ?? 0;
     const isCorrect = selectedIndex === correctIndex;
     
-    // Use the ACTUAL xp_reward from the database
-    const challengeXpReward = challenge.xp_reward || 50;
-    const xpAwarded = isCorrect ? challengeXpReward : 0;
+    // Daily Mystery XP values: Correct=15 Local/3 Global, Wrong=5 Local/1 Global
+    const localXp = isCorrect ? 15 : 5;
+    const globalXp = isCorrect ? 3 : 1;
 
     // Save submission record (clubId is optional for home users)
-    console.log('💾 [DailyChallenge] Inserting submission:', { challengeId, studentId, validClubId, isCorrect, xpAwarded });
+    console.log('💾 [DailyChallenge] Inserting submission:', { challengeId, studentId, validClubId, isCorrect, localXp, globalXp });
     await client.query(
       `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded)
        VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)`,
-      [challengeId, studentId, validClubId, answer || String(selectedIndex), isCorrect, xpAwarded]
+      [challengeId, studentId, validClubId, answer || String(selectedIndex), isCorrect, localXp]
     );
 
-    // Update student XP using unified helper
-    if (isCorrect && xpAwarded > 0) {
-      await applyXpDelta(client, studentId, xpAwarded, 'daily_challenge');
-    }
+    // Update student Local XP using unified helper
+    await applyXpDelta(client, studentId, localXp, 'daily_challenge');
+    
+    // Update student Global XP
+    await client.query(
+      `UPDATE students SET global_rank_points = COALESCE(global_rank_points, 0) + $1 WHERE id = $2::uuid`,
+      [globalXp, studentId]
+    );
 
-    console.log(`✅ [DailyChallenge] Submit Success - XP Awarded: ${xpAwarded}`);
+    console.log(`✅ [DailyChallenge] Submit Success - Local XP: ${localXp}, Global XP: ${globalXp}`);
     
     return res.json({
       success: true,
       isCorrect,
       correctIndex,
-      xpAwarded,
+      xpAwarded: localXp,
+      globalXp,
       explanation: quizData.explanation || 'Great effort!',
-      message: isCorrect ? `Correct! +${xpAwarded} XP` : `Not quite! The correct answer was option ${correctIndex + 1}.`
+      message: isCorrect ? `Correct! +${localXp} XP (+${globalXp} Global)` : `Not quite! +${localXp} XP (+${globalXp} Global) for trying. The correct answer was option ${correctIndex + 1}.`
     });
   } catch (error: any) {
     console.error('🔥 FATAL SUBMIT ERROR:', error);
