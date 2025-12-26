@@ -9,6 +9,37 @@ import { useChallengeRealtime } from '../hooks/useChallengeRealtime';
 import { ChallengeToast } from './ChallengeToast';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { useStudentProgress } from '../hooks/useStudentProgress';
+import SparkMD5 from 'spark-md5';
+
+const calculateVideoHash = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const chunkSize = 2097152; // 2MB chunks
+        const chunks = Math.ceil(file.size / chunkSize);
+        let currentChunk = 0;
+        const spark = new SparkMD5.ArrayBuffer();
+        const fileReader = new FileReader();
+
+        fileReader.onload = (e) => {
+            spark.append(e.target?.result as ArrayBuffer);
+            currentChunk++;
+            if (currentChunk < chunks) {
+                loadNext();
+            } else {
+                resolve(spark.end());
+            }
+        };
+
+        fileReader.onerror = () => reject(new Error('Failed to read video file'));
+
+        const loadNext = () => {
+            const start = currentChunk * chunkSize;
+            const end = Math.min(start + chunkSize, file.size);
+            fileReader.readAsArrayBuffer(file.slice(start, end));
+        };
+
+        loadNext();
+    });
+};
 
 interface ParentPortalProps {
     student: Student;
@@ -1582,6 +1613,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         setVideoUploadError(null);
 
         try {
+            // Calculate video fingerprint for duplicate detection
+            setVideoUploadProgress(5);
+            const videoHash = await calculateVideoHash(videoFile);
+            console.log('[VideoUpload] Video hash calculated:', videoHash);
+            setVideoUploadProgress(10);
+
             const presignedResponse = await fetch('/api/videos/presigned-upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1623,6 +1660,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         score: parseInt(videoScore),
                         proofType: 'VIDEO',
                         videoUrl: publicUrl,
+                        videoHash: videoHash,
                     }),
                 });
                 
@@ -1678,6 +1716,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         challengeCategory: challengeInfo.category,
                         videoUrl: publicUrl,
                         videoKey: key,
+                        videoHash: videoHash,
                         score: parseInt(videoScore) || 0
                     })
                 });
