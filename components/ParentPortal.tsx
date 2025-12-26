@@ -1718,7 +1718,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     throw new Error('Club information not found. Please log in again.');
                 }
 
-                console.log('[Arena] Saving video:', { studentId: student.id, clubId, challengeId: selectedChallenge, challengeName: challengeInfo.name });
+                // Calculate XP based on challenge difficulty (Coach Pick video = 2x base XP)
+                const customChallenge = (data.customChallenges || []).find(c => c.id === selectedChallenge);
+                const difficultyXpMap: Record<string, number> = {
+                    'EASY': 20, 'MEDIUM': 40, 'HARD': 70, 'EPIC': 100
+                };
+                const difficulty = (customChallenge?.difficulty || 'EASY').toUpperCase();
+                const xpAwarded = difficultyXpMap[difficulty] || 40;
+
+                console.log('[Arena] Saving video:', { studentId: student.id, clubId, challengeId: selectedChallenge, challengeName: challengeInfo.name, xpAwarded });
                 
                 const saveResponse = await fetch('/api/videos', {
                     method: 'POST',
@@ -1732,7 +1740,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         videoUrl: publicUrl,
                         videoKey: key,
                         videoHash: videoHash,
-                        score: parseInt(videoScore) || 0
+                        score: parseInt(videoScore) || 0,
+                        xpAwarded: xpAwarded
                     })
                 });
 

@@ -1675,7 +1675,8 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
     let status = 'pending';
     let isSpotCheck = false;
     let autoApproved = false;
-    let finalXpAwarded = 0;
+    // Store the correct XP upfront so coach sees it when reviewing (Coach Pick videos use passed xpAwarded)
+    let finalXpAwarded = xpAwarded || 40;
     
     // AI Flags override auto-approval
     if (aiFlag === 'red') {
