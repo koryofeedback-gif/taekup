@@ -515,6 +515,7 @@ export const challengeVideos = pgTable('challenge_videos', {
   aiFlag: varchar('ai_flag', { length: 50 }), // 'green', 'yellow', 'red' - AI pre-screening result
   aiFlagReason: varchar('ai_flag_reason', { length: 255 }), // Reason for AI flag
   videoDuration: integer('video_duration'), // Video length in seconds (for AI screening)
+  videoHash: varchar('video_hash', { length: 64 }), // MD5 hash of video file content for duplicate detection
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
