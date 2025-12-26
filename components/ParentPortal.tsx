@@ -3620,26 +3620,46 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             <h5 className="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
                                                 <span>📹</span> My Video Submissions
                                             </h5>
-                                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                            <div className="space-y-3 max-h-64 overflow-y-auto">
                                                 {myVideos.map(video => (
-                                                    <div key={video.id} className="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-lg">
-                                                                {video.status === 'pending' ? '⏳' : video.status === 'approved' ? '✅' : '❌'}
+                                                    <div key={video.id} className={`bg-gray-700/50 p-3 rounded-lg border-l-4 ${
+                                                        video.status === 'pending' ? 'border-yellow-500' : 
+                                                        video.status === 'approved' ? 'border-green-500' : 'border-red-500'
+                                                    }`}>
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-lg">
+                                                                    {video.status === 'pending' ? '⏳' : video.status === 'approved' ? '✅' : '❌'}
+                                                                </span>
+                                                                <div>
+                                                                    <p className="text-sm text-white font-medium">{video.challengeName}</p>
+                                                                    <p className="text-xs text-gray-500">
+                                                                        {video.status === 'pending' && 'Awaiting coach review'}
+                                                                        {video.status === 'approved' && !video.coachNotes && `Verified! ${video.voteCount} votes`}
+                                                                        {video.status === 'rejected' && !video.coachNotes && 'Not approved'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                                                video.status === 'pending' ? 'bg-yellow-900/50 text-yellow-400' :
+                                                                video.status === 'approved' ? 'bg-green-900/50 text-green-400' : 
+                                                                'bg-red-900/50 text-red-400'
+                                                            }`}>
+                                                                {video.status === 'pending' ? 'Pending' : video.status === 'approved' ? 'Approved' : 'Rejected'}
                                                             </span>
-                                                            <div>
-                                                                <p className="text-sm text-white font-medium">{video.challengeName}</p>
-                                                                <p className="text-xs text-gray-500">
-                                                                    {video.status === 'pending' && 'Awaiting coach review'}
-                                                                    {video.status === 'approved' && (video.coachNotes || `Verified! ${video.voteCount} votes`)}
-                                                                    {video.status === 'rejected' && (video.coachNotes || 'Not approved')}
+                                                        </div>
+                                                        {video.coachNotes && (
+                                                            <div className={`mt-2 p-2 rounded-lg text-sm ${
+                                                                video.status === 'approved' ? 'bg-green-900/30 border border-green-700/50' : 
+                                                                'bg-red-900/30 border border-red-700/50'
+                                                            }`}>
+                                                                <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                                                                    <span>💬</span> Coach Feedback:
+                                                                </p>
+                                                                <p className={`${video.status === 'approved' ? 'text-green-300' : 'text-red-300'}`}>
+                                                                    {video.coachNotes}
                                                                 </p>
                                                             </div>
-                                                        </div>
-                                                        {video.status === 'approved' && (
-                                                            <span className="text-xs bg-green-900/50 text-green-400 px-2 py-1 rounded-full">
-                                                                ✓ Verified
-                                                            </span>
                                                         )}
                                                     </div>
                                                 ))}
