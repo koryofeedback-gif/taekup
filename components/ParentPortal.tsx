@@ -1656,6 +1656,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
             if (gauntletVideoMode) {
                 // Submit gauntlet challenge with VIDEO proof type
+                console.log('[Gauntlet] Submitting video:', { challengeId: selectedGauntletChallenge, studentId: student.id, score: parseInt(videoScore) });
+                
                 const gauntletResponse = await fetch('/api/gauntlet/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1670,6 +1672,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 });
                 
                 const result = await gauntletResponse.json();
+                console.log('[Gauntlet] Submit response:', gauntletResponse.status, result);
                 setVideoUploadProgress(100);
                 
                 if (result.success) {
@@ -1710,6 +1713,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     throw new Error('Club information not found. Please log in again.');
                 }
 
+                console.log('[Arena] Saving video:', { studentId: student.id, clubId, challengeId: selectedChallenge, challengeName: challengeInfo.name });
+                
                 const saveResponse = await fetch('/api/videos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1726,12 +1731,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     })
                 });
 
+                const saveResult = await saveResponse.json().catch(() => ({}));
+                console.log('[Arena] Save response:', saveResponse.status, saveResult);
+                
                 if (!saveResponse.ok) {
-                    const errorData = await saveResponse.json().catch(() => ({}));
-                    throw new Error(errorData.message || 'Failed to save video record');
+                    throw new Error(saveResult.message || 'Failed to save video record');
                 }
 
                 setVideoUploadProgress(100);
+                
+                // Show success feedback
+                setVideoUploadError(null);
+                alert('Video submitted successfully! Your coach will review it soon.');
                 
                 setTimeout(() => {
                     setShowVideoUpload(false);
@@ -1740,7 +1751,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setVideoScore('');
                     setSelectedChallenge('');
                     fetchMyVideos();
-                }, 1000);
+                }, 500);
             }
 
         } catch (error: any) {
