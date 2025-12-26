@@ -2805,7 +2805,7 @@ async function handleSentChallenges(req: VercelRequest, res: VercelResponse, stu
   }
 }
 
-// GET /api/challenges/history - Fetch challenge submission history
+// GET /api/challenges/history - Fetch XP history from Coach Picks and Daily Training
 async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -2822,57 +2822,107 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    const result = await client.query(
+    // Fetch Coach Pick submissions (from challenge_videos table)
+    const coachPicksResult = await client.query(
       `SELECT 
         id,
-        answer as challenge_type,
+        challenge_id,
+        challenge_name,
+        challenge_category,
         status,
-        proof_type,
         xp_awarded,
         score,
         video_url,
-        mode,
-        completed_at
-      FROM challenge_submissions 
+        created_at
+      FROM challenge_videos 
       WHERE student_id = $1::uuid
-      ORDER BY completed_at DESC
-      LIMIT 50`,
+      ORDER BY created_at DESC
+      LIMIT 30`,
       [studentId]
     );
 
-    const history = result.rows.map(row => {
-      const challengeType = row.challenge_type || 'unknown';
-      let meta = CHALLENGE_METADATA[challengeType];
-      if (!meta) {
-        // For custom challenges, show friendly name instead of ugly ID
-        if (challengeType.startsWith('custom_')) {
-          meta = { name: 'Custom Challenge', icon: '⭐', category: 'Coach Picks' };
-        } else {
-          meta = { 
-            name: challengeType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()), 
-            icon: '⚡', 
-            category: 'General' 
-          };
-        }
-      }
+    // Fetch Daily Training submissions (from gauntlet_submissions table)
+    const gauntletResult = await client.query(
+      `SELECT 
+        gs.id,
+        gs.challenge_id,
+        gc.name as challenge_name,
+        gc.category as challenge_category,
+        gs.proof_type,
+        gs.xp_awarded,
+        gs.global_xp_awarded,
+        gs.score,
+        gs.is_personal_best,
+        gs.created_at
+      FROM gauntlet_submissions gs
+      LEFT JOIN gauntlet_challenges gc ON gs.challenge_id = gc.id
+      WHERE gs.student_id = $1::uuid
+      ORDER BY gs.created_at DESC
+      LIMIT 30`,
+      [studentId]
+    );
 
+    // Map Coach Picks to history format
+    const coachPickHistory = coachPicksResult.rows.map(row => {
+      const statusMap: Record<string, string> = {
+        'pending': 'PENDING',
+        'approved': 'VERIFIED',
+        'rejected': 'REJECTED'
+      };
+      
       return {
         id: row.id,
-        challengeType,
-        challengeName: meta.name,
-        icon: meta.icon,
-        category: meta.category,
-        status: row.status || 'COMPLETED',
-        proofType: row.proof_type || 'TRUST',
+        source: 'coach_pick',
+        challengeId: row.challenge_id,
+        challengeName: row.challenge_name || 'Coach Pick Challenge',
+        icon: '⭐',
+        category: row.challenge_category || 'Coach Picks',
+        status: statusMap[row.status] || 'PENDING',
+        proofType: 'VIDEO',
         xpAwarded: row.xp_awarded || 0,
         score: row.score || 0,
         videoUrl: row.video_url,
-        mode: row.mode || 'SOLO',
-        completedAt: row.completed_at
+        mode: 'SOLO',
+        completedAt: row.created_at
       };
     });
 
-    return res.json({ history });
+    // Map Daily Training to history format
+    const gauntletHistory = gauntletResult.rows.map(row => {
+      const categoryIcons: Record<string, string> = {
+        'Engine': '🔥',
+        'Foundation': '🏋️',
+        'Evasion': '💨',
+        'Explosion': '💥',
+        'Animal': '🐯',
+        'Defense': '🛡️',
+        'Flow': '🌊'
+      };
+      
+      return {
+        id: row.id,
+        source: 'daily_training',
+        challengeId: row.challenge_id,
+        challengeName: row.challenge_name || 'Daily Training',
+        icon: categoryIcons[row.challenge_category] || '🥋',
+        category: row.challenge_category || 'Daily Training',
+        status: 'COMPLETED',
+        proofType: row.proof_type || 'TRUST',
+        xpAwarded: row.xp_awarded || 0,
+        globalXp: row.global_xp_awarded || 0,
+        score: row.score || 0,
+        isPersonalBest: row.is_personal_best || false,
+        mode: 'SOLO',
+        completedAt: row.created_at
+      };
+    });
+
+    // Combine and sort by date (newest first)
+    const allHistory = [...coachPickHistory, ...gauntletHistory]
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+      .slice(0, 50);
+
+    return res.json({ history: allHistory });
   } catch (error: any) {
     console.error('[ChallengeHistory] Error:', error.message);
     return res.status(500).json({ error: 'Failed to fetch history' });
