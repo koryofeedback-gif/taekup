@@ -839,9 +839,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             (customChallenge && customChallenge.category !== 'Custom') 
             ? 'coach_pick' 
             : 'general';
-        // Normalize difficulty to uppercase ENUM keys (EASY, MEDIUM, HARD, EPIC)
-        const rawDifficulty = (customChallenge?.difficulty || 'easy').toString().toUpperCase();
-        const challengeDifficulty = ['EASY', 'MEDIUM', 'HARD', 'EPIC'].includes(rawDifficulty) ? rawDifficulty : 'EASY';
+        // Map difficulty labels to ENUM keys (Easy→EASY, Medium→MEDIUM, Hard→HARD, Expert→EPIC)
+        const difficultyToEnumMap: Record<string, string> = {
+            'Easy': 'EASY', 'Medium': 'MEDIUM', 'Hard': 'HARD', 'Expert': 'EPIC',
+            'EASY': 'EASY', 'MEDIUM': 'MEDIUM', 'HARD': 'HARD', 'EPIC': 'EPIC'
+        };
+        const challengeDifficulty = difficultyToEnumMap[customChallenge?.difficulty || 'Easy'] || 'EASY';
         
         setSoloSubmitting(true);
         setSoloResult(null);
