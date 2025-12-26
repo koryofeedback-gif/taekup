@@ -1719,12 +1719,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 }
 
                 // Calculate XP based on challenge difficulty (Coach Pick video = 2x base XP)
+                // Difficulty values: 'Easy', 'Medium', 'Hard', 'Expert' (Expert = Epic tier)
                 const customChallenge = (data.customChallenges || []).find(c => c.id === selectedChallenge);
                 const difficultyXpMap: Record<string, number> = {
-                    'EASY': 20, 'MEDIUM': 40, 'HARD': 70, 'EPIC': 100
+                    'Easy': 20, 'Medium': 40, 'Hard': 70, 'Expert': 100
                 };
-                const difficulty = (customChallenge?.difficulty || 'EASY').toUpperCase();
-                const xpAwarded = difficultyXpMap[difficulty] || 40;
+                const xpAwarded = customChallenge ? (difficultyXpMap[customChallenge.difficulty] || 40) : 40;
 
                 console.log('[Arena] Saving video:', { studentId: student.id, clubId, challengeId: selectedChallenge, challengeName: challengeInfo.name, xpAwarded });
                 
