@@ -2126,10 +2126,10 @@ The question should be age-appropriate, educational, and related to martial arts
 
 Return ONLY valid JSON, no markdown.`;
 
-  // Try Gemini first
+  // Try Gemini first (using latest stable model)
   if (gemini) {
     try {
-      const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const result = await model.generateContent(prompt);
       const text = result.response.text().replace(/```json\n?|\n?```/g, '').trim();
       const parsed = JSON.parse(text);
@@ -2707,7 +2707,7 @@ IMPORTANT: You MUST mention their specific score of ${score || 'their result'} i
   const gemini = getGeminiClient();
   if (gemini) {
     try {
-      const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const result = await model.generateContent(prompt);
       const feedback = result.response.text();
       if (feedback) return res.json({ feedback });

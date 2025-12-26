@@ -492,6 +492,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     belt: studentBeltName,
                 });
                 
+                // Add clubId for proper art type detection
+                if (student.clubId) {
+                    params.append('clubId', student.clubId);
+                }
+                
                 const response = await fetch(`/api/daily-challenge?${params}`);
                 const result = await response.json();
                 
