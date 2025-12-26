@@ -4207,10 +4207,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             )}
                                                         </button>
                                                         
-                                                        {/* Debug indicator */}
-                                                        <p className={`text-[10px] mt-3 text-center ${mysterySource === 'api' ? 'text-green-500' : 'text-orange-500'}`}>
-                                                            Source: {mysterySource === 'api' ? 'API (Dynamic)' : 'Static (Fallback)'}
-                                                        </p>
                                                     </div>
                                                 ) : (
                                                     <div className="text-center py-4">
