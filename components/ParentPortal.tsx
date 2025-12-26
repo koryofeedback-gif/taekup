@@ -1541,14 +1541,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 const videos = await response.json();
                 setMyVideos(videos.map((v: any) => ({
                     id: v.id,
-                    challengeId: v.challenge_id,
-                    challengeName: v.challenge_name,
-                    videoUrl: v.video_url,
+                    challengeId: v.challengeId || v.challenge_id,
+                    challengeName: v.challengeName || v.challenge_name,
+                    videoUrl: v.videoUrl || v.video_url,
                     status: v.status,
                     score: v.score,
-                    voteCount: v.vote_count || 0,
-                    coachNotes: v.coach_notes,
-                    createdAt: v.created_at
+                    voteCount: v.voteCount || v.vote_count || 0,
+                    coachNotes: v.coachNotes || v.coach_notes || '',
+                    createdAt: v.createdAt || v.created_at
                 })));
             }
         } catch (error) {
