@@ -1747,7 +1747,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 setCoachVideoNotes('');
                 setXpToAward(50);
                 setCurrentVideoPlaying(null);
-                const xp = video.source === 'arena' ? data.xpAwarded : xpToAward;
+                // Use data.xpAwarded (authoritative from backend) for all arena/coach_pick videos
+                const xp = data.xpAwarded || video.xp_awarded || xpToAward;
                 setConfirmation({ show: true, message: `Video approved! +${xp} XP awarded.` });
                 setTimeout(() => setConfirmation({ show: false, message: '' }), 3000);
             } else {
