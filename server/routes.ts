@@ -1932,9 +1932,9 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/videos', async (req: Request, res: Response) => {
     try {
-      const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, score } = req.body;
+      const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, videoHash, score } = req.body;
       
-      console.log('[Videos] Save request:', { studentId, clubId, challengeId, challengeName });
+      console.log('[Videos] Save request:', { studentId, clubId, challengeId, challengeName, videoHash: videoHash?.substring(0, 8) });
       
       if (!studentId || !clubId || !challengeId || !videoUrl) {
         console.log('[Videos] Missing fields:', { studentId: !!studentId, clubId: !!clubId, challengeId: !!challengeId, videoUrl: !!videoUrl });
@@ -1970,10 +1970,29 @@ export function registerRoutes(app: Express) {
         });
       }
 
-      // First submission today - INSERT new record
+      // AI Pre-Screening: Check for duplicate video content using hash (fingerprint)
+      let aiFlag = 'green';
+      let aiFlagReason = '';
+      
+      if (videoHash) {
+        const duplicateHashResult = await db.execute(sql`
+          SELECT id, student_id, created_at FROM challenge_videos 
+          WHERE video_hash = ${videoHash}
+          AND created_at > NOW() - INTERVAL '30 days'
+          LIMIT 1
+        `);
+        
+        if ((duplicateHashResult as any[]).length > 0) {
+          aiFlag = 'red';
+          aiFlagReason = 'Duplicate video content detected (same file uploaded before)';
+          console.log(`[AI-Screen] RED FLAG: Duplicate video hash detected for student ${studentId}, hash: ${videoHash.substring(0, 8)}...`);
+        }
+      }
+
+      // First submission today - INSERT new record with hash and AI flag
       const result = await db.execute(sql`
-        INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, created_at, updated_at)
-        VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeId}, ${challengeName || ''}, ${challengeCategory || ''}, ${videoUrl}, ${videoKey || ''}, ${score || 0}, 'pending', NOW(), NOW())
+        INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, video_hash, score, status, ai_flag, ai_flag_reason, created_at, updated_at)
+        VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeId}, ${challengeName || ''}, ${challengeCategory || ''}, ${videoUrl}, ${videoKey || ''}, ${videoHash || null}, ${score || 0}, 'pending', ${aiFlag}, ${aiFlagReason || null}, NOW(), NOW())
         RETURNING id
       `);
       const video = (result as any[])[0];
@@ -3317,7 +3336,7 @@ export function registerRoutes(app: Express) {
   // Submit gauntlet challenge (with PB tracking)
   app.post('/api/gauntlet/submit', async (req: Request, res: Response) => {
     try {
-      const { challengeId, studentId, score, proofType, videoUrl } = req.body;
+      const { challengeId, studentId, score, proofType, videoUrl, videoHash } = req.body;
       
       if (!challengeId || !studentId || score === undefined) {
         return res.status(400).json({ error: 'challengeId, studentId, and score are required' });
@@ -3410,12 +3429,31 @@ export function registerRoutes(app: Express) {
         const studentClubId = (studentClubResult as any[])[0]?.club_id;
         
         if (studentClubId && videoUrl) {
+          // Check for duplicate video content using hash (fingerprint)
+          let aiFlag = 'green';
+          let aiFlagReason = '';
+          
+          if (videoHash) {
+            const duplicateHashResult = await db.execute(sql`
+              SELECT id FROM challenge_videos 
+              WHERE video_hash = ${videoHash}
+              AND created_at > NOW() - INTERVAL '30 days'
+              LIMIT 1
+            `);
+            
+            if ((duplicateHashResult as any[]).length > 0) {
+              aiFlag = 'red';
+              aiFlagReason = 'Duplicate video content detected (same file uploaded before)';
+              console.log(`[Gauntlet] RED FLAG: Duplicate video hash for ${studentId}`);
+            }
+          }
+          
           await db.execute(sql`
             INSERT INTO challenge_videos 
-            (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, xp_awarded, created_at, updated_at)
-            VALUES (${studentId}::uuid, ${studentClubId}::uuid, ${challengeId}, ${challenge.name}, 'Daily Training', ${videoUrl}, '', ${score}, 'pending', ${localXp}, NOW(), NOW())
+            (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, video_hash, score, status, xp_awarded, ai_flag, ai_flag_reason, created_at, updated_at)
+            VALUES (${studentId}::uuid, ${studentClubId}::uuid, ${challengeId}, ${challenge.name}, 'Daily Training', ${videoUrl}, '', ${videoHash || null}, ${score}, 'pending', ${localXp}, ${aiFlag}, ${aiFlagReason || null}, NOW(), NOW())
           `);
-          console.log(`[Gauntlet] Video added to coach review queue for ${challenge.name}`);
+          console.log(`[Gauntlet] Video added to coach review queue for ${challenge.name}, AI Flag: ${aiFlag}`);
         }
       }
       

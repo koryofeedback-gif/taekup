@@ -1543,7 +1543,7 @@ async function handlePresignedUpload(req: VercelRequest, res: VercelResponse) {
 async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
-  const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, score, xpAwarded, videoDuration } = parseBody(req);
+  const { studentId, clubId, challengeId, challengeName, challengeCategory, videoUrl, videoKey, videoHash, score, xpAwarded, videoDuration } = parseBody(req);
   
   if (!studentId || !clubId || !challengeId || !videoUrl) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -1575,18 +1575,18 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
     let aiFlag = 'green'; // Default: looks good
     let aiFlagReason = '';
     
-    // Check 1: Duplicate video detection (same videoKey in last 7 days)
-    if (videoKey) {
-      const duplicateCheck = await client.query(
+    // Check 1: Duplicate video content detection using hash (fingerprint)
+    if (videoHash) {
+      const duplicateHashCheck = await client.query(
         `SELECT id FROM challenge_videos 
-         WHERE video_key = $1 AND created_at > NOW() - INTERVAL '7 days'
+         WHERE video_hash = $1 AND created_at > NOW() - INTERVAL '30 days'
          LIMIT 1`,
-        [videoKey]
+        [videoHash]
       );
-      if (duplicateCheck.rows.length > 0) {
+      if (duplicateHashCheck.rows.length > 0) {
         aiFlag = 'red';
-        aiFlagReason = 'Duplicate video detected';
-        console.log(`[AI-Screen] RED FLAG: Duplicate video for student ${studentId}`);
+        aiFlagReason = 'Duplicate video content detected (same file uploaded before)';
+        console.log(`[AI-Screen] RED FLAG: Duplicate video hash for student ${studentId}, hash: ${videoHash.substring(0, 8)}...`);
       }
     }
     
@@ -1663,24 +1663,24 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
       }
     }
     
-    // Insert new video record
+    // Insert new video record with hash for duplicate detection
     let video;
     try {
       const result = await client.query(
-        `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, is_spot_check, auto_approved, xp_awarded, ai_flag, ai_flag_reason, video_duration, verified_at, created_at, updated_at)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
+        `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, video_hash, score, status, is_spot_check, auto_approved, xp_awarded, ai_flag, ai_flag_reason, video_duration, verified_at, created_at, updated_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
          RETURNING id`,
-        [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, isSpotCheck, autoApproved, finalXpAwarded, aiFlag, aiFlagReason, videoDuration || null, autoApproved ? new Date() : null]
+        [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', videoHash || null, score || 0, status, isSpotCheck, autoApproved, finalXpAwarded, aiFlag, aiFlagReason, videoDuration || null, autoApproved ? new Date() : null]
       );
       video = result.rows[0];
     } catch (insertError: any) {
       console.log(`[Videos] Full insert failed, using basic insert: ${insertError.message}`);
       // Fallback to basic INSERT without newer columns
       const result = await client.query(
-        `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, xp_awarded, created_at, updated_at)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+        `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, video_hash, score, status, xp_awarded, created_at, updated_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
          RETURNING id`,
-        [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, finalXpAwarded]
+        [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', videoHash || null, score || 0, status, finalXpAwarded]
       );
       video = result.rows[0];
     }
@@ -4424,7 +4424,7 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
   const body = parseBody(req);
-  const { challengeId, studentId, score, proofType, videoUrl } = body;
+  const { challengeId, studentId, score, proofType, videoUrl, videoHash } = body;
   
   if (!challengeId || !studentId || score === undefined) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -4512,12 +4512,30 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
       const studentClubId = studentClubResult.rows[0]?.club_id;
       
       if (studentClubId && videoUrl) {
+        // Check for duplicate video content using hash (fingerprint)
+        let aiFlag = 'green';
+        let aiFlagReason = '';
+        
+        if (videoHash) {
+          const duplicateHashCheck = await client.query(`
+            SELECT id FROM challenge_videos 
+            WHERE video_hash = $1 AND created_at > NOW() - INTERVAL '30 days'
+            LIMIT 1
+          `, [videoHash]);
+          
+          if (duplicateHashCheck.rows.length > 0) {
+            aiFlag = 'red';
+            aiFlagReason = 'Duplicate video content detected (same file uploaded before)';
+            console.log(`[Gauntlet Submit] RED FLAG: Duplicate video hash for ${studentId}`);
+          }
+        }
+        
         await client.query(`
           INSERT INTO challenge_videos 
-          (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, xp_awarded, created_at, updated_at)
-          VALUES ($1::uuid, $2::uuid, $3, $4, 'Daily Training', $5, '', $6, 'pending', $7, NOW(), NOW())
-        `, [studentId, studentClubId, challengeId, challenge.name, videoUrl, score, localXp]);
-        console.log(`[Gauntlet Submit] Video added to coach review queue for ${challenge.name}`);
+          (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, video_hash, score, status, xp_awarded, ai_flag, ai_flag_reason, created_at, updated_at)
+          VALUES ($1::uuid, $2::uuid, $3, $4, 'Daily Training', $5, '', $6, $7, 'pending', $8, $9, $10, NOW(), NOW())
+        `, [studentId, studentClubId, challengeId, challenge.name, videoUrl, videoHash || null, score, localXp, aiFlag, aiFlagReason || null]);
+        console.log(`[Gauntlet Submit] Video added to coach review queue for ${challenge.name}, AI Flag: ${aiFlag}`);
       }
     }
     
