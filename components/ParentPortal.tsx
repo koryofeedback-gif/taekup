@@ -536,7 +536,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     title: 'Martial Arts Trivia',
                     description: 'Test your knowledge while we reconnect!',
                     type: 'quiz' as const,
-                    xpReward: 50,
+                    xpReward: 15,
                     isStaticFallback: true,
                     quizData: {
                         question: 'What is the traditional bow in martial arts called?',
@@ -628,7 +628,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             console.log('[MysteryChallenge] Handling static fallback locally');
             const quizData = mysteryChallenge.quizData;
             const isCorrect = selectedIndex === quizData?.correctIndex;
-            const xpAwarded = isCorrect ? (mysteryChallenge.xpReward || 10) : 0;
+            // Daily Mystery XP: 15 correct, 5 wrong (everyone gets XP for trying)
+            const xpAwarded = isCorrect ? 15 : 5;
             
             setMysteryCompleted(true);
             setMysteryXpAwarded(xpAwarded);
@@ -4153,7 +4154,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             <div className="p-4">
                                                 <div className="flex justify-between items-center mb-4">
                                                     <span className="text-gray-400 text-sm">Reward:</span>
-                                                    <span className="text-yellow-400 font-black text-lg">+{mysteryChallenge.xpReward} XP</span>
+                                                    <span className="text-yellow-400 font-black text-sm">+15 XP (correct) / +5 XP (trying)</span>
                                                 </div>
                                                 
                                                 {mysteryChallenge.type === 'quiz' && mysteryChallenge.quizData ? (

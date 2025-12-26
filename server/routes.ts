@@ -2300,7 +2300,7 @@ export function registerRoutes(app: Express) {
     title: "Master's Wisdom",
     description: "Test your knowledge of martial arts belt symbolism!",
     type: 'quiz' as const,
-    xpReward: 50,
+    xpReward: 15,
     quizData: {
       question: "What does the color of the White Belt represent?",
       options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
