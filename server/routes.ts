@@ -1960,26 +1960,23 @@ export function registerRoutes(app: Express) {
         AND created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
       `);
       
-      let video;
       if ((existingVideoResult as any[]).length > 0) {
-        // Video already exists today - UPDATE instead of INSERT (idempotent)
-        const existingId = (existingVideoResult as any[])[0].id;
-        console.log('[Videos] Updating existing video for student:', studentId, 'challenge:', challengeId);
-        await db.execute(sql`
-          UPDATE challenge_videos 
-          SET video_url = ${videoUrl}, video_key = ${videoKey || ''}, score = ${score || 0}, updated_at = NOW()
-          WHERE id = ${existingId}
-        `);
-        video = { id: existingId };
-      } else {
-        // First submission today - INSERT new record
-        const result = await db.execute(sql`
-          INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, created_at, updated_at)
-          VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeId}, ${challengeName || ''}, ${challengeCategory || ''}, ${videoUrl}, ${videoKey || ''}, ${score || 0}, 'pending', NOW(), NOW())
-          RETURNING id
-        `);
-        video = (result as any[])[0];
+        // Video already exists today - BLOCK duplicate submission
+        console.log('[Videos] Duplicate submission blocked for student:', studentId, 'challenge:', challengeId);
+        return res.status(429).json({
+          error: 'Already submitted',
+          message: 'You already uploaded a video for this challenge today. Try again tomorrow!',
+          alreadyCompleted: true
+        });
       }
+
+      // First submission today - INSERT new record
+      const result = await db.execute(sql`
+        INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, created_at, updated_at)
+        VALUES (${studentId}::uuid, ${clubId}::uuid, ${challengeId}, ${challengeName || ''}, ${challengeCategory || ''}, ${videoUrl}, ${videoKey || ''}, ${score || 0}, 'pending', NOW(), NOW())
+        RETURNING id
+      `);
+      const video = (result as any[])[0];
       
       // Send email notification to coaches
       try {
