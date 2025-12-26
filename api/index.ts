@@ -2847,17 +2847,17 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
         gs.id,
         gs.challenge_id,
         gc.name as challenge_name,
-        gc.category as challenge_category,
+        gc.day_theme as challenge_category,
         gs.proof_type,
-        gs.xp_awarded,
-        gs.global_xp_awarded,
+        gs.local_xp_awarded as xp_awarded,
+        gs.global_points_awarded as global_xp_awarded,
         gs.score,
         gs.is_personal_best,
-        gs.created_at
+        gs.submitted_at as created_at
       FROM gauntlet_submissions gs
       LEFT JOIN gauntlet_challenges gc ON gs.challenge_id = gc.id
       WHERE gs.student_id = $1::uuid
-      ORDER BY gs.created_at DESC
+      ORDER BY gs.submitted_at DESC
       LIMIT 30`,
       [studentId]
     );
