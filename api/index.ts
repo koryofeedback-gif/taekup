@@ -2527,9 +2527,9 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       });
     }
     
-    // FALLBACK CHALLENGE HANDLING: Skip DB lookup, trust frontend
+    // FALLBACK CHALLENGE HANDLING: Create or get fallback challenge, then save to history
     if (isFallbackChallenge) {
-      console.log('🎯 [DailyChallenge] Processing FALLBACK challenge - skipping DB lookup');
+      console.log('🎯 [DailyChallenge] Processing FALLBACK challenge');
       
       // For fallback challenges, trust the frontend's isCorrect or default to true
       const isCorrect = frontendIsCorrect !== undefined ? frontendIsCorrect : true;
@@ -2537,6 +2537,35 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       // Daily Mystery XP values: Correct=15 Local/3 Global, Wrong=5 Local/1 Global
       const localXp = isCorrect ? 15 : 5;
       const globalXp = isCorrect ? 3 : 1;
+      
+      // Ensure a fallback challenge exists in daily_challenges for today
+      const fallbackData = getFallbackChallenge();
+      let fallbackChallengeId: string;
+      
+      const existingFallback = await client.query(
+        `SELECT id FROM daily_challenges WHERE date = $1 AND title = $2 LIMIT 1`,
+        [today, fallbackData.title]
+      );
+      
+      if (existingFallback.rows.length > 0) {
+        fallbackChallengeId = existingFallback.rows[0].id;
+      } else {
+        const insertResult = await client.query(
+          `INSERT INTO daily_challenges (date, target_belt, title, description, xp_reward, type, quiz_data)
+           VALUES ($1, 'all', $2, $3, $4, $5, $6::jsonb)
+           RETURNING id`,
+          [today, fallbackData.title, fallbackData.description, fallbackData.xpReward, 
+           fallbackData.type, JSON.stringify(fallbackData.quizData)]
+        );
+        fallbackChallengeId = insertResult.rows[0].id;
+      }
+      
+      // Save submission to challenge_submissions for history tracking
+      await client.query(
+        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, is_correct, xp_awarded)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)`,
+        [fallbackChallengeId, studentId, validClubId, String(selectedIndex), isCorrect, localXp]
+      );
       
       // Award Local XP using unified helper
       await applyXpDelta(client, studentId, localXp, 'daily_challenge');
