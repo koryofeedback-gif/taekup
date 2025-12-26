@@ -1551,7 +1551,7 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    // CRITICAL: Check if already submitted video for this challenge today (prevent duplicates)
+    // Check if already submitted video for this challenge today
     // Use Postgres DATE_TRUNC in UTC to avoid timezone mismatch
     const existingVideoResult = await client.query(
       `SELECT id FROM challenge_videos 
@@ -1560,14 +1560,10 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
       [studentId, challengeId]
     );
     
-    if (existingVideoResult.rows.length > 0) {
-      console.log('[Videos] Duplicate submission blocked for student:', studentId, 'challenge:', challengeId);
-      client.release();
-      return res.status(429).json({
-        error: 'Already submitted',
-        message: 'You already submitted a video for this challenge today. Try again tomorrow!',
-        alreadyCompleted: true
-      });
+    // Track if this is an update (for idempotent handling)
+    const existingVideoId = existingVideoResult.rows.length > 0 ? existingVideoResult.rows[0].id : null;
+    if (existingVideoId) {
+      console.log('[Videos] Existing video found, will update:', studentId, 'challenge:', challengeId);
     }
 
     // AI Pre-Screening: Check for suspicious patterns
@@ -1662,26 +1658,40 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
       }
     }
     
-    // Try full INSERT with all columns, fallback to basic INSERT if columns don't exist
+    // Insert new or update existing video (idempotent handling)
     let video;
-    try {
-      const result = await client.query(
-        `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, is_spot_check, auto_approved, xp_awarded, ai_flag, ai_flag_reason, video_duration, verified_at, created_at, updated_at)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
-         RETURNING id`,
-        [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, isSpotCheck, autoApproved, finalXpAwarded, aiFlag, aiFlagReason, videoDuration || null, autoApproved ? new Date() : null]
+    if (existingVideoId) {
+      // UPDATE existing video record
+      console.log('[Videos] Updating existing video:', existingVideoId);
+      await client.query(
+        `UPDATE challenge_videos 
+         SET video_url = $1, video_key = $2, score = $3, status = $4, 
+             ai_flag = $5, ai_flag_reason = $6, updated_at = NOW()
+         WHERE id = $7`,
+        [videoUrl, videoKey || '', score || 0, status, aiFlag, aiFlagReason, existingVideoId]
       );
-      video = result.rows[0];
-    } catch (insertError: any) {
-      console.log(`[Videos] Full insert failed, using basic insert: ${insertError.message}`);
-      // Fallback to basic INSERT without newer columns
-      const result = await client.query(
-        `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, xp_awarded, created_at, updated_at)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-         RETURNING id`,
-        [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, finalXpAwarded]
-      );
-      video = result.rows[0];
+      video = { id: existingVideoId };
+    } else {
+      // Try full INSERT with all columns, fallback to basic INSERT if columns don't exist
+      try {
+        const result = await client.query(
+          `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, is_spot_check, auto_approved, xp_awarded, ai_flag, ai_flag_reason, video_duration, verified_at, created_at, updated_at)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
+           RETURNING id`,
+          [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, isSpotCheck, autoApproved, finalXpAwarded, aiFlag, aiFlagReason, videoDuration || null, autoApproved ? new Date() : null]
+        );
+        video = result.rows[0];
+      } catch (insertError: any) {
+        console.log(`[Videos] Full insert failed, using basic insert: ${insertError.message}`);
+        // Fallback to basic INSERT without newer columns
+        const result = await client.query(
+          `INSERT INTO challenge_videos (student_id, club_id, challenge_id, challenge_name, challenge_category, video_url, video_key, score, status, xp_awarded, created_at, updated_at)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+           RETURNING id`,
+          [studentId, clubId, challengeId, challengeName || '', challengeCategory || '', videoUrl, videoKey || '', score || 0, status, finalXpAwarded]
+        );
+        video = result.rows[0];
+      }
     }
     
     // If auto-approved, award XP immediately and update trust tier
