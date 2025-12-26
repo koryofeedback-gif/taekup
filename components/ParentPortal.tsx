@@ -1527,10 +1527,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${start}/${end}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
     }
 
-    // Fetch student's videos on mount
+    // Fetch student's videos on mount and refresh every 30 seconds
     useEffect(() => {
         if (hasPremiumAccess && student.id) {
             fetchMyVideos();
+            // Auto-refresh to pick up coach feedback updates
+            const interval = setInterval(() => {
+                fetchMyVideos();
+            }, 30000);
+            return () => clearInterval(interval);
         }
     }, [hasPremiumAccess, student.id]);
 
