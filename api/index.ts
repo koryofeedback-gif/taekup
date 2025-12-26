@@ -2875,6 +2875,23 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
       [studentId]
     );
 
+    // Fetch Daily Mystery Challenge submissions (from challenge_submissions table)
+    const mysteryResult = await client.query(
+      `SELECT 
+        cs.id,
+        cs.challenge_id,
+        dc.title as challenge_name,
+        cs.is_correct,
+        cs.xp_awarded,
+        cs.completed_at as created_at
+      FROM challenge_submissions cs
+      LEFT JOIN daily_challenges dc ON cs.challenge_id = dc.id
+      WHERE cs.student_id = $1::uuid
+      ORDER BY cs.completed_at DESC
+      LIMIT 20`,
+      [studentId]
+    );
+
     // Map Coach Picks to history format
     const coachPickHistory = coachPicksResult.rows.map(row => {
       const statusMap: Record<string, string> = {
@@ -2930,8 +2947,26 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
       };
     });
 
+    // Map Daily Mystery Challenge to history format
+    const mysteryHistory = mysteryResult.rows.map(row => {
+      return {
+        id: row.id,
+        source: 'mystery',
+        challengeId: row.challenge_id,
+        challengeName: row.challenge_name || 'Daily Mystery',
+        icon: '🎯',
+        category: 'Mystery',
+        status: row.is_correct ? 'CORRECT' : 'WRONG',
+        proofType: 'QUIZ',
+        xpAwarded: row.xp_awarded || 0,
+        globalXp: row.is_correct ? 3 : 1,
+        mode: 'SOLO',
+        completedAt: row.created_at
+      };
+    });
+
     // Combine and sort by date (newest first)
-    const allHistory = [...coachPickHistory, ...gauntletHistory]
+    const allHistory = [...coachPickHistory, ...gauntletHistory, ...mysteryHistory]
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
       .slice(0, 50);
 
