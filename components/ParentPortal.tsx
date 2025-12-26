@@ -4828,7 +4828,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                             <div className="text-right">
                                                 <p className={`font-bold text-xs ${config.color}`}>{config.badge}</p>
-                                                <p className="text-[10px] text-yellow-500 font-bold">+{entry.xpAwarded} XP</p>
+                                                <p className="text-[10px] text-yellow-500 font-bold">
+                                                    +{entry.category === 'Mystery' ? (entry.xpAwarded >= 10 ? 15 : 5) : entry.xpAwarded} XP
+                                                </p>
                                             </div>
                                         </div>
                                     );
