@@ -1683,7 +1683,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 });
 
                 if (!saveResponse.ok) {
-                    throw new Error('Failed to save video record');
+                    const errorData = await saveResponse.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Failed to save video record');
                 }
 
                 setVideoUploadProgress(100);
