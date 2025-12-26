@@ -1768,8 +1768,8 @@ async function handleSaveVideo(req: VercelRequest, res: VercelResponse) {
       aiFlagReason
     });
   } catch (error: any) {
-    console.error('[Videos] Create error:', error.message);
-    return res.status(500).json({ error: 'Failed to save video record' });
+    console.error('[Videos] Create error:', error.message, error.stack);
+    return res.status(500).json({ error: 'Failed to save video record', details: error.message });
   } finally {
     client.release();
   }
