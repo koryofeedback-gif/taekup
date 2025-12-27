@@ -4602,16 +4602,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {/* Habit Tracker List */}
                     {!isEditingHabits ? (
                         <div className="space-y-3">
-                            {activeHabits.map(habit => (
+                            {activeHabits.map(habit => {
+                                const isCompleted = homeDojoChecks[habit.id];
+                                const isLoading = habitLoading[habit.id];
+                                const isDisabled = !isCompleted && atDailyLimit;
+                                
+                                return (
                                 <div 
                                     key={habit.id}
-                                    onClick={() => toggleHabitCheck(habit.id, habit.question)}
+                                    onClick={() => !isDisabled && !isLoading && toggleHabitCheck(habit.id, habit.question)}
                                     className={`p-4 rounded-xl border transition-all flex items-center justify-between group relative
-                                        ${homeDojoChecks[habit.id] 
+                                        ${isCompleted 
                                             ? 'bg-green-900/20 border-green-500/50 cursor-default' 
-                                            : habitLoading[habit.id]
-                                                ? 'bg-gray-800 border-gray-600 cursor-wait opacity-70'
-                                                : 'bg-gray-800 border-gray-700 hover:border-gray-500 cursor-pointer'}`}
+                                            : isDisabled
+                                                ? 'bg-gray-900/50 border-gray-800 cursor-not-allowed opacity-50'
+                                                : isLoading
+                                                    ? 'bg-gray-800 border-gray-600 cursor-wait opacity-70'
+                                                    : 'bg-gray-800 border-gray-700 hover:border-gray-500 cursor-pointer'}`}
                                 >
                                     <div className="flex items-center space-x-4">
                                         <div className="text-3xl bg-gray-900 w-12 h-12 rounded-full flex items-center justify-center shadow-inner">
@@ -4636,7 +4643,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                            );
+                            })}
                             {activeHabits.length === 0 && (
                                 <p className="text-gray-500 text-center italic py-8">No active habits. Click customize to add some!</p>
                             )}
