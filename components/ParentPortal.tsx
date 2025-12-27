@@ -1099,7 +1099,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [habitLoading, setHabitLoading] = useState<Record<string, boolean>>({});
     const [habitXpEarned, setHabitXpEarned] = useState<Record<string, number>>({});
     const [habitXpToday, setHabitXpToday] = useState(0);
-    const [dailyXpCap] = useState(60);
+    const [dailyXpCap, setDailyXpCap] = useState(30); // Default to free tier (30 XP), updated from API
     const [atDailyLimit, setAtDailyLimit] = useState(false);
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
@@ -1143,7 +1143,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     });
                     setHomeDojoChecks(checks);
                     setHabitXpToday(data.totalXpToday || 0);
-                    setAtDailyLimit((data.totalXpToday || 0) >= (data.dailyXpCap || 60));
+                    const cap = data.dailyXpCap || 30;
+                    setDailyXpCap(cap);
+                    setAtDailyLimit((data.totalXpToday || 0) >= cap);
                     
                     // Sync XP from database totalXp (single source of truth)
                     const dbXp = data.totalXp ?? data.lifetimeXp ?? 0;
@@ -1295,8 +1297,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             if (apiData.success) {
                 // Sync with actual values from server (source of truth)
                 setHabitXpToday(apiData.dailyXpEarned || 0);
+                if (typeof apiData.dailyXpCap === 'number') {
+                    setDailyXpCap(apiData.dailyXpCap);
+                }
                 setAtDailyLimit(apiData.atDailyLimit || false);
-                // Show actual XP earned (may include bonuses)
+                // Show actual XP earned
                 if (apiData.xpAwarded > xpToShow) {
                     setHabitXpEarned(prev => ({ ...prev, [habitId]: apiData.xpAwarded }));
                     setTimeout(() => setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 })), 3000);
@@ -1305,11 +1310,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 if (typeof apiData.newTotalXp === 'number') {
                     setRivalStats(prev => ({ ...prev, xp: apiData.newTotalXp }));
                     setServerTotalXP(apiData.newTotalXp);
-                    console.log('[HomeDojo] XP synced from server:', apiData.newTotalXp, 'Daily:', apiData.dailyXpEarned, '/', apiData.dailyXpCap);
-                }
-                // Log bonuses if any
-                if (apiData.bonuses?.length > 0) {
-                    console.log('[HomeDojo] Bonuses:', apiData.bonuses);
                 }
             } else if (apiData.alreadyCompleted) {
                 // Already completed - revert optimistic update
