@@ -3795,7 +3795,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    // SIMPLE: Just read from students.total_xp (the single source of truth)
+    // Get students with their stored total_xp
     const studentsResult = await client.query(`
       SELECT id, name, belt, stripes, COALESCE(total_xp, 0) as total_xp
       FROM students WHERE club_id = $1::uuid`,
@@ -3807,7 +3807,16 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
     monthStart.setHours(0, 0, 0, 0);
     const monthStartStr = monthStart.toISOString();
 
-    // Monthly XP from xp_transactions only (audit log)
+    // Calculate ALL-TIME XP from transactions (source of truth)
+    const allTimeXpResult = await client.query(`
+      SELECT student_id, COALESCE(SUM(amount), 0) as all_time_xp
+      FROM xp_transactions 
+      WHERE student_id IN (SELECT id FROM students WHERE club_id = $1::uuid)
+        AND type = 'EARN'
+      GROUP BY student_id
+    `, [clubId]);
+
+    // Monthly XP from xp_transactions
     const monthlyXpResult = await client.query(`
       SELECT student_id, COALESCE(SUM(amount), 0) as monthly_xp
       FROM xp_transactions 
@@ -3825,18 +3834,47 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
       GROUP BY student_id
     `, [clubId, monthStartStr]);
 
+    const allTimeXpMap = new Map(allTimeXpResult.rows.map((r: any) => [r.student_id, parseInt(r.all_time_xp) || 0]));
     const monthlyXpMap = new Map(monthlyXpResult.rows.map((r: any) => [r.student_id, parseInt(r.monthly_xp) || 0]));
     const monthlyPtsMap = new Map(monthlyPtsResult.rows.map((r: any) => [r.student_id, parseInt(r.monthly_pts) || 0]));
 
-    const leaderboard = studentsResult.rows.map((s: any) => ({
-      id: s.id,
-      name: s.name,
-      belt: s.belt,
-      stripes: s.stripes || 0,
-      totalXP: parseInt(s.total_xp) || 0,
-      monthlyXP: monthlyXpMap.get(s.id) || 0,
-      monthlyPTS: monthlyPtsMap.get(s.id) || 0
-    }))
+    // Auto-sync: Update students.total_xp if it's lower than calculated from transactions
+    const studentsToSync: Array<{id: string, calculatedXp: number}> = [];
+    for (const s of studentsResult.rows) {
+      const calculatedXp = allTimeXpMap.get(s.id) || 0;
+      const storedXp = parseInt(s.total_xp) || 0;
+      if (calculatedXp > storedXp) {
+        studentsToSync.push({ id: s.id, calculatedXp });
+      }
+    }
+    
+    // Batch update any out-of-sync students
+    if (studentsToSync.length > 0) {
+      for (const sync of studentsToSync) {
+        await client.query(
+          `UPDATE students SET total_xp = $1 WHERE id = $2::uuid`,
+          [sync.calculatedXp, sync.id]
+        );
+      }
+      console.log(`[Leaderboard] Auto-synced total_xp for ${studentsToSync.length} students`);
+    }
+
+    // Build leaderboard using the higher of stored or calculated XP
+    const leaderboard = studentsResult.rows.map((s: any) => {
+      const storedXp = parseInt(s.total_xp) || 0;
+      const calculatedXp = allTimeXpMap.get(s.id) || 0;
+      const trueAllTimeXp = Math.max(storedXp, calculatedXp);
+      
+      return {
+        id: s.id,
+        name: s.name,
+        belt: s.belt,
+        stripes: s.stripes || 0,
+        totalXP: trueAllTimeXp,
+        monthlyXP: monthlyXpMap.get(s.id) || 0,
+        monthlyPTS: monthlyPtsMap.get(s.id) || 0
+      };
+    })
     .sort((a: any, b: any) => b.totalXP - a.totalXP)
     .map((s: any, index: number) => ({ ...s, rank: index + 1 }));
 
