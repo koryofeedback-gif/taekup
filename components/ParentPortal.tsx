@@ -3158,6 +3158,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <div className="text-center">
                                 <div className="text-2xl font-black text-purple-400">{(() => {
                                     const match = apiLeaderboardData.find(s => String(s.id) === String(student.id));
+                                    console.log('[Header XP Debug]', { 
+                                        studentId: student.id, 
+                                        apiDataLength: apiLeaderboardData.length,
+                                        firstFewIds: apiLeaderboardData.slice(0,3).map(s => s.id),
+                                        matchFound: !!match,
+                                        matchXP: match?.totalXP,
+                                        serverTotalXP 
+                                    });
                                     if (match) return match.totalXP;
                                     if (apiLeaderboardData.length === 0) return leaderboardLoading ? '...' : serverTotalXP;
                                     return serverTotalXP;
