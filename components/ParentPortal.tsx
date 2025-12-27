@@ -1349,7 +1349,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 const completedCount = Object.values({ ...homeDojoChecks, [habitId]: true }).filter(Boolean).length;
                 const totalActiveHabits = customHabitList.filter(h => h.isActive).length;
                 if (completedCount >= totalActiveHabits && totalActiveHabits > 0) {
-                    setSuccessMessage("PERFECT DAY! You are living like a Black Belt.");
+                    setSuccessMessage("PERFECT DAY! You are living like a True Warrior.");
                     setTimeout(() => setSuccessMessage(null), 5000);
                 } else if (completedCount === 1) {
                     setSuccessMessage("Good start. Discipline increasing.");
@@ -4620,20 +4620,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </button>
                     </div>
 
-                    {/* XP Summary with Daily Cap */}
-                    <div className={`p-3 rounded-lg flex items-center justify-between ${atDailyLimit ? 'bg-gradient-to-r from-orange-900/50 to-red-900/50 border border-orange-500/30' : 'bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border border-yellow-500/30'}`}>
-                        <div>
-                            <span className={`font-bold text-sm ${atDailyLimit ? 'text-orange-400' : 'text-yellow-400'}`}>
-                                {atDailyLimit ? 'Daily Limit Reached!' : "Today's Habit XP"}
-                            </span>
-                            <div className="text-[10px] text-gray-400">Max {dailyXpCap} XP per day</div>
+                    {/* XP Summary */}
+                    {habitXpToday > 0 && (
+                        <div className="p-3 rounded-lg flex items-center justify-between bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border border-yellow-500/30">
+                            <div>
+                                <span className="font-bold text-sm text-yellow-400">Today's Habit XP</span>
+                                <div className="text-[10px] text-gray-400">{hasPremiumAccess ? '6' : '3'} XP per habit</div>
+                            </div>
+                            <div className="text-right">
+                                <span className="font-black text-lg text-yellow-300">+{habitXpToday} XP</span>
+                            </div>
                         </div>
-                        <div className="text-right">
-                            <span className={`font-black text-lg ${atDailyLimit ? 'text-orange-300' : 'text-yellow-300'}`}>
-                                {habitXpToday}/{dailyXpCap} XP
-                            </span>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Success Message */}
                     {successMessage && (
