@@ -1904,19 +1904,26 @@ async function handleGauntletChallenges(req: VercelRequest, res: VercelResponse)
 }
 
 async function handleFamilyChallenges(req: VercelRequest, res: VercelResponse) {
+  console.log('[FamilyChallenges] Request received:', req.method);
+  
   const auth = await verifySuperAdminToken(req);
+  console.log('[FamilyChallenges] Auth result:', auth.valid, auth.error);
+  
   if (!auth.valid) {
     return res.status(401).json({ error: auth.error });
   }
   
   try {
     const db = getDb();
+    console.log('[FamilyChallenges] DB connection obtained');
     
     if (req.method === 'GET') {
+      console.log('[FamilyChallenges] Executing GET query...');
       const challenges = await db`
         SELECT * FROM family_challenges 
         ORDER BY display_order ASC, created_at ASC
       `;
+      console.log('[FamilyChallenges] Query returned', challenges?.length || 0, 'challenges');
       return res.json(challenges);
     }
     
@@ -1937,8 +1944,8 @@ async function handleFamilyChallenges(req: VercelRequest, res: VercelResponse) {
     
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error: any) {
-    console.error('[SuperAdmin] Family challenges error:', error);
-    return res.status(500).json({ error: 'Failed to handle family challenges' });
+    console.error('[FamilyChallenges] Error:', error.message, error.stack);
+    return res.status(500).json({ error: 'Failed to handle family challenges', details: error.message });
   }
 }
 
