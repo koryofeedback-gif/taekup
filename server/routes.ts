@@ -2763,21 +2763,28 @@ export function registerRoutes(app: Express) {
       `);
 
       // Fetch Family Challenge submissions (from family_logs table)
-      const familyResult = await db.execute(sql`
-        SELECT 
-          fl.id,
-          fl.challenge_id,
-          fc.name as challenge_name,
-          fc.icon as challenge_icon,
-          fc.category as challenge_category,
-          fl.xp_awarded,
-          fl.completed_at as created_at
-        FROM family_logs fl
-        LEFT JOIN family_challenges fc ON fl.challenge_id::uuid = fc.id
-        WHERE fl.student_id = ${studentId}::uuid
-        ORDER BY fl.completed_at DESC
-        LIMIT 20
-      `);
+      // Use text comparison to handle both UUID and legacy string IDs
+      // Wrapped in try-catch to prevent breaking history if family tables don't exist
+      let familyResult: any[] = [];
+      try {
+        familyResult = await db.execute(sql`
+          SELECT 
+            fl.id,
+            fl.challenge_id,
+            fc.name as challenge_name,
+            fc.icon as challenge_icon,
+            fc.category as challenge_category,
+            fl.xp_awarded,
+            fl.completed_at as created_at
+          FROM family_logs fl
+          LEFT JOIN family_challenges fc ON fl.challenge_id = fc.id::text
+          WHERE fl.student_id = ${studentId}::uuid
+          ORDER BY fl.completed_at DESC
+          LIMIT 20
+        `) as any[];
+      } catch (famErr: any) {
+        console.log('[ChallengeHistory] Family query skipped:', famErr.message);
+      }
 
       // Map Coach Picks to history format
       const coachPickHistory = (coachPicksResult as any[]).map(row => {

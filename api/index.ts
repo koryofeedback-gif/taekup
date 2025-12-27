@@ -2929,22 +2929,29 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
     );
 
     // Fetch Family Challenge submissions (from family_logs table)
-    const familyResult = await client.query(
-      `SELECT 
-        fl.id,
-        fl.challenge_id,
-        fc.name as challenge_name,
-        fc.icon as challenge_icon,
-        fc.category as challenge_category,
-        fl.xp_awarded,
-        fl.completed_at as created_at
-      FROM family_logs fl
-      LEFT JOIN family_challenges fc ON fl.challenge_id::uuid = fc.id
-      WHERE fl.student_id = $1::uuid
-      ORDER BY fl.completed_at DESC
-      LIMIT 20`,
-      [studentId]
-    );
+    // Use text comparison to handle both UUID and legacy string IDs
+    // Wrapped in try-catch to prevent breaking history if family tables don't exist
+    let familyResult = { rows: [] as any[] };
+    try {
+      familyResult = await client.query(
+        `SELECT 
+          fl.id,
+          fl.challenge_id,
+          fc.name as challenge_name,
+          fc.icon as challenge_icon,
+          fc.category as challenge_category,
+          fl.xp_awarded,
+          fl.completed_at as created_at
+        FROM family_logs fl
+        LEFT JOIN family_challenges fc ON fl.challenge_id = fc.id::text
+        WHERE fl.student_id = $1::uuid
+        ORDER BY fl.completed_at DESC
+        LIMIT 20`,
+        [studentId]
+      );
+    } catch (famErr: any) {
+      console.log('[ChallengeHistory] Family query skipped:', famErr.message);
+    }
 
     // Map Coach Picks to history format
     const coachPickHistory = coachPicksResult.rows.map(row => {
