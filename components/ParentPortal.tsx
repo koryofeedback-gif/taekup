@@ -2830,18 +2830,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // "World champion of yourself" - rewards consistency not difficulty
         const FAMILY_XP = { win: 15, lose: 5, globalWin: 2, globalLose: 1 };
         const familyChallenges = [
-            { id: 'family_pushups', name: 'Parent vs Kid: Pushups', icon: '💪', xp: FAMILY_XP.win, description: 'Who can do more pushups? Beat your parent! Count each rep together and see who gives up first.' },
-            { id: 'family_plank', name: 'Family Plank-Off', icon: '🧱', xp: FAMILY_XP.win, description: 'Plank together side by side. Who drops first loses! Parent times while both hold strong.' },
-            { id: 'family_squat_hold', name: 'The Squat Showdown', icon: '🦵', xp: FAMILY_XP.win, description: 'Hold a wall sit together. Thighs burning? Who can last longer without standing up!' },
-            { id: 'family_statue', name: 'The Statue Challenge', icon: '🧘', xp: FAMILY_XP.win, description: 'Stand on one leg, close your eyes. Who falls first? Focus and balance win!' },
-            { id: 'family_kicks', name: 'Kick Count Battle', icon: '🦶', xp: FAMILY_XP.win, description: 'Parent holds a pillow. Kid kicks for 30 seconds. Parent counts every kick!' },
-            { id: 'family_balance', name: 'Flamingo Stand-Off', icon: '🦩', xp: FAMILY_XP.win, description: 'Both stand on one leg like flamingos. First to put foot down loses. Eyes open!' },
-            { id: 'family_situps', name: 'Sit-Up Showdown', icon: '🏋️', xp: FAMILY_XP.win, description: 'Take turns doing sit-ups. Parent holds feet. Who can do more in 1 minute?' },
-            { id: 'family_dance', name: 'Martial Arts Dance-Off', icon: '💃', xp: FAMILY_XP.win, description: 'Create a 30-second routine mixing kicks and punches. Perform it together!' },
-            { id: 'family_mirror', name: 'Mirror Challenge', icon: '🪞', xp: FAMILY_XP.win, description: 'One person leads with martial arts moves, the other mirrors exactly. Switch after 1 minute!' },
-            { id: 'family_reaction', name: 'Reaction Time Test', icon: '⚡', xp: FAMILY_XP.win, description: 'Parent drops a ruler, kid catches it. Measure where they caught it. Lower = faster reflexes!' },
-            { id: 'family_stretch', name: 'Stretch Together', icon: '🤸', xp: FAMILY_XP.win, description: 'Do a 5-minute stretching routine together. Touch toes, butterfly stretch, reach for the sky!' },
-            { id: 'family_breathing', name: 'Calm Warrior Breathing', icon: '🧘', xp: FAMILY_XP.win, description: 'Sit together, close eyes, breathe deeply for 2 minutes. Focus and relax like true warriors.' },
+            // Strength Battles
+            { id: 'family_earthquake', name: 'The Earthquake Plank', icon: '🧱', xp: FAMILY_XP.win, category: 'Strength', description: 'Parent holds a plank. Kid has 30 seconds to push, pull, or crawl under to break their balance. Parent survives = Parent wins!' },
+            { id: 'family_tunnel', name: 'The Tunnel Bear', icon: '🐻', xp: FAMILY_XP.win, category: 'Strength', description: 'Parent holds a high plank. Kid crawls under, stands up, jumps over legs. Can Kid complete 10 cycles before Parent collapses?' },
+            { id: 'family_pillow', name: 'The Pillow Samurai', icon: '🛋️', xp: FAMILY_XP.win, category: 'Strength', description: 'Sit facing each other, feet interlocked. Do a sit-up and throw a pillow. Catch it, sit-up, throw back. Drop it = lose a life!' },
+            // Agility & Speed Battles
+            { id: 'family_toetag', name: 'Toe Tag', icon: '🦶', xp: FAMILY_XP.win, category: 'Speed', description: 'Stand in fighting stance. Gently tap the top of opponent\'s foot with your foot. First to 5 taps wins!' },
+            { id: 'family_dragon', name: 'The Dragon\'s Tail', icon: '🐉', xp: FAMILY_XP.win, category: 'Speed', description: 'Tuck a sock in your waistband like a tail. Stay in the arena and steal the opponent\'s tail without losing yours!' },
+            { id: 'family_kneeslap', name: 'Knee-Slap Boxing', icon: '🥊', xp: FAMILY_XP.win, category: 'Speed', description: 'Tag the opponent\'s knee with your hand. No blocking with hands - only move legs/hips to evade. First to 10 wins!' },
+            { id: 'family_ruler', name: 'The Ruler Ninja', icon: '📏', xp: FAMILY_XP.win, category: 'Speed', description: 'Parent stands on chair and drops a ruler. Kid catches it. Parent can yell "KIAI!" to distract! Catch below 15cm = Black Belt Reflexes!' },
+            // Balance & Focus
+            { id: 'family_sockwars', name: 'Sock Wars', icon: '🧦', xp: FAMILY_XP.win, category: 'Focus', description: 'Both start on knees on carpet. Wrestle to remove the other person\'s socks. Last one with a sock on wins!' },
+            { id: 'family_mirror', name: 'The Mirror of Doom', icon: '🪞', xp: FAMILY_XP.win, category: 'Focus', description: 'Leader moves slowly, Follower copies. Leader can suddenly FREEZE - if Follower is still moving, they lose! 3 tricks to win.' },
+            { id: 'family_tiger', name: 'The Sleeping Tiger', icon: '🐯', xp: FAMILY_XP.win, category: 'Focus', description: 'Parent lies down eyes closed. Kid creeps up to touch Parent\'s shoulder without being heard. If Parent points correctly, Kid restarts!' },
         ];
 
         // Weekly Challenges

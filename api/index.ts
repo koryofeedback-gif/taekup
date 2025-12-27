@@ -3495,18 +3495,19 @@ const FAMILY_CHALLENGE_XP = { winLocal: 15, winGlobal: 2, loseLocal: 5, loseGlob
 const FAMILY_DAILY_LIMIT = 3; // Max 3 family challenges per day
 
 const FAMILY_CHALLENGES: Record<string, { name: string }> = {
-  'family_pushups': { name: 'Parent vs Kid: Pushups' },
-  'family_plank': { name: 'Family Plank-Off' },
-  'family_squat_hold': { name: 'The Squat Showdown' },
-  'family_statue': { name: 'The Statue Challenge' },
-  'family_kicks': { name: 'Kick Count Battle' },
-  'family_balance': { name: 'Flamingo Stand-Off' },
-  'family_situps': { name: 'Sit-Up Showdown' },
-  'family_reaction': { name: 'Reaction Time Test' },
-  'family_mirror': { name: 'Mirror Challenge' },
-  'family_dance': { name: 'Martial Arts Dance-Off' },
-  'family_stretch': { name: 'Stretch Together' },
-  'family_breathing': { name: 'Calm Warrior Breathing' }
+  // Strength Battles
+  'family_earthquake': { name: 'The Earthquake Plank' },
+  'family_tunnel': { name: 'The Tunnel Bear' },
+  'family_pillow': { name: 'The Pillow Samurai' },
+  // Agility & Speed Battles
+  'family_toetag': { name: 'Toe Tag' },
+  'family_dragon': { name: 'The Dragon\'s Tail' },
+  'family_kneeslap': { name: 'Knee-Slap Boxing' },
+  'family_ruler': { name: 'The Ruler Ninja' },
+  // Balance & Focus
+  'family_sockwars': { name: 'Sock Wars' },
+  'family_mirror': { name: 'The Mirror of Doom' },
+  'family_tiger': { name: 'The Sleeping Tiger' }
 };
 
 async function handleFamilyChallengeSubmit(req: VercelRequest, res: VercelResponse) {
