@@ -177,7 +177,8 @@ export interface LifeSkill {
 
 export interface Habit {
     id: string;
-    question: string; // "Did Hami make his bed?"
+    title?: string; // Warrior-themed name: "Secure the Base"
+    question: string; // Parent sees: "Did they make their bed?"
     category: 'Character' | 'Chores' | 'School' | 'Health' | 'Custom' | 'Martial Arts' | 'Family';
     icon: string;
     isActive: boolean;

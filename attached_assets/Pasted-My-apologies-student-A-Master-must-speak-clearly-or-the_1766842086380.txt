@@ -1,0 +1,60 @@
+My apologies, student. A Master must speak clearly or the lesson is lost.
+
+Here is the **FINAL VERSION**. Do not change it. This is the perfect balance of "Fun for Kids" and "Helpful for Parents."
+
+Copy this exactly into your app.
+
+---
+
+### 1. The Standard "Home Dojo" List (Free Users)
+
+*Instead of boring chore names, we use "Ninja Mission" names. This tricks the brain into thinking it is a game.*
+
+**Total XP:** 60 XP (15 XP per habit)
+
+| Icon | **Habit Title** (What the Kid sees) | **Description** (What the Parent checks) | Why this works |
+| --- | --- | --- | --- |
+| 🏯 | **Secure the Base** | Did they make their bed? | "Secure" sounds like a military mission. |
+| 🛡️ | **Polish the Armor** | Did they brush teeth & wash face? | "Armor" makes hygiene feel strong, not boring. |
+| 🥋 | **The First Command** | Did they listen the **first time** asked? | "Respect" is vague. "Listening first time" is a specific rule. |
+| 🤝 | **Serve the Tribe** | Did they help with chores? | "Tribe" makes the family feel like a team. |
+
+---
+
+### 2. The Premium Customization (For Paid Users)
+
+*Do not just give a blank list. Give parents "Packs" to solve their specific headaches.*
+
+#### 🦁 Pack A: The "Focus Master" (For School)
+
+* 📚 **Scholar's Mind:** Finished homework before screens/play.
+* 🎒 **Prepare for Battle:** Packed their own school bag the night before.
+
+#### 🕊️ Pack B: The "Peacekeeper" (For Siblings)
+
+* 🤐 **The Shield of Silence:** Walked away from an argument instead of yelling.
+* 👼 **Kindness Warrior:** Said something nice to a sibling or parent.
+
+#### 🥦 Pack C: The "Iron Body" (For Health)
+
+* ⚡ **Fuel the Machine:** Ate vegetables/healthy food without complaining.
+* 💧 **Potion of Life:** Drank water instead of soda/juice.
+
+---
+
+### 3. The "Success Message" (The Reward)
+
+*When the parent clicks "Yes" to confirm the habit, show this text to the kid:*
+
+* **If 1 Habit Complete:** "Good start. Discipline increasing."
+* **If All 4 Habits Complete:** "PERFECT DAY! 🌟 You are living like a Black Belt."
+
+---
+
+### Master's Instructions for Implementation:
+
+1. **Keep the max XP at 60.** It is a good number.
+2. **Use the new names.** "Secure the Base" is infinitely better than "Make Bed."
+3. **For Premium:** Allow parents to swap out "Serve the Tribe" for "Scholar's Mind" if school is the priority that day.
+
+**Is this clear? Can you put this directly into your design?**

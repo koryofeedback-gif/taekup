@@ -1104,10 +1104,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
     const defaultHabits: Habit[] = [
-        { id: 'made_bed', question: 'Did they make their bed?', category: 'Chores', icon: '🛏️', isActive: true },
-        { id: 'brushed_teeth', question: 'Did they brush their teeth?', category: 'Health', icon: '🦷', isActive: true },
-        { id: 'showed_respect', question: 'Did they show respect to parents?', category: 'Character', icon: '🙇', isActive: true },
-        { id: 'did_chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: true },
+        { id: 'secure_base', question: 'Did they make their bed?', category: 'Chores', icon: '🏯', isActive: true, title: 'Secure the Base' },
+        { id: 'polish_armor', question: 'Did they brush teeth & wash face?', category: 'Health', icon: '🛡️', isActive: true, title: 'Polish the Armor' },
+        { id: 'first_command', question: 'Did they listen the first time asked?', category: 'Character', icon: '🥋', isActive: true, title: 'The First Command' },
+        { id: 'serve_tribe', question: 'Did they help with chores?', category: 'Chores', icon: '🤝', isActive: true, title: 'Serve the Tribe' },
     ];
     const [customHabitList, setCustomHabitList] = useState<Habit[]>(student.customHabits?.length ? student.customHabits : defaultHabits);
     // Custom habit creation state
@@ -4613,11 +4613,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                         <div>
                                             <h4 className={`font-bold text-base ${homeDojoChecks[habit.id] ? 'text-green-400' : 'text-white'}`}>
-                                                {habit.question}
+                                                {habit.title || habit.question}
                                             </h4>
-                                            <span className="text-[10px] uppercase font-bold text-gray-500 bg-gray-900 px-2 py-0.5 rounded mt-1 inline-block">
-                                                {habit.category}
-                                            </span>
+                                            <p className="text-xs text-gray-400 mt-0.5">{habit.question}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
