@@ -2927,7 +2927,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             .map(s => {
                 // Find this student's XP from fresh API data (same for everyone)
                 const apiStudent = apiLeaderboardData.find(a => a.id === s.id);
-                const freshXP = apiStudent?.totalXP ?? 0;
+                // Use API data, fall back to stored totalXP for the student
+                const freshXP = apiStudent?.totalXP ?? s.totalXP ?? 0;
                 return {
                     ...s,
                     displayXP: freshXP,
