@@ -4422,9 +4422,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             <span className="mr-2">💝</span> Family Bonding Benefits
                                         </h5>
                                         <ul className="text-gray-400 text-xs space-y-1">
-                                            <li>• Kids earn XP even when they lose (50%)</li>
-                                            <li>• Parents can let kids win for morale!</li>
-                                            <li>• Great for practicing at home</li>
+                                            <li>• Winner: +15 XP (+2 Global)</li>
+                                            <li>• Loser: +5 XP (+1 Global) - everyone wins!</li>
+                                            <li>• Max 3 challenges per day</li>
                                             <li>• Builds family martial arts culture</li>
                                         </ul>
                                     </div>
