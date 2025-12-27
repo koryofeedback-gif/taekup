@@ -3489,22 +3489,24 @@ async function handleDeleteCustomHabit(req: VercelRequest, res: VercelResponse, 
 // =====================================================
 
 // Server-side family challenge definitions (canonical XP values)
-const FAMILY_CHALLENGES: Record<string, { name: string; baseXp: number }> = {
-  // HARD tier (100+ XP)
-  'family_pushups': { name: 'Parent vs Kid: Pushups', baseXp: 100 },
-  'family_plank': { name: 'Family Plank-Off', baseXp: 120 },
-  'family_squat_hold': { name: 'The Squat Showdown', baseXp: 100 },
-  // MEDIUM tier (80-99 XP)
-  'family_statue': { name: 'The Statue Challenge', baseXp: 80 },
-  'family_kicks': { name: 'Kick Count Battle', baseXp: 90 },
-  'family_balance': { name: 'Flamingo Stand-Off', baseXp: 80 },
-  'family_situps': { name: 'Sit-Up Showdown', baseXp: 90 },
-  'family_reaction': { name: 'Reaction Time Test', baseXp: 85 },
-  'family_mirror': { name: 'Mirror Challenge', baseXp: 75 },
-  // EASY tier (50-79 XP)
-  'family_dance': { name: 'Martial Arts Dance-Off', baseXp: 70 },
-  'family_stretch': { name: 'Stretch Together', baseXp: 60 },
-  'family_breathing': { name: 'Calm Warrior Breathing', baseXp: 50 }
+// Family Challenges - Flat XP: 15 Local/2 Global (win), 5 Local/1 Global (lose)
+// Focus on consistency ("world champion of yourself") not tiered rewards
+const FAMILY_CHALLENGE_XP = { winLocal: 15, winGlobal: 2, loseLocal: 5, loseGlobal: 1 };
+const FAMILY_DAILY_LIMIT = 3; // Max 3 family challenges per day
+
+const FAMILY_CHALLENGES: Record<string, { name: string }> = {
+  'family_pushups': { name: 'Parent vs Kid: Pushups' },
+  'family_plank': { name: 'Family Plank-Off' },
+  'family_squat_hold': { name: 'The Squat Showdown' },
+  'family_statue': { name: 'The Statue Challenge' },
+  'family_kicks': { name: 'Kick Count Battle' },
+  'family_balance': { name: 'Flamingo Stand-Off' },
+  'family_situps': { name: 'Sit-Up Showdown' },
+  'family_reaction': { name: 'Reaction Time Test' },
+  'family_mirror': { name: 'Mirror Challenge' },
+  'family_dance': { name: 'Martial Arts Dance-Off' },
+  'family_stretch': { name: 'Stretch Together' },
+  'family_breathing': { name: 'Calm Warrior Breathing' }
 };
 
 async function handleFamilyChallengeSubmit(req: VercelRequest, res: VercelResponse) {
@@ -3528,13 +3530,28 @@ async function handleFamilyChallengeSubmit(req: VercelRequest, res: VercelRespon
     return res.status(400).json({ error: 'Invalid challengeId' });
   }
 
-  const baseXp = challenge.baseXp;
-  const xp = won ? baseXp : Math.round(baseXp * 0.5); // Win = full XP, Loss = 50%
+  // Flat XP: 15/5 Local, 2/1 Global (consistency-focused)
+  const localXp = won ? FAMILY_CHALLENGE_XP.winLocal : FAMILY_CHALLENGE_XP.loseLocal;
+  const globalXp = won ? FAMILY_CHALLENGE_XP.winGlobal : FAMILY_CHALLENGE_XP.loseGlobal;
   const today = new Date().toISOString().split('T')[0];
 
   const client = await pool.connect();
   try {
-    // Check if already completed today (1x daily limit per challenge)
+    // Check daily limit (3 family challenges per day total)
+    const dailyCount = await client.query(
+      `SELECT COUNT(*) as count FROM family_logs WHERE student_id = $1::uuid AND completed_at = $2::date`,
+      [studentId, today]
+    );
+    
+    if (parseInt(dailyCount.rows[0].count) >= FAMILY_DAILY_LIMIT) {
+      return res.status(200).json({
+        success: false,
+        dailyLimitReached: true,
+        message: `You've completed ${FAMILY_DAILY_LIMIT} family challenges today! Come back tomorrow.`
+      });
+    }
+
+    // Check if already completed this specific challenge today
     const existing = await client.query(
       `SELECT id FROM family_logs WHERE student_id = $1::uuid AND challenge_id = $2 AND completed_at = $3::date`,
       [studentId, challengeId, today]
@@ -3551,20 +3568,27 @@ async function handleFamilyChallengeSubmit(req: VercelRequest, res: VercelRespon
     // Insert into family_logs
     await client.query(
       `INSERT INTO family_logs (student_id, challenge_id, xp_awarded, completed_at) VALUES ($1::uuid, $2, $3, $4::date)`,
-      [studentId, challengeId, xp, today]
+      [studentId, challengeId, localXp, today]
     );
 
-    // Update student's total_xp using unified helper
-    const newTotalXp = await applyXpDelta(client, studentId, xp, 'family_challenge');
+    // Update student's Local XP using unified helper
+    const newTotalXp = await applyXpDelta(client, studentId, localXp, 'family_challenge');
+    
+    // Update student's Global XP
+    await client.query(
+      `UPDATE students SET global_rank_points = COALESCE(global_rank_points, 0) + $1 WHERE id = $2::uuid`,
+      [globalXp, studentId]
+    );
 
-    console.log(`[FamilyChallenge] "${challengeId}" completed: +${xp} XP, won: ${won}, new total_xp: ${newTotalXp}`);
+    console.log(`[FamilyChallenge] "${challengeId}" completed: +${localXp} Local XP, +${globalXp} Global, won: ${won}`);
 
     return res.json({
       success: true,
-      xpAwarded: xp,
+      xpAwarded: localXp,
+      globalXp,
       newTotalXp,
       won: won || false,
-      message: `Family challenge completed! +${xp} XP earned.`
+      message: `Family challenge completed! +${localXp} XP (+${globalXp} Global)`
     });
   } catch (error: any) {
     console.error('[FamilyChallenge] Submit error:', error.message);

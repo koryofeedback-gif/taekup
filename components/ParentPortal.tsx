@@ -2826,23 +2826,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }] : []),
         ];
         
-        // Family challenge pairs - Trust System only (parent verifies)
+        // Family challenge pairs - Flat XP: 15/5 Local, 2/1 Global (consistency-focused)
+        // "World champion of yourself" - rewards consistency not difficulty
+        const FAMILY_XP = { win: 15, lose: 5, globalWin: 2, globalLose: 1 };
         const familyChallenges = [
-            // HARD tier challenges (100+ XP)
-            { id: 'family_pushups', name: 'Parent vs Kid: Pushups', icon: '💪', xp: 100, tier: 'Hard', description: 'Who can do more pushups? Beat your parent! Count each rep together and see who gives up first.' },
-            { id: 'family_plank', name: 'Family Plank-Off', icon: '🧱', xp: 120, tier: 'Hard', description: 'Plank together side by side. Who drops first loses! Parent times while both hold strong.' },
-            { id: 'family_squat_hold', name: 'The Squat Showdown', icon: '🦵', xp: 100, tier: 'Hard', description: 'Hold a wall sit together. Thighs burning? Who can last longer without standing up!' },
-            // MEDIUM tier challenges (80-99 XP)
-            { id: 'family_statue', name: 'The Statue Challenge', icon: '🧘', xp: 80, tier: 'Medium', description: 'Stand on one leg, close your eyes. Who falls first? Focus and balance win!' },
-            { id: 'family_kicks', name: 'Kick Count Battle', icon: '🦶', xp: 90, tier: 'Medium', description: 'Parent holds a pillow. Kid kicks for 30 seconds. Parent counts every kick!' },
-            { id: 'family_balance', name: 'Flamingo Stand-Off', icon: '🦩', xp: 80, tier: 'Medium', description: 'Both stand on one leg like flamingos. First to put foot down loses. Eyes open!' },
-            { id: 'family_situps', name: 'Sit-Up Showdown', icon: '🏋️', xp: 90, tier: 'Medium', description: 'Take turns doing sit-ups. Parent holds feet. Who can do more in 1 minute?' },
-            // FUN & CREATIVE challenges
-            { id: 'family_dance', name: 'Martial Arts Dance-Off', icon: '💃', xp: 70, tier: 'Easy', description: 'Create a 30-second routine mixing kicks and punches. Perform it together!' },
-            { id: 'family_mirror', name: 'Mirror Challenge', icon: '🪞', xp: 75, tier: 'Medium', description: 'One person leads with martial arts moves, the other mirrors exactly. Switch after 1 minute!' },
-            { id: 'family_reaction', name: 'Reaction Time Test', icon: '⚡', xp: 85, tier: 'Medium', description: 'Parent drops a ruler, kid catches it. Measure where they caught it. Lower = faster reflexes!' },
-            { id: 'family_stretch', name: 'Stretch Together', icon: '🤸', xp: 60, tier: 'Easy', description: 'Do a 5-minute stretching routine together. Touch toes, butterfly stretch, reach for the sky!' },
-            { id: 'family_breathing', name: 'Calm Warrior Breathing', icon: '🧘', xp: 50, tier: 'Easy', description: 'Sit together, close eyes, breathe deeply for 2 minutes. Focus and relax like true warriors.' },
+            { id: 'family_pushups', name: 'Parent vs Kid: Pushups', icon: '💪', xp: FAMILY_XP.win, description: 'Who can do more pushups? Beat your parent! Count each rep together and see who gives up first.' },
+            { id: 'family_plank', name: 'Family Plank-Off', icon: '🧱', xp: FAMILY_XP.win, description: 'Plank together side by side. Who drops first loses! Parent times while both hold strong.' },
+            { id: 'family_squat_hold', name: 'The Squat Showdown', icon: '🦵', xp: FAMILY_XP.win, description: 'Hold a wall sit together. Thighs burning? Who can last longer without standing up!' },
+            { id: 'family_statue', name: 'The Statue Challenge', icon: '🧘', xp: FAMILY_XP.win, description: 'Stand on one leg, close your eyes. Who falls first? Focus and balance win!' },
+            { id: 'family_kicks', name: 'Kick Count Battle', icon: '🦶', xp: FAMILY_XP.win, description: 'Parent holds a pillow. Kid kicks for 30 seconds. Parent counts every kick!' },
+            { id: 'family_balance', name: 'Flamingo Stand-Off', icon: '🦩', xp: FAMILY_XP.win, description: 'Both stand on one leg like flamingos. First to put foot down loses. Eyes open!' },
+            { id: 'family_situps', name: 'Sit-Up Showdown', icon: '🏋️', xp: FAMILY_XP.win, description: 'Take turns doing sit-ups. Parent holds feet. Who can do more in 1 minute?' },
+            { id: 'family_dance', name: 'Martial Arts Dance-Off', icon: '💃', xp: FAMILY_XP.win, description: 'Create a 30-second routine mixing kicks and punches. Perform it together!' },
+            { id: 'family_mirror', name: 'Mirror Challenge', icon: '🪞', xp: FAMILY_XP.win, description: 'One person leads with martial arts moves, the other mirrors exactly. Switch after 1 minute!' },
+            { id: 'family_reaction', name: 'Reaction Time Test', icon: '⚡', xp: FAMILY_XP.win, description: 'Parent drops a ruler, kid catches it. Measure where they caught it. Lower = faster reflexes!' },
+            { id: 'family_stretch', name: 'Stretch Together', icon: '🤸', xp: FAMILY_XP.win, description: 'Do a 5-minute stretching routine together. Touch toes, butterfly stretch, reach for the sky!' },
+            { id: 'family_breathing', name: 'Calm Warrior Breathing', icon: '🧘', xp: FAMILY_XP.win, description: 'Sit together, close eyes, breathe deeply for 2 minutes. Focus and relax like true warriors.' },
         ];
 
         // Weekly Challenges
