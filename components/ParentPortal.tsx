@@ -1099,7 +1099,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [habitLoading, setHabitLoading] = useState<Record<string, boolean>>({});
     const [habitXpEarned, setHabitXpEarned] = useState<Record<string, number>>({});
     const [habitXpToday, setHabitXpToday] = useState(0);
-    const [dailyXpCap, setDailyXpCap] = useState(30); // Default to free tier (30 XP), updated from API
+    const [dailyXpCap, setDailyXpCap] = useState(9); // Default to free tier (9 XP = 3 habits), updated from API
     const [atDailyLimit, setAtDailyLimit] = useState(false);
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
@@ -1176,7 +1176,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     });
                     setHomeDojoChecks(checks);
                     setHabitXpToday(data.totalXpToday || 0);
-                    const cap = data.dailyXpCap || 30;
+                    const cap = data.dailyXpCap || 9;
                     setDailyXpCap(cap);
                     setAtDailyLimit((data.totalXpToday || 0) >= cap);
                     
@@ -1279,7 +1279,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     
     // Home Dojo Helpers - use habitId as the key for both frontend state and backend storage
     const toggleHabitCheck = async (habitId: string, habitName: string) => {
-        console.log('[HomeDojo] Click detected:', habitId, 'studentId:', studentId);
+        console.log('[HomeDojo] Click detected:', habitId, 'studentId:', studentId, 'hasPremiumAccess:', hasPremiumAccess);
+        console.log('[HomeDojo] Current state: habitXpToday:', habitXpToday, 'dailyXpCap:', dailyXpCap, 'atDailyLimit:', atDailyLimit);
         
         // Prevent double-clicks on already completed habits
         if (homeDojoChecks[habitId]) return;
@@ -1337,8 +1338,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 return;
             }
             
+            console.log('[HomeDojo] API Response:', apiData);
+            
             if (apiData.success) {
                 // Sync with actual values from server (source of truth)
+                console.log('[HomeDojo] Syncing values: dailyXpEarned:', apiData.dailyXpEarned, 'dailyXpCap:', apiData.dailyXpCap, 'newTotalXp:', apiData.newTotalXp);
                 setHabitXpToday(apiData.dailyXpEarned || 0);
                 if (typeof apiData.dailyXpCap === 'number') {
                     setDailyXpCap(apiData.dailyXpCap);
