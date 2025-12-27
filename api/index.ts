@@ -3488,6 +3488,26 @@ async function handleDeleteCustomHabit(req: VercelRequest, res: VercelResponse, 
 // FAMILY CHALLENGES - Trust System (Parent Verified)
 // =====================================================
 
+// Get active family challenges from database (for Parent Portal)
+async function handleGetFamilyChallenges(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT * FROM family_challenges 
+      WHERE is_active = true 
+      ORDER BY display_order ASC, created_at ASC
+    `);
+    return res.json(result.rows);
+  } catch (error: any) {
+    console.error('[FamilyChallenges] GET error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch family challenges' });
+  } finally {
+    client.release();
+  }
+}
+
 // Server-side family challenge definitions (canonical XP values)
 // Family Challenges - Flat XP: 15 Local/2 Global (win), 5 Local/1 Global (lose)
 // Focus on consistency ("world champion of yourself") not tiered rewards
@@ -4831,6 +4851,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/challenges/history' || path === '/challenges/history/') return await handleChallengeHistory(req, res);
     
     // Family Challenges
+    if (path === '/family-challenges' || path === '/family-challenges/') return await handleGetFamilyChallenges(req, res);
     if (path === '/family-challenges/submit' || path === '/family-challenges/submit/') return await handleFamilyChallengeSubmit(req, res);
     if (path === '/family-challenges/status' || path === '/family-challenges/status/') return await handleFamilyChallengeStatus(req, res);
     
