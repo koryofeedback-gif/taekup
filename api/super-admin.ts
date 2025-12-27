@@ -60,13 +60,11 @@ let sql: ReturnType<typeof postgres> | null = null;
 
 function getDb() {
   if (!sql) {
-    // Check for override first (allows using different DB in Vercel without editing locked vars)
-    const dbUrl = process.env.DATABASE_URL_OVERRIDE || process.env.DATABASE_URL;
-    if (!dbUrl) {
+    if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL not configured');
     }
     // Use SSL with rejectUnauthorized false for Neon/serverless compatibility
-    sql = postgres(dbUrl, { 
+    sql = postgres(process.env.DATABASE_URL, { 
       ssl: { rejectUnauthorized: false },
       max: 1,
       idle_timeout: 20,
