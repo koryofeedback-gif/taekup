@@ -2896,7 +2896,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             : (data.students || []);
         
         // If current student not in list, add them (handles edge cases)
-        if (!allStudentsForLeaderboard.find(s => s.id === student.id)) {
+        if (!allStudentsForLeaderboard.find(s => String(s.id) === String(student.id))) {
             allStudentsForLeaderboard = [{
                 ...student,
                 totalXP: serverTotalXP || 0,
@@ -2912,12 +2912,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const monthlyLeaderboard = allStudentsForLeaderboard
             .map(s => {
                 // Find this student's monthly XP from fresh API data
-                const apiStudent = apiLeaderboardData.find(a => a.id === s.id);
+                const apiStudent = apiLeaderboardData.find(a => String(a.id) === String(s.id));
                 // For current user, use serverTotalXP as fallback for monthly (approximation for home users)
-                const freshMonthlyXP = s.id === student.id 
+                const isCurrentStudent = String(s.id) === String(student.id);
+                const freshMonthlyXP = isCurrentStudent 
                     ? (apiStudent?.monthlyXP ?? serverTotalXP ?? 0)
                     : (apiStudent?.monthlyXP ?? 0);
-                return { ...s, displayXP: freshMonthlyXP, isYou: s.id === student.id };
+                return { ...s, displayXP: freshMonthlyXP, isYou: isCurrentStudent };
             })
             .sort((a, b) => b.displayXP - a.displayXP)
             .map((s, i) => ({ ...s, rank: i + 1 }));
@@ -2926,13 +2927,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const allTimeLeaderboard = allStudentsForLeaderboard
             .map(s => {
                 // Find this student's XP from fresh API data (same for everyone)
-                const apiStudent = apiLeaderboardData.find(a => a.id === s.id);
+                const apiStudent = apiLeaderboardData.find(a => String(a.id) === String(s.id));
                 // Use API data, fall back to stored totalXP for the student
+                const isCurrentStudent = String(s.id) === String(student.id);
                 const freshXP = apiStudent?.totalXP ?? s.totalXP ?? 0;
                 return {
                     ...s,
                     displayXP: freshXP,
-                    isYou: s.id === student.id
+                    isYou: isCurrentStudent
                 };
             })
             .sort((a, b) => b.displayXP - a.displayXP)
