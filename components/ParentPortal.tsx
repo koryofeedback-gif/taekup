@@ -4552,12 +4552,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
                     {/* XP Progress Bar */}
                     {(() => {
-                        const freeCap = HOME_DOJO_FREE_CAP;
-                        const premiumCap = HOME_DOJO_PREMIUM_CAP;
-                        const currentCap = hasPremiumAccess ? premiumCap : freeCap;
+                        // Use server-returned dailyXpCap as source of truth (fallback to hasPremiumAccess)
+                        const currentCap = dailyXpCap > 0 ? dailyXpCap : (hasPremiumAccess ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP);
                         const habitsRemaining = Math.max(0, Math.floor((currentCap - habitXpToday) / HOME_DOJO_BASE_XP));
-                        const maxHabits = hasPremiumAccess ? 7 : 3;
-                        const isComplete = habitXpToday >= currentCap;
+                        const maxHabits = currentCap === HOME_DOJO_PREMIUM_CAP ? 7 : 3;
+                        const isComplete = habitXpToday >= currentCap || atDailyLimit;
                         
                         return (
                             <div className={`p-4 rounded-xl ${isComplete ? 'bg-gradient-to-r from-green-900/60 to-emerald-900/60 border border-green-500/50' : 'bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700'}`}>
