@@ -3106,26 +3106,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     )}
 
                     {/* Navigation Tabs */}
-                    <div className="flex gap-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 p-2 rounded-xl border border-gray-700/50">
+                    <div className="grid grid-cols-4 gap-3 p-3 bg-gradient-to-br from-gray-900/90 via-gray-800/90 to-gray-900/90 rounded-2xl border border-gray-600/30 shadow-xl backdrop-blur-sm">
                         {[
-                            { id: 'arena', label: 'Arena', icon: '🎯', badge: 0, color: 'from-red-600 to-orange-600', glow: 'shadow-red-500/30' },
-                            { id: 'mystery', label: 'Mystery', icon: '🎁', badge: mysteryCompleted ? 0 : 1, color: 'from-purple-600 to-pink-600', glow: 'shadow-purple-500/30' },
-                            { id: 'leaderboard', label: 'Ranks', icon: '🏆', badge: 0, color: 'from-yellow-600 to-amber-600', glow: 'shadow-yellow-500/30' },
-                            { id: 'family', label: 'Family', icon: '👨‍👧', badge: 0, color: 'from-pink-600 to-rose-600', glow: 'shadow-pink-500/30' },
+                            { id: 'arena', label: 'Arena', icon: '🎯', badge: 0, color: 'from-orange-500 via-red-500 to-pink-500', glow: 'shadow-orange-500/40', hoverGlow: 'hover:shadow-orange-400/30' },
+                            { id: 'mystery', label: 'Mystery', icon: '🎁', badge: mysteryCompleted ? 0 : 1, color: 'from-violet-500 via-purple-500 to-fuchsia-500', glow: 'shadow-purple-500/40', hoverGlow: 'hover:shadow-purple-400/30' },
+                            { id: 'family', label: 'Family', icon: '👨‍👧', badge: 0, color: 'from-rose-500 via-pink-500 to-red-400', glow: 'shadow-pink-500/40', hoverGlow: 'hover:shadow-pink-400/30' },
+                            { id: 'leaderboard', label: 'Ranks', icon: '🏆', badge: 0, color: 'from-amber-400 via-yellow-500 to-orange-400', glow: 'shadow-yellow-500/40', hoverGlow: 'hover:shadow-yellow-400/30' },
                         ].map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setRivalsView(tab.id as typeof rivalsView)}
-                                className={`flex-1 py-2.5 px-2 rounded-lg text-xs font-bold transition-all duration-300 relative transform ${
+                                className={`relative py-3 px-2 rounded-xl text-xs font-black transition-all duration-300 transform flex flex-col items-center gap-1 ${
                                     rivalsView === tab.id 
-                                        ? `bg-gradient-to-r ${tab.color} text-white shadow-lg ${tab.glow} scale-[1.02]` 
-                                        : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 hover:scale-[1.02]'
+                                        ? `bg-gradient-to-br ${tab.color} text-white shadow-lg ${tab.glow} scale-105 border border-white/20` 
+                                        : `bg-gray-800/80 text-gray-400 hover:text-white hover:bg-gray-700/80 hover:scale-105 ${tab.hoverGlow} border border-gray-700/50 hover:border-gray-500/50`
                                 }`}
                             >
-                                <span className={`mr-1 ${rivalsView === tab.id ? 'animate-bounce' : ''}`} style={{ display: 'inline-block', animationDuration: '1s' }}>{tab.icon}</span>
-                                {tab.label}
+                                <span className={`text-xl ${rivalsView === tab.id ? 'animate-bounce' : 'group-hover:scale-110'}`} style={{ animationDuration: '1.5s' }}>{tab.icon}</span>
+                                <span className="tracking-wide">{tab.label}</span>
                                 {tab.badge > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-yellow-500/50 border border-yellow-300">
+                                    <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-yellow-500/50 border-2 border-white">
                                         {tab.badge}
                                     </span>
                                 )}
