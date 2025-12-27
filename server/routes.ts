@@ -4066,13 +4066,27 @@ export function registerRoutes(app: Express) {
       }
 
       // SERVER-SIDE XP CALCULATION - prevent client tampering
-      const challenge = FAMILY_CHALLENGES[challengeId];
-      if (!challenge) {
-        return res.status(400).json({ error: 'Invalid challengeId' });
+      // Validate challenge exists in database (supports both UUID and legacy IDs)
+      const isUuid = uuidRegex.test(challengeId);
+      let challengeValid = false;
+      
+      if (isUuid) {
+        const challengeCheck = await db.execute(sql`
+          SELECT id, name FROM family_challenges WHERE id = ${challengeId}::uuid AND is_active = true
+        `);
+        challengeValid = (challengeCheck as any[]).length > 0;
       }
       
-      const baseXp = challenge.baseXp;
-      const xp = won ? baseXp : Math.round(baseXp * 0.5); // Win = full XP, Loss = 50%
+      if (!challengeValid) {
+        // Fallback to legacy static challenges for backward compatibility
+        const legacyChallenge = FAMILY_CHALLENGES[challengeId];
+        if (!legacyChallenge) {
+          return res.status(400).json({ error: 'Invalid challengeId' });
+        }
+      }
+      
+      // Flat XP: 15/5 Local (win/lose) - consistency-focused ("world champion of yourself")
+      const xp = won ? 15 : 5;
       const today = new Date().toISOString().split('T')[0];
 
       // Check if already completed today (1x daily limit per challenge)

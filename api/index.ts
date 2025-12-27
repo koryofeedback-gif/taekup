@@ -3553,12 +3553,18 @@ async function handleFamilyChallengeSubmit(req: VercelRequest, res: VercelRespon
   const client = await pool.connect();
   try {
     // SERVER-SIDE XP CALCULATION - Validate challenge exists in database (supports both UUID and legacy IDs)
-    const challengeCheck = await client.query(
-      `SELECT id, name FROM family_challenges WHERE id = $1 AND is_active = true`,
-      [challengeId]
-    );
+    const isUuid = uuidRegex.test(challengeId);
+    let challengeValid = false;
     
-    if (challengeCheck.rows.length === 0) {
+    if (isUuid) {
+      const challengeCheck = await client.query(
+        `SELECT id, name FROM family_challenges WHERE id = $1::uuid AND is_active = true`,
+        [challengeId]
+      );
+      challengeValid = challengeCheck.rows.length > 0;
+    }
+    
+    if (!challengeValid) {
       // Fallback to legacy static challenges for backward compatibility
       const legacyChallenge = FAMILY_CHALLENGES[challengeId];
       if (!legacyChallenge) {
