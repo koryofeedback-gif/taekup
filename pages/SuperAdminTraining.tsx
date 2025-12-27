@@ -60,7 +60,9 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
 
   const fetchFamilyChallenges = async () => {
     try {
-      const response = await fetch('/api/family-challenges?active=false');
+      const response = await fetch('/api/admin/family-challenges', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (!response.ok) throw new Error('Failed to fetch family challenges');
       const data = await response.json();
       setFamilyChallenges(data);

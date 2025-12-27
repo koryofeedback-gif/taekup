@@ -4734,19 +4734,28 @@ export function registerRoutes(app: Express) {
   // FAMILY CHALLENGES CRUD - Super Admin Management
   // =====================================================
 
-  // Get all family challenges (for Parent Portal)
+  // Get active family challenges (for Parent Portal - public)
   app.get('/api/family-challenges', async (req: Request, res: Response) => {
     try {
-      const activeOnly = req.query.active !== 'false';
-      
-      let query = activeOnly
-        ? sql`SELECT * FROM family_challenges WHERE is_active = true ORDER BY display_order ASC, created_at ASC`
-        : sql`SELECT * FROM family_challenges ORDER BY display_order ASC, created_at ASC`;
-      
-      const challenges = await db.execute(query);
+      const challenges = await db.execute(sql`
+        SELECT * FROM family_challenges WHERE is_active = true ORDER BY display_order ASC, created_at ASC
+      `);
       res.json(challenges);
     } catch (error: any) {
       console.error('[FamilyChallenges] List error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch family challenges' });
+    }
+  });
+
+  // Get all family challenges including inactive (for Super Admin)
+  app.get('/api/admin/family-challenges', async (req: Request, res: Response) => {
+    try {
+      const challenges = await db.execute(sql`
+        SELECT * FROM family_challenges ORDER BY display_order ASC, created_at ASC
+      `);
+      res.json(challenges);
+    } catch (error: any) {
+      console.error('[FamilyChallenges] Admin list error:', error.message);
       res.status(500).json({ error: 'Failed to fetch family challenges' });
     }
   });
