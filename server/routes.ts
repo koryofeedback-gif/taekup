@@ -3831,11 +3831,12 @@ export function registerRoutes(app: Express) {
 
   // =====================================================
   // HOME DOJO - HABIT TRACKING (Simplified)
-  // XP System: 3 XP per habit (6 Premium), daily cap 30 XP (60 Premium)
-  // Streaks tracked for display only, no bonus XP
+  // XP System: 3 XP per habit for all users
+  // Free: 3 habits/day = 9 XP cap, Premium: 7 habits/day = 21 XP cap
   // =====================================================
   const HOME_DOJO_BASE_XP = 3;
-  const HOME_DOJO_DAILY_CAP = 30;
+  const HOME_DOJO_FREE_CAP = 9;    // 3 habits × 3 XP
+  const HOME_DOJO_PREMIUM_CAP = 21; // 7 habits × 3 XP
 
   // Helper: Check if student has premium (explicit check - NULL means free)
   async function hasHomeDojoPremium(studentId: string): Promise<boolean> {
@@ -3899,9 +3900,8 @@ export function registerRoutes(app: Express) {
       }
 
       const isPremium = await hasHomeDojoPremium(studentId);
-      const premiumMultiplier = isPremium ? 2 : 1;
-      const habitXp = HOME_DOJO_BASE_XP * premiumMultiplier;
-      const dailyCap = HOME_DOJO_DAILY_CAP * premiumMultiplier;
+      const habitXp = HOME_DOJO_BASE_XP; // 3 XP for all users
+      const dailyCap = isPremium ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP;
 
       const dailyXpResult = await db.execute(sql`
         SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs 
@@ -4025,13 +4025,13 @@ export function registerRoutes(app: Express) {
 
       // Check premium for correct daily cap
       const isPremium = await hasHomeDojoPremium(studentId);
-      const dailyCap = HOME_DOJO_DAILY_CAP * (isPremium ? 2 : 1);
+      const dailyCap = isPremium ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP;
 
       // Return totalXp as single source of truth (also as lifetimeXp for backward compatibility)
       res.json({ completedHabits, totalXpToday, dailyXpCap: dailyCap, totalXp, lifetimeXp: totalXp, streak, isPremium });
     } catch (error: any) {
       console.error('[HomeDojo] Status fetch error:', error.message);
-      res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_DAILY_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
+      res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_FREE_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
     }
   });
 

@@ -1271,8 +1271,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         setIsGeneratingAdvice(false);
     }
 
-    // Home Dojo XP Constants (Free: 3 XP per habit, Premium: 6 XP)
+    // Home Dojo XP Constants (3 XP per habit for all users)
+    // Free: 3 habits/day = 9 XP cap, Premium: 7 habits/day = 21 XP cap
     const HOME_DOJO_BASE_XP = 3;
+    const HOME_DOJO_FREE_CAP = 9;   // 3 habits × 3 XP
+    const HOME_DOJO_PREMIUM_CAP = 21; // 7 habits × 3 XP
     
     // Home Dojo Helpers - use habitId as the key for both frontend state and backend storage
     const toggleHabitCheck = async (habitId: string, habitName: string) => {
@@ -1290,7 +1293,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         // Check if at daily limit before visual feedback
         const wasAtLimit = atDailyLimit;
-        const xpPerHabit = hasPremiumAccess ? HOME_DOJO_BASE_XP * 2 : HOME_DOJO_BASE_XP;
+        const xpPerHabit = HOME_DOJO_BASE_XP; // 3 XP for everyone
         const xpToShow = wasAtLimit ? 0 : xpPerHabit;
         
         // Immediate visual feedback - mark as complete right away
@@ -4544,25 +4547,45 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
 
                     {/* XP Progress Bar */}
-                    <div className={`p-4 rounded-xl ${atDailyLimit ? 'bg-gradient-to-r from-green-900/60 to-emerald-900/60 border border-green-500/50' : 'bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700'}`}>
-                        <div className="flex items-center justify-between mb-2">
-                            <span className={`font-bold text-sm ${atDailyLimit ? 'text-green-400' : 'text-gray-300'}`}>
-                                {atDailyLimit ? '🎉 Daily Goal Complete!' : 'Today\'s Progress'}
-                            </span>
-                            <span className={`font-black text-lg ${atDailyLimit ? 'text-green-300' : 'text-yellow-400'}`}>
-                                {habitXpToday} / {dailyXpCap} XP
-                            </span>
-                        </div>
-                        <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
-                            <div 
-                                className={`h-full rounded-full transition-all duration-500 ${atDailyLimit ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-yellow-500 to-orange-400'}`}
-                                style={{ width: `${Math.min(100, (habitXpToday / dailyXpCap) * 100)}%` }}
-                            />
-                        </div>
-                        <p className="text-[10px] text-gray-500 mt-1.5 text-center">
-                            {hasPremiumAccess ? '6' : '3'} XP per habit • {Math.floor((dailyXpCap - habitXpToday) / (hasPremiumAccess ? 6 : 3))} habits until daily cap
-                        </p>
-                    </div>
+                    {(() => {
+                        const freeCap = HOME_DOJO_FREE_CAP;
+                        const premiumCap = HOME_DOJO_PREMIUM_CAP;
+                        const currentCap = hasPremiumAccess ? premiumCap : freeCap;
+                        const habitsRemaining = Math.max(0, Math.floor((currentCap - habitXpToday) / HOME_DOJO_BASE_XP));
+                        const maxHabits = hasPremiumAccess ? 7 : 3;
+                        const isComplete = habitXpToday >= currentCap;
+                        
+                        return (
+                            <div className={`p-4 rounded-xl ${isComplete ? 'bg-gradient-to-r from-green-900/60 to-emerald-900/60 border border-green-500/50' : 'bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700'}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className={`font-bold text-sm ${isComplete ? 'text-green-400' : 'text-gray-300'}`}>
+                                        {isComplete ? '🎉 Daily Goal Complete!' : 'Today\'s Progress'}
+                                    </span>
+                                    <span className={`font-black text-lg ${isComplete ? 'text-green-300' : 'text-yellow-400'}`}>
+                                        {habitXpToday} / {currentCap} XP
+                                    </span>
+                                </div>
+                                <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                    <div 
+                                        className={`h-full rounded-full transition-all duration-500 ${isComplete ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-yellow-500 to-orange-400'}`}
+                                        style={{ width: `${Math.min(100, (habitXpToday / currentCap) * 100)}%` }}
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1.5 text-center">
+                                    {habitsRemaining > 0 ? `${habitsRemaining} of ${maxHabits} habits remaining today` : 'All habits complete!'}
+                                </p>
+                                
+                                {/* Upgrade prompt for free users */}
+                                {!hasPremiumAccess && (
+                                    <div className="mt-3 p-2 bg-purple-900/30 rounded-lg border border-purple-500/30 text-center">
+                                        <p className="text-[11px] text-purple-300">
+                                            👑 <span className="font-bold">Premium unlocks 7 daily habits</span> for more XP & faster progress
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     {/* Success Message */}
                     {successMessage && (

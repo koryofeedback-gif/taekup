@@ -3186,11 +3186,12 @@ async function handleChallengeVerify(req: VercelRequest, res: VercelResponse) {
 
 // =====================================================
 // HOME DOJO - HABIT TRACKING (Simplified)
-// XP System: 3 XP per habit (6 Premium), daily cap 30 XP (60 Premium)
-// Streaks tracked for display only, no bonus XP
+// XP System: 3 XP per habit for all users
+// Free: 3 habits/day = 9 XP cap, Premium: 7 habits/day = 21 XP cap
 // =====================================================
 const HOME_DOJO_BASE_XP = 3;
-const HOME_DOJO_DAILY_CAP = 30;
+const HOME_DOJO_FREE_CAP = 9;    // 3 habits × 3 XP
+const HOME_DOJO_PREMIUM_CAP = 21; // 7 habits × 3 XP
 
 async function hasHomeDojoPremium(client: any, studentId: string): Promise<boolean> {
   try {
@@ -3247,9 +3248,8 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
     }
 
     const isPremium = await hasHomeDojoPremium(client, trimmedStudentId);
-    const premiumMultiplier = isPremium ? 2 : 1;
-    const habitXp = HOME_DOJO_BASE_XP * premiumMultiplier;
-    const dailyCap = HOME_DOJO_DAILY_CAP * premiumMultiplier;
+    const habitXp = HOME_DOJO_BASE_XP; // 3 XP for all users
+    const dailyCap = isPremium ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP;
 
     const dailyXpResult = await client.query(
       `SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs 
@@ -3403,7 +3403,7 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     );
     
     if (studentResult.rows.length === 0) {
-      return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_DAILY_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
+      return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_FREE_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
     }
     
     const totalXp = studentResult.rows[0]?.xp || 0;
@@ -3418,12 +3418,12 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     const streak = await calculateStreak(client, studentId);
     
     const isPremium = await hasHomeDojoPremium(client, studentId);
-    const dailyCap = HOME_DOJO_DAILY_CAP * (isPremium ? 2 : 1);
+    const dailyCap = isPremium ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP;
 
     return res.json({ completedHabits, totalXpToday, dailyXpCap: dailyCap, totalXp, lifetimeXp: totalXp, streak, isPremium });
   } catch (error: any) {
     console.error('[HomeDojo] Status fetch error:', error.message);
-    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_DAILY_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
+    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_FREE_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
   } finally {
     client.release();
   }
