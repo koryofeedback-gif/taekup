@@ -3475,8 +3475,18 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     );
     const calculatedXp = parseInt(allTimeResult.rows[0]?.all_time_xp) || 0;
     
-    // Use the higher of stored or calculated (matches leaderboard logic)
-    const totalXp = Math.max(storedXp, calculatedXp);
+    // Calculate monthly XP for consistency check
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const monthlyResult = await client.query(
+      `SELECT COALESCE(SUM(amount), 0) as monthly_xp FROM xp_transactions WHERE student_id = $1::uuid AND type = 'EARN' AND created_at >= $2::timestamp`,
+      [studentId, monthStart.toISOString()]
+    );
+    const monthlyXp = parseInt(monthlyResult.rows[0]?.monthly_xp) || 0;
+    
+    // Use the highest of stored, calculated, or monthly (matches leaderboard logic exactly)
+    const totalXp = Math.max(storedXp, calculatedXp, monthlyXp);
 
     const result = await client.query(
       `SELECT habit_name, xp_awarded FROM habit_logs WHERE student_id = $1::uuid AND log_date = $2::date`,
@@ -3869,15 +3879,15 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
       console.log(`[Leaderboard] Auto-synced total_xp for ${studentsToSync.length} students`);
     }
 
-    // Build leaderboard using calculated XP from transactions (source of truth)
-    // All-Time = sum of all transactions, Monthly = sum of this month's transactions
-    // All-Time should always be >= Monthly
+    // Build leaderboard using the highest of: stored XP, calculated from transactions, or monthly
+    // This ensures consistency with Rivals board which uses the same logic
     const leaderboard = studentsResult.rows.map((s: any) => {
+      const storedXp = parseInt(s.total_xp) || 0;
       const calculatedAllTime = allTimeXpMap.get(s.id) || 0;
       const monthlyXp = monthlyXpMap.get(s.id) || 0;
       
-      // All-Time must be at least as much as Monthly (transactions are source of truth)
-      const trueAllTimeXp = Math.max(calculatedAllTime, monthlyXp);
+      // All-Time = max of stored, calculated, or monthly (same as Rivals board)
+      const trueAllTimeXp = Math.max(storedXp, calculatedAllTime, monthlyXp);
       
       return {
         id: s.id,
