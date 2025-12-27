@@ -3495,6 +3495,18 @@ async function handleCreateCustomHabit(req: VercelRequest, res: VercelResponse) 
 
   const client = await pool.connect();
   try {
+    // Ensure table exists (auto-create if missing)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_custom_habits (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        student_id UUID NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        icon VARCHAR(10) DEFAULT '✨',
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    
     const result = await client.query(
       `INSERT INTO user_custom_habits (student_id, title, icon) VALUES ($1::uuid, $2, $3) RETURNING id, title, icon, is_active`,
       [studentId, title.slice(0, 100), icon || '✨']
