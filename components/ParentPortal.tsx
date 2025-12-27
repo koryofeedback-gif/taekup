@@ -1942,13 +1942,43 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <li>✅ AI Parenting Coach</li>
                 </ul>
                 <button 
-                    onClick={() => setIsPremium(true)}
+                    onClick={async () => {
+                        setIsPremium(true);
+                        setServerConfirmedPremium(true);
+                        setDailyXpCap(HOME_DOJO_PREMIUM_CAP);
+                        // Persist to database
+                        if (studentId) {
+                            try {
+                                await fetch('/api/students/upgrade-premium', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ studentId })
+                                });
+                                console.log('[Premium] Upgrade saved to database');
+                            } catch (e) {
+                                console.error('[Premium] Failed to save upgrade:', e);
+                            }
+                        }
+                    }}
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition-all active:scale-95"
                 >
                     Start 7-Day Free Trial
                 </button>
                 <p className="mt-3 text-xs text-gray-500">Then just $4.99/month. Cancel anytime.</p>
-                <button onClick={() => setIsPremium(true)} className="mt-8 text-xs text-gray-600 underline">
+                <button onClick={async () => {
+                    setIsPremium(true);
+                    setServerConfirmedPremium(true);
+                    setDailyXpCap(HOME_DOJO_PREMIUM_CAP);
+                    if (studentId) {
+                        try {
+                            await fetch('/api/students/upgrade-premium', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ studentId })
+                            });
+                        } catch (e) { console.error(e); }
+                    }
+                }} className="mt-8 text-xs text-gray-600 underline">
                     (Simulate Payment Success)
                 </button>
             </div>

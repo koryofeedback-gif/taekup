@@ -3224,6 +3224,37 @@ async function hasHomeDojoPremium(client: any, studentId: string): Promise<boole
   }
 }
 
+// Upgrade student to premium (persist to database)
+async function handleUpgradePremium(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { studentId } = parseBody(req);
+
+  if (!studentId) {
+    return res.status(400).json({ error: 'studentId is required' });
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE students SET premium_status = 'parent_paid', premium_started_at = NOW() WHERE id = $1::uuid`,
+      [studentId]
+    );
+    console.log(`[Premium] Student ${studentId} upgraded to premium`);
+    return res.json({ success: true, message: 'Upgraded to premium' });
+  } catch (error: any) {
+    console.error('[Premium] Upgrade error:', error.message);
+    return res.status(500).json({ error: 'Failed to upgrade' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -4962,6 +4993,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     // Home Dojo - Habit Tracking
     if (path === '/habits/check' || path === '/habits/check/') return await handleHabitCheck(req, res);
+    if (path === '/students/upgrade-premium' || path === '/students/upgrade-premium/') return await handleUpgradePremium(req, res);
     if (path === '/habits/status' || path === '/habits/status/') return await handleHabitStatus(req, res);
     if (path === '/xp/sync' || path === '/xp/sync/') return await handleXpSync(req, res);
     
