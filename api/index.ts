@@ -3251,6 +3251,9 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Student not found' });
     }
     
+    // Check premium BEFORE transaction to avoid transaction abort issues
+    const isPremium = await hasHomeDojoPremium(client, trimmedStudentId);
+    
     await client.query('BEGIN');
 
     const existing = await client.query(
@@ -3262,8 +3265,6 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Already completed', alreadyCompleted: true });
     }
-
-    const isPremium = await hasHomeDojoPremium(client, trimmedStudentId);
     const habitXp = HOME_DOJO_BASE_XP; // 3 XP for all users
     const dailyCap = isPremium ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP;
 
