@@ -2582,7 +2582,7 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
         xpAwarded: localXp,
         globalXp,
         explanation: 'Great job completing the challenge!',
-        message: isCorrect ? `Correct! +${localXp} XP (+${globalXp} Global)` : `Not quite! +${localXp} XP (+${globalXp} Global) for trying!`
+        message: isCorrect ? `Correct! +${localXp} XP` : `Not quite! +${localXp} XP for trying!`
       });
     }
 
@@ -2649,7 +2649,7 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       xpAwarded: localXp,
       globalXp,
       explanation: quizData.explanation || 'Great effort!',
-      message: isCorrect ? `Correct! +${localXp} XP (+${globalXp} Global)` : `Not quite! +${localXp} XP (+${globalXp} Global) for trying. The correct answer was option ${correctIndex + 1}.`
+      message: isCorrect ? `Correct! +${localXp} XP` : `Not quite! +${localXp} XP for trying.`
     });
   } catch (error: any) {
     console.error('🔥 FATAL SUBMIT ERROR:', error);
