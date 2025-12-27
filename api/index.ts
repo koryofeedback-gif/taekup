@@ -3232,6 +3232,18 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
+    // Ensure habit_logs table exists (auto-create if missing)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS habit_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        student_id UUID NOT NULL,
+        habit_name VARCHAR(255) NOT NULL,
+        xp_awarded INTEGER DEFAULT 3,
+        log_date DATE DEFAULT CURRENT_DATE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    
     const today = new Date().toISOString().split('T')[0];
     
     const studentCheck = await client.query(`SELECT id FROM students WHERE id = $1::uuid`, [trimmedStudentId]);
