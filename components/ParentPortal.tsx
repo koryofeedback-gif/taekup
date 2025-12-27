@@ -2884,6 +2884,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         // Use API leaderboard data (all club students) as primary source
         // This ensures we show ALL students in the club, not just parent's linked students
+        const apiStudentMatch = apiLeaderboardData.find(s => String(s.id) === String(student.id));
+        console.log('[Rivals Debug] apiLeaderboardData length:', apiLeaderboardData.length, 'student.id:', student.id, 'apiStudentMatch:', apiStudentMatch);
+        
         let allStudentsForLeaderboard: Array<any> = apiLeaderboardData.length > 0 
             ? apiLeaderboardData.map(s => ({
                 id: s.id,
