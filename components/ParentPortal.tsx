@@ -1363,12 +1363,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             
             if (apiData.success) {
                 // Sync with actual values from server (source of truth)
-                console.log('[HomeDojo] Syncing values: dailyXpEarned:', apiData.dailyXpEarned, 'dailyXpCap:', apiData.dailyXpCap, 'newTotalXp:', apiData.newTotalXp, 'isPremium:', apiData.isPremium);
+                console.log('[HomeDojo] Syncing values: dailyXpEarned:', apiData.dailyXpEarned, 'dailyXpCap:', apiData.dailyXpCap, 'newTotalXp:', apiData.newTotalXp, 'isPremium:', apiData.isPremium, 'localPremium:', isPremium);
                 setHabitXpToday(apiData.dailyXpEarned || 0);
+                
+                // Only sync dailyXpCap if server says premium OR if not locally premium
+                // This prevents downgrading when user has clicked upgrade but DB not updated yet
                 if (typeof apiData.dailyXpCap === 'number') {
-                    setDailyXpCap(apiData.dailyXpCap);
+                    const shouldUsePremiumCap = isPremium || apiData.isPremium || serverConfirmedPremium;
+                    const effectiveCap = shouldUsePremiumCap ? HOME_DOJO_PREMIUM_CAP : apiData.dailyXpCap;
+                    setDailyXpCap(effectiveCap);
+                    console.log('[HomeDojo] Effective cap set to:', effectiveCap, 'shouldUsePremiumCap:', shouldUsePremiumCap);
                 }
-                setAtDailyLimit(apiData.atDailyLimit || false);
+                
+                // Recalculate limit based on effective cap
+                const effectiveCap = (isPremium || apiData.isPremium || serverConfirmedPremium) ? HOME_DOJO_PREMIUM_CAP : (apiData.dailyXpCap || HOME_DOJO_FREE_CAP);
+                setAtDailyLimit((apiData.dailyXpEarned || 0) >= effectiveCap);
                 
                 // Store server-confirmed premium status
                 if (apiData.isPremium === true) {

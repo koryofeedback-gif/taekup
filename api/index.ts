@@ -3199,13 +3199,11 @@ const HOME_DOJO_PREMIUM_CAP = 21; // 7 habits × 3 XP
 
 async function hasHomeDojoPremium(client: any, studentId: string): Promise<boolean> {
   try {
-    // Check multiple sources of premium: student.premium_status, club.parent_premium_enabled, or linked parent's subscription
+    // Check premium sources: student.premium_status or club.parent_premium_enabled
     const result = await client.query(
-      `SELECT s.premium_status, s.parent_id, c.parent_premium_enabled,
-              p.is_premium as parent_is_premium, p.subscription_status as parent_sub_status
+      `SELECT s.premium_status, c.parent_premium_enabled
        FROM students s 
        LEFT JOIN clubs c ON s.club_id = c.id 
-       LEFT JOIN parents p ON s.parent_id = p.id
        WHERE s.id = $1::uuid`,
       [studentId]
     );
@@ -3215,10 +3213,9 @@ async function hasHomeDojoPremium(client: any, studentId: string): Promise<boole
     // Check all premium sources
     const hasPremiumStatus = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid';
     const hasClubPremium = student.parent_premium_enabled === true;
-    const parentHasPremium = student.parent_is_premium === true || student.parent_sub_status === 'active';
     
-    const isPremium = hasPremiumStatus || hasClubPremium || parentHasPremium;
-    console.log(`[HomeDojo] Premium check for ${studentId}: status=${student.premium_status}, clubPremium=${hasClubPremium}, parentPremium=${parentHasPremium} => ${isPremium}`);
+    const isPremium = hasPremiumStatus || hasClubPremium;
+    console.log(`[HomeDojo] Premium check for ${studentId}: status=${student.premium_status}, clubPremium=${hasClubPremium} => ${isPremium}`);
     
     return isPremium;
   } catch (e) {
