@@ -758,3 +758,25 @@ export type GauntletSubmission = typeof gauntletSubmissions.$inferSelect;
 export type NewGauntletSubmission = typeof gauntletSubmissions.$inferInsert;
 export type GauntletPersonalBest = typeof gauntletPersonalBests.$inferSelect;
 export type NewGauntletPersonalBest = typeof gauntletPersonalBests.$inferInsert;
+
+// =====================================================
+// FAMILY CHALLENGES - Parent vs Kid Battles
+// =====================================================
+
+export const familyChallengesCategoryEnum = pgEnum('family_challenge_category', ['Strength', 'Speed', 'Focus']);
+
+export const familyChallenges = pgTable('family_challenges', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description').notNull(),
+  icon: varchar('icon', { length: 10 }).default('🎯'),
+  category: familyChallengesCategoryEnum('category').notNull(),
+  demoVideoUrl: text('demo_video_url'),
+  isActive: boolean('is_active').default(true),
+  displayOrder: integer('display_order').default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export type FamilyChallenge = typeof familyChallenges.$inferSelect;
+export type NewFamilyChallenge = typeof familyChallenges.$inferInsert;
