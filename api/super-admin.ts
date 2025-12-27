@@ -1903,6 +1903,90 @@ async function handleGauntletChallenges(req: VercelRequest, res: VercelResponse)
   }
 }
 
+async function handleFamilyChallenges(req: VercelRequest, res: VercelResponse) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: auth.error });
+  }
+  
+  try {
+    const db = getDb();
+    
+    if (req.method === 'GET') {
+      const challenges = await db`
+        SELECT * FROM family_challenges 
+        ORDER BY display_order ASC, created_at ASC
+      `;
+      return res.json(challenges);
+    }
+    
+    if (req.method === 'POST') {
+      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      
+      if (!name || !description || !category) {
+        return res.status(400).json({ error: 'Name, description, and category are required' });
+      }
+      
+      const result = await db`
+        INSERT INTO family_challenges (name, description, icon, category, demo_video_url, is_active, display_order)
+        VALUES (${name}, ${description}, ${icon || '🎯'}, ${category}, ${demoVideoUrl || null}, ${isActive !== false}, ${displayOrder || 0})
+        RETURNING *
+      `;
+      return res.json(result[0]);
+    }
+    
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Family challenges error:', error);
+    return res.status(500).json({ error: 'Failed to handle family challenges' });
+  }
+}
+
+async function handleFamilyChallengeUpdate(req: VercelRequest, res: VercelResponse, challengeId: string) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: auth.error });
+  }
+  
+  try {
+    const db = getDb();
+    
+    if (req.method === 'PUT' || req.method === 'PATCH') {
+      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      
+      const result = await db`
+        UPDATE family_challenges
+        SET 
+          name = COALESCE(${name}, name),
+          description = COALESCE(${description}, description),
+          icon = COALESCE(${icon}, icon),
+          category = COALESCE(${category}, category),
+          demo_video_url = ${demoVideoUrl ?? null},
+          is_active = COALESCE(${isActive}, is_active),
+          display_order = COALESCE(${displayOrder}, display_order),
+          updated_at = NOW()
+        WHERE id = ${challengeId}::uuid
+        RETURNING *
+      `;
+      
+      if (result.length === 0) {
+        return res.status(404).json({ error: 'Challenge not found' });
+      }
+      return res.json(result[0]);
+    }
+    
+    if (req.method === 'DELETE') {
+      await db`DELETE FROM family_challenges WHERE id = ${challengeId}::uuid`;
+      return res.json({ success: true });
+    }
+    
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Family challenge update error:', error);
+    return res.status(500).json({ error: 'Failed to update family challenge' });
+  }
+}
+
 async function handleGauntletChallengeUpdate(req: VercelRequest, res: VercelResponse, challengeId: string) {
   const auth = await verifySuperAdminToken(req);
   if (!auth.valid) {
@@ -2121,6 +2205,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path.startsWith('/gauntlet-challenges/') || path.startsWith('gauntlet-challenges/')) {
       const challengeId = path.replace('/gauntlet-challenges/', '').replace('gauntlet-challenges/', '').replace('/', '');
       return handleGauntletChallengeUpdate(req, res, challengeId);
+    }
+    
+    // Handle /family-challenges for GET/POST
+    if (path === '/family-challenges' || path === '/family-challenges/' || path === 'family-challenges') {
+      return handleFamilyChallenges(req, res);
+    }
+    
+    // Handle /family-challenges/:id for PUT/DELETE
+    if (path.startsWith('/family-challenges/') || path.startsWith('family-challenges/')) {
+      const challengeId = path.replace('/family-challenges/', '').replace('family-challenges/', '').replace('/', '');
+      return handleFamilyChallengeUpdate(req, res, challengeId);
     }
     
     return res.status(404).json({ error: 'Route not found', path, url, queryPath });

@@ -60,7 +60,7 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
 
   const fetchFamilyChallenges = async () => {
     try {
-      const response = await fetch('/api/admin/family-challenges', {
+      const response = await fetch('/api/super-admin/family-challenges', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch family challenges');
@@ -112,9 +112,9 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
   const handleFamilySave = async (challengeId: string) => {
     setSaving(challengeId);
     try {
-      const response = await fetch(`/api/admin/family-challenges/${challengeId}`, {
+      const response = await fetch(`/api/super-admin/family-challenges/${challengeId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           name: familyForm.name,
           description: familyForm.description,
@@ -146,9 +146,9 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
     
     setSaving('new');
     try {
-      const response = await fetch('/api/admin/family-challenges', {
+      const response = await fetch('/api/super-admin/family-challenges', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           name: familyForm.name,
           description: familyForm.description,
@@ -178,7 +178,7 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
     
     setSaving(id);
     try {
-      const response = await fetch(`/api/admin/family-challenges/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/super-admin/family-challenges/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (!response.ok) throw new Error('Failed to delete');
       setSuccessMessage('Family challenge deleted!');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -193,9 +193,9 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
   const toggleFamilyActive = async (challenge: FamilyChallenge) => {
     setSaving(challenge.id);
     try {
-      const response = await fetch(`/api/admin/family-challenges/${challenge.id}`, {
+      const response = await fetch(`/api/super-admin/family-challenges/${challenge.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ isActive: !challenge.is_active })
       });
       
