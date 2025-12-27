@@ -2552,11 +2552,14 @@ export function registerRoutes(app: Express) {
       `);
       
       if ((alreadyPlayedToday as any[]).length > 0) {
-        console.log('⛔ [DailyChallenge] Already played today - blocking duplicate:', { studentId });
+        const previousXp = (alreadyPlayedToday as any[])[0].amount || 0;
+        const wasCorrect = previousXp >= 15;
+        console.log('⛔ [DailyChallenge] Already played today - blocking duplicate:', { studentId, previousXp, wasCorrect });
         return res.status(400).json({
           error: 'Already completed',
           message: 'You already completed today\'s challenge! Come back tomorrow.',
-          previousXp: (alreadyPlayedToday as any[])[0].amount || 0
+          previousXp,
+          wasCorrect
         });
       }
 

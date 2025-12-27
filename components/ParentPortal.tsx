@@ -551,9 +551,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     const statusResult = await statusCheck.json();
                     if (statusResult.completed || statusResult.alreadyPlayed) {
                         console.log('[MysteryChallenge] User already played today (status check)');
+                        const xpAwarded = statusResult.xpAwarded || statusResult.previousXp || 50;
+                        const wasCorrect = statusResult.wasCorrect !== undefined ? statusResult.wasCorrect : xpAwarded >= 15;
                         setMysteryCompleted(true);
-                        setMysteryXpAwarded(statusResult.xpAwarded || statusResult.previousXp || 50);
-                        setMysteryWasCorrect(true);
+                        setMysteryXpAwarded(xpAwarded);
+                        setMysteryWasCorrect(wasCorrect);
                         setMysteryCompletionMessage('You already completed today\'s challenge!');
                         setMysterySource('api');
                         return; // Don't show fallback
@@ -717,10 +719,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             
             // Handle ALREADY_COMPLETED error from backend (security fix) - treat as SUCCESS UI
             if (result.error === 'Already completed' || result.error === 'ALREADY_COMPLETED' || result.message?.includes('already completed')) {
-                console.log('[MysteryChallenge] Already completed - showing success state');
+                console.log('[MysteryChallenge] Already completed - showing previous result');
+                const xpAwarded = result.previousXp || 50;
+                const wasCorrect = result.wasCorrect !== undefined ? result.wasCorrect : xpAwarded >= 15;
                 setMysteryCompleted(true);
-                setMysteryXpAwarded(result.previousXp || 50);
-                setMysteryWasCorrect(true);
+                setMysteryXpAwarded(xpAwarded);
+                setMysteryWasCorrect(wasCorrect);
                 setMysteryCompletionMessage(result.message || 'You already completed today\'s challenge! Come back tomorrow.');
                 setSelectedQuizAnswer(null);
                 
