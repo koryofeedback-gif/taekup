@@ -2928,6 +2928,24 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
       [studentId]
     );
 
+    // Fetch Family Challenge submissions (from family_logs table)
+    const familyResult = await client.query(
+      `SELECT 
+        fl.id,
+        fl.challenge_id,
+        fc.name as challenge_name,
+        fc.icon as challenge_icon,
+        fc.category as challenge_category,
+        fl.xp_awarded,
+        fl.completed_at as created_at
+      FROM family_logs fl
+      LEFT JOIN family_challenges fc ON fl.challenge_id::uuid = fc.id
+      WHERE fl.student_id = $1::uuid
+      ORDER BY fl.completed_at DESC
+      LIMIT 20`,
+      [studentId]
+    );
+
     // Map Coach Picks to history format
     const coachPickHistory = coachPicksResult.rows.map(row => {
       const statusMap: Record<string, string> = {
@@ -3001,8 +3019,26 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
       };
     });
 
+    // Map Family Challenge to history format
+    const familyHistory = familyResult.rows.map(row => {
+      return {
+        id: row.id,
+        source: 'family',
+        challengeId: row.challenge_id,
+        challengeName: row.challenge_name || 'Family Challenge',
+        icon: row.challenge_icon || '👨‍👧',
+        category: row.challenge_category || 'Family',
+        status: 'COMPLETED',
+        proofType: 'TRUST',
+        xpAwarded: row.xp_awarded || 0,
+        globalXp: row.xp_awarded >= 15 ? 2 : 1, // Win = 2 Global, Lose = 1 Global
+        mode: 'FAMILY',
+        completedAt: row.created_at
+      };
+    });
+
     // Combine and sort by date (newest first)
-    const allHistory = [...coachPickHistory, ...gauntletHistory, ...mysteryHistory]
+    const allHistory = [...coachPickHistory, ...gauntletHistory, ...mysteryHistory, ...familyHistory]
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
       .slice(0, 50);
 
