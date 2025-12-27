@@ -4734,6 +4734,71 @@ export function registerRoutes(app: Express) {
   // FAMILY CHALLENGES CRUD - Super Admin Management
   // =====================================================
 
+  // Super Admin: Get all family challenges (including inactive) - for local dev
+  app.get('/api/super-admin/family-challenges', async (req: Request, res: Response) => {
+    try {
+      const challenges = await db.execute(sql`
+        SELECT * FROM family_challenges ORDER BY display_order ASC, created_at ASC
+      `);
+      res.json(challenges);
+    } catch (error: any) {
+      console.error('[FamilyChallenges] Super Admin list error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch family challenges' });
+    }
+  });
+
+  // Super Admin: Create family challenge - for local dev
+  app.post('/api/super-admin/family-challenges', async (req: Request, res: Response) => {
+    try {
+      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      if (!name || !description || !category) {
+        return res.status(400).json({ error: 'Name, description, and category are required' });
+      }
+      const result = await db.execute(sql`
+        INSERT INTO family_challenges (name, description, icon, category, demo_video_url, is_active, display_order)
+        VALUES (${name}, ${description}, ${icon || '🎯'}, ${category}, ${demoVideoUrl || null}, ${isActive !== false}, ${displayOrder || 0})
+        RETURNING *
+      `);
+      res.json((result as any[])[0]);
+    } catch (error: any) {
+      console.error('[FamilyChallenges] Super Admin create error:', error.message);
+      res.status(500).json({ error: 'Failed to create family challenge' });
+    }
+  });
+
+  // Super Admin: Update family challenge - for local dev
+  app.put('/api/super-admin/family-challenges/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      const result = await db.execute(sql`
+        UPDATE family_challenges
+        SET name = COALESCE(${name}, name), description = COALESCE(${description}, description),
+            icon = COALESCE(${icon}, icon), category = COALESCE(${category}, category),
+            demo_video_url = ${demoVideoUrl ?? null}, is_active = COALESCE(${isActive}, is_active),
+            display_order = COALESCE(${displayOrder}, display_order), updated_at = NOW()
+        WHERE id = ${id}::uuid RETURNING *
+      `);
+      if ((result as any[]).length === 0) return res.status(404).json({ error: 'Challenge not found' });
+      res.json((result as any[])[0]);
+    } catch (error: any) {
+      console.error('[FamilyChallenges] Super Admin update error:', error.message);
+      res.status(500).json({ error: 'Failed to update family challenge' });
+    }
+  });
+
+  // Super Admin: Delete family challenge - for local dev
+  app.delete('/api/super-admin/family-challenges/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await db.execute(sql`DELETE FROM family_challenges WHERE id = ${id}::uuid`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[FamilyChallenges] Super Admin delete error:', error.message);
+      res.status(500).json({ error: 'Failed to delete family challenge' });
+    }
+  });
+
   // Get active family challenges (for Parent Portal - public)
   app.get('/api/family-challenges', async (req: Request, res: Response) => {
     try {
