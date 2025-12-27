@@ -54,6 +54,7 @@ const getBelt = (beltId: string, belts: Belt[]) => belts.find(b => b.id === belt
 export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack, onUpdateStudent }) => {
     const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'home-dojo' | 'rivals'>('home');
     const [isPremium, setIsPremium] = useState(false); // Toggle to simulate upgrade
+    const [serverConfirmedPremium, setServerConfirmedPremium] = useState(false); // Premium status from API
     const [missionChecks, setMissionChecks] = useState<Record<string, boolean>>({});
     const [parentingAdvice, setParentingAdvice] = useState<string | null>(null);
     const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
@@ -1187,6 +1188,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setDailyXpCap(cap);
                     setAtDailyLimit((data.totalXpToday || 0) >= cap);
                     
+                    // Store server-confirmed premium status
+                    if (data.isPremium === true) {
+                        setServerConfirmedPremium(true);
+                        console.log('[HomeDojo] Server confirmed premium status');
+                    }
+                    
                     // Sync XP from database totalXp (single source of truth)
                     const dbXp = data.totalXp ?? data.lifetimeXp ?? 0;
                     setRivalStats(prev => ({ ...prev, xp: dbXp }));
@@ -1224,8 +1231,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Time Machine State
     const [simulatedAttendance, setSimulatedAttendance] = useState(2); // Default 2x week
 
-    // Check if premium is unlocked via Club Sponsorship or User Upgrade
-    const hasPremiumAccess = isPremium || data.clubSponsoredPremium;
+    // Check if premium is unlocked via Club Sponsorship, User Upgrade, or server confirmation
+    const hasPremiumAccess = isPremium || data.clubSponsoredPremium || serverConfirmedPremium;
     
     // Set initial dailyXpCap based on premium status (before API call returns)
     useEffect(() => {
@@ -1356,12 +1363,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             
             if (apiData.success) {
                 // Sync with actual values from server (source of truth)
-                console.log('[HomeDojo] Syncing values: dailyXpEarned:', apiData.dailyXpEarned, 'dailyXpCap:', apiData.dailyXpCap, 'newTotalXp:', apiData.newTotalXp);
+                console.log('[HomeDojo] Syncing values: dailyXpEarned:', apiData.dailyXpEarned, 'dailyXpCap:', apiData.dailyXpCap, 'newTotalXp:', apiData.newTotalXp, 'isPremium:', apiData.isPremium);
                 setHabitXpToday(apiData.dailyXpEarned || 0);
                 if (typeof apiData.dailyXpCap === 'number') {
                     setDailyXpCap(apiData.dailyXpCap);
                 }
                 setAtDailyLimit(apiData.atDailyLimit || false);
+                
+                // Store server-confirmed premium status
+                if (apiData.isPremium === true) {
+                    setServerConfirmedPremium(true);
+                }
                 // Show actual XP earned
                 if (apiData.xpAwarded > xpToShow) {
                     setHabitXpEarned(prev => ({ ...prev, [habitId]: apiData.xpAwarded }));
