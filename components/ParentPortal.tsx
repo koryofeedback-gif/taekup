@@ -276,6 +276,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             
             const result = await response.json();
             
+            if (result.dailyLimitReached) {
+                return { success: false, dailyLimitReached: true };
+            }
+            
             if (result.alreadyCompleted) {
                 setCompletedFamilyToday(prev => prev.includes(challengeId) ? prev : [...prev, challengeId]);
                 return { success: false, alreadyCompleted: true };
@@ -4342,75 +4346,78 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 
                                                 {activeFamilyChallenge === challenge.id && (
                                                     <div className="border-t border-gray-700 p-4 bg-gray-900/50">
-                                                        <div className="grid grid-cols-2 gap-3 mb-4">
-                                                            <div>
-                                                                <label className="text-gray-400 text-xs block mb-1">Your Score</label>
-                                                                <input
-                                                                    type="number"
-                                                                    placeholder="0"
-                                                                    value={myScore}
-                                                                    onChange={(e) => setMyScore(e.target.value)}
-                                                                    className="w-full bg-gray-700 text-white p-2 rounded-lg text-center"
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-gray-400 text-xs block mb-1">Parent's Score</label>
-                                                                <input
-                                                                    type="number"
-                                                                    placeholder="0"
-                                                                    value={parentScore}
-                                                                    onChange={(e) => setParentScore(e.target.value)}
-                                                                    className="w-full bg-gray-700 text-white p-2 rounded-lg text-center"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (!myScore || !parentScore) return;
-                                                                const won = parseInt(myScore) > parseInt(parentScore);
-                                                                
-                                                                // Submit to backend - XP calculated server-side
-                                                                const result = await submitFamilyChallenge(challenge.id, won);
-                                                                
-                                                                if (result.alreadyCompleted) {
-                                                                    setFamilyResult({ show: true, won: false, xp: 0, challengeName: challenge.name + ' (already completed today)' });
+                                                        <p className="text-gray-400 text-xs text-center mb-3">Who won this challenge?</p>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <button
+                                                                onClick={async () => {
+                                                                    const won = true;
+                                                                    const result = await submitFamilyChallenge(challenge.id, won);
+                                                                    
+                                                                    if (result.alreadyCompleted || result.dailyLimitReached) {
+                                                                        setFamilyResult({ show: true, won: false, xp: 0, challengeName: result.dailyLimitReached ? 'Daily limit reached!' : challenge.name + ' (already completed today)' });
+                                                                        setTimeout(() => setFamilyResult(null), 4000);
+                                                                        setActiveFamilyChallenge(null);
+                                                                        return;
+                                                                    }
+                                                                    
+                                                                    if (result.success) {
+                                                                        const xpAwarded = result.xpAwarded || 0;
+                                                                        setRivalStats(prev => ({
+                                                                            ...prev,
+                                                                            wins: prev.wins + 1,
+                                                                            streak: prev.streak + 1,
+                                                                            xp: prev.xp + xpAwarded
+                                                                        }));
+                                                                        setDailyStreak(prev => prev + 1);
+                                                                        setFamilyChallengesCompleted(prev => prev + 1);
+                                                                        setLastChallengeDate(new Date().toISOString().split('T')[0]);
+                                                                        setFamilyResult({ show: true, won: true, xp: xpAwarded, challengeName: challenge.name });
+                                                                    }
                                                                     setTimeout(() => setFamilyResult(null), 4000);
                                                                     setActiveFamilyChallenge(null);
-                                                                    setMyScore('');
-                                                                    setParentScore('');
-                                                                    return;
-                                                                }
-                                                                
-                                                                if (result.success) {
-                                                                    const xpAwarded = result.xpAwarded || 0;
-                                                                    setRivalStats(prev => ({
-                                                                        ...prev,
-                                                                        wins: won ? prev.wins + 1 : prev.wins,
-                                                                        losses: won ? prev.losses : prev.losses + 1,
-                                                                        streak: won ? prev.streak + 1 : 0,
-                                                                        xp: prev.xp + xpAwarded
-                                                                    }));
+                                                                }}
+                                                                disabled={familyChallengeSubmitting}
+                                                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all flex flex-col items-center"
+                                                            >
+                                                                <span className="text-2xl mb-1">🧒</span>
+                                                                <span className="text-sm">Kid Won!</span>
+                                                                <span className="text-[10px] text-green-200">+15 XP</span>
+                                                            </button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    const won = false;
+                                                                    const result = await submitFamilyChallenge(challenge.id, won);
                                                                     
-                                                                    if (won) setDailyStreak(prev => prev + 1);
-                                                                    setFamilyChallengesCompleted(prev => prev + 1);
-                                                                    setLastChallengeDate(new Date().toISOString().split('T')[0]);
+                                                                    if (result.alreadyCompleted || result.dailyLimitReached) {
+                                                                        setFamilyResult({ show: true, won: false, xp: 0, challengeName: result.dailyLimitReached ? 'Daily limit reached!' : challenge.name + ' (already completed today)' });
+                                                                        setTimeout(() => setFamilyResult(null), 4000);
+                                                                        setActiveFamilyChallenge(null);
+                                                                        return;
+                                                                    }
                                                                     
-                                                                    // Show result feedback with server-calculated XP
-                                                                    setFamilyResult({ show: true, won, xp: xpAwarded, challengeName: challenge.name });
-                                                                }
-                                                                
-                                                                // Auto-hide after 4 seconds
-                                                                setTimeout(() => setFamilyResult(null), 4000);
-                                                                
-                                                                setActiveFamilyChallenge(null);
-                                                                setMyScore('');
-                                                                setParentScore('');
-                                                            }}
-                                                            disabled={!myScore || !parentScore || familyChallengeSubmitting}
-                                                            className="w-full bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white font-bold py-2 rounded-lg transition-colors"
-                                                        >
-                                                            {familyChallengeSubmitting ? 'Submitting...' : 'Submit Results'}
-                                                        </button>
+                                                                    if (result.success) {
+                                                                        const xpAwarded = result.xpAwarded || 0;
+                                                                        setRivalStats(prev => ({
+                                                                            ...prev,
+                                                                            losses: prev.losses + 1,
+                                                                            streak: 0,
+                                                                            xp: prev.xp + xpAwarded
+                                                                        }));
+                                                                        setFamilyChallengesCompleted(prev => prev + 1);
+                                                                        setLastChallengeDate(new Date().toISOString().split('T')[0]);
+                                                                        setFamilyResult({ show: true, won: false, xp: xpAwarded, challengeName: challenge.name });
+                                                                    }
+                                                                    setTimeout(() => setFamilyResult(null), 4000);
+                                                                    setActiveFamilyChallenge(null);
+                                                                }}
+                                                                disabled={familyChallengeSubmitting}
+                                                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all flex flex-col items-center"
+                                                            >
+                                                                <span className="text-2xl mb-1">👨</span>
+                                                                <span className="text-sm">Parent Won!</span>
+                                                                <span className="text-[10px] text-blue-200">+5 XP</span>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
