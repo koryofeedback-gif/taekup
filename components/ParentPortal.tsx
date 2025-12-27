@@ -235,6 +235,30 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Daily limit for family challenges - prevent XP farming (now backed by database)
     const [completedFamilyToday, setCompletedFamilyToday] = useState<string[]>([]);
     const [familyChallengeSubmitting, setFamilyChallengeSubmitting] = useState(false);
+    const [familyChallengesList, setFamilyChallengesList] = useState<Array<{
+        id: string;
+        name: string;
+        description: string;
+        icon: string;
+        category: 'Strength' | 'Speed' | 'Focus';
+        demo_video_url: string | null;
+    }>>([]);
+    
+    // Fetch family challenges from database
+    useEffect(() => {
+        const fetchFamilyChallenges = async () => {
+            try {
+                const response = await fetch('/api/family-challenges');
+                if (response.ok) {
+                    const data = await response.json();
+                    setFamilyChallengesList(data);
+                }
+            } catch (error) {
+                console.error('[FamilyChallenge] Failed to fetch challenges:', error);
+            }
+        };
+        fetchFamilyChallenges();
+    }, []);
     
     // Fetch family challenge status from backend on load
     useEffect(() => {
@@ -2833,21 +2857,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Family challenge pairs - Flat XP: 15/5 Local, 2/1 Global (consistency-focused)
         // "World champion of yourself" - rewards consistency not difficulty
         const FAMILY_XP = { win: 15, lose: 5, globalWin: 2, globalLose: 1 };
-        const familyChallenges = [
-            // Strength Battles
-            { id: 'family_earthquake', name: 'The Earthquake Plank', icon: '🧱', xp: FAMILY_XP.win, category: 'Strength', description: 'Parent holds a plank. Kid has 30 seconds to push, pull, or crawl under to break their balance. Parent survives = Parent wins!' },
-            { id: 'family_tunnel', name: 'The Tunnel Bear', icon: '🐻', xp: FAMILY_XP.win, category: 'Strength', description: 'Parent holds a high plank. Kid crawls under, stands up, jumps over legs. Can Kid complete 10 cycles before Parent collapses?' },
-            { id: 'family_pillow', name: 'The Pillow Samurai', icon: '🛋️', xp: FAMILY_XP.win, category: 'Strength', description: 'Sit facing each other, feet interlocked. Do a sit-up and throw a pillow. Catch it, sit-up, throw back. Drop it = lose a life!' },
-            // Agility & Speed Battles
-            { id: 'family_toetag', name: 'Toe Tag', icon: '🦶', xp: FAMILY_XP.win, category: 'Speed', description: 'Stand in fighting stance. Gently tap the top of opponent\'s foot with your foot. First to 5 taps wins!' },
-            { id: 'family_dragon', name: 'The Dragon\'s Tail', icon: '🐉', xp: FAMILY_XP.win, category: 'Speed', description: 'Tuck a sock in your waistband like a tail. Stay in the arena and steal the opponent\'s tail without losing yours!' },
-            { id: 'family_kneeslap', name: 'Knee-Slap Boxing', icon: '🥊', xp: FAMILY_XP.win, category: 'Speed', description: 'Tag the opponent\'s knee with your hand. No blocking with hands - only move legs/hips to evade. First to 10 wins!' },
-            { id: 'family_ruler', name: 'The Ruler Ninja', icon: '📏', xp: FAMILY_XP.win, category: 'Speed', description: 'Parent stands on chair and drops a ruler. Kid catches it. Parent can yell "KIAI!" to distract! Catch below 15cm = Black Belt Reflexes!' },
-            // Balance & Focus
-            { id: 'family_sockwars', name: 'Sock Wars', icon: '🧦', xp: FAMILY_XP.win, category: 'Focus', description: 'Both start on knees on carpet. Wrestle to remove the other person\'s socks. Last one with a sock on wins!' },
-            { id: 'family_mirror', name: 'The Mirror of Doom', icon: '🪞', xp: FAMILY_XP.win, category: 'Focus', description: 'Leader moves slowly, Follower copies. Leader can suddenly FREEZE - if Follower is still moving, they lose! 3 tricks to win.' },
-            { id: 'family_tiger', name: 'The Sleeping Tiger', icon: '🐯', xp: FAMILY_XP.win, category: 'Focus', description: 'Parent lies down eyes closed. Kid creeps up to touch Parent\'s shoulder without being heard. If Parent points correctly, Kid restarts!' },
-        ];
+        // Use database challenges with XP attached
+        const familyChallenges = familyChallengesList.map(c => ({
+            id: c.id,
+            name: c.name,
+            icon: c.icon,
+            xp: FAMILY_XP.win,
+            category: c.category,
+            description: c.description,
+            demoVideoUrl: c.demo_video_url
+        }));
 
         // Weekly Challenges
         const weeklyChallenges = [
