@@ -1339,11 +1339,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         }, 2000);
         
         // API call to persist to database - use habitId as the key
+        // Include premium status from frontend so API uses correct cap
         try {
             const res = await fetch('/api/habits/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId, habitName: habitId })
+                body: JSON.stringify({ studentId, habitName: habitId, isPremiumOverride: hasPremiumAccess })
             });
             const apiData = await res.json();
             

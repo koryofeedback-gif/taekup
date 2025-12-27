@@ -3227,7 +3227,7 @@ async function hasHomeDojoPremium(client: any, studentId: string): Promise<boole
 async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { studentId, habitName } = parseBody(req);
+  const { studentId, habitName, isPremiumOverride } = parseBody(req);
 
   if (!studentId || !habitName) {
     return res.status(400).json({ error: 'studentId and habitName are required' });
@@ -3260,8 +3260,10 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Student not found' });
     }
     
-    // Check premium BEFORE transaction to avoid transaction abort issues
-    const isPremium = await hasHomeDojoPremium(client, trimmedStudentId);
+    // Check premium BEFORE transaction - use frontend override if provided
+    const dbPremium = await hasHomeDojoPremium(client, trimmedStudentId);
+    const isPremium = isPremiumOverride === true || dbPremium;
+    console.log(`[HomeDojo] Premium: dbPremium=${dbPremium}, override=${isPremiumOverride}, final=${isPremium}`);
     
     await client.query('BEGIN');
 
@@ -3276,6 +3278,7 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
     }
     const habitXp = HOME_DOJO_BASE_XP; // 3 XP for all users
     const dailyCap = isPremium ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP;
+    console.log(`[HomeDojo] Using cap: ${dailyCap} (isPremium=${isPremium})`);
 
     const dailyXpResult = await client.query(
       `SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs 
