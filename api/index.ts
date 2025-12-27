@@ -3879,15 +3879,15 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
       console.log(`[Leaderboard] Auto-synced total_xp for ${studentsToSync.length} students`);
     }
 
-    // Build leaderboard using the highest of: stored XP, calculated from transactions, or monthly
-    // This ensures consistency with Rivals board which uses the same logic
+    // Build leaderboard using calculated XP from transactions as single source of truth
+    // This prevents stale stored values from showing incorrect XP
     const leaderboard = studentsResult.rows.map((s: any) => {
-      const storedXp = parseInt(s.total_xp) || 0;
       const calculatedAllTime = allTimeXpMap.get(s.id) || 0;
       const monthlyXp = monthlyXpMap.get(s.id) || 0;
       
-      // All-Time = max of stored, calculated, or monthly (same as Rivals board)
-      const trueAllTimeXp = Math.max(storedXp, calculatedAllTime, monthlyXp);
+      // All-Time = calculated from transactions (true source of truth)
+      // Use Math.max with monthly to handle edge cases where monthly > all-time calculation
+      const trueAllTimeXp = Math.max(calculatedAllTime, monthlyXp);
       
       return {
         id: s.id,
