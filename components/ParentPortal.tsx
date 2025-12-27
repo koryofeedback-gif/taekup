@@ -1290,16 +1290,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         // Check if at daily limit before visual feedback
         const wasAtLimit = atDailyLimit;
-        const xpToShow = wasAtLimit ? 0 : HOME_DOJO_BASE_XP;
+        const xpPerHabit = hasPremiumAccess ? HOME_DOJO_BASE_XP * 2 : HOME_DOJO_BASE_XP;
+        const xpToShow = wasAtLimit ? 0 : xpPerHabit;
         
         // Immediate visual feedback - mark as complete right away
         setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
         setHabitXpEarned(prev => ({ ...prev, [habitId]: xpToShow }));
         setHabitXpToday(prev => prev + xpToShow);
         
+        // Check if we hit the daily limit with this habit
+        const newDailyTotal = habitXpToday + xpToShow;
+        if (newDailyTotal >= dailyXpCap) {
+            setAtDailyLimit(true);
+        }
+        
         // Update rivalStats.xp immediately so header shows new total (only if not at limit)
         if (!wasAtLimit) {
-            setRivalStats(prev => ({ ...prev, xp: prev.xp + HOME_DOJO_BASE_XP }));
+            setRivalStats(prev => ({ ...prev, xp: prev.xp + xpPerHabit }));
         }
         
         setTimeout(() => {
@@ -1321,8 +1328,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 // Revert optimistic updates
                 setHomeDojoChecks(prev => ({ ...prev, [habitId]: false }));
                 if (!wasAtLimit) {
-                    setRivalStats(prev => ({ ...prev, xp: prev.xp - HOME_DOJO_BASE_XP }));
-                    setHabitXpToday(prev => prev - HOME_DOJO_BASE_XP);
+                    setRivalStats(prev => ({ ...prev, xp: prev.xp - xpPerHabit }));
+                    setHabitXpToday(prev => prev - xpPerHabit);
                 }
                 return;
             }
@@ -1361,8 +1368,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
                 // Revert the optimistic XP add
                 if (!wasAtLimit) {
-                    setRivalStats(prev => ({ ...prev, xp: prev.xp - HOME_DOJO_BASE_XP }));
-                    setHabitXpToday(prev => prev - HOME_DOJO_BASE_XP);
+                    setRivalStats(prev => ({ ...prev, xp: prev.xp - xpPerHabit }));
+                    setHabitXpToday(prev => prev - xpPerHabit);
                 }
             }
         } catch (e) {
@@ -1371,8 +1378,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             setHomeDojoChecks(prev => ({ ...prev, [habitId]: false }));
             setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
             if (!wasAtLimit) {
-                setRivalStats(prev => ({ ...prev, xp: prev.xp - HOME_DOJO_BASE_XP }));
-                setHabitXpToday(prev => prev - HOME_DOJO_BASE_XP);
+                setRivalStats(prev => ({ ...prev, xp: prev.xp - xpPerHabit }));
+                setHabitXpToday(prev => prev - xpPerHabit);
             }
         }
     };
@@ -4536,18 +4543,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </button>
                     </div>
 
-                    {/* XP Summary */}
-                    {habitXpToday > 0 && (
-                        <div className="p-3 rounded-lg flex items-center justify-between bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border border-yellow-500/30">
-                            <div>
-                                <span className="font-bold text-sm text-yellow-400">Today's Habit XP</span>
-                                <div className="text-[10px] text-gray-400">{hasPremiumAccess ? '6' : '3'} XP per habit</div>
-                            </div>
-                            <div className="text-right">
-                                <span className="font-black text-lg text-yellow-300">+{habitXpToday} XP</span>
-                            </div>
+                    {/* XP Progress Bar */}
+                    <div className={`p-4 rounded-xl ${atDailyLimit ? 'bg-gradient-to-r from-green-900/60 to-emerald-900/60 border border-green-500/50' : 'bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                            <span className={`font-bold text-sm ${atDailyLimit ? 'text-green-400' : 'text-gray-300'}`}>
+                                {atDailyLimit ? '🎉 Daily Goal Complete!' : 'Today\'s Progress'}
+                            </span>
+                            <span className={`font-black text-lg ${atDailyLimit ? 'text-green-300' : 'text-yellow-400'}`}>
+                                {habitXpToday} / {dailyXpCap} XP
+                            </span>
                         </div>
-                    )}
+                        <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
+                            <div 
+                                className={`h-full rounded-full transition-all duration-500 ${atDailyLimit ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-yellow-500 to-orange-400'}`}
+                                style={{ width: `${Math.min(100, (habitXpToday / dailyXpCap) * 100)}%` }}
+                            />
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-1.5 text-center">
+                            {hasPremiumAccess ? '6' : '3'} XP per habit • {Math.floor((dailyXpCap - habitXpToday) / (hasPremiumAccess ? 6 : 3))} habits until daily cap
+                        </p>
+                    </div>
 
                     {/* Success Message */}
                     {successMessage && (
