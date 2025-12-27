@@ -1109,7 +1109,40 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         { id: 'first_command', question: 'Did they listen the first time asked?', category: 'Character', icon: '🥋', isActive: true, title: 'The First Command' },
         { id: 'serve_tribe', question: 'Did they help with chores?', category: 'Chores', icon: '🤝', isActive: true, title: 'Serve the Tribe' },
     ];
+    
+    // Premium Habit Packs
+    const habitPacks = {
+        focus: {
+            name: 'Focus Master',
+            icon: '🦁',
+            description: 'For school & concentration',
+            habits: [
+                { id: 'scholars_mind', question: 'Finished homework before screens/play?', category: 'School' as const, icon: '📚', isActive: true, title: "Scholar's Mind", isCustom: true },
+                { id: 'prepare_battle', question: 'Packed their own school bag the night before?', category: 'School' as const, icon: '🎒', isActive: true, title: 'Prepare for Battle', isCustom: true },
+            ]
+        },
+        peace: {
+            name: 'Peacekeeper',
+            icon: '🕊️',
+            description: 'For sibling harmony',
+            habits: [
+                { id: 'shield_silence', question: 'Walked away from an argument instead of yelling?', category: 'Character' as const, icon: '🤐', isActive: true, title: 'Shield of Silence', isCustom: true },
+                { id: 'kindness_warrior', question: 'Said something nice to a sibling or parent?', category: 'Family' as const, icon: '👼', isActive: true, title: 'Kindness Warrior', isCustom: true },
+            ]
+        },
+        health: {
+            name: 'Iron Body',
+            icon: '🥦',
+            description: 'For health & nutrition',
+            habits: [
+                { id: 'fuel_machine', question: 'Ate vegetables/healthy food without complaining?', category: 'Health' as const, icon: '⚡', isActive: true, title: 'Fuel the Machine', isCustom: true },
+                { id: 'potion_life', question: 'Drank water instead of soda/juice?', category: 'Health' as const, icon: '💧', isActive: true, title: 'Potion of Life', isCustom: true },
+            ]
+        }
+    };
+    
     const [customHabitList, setCustomHabitList] = useState<Habit[]>(student.customHabits?.length ? student.customHabits : defaultHabits);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     // Custom habit creation state
     const [showCustomForm, setShowCustomForm] = useState(false);
     const [customHabitQuestion, setCustomHabitQuestion] = useState('');
@@ -1310,6 +1343,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 if (typeof apiData.newTotalXp === 'number') {
                     setRivalStats(prev => ({ ...prev, xp: apiData.newTotalXp }));
                     setServerTotalXP(apiData.newTotalXp);
+                }
+                
+                // Show success message based on habits completed
+                const completedCount = Object.values({ ...homeDojoChecks, [habitId]: true }).filter(Boolean).length;
+                const totalActiveHabits = customHabitList.filter(h => h.isActive).length;
+                if (completedCount >= totalActiveHabits && totalActiveHabits > 0) {
+                    setSuccessMessage("PERFECT DAY! You are living like a Black Belt.");
+                    setTimeout(() => setSuccessMessage(null), 5000);
+                } else if (completedCount === 1) {
+                    setSuccessMessage("Good start. Discipline increasing.");
+                    setTimeout(() => setSuccessMessage(null), 3000);
                 }
             } else if (apiData.alreadyCompleted) {
                 // Already completed - revert optimistic update
@@ -4591,6 +4635,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </div>
                     </div>
 
+                    {/* Success Message */}
+                    {successMessage && (
+                        <div className="p-4 rounded-xl bg-gradient-to-r from-yellow-900/60 to-amber-900/60 border border-yellow-500/50 text-center animate-pulse">
+                            <span className="text-2xl mr-2">🌟</span>
+                            <span className="font-black text-yellow-300 text-lg">{successMessage}</span>
+                        </div>
+                    )}
+
                     {/* Habit Tracker List */}
                     {!isEditingHabits ? (
                         <div className="space-y-3">
@@ -4714,6 +4766,68 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 )}
                             </div>
                             
+                            {/* Premium Habit Packs */}
+                            <div className="mb-4">
+                                <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Habit Packs</h5>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {Object.entries(habitPacks).map(([key, pack]) => {
+                                        const alreadyAdded = pack.habits.every(h => customHabitList.some(ch => ch.id === h.id));
+                                        return (
+                                            <div key={key} className="bg-gray-900 p-3 rounded-lg border border-gray-700">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center space-x-3">
+                                                        <span className="text-2xl">{pack.icon}</span>
+                                                        <div>
+                                                            <span className="font-bold text-white text-sm">{pack.name}</span>
+                                                            <span className="text-[10px] text-gray-400 block">{pack.description}</span>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!alreadyAdded && studentId) {
+                                                                setCustomHabitList(prev => [...prev, ...pack.habits]);
+                                                                // Save each habit to database
+                                                                for (const habit of pack.habits) {
+                                                                    try {
+                                                                        await fetch('/api/habits/custom', {
+                                                                            method: 'POST',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ 
+                                                                                studentId, 
+                                                                                title: habit.title || habit.question,
+                                                                                icon: habit.icon,
+                                                                                habitId: habit.id
+                                                                            })
+                                                                        });
+                                                                    } catch (e) {
+                                                                        console.error('Failed to save pack habit:', e);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }}
+                                                        disabled={alreadyAdded}
+                                                        className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                                                            alreadyAdded 
+                                                                ? 'bg-green-900/50 text-green-400 border border-green-900' 
+                                                                : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                                                        }`}
+                                                    >
+                                                        {alreadyAdded ? '✓ Added' : '+ Add'}
+                                                    </button>
+                                                </div>
+                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                    {pack.habits.map(h => (
+                                                        <span key={h.id} className="text-[10px] bg-gray-800 text-gray-300 px-2 py-0.5 rounded">
+                                                            {h.icon} {h.title}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            
                             {/* Existing Custom Habits */}
                             {customHabitList.filter(h => h.isCustom).length > 0 && (
                                 <div className="mb-4">
@@ -4724,7 +4838,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <div className="flex items-center space-x-3">
                                                     <span className="text-2xl">{habit.icon}</span>
                                                     <div>
-                                                        <span className="text-sm text-white block">{habit.question}</span>
+                                                        <span className="text-sm text-white block">{habit.title || habit.question}</span>
                                                         <span className="text-[10px] text-cyan-400">{habit.category}</span>
                                                     </div>
                                                 </div>
