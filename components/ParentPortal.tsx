@@ -4618,8 +4618,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
                     {/* XP Progress Bar */}
                     {(() => {
-                        // Use server-returned dailyXpCap as source of truth (fallback to hasPremiumAccess)
-                        const currentCap = dailyXpCap > 0 ? dailyXpCap : (hasPremiumAccess ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP);
+                        // hasPremiumAccess takes priority to show correct cap immediately after upgrade
+                        const currentCap = hasPremiumAccess ? HOME_DOJO_PREMIUM_CAP : (dailyXpCap > 0 ? dailyXpCap : HOME_DOJO_FREE_CAP);
                         const habitsRemaining = Math.max(0, Math.floor((currentCap - habitXpToday) / HOME_DOJO_BASE_XP));
                         const maxHabits = currentCap === HOME_DOJO_PREMIUM_CAP ? 7 : 3;
                         const isComplete = habitXpToday >= currentCap || atDailyLimit;
