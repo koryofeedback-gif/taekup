@@ -1101,6 +1101,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [habitXpToday, setHabitXpToday] = useState(0);
     const [dailyXpCap, setDailyXpCap] = useState(9); // Default to free tier (9 XP = 3 habits), updated from API
     const [atDailyLimit, setAtDailyLimit] = useState(false);
+    
+    // Recalculate atDailyLimit when XP or cap changes (important for premium upgrades)
+    useEffect(() => {
+        const newAtLimit = habitXpToday >= dailyXpCap;
+        console.log('[HomeDojo] Recalc limit: xpToday:', habitXpToday, 'cap:', dailyXpCap, 'atLimit:', newAtLimit);
+        setAtDailyLimit(newAtLimit);
+    }, [habitXpToday, dailyXpCap]);
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
     const defaultHabits: Habit[] = [
@@ -1219,6 +1226,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     // Check if premium is unlocked via Club Sponsorship or User Upgrade
     const hasPremiumAccess = isPremium || data.clubSponsoredPremium;
+    
+    // Set initial dailyXpCap based on premium status (before API call returns)
+    useEffect(() => {
+        const cap = hasPremiumAccess ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP;
+        setDailyXpCap(cap);
+        console.log('[HomeDojo] Premium status changed, cap set to:', cap);
+    }, [hasPremiumAccess]);
 
     const currentBelt = getBelt(student.beltId, data.belts);
     
