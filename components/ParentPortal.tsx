@@ -3105,39 +3105,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </div>
                     )}
 
-                    {/* Navigation Tabs - Row 1 */}
+                    {/* Navigation Tabs */}
                     <div className="flex gap-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 p-2 rounded-xl border border-gray-700/50">
                         {[
-                            { id: 'arena', label: 'Arena', icon: '⚔️', badge: 0, color: 'from-red-600 to-orange-600', glow: 'shadow-red-500/30' },
-                            { id: 'inbox', label: 'Inbox', icon: '📬', badge: totalPendingCount, color: 'from-blue-600 to-cyan-600', glow: 'shadow-blue-500/30' },
+                            { id: 'arena', label: 'Arena', icon: '🎯', badge: 0, color: 'from-red-600 to-orange-600', glow: 'shadow-red-500/30' },
                             { id: 'mystery', label: 'Mystery', icon: '🎁', badge: mysteryCompleted ? 0 : 1, color: 'from-purple-600 to-pink-600', glow: 'shadow-purple-500/30' },
                             { id: 'leaderboard', label: 'Ranks', icon: '🏆', badge: 0, color: 'from-yellow-600 to-amber-600', glow: 'shadow-yellow-500/30' },
-                        ].map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setRivalsView(tab.id as typeof rivalsView)}
-                                className={`flex-1 py-2.5 px-2 rounded-lg text-xs font-bold transition-all duration-300 relative transform ${
-                                    rivalsView === tab.id 
-                                        ? `bg-gradient-to-r ${tab.color} text-white shadow-lg ${tab.glow} scale-[1.02]` 
-                                        : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 hover:scale-[1.02]'
-                                }`}
-                            >
-                                <span className={`mr-1 ${rivalsView === tab.id ? 'animate-bounce' : ''}`} style={{ display: 'inline-block', animationDuration: '1s' }}>{tab.icon}</span>
-                                {tab.label}
-                                {tab.badge > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-yellow-500/50 border border-yellow-300">
-                                        {tab.badge}
-                                    </span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                    
-                    {/* Navigation Tabs - Row 2 */}
-                    <div className="flex gap-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 p-2 rounded-xl border border-gray-700/50">
-                        {[
-                            { id: 'teams', label: 'Team Battles', icon: '👥', badge: 0, color: 'from-green-600 to-emerald-600', glow: 'shadow-green-500/30' },
-                            { id: 'family', label: 'Family Mode', icon: '👨‍👧', badge: 0, color: 'from-pink-600 to-rose-600', glow: 'shadow-pink-500/30' },
+                            { id: 'family', label: 'Family', icon: '👨‍👧', badge: 0, color: 'from-pink-600 to-rose-600', glow: 'shadow-pink-500/30' },
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -3661,64 +3635,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                     )}
 
-                                    {/* VS Mode - Challenge a Friend (Secondary) */}
-                                    {selectedChallenge && classmates.length > 0 && (
-                                        <div className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 p-4 rounded-2xl border border-gray-700/50">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <span className="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center">⚔️</span>
-                                                <div>
-                                                    <h4 className="font-bold text-white text-sm">Challenge a Friend</h4>
-                                                    <p className="text-gray-500 text-xs">Optional: compete with a classmate</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 mb-3 p-2 bg-green-900/20 rounded-lg border border-green-700/30">
-                                                <span className="text-green-400 text-xs">⚖️</span>
-                                                <span className="text-gray-400 text-xs">{studentBeltTier} tier • {fairMatchClassmates.length} fair matches</span>
-                                            </div>
-                                            <select 
-                                                value={selectedRival} 
-                                                onChange={e => setSelectedRival(e.target.value)}
-                                                className="w-full bg-gray-800 text-white p-3 rounded-xl border border-gray-600 text-sm focus:border-blue-500 focus:outline-none"
-                                            >
-                                                <option value="">Solo Mode (no opponent)</option>
-                                                {fairMatchClassmates.length > 0 && (
-                                                    <optgroup label="Fair Match (Same Tier)">
-                                                        {fairMatchClassmates.map(c => (
-                                                            <option key={c.id} value={c.id}>
-                                                                {c.name} • {data.belts.find(b => b.id === c.beltId)?.name}
-                                                            </option>
-                                                        ))}
-                                                    </optgroup>
-                                                )}
-                                                {classmates.filter(c => !fairMatchClassmates.includes(c)).length > 0 && (
-                                                    <optgroup label="All Others">
-                                                        {classmates.filter(c => !fairMatchClassmates.includes(c)).map(c => (
-                                                            <option key={c.id} value={c.id}>
-                                                                {c.name} • {data.belts.find(b => b.id === c.beltId)?.name}
-                                                            </option>
-                                                        ))}
-                                                    </optgroup>
-                                                )}
-                                            </select>
-                                            {selectedRival && (
-                                                <button 
-                                                    onClick={handleSendChallenge}
-                                                    className="w-full mt-3 py-3 rounded-xl font-bold bg-gradient-to-r from-red-600 to-orange-500 text-white hover:from-red-500 hover:to-orange-400 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <span>⚔️</span> Send Challenge to {classmates.find(c => c.id === selectedRival)?.name}
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                    
-                                    {/* Challenge Sent Confirmation */}
-                                    {challengeSent && (
-                                        <div className="bg-green-900/50 border border-green-500 p-4 rounded-xl text-center animate-pulse">
-                                            <span className="text-2xl">✅</span>
-                                            <p className="text-green-400 font-bold mt-2">Challenge Sent!</p>
-                                            <p className="text-gray-400 text-xs">They have 24 hours to respond</p>
-                                        </div>
-                                    )}
 
                                     {/* My Video Submissions - Premium Only */}
                                     {hasPremiumAccess && myVideos.length > 0 && (
