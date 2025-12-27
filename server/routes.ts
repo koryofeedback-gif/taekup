@@ -4729,4 +4729,128 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to fetch stats' });
     }
   });
+
+  // =====================================================
+  // FAMILY CHALLENGES CRUD - Super Admin Management
+  // =====================================================
+
+  // Get all family challenges (for Parent Portal)
+  app.get('/api/family-challenges', async (req: Request, res: Response) => {
+    try {
+      const activeOnly = req.query.active !== 'false';
+      
+      let query = activeOnly
+        ? sql`SELECT * FROM family_challenges WHERE is_active = true ORDER BY display_order ASC, created_at ASC`
+        : sql`SELECT * FROM family_challenges ORDER BY display_order ASC, created_at ASC`;
+      
+      const challenges = await db.execute(query);
+      res.json(challenges);
+    } catch (error: any) {
+      console.error('[FamilyChallenges] List error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch family challenges' });
+    }
+  });
+
+  // Create family challenge (Super Admin)
+  app.post('/api/admin/family-challenges', async (req: Request, res: Response) => {
+    try {
+      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      
+      if (!name || !description || !category) {
+        return res.status(400).json({ error: 'Name, description, and category are required' });
+      }
+      
+      const result = await db.execute(sql`
+        INSERT INTO family_challenges (name, description, icon, category, demo_video_url, is_active, display_order)
+        VALUES (${name}, ${description}, ${icon || '🎯'}, ${category}, ${demoVideoUrl || null}, ${isActive !== false}, ${displayOrder || 0})
+        RETURNING *
+      `);
+      
+      res.json((result as any[])[0]);
+    } catch (error: any) {
+      console.error('[FamilyChallenges] Create error:', error.message);
+      res.status(500).json({ error: 'Failed to create family challenge' });
+    }
+  });
+
+  // Update family challenge (Super Admin)
+  app.put('/api/admin/family-challenges/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      
+      const result = await db.execute(sql`
+        UPDATE family_challenges
+        SET 
+          name = COALESCE(${name}, name),
+          description = COALESCE(${description}, description),
+          icon = COALESCE(${icon}, icon),
+          category = COALESCE(${category}, category),
+          demo_video_url = ${demoVideoUrl},
+          is_active = COALESCE(${isActive}, is_active),
+          display_order = COALESCE(${displayOrder}, display_order),
+          updated_at = NOW()
+        WHERE id = ${id}::uuid
+        RETURNING *
+      `);
+      
+      if ((result as any[]).length === 0) {
+        return res.status(404).json({ error: 'Challenge not found' });
+      }
+      
+      res.json((result as any[])[0]);
+    } catch (error: any) {
+      console.error('[FamilyChallenges] Update error:', error.message);
+      res.status(500).json({ error: 'Failed to update family challenge' });
+    }
+  });
+
+  // Delete family challenge (Super Admin)
+  app.delete('/api/admin/family-challenges/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      await db.execute(sql`DELETE FROM family_challenges WHERE id = ${id}::uuid`);
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[FamilyChallenges] Delete error:', error.message);
+      res.status(500).json({ error: 'Failed to delete family challenge' });
+    }
+  });
+
+  // Seed default family challenges (Super Admin - one-time setup)
+  app.post('/api/admin/family-challenges/seed', async (req: Request, res: Response) => {
+    try {
+      const existingCount = await db.execute(sql`SELECT COUNT(*) as count FROM family_challenges`);
+      if (Number((existingCount as any[])[0]?.count) > 0) {
+        return res.json({ message: 'Challenges already seeded', count: Number((existingCount as any[])[0]?.count) });
+      }
+      
+      const defaultChallenges = [
+        { name: 'The Earthquake Plank', description: 'Parent holds a plank. Kid has 30 seconds to push, pull, or crawl under to break their balance. Parent survives = Parent wins!', icon: '🧱', category: 'Strength', displayOrder: 1 },
+        { name: 'The Tunnel Bear', description: 'Parent holds a high plank. Kid crawls under, stands up, jumps over legs. Can Kid complete 10 cycles before Parent collapses?', icon: '🐻', category: 'Strength', displayOrder: 2 },
+        { name: 'The Pillow Samurai', description: 'Sit facing each other, feet interlocked. Do a sit-up and throw a pillow. Catch it, sit-up, throw back. Drop it = lose a life!', icon: '🛋️', category: 'Strength', displayOrder: 3 },
+        { name: 'Toe Tag', description: "Stand in fighting stance. Gently tap the top of opponent's foot with your foot. First to 5 taps wins!", icon: '🦶', category: 'Speed', displayOrder: 4 },
+        { name: "The Dragon's Tail", description: "Tuck a sock in your waistband like a tail. Stay in the arena and steal the opponent's tail without losing yours!", icon: '🐉', category: 'Speed', displayOrder: 5 },
+        { name: 'Knee-Slap Boxing', description: "Tag the opponent's knee with your hand. No blocking with hands - only move legs/hips to evade. First to 10 wins!", icon: '🥊', category: 'Speed', displayOrder: 6 },
+        { name: 'The Ruler Ninja', description: 'Parent stands on chair and drops a ruler. Kid catches it. Parent can yell "KIAI!" to distract! Catch below 15cm = Black Belt Reflexes!', icon: '📏', category: 'Speed', displayOrder: 7 },
+        { name: 'Sock Wars', description: "Both start on knees on carpet. Wrestle to remove the other person's socks. Last one with a sock on wins!", icon: '🧦', category: 'Focus', displayOrder: 8 },
+        { name: 'The Mirror of Doom', description: 'Leader moves slowly, Follower copies. Leader can suddenly FREEZE - if Follower is still moving, they lose! 3 tricks to win.', icon: '🪞', category: 'Focus', displayOrder: 9 },
+        { name: 'The Sleeping Tiger', description: "Parent lies down eyes closed. Kid creeps up to touch Parent's shoulder without being heard. If Parent points correctly, Kid restarts!", icon: '🐯', category: 'Focus', displayOrder: 10 },
+      ];
+      
+      for (const c of defaultChallenges) {
+        await db.execute(sql`
+          INSERT INTO family_challenges (name, description, icon, category, is_active, display_order)
+          VALUES (${c.name}, ${c.description}, ${c.icon}, ${c.category}, true, ${c.displayOrder})
+        `);
+      }
+      
+      res.json({ success: true, count: defaultChallenges.length });
+    } catch (error: any) {
+      console.error('[FamilyChallenges] Seed error:', error.message);
+      res.status(500).json({ error: 'Failed to seed family challenges' });
+    }
+  });
 }
