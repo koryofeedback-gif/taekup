@@ -147,12 +147,16 @@ async function applyXpDelta(client: any, studentId: string, amount: number, reas
     [amount, studentId]
   );
   
-  // Log to xp_transactions for audit trail only
-  await client.query(
-    `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-     VALUES ($1::uuid, $2, $3, $4, NOW())`,
-    [studentId, Math.abs(amount), amount > 0 ? 'EARN' : 'SPEND', reason]
-  );
+  // Log to xp_transactions for audit trail (optional - don't fail if table missing)
+  try {
+    await client.query(
+      `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+       VALUES ($1::uuid, $2, $3, $4, NOW())`,
+      [studentId, Math.abs(amount), amount > 0 ? 'EARN' : 'SPEND', reason]
+    );
+  } catch (e) {
+    console.warn('[XP] xp_transactions insert failed (table may not exist):', (e as any).message);
+  }
   
   const newTotal = result.rows[0]?.total_xp || 0;
   console.log(`[XP] ${amount > 0 ? '+' : ''}${amount} XP to ${studentId} (${reason}) → Total: ${newTotal}`);
@@ -3289,8 +3293,8 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('[HomeDojo] Error:', error.message);
-    return res.status(500).json({ error: 'Failed to log habit' });
+    console.error('[HomeDojo] Error:', error.message, 'Stack:', error.stack);
+    return res.status(500).json({ error: 'Failed to log habit', details: error.message });
   } finally {
     client.release();
   }
