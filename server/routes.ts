@@ -3831,9 +3831,56 @@ export function registerRoutes(app: Express) {
 
   // =====================================================
   // HOME DOJO - HABIT TRACKING
+  // XP System: 3 XP per habit (6 Premium), daily cap 30 XP
+  // Daily bonus: +3 XP (6 Premium) for completing all habits
+  // Streak bonuses: 3-day +5 XP, 7-day +10 XP (doubled for Premium)
   // =====================================================
-  const HABIT_XP = 10;
-  const DAILY_HABIT_XP_CAP = 60;
+  const HOME_DOJO_BASE_XP = 3;
+  const HOME_DOJO_DAILY_CAP = 30;
+  const HOME_DOJO_DAILY_BONUS = 3;
+  const HOME_DOJO_STREAK_3_BONUS = 5;
+  const HOME_DOJO_STREAK_7_BONUS = 10;
+  const HOME_DOJO_TOTAL_HABITS = 6; // Number of habits for daily completion bonus
+
+  // Helper: Check if student has premium (explicit check - NULL means free)
+  async function hasHomeDojoPremium(studentId: string): Promise<boolean> {
+    try {
+      const result = await db.execute(sql`
+        SELECT s.premium_status, c.parent_premium_enabled 
+        FROM students s 
+        LEFT JOIN clubs c ON s.club_id = c.id 
+        WHERE s.id = ${studentId}::uuid
+      `);
+      const student = (result as any[])[0];
+      if (!student) return false;
+      const hasPremiumStatus = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid';
+      const hasParentPremium = student.parent_premium_enabled === true;
+      return hasPremiumStatus || hasParentPremium;
+    } catch {
+      return false;
+    }
+  }
+
+  // Helper: Check if streak bonus was already awarded this week
+  async function wasStreakBonusAwarded(studentId: string, streakDays: number): Promise<boolean> {
+    try {
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of week (Sunday)
+      weekStart.setHours(0, 0, 0, 0);
+      const weekStartStr = weekStart.toISOString().split('T')[0];
+      
+      const result = await db.execute(sql`
+        SELECT id FROM habit_logs 
+        WHERE student_id = ${studentId}::uuid 
+        AND habit_name = ${'streak_bonus_' + streakDays}
+        AND log_date >= ${weekStartStr}::date
+        LIMIT 1
+      `);
+      return (result as any[]).length > 0;
+    } catch {
+      return false;
+    }
+  }
 
   app.post('/api/habits/check', async (req: Request, res: Response) => {
     try {
@@ -3853,7 +3900,6 @@ export function registerRoutes(app: Express) {
       // AUTO-CREATE: Check if student exists, if not create them
       const studentCheck = await db.execute(sql`SELECT id FROM students WHERE id = ${studentId}::uuid`);
       if ((studentCheck as any[]).length === 0) {
-        // Get first available club for default assignment
         const clubResult = await db.execute(sql`SELECT id FROM clubs ORDER BY created_at ASC LIMIT 1`);
         const defaultClubId = (clubResult as any[])[0]?.id;
         
@@ -3861,7 +3907,6 @@ export function registerRoutes(app: Express) {
           return res.status(400).json({ error: 'No clubs available. Please contact support.' });
         }
         
-        // Auto-create the student
         await db.execute(sql`
           INSERT INTO students (id, club_id, name, total_xp, created_at, updated_at)
           VALUES (${studentId}::uuid, ${defaultClubId}::uuid, 'New Student', 0, NOW(), NOW())
@@ -3869,6 +3914,7 @@ export function registerRoutes(app: Express) {
         console.log(`[HomeDojo] Auto-created student ${studentId} in club ${defaultClubId}`);
       }
 
+      // Check for duplicate submission
       const existing = await db.execute(sql`
         SELECT id FROM habit_logs WHERE student_id = ${studentId}::uuid AND habit_name = ${habitName} AND log_date = ${today}::date
       `);
@@ -3881,39 +3927,114 @@ export function registerRoutes(app: Express) {
         });
       }
 
-      // Anti-cheat: Check daily XP cap (60 XP max from habits per day)
+      // Check premium status for XP multiplier
+      const isPremium = await hasHomeDojoPremium(studentId);
+      const premiumMultiplier = isPremium ? 2 : 1;
+      const habitXp = HOME_DOJO_BASE_XP * premiumMultiplier;
+      const dailyCap = HOME_DOJO_DAILY_CAP * premiumMultiplier;
+
+      // Check daily XP cap
       const dailyXpResult = await db.execute(sql`
-        SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs WHERE student_id = ${studentId}::uuid AND log_date = ${today}::date
+        SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs 
+        WHERE student_id = ${studentId}::uuid AND log_date = ${today}::date
+        AND habit_name NOT LIKE 'streak_bonus_%'
       `);
       const totalXpToday = parseInt((dailyXpResult as any[])[0]?.total_xp_today || '0');
-      const atDailyLimit = totalXpToday >= DAILY_HABIT_XP_CAP;
-      const xpToAward = atDailyLimit ? 0 : HABIT_XP;
+      const atDailyLimit = totalXpToday >= dailyCap;
+      const xpToAward = atDailyLimit ? 0 : habitXp;
 
+      // Log the habit completion
       await db.execute(sql`
-        INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES (${studentId}::uuid, ${habitName}, ${xpToAward}, ${today}::date)
+        INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) 
+        VALUES (${studentId}::uuid, ${habitName}, ${xpToAward}, ${today}::date)
       `);
 
-      let newTotalXp = 0;
+      let totalXpAwarded = xpToAward;
+      let bonusMessages: string[] = [];
+
+      // Award habit XP
       if (xpToAward > 0) {
-        // Award XP using unified XP service
-        const xpResult = await awardXP(studentId, xpToAward, 'home_dojo', { habitName });
-        newTotalXp = xpResult.newTotal;
-        console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total_xp: ${newTotalXp}`);
-      } else {
-        newTotalXp = await getStudentXP(studentId);
-        console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
+        await awardXP(studentId, xpToAward, 'home_dojo', { habitName });
+        console.log(`[HomeDojo] Habit "${habitName}": +${xpToAward} XP ${isPremium ? '(Premium)' : ''}`);
+      }
+
+      // Check for daily completion bonus (all habits done)
+      const todayHabitsResult = await db.execute(sql`
+        SELECT COUNT(DISTINCT habit_name) as count FROM habit_logs 
+        WHERE student_id = ${studentId}::uuid AND log_date = ${today}::date
+        AND habit_name NOT LIKE 'streak_bonus_%' AND habit_name != 'daily_completion_bonus'
+      `);
+      const habitsCompletedToday = parseInt((todayHabitsResult as any[])[0]?.count || '0');
+      
+      // Check if daily bonus was already awarded today
+      const dailyBonusCheck = await db.execute(sql`
+        SELECT id FROM habit_logs WHERE student_id = ${studentId}::uuid 
+        AND habit_name = 'daily_completion_bonus' AND log_date = ${today}::date
+      `);
+      
+      if (habitsCompletedToday >= HOME_DOJO_TOTAL_HABITS && (dailyBonusCheck as any[]).length === 0) {
+        const dailyBonus = HOME_DOJO_DAILY_BONUS * premiumMultiplier;
+        await db.execute(sql`
+          INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) 
+          VALUES (${studentId}::uuid, 'daily_completion_bonus', ${dailyBonus}, ${today}::date)
+        `);
+        await awardXP(studentId, dailyBonus, 'home_dojo', { bonus: 'daily_completion' });
+        totalXpAwarded += dailyBonus;
+        bonusMessages.push(`Daily Dojo Complete! +${dailyBonus} bonus XP`);
+        console.log(`[HomeDojo] Daily completion bonus: +${dailyBonus} XP`);
+      }
+
+      // Check for streak bonuses (once per week)
+      const currentStreak = await calculateStreak(studentId);
+      
+      // 7-day streak bonus (higher priority)
+      if (currentStreak >= 7 && !(await wasStreakBonusAwarded(studentId, 7))) {
+        const streakBonus = HOME_DOJO_STREAK_7_BONUS * premiumMultiplier;
+        await db.execute(sql`
+          INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) 
+          VALUES (${studentId}::uuid, 'streak_bonus_7', ${streakBonus}, ${today}::date)
+        `);
+        await awardXP(studentId, streakBonus, 'home_dojo', { bonus: '7_day_streak' });
+        totalXpAwarded += streakBonus;
+        bonusMessages.push(`7-Day Streak! +${streakBonus} bonus XP`);
+        console.log(`[HomeDojo] 7-day streak bonus: +${streakBonus} XP`);
+      }
+      // 3-day streak bonus
+      else if (currentStreak >= 3 && !(await wasStreakBonusAwarded(studentId, 3))) {
+        const streakBonus = HOME_DOJO_STREAK_3_BONUS * premiumMultiplier;
+        await db.execute(sql`
+          INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) 
+          VALUES (${studentId}::uuid, 'streak_bonus_3', ${streakBonus}, ${today}::date)
+        `);
+        await awardXP(studentId, streakBonus, 'home_dojo', { bonus: '3_day_streak' });
+        totalXpAwarded += streakBonus;
+        bonusMessages.push(`3-Day Streak! +${streakBonus} bonus XP`);
+        console.log(`[HomeDojo] 3-day streak bonus: +${streakBonus} XP`);
+      }
+
+      const newTotalXp = await getStudentXP(studentId);
+      const updatedDailyXp = totalXpToday + xpToAward;
+
+      let message = atDailyLimit 
+        ? `Habit done! Daily limit reached.`
+        : `+${xpToAward} XP`;
+      
+      if (bonusMessages.length > 0) {
+        message = bonusMessages.join(' ');
       }
 
       res.json({
         success: true,
-        xpAwarded: xpToAward,
+        xpAwarded: totalXpAwarded,
+        habitXp: xpToAward,
         newTotalXp,
-        dailyXpEarned: totalXpToday + xpToAward,
-        dailyXpCap: DAILY_HABIT_XP_CAP,
-        atDailyLimit: (totalXpToday + xpToAward) >= DAILY_HABIT_XP_CAP,
-        message: atDailyLimit 
-          ? `Habit done! Daily Dojo Limit reached (Max ${DAILY_HABIT_XP_CAP} XP).`
-          : `Habit completed! +${HABIT_XP} XP earned.`
+        dailyXpEarned: updatedDailyXp,
+        dailyXpCap: dailyCap,
+        atDailyLimit: updatedDailyXp >= dailyCap,
+        isPremium,
+        streak: currentStreak,
+        bonuses: bonusMessages,
+        message
       });
     } catch (error: any) {
       console.error('[HomeDojo] Habit check error:', error.message);
@@ -4002,11 +4123,15 @@ export function registerRoutes(app: Express) {
       // Calculate real streak from habit_logs
       const streak = await calculateStreak(studentId);
 
+      // Check premium for correct daily cap
+      const isPremium = await hasHomeDojoPremium(studentId);
+      const dailyCap = HOME_DOJO_DAILY_CAP * (isPremium ? 2 : 1);
+
       // Return totalXp as single source of truth (also as lifetimeXp for backward compatibility)
-      res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp, lifetimeXp: totalXp, streak });
+      res.json({ completedHabits, totalXpToday, dailyXpCap: dailyCap, totalXp, lifetimeXp: totalXp, streak, isPremium });
     } catch (error: any) {
       console.error('[HomeDojo] Status fetch error:', error.message);
-      res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
+      res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_DAILY_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
     }
   });
 

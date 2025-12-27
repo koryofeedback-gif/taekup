@@ -1236,6 +1236,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         setIsGeneratingAdvice(false);
     }
 
+    // Home Dojo XP Constants (Free: 3 XP per habit, Premium: 6 XP)
+    const HOME_DOJO_BASE_XP = 3;
+    
     // Home Dojo Helpers - use habitId as the key for both frontend state and backend storage
     const toggleHabitCheck = async (habitId: string, habitName: string) => {
         console.log('[HomeDojo] Click detected:', habitId, 'studentId:', studentId);
@@ -1252,7 +1255,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         // Check if at daily limit before visual feedback
         const wasAtLimit = atDailyLimit;
-        const xpToShow = wasAtLimit ? 0 : 10;
+        const xpToShow = wasAtLimit ? 0 : HOME_DOJO_BASE_XP;
         
         // Immediate visual feedback - mark as complete right away
         setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
@@ -1261,7 +1264,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         // Update rivalStats.xp immediately so header shows new total (only if not at limit)
         if (!wasAtLimit) {
-            setRivalStats(prev => ({ ...prev, xp: prev.xp + 10 }));
+            setRivalStats(prev => ({ ...prev, xp: prev.xp + HOME_DOJO_BASE_XP }));
         }
         
         setTimeout(() => {
@@ -1283,8 +1286,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 // Revert optimistic updates
                 setHomeDojoChecks(prev => ({ ...prev, [habitId]: false }));
                 if (!wasAtLimit) {
-                    setRivalStats(prev => ({ ...prev, xp: prev.xp - 10 }));
-                    setHabitXpToday(prev => prev - 10);
+                    setRivalStats(prev => ({ ...prev, xp: prev.xp - HOME_DOJO_BASE_XP }));
+                    setHabitXpToday(prev => prev - HOME_DOJO_BASE_XP);
                 }
                 return;
             }
@@ -1293,11 +1296,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 // Sync with actual values from server (source of truth)
                 setHabitXpToday(apiData.dailyXpEarned || 0);
                 setAtDailyLimit(apiData.atDailyLimit || false);
+                // Show actual XP earned (may include bonuses)
+                if (apiData.xpAwarded > xpToShow) {
+                    setHabitXpEarned(prev => ({ ...prev, [habitId]: apiData.xpAwarded }));
+                    setTimeout(() => setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 })), 3000);
+                }
                 // Update header XP from server's newTotalXp (single source of truth)
                 if (typeof apiData.newTotalXp === 'number') {
                     setRivalStats(prev => ({ ...prev, xp: apiData.newTotalXp }));
                     setServerTotalXP(apiData.newTotalXp);
                     console.log('[HomeDojo] XP synced from server:', apiData.newTotalXp, 'Daily:', apiData.dailyXpEarned, '/', apiData.dailyXpCap);
+                }
+                // Log bonuses if any
+                if (apiData.bonuses?.length > 0) {
+                    console.log('[HomeDojo] Bonuses:', apiData.bonuses);
                 }
             } else if (apiData.alreadyCompleted) {
                 // Already completed - revert optimistic update
@@ -1305,8 +1317,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
                 // Revert the optimistic XP add
                 if (!wasAtLimit) {
-                    setRivalStats(prev => ({ ...prev, xp: prev.xp - 10 }));
-                    setHabitXpToday(prev => prev - 10);
+                    setRivalStats(prev => ({ ...prev, xp: prev.xp - HOME_DOJO_BASE_XP }));
+                    setHabitXpToday(prev => prev - HOME_DOJO_BASE_XP);
                 }
             }
         } catch (e) {
@@ -1315,8 +1327,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             setHomeDojoChecks(prev => ({ ...prev, [habitId]: false }));
             setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 }));
             if (!wasAtLimit) {
-                setRivalStats(prev => ({ ...prev, xp: prev.xp - 10 }));
-                setHabitXpToday(prev => prev - 10);
+                setRivalStats(prev => ({ ...prev, xp: prev.xp - HOME_DOJO_BASE_XP }));
+                setHabitXpToday(prev => prev - HOME_DOJO_BASE_XP);
             }
         }
     };

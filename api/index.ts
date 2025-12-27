@@ -3186,9 +3186,51 @@ async function handleChallengeVerify(req: VercelRequest, res: VercelResponse) {
 
 // =====================================================
 // HOME DOJO - HABIT TRACKING
+// XP System: 3 XP per habit (6 Premium), daily cap 30 XP
+// Daily bonus: +3 XP (6 Premium) for completing all habits
+// Streak bonuses: 3-day +5 XP, 7-day +10 XP (doubled for Premium)
 // =====================================================
-const HABIT_XP = 10;
-const DAILY_HABIT_XP_CAP = 60;
+const HOME_DOJO_BASE_XP = 3;
+const HOME_DOJO_DAILY_CAP = 30;
+const HOME_DOJO_DAILY_BONUS = 3;
+const HOME_DOJO_STREAK_3_BONUS = 5;
+const HOME_DOJO_STREAK_7_BONUS = 10;
+const HOME_DOJO_TOTAL_HABITS = 6;
+
+async function hasHomeDojoPremium(client: any, studentId: string): Promise<boolean> {
+  try {
+    const result = await client.query(
+      `SELECT s.premium_status, c.parent_premium_enabled 
+       FROM students s LEFT JOIN clubs c ON s.club_id = c.id 
+       WHERE s.id = $1::uuid`,
+      [studentId]
+    );
+    const student = result.rows[0];
+    if (!student) return false;
+    const hasPremiumStatus = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid';
+    const hasParentPremium = student.parent_premium_enabled === true;
+    return hasPremiumStatus || hasParentPremium;
+  } catch {
+    return false;
+  }
+}
+
+async function wasStreakBonusAwardedThisWeek(client: any, studentId: string, streakDays: number): Promise<boolean> {
+  try {
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekStartStr = weekStart.toISOString().split('T')[0];
+    
+    const result = await client.query(
+      `SELECT id FROM habit_logs WHERE student_id = $1::uuid AND habit_name = $2 AND log_date >= $3::date LIMIT 1`,
+      [studentId, `streak_bonus_${streakDays}`, weekStartStr]
+    );
+    return result.rows.length > 0;
+  } catch {
+    return false;
+  }
+}
 
 async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -3199,41 +3241,23 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'studentId and habitName are required' });
   }
 
-  // STRICT MODE: Reject invalid UUIDs - NO MORE DEMO MODE
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const trimmedStudentId = studentId.trim();
   if (!uuidRegex.test(trimmedStudentId)) {
-    console.error('[HomeDojo] INVALID UUID FORMAT:', studentId);
-    return res.status(400).json({
-      error: 'Invalid student ID format',
-      receivedId: studentId,
-      message: 'Student ID must be a valid UUID'
-    });
+    return res.status(400).json({ error: 'Invalid student ID format' });
   }
 
   const client = await pool.connect();
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    // First verify the student exists in database (use trimmed ID)
-    const studentCheck = await client.query(
-      `SELECT id FROM students WHERE id = $1::uuid`,
-      [trimmedStudentId]
-    );
-    
+    const studentCheck = await client.query(`SELECT id FROM students WHERE id = $1::uuid`, [trimmedStudentId]);
     if (studentCheck.rows.length === 0) {
-      console.error('[HomeDojo] STUDENT NOT FOUND IN DB:', trimmedStudentId);
-      return res.status(404).json({
-        error: 'Student ID not found in database',
-        studentId: trimmedStudentId,
-        message: 'This student does not exist in the database. Please re-login.'
-      });
+      return res.status(404).json({ error: 'Student not found' });
     }
     
-    // Use transaction for atomicity
     await client.query('BEGIN');
 
-    // Check if habit already completed today
     const existing = await client.query(
       `SELECT id FROM habit_logs WHERE student_id = $1::uuid AND habit_name = $2 AND log_date = $3::date`,
       [trimmedStudentId, habitName, today]
@@ -3241,60 +3265,105 @@ async function handleHabitCheck(req: VercelRequest, res: VercelResponse) {
 
     if (existing.rows.length > 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({
-        error: 'Already completed',
-        message: 'You already completed this habit today!',
-        alreadyCompleted: true
-      });
+      return res.status(400).json({ error: 'Already completed', alreadyCompleted: true });
     }
 
-    // Anti-cheat: Check daily XP cap (60 XP max from habits per day)
+    const isPremium = await hasHomeDojoPremium(client, trimmedStudentId);
+    const premiumMultiplier = isPremium ? 2 : 1;
+    const habitXp = HOME_DOJO_BASE_XP * premiumMultiplier;
+    const dailyCap = HOME_DOJO_DAILY_CAP * premiumMultiplier;
+
     const dailyXpResult = await client.query(
-      `SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs WHERE student_id = $1::uuid AND log_date = $2::date`,
+      `SELECT COALESCE(SUM(xp_awarded), 0) as total_xp_today FROM habit_logs 
+       WHERE student_id = $1::uuid AND log_date = $2::date AND habit_name NOT LIKE 'streak_bonus_%'`,
       [trimmedStudentId, today]
     );
     const totalXpToday = parseInt(dailyXpResult.rows[0]?.total_xp_today || '0');
-    const atDailyLimit = totalXpToday >= DAILY_HABIT_XP_CAP;
-    const xpToAward = atDailyLimit ? 0 : HABIT_XP;
+    const atDailyLimit = totalXpToday >= dailyCap;
+    const xpToAward = atDailyLimit ? 0 : habitXp;
 
-    // Insert habit log (mark as done regardless of XP cap)
     await client.query(
       `INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES ($1::uuid, $2, $3, $4::date)`,
       [trimmedStudentId, habitName, xpToAward, today]
     );
 
-    let newTotalXp = 0;
+    let totalXpAwarded = xpToAward;
+    let bonusMessages: string[] = [];
+
     if (xpToAward > 0) {
-      // Use unified helper for XP updates
-      newTotalXp = await applyXpDelta(client, trimmedStudentId, xpToAward, 'habit');
-      console.log(`[HomeDojo] Habit "${habitName}" completed: +${xpToAward} XP, new total: ${newTotalXp}`);
-    } else {
-      const currentXp = await client.query(`SELECT COALESCE(total_xp, 0) as xp FROM students WHERE id = $1::uuid`, [trimmedStudentId]);
-      newTotalXp = currentXp.rows[0]?.xp || 0;
-      console.log(`[HomeDojo] Habit "${habitName}" completed but daily cap reached (${totalXpToday}/${DAILY_HABIT_XP_CAP} XP)`);
+      await applyXpDelta(client, trimmedStudentId, xpToAward, 'habit');
+    }
+
+    // Check for daily completion bonus
+    const todayHabitsResult = await client.query(
+      `SELECT COUNT(DISTINCT habit_name) as count FROM habit_logs 
+       WHERE student_id = $1::uuid AND log_date = $2::date
+       AND habit_name NOT LIKE 'streak_bonus_%' AND habit_name != 'daily_completion_bonus'`,
+      [trimmedStudentId, today]
+    );
+    const habitsCompletedToday = parseInt(todayHabitsResult.rows[0]?.count || '0');
+    
+    const dailyBonusCheck = await client.query(
+      `SELECT id FROM habit_logs WHERE student_id = $1::uuid AND habit_name = 'daily_completion_bonus' AND log_date = $2::date`,
+      [trimmedStudentId, today]
+    );
+    
+    if (habitsCompletedToday >= HOME_DOJO_TOTAL_HABITS && dailyBonusCheck.rows.length === 0) {
+      const dailyBonus = HOME_DOJO_DAILY_BONUS * premiumMultiplier;
+      await client.query(
+        `INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES ($1::uuid, 'daily_completion_bonus', $2, $3::date)`,
+        [trimmedStudentId, dailyBonus, today]
+      );
+      await applyXpDelta(client, trimmedStudentId, dailyBonus, 'habit');
+      totalXpAwarded += dailyBonus;
+      bonusMessages.push(`Daily Dojo Complete! +${dailyBonus} bonus XP`);
+    }
+
+    // Check for streak bonuses
+    const currentStreak = await calculateStreak(client, trimmedStudentId);
+    
+    if (currentStreak >= 7 && !(await wasStreakBonusAwardedThisWeek(client, trimmedStudentId, 7))) {
+      const streakBonus = HOME_DOJO_STREAK_7_BONUS * premiumMultiplier;
+      await client.query(
+        `INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES ($1::uuid, 'streak_bonus_7', $2, $3::date)`,
+        [trimmedStudentId, streakBonus, today]
+      );
+      await applyXpDelta(client, trimmedStudentId, streakBonus, 'habit');
+      totalXpAwarded += streakBonus;
+      bonusMessages.push(`7-Day Streak! +${streakBonus} bonus XP`);
+    } else if (currentStreak >= 3 && !(await wasStreakBonusAwardedThisWeek(client, trimmedStudentId, 3))) {
+      const streakBonus = HOME_DOJO_STREAK_3_BONUS * premiumMultiplier;
+      await client.query(
+        `INSERT INTO habit_logs (student_id, habit_name, xp_awarded, log_date) VALUES ($1::uuid, 'streak_bonus_3', $2, $3::date)`,
+        [trimmedStudentId, streakBonus, today]
+      );
+      await applyXpDelta(client, trimmedStudentId, streakBonus, 'habit');
+      totalXpAwarded += streakBonus;
+      bonusMessages.push(`3-Day Streak! +${streakBonus} bonus XP`);
     }
 
     await client.query('COMMIT');
 
+    const currentXpResult = await client.query(`SELECT COALESCE(total_xp, 0) as xp FROM students WHERE id = $1::uuid`, [trimmedStudentId]);
+    const newTotalXp = currentXpResult.rows[0]?.xp || 0;
+
     return res.json({
       success: true,
-      xpAwarded: xpToAward,
+      xpAwarded: totalXpAwarded,
+      habitXp: xpToAward,
       newTotalXp,
       dailyXpEarned: totalXpToday + xpToAward,
-      dailyXpCap: DAILY_HABIT_XP_CAP,
-      atDailyLimit: (totalXpToday + xpToAward) >= DAILY_HABIT_XP_CAP,
-      message: atDailyLimit 
-        ? `Habit done! Daily Dojo Limit reached (Max ${DAILY_HABIT_XP_CAP} XP).`
-        : `Habit completed! +${HABIT_XP} XP earned.`
+      dailyXpCap: dailyCap,
+      atDailyLimit: (totalXpToday + xpToAward) >= dailyCap,
+      isPremium,
+      streak: currentStreak,
+      bonuses: bonusMessages,
+      message: bonusMessages.length > 0 ? bonusMessages.join(' ') : `+${xpToAward} XP`
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('[HomeDojo] Habit check error:', error.message, error.stack);
-    return res.status(500).json({ 
-      error: error.message || 'Failed to log habit',
-      details: error.stack,
-      code: error.code
-    });
+    console.error('[HomeDojo] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to log habit' });
   } finally {
     client.release();
   }
@@ -3392,7 +3461,6 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'studentId is required' });
   }
 
-  // STRICT MODE: Validate UUID - NO DEMO MODE
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(studentId)) {
     return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
@@ -3402,20 +3470,17 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    // First check if student exists (use COALESCE for compatibility)
     const studentResult = await client.query(
       `SELECT COALESCE(total_xp, 0) as xp FROM students WHERE id = $1::uuid`,
       [studentId]
     );
     
     if (studentResult.rows.length === 0) {
-      console.log(`[HomeDojo] Student ${studentId} not found for status - returning empty`);
-      return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
+      return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_DAILY_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
     }
     
     const totalXp = studentResult.rows[0]?.xp || 0;
 
-    // Fetch today's habit logs
     const result = await client.query(
       `SELECT habit_name, xp_awarded FROM habit_logs WHERE student_id = $1::uuid AND log_date = $2::date`,
       [studentId, today]
@@ -3423,15 +3488,15 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
 
     const completedHabits = result.rows.map(r => r.habit_name);
     const totalXpToday = result.rows.reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
-
-    // Calculate real streak from habit_logs
     const streak = await calculateStreak(client, studentId);
+    
+    const isPremium = await hasHomeDojoPremium(client, studentId);
+    const dailyCap = HOME_DOJO_DAILY_CAP * (isPremium ? 2 : 1);
 
-    // Return totalXp as single source of truth (also as lifetimeXp for backward compatibility)
-    return res.json({ completedHabits, totalXpToday, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp, lifetimeXp: totalXp, streak });
+    return res.json({ completedHabits, totalXpToday, dailyXpCap: dailyCap, totalXp, lifetimeXp: totalXp, streak, isPremium });
   } catch (error: any) {
     console.error('[HomeDojo] Status fetch error:', error.message);
-    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: DAILY_HABIT_XP_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
+    return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_DAILY_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
   } finally {
     client.release();
   }
