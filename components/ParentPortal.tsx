@@ -4349,6 +4349,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 )}
                                                             </p>
                                                             <p className="text-gray-400 text-[10px]">{challenge.description}</p>
+                                                            {challenge.demoVideoUrl && (
+                                                                <a 
+                                                                    href={challenge.demoVideoUrl}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="inline-flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 mt-1"
+                                                                >
+                                                                    📺 Watch Demo
+                                                                </a>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <div className="text-right">

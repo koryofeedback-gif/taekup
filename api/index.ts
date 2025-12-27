@@ -3545,12 +3545,6 @@ async function handleFamilyChallengeSubmit(req: VercelRequest, res: VercelRespon
     return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
   }
 
-  // SERVER-SIDE XP CALCULATION - prevent client tampering
-  const challenge = FAMILY_CHALLENGES[challengeId];
-  if (!challenge) {
-    return res.status(400).json({ error: 'Invalid challengeId' });
-  }
-
   // Flat XP: 15/5 Local, 2/1 Global (consistency-focused)
   const localXp = won ? FAMILY_CHALLENGE_XP.winLocal : FAMILY_CHALLENGE_XP.loseLocal;
   const globalXp = won ? FAMILY_CHALLENGE_XP.winGlobal : FAMILY_CHALLENGE_XP.loseGlobal;
@@ -3558,6 +3552,19 @@ async function handleFamilyChallengeSubmit(req: VercelRequest, res: VercelRespon
 
   const client = await pool.connect();
   try {
+    // SERVER-SIDE XP CALCULATION - Validate challenge exists in database (supports both UUID and legacy IDs)
+    const challengeCheck = await client.query(
+      `SELECT id, name FROM family_challenges WHERE id = $1 AND is_active = true`,
+      [challengeId]
+    );
+    
+    if (challengeCheck.rows.length === 0) {
+      // Fallback to legacy static challenges for backward compatibility
+      const legacyChallenge = FAMILY_CHALLENGES[challengeId];
+      if (!legacyChallenge) {
+        return res.status(400).json({ error: 'Invalid challengeId' });
+      }
+    }
     // Check daily limit (3 family challenges per day total)
     const dailyCount = await client.query(
       `SELECT COUNT(*) as count FROM family_logs WHERE student_id = $1::uuid AND completed_at = $2::date`,
