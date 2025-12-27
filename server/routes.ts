@@ -2596,7 +2596,7 @@ export function registerRoutes(app: Express) {
           xpAwarded: localXp,
           globalXp,
           explanation: 'Great job completing the challenge!',
-          message: isCorrect ? `Correct! +${localXp} XP (+${globalXp} Global)` : `Not quite! +${localXp} XP (+${globalXp} Global) for trying!`
+          message: isCorrect ? `Correct! +${localXp} XP` : `Not quite! +${localXp} XP for trying!`
         });
       }
 
@@ -2660,8 +2660,8 @@ export function registerRoutes(app: Express) {
         globalXp,
         explanation: challenge.quiz_data?.explanation || null,
         message: isCorrect 
-          ? `Correct! +${localXp} XP (+${globalXp} Global)` 
-          : `Not quite! +${localXp} XP (+${globalXp} Global) for trying.`
+          ? `Correct! +${localXp} XP` 
+          : `Not quite! +${localXp} XP for trying.`
       });
     } catch (error: any) {
       console.error('❌ DAILY CHALLENGE ERROR:', error);
