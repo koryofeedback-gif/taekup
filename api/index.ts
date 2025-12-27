@@ -3466,7 +3466,17 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
       return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_FREE_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
     }
     
-    const totalXp = studentResult.rows[0]?.xp || 0;
+    const storedXp = studentResult.rows[0]?.xp || 0;
+
+    // Calculate all-time XP from transactions (same as leaderboard - source of truth)
+    const allTimeResult = await client.query(
+      `SELECT COALESCE(SUM(amount), 0) as all_time_xp FROM xp_transactions WHERE student_id = $1::uuid AND type = 'EARN'`,
+      [studentId]
+    );
+    const calculatedXp = parseInt(allTimeResult.rows[0]?.all_time_xp) || 0;
+    
+    // Use the higher of stored or calculated (matches leaderboard logic)
+    const totalXp = Math.max(storedXp, calculatedXp);
 
     const result = await client.query(
       `SELECT habit_name, xp_awarded FROM habit_logs WHERE student_id = $1::uuid AND log_date = $2::date`,
