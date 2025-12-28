@@ -2931,6 +2931,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 // Use API data, fall back to stored totalXP for the student
                 const isCurrentStudent = String(s.id) === String(student.id);
                 const freshXP = apiStudent?.totalXP ?? s.totalXP ?? 0;
+                if (isCurrentStudent) {
+                    console.log('[AllTimeLeaderboard Calc]', {
+                        studentId: s.id,
+                        studentName: s.name,
+                        sTotalXP: s.totalXP,
+                        apiStudentFound: !!apiStudent,
+                        apiStudentTotalXP: apiStudent?.totalXP,
+                        freshXP
+                    });
+                }
                 return {
                     ...s,
                     displayXP: freshXP,
