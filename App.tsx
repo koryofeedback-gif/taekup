@@ -899,12 +899,16 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
         ? data.students.find(s => s.id === effectiveStudentId) || data.students[0]
         : data.students[0];
     
+    // Get clubId from localStorage (stored during login)
+    const storedClubId = localStorage.getItem('taekup_club_id');
+    
     if (wizardStudent) {
         // ALWAYS use resolvedStudentId if available (it's the database UUID)
         // This ensures habits/XP are saved to the correct database record
+        // Also include clubId from localStorage for leaderboard API calls
         studentToShow = resolvedStudentId 
-            ? { ...wizardStudent, id: resolvedStudentId }
-            : wizardStudent;
+            ? { ...wizardStudent, id: resolvedStudentId, clubId: storedClubId || wizardStudent.clubId }
+            : { ...wizardStudent, clubId: storedClubId || wizardStudent.clubId };
     }
 
     if (!studentToShow || !studentId) {
