@@ -3156,21 +3156,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="text-[10px] text-gray-400 uppercase">Rank</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-2xl font-black text-purple-400">{(() => {
-                                    // Debug: check what data.students has
-                                    const allStudents = data.students || [];
-                                    const matchById = allStudents.find((s: any) => String(s.id) === String(student.id));
-                                    const matchByName = allStudents.find((s: any) => s.name === student.name);
-                                    console.log('[DataStudents Debug]', {
-                                        studentId: student.id,
-                                        studentName: student.name,
-                                        studentTotalXP: student.totalXP,
-                                        dataStudentsCount: allStudents.length,
-                                        matchByIdXP: matchById?.totalXP,
-                                        matchByNameXP: matchByName?.totalXP
-                                    });
-                                    return matchByName?.totalXP ?? matchById?.totalXP ?? student.totalXP ?? 0;
-                                })()}</div>
+                                <div className="text-2xl font-black text-purple-400">{allTimeLeaderboard.find(p => p.isYou)?.displayXP ?? 0}</div>
                                 <div className="text-[10px] text-gray-400 uppercase">Total XP</div>
                             </div>
                             <div className="text-center">
