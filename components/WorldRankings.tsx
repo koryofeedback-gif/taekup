@@ -142,7 +142,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
   }, [category, sport, country]);
 
   const RankChangeIndicator = ({ change }: { change: number | null }) => {
-    if (change === null || change === 0) {
+    if (change === null || change === 0 || Number.isNaN(change)) {
       return <Minus className="w-4 h-4 text-gray-400" />;
     }
     if (change > 0) {
