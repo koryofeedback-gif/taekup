@@ -84,10 +84,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                         const wd = wizardResult.wizardData;
                         const hasContent = wd.clubName || (wd.students && wd.students.length > 0) || (wd.belts && wd.belts.length > 0);
                         if (hasContent) {
-                            localStorage.setItem('taekup_wizard_data', JSON.stringify(wizardResult.wizardData));
+                            // Merge club settings (like worldRankingsEnabled) into wizardData
+                            const mergedData = {
+                                ...wizardResult.wizardData,
+                                worldRankingsEnabled: wizardResult.club?.worldRankingsEnabled || false
+                            };
+                            localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
                             // Mark wizard as completed if there's real content
                             user.wizardCompleted = true;
-                            console.log('[Login] Saved wizard data from /api/club/:id/data');
+                            console.log('[Login] Saved wizard data from /api/club/:id/data, worldRankingsEnabled:', mergedData.worldRankingsEnabled);
                         }
                     }
                 } catch (err) {

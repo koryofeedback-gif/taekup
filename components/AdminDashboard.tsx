@@ -590,7 +590,7 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ c
     </button>
 );
 
-const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void }> = ({ data, onUpdateData }) => {
+const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
     const [activeSubTab, setActiveSubTab] = useState<'general' | 'belts' | 'locations' | 'rules'>('general');
 
     return (
@@ -726,7 +726,23 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             </div>
                             <ToggleSwitch 
                                 checked={data.worldRankingsEnabled || false} 
-                                onChange={() => onUpdateData({ worldRankingsEnabled: !data.worldRankingsEnabled })}
+                                onChange={async () => {
+                                    const newValue = !data.worldRankingsEnabled;
+                                    onUpdateData({ worldRankingsEnabled: newValue });
+                                    // Also persist to database
+                                    if (clubId) {
+                                        try {
+                                            await fetch(`/api/clubs/${clubId}/world-rankings`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ enabled: newValue })
+                                            });
+                                            console.log('[AdminDashboard] World Rankings toggled:', newValue);
+                                        } catch (err) {
+                                            console.error('[AdminDashboard] Failed to save world rankings setting:', err);
+                                        }
+                                    }
+                                }}
                             />
                         </div>
                         {data.worldRankingsEnabled && (
@@ -2584,7 +2600,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
                     {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
                     {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
-                    {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} />}
+                    {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                 </div>
             </div>

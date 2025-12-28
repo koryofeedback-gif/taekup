@@ -352,9 +352,14 @@ const App: React.FC = () => {
                         const response = await fetch(`/api/club/${userData.clubId}/data`);
                         const data = await response.json();
                         if (data.success && data.wizardData) {
-                            setFinalWizardData(data.wizardData);
-                            localStorage.setItem('taekup_wizard_data', JSON.stringify(data.wizardData));
-                            console.log('[Login] Restored wizard data from database');
+                            // Merge club settings (like worldRankingsEnabled) into wizardData
+                            const mergedData = {
+                                ...data.wizardData,
+                                worldRankingsEnabled: data.club?.worldRankingsEnabled || false
+                            };
+                            setFinalWizardData(mergedData);
+                            localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
+                            console.log('[Login] Restored wizard data from database, worldRankingsEnabled:', mergedData.worldRankingsEnabled);
                         } else {
                             // Fallback to localStorage if database doesn't have wizard data
                             const localData = localStorage.getItem('taekup_wizard_data');
