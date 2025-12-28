@@ -321,7 +321,10 @@ export function calculateGradingXP(
  * 
  * Where:
  * - earned = sum of scores + min(coachBonus, 2) + min(homework, 2)
- * - possible = (items × 2) + 2 (if bonus enabled) + 2 (if homework enabled)
+ * - possible = (items × 2) + actualBonus + actualHomework (only if given)
+ * 
+ * Note: Bonus/homework are only included in possible if actually awarded.
+ * This ensures students can achieve 100% without needing bonus/homework.
  * 
  * @param scores - Array of score values (Green=2, Yellow=1, Red=0)
  * @param coachBonus - Coach bonus points (CAPPED AT 2 for global)
@@ -331,10 +334,11 @@ export function calculateGradingXP(
  * @returns Normalized XP value (0-100) for world rankings
  * 
  * @example
- * // Coach gives 15 bonus, 10 homework - only 2+2 count for GLOBAL
- * // 4 items all green (8) + 2 (capped bonus) + 2 (capped homework) = 12 earned
- * // possible = 8 + 2 + 2 = 12
- * // Global XP = 100
+ * // 4 items all green, no bonus/homework given
+ * // earned = 8, possible = 8, Global XP = 100
+ * 
+ * // 4 items all green + 2 bonus given (capped from 15)
+ * // earned = 8 + 2 = 10, possible = 8 + 2 = 10, Global XP = 100
  */
 export function calculateGlobalGradingXP(
   scores: (number | null | undefined)[],
@@ -355,13 +359,14 @@ export function calculateGlobalGradingXP(
   
   // Calculate earned points (with caps)
   const earnedScores = validScores.reduce((sum, score) => sum + score, 0);
-  const earnedTotal = earnedScores + (coachBonusEnabled ? cappedBonus : 0) + (homeworkEnabled ? cappedHomework : 0);
+  const actualBonus = coachBonusEnabled ? cappedBonus : 0;
+  const actualHomework = homeworkEnabled ? cappedHomework : 0;
+  const earnedTotal = earnedScores + actualBonus + actualHomework;
   
-  // Calculate possible points (max 2 for bonus/homework)
+  // Calculate possible points - only include bonus/homework in possible if actually given
+  // This ensures students can get 100% without needing bonus/homework
   const maxScores = validScores.length * SCORE_VALUES.GREEN;
-  const maxBonus = coachBonusEnabled ? GLOBAL_MAX_COACH_BONUS : 0;
-  const maxHomework = homeworkEnabled ? GLOBAL_MAX_HOMEWORK_BONUS : 0;
-  const possibleTotal = maxScores + maxBonus + maxHomework;
+  const possibleTotal = maxScores + actualBonus + actualHomework;
   
   // Avoid division by zero
   if (possibleTotal === 0) return 0;
