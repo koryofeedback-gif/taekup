@@ -2924,11 +2924,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             .map((s, i) => ({ ...s, rank: i + 1 }));
         
         // Calculate All-Time XP leaderboard - USE FRESH API DATA as single source of truth
+        // First, find current student's totalXP directly from API (most reliable)
+        const currentStudentApiData = apiLeaderboardData.find(a => String(a.id) === String(student.id));
+        const currentStudentTotalXP = currentStudentApiData?.totalXP ?? 0;
+        
         const allTimeLeaderboard = allStudentsForLeaderboard
             .map(s => {
                 const apiStudent = apiLeaderboardData.find(a => String(a.id) === String(s.id));
                 const isCurrentStudent = String(s.id) === String(student.id);
-                const freshXP = apiStudent?.totalXP ?? s.totalXP ?? 0;
+                // For current student, prefer direct API lookup; for others, use apiStudent?.totalXP
+                const freshXP = isCurrentStudent 
+                    ? (currentStudentTotalXP || apiStudent?.totalXP || s.totalXP || 0)
+                    : (apiStudent?.totalXP ?? s.totalXP ?? 0);
                 return {
                     ...s,
                     displayXP: freshXP,
