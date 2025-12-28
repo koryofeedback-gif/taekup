@@ -93,25 +93,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Fetch fresh leaderboard data from API
     useEffect(() => {
         const fetchLeaderboard = async () => {
-            console.log('[Leaderboard] Attempting fetch, clubId:', student.clubId);
-            if (!student.clubId) {
-                console.log('[Leaderboard] No clubId, skipping fetch');
-                return;
-            }
+            if (!student.clubId) return;
             setLeaderboardLoading(true);
             try {
                 const response = await fetch(`/api/leaderboard?clubId=${student.clubId}`);
                 const result = await response.json();
                 if (result.leaderboard) {
                     setApiLeaderboardData(result.leaderboard);
-                    console.log('[Leaderboard] Fetched fresh data from API:', result.leaderboard.length, 'students');
-                    // Debug: Log current student's data from API
-                    const myData = result.leaderboard.find((s: any) => String(s.id) === String(student.id));
-                    if (myData) {
-                        console.log('[Leaderboard] Current student API data:', { id: myData.id, name: myData.name, totalXP: myData.totalXP, monthlyXP: myData.monthlyXP });
-                    } else {
-                        console.log('[Leaderboard] Current student NOT FOUND in API data. Student ID:', student.id);
-                    }
                 }
             } catch (err) {
                 console.error('[Leaderboard] Failed to fetch:', err);
@@ -120,7 +108,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         };
         fetchLeaderboard();
-        // Refresh every 30 seconds
         const interval = setInterval(fetchLeaderboard, 30000);
         return () => clearInterval(interval);
     }, [student.clubId]);
