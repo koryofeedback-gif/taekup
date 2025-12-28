@@ -101,6 +101,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 if (result.leaderboard) {
                     setApiLeaderboardData(result.leaderboard);
                     console.log('[Leaderboard] Fetched fresh data from API:', result.leaderboard.length, 'students');
+                    // Debug: Log current student's data from API
+                    const myData = result.leaderboard.find((s: any) => String(s.id) === String(student.id));
+                    if (myData) {
+                        console.log('[Leaderboard] Current student API data:', { id: myData.id, name: myData.name, totalXP: myData.totalXP, monthlyXP: myData.monthlyXP });
+                    } else {
+                        console.log('[Leaderboard] Current student NOT FOUND in API data. Student ID:', student.id);
+                    }
                 }
             } catch (err) {
                 console.error('[Leaderboard] Failed to fetch:', err);
