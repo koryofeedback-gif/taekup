@@ -3815,9 +3815,9 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    // Get students with their stored total_xp
+    // Get students with their stored total_xp and created_at
     const studentsResult = await client.query(`
-      SELECT id, name, belt, stripes, COALESCE(total_xp, 0) as total_xp
+      SELECT id, name, belt, stripes, COALESCE(total_xp, 0) as total_xp, created_at
       FROM students WHERE club_id = $1::uuid`,
       [clubId]
     );
@@ -3884,10 +3884,22 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
     const leaderboard = studentsResult.rows.map((s: any) => {
       const storedXp = parseInt(s.total_xp) || 0;
       const calculatedAllTime = allTimeXpMap.get(s.id) || 0;
-      const monthlyXp = monthlyXpMap.get(s.id) || 0;
+      const monthlyXpFromTx = monthlyXpMap.get(s.id) || 0;
       
       // Use highest value to never undercount XP
-      const trueAllTimeXp = Math.max(storedXp, calculatedAllTime, monthlyXp);
+      const trueAllTimeXp = Math.max(storedXp, calculatedAllTime, monthlyXpFromTx);
+      
+      // For monthly: if student was created this month and stored > transactions, use stored
+      // This handles students who earned XP before transaction logging was complete
+      const studentCreatedAt = s.created_at ? new Date(s.created_at) : null;
+      const isCreatedThisMonth = studentCreatedAt && 
+        studentCreatedAt.getFullYear() === monthStart.getFullYear() && 
+        studentCreatedAt.getMonth() === monthStart.getMonth();
+      
+      // Monthly = max of transactions this month, or all their stored XP if created this month
+      const trueMonthlyXp = isCreatedThisMonth 
+        ? Math.max(monthlyXpFromTx, storedXp) 
+        : monthlyXpFromTx;
       
       return {
         id: s.id,
@@ -3895,7 +3907,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
         belt: s.belt,
         stripes: s.stripes || 0,
         totalXP: trueAllTimeXp,
-        monthlyXP: monthlyXp,
+        monthlyXP: trueMonthlyXp,
         monthlyPTS: monthlyPtsMap.get(s.id) || 0
       };
     })
