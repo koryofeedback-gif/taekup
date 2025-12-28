@@ -2075,7 +2075,24 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         )}
                                         <th className="px-2 py-3 text-center">Note</th>
                                         {!focusMode && <th className="px-2 py-3 text-center">View</th>}
-                                        <th className="px-4 py-3 text-center">✅</th>
+                                        <th className="px-4 py-3 text-center">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={filteredStudents.length > 0 && filteredStudents.every(s => attendance[s.id])}
+                                                onChange={(e) => {
+                                                    const newValue = e.target.checked;
+                                                    setAttendance(prev => {
+                                                        const updated = { ...prev };
+                                                        filteredStudents.forEach(s => {
+                                                            updated[s.id] = newValue;
+                                                        });
+                                                        return updated;
+                                                    });
+                                                }}
+                                                className="w-5 h-5 text-sky-500 bg-gray-700 border-gray-600 rounded focus:ring-sky-500 cursor-pointer"
+                                                title={filteredStudents.every(s => attendance[s.id]) ? "Uncheck all" : "Check all"}
+                                            />
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
