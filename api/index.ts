@@ -4669,6 +4669,39 @@ async function handleStudentGlobalXp(req: VercelRequest, res: VercelResponse, st
 }
 
 // =====================================================
+// SEED GLOBAL XP FOR TESTING
+// =====================================================
+
+async function handleSeedClubGlobalXp(req: VercelRequest, res: VercelResponse, clubId: string) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const client = await pool.connect();
+  try {
+    // Give each student in the club 30-50 random global XP
+    const result = await client.query(`
+      UPDATE students 
+      SET global_xp = COALESCE(global_xp, 0) + (20 + floor(random() * 31)::int),
+          updated_at = NOW()
+      WHERE club_id = $1::uuid
+      RETURNING id, name, global_xp
+    `, [clubId]);
+
+    console.log(`[Seed Global XP] Added global XP to ${result.rows.length} students in club ${clubId}`);
+
+    return res.json({ 
+      success: true, 
+      message: `Added 20-50 global XP to ${result.rows.length} students`,
+      students: result.rows.map((s: any) => ({ name: s.name, globalXp: s.global_xp }))
+    });
+  } catch (error: any) {
+    console.error('[Seed Global XP] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to seed global XP' });
+  } finally {
+    client.release();
+  }
+}
+
+// =====================================================
 // SUPER ADMIN - DAILY TRAINING MANAGEMENT
 // =====================================================
 
@@ -5156,6 +5189,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const clubWorldRankingsMatch = path.match(/^\/clubs\/([^/]+)\/world-rankings\/?$/);
     if (clubWorldRankingsMatch) return await handleClubWorldRankingsToggle(req, res, clubWorldRankingsMatch[1]);
+    
+    const seedGlobalXpMatch = path.match(/^\/clubs\/([^/]+)\/seed-global-xp\/?$/);
+    if (seedGlobalXpMatch) return await handleSeedClubGlobalXp(req, res, seedGlobalXpMatch[1]);
     
     const studentGlobalXpMatch = path.match(/^\/students\/([^/]+)\/global-xp\/?$/);
     if (studentGlobalXpMatch) return await handleStudentGlobalXp(req, res, studentGlobalXpMatch[1]);
