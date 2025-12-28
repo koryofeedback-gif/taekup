@@ -93,7 +93,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Fetch fresh leaderboard data from API
     useEffect(() => {
         const fetchLeaderboard = async () => {
-            if (!student.clubId) return;
+            console.log('[Leaderboard] Attempting fetch, clubId:', student.clubId);
+            if (!student.clubId) {
+                console.log('[Leaderboard] No clubId, skipping fetch');
+                return;
+            }
             setLeaderboardLoading(true);
             try {
                 const response = await fetch(`/api/leaderboard?clubId=${student.clubId}`);
