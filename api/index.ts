@@ -510,7 +510,8 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
   try {
     const clubResult = await client.query(
       `SELECT id, name, owner_email, owner_name, country, city, art_type, 
-              wizard_data, trial_start, trial_end, trial_status, status
+              wizard_data, trial_start, trial_end, trial_status, status,
+              world_rankings_enabled
        FROM clubs WHERE id = $1::uuid`,
       [clubId]
     );
@@ -591,7 +592,8 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
         trialStart: club.trial_start,
         trialEnd: club.trial_end,
         trialStatus: club.trial_status,
-        status: club.status
+        status: club.status,
+        worldRankingsEnabled: club.world_rankings_enabled || false
       },
       wizardData
     });
