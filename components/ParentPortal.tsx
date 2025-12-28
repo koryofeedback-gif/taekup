@@ -4148,6 +4148,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </p>
                                     </div>
                                     
+                                    {(() => {
+                                        const youInList = leaderboard.find(p => p.isYou);
+                                        console.log('[ListRender]', leaderboardMode, 'youInList:', youInList?.name, 'displayXP:', youInList?.displayXP);
+                                        return null;
+                                    })()}
                                     {leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
                                         <p className="text-gray-500 text-center py-8 italic">
                                             {leaderboardMode === 'monthly' 
