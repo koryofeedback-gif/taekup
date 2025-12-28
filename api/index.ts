@@ -4385,8 +4385,6 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
           s.name,
           s.belt,
           COALESCE(s.global_xp, 0) as global_xp,
-          s.world_rank,
-          s.previous_world_rank,
           c.name as club_name,
           c.art_type as sport,
           c.country,
@@ -4422,12 +4420,10 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         name: r.name,
         belt: r.belt,
         globalXp: Number(r.global_xp) || 0,
-        previousRank: r.previous_world_rank,
         clubName: r.club_name,
         sport: r.sport,
         country: r.country,
-        city: r.city,
-        rankChange: r.previous_world_rank ? r.previous_world_rank - (offset + index + 1) : null
+        city: r.city
       }));
 
       return res.json({ category: 'students', rankings, total: rankings.length });
@@ -4439,7 +4435,6 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
           c.art_type as sport,
           c.country,
           c.city,
-          c.global_score,
           COUNT(s.id) as student_count,
           COALESCE(SUM(s.global_xp), 0) as total_global_xp,
           CASE WHEN COUNT(s.id) > 0 THEN COALESCE(SUM(s.global_xp), 0) / COUNT(s.id) ELSE 0 END as avg_global_xp
@@ -4447,7 +4442,7 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         LEFT JOIN students s ON s.club_id = c.id
         WHERE c.world_rankings_enabled = true
           AND c.status = 'active'
-        GROUP BY c.id, c.name, c.art_type, c.country, c.city, c.global_score
+        GROUP BY c.id, c.name, c.art_type, c.country, c.city
         HAVING COUNT(s.id) > 0
       `;
       const params: any[] = [];
