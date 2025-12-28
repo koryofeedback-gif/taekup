@@ -2924,15 +2924,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             .map((s, i) => ({ ...s, rank: i + 1 }));
         
         // Calculate All-Time XP leaderboard - USE FRESH API DATA as single source of truth
-        console.log('[LeaderboardDebug] student.id:', student.id, 'allStudentsCount:', allStudentsForLeaderboard.length);
         const allTimeLeaderboard = allStudentsForLeaderboard
             .map(s => {
-                // Find this student's XP from fresh API data (same for everyone)
                 const apiStudent = apiLeaderboardData.find(a => String(a.id) === String(s.id));
-                // Use API data, fall back to stored totalXP for the student
                 const isCurrentStudent = String(s.id) === String(student.id);
                 const freshXP = apiStudent?.totalXP ?? s.totalXP ?? 0;
-                console.log('[AllTimeCalc]', s.name, 'id:', s.id, 'totalXP:', s.totalXP, 'displayXP:', freshXP, 'isYou:', isCurrentStudent);
                 return {
                     ...s,
                     displayXP: freshXP,
@@ -4148,11 +4144,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </p>
                                     </div>
                                     
-                                    {(() => {
-                                        const youInList = leaderboard.find(p => p.isYou);
-                                        console.log('[ListRender]', leaderboardMode, 'youInList:', youInList?.name, 'displayXP:', youInList?.displayXP);
-                                        return null;
-                                    })()}
                                     {leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
                                         <p className="text-gray-500 text-center py-8 italic">
                                             {leaderboardMode === 'monthly' 
