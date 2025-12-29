@@ -67,8 +67,12 @@ const SPORT_ICONS: Record<string, string> = {
 
 const COUNTRY_FLAGS: Record<string, string> = {
   'Iran': '🇮🇷',
+  'IR': '🇮🇷',
+  'Iran (Islamic Republic of)': '🇮🇷',
+  'Islamic Republic of Iran': '🇮🇷',
   'United States': '🇺🇸',
   'USA': '🇺🇸',
+  'US': '🇺🇸',
   'South Korea': '🇰🇷',
   'Korea': '🇰🇷',
   'Japan': '🇯🇵',
@@ -129,7 +133,9 @@ const COUNTRY_FLAGS: Record<string, string> = {
 };
 
 const getCountryFlag = (country: string): string => {
-  return COUNTRY_FLAGS[country] || '🌍';
+  if (!country) return '🌍';
+  const trimmed = country.trim();
+  return COUNTRY_FLAGS[trimmed] || COUNTRY_FLAGS[trimmed.toUpperCase()] || '🌍';
 };
 
 export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = false }) => {
@@ -193,10 +199,8 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
         if (data.error) {
           setError(data.error);
         } else if (category === 'students') {
-          console.log('[WorldRankings] Student data:', data.rankings?.map((s: any) => ({ name: s.name, country: s.country })));
           setStudentRankings(data.rankings || []);
         } else {
-          console.log('[WorldRankings] Club data:', data.rankings?.map((c: any) => ({ name: c.name, country: c.country })));
           setClubRankings(data.rankings || []);
         }
       } catch (err) {
