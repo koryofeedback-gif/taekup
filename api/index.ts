@@ -4387,6 +4387,7 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
           s.name,
           s.belt,
           COALESCE(s.global_xp, 0) as global_xp,
+          s.previous_rank,
           c.name as club_name,
           c.art_type as sport,
           c.country,
@@ -4416,18 +4417,29 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
 
       const result = await client.query(query, params);
       
-      const rankings = result.rows.map((r: any, index: number) => ({
-        rank: offset + index + 1,
-        id: r.id,
-        name: r.name,
-        belt: r.belt,
-        globalXp: Number(r.global_xp) || 0,
-        clubName: r.club_name,
-        sport: r.sport,
-        country: r.country,
-        city: r.city,
-        rankChange: null // Will be calculated when we have historical data
-      }));
+      const rankings = result.rows.map((r: any, index: number) => {
+        const currentRank = offset + index + 1;
+        const prevRank = r.previous_rank ? Number(r.previous_rank) : null;
+        const rankChange = prevRank !== null ? prevRank - currentRank : null;
+        return {
+          rank: currentRank,
+          id: r.id,
+          name: r.name,
+          belt: r.belt,
+          globalXp: Number(r.global_xp) || 0,
+          clubName: r.club_name,
+          sport: r.sport,
+          country: r.country,
+          city: r.city,
+          rankChange
+        };
+      });
+
+      // Update previous_rank for all students in this ranking
+      const updatePromises = rankings.map((s: any) => 
+        client.query('UPDATE students SET previous_rank = $1 WHERE id = $2', [s.rank, s.id])
+      );
+      await Promise.all(updatePromises);
 
       return res.json({ category: 'students', rankings, total: rankings.length });
     } else if (category === 'clubs') {
