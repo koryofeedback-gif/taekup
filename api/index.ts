@@ -4381,16 +4381,23 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
   const client = await pool.connect();
   try {
     if (category === 'students') {
-      // Check if previous_rank column exists
+      // Check if previous_rank column exists, create if not
       let hasPreviousRank = false;
       try {
         const colCheck = await client.query(`
           SELECT column_name FROM information_schema.columns 
           WHERE table_name = 'students' AND column_name = 'previous_rank'
         `);
-        hasPreviousRank = colCheck.rows.length > 0;
+        if (colCheck.rows.length > 0) {
+          hasPreviousRank = true;
+        } else {
+          // Create the column if it doesn't exist
+          await client.query('ALTER TABLE students ADD COLUMN previous_rank INTEGER DEFAULT NULL');
+          hasPreviousRank = true;
+          console.log('[WorldRankings] Created previous_rank column');
+        }
       } catch (e) {
-        // Column doesn't exist, that's fine
+        console.log('[WorldRankings] Could not check/create previous_rank column:', e);
       }
 
       let query = `
