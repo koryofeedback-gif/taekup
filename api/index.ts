@@ -4381,13 +4381,25 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
   const client = await pool.connect();
   try {
     if (category === 'students') {
+      // Check if previous_rank column exists
+      let hasPreviousRank = false;
+      try {
+        const colCheck = await client.query(`
+          SELECT column_name FROM information_schema.columns 
+          WHERE table_name = 'students' AND column_name = 'previous_rank'
+        `);
+        hasPreviousRank = colCheck.rows.length > 0;
+      } catch (e) {
+        // Column doesn't exist, that's fine
+      }
+
       let query = `
         SELECT 
           s.id,
           s.name,
           s.belt,
           COALESCE(s.global_xp, 0) as global_xp,
-          s.previous_rank,
+          ${hasPreviousRank ? 's.previous_rank,' : ''}
           c.name as club_name,
           c.art_type as sport,
           c.country,
@@ -4419,7 +4431,7 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
       
       const rankings = result.rows.map((r: any, index: number) => {
         const currentRank = offset + index + 1;
-        const prevRank = r.previous_rank ? Number(r.previous_rank) : null;
+        const prevRank = hasPreviousRank && r.previous_rank ? Number(r.previous_rank) : null;
         const rankChange = prevRank !== null ? prevRank - currentRank : null;
         return {
           rank: currentRank,
@@ -4435,11 +4447,13 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         };
       });
 
-      // Update previous_rank for all students in this ranking
-      const updatePromises = rankings.map((s: any) => 
-        client.query('UPDATE students SET previous_rank = $1 WHERE id = $2', [s.rank, s.id])
-      );
-      await Promise.all(updatePromises);
+      // Update previous_rank for all students in this ranking (if column exists)
+      if (hasPreviousRank) {
+        const updatePromises = rankings.map((s: any) => 
+          client.query('UPDATE students SET previous_rank = $1 WHERE id = $2', [s.rank, s.id])
+        );
+        await Promise.all(updatePromises);
+      }
 
       return res.json({ category: 'students', rankings, total: rankings.length });
     } else if (category === 'clubs') {
