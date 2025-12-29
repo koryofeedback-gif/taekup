@@ -3165,16 +3165,12 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
     
     // Map Arena TRUST submissions to history format (Coach Pick challenges done without video)
     const arenaTrustHistory = arenaTrustResult.rows.map(row => {
-      // Format challenge name nicely (convert snake_case to Title Case)
-      const formattedName = (row.challenge_name || 'Arena Challenge')
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (l: string) => l.toUpperCase());
-      
+      // Use simple "Coach Pick" as the display name
       return {
         id: row.id,
         source: 'coach_pick',
         challengeId: row.challenge_id,
-        challengeName: formattedName,
+        challengeName: 'Coach Pick',
         icon: '⭐',
         category: 'Coach Picks',
         status: 'COMPLETED',
