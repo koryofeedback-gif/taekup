@@ -2878,6 +2878,7 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
   const client = await pool.connect();
   try {
     // Fetch Coach Pick submissions (from challenge_videos table)
+    // Exclude 'Daily Training' category as those are Gauntlet submissions (already in gauntlet_submissions)
     const coachPicksResult = await client.query(
       `SELECT 
         id,
@@ -2891,6 +2892,7 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
         created_at
       FROM challenge_videos 
       WHERE student_id = $1::uuid
+        AND (challenge_category IS NULL OR challenge_category != 'Daily Training')
       ORDER BY created_at DESC
       LIMIT 30`,
       [studentId]

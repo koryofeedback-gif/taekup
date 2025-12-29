@@ -2714,6 +2714,7 @@ export function registerRoutes(app: Express) {
       }
 
       // Fetch Coach Pick submissions (from challenge_videos table)
+      // Exclude 'Daily Training' category as those are Gauntlet submissions (already in gauntlet_submissions)
       const coachPicksResult = await db.execute(sql`
         SELECT 
           id,
@@ -2727,6 +2728,7 @@ export function registerRoutes(app: Express) {
           created_at
         FROM challenge_videos 
         WHERE student_id = ${studentId}::uuid
+          AND (challenge_category IS NULL OR challenge_category != 'Daily Training')
         ORDER BY created_at DESC
         LIMIT 30
       `);
