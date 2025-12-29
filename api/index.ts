@@ -2429,49 +2429,50 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Check if challenge exists for today
+    // Get club's art_type FIRST (needed for cache lookup)
+    let artType = 'Taekwondo';
+    const clubIdStr = clubId as string;
+    const isValidClubUuid = uuidRegex.test(clubIdStr);
+    
+    if (clubId && isValidClubUuid) {
+      try {
+        const clubData = await client.query(`SELECT art_type FROM clubs WHERE id = $1::uuid`, [clubIdStr]);
+        if (clubData.rows.length > 0) {
+          artType = clubData.rows[0].art_type || 'Taekwondo';
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    // Check if challenge exists for today + belt + art_type (PROPER CACHING)
     const existingChallenge = await client.query(
-      `SELECT * FROM daily_challenges WHERE date = $1 AND target_belt = $2 LIMIT 1`,
-      [today, targetBelt]
+      `SELECT * FROM daily_challenges WHERE date = $1 AND target_belt = $2 AND art_type = $3 LIMIT 1`,
+      [today, targetBelt, artType]
     );
 
     let challenge: any;
 
     if (existingChallenge.rows.length > 0) {
       challenge = existingChallenge.rows[0];
-      console.log(`[DailyChallenge] Using cached challenge for ${targetBelt} belt`);
+      console.log(`[DailyChallenge] Using cached challenge for ${artType} ${targetBelt} belt`);
     } else {
       // Generate new challenge with AI, with fallback
-      let artType = 'Taekwondo';
-      const clubIdStr = clubId as string;
-      const isValidClubUuid = uuidRegex.test(clubIdStr);
-      
-      if (clubId && isValidClubUuid) {
-        try {
-          const clubData = await client.query(`SELECT art_type FROM clubs WHERE id = $1::uuid`, [clubIdStr]);
-          if (clubData.rows.length > 0) {
-            artType = clubData.rows[0].art_type || 'Taekwondo';
-          }
-        } catch (e) { /* ignore */ }
-      }
-
       let generated;
       try {
         generated = await generateDailyChallengeAI(targetBelt, artType);
-        console.log(`[DailyChallenge] AI generated challenge for ${targetBelt} belt`);
+        console.log(`[DailyChallenge] AI generated challenge for ${artType} ${targetBelt} belt`);
       } catch (aiError: any) {
         console.error(`[DailyChallenge] AI generation failed: ${aiError.message}`);
         console.log(`[DailyChallenge] Using fallback challenge`);
         generated = getFallbackChallenge();
       }
       
-      // Cache in database
+      // Cache in database with art_type
       try {
         const insertResult = await client.query(
-          `INSERT INTO daily_challenges (date, target_belt, title, description, xp_reward, type, quiz_data, created_by_ai)
-           VALUES ($1, $2, $3, $4, $5, $6::daily_challenge_type, $7::jsonb, NOW())
+          `INSERT INTO daily_challenges (date, target_belt, art_type, title, description, xp_reward, type, quiz_data, created_by_ai)
+           VALUES ($1, $2, $3, $4, $5, $6, $7::daily_challenge_type, $8::jsonb, NOW())
            RETURNING *`,
-          [today, targetBelt, generated.title, generated.description, generated.xpReward, 
+          [today, targetBelt, artType, generated.title, generated.description, generated.xpReward, 
            generated.type, JSON.stringify(generated.quizData)]
         );
         challenge = insertResult.rows[0];

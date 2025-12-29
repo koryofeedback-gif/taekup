@@ -2478,38 +2478,39 @@ export function registerRoutes(app: Express) {
         });
       }
 
-      // "Lazy Generator" - Check if challenge exists for today + belt
+      // Get club's art_type FIRST (needed for cache lookup)
+      let artType = 'Taekwondo';
+      const clubIdStr = clubId as string;
+      const isValidClubUuid = uuidRegex.test(clubIdStr);
+      
+      if (clubId && isValidClubUuid) {
+        const clubData = await db.execute(sql`
+          SELECT art_type FROM clubs WHERE id = ${clubIdStr}::uuid
+        `);
+        if ((clubData as any[]).length > 0) {
+          artType = (clubData as any[])[0].art_type || 'Taekwondo';
+        }
+      }
+
+      // "Lazy Generator" - Check if challenge exists for today + belt + art_type
       let existingChallenge = await db.execute(sql`
         SELECT * FROM daily_challenges 
-        WHERE date = ${today} AND target_belt = ${targetBelt}
+        WHERE date = ${today} AND target_belt = ${targetBelt} AND art_type = ${artType}
         LIMIT 1
       `);
 
       let challenge: any;
 
       if ((existingChallenge as any[]).length > 0) {
-        // Use cached challenge
+        // Use cached challenge - SAME question for all students with same sport+belt
         challenge = (existingChallenge as any[])[0];
-        console.log(`[DailyChallenge] Using cached challenge for ${targetBelt} belt`);
+        console.log(`[DailyChallenge] Using cached challenge for ${artType} ${targetBelt} belt`);
       } else {
         // Try to generate new challenge with AI, with fallback on failure
-        let artType = 'Taekwondo';
-        const clubIdStr = clubId as string;
-        const isValidClubUuid = uuidRegex.test(clubIdStr);
-        
-        if (clubId && isValidClubUuid) {
-          const clubData = await db.execute(sql`
-            SELECT art_type FROM clubs WHERE id = ${clubIdStr}::uuid
-          `);
-          if ((clubData as any[]).length > 0) {
-            artType = (clubData as any[])[0].art_type || 'Taekwondo';
-          }
-        }
-
         let generated;
         try {
           generated = await generateDailyChallenge(targetBelt, artType);
-          console.log(`[DailyChallenge] AI generated challenge for ${targetBelt} belt`);
+          console.log(`[DailyChallenge] AI generated challenge for ${artType} ${targetBelt} belt`);
         } catch (aiError: any) {
           // AI generation failed - use fallback challenge
           console.error(`[DailyChallenge] AI generation failed: ${aiError.message}`);
@@ -2517,17 +2518,17 @@ export function registerRoutes(app: Express) {
           generated = getFallbackChallenge();
         }
         
-        // Cache in database
+        // Cache in database with art_type
         try {
           const insertResult = await db.execute(sql`
-            INSERT INTO daily_challenges (date, target_belt, title, description, xp_reward, type, quiz_data, created_by_ai)
-            VALUES (${today}, ${targetBelt}, ${generated.title}, ${generated.description}, ${generated.xpReward}, 
+            INSERT INTO daily_challenges (date, target_belt, art_type, title, description, xp_reward, type, quiz_data, created_by_ai)
+            VALUES (${today}, ${targetBelt}, ${artType}, ${generated.title}, ${generated.description}, ${generated.xpReward}, 
                     ${generated.type}::daily_challenge_type, ${JSON.stringify(generated.quizData)}::jsonb, NOW())
             RETURNING *
           `);
           
           challenge = (insertResult as any[])[0];
-          console.log(`[DailyChallenge] Cached challenge for ${targetBelt} belt`);
+          console.log(`[DailyChallenge] Cached challenge for ${artType} ${targetBelt} belt`);
         } catch (dbError: any) {
           // If DB insert fails, return the generated challenge directly without caching
           console.error(`[DailyChallenge] DB cache failed: ${dbError.message}`);
