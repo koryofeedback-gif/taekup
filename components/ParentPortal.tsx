@@ -4302,6 +4302,84 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         );
                                         })
                                     )}
+                                    
+                                    {/* WORLD RANKINGS SECTION */}
+                                    <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 p-4 rounded-xl border border-cyan-500/30 mt-6">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="font-bold text-white flex items-center">
+                                                <span className="mr-2">🌍</span> World Rankings
+                                            </h4>
+                                            {worldRankLoading && (
+                                                <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                                            )}
+                                        </div>
+                                        
+                                        {worldRankData.myRank !== null ? (
+                                            <div className="space-y-3">
+                                                <div className="bg-gray-800/50 rounded-lg p-3 text-center">
+                                                    <p className="text-gray-400 text-xs mb-1">Your Global Rank</p>
+                                                    <p className="text-3xl font-black text-cyan-400">#{worldRankData.myRank}</p>
+                                                    <p className="text-gray-500 text-xs">of {worldRankData.totalStudents.toLocaleString()} students worldwide</p>
+                                                    <p className="text-purple-400 text-sm mt-1">{worldRankData.myGlobalXP.toLocaleString()} Global XP</p>
+                                                </div>
+                                                
+                                                {isPremium ? (
+                                                    <button
+                                                        onClick={() => setShowGlobalLeaderboard(!showGlobalLeaderboard)}
+                                                        className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm"
+                                                    >
+                                                        {showGlobalLeaderboard ? 'Hide' : 'View'} Global Leaderboard
+                                                    </button>
+                                                ) : (
+                                                    <div className="bg-gray-800/50 rounded-lg p-3 text-center border border-yellow-500/30">
+                                                        <span className="text-yellow-400 mr-2">🔒</span>
+                                                        <span className="text-gray-400 text-sm">Upgrade to Premium to see full global leaderboard</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {showGlobalLeaderboard && isPremium && worldRankData.topPlayers.length > 0 && (
+                                                    <div className="space-y-2 mt-3">
+                                                        <p className="text-gray-400 text-xs font-bold">Top 10 Worldwide</p>
+                                                        {worldRankData.topPlayers.map((player, index) => (
+                                                            <div 
+                                                                key={player.id} 
+                                                                className={`flex items-center justify-between p-2 rounded-lg border ${
+                                                                    player.id === student.id 
+                                                                        ? 'bg-cyan-900/30 border-cyan-500/50' 
+                                                                        : 'bg-gray-800/50 border-gray-700'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center">
+                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-xs mr-2 ${
+                                                                        index === 0 ? 'bg-yellow-500 text-black' :
+                                                                        index === 1 ? 'bg-gray-400 text-black' :
+                                                                        index === 2 ? 'bg-orange-600 text-white' :
+                                                                        'bg-gray-700 text-gray-400'
+                                                                    }`}>
+                                                                        {index + 1}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className={`font-bold text-xs ${player.id === student.id ? 'text-cyan-400' : 'text-white'}`}>
+                                                                            {player.name} {player.id === student.id && '(You)'}
+                                                                        </p>
+                                                                        <p className="text-[10px] text-gray-500">
+                                                                            {player.club_name} • {player.country || 'Unknown'}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-4">
+                                                <p className="text-gray-400 text-sm">Complete challenges to earn Global XP and appear on the World Rankings!</p>
+                                                <p className="text-gray-500 text-xs mt-2">Only challenges with video proof count toward global rankings.</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
