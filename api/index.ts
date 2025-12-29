@@ -2991,6 +2991,7 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
     );
 
     // Fetch Daily Mystery Challenge submissions (from challenge_submissions table)
+    // ONLY include submissions that have a matching daily_challenges record
     const mysteryResult = await client.query(
       `SELECT 
         cs.id,
@@ -3000,10 +3001,31 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
         cs.xp_awarded,
         cs.completed_at as created_at
       FROM challenge_submissions cs
-      LEFT JOIN daily_challenges dc ON cs.challenge_id = dc.id
+      INNER JOIN daily_challenges dc ON cs.challenge_id = dc.id
       WHERE cs.student_id = $1::uuid
       ORDER BY cs.completed_at DESC
       LIMIT 20`,
+      [studentId]
+    );
+    
+    // Fetch Arena Coach Pick TRUST submissions (from challenge_submissions table)
+    // These are TRUST submissions that are NOT daily mystery challenges
+    const arenaTrustResult = await client.query(
+      `SELECT 
+        cs.id,
+        cs.challenge_id,
+        cs.answer as challenge_name,
+        cs.xp_awarded,
+        cs.global_rank_points,
+        cs.proof_type,
+        cs.completed_at as created_at
+      FROM challenge_submissions cs
+      LEFT JOIN daily_challenges dc ON cs.challenge_id = dc.id
+      WHERE cs.student_id = $1::uuid
+        AND dc.id IS NULL
+        AND cs.proof_type = 'TRUST'
+      ORDER BY cs.completed_at DESC
+      LIMIT 30`,
       [studentId]
     );
 
@@ -3140,9 +3162,32 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
         completedAt: row.created_at
       };
     });
+    
+    // Map Arena TRUST submissions to history format (Coach Pick challenges done without video)
+    const arenaTrustHistory = arenaTrustResult.rows.map(row => {
+      // Format challenge name nicely (convert snake_case to Title Case)
+      const formattedName = (row.challenge_name || 'Arena Challenge')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (l: string) => l.toUpperCase());
+      
+      return {
+        id: row.id,
+        source: 'coach_pick',
+        challengeId: row.challenge_id,
+        challengeName: formattedName,
+        icon: '⭐',
+        category: 'Coach Picks',
+        status: 'COMPLETED',
+        proofType: 'TRUST',
+        xpAwarded: row.xp_awarded || 0,
+        globalXp: row.global_rank_points || 0,
+        mode: 'SOLO',
+        completedAt: row.created_at
+      };
+    });
 
     // Combine and sort by date (newest first)
-    const allHistory = [...coachPickHistory, ...gauntletHistory, ...mysteryHistory, ...familyHistory]
+    const allHistory = [...coachPickHistory, ...gauntletHistory, ...mysteryHistory, ...familyHistory, ...arenaTrustHistory]
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
       .slice(0, 50);
 
