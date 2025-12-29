@@ -5325,12 +5325,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             <div className="fixed bottom-0 w-full max-w-md bg-gray-800 border-t border-gray-700 pb-safe z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
                 <div className="flex justify-between items-center h-16 px-2 overflow-x-auto no-scrollbar">
                     <NavButton icon="🏠" label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                    <NavButton icon="🏠" label="Dojo" active={activeTab === 'home-dojo'} onClick={() => setActiveTab('home-dojo')} isPremium={!hasPremiumAccess} />
+                    <NavButton icon="🥋" label="Dojo" active={activeTab === 'home-dojo'} onClick={() => setActiveTab('home-dojo')} isPremium={!hasPremiumAccess} />
+                    <NavButton icon="⚔️" label="Arena" active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
                     <NavButton icon="📅" label="Book" active={activeTab === 'booking'} onClick={() => setActiveTab('booking')} />
-                    <NavButton icon="⚔️" label="Rivals" active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
+                    <NavButton icon="🔮" label="Future" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="🏅" label="Card" active={activeTab === 'card'} onClick={() => setActiveTab('card')} isPremium={!hasPremiumAccess} />
-                    <NavButton icon="📊" label="Stats" active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} isPremium={!hasPremiumAccess} />
-                    <NavButton icon="🚀" label="Path" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
                 </div>
             </div>
 
