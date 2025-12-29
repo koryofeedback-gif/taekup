@@ -10,8 +10,6 @@ import { ChallengeToast } from './ChallengeToast';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { useStudentProgress } from '../hooks/useStudentProgress';
 import SparkMD5 from 'spark-md5';
-import { getTierFromXP, getProgressToNextTier, AVATAR_TIERS, AvatarTier } from '../services/tierSystem';
-import confetti from 'canvas-confetti';
 
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -78,11 +76,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }>({ myRank: null, totalStudents: 0, myGlobalXP: 0, topPlayers: [] });
     const [worldRankLoading, setWorldRankLoading] = useState(false);
     const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
-    
-    // Tier-up celebration state
-    const [previousTierId, setPreviousTierId] = useState<number | null>(null);
-    const [showTierUpCelebration, setShowTierUpCelebration] = useState(false);
-    const [newTier, setNewTier] = useState<AvatarTier | null>(null);
     
     // One-time cleanup of stale localStorage cache on mount
     useEffect(() => {
@@ -180,50 +173,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const interval = setInterval(fetchWorldRankings, 60000); // Refresh every minute
         return () => clearInterval(interval);
     }, [student.id, isPremium]);
-    
-    // Detect tier-up and trigger celebration
-    useEffect(() => {
-        const currentTier = getTierFromXP(worldRankData.myGlobalXP);
-        
-        // If we have a previous tier and the current tier is higher, celebrate!
-        if (previousTierId !== null && currentTier.id > previousTierId) {
-            setNewTier(currentTier);
-            setShowTierUpCelebration(true);
-            
-            // Fire confetti!
-            const duration = 3000;
-            const end = Date.now() + duration;
-            const colors = [currentTier.color, '#ffffff', '#ffd700'];
-            
-            const frame = () => {
-                confetti({
-                    particleCount: 3,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0, y: 0.7 },
-                    colors: colors
-                });
-                confetti({
-                    particleCount: 3,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1, y: 0.7 },
-                    colors: colors
-                });
-                
-                if (Date.now() < end) {
-                    requestAnimationFrame(frame);
-                }
-            };
-            frame();
-            
-            // Auto-close celebration after 5 seconds
-            setTimeout(() => setShowTierUpCelebration(false), 5000);
-        }
-        
-        // Always update the previous tier (including 0 XP case for tier 1)
-        setPreviousTierId(currentTier.id);
-    }, [worldRankData.myGlobalXP, previousTierId]);
     
     // Fetch total XP directly from server as single source of truth
     useEffect(() => {
@@ -4364,21 +4313,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     </div>
                                                 </div>
                                                 <div className="text-right flex items-center gap-2">
-                                                    {player.isYou ? (
-                                                        <>
-                                                            <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} XP</p>
-                                                            <span className="text-gray-500 text-xs">→</span>
-                                                        </>
-                                                    ) : (
-                                                        <p className="text-gray-500 text-xs">#{player.rank}</p>
-                                                    )}
+                                                    <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} XP</p>
+                                                    {player.isYou && <span className="text-gray-500 text-xs">→</span>}
                                                 </div>
                                             </div>
                                         );
                                         })
                                     )}
                                     
-                                    {/* WORLD RANKINGS SECTION - Tier-Based Avatar System */}
+                                    {/* WORLD RANKINGS SECTION */}
                                     <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 p-4 rounded-xl border border-cyan-500/30 mt-6">
                                         <div className="flex items-center justify-between mb-3">
                                             <h4 className="font-bold text-white flex items-center">
@@ -4390,98 +4333,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                         
                                         {worldRankData.myRank !== null ? (
-                                            <div className="space-y-4">
-                                                {/* Tier Avatar Display */}
-                                                {(() => {
-                                                    const tierProgress = getProgressToNextTier(worldRankData.myGlobalXP);
-                                                    const { currentTier, nextTier, progress, xpNeeded } = tierProgress;
-                                                    return (
-                                                        <div className="relative">
-                                                            {/* Avatar Frame with Tier Glow */}
-                                                            <div className="flex flex-col items-center">
-                                                                <div 
-                                                                    className={`relative w-24 h-24 rounded-full flex items-center justify-center ${currentTier.auraAnimation}`}
-                                                                    style={{
-                                                                        background: `linear-gradient(135deg, ${currentTier.color}40, ${currentTier.color}20)`,
-                                                                        boxShadow: `0 0 20px ${currentTier.glowColor}, 0 0 40px ${currentTier.glowColor}`,
-                                                                        border: `3px solid ${currentTier.color}`
-                                                                    }}
-                                                                >
-                                                                    <span className="text-4xl">{currentTier.icon}</span>
-                                                                    {/* Rank badge */}
-                                                                    <div 
-                                                                        className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black"
-                                                                        style={{ 
-                                                                            background: currentTier.color,
-                                                                            color: currentTier.id >= 4 ? 'black' : 'white'
-                                                                        }}
-                                                                    >
-                                                                        #{worldRankData.myRank}
-                                                                    </div>
-                                                                </div>
-                                                                
-                                                                {/* Tier Name */}
-                                                                <p 
-                                                                    className="font-black text-lg mt-3"
-                                                                    style={{ color: currentTier.color }}
-                                                                >
-                                                                    {currentTier.name}
-                                                                </p>
-                                                                <p className="text-gray-500 text-xs">
-                                                                    Rank #{worldRankData.myRank} of {worldRankData.totalStudents.toLocaleString()} worldwide
-                                                                </p>
-                                                            </div>
-                                                            
-                                                            {/* Progress to Next Tier */}
-                                                            {nextTier && (
-                                                                <div className="mt-4 bg-gray-800/50 rounded-lg p-3">
-                                                                    <div className="flex justify-between items-center mb-2">
-                                                                        <span className="text-gray-400 text-xs">Progress to {nextTier.name}</span>
-                                                                        <span className="text-xs font-bold" style={{ color: nextTier.color }}>
-                                                                            {nextTier.icon} {xpNeeded} XP to go
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
-                                                                        <div 
-                                                                            className="h-full rounded-full transition-all duration-500"
-                                                                            style={{ 
-                                                                                width: `${progress}%`,
-                                                                                background: `linear-gradient(90deg, ${currentTier.color}, ${nextTier.color})`
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                    
-                                                                    {/* Next Unlock Preview */}
-                                                                    <div className="mt-3 p-2 bg-gray-900/50 rounded-lg border border-dashed" style={{ borderColor: `${nextTier.color}50` }}>
-                                                                        <p className="text-xs text-gray-400 mb-1">🔓 Unlock at {nextTier.name}:</p>
-                                                                        <div className="flex flex-wrap gap-1">
-                                                                            {nextTier.unlocks.slice(0, 2).map((unlock, i) => (
-                                                                                <span 
-                                                                                    key={i} 
-                                                                                    className="text-[10px] px-2 py-0.5 rounded-full"
-                                                                                    style={{ 
-                                                                                        background: `${nextTier.color}20`,
-                                                                                        color: nextTier.color
-                                                                                    }}
-                                                                                >
-                                                                                    {unlock}
-                                                                                </span>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            
-                                                            {/* Max Tier Message */}
-                                                            {!nextTier && (
-                                                                <div className="mt-4 bg-gradient-to-r from-yellow-900/30 to-orange-900/30 rounded-lg p-3 border border-yellow-500/30 text-center">
-                                                                    <p className="text-yellow-400 font-bold text-sm">🏆 Maximum Tier Achieved!</p>
-                                                                    <p className="text-gray-400 text-xs mt-1">You are among the world's elite martial artists</p>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
+                                            <div className="space-y-3">
+                                                <div className="bg-gray-800/50 rounded-lg p-3 text-center">
+                                                    <p className="text-gray-400 text-xs mb-1">Your Global Rank</p>
+                                                    <p className="text-3xl font-black text-cyan-400">#{worldRankData.myRank}</p>
+                                                    <p className="text-gray-500 text-xs">of {worldRankData.totalStudents.toLocaleString()} students worldwide</p>
+                                                    <p className="text-purple-400 text-sm mt-1">{worldRankData.myGlobalXP.toLocaleString()} Global XP</p>
+                                                </div>
                                                 
                                                 {isPremium ? (
                                                     <button
@@ -4500,9 +4358,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 {showGlobalLeaderboard && isPremium && worldRankData.topPlayers.length > 0 && (
                                                     <div className="space-y-2 mt-3">
                                                         <p className="text-gray-400 text-xs font-bold">Top 10 Worldwide</p>
-                                                        {worldRankData.topPlayers.map((player, index) => {
-                                                            const playerTier = getTierFromXP(player.global_xp);
-                                                            return (
+                                                        {worldRankData.topPlayers.map((player, index) => (
                                                             <div 
                                                                 key={player.id} 
                                                                 className={`flex items-center justify-between p-2 rounded-lg border ${
@@ -4529,15 +4385,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         </p>
                                                                     </div>
                                                                 </div>
-                                                                {/* Show tier icon instead of raw XP */}
-                                                                <div className="flex items-center gap-1">
-                                                                    <span className="text-sm">{playerTier.icon}</span>
-                                                                    <span className="text-[10px] font-bold" style={{ color: playerTier.color }}>
-                                                                        {playerTier.name.split(' ')[0]}
-                                                                    </span>
-                                                                </div>
+                                                                <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()}</p>
                                                             </div>
-                                                        )})}
+                                                        ))}
                                                     </div>
                                                 )}
                                             </div>
@@ -4551,18 +4401,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         </>
                                                     ) : (
                                                         <>
-                                                            {/* Show starter tier for users with no XP */}
-                                                            <div className="flex flex-col items-center mb-4">
-                                                                <div 
-                                                                    className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-gray-600"
-                                                                    style={{ background: 'linear-gradient(135deg, #4B556340, #1F293740)' }}
-                                                                >
-                                                                    <span className="text-2xl">🥋</span>
-                                                                </div>
-                                                                <p className="text-gray-400 font-bold mt-2">Dojo Initiate</p>
-                                                            </div>
-                                                            <p className="text-gray-400 text-sm">Complete challenges with video proof to climb the World Rankings!</p>
-                                                            <p className="text-gray-500 text-xs mt-2">Earn Global XP to unlock new tiers and avatar features.</p>
+                                                            <p className="text-gray-400 text-sm">Complete challenges to earn Global XP and appear on the World Rankings!</p>
+                                                            <p className="text-gray-500 text-xs mt-2">Only challenges with video proof count toward global rankings.</p>
                                                         </>
                                                     )}
                                                 </div>
@@ -4579,9 +4419,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 {showGlobalLeaderboard && isPremium && worldRankData.topPlayers.length > 0 && (
                                                     <div className="space-y-2 mt-3">
                                                         <p className="text-gray-400 text-xs font-bold">Top 10 Worldwide</p>
-                                                        {worldRankData.topPlayers.map((player, index) => {
-                                                            const playerTier = getTierFromXP(player.global_xp);
-                                                            return (
+                                                        {worldRankData.topPlayers.map((player, index) => (
                                                             <div 
                                                                 key={player.id} 
                                                                 className="flex items-center justify-between p-2 rounded-lg border bg-gray-800/50 border-gray-700"
@@ -4600,15 +4438,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <p className="text-[10px] text-gray-500">{player.club_name} • {player.country || 'Unknown'}</p>
                                                                     </div>
                                                                 </div>
-                                                                {/* Show tier icon instead of raw XP */}
-                                                                <div className="flex items-center gap-1">
-                                                                    <span className="text-sm">{playerTier.icon}</span>
-                                                                    <span className="text-[10px] font-bold" style={{ color: playerTier.color }}>
-                                                                        {playerTier.name.split(' ')[0]}
-                                                                    </span>
-                                                                </div>
+                                                                <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()}</p>
                                                             </div>
-                                                        )})}
+                                                        ))}
                                                     </div>
                                                 )}
                                             </div>
@@ -5354,58 +5186,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setRivalsView('inbox');
                 }}
             />
-            
-            {/* Tier-Up Celebration Modal */}
-            {showTierUpCelebration && newTier && (
-                <div 
-                    className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4"
-                    onClick={() => setShowTierUpCelebration(false)}
-                >
-                    <div 
-                        className="bg-gray-900 rounded-3xl p-8 max-w-sm w-full text-center border-2 animate-bounce"
-                        style={{ borderColor: newTier.color, boxShadow: `0 0 60px ${newTier.glowColor}` }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="text-6xl mb-4 animate-pulse">{newTier.icon}</div>
-                        <h2 className="text-2xl font-black text-white mb-2">TIER UP!</h2>
-                        <p 
-                            className="text-3xl font-black mb-4"
-                            style={{ color: newTier.color }}
-                        >
-                            {newTier.name}
-                        </p>
-                        <div 
-                            className="w-32 h-32 mx-auto rounded-full flex items-center justify-center mb-4"
-                            style={{
-                                background: `linear-gradient(135deg, ${newTier.color}40, ${newTier.color}20)`,
-                                boxShadow: `0 0 30px ${newTier.glowColor}, 0 0 60px ${newTier.glowColor}`,
-                                border: `4px solid ${newTier.color}`
-                            }}
-                        >
-                            <span className="text-6xl">{newTier.icon}</span>
-                        </div>
-                        <p className="text-gray-400 text-sm mb-4">You've unlocked new features:</p>
-                        <div className="flex flex-wrap justify-center gap-2 mb-6">
-                            {newTier.unlocks.map((unlock, i) => (
-                                <span 
-                                    key={i}
-                                    className="text-xs px-3 py-1 rounded-full"
-                                    style={{ background: `${newTier.color}30`, color: newTier.color }}
-                                >
-                                    {unlock}
-                                </span>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => setShowTierUpCelebration(false)}
-                            className="w-full py-3 rounded-xl font-bold text-white transition-all"
-                            style={{ background: newTier.color }}
-                        >
-                            Awesome! 🎉
-                        </button>
-                    </div>
-                </div>
-            )}
 
              {/* Preview Header for Owner */}
             <div className="bg-yellow-600 text-white text-xs font-bold text-center py-2 sticky top-0 z-50 shadow-md flex justify-between px-4 items-center">
