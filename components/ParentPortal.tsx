@@ -10,7 +10,8 @@ import { ChallengeToast } from './ChallengeToast';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { useStudentProgress } from '../hooks/useStudentProgress';
 import SparkMD5 from 'spark-md5';
-import { getTierFromXP, getProgressToNextTier, AVATAR_TIERS } from '../services/tierSystem';
+import { getTierFromXP, getProgressToNextTier, AVATAR_TIERS, AvatarTier } from '../services/tierSystem';
+import confetti from 'canvas-confetti';
 
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -77,6 +78,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }>({ myRank: null, totalStudents: 0, myGlobalXP: 0, topPlayers: [] });
     const [worldRankLoading, setWorldRankLoading] = useState(false);
     const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
+    
+    // Tier-up celebration state
+    const [previousTierId, setPreviousTierId] = useState<number | null>(null);
+    const [showTierUpCelebration, setShowTierUpCelebration] = useState(false);
+    const [newTier, setNewTier] = useState<AvatarTier | null>(null);
     
     // One-time cleanup of stale localStorage cache on mount
     useEffect(() => {
@@ -174,6 +180,50 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const interval = setInterval(fetchWorldRankings, 60000); // Refresh every minute
         return () => clearInterval(interval);
     }, [student.id, isPremium]);
+    
+    // Detect tier-up and trigger celebration
+    useEffect(() => {
+        const currentTier = getTierFromXP(worldRankData.myGlobalXP);
+        
+        // If we have a previous tier and the current tier is higher, celebrate!
+        if (previousTierId !== null && currentTier.id > previousTierId) {
+            setNewTier(currentTier);
+            setShowTierUpCelebration(true);
+            
+            // Fire confetti!
+            const duration = 3000;
+            const end = Date.now() + duration;
+            const colors = [currentTier.color, '#ffffff', '#ffd700'];
+            
+            const frame = () => {
+                confetti({
+                    particleCount: 3,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.7 },
+                    colors: colors
+                });
+                confetti({
+                    particleCount: 3,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1, y: 0.7 },
+                    colors: colors
+                });
+                
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            };
+            frame();
+            
+            // Auto-close celebration after 5 seconds
+            setTimeout(() => setShowTierUpCelebration(false), 5000);
+        }
+        
+        // Always update the previous tier (including 0 XP case for tier 1)
+        setPreviousTierId(currentTier.id);
+    }, [worldRankData.myGlobalXP, previousTierId]);
     
     // Fetch total XP directly from server as single source of truth
     useEffect(() => {
@@ -5304,6 +5354,58 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setRivalsView('inbox');
                 }}
             />
+            
+            {/* Tier-Up Celebration Modal */}
+            {showTierUpCelebration && newTier && (
+                <div 
+                    className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4"
+                    onClick={() => setShowTierUpCelebration(false)}
+                >
+                    <div 
+                        className="bg-gray-900 rounded-3xl p-8 max-w-sm w-full text-center border-2 animate-bounce"
+                        style={{ borderColor: newTier.color, boxShadow: `0 0 60px ${newTier.glowColor}` }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="text-6xl mb-4 animate-pulse">{newTier.icon}</div>
+                        <h2 className="text-2xl font-black text-white mb-2">TIER UP!</h2>
+                        <p 
+                            className="text-3xl font-black mb-4"
+                            style={{ color: newTier.color }}
+                        >
+                            {newTier.name}
+                        </p>
+                        <div 
+                            className="w-32 h-32 mx-auto rounded-full flex items-center justify-center mb-4"
+                            style={{
+                                background: `linear-gradient(135deg, ${newTier.color}40, ${newTier.color}20)`,
+                                boxShadow: `0 0 30px ${newTier.glowColor}, 0 0 60px ${newTier.glowColor}`,
+                                border: `4px solid ${newTier.color}`
+                            }}
+                        >
+                            <span className="text-6xl">{newTier.icon}</span>
+                        </div>
+                        <p className="text-gray-400 text-sm mb-4">You've unlocked new features:</p>
+                        <div className="flex flex-wrap justify-center gap-2 mb-6">
+                            {newTier.unlocks.map((unlock, i) => (
+                                <span 
+                                    key={i}
+                                    className="text-xs px-3 py-1 rounded-full"
+                                    style={{ background: `${newTier.color}30`, color: newTier.color }}
+                                >
+                                    {unlock}
+                                </span>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setShowTierUpCelebration(false)}
+                            className="w-full py-3 rounded-xl font-bold text-white transition-all"
+                            style={{ background: newTier.color }}
+                        >
+                            Awesome! 🎉
+                        </button>
+                    </div>
+                </div>
+            )}
 
              {/* Preview Header for Owner */}
             <div className="bg-yellow-600 text-white text-xs font-bold text-center py-2 sticky top-0 z-50 shadow-md flex justify-between px-4 items-center">
