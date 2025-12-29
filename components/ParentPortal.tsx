@@ -141,8 +141,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     try {
                         const topResponse = await fetch(`/api/world-rankings?limit=10`);
                         const topResult = await topResponse.json();
-                        if (topResult.students) {
-                            topPlayers = topResult.students;
+                        if (topResult.rankings) {
+                            topPlayers = topResult.rankings.map((r: any) => ({
+                                id: r.id,
+                                name: r.name,
+                                global_xp: r.globalXp,
+                                club_name: r.clubName,
+                                sport: r.sport,
+                                country: r.country
+                            }));
                         }
                     } catch (e) {
                         console.error('[WorldRankings] Failed to fetch top players:', e);
