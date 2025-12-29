@@ -65,6 +65,73 @@ const SPORT_ICONS: Record<string, string> = {
   'MMA': '🥊',
 };
 
+const COUNTRY_FLAGS: Record<string, string> = {
+  'Iran': '🇮🇷',
+  'United States': '🇺🇸',
+  'USA': '🇺🇸',
+  'South Korea': '🇰🇷',
+  'Korea': '🇰🇷',
+  'Japan': '🇯🇵',
+  'China': '🇨🇳',
+  'Brazil': '🇧🇷',
+  'Germany': '🇩🇪',
+  'France': '🇫🇷',
+  'United Kingdom': '🇬🇧',
+  'UK': '🇬🇧',
+  'Spain': '🇪🇸',
+  'Italy': '🇮🇹',
+  'Canada': '🇨🇦',
+  'Australia': '🇦🇺',
+  'Mexico': '🇲🇽',
+  'Russia': '🇷🇺',
+  'Turkey': '🇹🇷',
+  'India': '🇮🇳',
+  'Netherlands': '🇳🇱',
+  'Belgium': '🇧🇪',
+  'Sweden': '🇸🇪',
+  'Norway': '🇳🇴',
+  'Denmark': '🇩🇰',
+  'Finland': '🇫🇮',
+  'Poland': '🇵🇱',
+  'Austria': '🇦🇹',
+  'Switzerland': '🇨🇭',
+  'Portugal': '🇵🇹',
+  'Greece': '🇬🇷',
+  'Argentina': '🇦🇷',
+  'Colombia': '🇨🇴',
+  'Chile': '🇨🇱',
+  'Peru': '🇵🇪',
+  'Venezuela': '🇻🇪',
+  'Egypt': '🇪🇬',
+  'South Africa': '🇿🇦',
+  'Morocco': '🇲🇦',
+  'Nigeria': '🇳🇬',
+  'Saudi Arabia': '🇸🇦',
+  'UAE': '🇦🇪',
+  'United Arab Emirates': '🇦🇪',
+  'Israel': '🇮🇱',
+  'Thailand': '🇹🇭',
+  'Vietnam': '🇻🇳',
+  'Philippines': '🇵🇭',
+  'Indonesia': '🇮🇩',
+  'Malaysia': '🇲🇾',
+  'Singapore': '🇸🇬',
+  'New Zealand': '🇳🇿',
+  'Ireland': '🇮🇪',
+  'Czech Republic': '🇨🇿',
+  'Romania': '🇷🇴',
+  'Hungary': '🇭🇺',
+  'Ukraine': '🇺🇦',
+  'Pakistan': '🇵🇰',
+  'Bangladesh': '🇧🇩',
+  'Taiwan': '🇹🇼',
+  'Hong Kong': '🇭🇰',
+};
+
+const getCountryFlag = (country: string): string => {
+  return COUNTRY_FLAGS[country] || '🌍';
+};
+
 export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = false }) => {
   const [category, setCategory] = useState<'students' | 'clubs'>('students');
   const [sport, setSport] = useState<string>('all');
@@ -327,7 +394,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
                       </td>
                       <td className="py-4 px-6 hidden lg:table-cell">
                         <div className="flex items-center gap-1 text-slate-400 text-sm">
-                          <MapPin className="w-3 h-3" />
+                          <span className="text-base">{getCountryFlag(student.country)}</span>
                           {student.city}, {student.country}
                         </div>
                       </td>
@@ -388,7 +455,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
                       </td>
                       <td className="py-4 px-6 hidden lg:table-cell">
                         <div className="flex items-center gap-1 text-slate-400 text-sm">
-                          <MapPin className="w-3 h-3" />
+                          <span className="text-base">{getCountryFlag(club.country)}</span>
                           {club.city}, {club.country}
                         </div>
                       </td>
