@@ -4546,6 +4546,13 @@ export function registerRoutes(app: Express) {
       const { category = 'students', sport, country, limit = 100, offset = 0 } = req.query;
 
       if (category === 'students') {
+        // Ensure previous_rank column exists
+        try {
+          await db.execute(sql`ALTER TABLE students ADD COLUMN IF NOT EXISTS previous_rank INTEGER DEFAULT NULL`);
+        } catch (e) {
+          // Column likely already exists
+        }
+
         // Get top students globally (from clubs that opted in)
         let query = sql`
           SELECT 
@@ -4553,8 +4560,7 @@ export function registerRoutes(app: Express) {
             s.name,
             s.belt,
             s.global_xp,
-            s.world_rank,
-            s.previous_world_rank,
+            s.previous_rank,
             c.name as club_name,
             c.art_type as sport,
             c.country,
@@ -4577,20 +4583,29 @@ export function registerRoutes(app: Express) {
 
         const result = await db.execute(query);
         
-        // Add rank position
-        const rankings = (result as any[]).map((r, index) => ({
-          rank: Number(offset) + index + 1,
-          id: r.id,
-          name: r.name,
-          belt: r.belt,
-          globalXp: r.global_xp || 0,
-          previousRank: r.previous_world_rank,
-          clubName: r.club_name,
-          sport: r.sport,
-          country: r.country,
-          city: r.city,
-          rankChange: r.previous_world_rank ? r.previous_world_rank - (Number(offset) + index + 1) : null
-        }));
+        // Add rank position and calculate rank change
+        const rankings = (result as any[]).map((r, index) => {
+          const currentRank = Number(offset) + index + 1;
+          const prevRank = r.previous_rank ? Number(r.previous_rank) : null;
+          const rankChange = prevRank !== null ? prevRank - currentRank : null;
+          return {
+            rank: currentRank,
+            id: r.id,
+            name: r.name,
+            belt: r.belt,
+            globalXp: r.global_xp || 0,
+            clubName: r.club_name,
+            sport: r.sport,
+            country: r.country,
+            city: r.city,
+            rankChange
+          };
+        });
+
+        // Update previous_rank for all students
+        for (const s of rankings) {
+          await db.execute(sql`UPDATE students SET previous_rank = ${s.rank} WHERE id = ${s.id}`);
+        }
 
         res.json({ category: 'students', rankings, total: rankings.length });
       } else if (category === 'clubs') {

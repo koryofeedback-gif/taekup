@@ -4381,23 +4381,11 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
   const client = await pool.connect();
   try {
     if (category === 'students') {
-      // Check if previous_rank column exists, create if not
-      let hasPreviousRank = false;
+      // Ensure previous_rank column exists
       try {
-        const colCheck = await client.query(`
-          SELECT column_name FROM information_schema.columns 
-          WHERE table_name = 'students' AND column_name = 'previous_rank'
-        `);
-        if (colCheck.rows.length > 0) {
-          hasPreviousRank = true;
-        } else {
-          // Create the column if it doesn't exist
-          await client.query('ALTER TABLE students ADD COLUMN previous_rank INTEGER DEFAULT NULL');
-          hasPreviousRank = true;
-          console.log('[WorldRankings] Created previous_rank column');
-        }
+        await client.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS previous_rank INTEGER DEFAULT NULL');
       } catch (e) {
-        console.log('[WorldRankings] Could not check/create previous_rank column:', e);
+        // Column likely already exists, ignore error
       }
 
       let query = `
@@ -4406,7 +4394,7 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
           s.name,
           s.belt,
           COALESCE(s.global_xp, 0) as global_xp,
-          ${hasPreviousRank ? 's.previous_rank,' : ''}
+          s.previous_rank,
           c.name as club_name,
           c.art_type as sport,
           c.country,
@@ -4438,7 +4426,7 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
       
       const rankings = result.rows.map((r: any, index: number) => {
         const currentRank = offset + index + 1;
-        const prevRank = hasPreviousRank && r.previous_rank ? Number(r.previous_rank) : null;
+        const prevRank = r.previous_rank ? Number(r.previous_rank) : null;
         const rankChange = prevRank !== null ? prevRank - currentRank : null;
         return {
           rank: currentRank,
@@ -4454,12 +4442,9 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         };
       });
 
-      // Update previous_rank for all students in this ranking (if column exists)
-      if (hasPreviousRank) {
-        const updatePromises = rankings.map((s: any) => 
-          client.query('UPDATE students SET previous_rank = $1 WHERE id = $2', [s.rank, s.id])
-        );
-        await Promise.all(updatePromises);
+      // Update previous_rank for all students in this ranking
+      for (const s of rankings) {
+        await client.query('UPDATE students SET previous_rank = $1 WHERE id = $2', [s.rank, s.id]);
       }
 
       return res.json({ category: 'students', rankings, total: rankings.length });
