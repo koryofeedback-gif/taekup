@@ -2658,9 +2658,9 @@ export function registerRoutes(app: Express) {
           VALUES (${studentId}::uuid, ${localXp}, 'EARN', 'daily_challenge', NOW())
         `);
         
-        // 3. Award Global XP
+        // 3. Award Global XP (use global_xp column - the one World Rankings queries)
         await db.execute(sql`
-          UPDATE students SET global_rank_points = COALESCE(global_rank_points, 0) + ${globalXp} WHERE id = ${studentId}::uuid
+          UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalXp} WHERE id = ${studentId}::uuid
         `);
         
         console.log(`✅ [DailyChallenge] Fallback XP PERSISTED: Local=${localXp}, Global=${globalXp} to student ${studentId}`);
@@ -2721,9 +2721,9 @@ export function registerRoutes(app: Express) {
       // Award Local XP using unified XP service (single source of truth)
       await awardXP(studentId, localXp, 'mystery', { challengeId, isCorrect });
       
-      // Award Global XP
+      // Award Global XP (use global_xp column - the one World Rankings queries)
       await db.execute(sql`
-        UPDATE students SET global_rank_points = COALESCE(global_rank_points, 0) + ${globalXp} WHERE id = ${studentId}::uuid
+        UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalXp} WHERE id = ${studentId}::uuid
       `);
 
       console.log(`✅ [DailyChallenge] Submit Success - Local XP: ${localXp}, Global XP: ${globalXp}`);

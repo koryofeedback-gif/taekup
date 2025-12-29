@@ -2693,12 +2693,12 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
       await applyXpDelta(client, studentId, localXp, 'daily_challenge');
       console.log(`✅ [DailyChallenge] Fallback Local XP awarded: ${localXp}`);
       
-      // Award Global XP
+      // Award Global XP (use global_xp column - the one World Rankings queries)
       const globalResult = await client.query(
-        `UPDATE students SET global_rank_points = COALESCE(global_rank_points, 0) + $1 WHERE id = $2::uuid RETURNING global_rank_points`,
+        `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid RETURNING global_xp`,
         [globalXp, studentId]
       );
-      console.log(`✅ [DailyChallenge] Fallback Global XP awarded: +${globalXp}, new total: ${globalResult.rows[0]?.global_rank_points}`);
+      console.log(`✅ [DailyChallenge] Fallback Global XP awarded: +${globalXp}, new total: ${globalResult.rows[0]?.global_xp}`);
       
       return res.json({
         success: true,
@@ -2759,12 +2759,12 @@ async function handleDailyChallengeSubmit(req: VercelRequest, res: VercelRespons
     await applyXpDelta(client, studentId, localXp, 'daily_challenge');
     console.log(`✅ [DailyChallenge] Regular Local XP awarded: ${localXp}`);
     
-    // Update student Global XP
+    // Update student Global XP (use global_xp column - the one World Rankings queries)
     const globalResult = await client.query(
-      `UPDATE students SET global_rank_points = COALESCE(global_rank_points, 0) + $1 WHERE id = $2::uuid RETURNING global_rank_points`,
+      `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid RETURNING global_xp`,
       [globalXp, studentId]
     );
-    console.log(`✅ [DailyChallenge] Regular Global XP awarded: +${globalXp}, new total: ${globalResult.rows[0]?.global_rank_points}`);
+    console.log(`✅ [DailyChallenge] Regular Global XP awarded: +${globalXp}, new total: ${globalResult.rows[0]?.global_xp}`);
     
     return res.json({
       success: true,
