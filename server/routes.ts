@@ -2370,19 +2370,76 @@ export function registerRoutes(app: Express) {
   // AI DAILY MYSTERY CHALLENGE - "Lazy Generator" Pattern
   // =====================================================
 
-  // Hardcoded fallback challenge for when AI generation fails
-  const getFallbackChallenge = () => ({
-    title: "Master's Wisdom",
-    description: "Test your knowledge of martial arts belt symbolism!",
-    type: 'quiz' as const,
-    xpReward: 15,
-    quizData: {
-      question: "What does the color of the White Belt represent?",
-      options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
-      correctIndex: 1,
-      explanation: "The White Belt represents innocence and a beginner's pure mind - ready to absorb new knowledge like a blank canvas!"
-    }
-  });
+  // Fallback challenges - rotates daily to prevent same question every day
+  const getFallbackChallenge = () => {
+    const fallbackQuestions = [
+      {
+        title: "Belt Wisdom",
+        question: "What does the color of the White Belt represent?",
+        options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
+        correctIndex: 1,
+        explanation: "The White Belt represents innocence and a beginner's pure mind."
+      },
+      {
+        title: "Martial Arts Origins",
+        question: "Which country is known as the birthplace of many martial arts?",
+        options: ["Japan", "China", "Korea", "Brazil"],
+        correctIndex: 1,
+        explanation: "China is considered the birthplace of many martial arts traditions."
+      },
+      {
+        title: "Martial Arts Respect",
+        question: "What is the purpose of bowing in martial arts?",
+        options: ["To stretch", "To show respect", "To intimidate", "To start fighting"],
+        correctIndex: 1,
+        explanation: "Bowing shows respect to instructors, training partners, and the art itself."
+      },
+      {
+        title: "Training Space",
+        question: "What is a martial arts training hall generally called?",
+        options: ["Arena", "Dojo/Dojang", "Court", "Ring"],
+        correctIndex: 1,
+        explanation: "Training halls are called Dojo (Japanese) or Dojang (Korean)."
+      },
+      {
+        title: "Black Belt Meaning",
+        question: "What does the Black Belt traditionally symbolize?",
+        options: ["End of training", "Mastery and maturity", "Danger level", "Teaching ability"],
+        correctIndex: 1,
+        explanation: "The Black Belt symbolizes maturity - it's actually the beginning of deeper learning!"
+      },
+      {
+        title: "Forms Practice",
+        question: "What are choreographed movement patterns called in martial arts?",
+        options: ["Sparring", "Forms/Kata/Poomsae", "Drills", "Combos"],
+        correctIndex: 1,
+        explanation: "Forms (Kata in Japanese, Poomsae in Korean) are solo practice patterns."
+      },
+      {
+        title: "Martial Arts Philosophy",
+        question: "What is a core principle of most martial arts?",
+        options: ["Aggression", "Self-discipline", "Competition", "Strength"],
+        correctIndex: 1,
+        explanation: "Self-discipline is fundamental to martial arts training and philosophy."
+      }
+    ];
+    
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    const selected = fallbackQuestions[dayOfYear % fallbackQuestions.length];
+    
+    return {
+      title: selected.title,
+      description: "Test your martial arts knowledge!",
+      type: 'quiz' as const,
+      xpReward: 15,
+      quizData: {
+        question: selected.question,
+        options: selected.options,
+        correctIndex: selected.correctIndex,
+        explanation: selected.explanation
+      }
+    };
+  };
 
   app.get('/api/daily-challenge', async (req: Request, res: Response) => {
     try {

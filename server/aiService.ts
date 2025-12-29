@@ -640,26 +640,31 @@ export interface DailyChallengeResult {
 export async function generateDailyChallenge(belt: string, artType: string = 'Taekwondo'): Promise<DailyChallengeResult> {
   const openai = getOpenAIClient();
   
-  const prompt = `Generate a fun daily martial arts challenge for a ${belt} belt ${artType} student. The challenge should be:
-- Age-appropriate and safe to do at home
-- Related to ${artType} techniques, philosophy, or history appropriate for ${belt} level
-- Engaging and educational
+  const prompt = `Generate a fun daily quiz challenge for a ${belt} belt student practicing ${artType}.
+
+IMPORTANT: The martial art is ${artType} (NOT Taekwondo unless that's the art specified). Make sure the title and question are specific to ${artType}.
 
 Return a JSON object with this exact structure:
 {
-  "title": "Brief catchy title (under 50 chars)",
-  "description": "Engaging 1-2 sentence description of what to do",
+  "title": "${artType} Trivia Time!",
+  "description": "Test your ${artType} knowledge!",
   "type": "quiz",
-  "xpReward": 25,
+  "xpReward": 15,
   "quizData": {
-    "question": "The trivia question about ${artType}",
+    "question": "A quiz question specifically about ${artType}",
     "options": ["Option A", "Option B", "Option C", "Option D"],
     "correctIndex": 0,
     "explanation": "Brief explanation of why this is correct"
   }
 }
 
-Make the quiz question appropriate for ${belt} belt level - easier for beginners, harder for advanced. Focus on ${artType} terminology, history, forms, or technique names.`;
+REQUIREMENTS:
+1. Title MUST mention ${artType} (not Taekwondo unless artType is Taekwondo)
+2. Question must be about ${artType} history, terminology, techniques, or philosophy
+3. Appropriate for ${belt} belt level - easier for beginners, harder for advanced
+4. Vary the topics - don't always ask about the meaning of the art's name
+
+Return ONLY valid JSON, no markdown.`;
 
   if (openai) {
     try {

@@ -2291,17 +2291,19 @@ async function generateDailyChallengeAI(targetBelt: string, artType: string): Pr
   const gemini = getGeminiClient();
   const openai = getOpenAIClient();
   
-  const prompt = `Generate a fun daily quiz challenge for a ${targetBelt} belt ${artType} student.
+  const prompt = `Generate a fun daily quiz challenge for a ${targetBelt} belt student practicing ${artType}.
+
+IMPORTANT: The martial art is ${artType} (NOT Taekwondo unless that's the art specified). Make sure the title and question are specific to ${artType}.
 
 Return a JSON object with:
-- title: Short catchy title (max 30 chars)
+- title: Short catchy title mentioning ${artType} (max 30 chars)
 - description: Brief description of the challenge (max 100 chars)
-- question: The quiz question
+- question: A quiz question specifically about ${artType} history, terminology, techniques, or philosophy
 - options: Array of 4 answer choices
 - correctIndex: Index of correct answer (0-3)
 - explanation: Brief explanation of the correct answer (max 100 chars)
 
-The question should be age-appropriate, educational, and related to martial arts history, terminology, techniques, or philosophy. Make it fun and engaging!
+The question should be age-appropriate, educational, and fun! Vary the topics - don't always ask about the meaning of the art's name.
 
 Return ONLY valid JSON, no markdown.`;
 
