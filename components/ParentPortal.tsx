@@ -5453,7 +5453,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <NavButton icon="🏠" label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
                     <NavButton icon="🥋" label="Dojo" active={activeTab === 'home-dojo'} onClick={() => setActiveTab('home-dojo')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="⚔️" label="Arena" active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
-                    <NavButton icon="📅" label="Book" active={activeTab === 'booking'} onClick={() => setActiveTab('booking')} />
+                    <NavButton icon="📊" label="Stats" active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="🔮" label="Future" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="🏅" label="Card" active={activeTab === 'card'} onClick={() => setActiveTab('card')} isPremium={!hasPremiumAccess} />
                 </div>
