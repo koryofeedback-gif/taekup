@@ -193,8 +193,10 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
         if (data.error) {
           setError(data.error);
         } else if (category === 'students') {
+          console.log('[WorldRankings] Student data:', data.rankings?.map((s: any) => ({ name: s.name, country: s.country })));
           setStudentRankings(data.rankings || []);
         } else {
+          console.log('[WorldRankings] Club data:', data.rankings?.map((c: any) => ({ name: c.name, country: c.country })));
           setClubRankings(data.rankings || []);
         }
       } catch (err) {
