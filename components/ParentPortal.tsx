@@ -10,6 +10,7 @@ import { ChallengeToast } from './ChallengeToast';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { useStudentProgress } from '../hooks/useStudentProgress';
 import SparkMD5 from 'spark-md5';
+import { getTierFromXP, getProgressToNextTier, AVATAR_TIERS } from '../services/tierSystem';
 
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -4321,7 +4322,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         })
                                     )}
                                     
-                                    {/* WORLD RANKINGS SECTION */}
+                                    {/* WORLD RANKINGS SECTION - Tier-Based Avatar System */}
                                     <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 p-4 rounded-xl border border-cyan-500/30 mt-6">
                                         <div className="flex items-center justify-between mb-3">
                                             <h4 className="font-bold text-white flex items-center">
@@ -4333,13 +4334,98 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                         
                                         {worldRankData.myRank !== null ? (
-                                            <div className="space-y-3">
-                                                <div className="bg-gray-800/50 rounded-lg p-3 text-center">
-                                                    <p className="text-gray-400 text-xs mb-1">Your Global Rank</p>
-                                                    <p className="text-3xl font-black text-cyan-400">#{worldRankData.myRank}</p>
-                                                    <p className="text-gray-500 text-xs">of {worldRankData.totalStudents.toLocaleString()} students worldwide</p>
-                                                    <p className="text-purple-400 text-sm mt-1">{worldRankData.myGlobalXP.toLocaleString()} Global XP</p>
-                                                </div>
+                                            <div className="space-y-4">
+                                                {/* Tier Avatar Display */}
+                                                {(() => {
+                                                    const tierProgress = getProgressToNextTier(worldRankData.myGlobalXP);
+                                                    const { currentTier, nextTier, progress, xpNeeded } = tierProgress;
+                                                    return (
+                                                        <div className="relative">
+                                                            {/* Avatar Frame with Tier Glow */}
+                                                            <div className="flex flex-col items-center">
+                                                                <div 
+                                                                    className={`relative w-24 h-24 rounded-full flex items-center justify-center ${currentTier.auraAnimation}`}
+                                                                    style={{
+                                                                        background: `linear-gradient(135deg, ${currentTier.color}40, ${currentTier.color}20)`,
+                                                                        boxShadow: `0 0 20px ${currentTier.glowColor}, 0 0 40px ${currentTier.glowColor}`,
+                                                                        border: `3px solid ${currentTier.color}`
+                                                                    }}
+                                                                >
+                                                                    <span className="text-4xl">{currentTier.icon}</span>
+                                                                    {/* Rank badge */}
+                                                                    <div 
+                                                                        className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black"
+                                                                        style={{ 
+                                                                            background: currentTier.color,
+                                                                            color: currentTier.id >= 4 ? 'black' : 'white'
+                                                                        }}
+                                                                    >
+                                                                        #{worldRankData.myRank}
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                {/* Tier Name */}
+                                                                <p 
+                                                                    className="font-black text-lg mt-3"
+                                                                    style={{ color: currentTier.color }}
+                                                                >
+                                                                    {currentTier.name}
+                                                                </p>
+                                                                <p className="text-gray-500 text-xs">
+                                                                    Rank #{worldRankData.myRank} of {worldRankData.totalStudents.toLocaleString()} worldwide
+                                                                </p>
+                                                            </div>
+                                                            
+                                                            {/* Progress to Next Tier */}
+                                                            {nextTier && (
+                                                                <div className="mt-4 bg-gray-800/50 rounded-lg p-3">
+                                                                    <div className="flex justify-between items-center mb-2">
+                                                                        <span className="text-gray-400 text-xs">Progress to {nextTier.name}</span>
+                                                                        <span className="text-xs font-bold" style={{ color: nextTier.color }}>
+                                                                            {nextTier.icon} {xpNeeded} XP to go
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
+                                                                        <div 
+                                                                            className="h-full rounded-full transition-all duration-500"
+                                                                            style={{ 
+                                                                                width: `${progress}%`,
+                                                                                background: `linear-gradient(90deg, ${currentTier.color}, ${nextTier.color})`
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    
+                                                                    {/* Next Unlock Preview */}
+                                                                    <div className="mt-3 p-2 bg-gray-900/50 rounded-lg border border-dashed" style={{ borderColor: `${nextTier.color}50` }}>
+                                                                        <p className="text-xs text-gray-400 mb-1">🔓 Unlock at {nextTier.name}:</p>
+                                                                        <div className="flex flex-wrap gap-1">
+                                                                            {nextTier.unlocks.slice(0, 2).map((unlock, i) => (
+                                                                                <span 
+                                                                                    key={i} 
+                                                                                    className="text-[10px] px-2 py-0.5 rounded-full"
+                                                                                    style={{ 
+                                                                                        background: `${nextTier.color}20`,
+                                                                                        color: nextTier.color
+                                                                                    }}
+                                                                                >
+                                                                                    {unlock}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {/* Max Tier Message */}
+                                                            {!nextTier && (
+                                                                <div className="mt-4 bg-gradient-to-r from-yellow-900/30 to-orange-900/30 rounded-lg p-3 border border-yellow-500/30 text-center">
+                                                                    <p className="text-yellow-400 font-bold text-sm">🏆 Maximum Tier Achieved!</p>
+                                                                    <p className="text-gray-400 text-xs mt-1">You are among the world's elite martial artists</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                                 
                                                 {isPremium ? (
                                                     <button
@@ -4358,7 +4444,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 {showGlobalLeaderboard && isPremium && worldRankData.topPlayers.length > 0 && (
                                                     <div className="space-y-2 mt-3">
                                                         <p className="text-gray-400 text-xs font-bold">Top 10 Worldwide</p>
-                                                        {worldRankData.topPlayers.map((player, index) => (
+                                                        {worldRankData.topPlayers.map((player, index) => {
+                                                            const playerTier = getTierFromXP(player.global_xp);
+                                                            return (
                                                             <div 
                                                                 key={player.id} 
                                                                 className={`flex items-center justify-between p-2 rounded-lg border ${
@@ -4385,9 +4473,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         </p>
                                                                     </div>
                                                                 </div>
-                                                                <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()}</p>
+                                                                {/* Show tier icon instead of raw XP */}
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-sm">{playerTier.icon}</span>
+                                                                    <span className="text-[10px] font-bold" style={{ color: playerTier.color }}>
+                                                                        {playerTier.name.split(' ')[0]}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                        ))}
+                                                        )})}
                                                     </div>
                                                 )}
                                             </div>
@@ -4401,8 +4495,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <p className="text-gray-400 text-sm">Complete challenges to earn Global XP and appear on the World Rankings!</p>
-                                                            <p className="text-gray-500 text-xs mt-2">Only challenges with video proof count toward global rankings.</p>
+                                                            {/* Show starter tier for users with no XP */}
+                                                            <div className="flex flex-col items-center mb-4">
+                                                                <div 
+                                                                    className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-gray-600"
+                                                                    style={{ background: 'linear-gradient(135deg, #4B556340, #1F293740)' }}
+                                                                >
+                                                                    <span className="text-2xl">🥋</span>
+                                                                </div>
+                                                                <p className="text-gray-400 font-bold mt-2">Dojo Initiate</p>
+                                                            </div>
+                                                            <p className="text-gray-400 text-sm">Complete challenges with video proof to climb the World Rankings!</p>
+                                                            <p className="text-gray-500 text-xs mt-2">Earn Global XP to unlock new tiers and avatar features.</p>
                                                         </>
                                                     )}
                                                 </div>
@@ -4419,7 +4523,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 {showGlobalLeaderboard && isPremium && worldRankData.topPlayers.length > 0 && (
                                                     <div className="space-y-2 mt-3">
                                                         <p className="text-gray-400 text-xs font-bold">Top 10 Worldwide</p>
-                                                        {worldRankData.topPlayers.map((player, index) => (
+                                                        {worldRankData.topPlayers.map((player, index) => {
+                                                            const playerTier = getTierFromXP(player.global_xp);
+                                                            return (
                                                             <div 
                                                                 key={player.id} 
                                                                 className="flex items-center justify-between p-2 rounded-lg border bg-gray-800/50 border-gray-700"
@@ -4438,9 +4544,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <p className="text-[10px] text-gray-500">{player.club_name} • {player.country || 'Unknown'}</p>
                                                                     </div>
                                                                 </div>
-                                                                <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()}</p>
+                                                                {/* Show tier icon instead of raw XP */}
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-sm">{playerTier.icon}</span>
+                                                                    <span className="text-[10px] font-bold" style={{ color: playerTier.color }}>
+                                                                        {playerTier.name.split(' ')[0]}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                        ))}
+                                                        )})}
                                                     </div>
                                                 )}
                                             </div>
