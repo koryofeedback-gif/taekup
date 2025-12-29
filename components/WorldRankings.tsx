@@ -132,10 +132,94 @@ const COUNTRY_FLAGS: Record<string, string> = {
   'Hong Kong': '🇭🇰',
 };
 
-const getCountryFlag = (country: string): string => {
-  if (!country) return '🌍';
+const COUNTRY_CODES: Record<string, string> = {
+  'United States': 'us',
+  'USA': 'us',
+  'US': 'us',
+  'Iran': 'ir',
+  'IR': 'ir',
+  'Iran (Islamic Republic of)': 'ir',
+  'South Korea': 'kr',
+  'Korea': 'kr',
+  'Japan': 'jp',
+  'China': 'cn',
+  'Brazil': 'br',
+  'Germany': 'de',
+  'France': 'fr',
+  'United Kingdom': 'gb',
+  'UK': 'gb',
+  'Spain': 'es',
+  'Italy': 'it',
+  'Canada': 'ca',
+  'Australia': 'au',
+  'Mexico': 'mx',
+  'Russia': 'ru',
+  'Turkey': 'tr',
+  'India': 'in',
+  'Netherlands': 'nl',
+  'Belgium': 'be',
+  'Sweden': 'se',
+  'Norway': 'no',
+  'Denmark': 'dk',
+  'Finland': 'fi',
+  'Poland': 'pl',
+  'Austria': 'at',
+  'Switzerland': 'ch',
+  'Portugal': 'pt',
+  'Greece': 'gr',
+  'Argentina': 'ar',
+  'Colombia': 'co',
+  'Chile': 'cl',
+  'Peru': 'pe',
+  'Venezuela': 've',
+  'Egypt': 'eg',
+  'South Africa': 'za',
+  'Morocco': 'ma',
+  'Nigeria': 'ng',
+  'Saudi Arabia': 'sa',
+  'UAE': 'ae',
+  'United Arab Emirates': 'ae',
+  'Israel': 'il',
+  'Thailand': 'th',
+  'Vietnam': 'vn',
+  'Philippines': 'ph',
+  'Indonesia': 'id',
+  'Malaysia': 'my',
+  'Singapore': 'sg',
+  'New Zealand': 'nz',
+  'Ireland': 'ie',
+  'Czech Republic': 'cz',
+  'Romania': 'ro',
+  'Hungary': 'hu',
+  'Ukraine': 'ua',
+  'Pakistan': 'pk',
+  'Bangladesh': 'bd',
+  'Taiwan': 'tw',
+  'Hong Kong': 'hk',
+};
+
+const getCountryCode = (country: string): string => {
+  if (!country) return '';
   const trimmed = country.trim();
-  return COUNTRY_FLAGS[trimmed] || COUNTRY_FLAGS[trimmed.toUpperCase()] || '🌍';
+  return COUNTRY_CODES[trimmed] || COUNTRY_CODES[trimmed.toUpperCase()] || trimmed.toLowerCase().substring(0, 2);
+};
+
+const CountryFlag: React.FC<{ country: string; size?: number }> = ({ country, size = 24 }) => {
+  const code = getCountryCode(country);
+  if (!code) return <span>🌍</span>;
+  return (
+    <img 
+      src={`https://flagcdn.com/w40/${code}.png`}
+      srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
+      width={size}
+      height={Math.round(size * 0.75)}
+      alt={country}
+      className="inline-block rounded-sm"
+      onError={(e) => {
+        e.currentTarget.style.display = 'none';
+      }}
+    />
+  );
 };
 
 export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = false }) => {
@@ -386,7 +470,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">{getCountryFlag(student.country)}</span>
+                          <CountryFlag country={student.country} size={28} />
                           <div>
                             <div className="font-medium text-white text-lg">{student.name}</div>
                             <div className="flex items-center gap-2 mt-1">
@@ -401,7 +485,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
                       </td>
                       <td className="py-4 px-6 hidden lg:table-cell">
                         <div className="flex items-center gap-1 text-slate-400 text-sm">
-                          <span className="text-base">{getCountryFlag(student.country)}</span>
+                          <CountryFlag country={student.country} size={20} />
                           {student.city}, {student.country}
                         </div>
                       </td>
@@ -453,7 +537,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">{getCountryFlag(club.country)}</span>
+                          <CountryFlag country={club.country} size={28} />
                           <div className="font-medium text-white text-lg">{club.name}</div>
                         </div>
                       </td>
@@ -465,7 +549,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
                       </td>
                       <td className="py-4 px-6 hidden lg:table-cell">
                         <div className="flex items-center gap-1 text-slate-400 text-sm">
-                          <span className="text-base">{getCountryFlag(club.country)}</span>
+                          <CountryFlag country={club.country} size={20} />
                           {club.city}, {club.country}
                         </div>
                       </td>
