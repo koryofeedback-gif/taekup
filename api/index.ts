@@ -2918,6 +2918,7 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
     );
 
     // Fetch Daily Training submissions (from gauntlet_submissions table)
+    // Join with challenge_videos to get actual verification status for video submissions
     const gauntletResult = await client.query(
       `SELECT 
         gs.id,
@@ -2929,9 +2930,13 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
         gs.global_points_awarded as global_xp_awarded,
         gs.score,
         gs.is_personal_best,
-        gs.submitted_at as created_at
+        gs.submitted_at as created_at,
+        cv.status as video_status
       FROM gauntlet_submissions gs
       LEFT JOIN gauntlet_challenges gc ON gs.challenge_id = gc.id
+      LEFT JOIN challenge_videos cv ON cv.challenge_id = gs.challenge_id::text 
+        AND cv.student_id = gs.student_id 
+        AND cv.challenge_category = 'Daily Training'
       WHERE gs.student_id = $1::uuid
       ORDER BY gs.submitted_at DESC
       LIMIT 30`,
@@ -3017,6 +3022,22 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
         'Flow': '🌊'
       };
       
+      // Determine status: TRUST submissions are always COMPLETED, VIDEO depends on verification
+      let status = 'COMPLETED';
+      if (row.proof_type === 'VIDEO') {
+        if (row.video_status === 'approved') {
+          status = 'VERIFIED';
+        } else if (row.video_status === 'rejected') {
+          status = 'REJECTED';
+        } else {
+          status = 'PENDING';
+        }
+      }
+      
+      // XP shown: For pending videos, show 0 (not yet awarded)
+      const xpAwarded = (row.proof_type === 'VIDEO' && status === 'PENDING') ? 0 : (row.xp_awarded || 0);
+      const globalXp = (row.proof_type === 'VIDEO' && status === 'PENDING') ? 0 : (row.global_xp_awarded || 0);
+      
       return {
         id: row.id,
         source: 'daily_training',
@@ -3024,10 +3045,12 @@ async function handleChallengeHistory(req: VercelRequest, res: VercelResponse) {
         challengeName: row.challenge_name || 'Daily Training',
         icon: categoryIcons[row.challenge_category] || '🥋',
         category: row.challenge_category || 'Daily Training',
-        status: 'COMPLETED',
+        status,
         proofType: row.proof_type || 'TRUST',
-        xpAwarded: row.xp_awarded || 0,
-        globalXp: row.global_xp_awarded || 0,
+        xpAwarded,
+        pendingXp: (row.proof_type === 'VIDEO' && status === 'PENDING') ? (row.xp_awarded || 0) : 0,
+        globalXp,
+        pendingGlobalXp: (row.proof_type === 'VIDEO' && status === 'PENDING') ? (row.global_xp_awarded || 0) : 0,
         score: row.score || 0,
         isPersonalBest: row.is_personal_best || false,
         mode: 'SOLO',
