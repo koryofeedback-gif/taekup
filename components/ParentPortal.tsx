@@ -2149,13 +2149,34 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="mt-6">
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-2 gap-3 mt-6">
                     <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
                         <p className="text-xs text-gray-400 uppercase tracking-wider">Attendance</p>
                         <p className="text-2xl font-bold text-white mt-1">{student.attendanceCount} <span className="text-xs font-normal text-gray-500">classes</span></p>
                     </div>
+                    <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
+                        <p className="text-xs text-gray-400 uppercase tracking-wider">Total XP</p>
+                        <p className="text-2xl font-bold text-cyan-400 mt-1">{(student.lifetimeXp || serverTotalXP || 0).toLocaleString()}</p>
+                    </div>
                 </div>
+                
+                {/* World Rank Preview - only show if they have global XP */}
+                {worldRankData.myRank && worldRankData.myGlobalXP > 0 && (
+                    <div 
+                        onClick={() => setActiveTab('rivals')}
+                        className="mt-3 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-xl p-3 border border-cyan-500/30 flex items-center justify-between cursor-pointer hover:border-cyan-400/50 transition-colors"
+                    >
+                        <div className="flex items-center">
+                            <span className="text-xl mr-2">🌍</span>
+                            <div>
+                                <p className="text-xs text-cyan-300 font-bold">World Rank #{worldRankData.myRank}</p>
+                                <p className="text-[10px] text-gray-400">{worldRankData.myGlobalXP} Global XP</p>
+                            </div>
+                        </div>
+                        <span className="text-cyan-400 text-xs">View →</span>
+                    </div>
+                )}
 
                 {/* Next Belt Progress */}
                 <div className="mt-6">
@@ -2182,57 +2203,59 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 </div>
             </div>
             
-            {/* Athlete Card Teaser */}
-            <div 
-                onClick={() => setActiveTab('card')}
-                className="bg-gradient-to-r from-blue-900 to-black border border-blue-700/50 p-4 rounded-xl flex items-center justify-between cursor-pointer group shadow-lg"
-            >
-                <div className="flex items-center">
-                    <div className="text-2xl mr-3">🏅</div>
-                    <div>
-                        <h4 className="font-black text-white text-sm italic uppercase">My Athlete Card</h4>
-                        <p className="text-[10px] text-gray-400">View your stats & rating</p>
+            {/* Latest Coach Feedback - Show first if exists */}
+            {student.feedbackHistory && student.feedbackHistory.length > 0 && (
+                <div className="bg-gray-800 p-4 rounded-xl border-l-4 border-sky-500 shadow-lg relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-2 opacity-10 text-4xl">💬</div>
+                    <div className="flex items-start justify-between mb-2">
+                        <span className="text-xs font-bold text-sky-400 uppercase">Latest Coach Feedback</span>
+                        <span className="text-[10px] text-gray-500">{new Date(student.feedbackHistory[student.feedbackHistory.length - 1].date).toLocaleDateString()}</span>
                     </div>
+                    <p className="text-gray-300 text-sm italic relative z-10">"{student.feedbackHistory[student.feedbackHistory.length - 1].text}"</p>
                 </div>
-                <div className="text-sky-400 group-hover:text-white transition-colors font-bold">VIEW &gt;</div>
-            </div>
+            )}
 
-            {/* Home Dojo Teaser */}
-            <div 
-                onClick={() => setActiveTab('home-dojo')}
-                className="bg-gradient-to-r from-green-900 to-black border border-green-700/50 p-4 rounded-xl flex items-center justify-between cursor-pointer group shadow-lg"
-            >
-                <div className="flex items-center">
-                    <div className="text-2xl mr-3">🏠</div>
-                    <div>
-                        <h4 className="font-black text-white text-sm italic uppercase">Home Dojo</h4>
-                        <p className="text-[10px] text-gray-400">Track daily habits</p>
-                    </div>
+            {/* Quick Action Cards */}
+            <div className="grid grid-cols-2 gap-3">
+                {/* Athlete Card */}
+                <div 
+                    onClick={() => setActiveTab('card')}
+                    className="bg-gradient-to-br from-blue-900/80 to-blue-950 border border-blue-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-blue-500/70 transition-all"
+                >
+                    <div className="text-3xl mb-2">🏅</div>
+                    <h4 className="font-bold text-white text-sm">Athlete Card</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">Digital ID & stats</p>
                 </div>
-                <div className="text-green-500 group-hover:text-white transition-colors font-bold">VIEW &gt;</div>
-            </div>
 
-            {/* Recent Feedback */}
-            <div className="space-y-4">
-                <h3 className="font-bold text-gray-200 px-2 text-sm uppercase tracking-wider">Coach Feedback</h3>
-                {student.feedbackHistory && student.feedbackHistory.length > 0 ? (
-                    student.feedbackHistory.slice().reverse().slice(0, 3).map((fb, idx) => (
-                        <div key={idx} className="bg-gray-800 p-4 rounded-xl border-l-4 border-sky-500 shadow-sm relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-2 opacity-10 text-4xl">💬</div>
-                            <p className="text-gray-300 text-sm italic mb-2 relative z-10">"{fb.text}"</p>
-                            <div className="flex justify-between items-center text-xs text-gray-500 relative z-10">
-                                <span>{new Date(fb.date).toLocaleDateString()}</span>
-                                <span className="flex items-center font-medium text-sky-300">
-                                    {fb.isAIGenerated ? '✨ Coach AI' : `👤 ${fb.coachName}`}
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="text-center py-8 text-gray-500 bg-gray-800/30 rounded-xl border border-dashed border-gray-700">
-                        No feedback yet. Keep training hard!
-                    </div>
-                )}
+                {/* Home Dojo */}
+                <div 
+                    onClick={() => setActiveTab('home-dojo')}
+                    className="bg-gradient-to-br from-green-900/80 to-green-950 border border-green-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-green-500/70 transition-all"
+                >
+                    <div className="text-3xl mb-2">🏠</div>
+                    <h4 className="font-bold text-white text-sm">Home Dojo</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">Daily character habits</p>
+                </div>
+
+                {/* Arena */}
+                <div 
+                    onClick={() => setActiveTab('rivals')}
+                    className="bg-gradient-to-br from-orange-900/80 to-orange-950 border border-orange-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-orange-500/70 transition-all"
+                >
+                    <div className="text-3xl mb-2">⚔️</div>
+                    <h4 className="font-bold text-white text-sm">Arena</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">Challenges & XP</p>
+                </div>
+
+                {/* Schedule */}
+                <div 
+                    onClick={() => setActiveTab('booking')}
+                    className="bg-gradient-to-br from-purple-900/80 to-purple-950 border border-purple-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-purple-500/70 transition-all"
+                >
+                    <div className="text-3xl mb-2">📅</div>
+                    <h4 className="font-bold text-white text-sm">Schedule</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">Classes & booking</p>
+                </div>
             </div>
         </div>
     );
