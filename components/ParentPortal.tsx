@@ -412,8 +412,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         });
     }, [getTodayKey]);
     
-    const isChallengeCompletedToday = useCallback((challengeId: string) => 
-        dailyCompletedChallenges.has(challengeId), [dailyCompletedChallenges]);
+    const isChallengeCompletedToday = useCallback((challengeId: string) => {
+        // Check localStorage first
+        if (dailyCompletedChallenges.has(challengeId)) return true;
+        // Also check if there's a pending or approved video for this challenge
+        const hasVideoSubmission = myVideos.some(v => 
+            v.challengeId === challengeId && (v.status === 'pending' || v.status === 'approved')
+        );
+        return hasVideoSubmission;
+    }, [dailyCompletedChallenges, myVideos]);
     
     // Use robust progress tracking hook for XP/completion
     const { 
