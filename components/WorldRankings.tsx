@@ -547,7 +547,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
                           <td className="py-4 px-6 hidden lg:table-cell">
                             <div className="flex items-center gap-2 text-slate-400">
                               <CountryFlag country={student.country} size={20} />
-                              <span className="text-sm">{student.city}, {student.country}</span>
+                              <span className="text-sm">{student.city}</span>
                             </div>
                           </td>
                           <td className="py-4 px-6 text-right">
@@ -617,7 +617,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
                         <td className="py-4 px-6 hidden lg:table-cell">
                           <div className="flex items-center gap-2 text-slate-400">
                             <CountryFlag country={club.country} size={20} />
-                            <span className="text-sm">{club.city}, {club.country}</span>
+                            <span className="text-sm">{club.city}</span>
                           </div>
                         </td>
                         <td className="py-4 px-6 text-center">
