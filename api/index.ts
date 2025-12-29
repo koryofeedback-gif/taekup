@@ -5112,6 +5112,190 @@ async function handleStudentWorldRank(req: VercelRequest, res: VercelResponse, s
   }
 }
 
+// GET /api/students/:id/stats - Comprehensive stats for Insights tab
+async function handleStudentStats(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!studentId || !uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid student ID format' });
+  }
+
+  const client = await pool.connect();
+  try {
+    // 1. Attendance history for heatmap (last 90 days)
+    const attendanceResult = await client.query(`
+      SELECT DATE(attended_at) as date, COUNT(*) as count
+      FROM attendance_events 
+      WHERE student_id = $1::uuid
+        AND attended_at >= NOW() - INTERVAL '90 days'
+      GROUP BY DATE(attended_at)
+      ORDER BY date ASC
+    `, [studentId]);
+
+    // 2. XP history by day (last 30 days) from challenge submissions
+    const xpHistoryResult = await client.query(`
+      SELECT 
+        DATE(created_at) as date,
+        SUM(COALESCE(xp_awarded, 0)) as xp
+      FROM challenge_videos 
+      WHERE student_id = $1::uuid
+        AND status = 'approved'
+        AND created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `, [studentId]);
+
+    // 3. Gauntlet XP history (Daily Training) - uses submitted_at and local_xp_awarded
+    const gauntletXpResult = await client.query(`
+      SELECT 
+        DATE(submitted_at) as date,
+        SUM(COALESCE(local_xp_awarded, 0)) as xp
+      FROM gauntlet_submissions
+      WHERE student_id = $1::uuid
+        AND submitted_at >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE(submitted_at)
+      ORDER BY date ASC
+    `, [studentId]);
+
+    // 4. Challenge category breakdown for Character Development
+    const categoryResult = await client.query(`
+      SELECT 
+        COALESCE(challenge_category, 'General') as category,
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE status = 'approved') as approved,
+        SUM(COALESCE(xp_awarded, 0)) as xp_earned
+      FROM challenge_videos
+      WHERE student_id = $1::uuid
+        AND created_at >= NOW() - INTERVAL '90 days'
+      GROUP BY COALESCE(challenge_category, 'General')
+    `, [studentId]);
+
+    // 5. Video approval stats for Discipline metric
+    const videoStatsResult = await client.query(`
+      SELECT 
+        COUNT(*) as total_videos,
+        COUNT(*) FILTER (WHERE status = 'approved') as approved_videos,
+        COUNT(*) FILTER (WHERE status = 'rejected') as rejected_videos
+      FROM challenge_videos
+      WHERE student_id = $1::uuid
+        AND created_at >= NOW() - INTERVAL '90 days'
+    `, [studentId]);
+
+    // 6. Training consistency (submissions per week)
+    const consistencyResult = await client.query(`
+      SELECT 
+        DATE_TRUNC('week', created_at) as week,
+        COUNT(*) as submissions
+      FROM challenge_videos
+      WHERE student_id = $1::uuid
+        AND created_at >= NOW() - INTERVAL '8 weeks'
+      GROUP BY DATE_TRUNC('week', created_at)
+      ORDER BY week ASC
+    `, [studentId]);
+
+    // Merge XP histories (Coach Picks + Gauntlet)
+    const xpByDate = new Map<string, number>();
+    for (const row of xpHistoryResult.rows) {
+      const dateStr = new Date(row.date).toISOString().split('T')[0];
+      xpByDate.set(dateStr, (xpByDate.get(dateStr) || 0) + parseInt(row.xp || '0'));
+    }
+    for (const row of gauntletXpResult.rows) {
+      const dateStr = new Date(row.date).toISOString().split('T')[0];
+      xpByDate.set(dateStr, (xpByDate.get(dateStr) || 0) + parseInt(row.xp || '0'));
+    }
+
+    // Build XP trend array (last 14 days)
+    const xpTrend = [];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    for (let i = 13; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      xpTrend.push({
+        date: dateStr,
+        xp: xpByDate.get(dateStr) || 0,
+        dayName: dayNames[date.getDay()]
+      });
+    }
+
+    // Parse attendance into date array
+    const attendanceDates = attendanceResult.rows.map(row => 
+      new Date(row.date).toISOString().split('T')[0]
+    );
+
+    // Calculate character development metrics from real data
+    const videoStats = videoStatsResult.rows[0] || { total_videos: 0, approved_videos: 0, rejected_videos: 0 };
+    const categories = categoryResult.rows;
+    const weeklyActivity = consistencyResult.rows;
+
+    // Derive meaningful metrics
+    const totalSubmissions = parseInt(videoStats.total_videos || '0');
+    const approvedSubmissions = parseInt(videoStats.approved_videos || '0');
+    const approvalRate = totalSubmissions > 0 ? Math.round((approvedSubmissions / totalSubmissions) * 100) : 0;
+
+    // Find tech vs fitness balance
+    const techCategories = ['Technique', 'Power', 'Flexibility'];
+    let techXp = 0, fitnessXp = 0;
+    for (const cat of categories) {
+      const xp = parseInt(cat.xp_earned || '0');
+      if (techCategories.includes(cat.category)) {
+        techXp += xp;
+      } else {
+        fitnessXp += xp;
+      }
+    }
+    const totalCatXp = techXp + fitnessXp;
+    const techFocus = totalCatXp > 0 ? Math.round((techXp / totalCatXp) * 100) : 50;
+
+    // Weekly consistency score
+    const weeksActive = weeklyActivity.filter(w => parseInt(w.submissions) > 0).length;
+    const totalWeeks = Math.max(1, weeklyActivity.length || 1);
+    const consistencyScore = Math.round((weeksActive / totalWeeks) * 100);
+
+    // Character development derived metrics
+    const characterDevelopment = {
+      technique: {
+        name: 'Technique Focus',
+        score: techFocus,
+        trend: techFocus >= 50 ? 'up' : 'steady',
+        description: techFocus >= 60 ? 'Strong technical training' : techFocus >= 40 ? 'Balanced approach' : 'More fitness-focused'
+      },
+      discipline: {
+        name: 'Discipline',
+        score: approvalRate,
+        trend: approvalRate >= 80 ? 'up' : approvalRate >= 50 ? 'steady' : 'down',
+        description: approvalRate >= 80 ? 'Excellent quality submissions' : approvalRate >= 50 ? 'Good effort' : 'Room for improvement'
+      },
+      consistency: {
+        name: 'Consistency',
+        score: consistencyScore,
+        trend: consistencyScore >= 75 ? 'up' : consistencyScore >= 50 ? 'steady' : 'down',
+        description: consistencyScore >= 75 ? 'Training regularly' : consistencyScore >= 50 ? 'Fairly consistent' : 'Could train more often'
+      }
+    };
+
+    return res.json({
+      attendanceDates,
+      xpTrend,
+      characterDevelopment,
+      categoryBreakdown: categories.map(c => ({
+        category: c.category,
+        submissions: parseInt(c.total || '0'),
+        approved: parseInt(c.approved || '0'),
+        xpEarned: parseInt(c.xp_earned || '0')
+      })),
+      totalSubmissions,
+      approvalRate
+    });
+  } catch (error: any) {
+    console.error('[Student Stats] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch student stats' });
+  } finally {
+    client.release();
+  }
+}
+
 // =====================================================
 // SUPER ADMIN - DAILY TRAINING MANAGEMENT
 // =====================================================
@@ -5609,6 +5793,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const studentWorldRankMatch = path.match(/^\/students\/([^/]+)\/world-rank\/?$/);
     if (studentWorldRankMatch) return await handleStudentWorldRank(req, res, studentWorldRankMatch[1]);
+    
+    const studentStatsMatch = path.match(/^\/students\/([^/]+)\/stats\/?$/);
+    if (studentStatsMatch) return await handleStudentStats(req, res, studentStatsMatch[1]);
 
     return res.status(404).json({ error: 'Not found', path });
   } catch (error: any) {

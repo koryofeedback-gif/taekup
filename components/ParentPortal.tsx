@@ -77,6 +77,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [worldRankLoading, setWorldRankLoading] = useState(false);
     const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
     
+    // Student Stats for Insights tab
+    interface StudentStats {
+        attendanceDates: string[];
+        xpTrend: Array<{ date: string; xp: number; dayName: string }>;
+        characterDevelopment: {
+            technique: { name: string; score: number; trend: string; description: string };
+            discipline: { name: string; score: number; trend: string; description: string };
+            consistency: { name: string; score: number; trend: string; description: string };
+        };
+        categoryBreakdown: Array<{ category: string; submissions: number; approved: number; xpEarned: number }>;
+        totalSubmissions: number;
+        approvalRate: number;
+    }
+    const [studentStats, setStudentStats] = useState<StudentStats | null>(null);
+    const [statsLoading, setStatsLoading] = useState(false);
+    
     // One-time cleanup of stale localStorage cache on mount
     useEffect(() => {
         try {
@@ -173,6 +189,29 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const interval = setInterval(fetchWorldRankings, 60000); // Refresh every minute
         return () => clearInterval(interval);
     }, [student.id, isPremium]);
+    
+    // Fetch Student Stats for Insights tab
+    useEffect(() => {
+        const fetchStats = async () => {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!student.id || !uuidRegex.test(student.id)) return;
+            if (activeTab !== 'insights') return; // Only fetch when on insights tab
+            
+            setStatsLoading(true);
+            try {
+                const response = await fetch(`/api/students/${student.id}/stats`);
+                if (response.ok) {
+                    const stats = await response.json();
+                    setStudentStats(stats);
+                }
+            } catch (err) {
+                console.error('[Stats] Failed to fetch:', err);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+        fetchStats();
+    }, [student.id, activeTab]);
     
     // Fetch total XP directly from server as single source of truth
     useEffect(() => {
@@ -2292,109 +2331,196 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         </div>
     );
 
-    const renderInsights = () => (
-        <div className="relative h-full min-h-[500px]">
-            {!hasPremiumAccess && renderPremiumLock("Growth Analytics", "Visualize your child's character development. See trends in Focus, Discipline, and Effort over time.")}
-            
-            <div className={`space-y-6 pb-20 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none overflow-hidden h-[500px]' : ''}`}>
+    const renderInsights = () => {
+        const getTrendIcon = (trend: string) => {
+            if (trend === 'up') return { icon: '↗️', color: 'text-green-400' };
+            if (trend === 'down') return { icon: '↘️', color: 'text-red-400' };
+            return { icon: '→', color: 'text-gray-400' };
+        };
+
+        const generateHeatmapDays = () => {
+            const days = [];
+            const today = new Date();
+            for (let i = 89; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const attended = studentStats?.attendanceDates?.includes(dateStr) || false;
+                days.push({ date: dateStr, attended, dayOfWeek: date.getDay() });
+            }
+            return days;
+        };
+
+        const maxXp = studentStats?.xpTrend ? Math.max(...studentStats.xpTrend.map(d => d.xp), 1) : 1;
+
+        return (
+            <div className="relative h-full min-h-[500px]">
+                {!hasPremiumAccess && renderPremiumLock("Growth Analytics", "Visualize your child's character development. See trends in Focus, Discipline, and Effort over time.")}
                 
-                 {/* AI Parenting Coach */}
-                 <div className="bg-gradient-to-r from-indigo-900/50 to-blue-900/50 p-6 rounded-2xl border border-indigo-500/30 shadow-lg">
-                    <h3 className="font-bold text-white mb-2 flex items-center">
-                        <span className="mr-2 text-xl">🧠</span> AI Parenting Coach
-                    </h3>
-                    <p className="text-xs text-indigo-200 mb-4">Get personalized advice on how to support {student.name} based on recent class performance.</p>
+                <div className={`space-y-6 pb-20 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none overflow-hidden h-[500px]' : ''}`}>
                     
-                    {parentingAdvice ? (
-                        <div className="bg-indigo-950/50 p-4 rounded-xl border border-indigo-500/30">
-                            <p className="text-sm text-indigo-100 italic">"{parentingAdvice}"</p>
-                            <button onClick={() => setParentingAdvice(null)} className="text-xs text-indigo-400 mt-2 hover:text-white">Generate New Tip</button>
-                        </div>
-                    ) : (
-                        <button 
-                            onClick={handleGenerateAdvice} 
-                            disabled={isGeneratingAdvice}
-                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex justify-center items-center"
-                        >
-                            {isGeneratingAdvice ? (
-                                <span className="animate-pulse">Analyzing progress...</span>
-                            ) : (
-                                "✨ Generate Advice"
-                            )}
-                        </button>
-                    )}
-                </div>
+                    {/* AI Parenting Coach */}
+                    <div className="bg-gradient-to-r from-indigo-900/50 to-blue-900/50 p-6 rounded-2xl border border-indigo-500/30 shadow-lg">
+                        <h3 className="font-bold text-white mb-2 flex items-center">
+                            <span className="mr-2 text-xl">🧠</span> AI Parenting Coach
+                        </h3>
+                        <p className="text-xs text-indigo-200 mb-4">Get personalized advice on how to support {student.name} based on recent class performance.</p>
+                        
+                        {parentingAdvice ? (
+                            <div className="bg-indigo-950/50 p-4 rounded-xl border border-indigo-500/30">
+                                <p className="text-sm text-indigo-100 italic">"{parentingAdvice}"</p>
+                                <button onClick={() => setParentingAdvice(null)} className="text-xs text-indigo-400 mt-2 hover:text-white">Generate New Tip</button>
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={handleGenerateAdvice} 
+                                disabled={isGeneratingAdvice}
+                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex justify-center items-center"
+                            >
+                                {isGeneratingAdvice ? (
+                                    <span className="animate-pulse">Analyzing progress...</span>
+                                ) : (
+                                    "✨ Generate Advice"
+                                )}
+                            </button>
+                        )}
+                    </div>
 
-                <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-lg">
-                    <h3 className="font-bold text-white mb-4 flex items-center">
-                        <span className="mr-2">📈</span> Character Development
-                    </h3>
-                    {student.performanceHistory && student.performanceHistory.length > 0 ? (
-                        <div className="space-y-6">
-                            {data.skills.filter(s => s.isActive).slice(0, 3).map(skill => {
-                                const recentScores = student.performanceHistory?.slice(-8).map(ph => {
-                                    const score = ph.scores?.[skill.id];
-                                    return typeof score === 'number' ? Math.round(score * 50) : 50;
-                                }) || [];
-                                const hasData = recentScores.length > 0;
-                                const displayScores = hasData ? recentScores : [50, 50, 50, 50, 50, 50, 50, 50];
-                                
-                                return (
-                                    <div key={skill.id}>
-                                        <div className="flex justify-between text-xs text-gray-400 mb-1 font-bold uppercase">
-                                            <span>{skill.name}</span>
-                                            {hasData && recentScores.length >= 2 && (
-                                                <span className={recentScores[recentScores.length - 1] > recentScores[0] ? 'text-green-400' : 'text-gray-500'}>
-                                                    {recentScores[recentScores.length - 1] > recentScores[0] ? '⬆️ Improving' : '➡️ Steady'}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="h-20 flex items-end space-x-2">
-                                            {displayScores.map((h, i) => (
-                                                <div key={i} className="flex-1 bg-gray-700 rounded-t overflow-hidden relative group">
-                                                    <div className="absolute bottom-0 w-full bg-gradient-to-t from-blue-600 to-blue-400 transition-all duration-500" style={{ height: `${h}%` }}></div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="text-center py-6">
-                            <div className="text-4xl mb-3">📊</div>
-                            <p className="text-gray-400 text-sm">Progress charts will appear after coach grades are recorded.</p>
-                            <p className="text-gray-500 text-xs mt-2">Each class, coaches rate skills like {data.skills.filter(s => s.isActive).slice(0, 2).map(s => s.name).join(', ')} and more.</p>
-                        </div>
-                    )}
-                </div>
-
-                <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-lg">
-                    <h3 className="font-bold text-white mb-4 flex items-center">
-                        <span className="mr-2">📅</span> Consistency Heatmap
-                    </h3>
-                    {student.attendanceCount && student.attendanceCount > 0 ? (
-                        <>
-                            <div className="grid grid-cols-7 gap-2">
-                                {Array.from({length: 28}).map((_, i) => {
-                                    const attended = i < (student.attendanceCount || 0) && ((i + 1) % 3 === 0 || (i + 1) % 4 === 0);
+                    {/* Character Development - Real Data */}
+                    <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-lg">
+                        <h3 className="font-bold text-white mb-4 flex items-center">
+                            <span className="mr-2">📈</span> Character Development
+                        </h3>
+                        {statsLoading ? (
+                            <div className="text-center py-6">
+                                <div className="text-4xl animate-pulse mb-3">📊</div>
+                                <p className="text-gray-400 text-sm">Loading stats...</p>
+                            </div>
+                        ) : studentStats?.characterDevelopment ? (
+                            <div className="space-y-4">
+                                {Object.entries(studentStats.characterDevelopment).map(([key, metric]) => {
+                                    const trend = getTrendIcon(metric.trend);
                                     return (
-                                        <div key={i} className={`aspect-square rounded-sm ${attended ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.4)]' : 'bg-gray-700/50'}`}></div>
+                                        <div key={key} className="bg-gray-900/50 p-4 rounded-xl">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm font-bold text-white">{metric.name}</span>
+                                                <span className={`text-xs ${trend.color} flex items-center gap-1`}>
+                                                    {trend.icon} {metric.score}%
+                                                </span>
+                                            </div>
+                                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full transition-all duration-500 ${
+                                                        metric.score >= 70 ? 'bg-green-500' : 
+                                                        metric.score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                                                    }`}
+                                                    style={{ width: `${metric.score}%` }}
+                                                />
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-2">{metric.description}</p>
+                                        </div>
                                     );
                                 })}
                             </div>
-                            <p className="text-xs text-center text-gray-500 mt-3">{student.attendanceCount} classes attended. Keep going!</p>
-                        </>
-                    ) : (
-                        <div className="text-center py-4">
-                            <div className="text-3xl mb-2">📅</div>
-                            <p className="text-gray-400 text-sm">Attendance tracking will appear after classes.</p>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="text-center py-6">
+                                <div className="text-4xl mb-3">🥋</div>
+                                <p className="text-gray-400 text-sm">Complete some challenges to see your character stats!</p>
+                                <p className="text-gray-500 text-xs mt-2">Submit videos in the Arena to build your profile.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* XP Trends Chart */}
+                    <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-lg">
+                        <h3 className="font-bold text-white mb-4 flex items-center">
+                            <span className="mr-2">⚡</span> XP Earned (Last 14 Days)
+                        </h3>
+                        {statsLoading ? (
+                            <div className="h-32 flex items-center justify-center">
+                                <span className="text-gray-400 animate-pulse">Loading...</span>
+                            </div>
+                        ) : studentStats?.xpTrend && studentStats.xpTrend.some(d => d.xp > 0) ? (
+                            <>
+                                <div className="h-32 flex items-end gap-1">
+                                    {studentStats.xpTrend.map((day, i) => {
+                                        const height = day.xp > 0 ? Math.max((day.xp / maxXp) * 100, 8) : 0;
+                                        return (
+                                            <div key={i} className="flex-1 flex flex-col items-center group">
+                                                <div className="w-full relative">
+                                                    {day.xp > 0 && (
+                                                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-yellow-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            +{day.xp}
+                                                        </div>
+                                                    )}
+                                                    <div 
+                                                        className={`w-full rounded-t transition-all duration-300 ${day.xp > 0 ? 'bg-gradient-to-t from-yellow-600 to-yellow-400' : 'bg-gray-700/30'}`}
+                                                        style={{ height: `${height}px`, minHeight: day.xp > 0 ? '8px' : '2px' }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex justify-between text-[9px] text-gray-500 mt-2 px-1">
+                                    <span>{studentStats.xpTrend[0]?.dayName}</span>
+                                    <span>{studentStats.xpTrend[6]?.dayName}</span>
+                                    <span>{studentStats.xpTrend[13]?.dayName}</span>
+                                </div>
+                                <p className="text-xs text-center text-gray-500 mt-3">
+                                    Total: <span className="text-yellow-400 font-bold">+{studentStats.xpTrend.reduce((sum, d) => sum + d.xp, 0)} XP</span> this period
+                                </p>
+                            </>
+                        ) : (
+                            <div className="text-center py-6">
+                                <div className="text-3xl mb-2">⚡</div>
+                                <p className="text-gray-400 text-sm">No XP earned yet. Start training!</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Consistency Heatmap - Real Attendance Data */}
+                    <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-lg">
+                        <h3 className="font-bold text-white mb-4 flex items-center">
+                            <span className="mr-2">📅</span> Training Heatmap (90 Days)
+                        </h3>
+                        {statsLoading ? (
+                            <div className="h-20 flex items-center justify-center">
+                                <span className="text-gray-400 animate-pulse">Loading...</span>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex gap-0.5 flex-wrap">
+                                    {generateHeatmapDays().map((day, i) => (
+                                        <div 
+                                            key={i} 
+                                            className={`w-3 h-3 rounded-sm transition-all ${
+                                                day.attended 
+                                                    ? 'bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.5)]' 
+                                                    : 'bg-gray-700/40'
+                                            }`}
+                                            title={`${day.date}${day.attended ? ' - Attended' : ''}`}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="flex items-center justify-between mt-3">
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <div className="w-3 h-3 bg-gray-700/40 rounded-sm"></div>
+                                        <span>No class</span>
+                                        <div className="w-3 h-3 bg-green-500 rounded-sm ml-2"></div>
+                                        <span>Attended</span>
+                                    </div>
+                                    <span className="text-xs text-green-400 font-bold">
+                                        {studentStats?.attendanceDates?.length || 0} classes
+                                    </span>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const renderPractice = () => {
         const hasVideos = studentVideos.length > 0;
