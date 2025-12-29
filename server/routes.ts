@@ -2207,6 +2207,31 @@ export function registerRoutes(app: Express) {
       if (status === 'approved' && xpAwarded > 0 && studentId) {
         await awardXP(studentId, xpAwarded, 'video', { videoId, type: 'video_verify' });
         console.log('[Videos] Awarded', xpAwarded, 'XP to student', studentId);
+        
+        // For Gauntlet (Daily Training) videos, also award Global XP
+        // Get the challenge category to check if it's a Gauntlet submission
+        const videoDetails = await db.execute(sql`
+          SELECT challenge_category, challenge_id FROM challenge_videos WHERE id = ${videoId}::uuid
+        `);
+        const videoDetail = (videoDetails as any[])[0];
+        
+        if (videoDetail?.challenge_category === 'Daily Training') {
+          // Get global points from gauntlet_submissions
+          const gauntletSub = await db.execute(sql`
+            SELECT global_points_awarded FROM gauntlet_submissions 
+            WHERE challenge_id = ${videoDetail.challenge_id}::uuid 
+            AND student_id = ${studentId}::uuid
+            ORDER BY submitted_at DESC LIMIT 1
+          `);
+          const globalPoints = (gauntletSub as any[])[0]?.global_points_awarded || 15;
+          
+          // Award Global XP
+          await db.execute(sql`
+            UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalPoints}
+            WHERE id = ${studentId}::uuid
+          `);
+          console.log('[Videos] Awarded', globalPoints, 'Global XP to student', studentId, '(Gauntlet video)');
+        }
       }
 
       // Send email notification to parent

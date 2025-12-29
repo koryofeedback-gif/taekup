@@ -2036,6 +2036,25 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
       // Award XP using unified helper
       if (finalXpAwarded > 0) {
         await applyXpDelta(client, video.student_id, finalXpAwarded, 'video_approved');
+        
+        // For Gauntlet (Daily Training) videos, also award Global XP
+        if (video.challenge_category === 'Daily Training') {
+          // Get global points from gauntlet_submissions
+          const gauntletSub = await client.query(
+            `SELECT global_points_awarded FROM gauntlet_submissions 
+             WHERE challenge_id = $1::uuid AND student_id = $2::uuid
+             ORDER BY submitted_at DESC LIMIT 1`,
+            [video.challenge_id, video.student_id]
+          );
+          const globalPoints = gauntletSub.rows[0]?.global_points_awarded || 15;
+          
+          // Award Global XP
+          await client.query(
+            `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid`,
+            [globalPoints, video.student_id]
+          );
+          console.log('[Videos] Awarded', globalPoints, 'Global XP to student', video.student_id, '(Gauntlet video)');
+        }
       }
     } else if (status === 'rejected') {
       try {
