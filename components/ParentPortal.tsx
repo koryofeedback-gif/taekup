@@ -2149,15 +2149,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                 </div>
 
-                {/* Quick Stats Grid */}
-                <div className="grid grid-cols-2 gap-3 mt-6">
+                {/* Quick Stats */}
+                <div className="mt-6">
                     <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
                         <p className="text-xs text-gray-400 uppercase tracking-wider">Attendance</p>
                         <p className="text-2xl font-bold text-white mt-1">{student.attendanceCount} <span className="text-xs font-normal text-gray-500">classes</span></p>
-                    </div>
-                    <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Current Streak</p>
-                        <p className="text-2xl font-bold text-green-400 mt-1">🔥 {streak} <span className="text-xs font-normal text-gray-500">days</span></p>
                     </div>
                 </div>
 
@@ -2635,7 +2631,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const actualXP = student.lifetimeXp || 0;
         const achievements = [
             { icon: '🎯', label: 'Classes Attended', value: student.attendanceCount || 0 },
-            { icon: '⚡', label: 'Current Streak', value: `${student.rivalsStats?.dailyStreak || 0} days` },
             { icon: '🏆', label: 'Total Wins', value: rivalStats?.wins || 0 },
             { icon: '⭐', label: 'XP Earned', value: actualXP },
             { icon: '🥋', label: 'Belt Rank', value: currentBelt?.name || 'White' },
