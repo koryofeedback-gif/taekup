@@ -66,6 +66,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [leaderboardLoading, setLeaderboardLoading] = useState(false);
     const [serverTotalXP, setServerTotalXP] = useState<number>(0);
     
+    // World Rankings state
+    const [worldRankData, setWorldRankData] = useState<{
+        myRank: number | null;
+        totalStudents: number;
+        myGlobalXP: number;
+        topPlayers: Array<{id: string; name: string; global_xp: number; club_name: string; sport: string; country: string}>;
+    }>({ myRank: null, totalStudents: 0, myGlobalXP: 0, topPlayers: [] });
+    const [worldRankLoading, setWorldRankLoading] = useState(false);
+    const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
+    
     // One-time cleanup of stale localStorage cache on mount
     useEffect(() => {
         try {
@@ -111,6 +121,40 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const interval = setInterval(fetchLeaderboard, 30000);
         return () => clearInterval(interval);
     }, [student.clubId]);
+    
+    // Fetch World Rankings data
+    useEffect(() => {
+        const fetchWorldRankings = async () => {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!student.id || !uuidRegex.test(student.id)) return;
+            
+            setWorldRankLoading(true);
+            try {
+                const response = await fetch(`/api/world-rankings?limit=100`);
+                const result = await response.json();
+                
+                if (result.students) {
+                    const allStudents = result.students as Array<{id: string; name: string; global_xp: number; club_name: string; sport: string; country: string}>;
+                    const myIndex = allStudents.findIndex(s => s.id === student.id);
+                    const myStudent = allStudents.find(s => s.id === student.id);
+                    
+                    setWorldRankData({
+                        myRank: myIndex >= 0 ? myIndex + 1 : null,
+                        totalStudents: result.total || allStudents.length,
+                        myGlobalXP: myStudent?.global_xp || 0,
+                        topPlayers: allStudents.slice(0, 10)
+                    });
+                }
+            } catch (err) {
+                console.error('[WorldRankings] Failed to fetch:', err);
+            } finally {
+                setWorldRankLoading(false);
+            }
+        };
+        fetchWorldRankings();
+        const interval = setInterval(fetchWorldRankings, 60000); // Refresh every minute
+        return () => clearInterval(interval);
+    }, [student.id]);
     
     // Fetch total XP directly from server as single source of truth
     useEffect(() => {
