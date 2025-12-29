@@ -4314,8 +4314,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     </div>
                                                 </div>
                                                 <div className="text-right flex items-center gap-2">
-                                                    <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} XP</p>
-                                                    {player.isYou && <span className="text-gray-500 text-xs">→</span>}
+                                                    {player.isYou ? (
+                                                        <>
+                                                            <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} XP</p>
+                                                            <span className="text-gray-500 text-xs">→</span>
+                                                        </>
+                                                    ) : (
+                                                        <p className="text-gray-500 text-xs">#{player.rank}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
