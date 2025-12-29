@@ -5070,6 +5070,75 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Get specific student's world rank (accurate even if ranked beyond top 100)
+  app.get('/api/students/:studentId/world-rank', async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+
+      // Get student's global XP
+      const studentResult = await db.execute(sql`
+        SELECT s.id, s.name, COALESCE(s.global_xp, 0) as global_xp, c.world_rankings_enabled
+        FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE s.id = ${studentId}::uuid
+      `);
+
+      if ((studentResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+
+      const studentData = (studentResult as any[])[0];
+      const myGlobalXP = Number(studentData.global_xp || 0);
+      const clubEnabled = studentData.world_rankings_enabled;
+
+      // If student has no global XP or club not enabled, they're not ranked
+      if (myGlobalXP === 0 || !clubEnabled) {
+        return res.json({
+          rank: null,
+          totalStudents: 0,
+          globalXP: myGlobalXP,
+          message: myGlobalXP === 0 
+            ? 'No global XP earned yet' 
+            : 'Club has not opted into World Rankings'
+        });
+      }
+
+      // Count how many students have MORE global XP (rank = count + 1)
+      const rankResult = await db.execute(sql`
+        SELECT COUNT(*) as higher_count
+        FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE c.world_rankings_enabled = true
+          AND c.status = 'active'
+          AND COALESCE(s.global_xp, 0) > ${myGlobalXP}
+      `);
+
+      // Get total count of ranked students
+      const totalResult = await db.execute(sql`
+        SELECT COUNT(*) as total
+        FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE c.world_rankings_enabled = true
+          AND c.status = 'active'
+          AND COALESCE(s.global_xp, 0) > 0
+      `);
+
+      const higherCount = Number((rankResult as any[])[0]?.higher_count || 0);
+      const totalStudents = Number((totalResult as any[])[0]?.total || 0);
+      const myRank = higherCount + 1;
+
+      res.json({
+        rank: myRank,
+        totalStudents,
+        globalXP: myGlobalXP,
+        percentile: totalStudents > 0 ? Math.round((1 - (myRank / totalStudents)) * 100) : 0
+      });
+    } catch (error: any) {
+      console.error('[Student World Rank] Error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch world rank' });
+    }
+  });
+
   // =====================================================
   // FAMILY CHALLENGES CRUD - Super Admin Management
   // =====================================================

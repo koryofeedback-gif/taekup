@@ -72,6 +72,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         totalStudents: number;
         myGlobalXP: number;
         topPlayers: Array<{id: string; name: string; global_xp: number; club_name: string; sport: string; country: string}>;
+        message?: string;
     }>({ myRank: null, totalStudents: 0, myGlobalXP: 0, topPlayers: [] });
     const [worldRankLoading, setWorldRankLoading] = useState(false);
     const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
@@ -122,7 +123,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         return () => clearInterval(interval);
     }, [student.clubId]);
     
-    // Fetch World Rankings data
+    // Fetch World Rankings data - use dedicated endpoint for accurate rank
     useEffect(() => {
         const fetchWorldRankings = async () => {
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -130,21 +131,31 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             
             setWorldRankLoading(true);
             try {
-                const response = await fetch(`/api/world-rankings?limit=100`);
-                const result = await response.json();
+                // Fetch student's specific rank (accurate even if ranked beyond top 100)
+                const rankResponse = await fetch(`/api/students/${student.id}/world-rank`);
+                const rankResult = await rankResponse.json();
                 
-                if (result.students) {
-                    const allStudents = result.students as Array<{id: string; name: string; global_xp: number; club_name: string; sport: string; country: string}>;
-                    const myIndex = allStudents.findIndex(s => s.id === student.id);
-                    const myStudent = allStudents.find(s => s.id === student.id);
-                    
-                    setWorldRankData({
-                        myRank: myIndex >= 0 ? myIndex + 1 : null,
-                        totalStudents: result.total || allStudents.length,
-                        myGlobalXP: myStudent?.global_xp || 0,
-                        topPlayers: allStudents.slice(0, 10)
-                    });
+                // Always fetch top 10 for premium users (even if their club opted out)
+                let topPlayers: Array<{id: string; name: string; global_xp: number; club_name: string; sport: string; country: string}> = [];
+                if (isPremium) {
+                    try {
+                        const topResponse = await fetch(`/api/world-rankings?limit=10`);
+                        const topResult = await topResponse.json();
+                        if (topResult.students) {
+                            topPlayers = topResult.students;
+                        }
+                    } catch (e) {
+                        console.error('[WorldRankings] Failed to fetch top players:', e);
+                    }
                 }
+                
+                setWorldRankData({
+                    myRank: rankResult.rank ?? null,
+                    totalStudents: rankResult.totalStudents || 0,
+                    myGlobalXP: rankResult.globalXP || 0,
+                    topPlayers,
+                    message: rankResult.message || undefined
+                });
             } catch (err) {
                 console.error('[WorldRankings] Failed to fetch:', err);
             } finally {
@@ -154,7 +165,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         fetchWorldRankings();
         const interval = setInterval(fetchWorldRankings, 60000); // Refresh every minute
         return () => clearInterval(interval);
-    }, [student.id]);
+    }, [student.id, isPremium]);
     
     // Fetch total XP directly from server as single source of truth
     useEffect(() => {
@@ -4374,9 +4385,57 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 )}
                                             </div>
                                         ) : (
-                                            <div className="text-center py-4">
-                                                <p className="text-gray-400 text-sm">Complete challenges to earn Global XP and appear on the World Rankings!</p>
-                                                <p className="text-gray-500 text-xs mt-2">Only challenges with video proof count toward global rankings.</p>
+                                            <div className="space-y-3">
+                                                <div className="text-center py-4">
+                                                    {worldRankData.message?.includes('opted') ? (
+                                                        <>
+                                                            <p className="text-yellow-400 text-sm">Your club hasn't joined World Rankings yet.</p>
+                                                            <p className="text-gray-500 text-xs mt-2">Ask your club owner to enable World Rankings in settings!</p>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <p className="text-gray-400 text-sm">Complete challenges to earn Global XP and appear on the World Rankings!</p>
+                                                            <p className="text-gray-500 text-xs mt-2">Only challenges with video proof count toward global rankings.</p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                
+                                                {isPremium && (
+                                                    <button
+                                                        onClick={() => setShowGlobalLeaderboard(!showGlobalLeaderboard)}
+                                                        className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm"
+                                                    >
+                                                        {showGlobalLeaderboard ? 'Hide' : 'View'} Global Leaderboard
+                                                    </button>
+                                                )}
+                                                
+                                                {showGlobalLeaderboard && isPremium && worldRankData.topPlayers.length > 0 && (
+                                                    <div className="space-y-2 mt-3">
+                                                        <p className="text-gray-400 text-xs font-bold">Top 10 Worldwide</p>
+                                                        {worldRankData.topPlayers.map((player, index) => (
+                                                            <div 
+                                                                key={player.id} 
+                                                                className="flex items-center justify-between p-2 rounded-lg border bg-gray-800/50 border-gray-700"
+                                                            >
+                                                                <div className="flex items-center">
+                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-xs mr-2 ${
+                                                                        index === 0 ? 'bg-yellow-500 text-black' :
+                                                                        index === 1 ? 'bg-gray-400 text-black' :
+                                                                        index === 2 ? 'bg-orange-600 text-white' :
+                                                                        'bg-gray-700 text-gray-400'
+                                                                    }`}>
+                                                                        {index + 1}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-bold text-xs text-white">{player.name}</p>
+                                                                        <p className="text-[10px] text-gray-500">{player.club_name} • {player.country || 'Unknown'}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>

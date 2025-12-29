@@ -5038,6 +5038,81 @@ async function handleSeedClubGlobalXp(req: VercelRequest, res: VercelResponse, c
 }
 
 // =====================================================
+// STUDENT WORLD RANK - Get specific student's global rank
+// =====================================================
+
+async function handleStudentWorldRank(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const client = await pool.connect();
+  try {
+    // Get student's global XP
+    const studentResult = await client.query(`
+      SELECT s.id, s.name, COALESCE(s.global_xp, 0) as global_xp, c.world_rankings_enabled
+      FROM students s
+      JOIN clubs c ON s.club_id = c.id
+      WHERE s.id = $1::uuid
+    `, [studentId]);
+
+    if (studentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const studentData = studentResult.rows[0];
+    const myGlobalXP = Number(studentData.global_xp || 0);
+    const clubEnabled = studentData.world_rankings_enabled;
+
+    // If student has no global XP or club not enabled, they're not ranked
+    if (myGlobalXP === 0 || !clubEnabled) {
+      return res.json({
+        rank: null,
+        totalStudents: 0,
+        globalXP: myGlobalXP,
+        message: myGlobalXP === 0 
+          ? 'No global XP earned yet' 
+          : 'Club has not opted into World Rankings'
+      });
+    }
+
+    // Count how many students have MORE global XP (rank = count + 1)
+    const rankResult = await client.query(`
+      SELECT COUNT(*) as higher_count
+      FROM students s
+      JOIN clubs c ON s.club_id = c.id
+      WHERE c.world_rankings_enabled = true
+        AND c.status = 'active'
+        AND COALESCE(s.global_xp, 0) > $1
+    `, [myGlobalXP]);
+
+    // Get total count of ranked students
+    const totalResult = await client.query(`
+      SELECT COUNT(*) as total
+      FROM students s
+      JOIN clubs c ON s.club_id = c.id
+      WHERE c.world_rankings_enabled = true
+        AND c.status = 'active'
+        AND COALESCE(s.global_xp, 0) > 0
+    `);
+
+    const higherCount = Number(rankResult.rows[0]?.higher_count || 0);
+    const totalStudents = Number(totalResult.rows[0]?.total || 0);
+    const myRank = higherCount + 1; // Rank is number of students with more XP + 1
+
+    return res.json({
+      rank: myRank,
+      totalStudents,
+      globalXP: myGlobalXP,
+      percentile: totalStudents > 0 ? Math.round((1 - (myRank / totalStudents)) * 100) : 0
+    });
+  } catch (error: any) {
+    console.error('[Student World Rank] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch world rank' });
+  } finally {
+    client.release();
+  }
+}
+
+// =====================================================
 // SUPER ADMIN - DAILY TRAINING MANAGEMENT
 // =====================================================
 
@@ -5531,6 +5606,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const studentGlobalXpMatch = path.match(/^\/students\/([^/]+)\/global-xp\/?$/);
     if (studentGlobalXpMatch) return await handleStudentGlobalXp(req, res, studentGlobalXpMatch[1]);
+    
+    const studentWorldRankMatch = path.match(/^\/students\/([^/]+)\/world-rank\/?$/);
+    if (studentWorldRankMatch) return await handleStudentWorldRank(req, res, studentWorldRankMatch[1]);
 
     return res.status(404).json({ error: 'Not found', path });
   } catch (error: any) {
