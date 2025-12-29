@@ -2102,6 +2102,43 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
           );
           console.log('[Videos] Awarded', globalPoints, 'Global XP to student', video.student_id, '(Gauntlet video)');
         }
+        
+        // For Coach Pick (Arena) videos, calculate and award Global XP
+        if (video.challenge_category && video.challenge_category !== 'Daily Training') {
+          try {
+            // Get difficulty tier from arena_challenges table
+            const challengeResult = await client.query(
+              `SELECT difficulty_tier, category FROM arena_challenges WHERE id = $1::uuid`,
+              [video.challenge_id]
+            );
+            
+            if (challengeResult.rows.length > 0) {
+              const challenge = challengeResult.rows[0];
+              const difficulty = (challenge.difficulty_tier || 'MEDIUM').toUpperCase() as 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
+              const isCoachPick = challenge.category === 'coach_pick';
+              const challengeType = isCoachPick ? 'coach_pick' : 'general';
+              
+              // Calculate Global XP using ARENA_GLOBAL_SCORE_MATRIX (with video = true)
+              const globalPoints = calculateArenaGlobalScore(challengeType, difficulty, true);
+              
+              // Award Global XP to student
+              await client.query(
+                `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid`,
+                [globalPoints, video.student_id]
+              );
+              
+              // Store global_rank_points on the video record for auditing
+              await client.query(
+                `UPDATE challenge_videos SET global_rank_points = $1 WHERE id = $2::uuid`,
+                [globalPoints, video.id]
+              );
+              
+              console.log('[Videos] Awarded', globalPoints, 'Global XP to student', video.student_id, '(Coach Pick video, difficulty:', difficulty, ')');
+            }
+          } catch (globalErr: any) {
+            console.error('[Videos] Failed to award Global XP for Coach Pick:', globalErr.message);
+          }
+        }
       }
     } else if (status === 'rejected') {
       try {

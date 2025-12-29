@@ -2232,6 +2232,41 @@ export function registerRoutes(app: Express) {
           `);
           console.log('[Videos] Awarded', globalPoints, 'Global XP to student', studentId, '(Gauntlet video)');
         }
+        
+        // For Coach Pick (Arena) videos, calculate and award Global XP
+        if (videoDetail?.challenge_category && videoDetail.challenge_category !== 'Daily Training') {
+          try {
+            // Get difficulty tier from arena_challenges table
+            const challengeResult = await db.execute(sql`
+              SELECT difficulty_tier, category FROM arena_challenges WHERE id = ${videoDetail.challenge_id}::uuid
+            `);
+            
+            if ((challengeResult as any[]).length > 0) {
+              const challenge = (challengeResult as any[])[0];
+              const difficulty = (challenge.difficulty_tier || 'MEDIUM').toUpperCase();
+              const isCoachPick = challenge.category === 'coach_pick';
+              const challengeType = isCoachPick ? 'coach_pick' : 'general';
+              
+              // Calculate Global XP using ARENA_GLOBAL_SCORE_MATRIX (with video = true)
+              const globalPoints = calculateArenaGlobalScore(challengeType as any, difficulty as any, true);
+              
+              // Award Global XP to student
+              await db.execute(sql`
+                UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalPoints}
+                WHERE id = ${studentId}::uuid
+              `);
+              
+              // Store global_rank_points on the video record for auditing
+              await db.execute(sql`
+                UPDATE challenge_videos SET global_rank_points = ${globalPoints} WHERE id = ${videoId}::uuid
+              `);
+              
+              console.log('[Videos] Awarded', globalPoints, 'Global XP to student', studentId, '(Coach Pick video, difficulty:', difficulty, ')');
+            }
+          } catch (globalErr: any) {
+            console.error('[Videos] Failed to award Global XP for Coach Pick:', globalErr.message);
+          }
+        }
       }
 
       // Send email notification to parent
