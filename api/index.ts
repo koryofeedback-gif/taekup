@@ -4644,10 +4644,26 @@ async function handleStudentGlobalXp(req: VercelRequest, res: VercelResponse, st
       WHERE id = $2::uuid
     `, [sessionGlobalXp, studentId]);
 
-    // Log the global XP transaction
+    // Ensure GLOBAL_EARN enum value exists
+    try {
+      await client.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'GLOBAL_EARN' 
+            AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'xp_transaction_type')) THEN
+            ALTER TYPE xp_transaction_type ADD VALUE 'GLOBAL_EARN';
+          END IF;
+        END
+        $$;
+      `);
+    } catch (enumError: any) {
+      console.log('[Global XP] GLOBAL_EARN enum check:', enumError.message);
+    }
+
+    // Log the global XP transaction (use different type so it doesn't count in local leaderboard)
     await client.query(`
       INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-      VALUES ($1::uuid, $2, 'EARN', 'Global grading', NOW())
+      VALUES ($1::uuid, $2, 'GLOBAL_EARN', 'Global grading', NOW())
     `, [studentId, sessionGlobalXp]);
 
     console.log(`[Global XP] Student ${studentId}: +${sessionGlobalXp} (attendance: ${attendanceXp}, performance: ${performanceXp})`);

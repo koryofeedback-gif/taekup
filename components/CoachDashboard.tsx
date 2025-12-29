@@ -1257,11 +1257,6 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             const classPTS = calculateClassPTS(scoresArray);
             const sessionTotal = classPTS + studentBonus + studentHomework;
             
-            // DEBUG: Log exact inputs to XP calculation
-            console.log('[XP-DEBUG]', student.name, 'RAW studentScores:', JSON.stringify(studentScores));
-            console.log('[XP-DEBUG]', student.name, 'scoresArray:', JSON.stringify(scoresArray), 'length:', scoresArray.length);
-            console.log('[XP-DEBUG]', student.name, 'bonus:', studentBonus, 'hw:', studentHomework, 'coachBonusEnabled:', data.coachBonus, 'hwEnabled:', data.homeworkBonus);
-            
             // Calculate LOCAL XP (includes bonus/homework - NO caps for generosity)
             const gradingXP = calculateGradingXP(
                 scoresArray,
@@ -1270,8 +1265,6 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 data.coachBonus || false,
                 data.homeworkBonus || false
             );
-            
-            console.log('[XP-DEBUG]', student.name, 'RESULT gradingXP:', gradingXP);
             
             // Calculate GLOBAL XP (capped bonus/homework at 2 each for World Rankings fairness)
             const globalGradingXP = calculateGlobalGradingXP(
