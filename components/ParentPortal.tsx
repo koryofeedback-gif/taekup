@@ -2203,18 +2203,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 </div>
             </div>
             
-            {/* Latest Coach Feedback - Show first if exists */}
-            {student.feedbackHistory && student.feedbackHistory.length > 0 && (
-                <div className="bg-gray-800 p-4 rounded-xl border-l-4 border-sky-500 shadow-lg relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-2 opacity-10 text-4xl">💬</div>
-                    <div className="flex items-start justify-between mb-2">
-                        <span className="text-xs font-bold text-sky-400 uppercase">Latest Coach Feedback</span>
-                        <span className="text-[10px] text-gray-500">{new Date(student.feedbackHistory[student.feedbackHistory.length - 1].date).toLocaleDateString()}</span>
-                    </div>
-                    <p className="text-gray-300 text-sm italic relative z-10">"{student.feedbackHistory[student.feedbackHistory.length - 1].text}"</p>
-                </div>
-            )}
-
             {/* Quick Action Cards */}
             <div className="grid grid-cols-2 gap-3">
                 {/* Athlete Card */}
@@ -2230,11 +2218,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {/* Home Dojo */}
                 <div 
                     onClick={() => setActiveTab('home-dojo')}
-                    className="bg-gradient-to-br from-green-900/80 to-green-950 border border-green-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-green-500/70 transition-all"
+                    className="bg-gradient-to-br from-green-900/80 to-green-950 border border-green-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-green-500/70 transition-all relative"
                 >
                     <div className="text-3xl mb-2">🏠</div>
                     <h4 className="font-bold text-white text-sm">Home Dojo</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Daily character habits</p>
+                    <p className="text-[10px] text-gray-400 mt-1">
+                        {atDailyLimit ? (
+                            <span className="text-green-400">✓ Complete!</span>
+                        ) : habitXpToday > 0 ? (
+                            <span className="text-yellow-400">{habitXpToday} XP today</span>
+                        ) : (
+                            'Check daily habits'
+                        )}
+                    </p>
                 </div>
 
                 {/* Arena */}
@@ -2256,6 +2252,31 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <h4 className="font-bold text-white text-sm">Schedule</h4>
                     <p className="text-[10px] text-gray-400 mt-1">Classes & booking</p>
                 </div>
+            </div>
+
+            {/* Coach Feedback Section */}
+            <div className="space-y-3">
+                <h3 className="font-bold text-gray-200 text-sm uppercase tracking-wider flex items-center">
+                    <span className="mr-2">💬</span> Coach Feedback
+                    {student.feedbackHistory && student.feedbackHistory.length > 0 && (
+                        <span className="ml-2 bg-sky-500/20 text-sky-400 text-[10px] px-2 py-0.5 rounded-full">{student.feedbackHistory.length}</span>
+                    )}
+                </h3>
+                {student.feedbackHistory && student.feedbackHistory.length > 0 ? (
+                    student.feedbackHistory.slice().reverse().slice(0, 2).map((fb, idx) => (
+                        <div key={idx} className="bg-gray-800 p-3 rounded-xl border-l-4 border-sky-500 shadow-sm relative overflow-hidden">
+                            <p className="text-gray-300 text-sm italic relative z-10 line-clamp-2">"{fb.text}"</p>
+                            <div className="flex justify-between items-center text-[10px] text-gray-500 mt-2 relative z-10">
+                                <span>{new Date(fb.date).toLocaleDateString()}</span>
+                                <span className="text-sky-400">{fb.isAIGenerated ? '✨ AI' : fb.coachName}</span>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-6 text-gray-500 bg-gray-800/30 rounded-xl border border-dashed border-gray-700 text-sm">
+                        No feedback yet. Keep training hard!
+                    </div>
+                )}
             </div>
         </div>
     );
