@@ -4381,11 +4381,12 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
   const client = await pool.connect();
   try {
     if (category === 'students') {
-      // Ensure previous_rank column exists
+      // Ensure previous_rank and rank_snapshot_date columns exist
       try {
         await client.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS previous_rank INTEGER DEFAULT NULL');
+        await client.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS rank_snapshot_date DATE DEFAULT NULL');
       } catch (e) {
-        // Column likely already exists, ignore error
+        // Columns likely already exist, ignore error
       }
 
       let query = `
@@ -4395,6 +4396,7 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
           s.belt,
           COALESCE(s.global_xp, 0) as global_xp,
           s.previous_rank,
+          s.rank_snapshot_date,
           c.name as club_name,
           c.art_type as sport,
           c.country,
@@ -4442,9 +4444,17 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         };
       });
 
-      // Update previous_rank for all students in this ranking
+      // Update previous_rank ONLY once per day (daily snapshot)
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       for (const s of rankings) {
-        await client.query('UPDATE students SET previous_rank = $1 WHERE id = $2', [s.rank, s.id]);
+        // Only update if snapshot date is not today (first call of the day)
+        await client.query(
+          `UPDATE students 
+           SET previous_rank = $1, rank_snapshot_date = $2::date
+           WHERE id = $3 
+           AND (rank_snapshot_date IS NULL OR rank_snapshot_date < $2::date)`,
+          [s.rank, today, s.id]
+        );
       }
 
       return res.json({ category: 'students', rankings, total: rankings.length });

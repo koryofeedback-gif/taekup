@@ -4546,11 +4546,12 @@ export function registerRoutes(app: Express) {
       const { category = 'students', sport, country, limit = 100, offset = 0 } = req.query;
 
       if (category === 'students') {
-        // Ensure previous_rank column exists
+        // Ensure previous_rank and rank_snapshot_date columns exist
         try {
           await db.execute(sql`ALTER TABLE students ADD COLUMN IF NOT EXISTS previous_rank INTEGER DEFAULT NULL`);
+          await db.execute(sql`ALTER TABLE students ADD COLUMN IF NOT EXISTS rank_snapshot_date DATE DEFAULT NULL`);
         } catch (e) {
-          // Column likely already exists
+          // Columns likely already exist
         }
 
         // Get top students globally (from clubs that opted in)
@@ -4561,6 +4562,7 @@ export function registerRoutes(app: Express) {
             s.belt,
             s.global_xp,
             s.previous_rank,
+            s.rank_snapshot_date,
             c.name as club_name,
             c.art_type as sport,
             c.country,
@@ -4602,9 +4604,16 @@ export function registerRoutes(app: Express) {
           };
         });
 
-        // Update previous_rank for all students
+        // Update previous_rank ONLY once per day (daily snapshot)
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         for (const s of rankings) {
-          await db.execute(sql`UPDATE students SET previous_rank = ${s.rank} WHERE id = ${s.id}`);
+          // Only update if snapshot date is not today (first call of the day)
+          await db.execute(sql`
+            UPDATE students 
+            SET previous_rank = ${s.rank}, rank_snapshot_date = ${today}::date
+            WHERE id = ${s.id} 
+            AND (rank_snapshot_date IS NULL OR rank_snapshot_date < ${today}::date)
+          `);
         }
 
         res.json({ category: 'students', rankings, total: rankings.length });
