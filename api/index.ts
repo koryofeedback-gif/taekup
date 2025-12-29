@@ -4425,7 +4425,8 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         clubName: r.club_name,
         sport: r.sport,
         country: r.country,
-        city: r.city
+        city: r.city,
+        rankChange: null // Will be calculated when we have historical data
       }));
 
       return res.json({ category: 'students', rankings, total: rankings.length });
@@ -4469,7 +4470,8 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         studentCount: Number(r.student_count),
         totalGlobalXp: Number(r.total_global_xp),
         avgGlobalXp: Math.round(Number(r.avg_global_xp)),
-        globalScore: r.global_score || 0
+        globalScore: r.global_score || 0,
+        rankChange: null // Will be calculated when we have historical data
       }));
 
       return res.json({ category: 'clubs', rankings, total: rankings.length });
