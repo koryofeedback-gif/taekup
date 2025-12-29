@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Users, Globe2, Filter, ChevronUp, ChevronDown, Minus, Building2, Medal, TrendingUp, Flag, MapPin, Award, Loader2 } from 'lucide-react';
+import { Trophy, Users, Globe2, Filter, ChevronUp, ChevronDown, Minus, Building2, Medal, TrendingUp, Award, Loader2, Sparkles, Star, Flame, Crown } from 'lucide-react';
 
 interface StudentRanking {
   rank: number;
@@ -40,17 +40,17 @@ interface WorldRankingsProps {
   isAdmin?: boolean;
 }
 
-const BELT_COLORS: Record<string, string> = {
-  'White': 'bg-white border-gray-300',
-  'Yellow': 'bg-yellow-400',
-  'Orange': 'bg-orange-400',
-  'Green': 'bg-green-500',
-  'Blue': 'bg-blue-500',
-  'Purple': 'bg-purple-500',
-  'Brown': 'bg-amber-700',
-  'Red': 'bg-red-500',
-  'Black': 'bg-gray-900',
-  'Poom': 'bg-gradient-to-r from-red-500 to-gray-900',
+const BELT_COLORS: Record<string, { bg: string; text: string; border?: string }> = {
+  'white': { bg: 'bg-white', text: 'text-gray-800', border: 'border border-gray-300' },
+  'yellow': { bg: 'bg-gradient-to-r from-yellow-300 to-yellow-400', text: 'text-yellow-900' },
+  'orange': { bg: 'bg-gradient-to-r from-orange-400 to-orange-500', text: 'text-white' },
+  'green': { bg: 'bg-gradient-to-r from-green-500 to-green-600', text: 'text-white' },
+  'blue': { bg: 'bg-gradient-to-r from-blue-500 to-blue-600', text: 'text-white' },
+  'purple': { bg: 'bg-gradient-to-r from-purple-500 to-purple-600', text: 'text-white' },
+  'brown': { bg: 'bg-gradient-to-r from-amber-700 to-amber-800', text: 'text-white' },
+  'red': { bg: 'bg-gradient-to-r from-red-500 to-red-600', text: 'text-white' },
+  'black': { bg: 'bg-gradient-to-r from-gray-800 to-gray-900', text: 'text-white' },
+  'poom': { bg: 'bg-gradient-to-r from-red-500 via-red-600 to-gray-900', text: 'text-white' },
 };
 
 const SPORT_ICONS: Record<string, string> = {
@@ -63,73 +63,6 @@ const SPORT_ICONS: Record<string, string> = {
   'Kung Fu': '🐉',
   'Krav Maga': '🥊',
   'MMA': '🥊',
-};
-
-const COUNTRY_FLAGS: Record<string, string> = {
-  'Iran': '🇮🇷',
-  'IR': '🇮🇷',
-  'Iran (Islamic Republic of)': '🇮🇷',
-  'Islamic Republic of Iran': '🇮🇷',
-  'United States': '🇺🇸',
-  'USA': '🇺🇸',
-  'US': '🇺🇸',
-  'South Korea': '🇰🇷',
-  'Korea': '🇰🇷',
-  'Japan': '🇯🇵',
-  'China': '🇨🇳',
-  'Brazil': '🇧🇷',
-  'Germany': '🇩🇪',
-  'France': '🇫🇷',
-  'United Kingdom': '🇬🇧',
-  'UK': '🇬🇧',
-  'Spain': '🇪🇸',
-  'Italy': '🇮🇹',
-  'Canada': '🇨🇦',
-  'Australia': '🇦🇺',
-  'Mexico': '🇲🇽',
-  'Russia': '🇷🇺',
-  'Turkey': '🇹🇷',
-  'India': '🇮🇳',
-  'Netherlands': '🇳🇱',
-  'Belgium': '🇧🇪',
-  'Sweden': '🇸🇪',
-  'Norway': '🇳🇴',
-  'Denmark': '🇩🇰',
-  'Finland': '🇫🇮',
-  'Poland': '🇵🇱',
-  'Austria': '🇦🇹',
-  'Switzerland': '🇨🇭',
-  'Portugal': '🇵🇹',
-  'Greece': '🇬🇷',
-  'Argentina': '🇦🇷',
-  'Colombia': '🇨🇴',
-  'Chile': '🇨🇱',
-  'Peru': '🇵🇪',
-  'Venezuela': '🇻🇪',
-  'Egypt': '🇪🇬',
-  'South Africa': '🇿🇦',
-  'Morocco': '🇲🇦',
-  'Nigeria': '🇳🇬',
-  'Saudi Arabia': '🇸🇦',
-  'UAE': '🇦🇪',
-  'United Arab Emirates': '🇦🇪',
-  'Israel': '🇮🇱',
-  'Thailand': '🇹🇭',
-  'Vietnam': '🇻🇳',
-  'Philippines': '🇵🇭',
-  'Indonesia': '🇮🇩',
-  'Malaysia': '🇲🇾',
-  'Singapore': '🇸🇬',
-  'New Zealand': '🇳🇿',
-  'Ireland': '🇮🇪',
-  'Czech Republic': '🇨🇿',
-  'Romania': '🇷🇴',
-  'Hungary': '🇭🇺',
-  'Ukraine': '🇺🇦',
-  'Pakistan': '🇵🇰',
-  'Bangladesh': '🇧🇩',
-  'Taiwan': '🇹🇼',
-  'Hong Kong': '🇭🇰',
 };
 
 const COUNTRY_CODES: Record<string, string> = {
@@ -206,7 +139,7 @@ const getCountryCode = (country: string): string => {
 
 const CountryFlag: React.FC<{ country: string; size?: number }> = ({ country, size = 24 }) => {
   const code = getCountryCode(country);
-  if (!code) return <span>🌍</span>;
+  if (!code) return <span className="text-lg">🌍</span>;
   return (
     <img 
       src={`https://flagcdn.com/w40/${code}.png`}
@@ -214,12 +147,29 @@ const CountryFlag: React.FC<{ country: string; size?: number }> = ({ country, si
       width={size}
       height={Math.round(size * 0.75)}
       alt={country}
-      className="inline-block rounded-sm"
+      className="inline-block rounded shadow-sm"
       onError={(e) => {
         e.currentTarget.style.display = 'none';
       }}
     />
   );
+};
+
+const getInitials = (name: string): string => {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+};
+
+const getAvatarColor = (name: string): string => {
+  const colors = [
+    'from-cyan-500 to-blue-600',
+    'from-purple-500 to-pink-600',
+    'from-green-500 to-emerald-600',
+    'from-orange-500 to-red-600',
+    'from-indigo-500 to-purple-600',
+    'from-teal-500 to-cyan-600',
+  ];
+  const index = name.charCodeAt(0) % colors.length;
+  return colors[index];
 };
 
 export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = false }) => {
@@ -249,7 +199,6 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
         
         setSports(sportsData.sports || []);
         setCountries(countriesData.countries || []);
-        // Only set stats if it has the expected properties (not an error response)
         if (statsData && typeof statsData.totalStudents === 'number') {
           setStats(statsData);
         } else {
@@ -257,7 +206,6 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
         }
       } catch (err) {
         console.error('Failed to fetch filters:', err);
-        // Set default stats on error
         setStats({ participatingClubs: 0, totalStudents: 0, sportsRepresented: 0, countriesRepresented: 0 });
       }
     };
@@ -300,23 +248,134 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
 
   const RankChangeIndicator = ({ change }: { change: number | null }) => {
     if (change === null || change === undefined || Number.isNaN(change)) {
-      return <span className="text-xs text-cyan-400 font-medium">NEW</span>;
+      return (
+        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30">
+          <Sparkles className="w-3 h-3 text-cyan-400" />
+          <span className="text-xs font-bold text-cyan-400 uppercase tracking-wide">New</span>
+        </div>
+      );
     }
     if (change === 0) {
-      return <Minus className="w-4 h-4 text-gray-400" />;
+      return (
+        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-600/30 border border-slate-500/30">
+          <Minus className="w-3 h-3 text-slate-400" />
+          <span className="text-xs font-medium text-slate-400">—</span>
+        </div>
+      );
     }
     if (change > 0) {
       return (
-        <div className="flex items-center text-green-400">
-          <ChevronUp className="w-4 h-4" />
-          <span className="text-xs font-medium">{change}</span>
+        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 animate-pulse">
+          <ChevronUp className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-xs font-bold text-emerald-400">+{change}</span>
         </div>
       );
     }
     return (
-      <div className="flex items-center text-red-400">
-        <ChevronDown className="w-4 h-4" />
-        <span className="text-xs font-medium">{Math.abs(change)}</span>
+      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/20 border border-red-500/30">
+        <ChevronDown className="w-3.5 h-3.5 text-red-400" />
+        <span className="text-xs font-bold text-red-400">{change}</span>
+      </div>
+    );
+  };
+
+  const BeltBadge = ({ belt }: { belt: string }) => {
+    const beltKey = belt.toLowerCase();
+    const style = BELT_COLORS[beltKey] || { bg: 'bg-gray-600', text: 'text-white' };
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${style.bg} ${style.text} ${style.border || ''} shadow-sm`}>
+        {belt}
+      </span>
+    );
+  };
+
+  const TopThreePodium = ({ athletes }: { athletes: StudentRanking[] }) => {
+    if (athletes.length < 3) return null;
+    
+    const [first, second, third] = athletes;
+    
+    const PodiumCard = ({ athlete, position }: { athlete: StudentRanking; position: 1 | 2 | 3 }) => {
+      const configs = {
+        1: {
+          gradient: 'from-yellow-500/20 via-amber-500/10 to-transparent',
+          border: 'border-yellow-500/50',
+          glow: 'shadow-yellow-500/20',
+          icon: <Crown className="w-8 h-8 text-yellow-400" />,
+          size: 'h-44',
+          avatarSize: 'w-20 h-20',
+          ring: 'ring-4 ring-yellow-500/50',
+        },
+        2: {
+          gradient: 'from-slate-400/20 via-gray-400/10 to-transparent',
+          border: 'border-slate-400/50',
+          glow: 'shadow-slate-400/20',
+          icon: <Medal className="w-7 h-7 text-slate-300" />,
+          size: 'h-40',
+          avatarSize: 'w-16 h-16',
+          ring: 'ring-4 ring-slate-400/50',
+        },
+        3: {
+          gradient: 'from-amber-700/20 via-orange-600/10 to-transparent',
+          border: 'border-amber-600/50',
+          glow: 'shadow-amber-600/20',
+          icon: <Award className="w-6 h-6 text-amber-500" />,
+          size: 'h-36',
+          avatarSize: 'w-14 h-14',
+          ring: 'ring-4 ring-amber-600/50',
+        },
+      };
+      
+      const config = configs[position];
+      
+      return (
+        <div className={`relative flex flex-col items-center p-4 rounded-2xl bg-gradient-to-b ${config.gradient} border ${config.border} ${config.size} shadow-2xl ${config.glow} backdrop-blur-sm transition-all hover:scale-105 hover:shadow-3xl`}>
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-slate-800 rounded-full p-2 border-2 border-slate-600">
+            {config.icon}
+          </div>
+          
+          <div className={`mt-6 ${config.avatarSize} rounded-full bg-gradient-to-br ${getAvatarColor(athlete.name)} flex items-center justify-center text-white font-bold text-xl ${config.ring} shadow-lg`}>
+            {getInitials(athlete.name)}
+          </div>
+          
+          <div className="mt-3 text-center">
+            <div className="font-bold text-white text-lg leading-tight">{athlete.name}</div>
+            <div className="flex items-center justify-center gap-1 mt-1">
+              <CountryFlag country={athlete.country} size={16} />
+              <span className="text-slate-400 text-xs">{athlete.clubName}</span>
+            </div>
+          </div>
+          
+          <div className="mt-auto flex items-center gap-1.5">
+            <Flame className="w-4 h-4 text-cyan-400" />
+            <span className="text-2xl font-black text-white">{athlete.globalXp.toLocaleString()}</span>
+          </div>
+          
+          <div className="mt-2">
+            <BeltBadge belt={athlete.belt} />
+          </div>
+        </div>
+      );
+    };
+    
+    return (
+      <div className="mb-8">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <Star className="w-5 h-5 text-yellow-400 animate-pulse" />
+          <h2 className="text-xl font-bold text-white uppercase tracking-wider">Top Champions</h2>
+          <Star className="w-5 h-5 text-yellow-400 animate-pulse" />
+        </div>
+        
+        <div className="flex items-end justify-center gap-4 px-4">
+          <div className="flex-1 max-w-[200px]">
+            <PodiumCard athlete={second} position={2} />
+          </div>
+          <div className="flex-1 max-w-[220px] -mt-4">
+            <PodiumCard athlete={first} position={1} />
+          </div>
+          <div className="flex-1 max-w-[180px]">
+            <PodiumCard athlete={third} position={3} />
+          </div>
+        </div>
       </div>
     );
   };
@@ -324,96 +383,84 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
   const RankBadge = ({ rank }: { rank: number }) => {
     if (rank === 1) {
       return (
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-500 flex items-center justify-center shadow-lg shadow-yellow-500/30">
-          <Trophy className="w-5 h-5 text-yellow-900" />
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-500/40 ring-2 ring-yellow-300/50">
+          <Crown className="w-6 h-6 text-yellow-900" />
         </div>
       );
     }
     if (rank === 2) {
       return (
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center shadow-lg shadow-gray-400/30">
-          <Medal className="w-5 h-5 text-gray-700" />
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 flex items-center justify-center shadow-lg shadow-slate-400/30 ring-2 ring-slate-200/50">
+          <Medal className="w-6 h-6 text-slate-700" />
         </div>
       );
     }
     if (rank === 3) {
       return (
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-600/30">
-          <Award className="w-5 h-5 text-amber-100" />
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-600/40 ring-2 ring-amber-400/50">
+          <Award className="w-6 h-6 text-amber-100" />
         </div>
       );
     }
     return (
-      <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
-        <span className="text-lg font-bold text-white">{rank}</span>
-      </div>
-    );
-  };
-
-  const BeltBadge = ({ belt }: { belt: string }) => {
-    const colorClass = BELT_COLORS[belt] || 'bg-gray-500';
-    return (
-      <div className={`px-2 py-0.5 rounded text-xs font-medium ${colorClass} ${belt === 'White' ? 'text-gray-700 border' : 'text-white'}`}>
-        {belt}
+      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-md border border-slate-500/30">
+        <span className="text-xl font-black text-white">{rank}</span>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Globe2 className="w-10 h-10 text-cyan-400" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NDEgMC0xOCA4LjA1OS0xOCAxOHM4LjA1OSAxOCAxOCAxOCAxOC04LjA1OSAxOC0xOC04LjA1OS0xOC0xOC0xOHptMCAzMmMtNy43MzIgMC0xNC02LjI2OC0xNC0xNHM2LjI2OC0xNCAxNC0xNCAxNCA2LjI2OCAxNCAxNC02LjI2OCAxNC0xNCAxNHoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9nPjwvc3ZnPg==')] opacity-30" />
+      
+      <div className="relative max-w-7xl mx-auto px-4 py-8">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-3 mb-4 px-6 py-2 rounded-full bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10 border border-cyan-500/20">
+            <Globe2 className="w-8 h-8 text-cyan-400 animate-pulse" />
+            <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
               World Rankings
             </h1>
           </div>
-          <p className="text-slate-400 text-lg">
-            Global martial arts leaderboard across all participating clubs
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+            Global martial arts leaderboard across all participating clubs worldwide
           </p>
         </div>
 
-        {/* Stats Bar - Hidden until platform reaches significant scale */}
-
-        {/* Category Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-3 mb-8 justify-center">
           <button
             onClick={() => setCategory('students')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+            className={`group flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-all duration-300 ${
               category === 'students'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30 scale-105'
+                : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
             }`}
           >
-            <Users className="w-5 h-5" />
+            <Users className={`w-5 h-5 transition-transform ${category === 'students' ? 'animate-bounce' : 'group-hover:scale-110'}`} />
             Top Athletes
           </button>
           <button
             onClick={() => setCategory('clubs')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+            className={`group flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-all duration-300 ${
               category === 'clubs'
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/30 scale-105'
+                : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
             }`}
           >
-            <Building2 className="w-5 h-5" />
+            <Building2 className={`w-5 h-5 transition-transform ${category === 'clubs' ? 'animate-bounce' : 'group-hover:scale-110'}`} />
             Top Clubs
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-400 text-sm">Filter by:</span>
+        <div className="flex flex-wrap gap-4 mb-8 justify-center items-center">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Filter className="w-4 h-4" />
+            <span className="text-sm font-medium">Filter:</span>
           </div>
           
           <select
             value={sport}
             onChange={(e) => setSport(e.target.value)}
-            className="bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+            className="bg-slate-800/80 border border-slate-600 text-white rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-cyan-500 focus:border-transparent cursor-pointer hover:bg-slate-700 transition-colors"
           >
             <option value="all">All Sports</option>
             {sports.map(s => (
@@ -424,7 +471,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
           <select
             value={country}
             onChange={(e) => setCountry(e.target.value)}
-            className="bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+            className="bg-slate-800/80 border border-slate-600 text-white rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-cyan-500 focus:border-transparent cursor-pointer hover:bg-slate-700 transition-colors"
           >
             <option value="all">All Countries</option>
             {countries.map(c => (
@@ -433,152 +480,172 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
           </select>
         </div>
 
-        {/* Rankings Table */}
-        <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl overflow-hidden">
+        <div className="bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl">
           {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+            <div className="flex flex-col items-center justify-center py-24">
+              <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
+              <p className="mt-4 text-slate-400 animate-pulse">Loading rankings...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-20 text-red-400">{error}</div>
+            <div className="text-center py-24 text-red-400">{error}</div>
           ) : category === 'students' ? (
             studentRankings.length === 0 ? (
-              <div className="text-center py-20">
-                <Trophy className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 text-lg">No rankings available yet</p>
-                <p className="text-slate-500 text-sm mt-2">Clubs need to opt-in and students need to earn Global XP</p>
+              <div className="text-center py-24">
+                <Trophy className="w-20 h-20 text-slate-600 mx-auto mb-6" />
+                <p className="text-slate-300 text-xl font-medium">No rankings available yet</p>
+                <p className="text-slate-500 mt-2">Clubs need to opt-in and athletes need to earn Global XP</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">RANK</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">ATHLETE</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-400 hidden md:table-cell">CLUB</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-400 hidden lg:table-cell">LOCATION</th>
-                    <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">GLOBAL XP</th>
-                    <th className="text-center py-4 px-6 text-sm font-medium text-slate-400 w-20">TREND</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {studentRankings.map((student, index) => (
-                    <tr 
-                      key={student.id}
-                      className={`border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors ${
-                        index < 3 ? 'bg-gradient-to-r from-transparent via-slate-700/20 to-transparent' : ''
-                      }`}
-                    >
-                      <td className="py-4 px-6">
-                        <RankBadge rank={student.rank} />
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <CountryFlag country={student.country} size={28} />
-                          <div>
-                            <div className="font-medium text-white text-lg">{student.name}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <BeltBadge belt={student.belt} />
-                              <span className="text-xs text-slate-500">{student.sport}</span>
+              <div>
+                {studentRankings.length >= 3 && (
+                  <div className="p-6 border-b border-slate-700/50 bg-gradient-to-b from-slate-800/50 to-transparent">
+                    <TopThreePodium athletes={studentRankings.slice(0, 3)} />
+                  </div>
+                )}
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-700/50 bg-slate-800/50">
+                        <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Rank</th>
+                        <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Athlete</th>
+                        <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest hidden md:table-cell">Club</th>
+                        <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest hidden lg:table-cell">Location</th>
+                        <th className="text-right py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Global XP</th>
+                        <th className="text-center py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest w-28">Trend</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {studentRankings.map((student, index) => (
+                        <tr 
+                          key={student.id}
+                          className={`border-b border-slate-700/30 transition-all duration-200 hover:bg-slate-700/40 hover:scale-[1.01] ${
+                            index < 3 ? 'bg-gradient-to-r from-cyan-500/5 via-transparent to-transparent' : ''
+                          }`}
+                          style={{ height: '72px' }}
+                        >
+                          <td className="py-4 px-6">
+                            <RankBadge rank={student.rank} />
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getAvatarColor(student.name)} flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/10`}>
+                                {getInitials(student.name)}
+                              </div>
+                              <div>
+                                <div className="font-bold text-white text-lg leading-tight">{student.name}</div>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <BeltBadge belt={student.belt} />
+                                  <span className="text-xs text-slate-500 font-medium">{student.sport}</span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 hidden md:table-cell">
-                        <div className="text-slate-300">{student.clubName}</div>
-                      </td>
-                      <td className="py-4 px-6 hidden lg:table-cell">
-                        <div className="flex items-center gap-1 text-slate-400 text-sm">
-                          <CountryFlag country={student.country} size={20} />
-                          {student.city}, {student.country}
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <TrendingUp className="w-4 h-4 text-cyan-400" />
-                          <span className="text-xl font-bold text-white">{student.globalXp.toLocaleString()}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex justify-center">
-                          <RankChangeIndicator change={student.rankChange} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="py-4 px-6 hidden md:table-cell">
+                            <div className="text-slate-300 font-medium">{student.clubName}</div>
+                          </td>
+                          <td className="py-4 px-6 hidden lg:table-cell">
+                            <div className="flex items-center gap-2 text-slate-400">
+                              <CountryFlag country={student.country} size={20} />
+                              <span className="text-sm">{student.city}, {student.country}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <TrendingUp className="w-5 h-5 text-cyan-400" />
+                              <span className="text-2xl font-black text-white tabular-nums">{student.globalXp.toLocaleString()}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex justify-center">
+                              <RankChangeIndicator change={student.rankChange} />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )
           ) : (
             clubRankings.length === 0 ? (
-              <div className="text-center py-20">
-                <Building2 className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 text-lg">No club rankings available yet</p>
-                <p className="text-slate-500 text-sm mt-2">Clubs need to opt-in to world rankings</p>
+              <div className="text-center py-24">
+                <Building2 className="w-20 h-20 text-slate-600 mx-auto mb-6" />
+                <p className="text-slate-300 text-xl font-medium">No club rankings available yet</p>
+                <p className="text-slate-500 mt-2">Clubs need to opt-in to world rankings</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">RANK</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">CLUB</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-400 hidden md:table-cell">SPORT</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-400 hidden lg:table-cell">LOCATION</th>
-                    <th className="text-center py-4 px-6 text-sm font-medium text-slate-400">ATHLETES</th>
-                    <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">AVG XP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clubRankings.map((club, index) => (
-                    <tr 
-                      key={club.id}
-                      className={`border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors ${
-                        index < 3 ? 'bg-gradient-to-r from-transparent via-slate-700/20 to-transparent' : ''
-                      }`}
-                    >
-                      <td className="py-4 px-6">
-                        <RankBadge rank={club.rank} />
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <CountryFlag country={club.country} size={28} />
-                          <div className="font-medium text-white text-lg">{club.name}</div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 hidden md:table-cell">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{SPORT_ICONS[club.sport] || '🥋'}</span>
-                          <span className="text-slate-300">{club.sport}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 hidden lg:table-cell">
-                        <div className="flex items-center gap-1 text-slate-400 text-sm">
-                          <CountryFlag country={club.country} size={20} />
-                          {club.city}, {club.country}
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <div className="inline-flex items-center gap-1 bg-slate-700 px-3 py-1 rounded-full">
-                          <Users className="w-4 h-4 text-purple-400" />
-                          <span className="text-white font-medium">{club.studentCount}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <TrendingUp className="w-4 h-4 text-purple-400" />
-                          <span className="text-xl font-bold text-white">{club.avgGlobalXp.toLocaleString()}</span>
-                        </div>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-700/50 bg-slate-800/50">
+                      <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Rank</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Club</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest hidden md:table-cell">Sport</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest hidden lg:table-cell">Location</th>
+                      <th className="text-center py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Athletes</th>
+                      <th className="text-right py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Avg XP</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {clubRankings.map((club, index) => (
+                      <tr 
+                        key={club.id}
+                        className={`border-b border-slate-700/30 transition-all duration-200 hover:bg-slate-700/40 hover:scale-[1.01] ${
+                          index < 3 ? 'bg-gradient-to-r from-purple-500/5 via-transparent to-transparent' : ''
+                        }`}
+                        style={{ height: '72px' }}
+                      >
+                        <td className="py-4 px-6">
+                          <RankBadge rank={club.rank} />
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarColor(club.name)} flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/10`}>
+                              {getInitials(club.name)}
+                            </div>
+                            <div className="font-bold text-white text-lg">{club.name}</div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 hidden md:table-cell">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{SPORT_ICONS[club.sport] || '🥋'}</span>
+                            <span className="text-slate-300 font-medium">{club.sport}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 hidden lg:table-cell">
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <CountryFlag country={club.country} size={20} />
+                            <span className="text-sm">{club.city}, {club.country}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 text-center">
+                          <div className="inline-flex items-center gap-2 bg-slate-700/50 px-4 py-2 rounded-xl border border-slate-600/50">
+                            <Users className="w-4 h-4 text-purple-400" />
+                            <span className="text-white font-bold">{club.studentCount}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <TrendingUp className="w-5 h-5 text-purple-400" />
+                            <span className="text-2xl font-black text-white tabular-nums">{club.avgGlobalXp.toLocaleString()}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )
           )}
         </div>
 
-        {/* Footer Note */}
-        <div className="mt-8 text-center text-sm text-slate-500">
-          <p>Rankings are calculated using standardized scoring to ensure fairness across all clubs.</p>
+        <div className="mt-8 text-center">
+          <p className="text-sm text-slate-500 flex items-center justify-center gap-2">
+            <Globe2 className="w-4 h-4" />
+            Rankings calculated using standardized global scoring for fair competition
+          </p>
         </div>
       </div>
     </div>
