@@ -21,6 +21,53 @@ const TRUST_TIER_VERIFIED_THRESHOLD = 10; // 10 consecutive approvals = verified
 const TRUST_TIER_TRUSTED_THRESHOLD = 25; // 25 consecutive approvals = trusted
 const SPOT_CHECK_RATIO = 10; // 1 in 10 videos are spot-checked for verified students
 
+// =====================================================
+// GAMIFICATION MATRICES - Arena XP & Global Rank Scoring
+// =====================================================
+type ChallengeTierKey = 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
+type ChallengeTypeKey = 'coach_pick' | 'general';
+
+const CHALLENGE_XP_MATRIX = {
+  coach_pick: {
+    EASY:   { freeXp: 10, premiumXp: 20 },
+    MEDIUM: { freeXp: 20, premiumXp: 40 },
+    HARD:   { freeXp: 35, premiumXp: 70 },
+    EPIC:   { freeXp: 50, premiumXp: 100 },
+  },
+  general: {
+    EASY:   { freeXp: 5,  premiumXp: 10 },
+    MEDIUM: { freeXp: 10, premiumXp: 20 },
+    HARD:   { freeXp: 15, premiumXp: 30 },
+    EPIC:   { freeXp: 25, premiumXp: 50 },
+  },
+} as const;
+
+const ARENA_GLOBAL_SCORE_MATRIX = {
+  coach_pick: {
+    EASY:   { noVideo: 1,  withVideo: 5 },
+    MEDIUM: { noVideo: 3,  withVideo: 15 },
+    HARD:   { noVideo: 5,  withVideo: 25 },
+    EPIC:   { noVideo: 10, withVideo: 35 },
+  },
+  general: {
+    EASY:   { noVideo: 1,  withVideo: 3 },
+    MEDIUM: { noVideo: 2,  withVideo: 5 },
+    HARD:   { noVideo: 3,  withVideo: 10 },
+    EPIC:   { noVideo: 5,  withVideo: 15 },
+  },
+} as const;
+
+function calculateLocalXp(challengeType: ChallengeTypeKey, tier: ChallengeTierKey, hasVideoProof: boolean): number {
+  const matrix = CHALLENGE_XP_MATRIX[challengeType][tier];
+  return hasVideoProof ? matrix.premiumXp : matrix.freeXp;
+}
+
+function calculateArenaGlobalScore(challengeType: ChallengeTypeKey, difficulty: ChallengeTierKey, hasVideoProof: boolean): number {
+  const matrix = ARENA_GLOBAL_SCORE_MATRIX[challengeType];
+  const tierScores = matrix[difficulty];
+  return hasVideoProof ? tierScores.withVideo : tierScores.noVideo;
+}
+
 // Generate deterministic UUID from challenge type string (since challenges are hardcoded, not in DB)
 function generateChallengeUUID(challengeType: string): string {
   const hash = crypto.createHash('sha256').update(`taekup-challenge-${challengeType}`).digest('hex');
@@ -3999,7 +4046,7 @@ async function handleSyncRivals(req: VercelRequest, res: VercelResponse, student
 async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { studentId, clubId, challengeType, score, proofType, videoUrl, challengeXp } = parseBody(req);
+  const { studentId, clubId, challengeType, score, proofType, videoUrl, challengeXp, challengeCategoryType, challengeDifficulty } = parseBody(req);
 
   if (!studentId || !challengeType) {
     return res.status(400).json({ error: 'studentId and challengeType are required' });
@@ -4015,8 +4062,13 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid studentId - must be a valid UUID' });
   }
 
-  const baseXp = challengeXp || 15;
-  const finalXp = proofType === 'VIDEO' ? baseXp * VIDEO_XP_MULTIPLIER : baseXp;
+  // Calculate XP and Global Rank using secure server-side matrix
+  const catType: ChallengeTypeKey = challengeCategoryType === 'coach_pick' ? 'coach_pick' : 'general';
+  const difficulty: ChallengeTierKey = (['EASY', 'MEDIUM', 'HARD', 'EPIC'].includes(challengeDifficulty) ? challengeDifficulty : 'EASY') as ChallengeTierKey;
+  const hasVideoProof = proofType === 'VIDEO';
+  
+  const finalXp = calculateLocalXp(catType, difficulty, hasVideoProof);
+  const globalRankPoints = calculateArenaGlobalScore(catType, difficulty, hasVideoProof);
 
   if (proofType === 'TRUST') {
     const client = await pool.connect();
@@ -4052,26 +4104,33 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
 
       const validClubId = studentResult.rows[0].club_id;
 
-      // Create submission with deterministic challenge_id
+      // Create submission with deterministic challenge_id and global rank metadata
       const challengeUUID = generateChallengeUUID(challengeType);
       await client.query(
-        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, completed_at)
-         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'COMPLETED', 'TRUST', $6, NOW())`,
-        [challengeUUID, studentId, validClubId, challengeType, score || 0, finalXp]
+        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, challenge_category_type, challenge_difficulty, global_rank_points, completed_at)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'COMPLETED', 'TRUST', $6, $7::challenge_category_type, $8::challenge_difficulty, $9, NOW())`,
+        [challengeUUID, studentId, validClubId, challengeType, score || 0, finalXp, catType, difficulty, globalRankPoints]
       );
 
-      // Award XP using unified helper
+      // Award Local XP using unified helper
       await applyXpDelta(client, studentId, finalXp, 'arena_challenge');
+      
+      // Award Global Rank Points (for World Rankings)
+      await client.query(
+        `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1, updated_at = NOW() WHERE id = $2::uuid`,
+        [globalRankPoints, studentId]
+      );
 
-      console.log(`[Arena] Trust submission for "${challengeType}": +${finalXp} XP (${count + 1}/${TRUST_PER_CHALLENGE_LIMIT} today)`);
+      console.log(`[Arena] Trust submission for "${challengeType}" (${catType}/${difficulty}): +${finalXp} XP, +${globalRankPoints} Global Rank Points (${count + 1}/${TRUST_PER_CHALLENGE_LIMIT} today)`);
 
       return res.json({
         success: true,
         status: 'COMPLETED',
         xpAwarded: finalXp,
         earned_xp: finalXp,
+        globalRankPoints,
         remainingForChallenge: TRUST_PER_CHALLENGE_LIMIT - count - 1,
-        message: `Challenge completed! +${finalXp} XP earned.`
+        message: `Challenge completed! +${finalXp} XP earned. +${globalRankPoints} World Rank points!`
       });
     } finally {
       client.release();
@@ -4132,9 +4191,9 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
       }
       
       await client.query(
-        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, completed_at)
-         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'PENDING', 'VIDEO', $6, $7, NOW())`,
-        [challengeUUID, studentId, student.club_id, challengeType, score || 0, videoUrl, finalXp]
+        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, challenge_category_type, challenge_difficulty, global_rank_points, completed_at)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'PENDING', 'VIDEO', $6, $7, $8::challenge_category_type, $9::challenge_difficulty, $10, NOW())`,
+        [challengeUUID, studentId, student.club_id, challengeType, score || 0, videoUrl, finalXp, catType, difficulty, globalRankPoints]
       );
       
       // Also add to challenge_videos for coach review queue
@@ -4146,15 +4205,16 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
         [studentId, student.club_id, challengeUUID, friendlyName, videoUrl, videoKey, score || 0, finalXp]
       );
       
-      console.log(`[Arena] Coach Pick video submitted for "${challengeType}" - added to coach review queue`);
+      console.log(`[Arena] Coach Pick video submitted for "${challengeType}" (${catType}/${difficulty}) - pending: ${finalXp} XP, ${globalRankPoints} Global Rank`);
 
       return res.json({
         success: true,
         status: 'PENDING',
         xpAwarded: 0,
         pendingXp: finalXp,
+        pendingGlobalRankPoints: globalRankPoints,
         earned_xp: 0,
-        message: `Video submitted! You'll earn ${finalXp} XP when verified.`
+        message: `Video submitted! You'll earn ${finalXp} XP and ${globalRankPoints} World Rank points when verified.`
       });
     } finally {
       client.release();
