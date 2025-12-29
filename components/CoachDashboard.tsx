@@ -1266,6 +1266,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 data.homeworkBonus || false
             );
             
+            console.log('[GradingDebug]', student.name, '- scores:', scoresArray, 'bonus:', studentBonus, 'hw:', studentHomework, '=> gradingXP:', gradingXP);
+            
             // Calculate GLOBAL XP (capped bonus/homework at 2 each for World Rankings fairness)
             const globalGradingXP = calculateGlobalGradingXP(
                 scoresArray,
@@ -1332,7 +1334,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 const sessionGlobalXpValue = studentAny.sessionGlobalXp || 0;
                 const sessionPtsValue = studentAny.sessionPts || 0;
                 
-                console.log('[Grading] Persisting for', student.name, '- localXP:', sessionXpValue, 'globalXP:', sessionGlobalXpValue, 'PTS:', sessionPtsValue);
+                console.log('[GradingDebug] API sending for', student.name, '- sessionXp:', sessionXpValue, 'globalXP:', sessionGlobalXpValue, 'PTS:', sessionPtsValue, 'lifetimeXp:', student.lifetimeXp);
                 
                 try {
                     // 1. Save local grading data
