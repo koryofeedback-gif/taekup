@@ -4107,9 +4107,9 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
       // Create submission with deterministic challenge_id and global rank metadata
       const challengeUUID = generateChallengeUUID(challengeType);
       await client.query(
-        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, challenge_category_type, challenge_difficulty, global_rank_points, completed_at)
-         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'COMPLETED', 'TRUST', $6, $7::challenge_category_type, $8::challenge_difficulty, $9, NOW())`,
-        [challengeUUID, studentId, validClubId, challengeType, score || 0, finalXp, catType, difficulty, globalRankPoints]
+        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, xp_awarded, global_rank_points, completed_at)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'COMPLETED', 'TRUST', $6, $7, NOW())`,
+        [challengeUUID, studentId, validClubId, challengeType, score || 0, finalXp, globalRankPoints]
       );
 
       // Award Local XP using unified helper
@@ -4191,9 +4191,9 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
       }
       
       await client.query(
-        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, challenge_category_type, challenge_difficulty, global_rank_points, completed_at)
-         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'PENDING', 'VIDEO', $6, $7, $8::challenge_category_type, $9::challenge_difficulty, $10, NOW())`,
-        [challengeUUID, studentId, student.club_id, challengeType, score || 0, videoUrl, finalXp, catType, difficulty, globalRankPoints]
+        `INSERT INTO challenge_submissions (challenge_id, student_id, club_id, answer, score, mode, status, proof_type, video_url, xp_awarded, global_rank_points, completed_at)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'SOLO', 'PENDING', 'VIDEO', $6, $7, $8, NOW())`,
+        [challengeUUID, studentId, student.club_id, challengeType, score || 0, videoUrl, finalXp, globalRankPoints]
       );
       
       // Also add to challenge_videos for coach review queue
