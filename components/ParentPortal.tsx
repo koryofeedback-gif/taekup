@@ -2179,26 +2179,37 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 )}
 
                 {/* Next Belt Progress */}
-                <div className="mt-6">
-                    <div className="flex justify-between text-xs text-gray-400 mb-2">
-                        <span>Progress to Next Belt</span>
-                        <span>{Math.round(progressPercent)}%</span>
+                <div className="mt-6 space-y-4">
+                    {/* Overall Progress Bar */}
+                    <div>
+                        <div className="flex justify-between text-xs text-gray-400 mb-2">
+                            <span>Progress to Next Belt</span>
+                            <span>{Math.round(progressPercent)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-700/50 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
+                        </div>
                     </div>
-                    <div className="w-full bg-gray-700/50 rounded-full h-3 overflow-hidden shadow-inner">
-                        <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
-                    </div>
-                    <div className="flex justify-between mt-2">
-                        {Array.from({ length: data.stripesPerBelt }).map((_, i) => {
-                            const isEarned = i < currentBeltStripes;
-                            const stripeColor = data.useColorCodedStripes && data.stripeColors?.[i] ? data.stripeColors[i] : '#FACC15';
-                            return (
-                                <div 
-                                    key={i} 
-                                    className={`h-2 flex-1 rounded-full mx-0.5 transition-all ${isEarned ? 'shadow-lg' : 'bg-gray-700'}`}
-                                    style={isEarned ? { backgroundColor: stripeColor, boxShadow: `0 0 8px ${stripeColor}80` } : {}}
-                                ></div>
-                            );
-                        })}
+                    
+                    {/* Stripes Earned */}
+                    <div>
+                        <div className="flex justify-between text-xs text-gray-400 mb-2">
+                            <span>Stripes Earned</span>
+                            <span>{currentBeltStripes} of {data.stripesPerBelt}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            {Array.from({ length: data.stripesPerBelt }).map((_, i) => {
+                                const isEarned = i < currentBeltStripes;
+                                const stripeColor = data.useColorCodedStripes && data.stripeColors?.[i] ? data.stripeColors[i] : '#FACC15';
+                                return (
+                                    <div 
+                                        key={i} 
+                                        className={`h-2 flex-1 rounded-full mx-0.5 transition-all ${isEarned ? 'shadow-lg' : 'bg-gray-700'}`}
+                                        style={isEarned ? { backgroundColor: stripeColor, boxShadow: `0 0 8px ${stripeColor}80` } : {}}
+                                    ></div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>
