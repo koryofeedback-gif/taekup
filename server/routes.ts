@@ -2236,33 +2236,46 @@ export function registerRoutes(app: Express) {
         // For Coach Pick (Arena) videos, calculate and award Global XP
         if (videoDetail?.challenge_category && videoDetail.challenge_category !== 'Daily Training') {
           try {
-            // Get difficulty tier from arena_challenges table
-            const challengeResult = await db.execute(sql`
-              SELECT difficulty_tier, category FROM arena_challenges WHERE id = ${videoDetail.challenge_id}::uuid
+            let difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC' = 'MEDIUM';
+            let foundInDb = false;
+            
+            // Try to get difficulty tier from arena_challenges table (if valid UUID)
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (videoDetail.challenge_id && uuidRegex.test(videoDetail.challenge_id)) {
+              const challengeResult = await db.execute(sql`
+                SELECT difficulty_tier, category FROM arena_challenges WHERE id = ${videoDetail.challenge_id}::uuid
+              `);
+              if ((challengeResult as any[]).length > 0) {
+                difficulty = ((challengeResult as any[])[0].difficulty_tier || 'MEDIUM').toUpperCase() as 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
+                foundInDb = true;
+              }
+            }
+            
+            // If not found in DB, infer difficulty from XP awarded (Local XP values for Coach Pick with video)
+            if (!foundInDb) {
+              const xpVal = xpAwarded || 0;
+              if (xpVal >= 100) difficulty = 'EPIC';
+              else if (xpVal >= 70) difficulty = 'HARD';
+              else if (xpVal >= 40) difficulty = 'MEDIUM';
+              else difficulty = 'EASY';
+              console.log('[Videos] Inferred difficulty', difficulty, 'from XP', xpVal);
+            }
+            
+            // Calculate Global XP using ARENA_GLOBAL_SCORE_MATRIX (Coach Pick with video)
+            const globalPoints = calculateArenaGlobalScore('coach_pick', difficulty, true);
+            
+            // Award Global XP to student
+            await db.execute(sql`
+              UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalPoints}
+              WHERE id = ${studentId}::uuid
             `);
             
-            if ((challengeResult as any[]).length > 0) {
-              const challenge = (challengeResult as any[])[0];
-              const difficulty = (challenge.difficulty_tier || 'MEDIUM').toUpperCase();
-              const isCoachPick = challenge.category === 'coach_pick';
-              const challengeType = isCoachPick ? 'coach_pick' : 'general';
-              
-              // Calculate Global XP using ARENA_GLOBAL_SCORE_MATRIX (with video = true)
-              const globalPoints = calculateArenaGlobalScore(challengeType as any, difficulty as any, true);
-              
-              // Award Global XP to student
-              await db.execute(sql`
-                UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalPoints}
-                WHERE id = ${studentId}::uuid
-              `);
-              
-              // Store global_rank_points on the video record for auditing
-              await db.execute(sql`
-                UPDATE challenge_videos SET global_rank_points = ${globalPoints} WHERE id = ${videoId}::uuid
-              `);
-              
-              console.log('[Videos] Awarded', globalPoints, 'Global XP to student', studentId, '(Coach Pick video, difficulty:', difficulty, ')');
-            }
+            // Store global_rank_points on the video record for auditing
+            await db.execute(sql`
+              UPDATE challenge_videos SET global_rank_points = ${globalPoints} WHERE id = ${videoId}::uuid
+            `);
+            
+            console.log('[Videos] Awarded', globalPoints, 'Global XP to student', studentId, '(Coach Pick video, difficulty:', difficulty, ')');
           } catch (globalErr: any) {
             console.error('[Videos] Failed to award Global XP for Coach Pick:', globalErr.message);
           }
