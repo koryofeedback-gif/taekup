@@ -570,20 +570,76 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     console.log('[MysteryChallenge] Status check failed, showing fallback');
                 }
                 
-                // Static fallback question with DAILY unique ID (prevents duplicate submissions)
+                // Static fallback questions - rotates daily to prevent same question every day
+                const fallbackQuestions = [
+                    {
+                        title: "Martial Arts Respect",
+                        question: "What is the traditional bow called in Korean martial arts?",
+                        options: ["Hajime", "Kyungye (경례)", "Rei", "Salute"],
+                        correctIndex: 1,
+                        explanation: "Kyungye (경례) means 'bow' in Korean and is used to show respect."
+                    },
+                    {
+                        title: "Belt Wisdom",
+                        question: "What does the color of the White Belt represent?",
+                        options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
+                        correctIndex: 1,
+                        explanation: "The White Belt represents innocence and a beginner's pure mind."
+                    },
+                    {
+                        title: "Taekwondo Origins",
+                        question: "What country did Taekwondo originate from?",
+                        options: ["Japan", "China", "Korea", "Vietnam"],
+                        correctIndex: 2,
+                        explanation: "Taekwondo was developed in Korea in the 1940s and 1950s."
+                    },
+                    {
+                        title: "Training Space",
+                        question: "What is the training hall called in Taekwondo?",
+                        options: ["Dojo", "Dojang", "Gym", "Studio"],
+                        correctIndex: 1,
+                        explanation: "Dojang (도장) is the Korean word for a martial arts training hall."
+                    },
+                    {
+                        title: "Spirit of Taekwondo",
+                        question: "What does 'Taekwondo' literally mean?",
+                        options: ["Art of fighting", "The way of the foot and fist", "Korean karate", "Self-defense"],
+                        correctIndex: 1,
+                        explanation: "Taekwondo means 'the way of the foot and fist' - Tae (foot), Kwon (fist), Do (way)."
+                    },
+                    {
+                        title: "Forms Practice",
+                        question: "What are the choreographed patterns called in Taekwondo?",
+                        options: ["Kata", "Poomsae", "Kihon", "Sparring"],
+                        correctIndex: 1,
+                        explanation: "Poomsae (품새) are the forms or patterns in Taekwondo."
+                    },
+                    {
+                        title: "Black Belt Meaning",
+                        question: "What does the Black Belt traditionally symbolize?",
+                        options: ["End of training", "Mastery and maturity", "Danger level", "Teaching ability"],
+                        correctIndex: 1,
+                        explanation: "The Black Belt symbolizes maturity - it's actually the beginning of deeper learning!"
+                    }
+                ];
+                
+                // Select question based on day of year
+                const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+                const selectedQ = fallbackQuestions[dayOfYear % fallbackQuestions.length];
+                
                 const today = new Date().toISOString().split('T')[0];
                 const fallbackChallenge = {
                     id: `fallback-${today}-${student.id.slice(0, 8)}`,
-                    title: 'Martial Arts Trivia',
+                    title: selectedQ.title,
                     description: 'Test your knowledge while we reconnect!',
                     type: 'quiz' as const,
                     xpReward: 15,
                     isStaticFallback: true,
                     quizData: {
-                        question: 'What is the traditional bow in martial arts called?',
-                        options: ['Kyungye (경례)', 'Kick', 'Punch', 'Block'],
-                        correctIndex: 0,
-                        explanation: 'Kyungye (경례) means "bow" in Korean and is used to show respect in martial arts.'
+                        question: selectedQ.question,
+                        options: selectedQ.options,
+                        correctIndex: selectedQ.correctIndex,
+                        explanation: selectedQ.explanation
                     }
                 };
                 setMysteryChallenge(fallbackChallenge);

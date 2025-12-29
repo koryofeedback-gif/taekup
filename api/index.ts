@@ -2216,16 +2216,73 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
 // =====================================================
 
 function getFallbackChallenge() {
-  return {
-    title: "Master's Wisdom",
-    description: "Test your knowledge of martial arts belt symbolism!",
-    type: 'quiz' as const,
-    xpReward: 15,
-    quizData: {
+  // Array of fallback questions - rotates daily to prevent same question every day
+  const fallbackQuestions = [
+    {
+      title: "Belt Wisdom",
       question: "What does the color of the White Belt represent?",
       options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
       correctIndex: 1,
       explanation: "The White Belt represents innocence and a beginner's pure mind - ready to absorb new knowledge like a blank canvas!"
+    },
+    {
+      title: "Taekwondo Origins",
+      question: "What country did Taekwondo originate from?",
+      options: ["Japan", "China", "Korea", "Vietnam"],
+      correctIndex: 2,
+      explanation: "Taekwondo was developed in Korea in the 1940s and 1950s, combining traditional Korean martial arts with influences from other disciplines."
+    },
+    {
+      title: "Martial Arts Respect",
+      question: "What is the traditional bow called in Korean martial arts?",
+      options: ["Hajime", "Kyungye", "Rei", "Salute"],
+      correctIndex: 1,
+      explanation: "Kyungye (경례) means 'bow' in Korean and is used to show respect to instructors, training partners, and the dojang."
+    },
+    {
+      title: "Training Space",
+      question: "What is the training hall called in Taekwondo?",
+      options: ["Dojo", "Dojang", "Gym", "Studio"],
+      correctIndex: 1,
+      explanation: "Dojang (도장) is the Korean word for a martial arts training hall, literally meaning 'the place of the way'."
+    },
+    {
+      title: "Black Belt Meaning",
+      question: "What does the Black Belt traditionally symbolize?",
+      options: ["End of training", "Mastery and maturity", "Danger level", "Teaching ability"],
+      correctIndex: 1,
+      explanation: "The Black Belt symbolizes maturity and proficiency in the basics - it's actually the beginning of deeper learning, not the end!"
+    },
+    {
+      title: "Spirit of Taekwondo",
+      question: "What does 'Taekwondo' literally mean?",
+      options: ["Art of fighting", "The way of the foot and fist", "Korean karate", "Self-defense art"],
+      correctIndex: 1,
+      explanation: "Taekwondo (태권도) literally means 'the way of the foot and fist' - Tae (foot), Kwon (fist), Do (way/art)."
+    },
+    {
+      title: "Forms Practice",
+      question: "What are the choreographed patterns of movements called in Taekwondo?",
+      options: ["Kata", "Poomsae", "Kihon", "Sparring"],
+      correctIndex: 1,
+      explanation: "Poomsae (품새) are the forms or patterns in Taekwondo - a sequence of techniques practiced solo to develop precision and focus."
+    }
+  ];
+  
+  // Select question based on day of year (rotates through all questions)
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  const selectedQuestion = fallbackQuestions[dayOfYear % fallbackQuestions.length];
+  
+  return {
+    title: selectedQuestion.title,
+    description: "Test your martial arts knowledge!",
+    type: 'quiz' as const,
+    xpReward: 15,
+    quizData: {
+      question: selectedQuestion.question,
+      options: selectedQuestion.options,
+      correctIndex: selectedQuestion.correctIndex,
+      explanation: selectedQuestion.explanation
     }
   };
 }
