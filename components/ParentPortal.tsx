@@ -2216,25 +2216,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <div className="text-green-500 group-hover:text-white transition-colors font-bold">VIEW &gt;</div>
             </div>
 
-            {/* Premium Teaser on Home - Only show if NOT premium */}
-            {!hasPremiumAccess && (
-                <div 
-                    onClick={() => setActiveTab('practice')}
-                    className="bg-gradient-to-r from-gray-800 to-gray-800 border border-gray-700 p-4 rounded-xl flex items-center justify-between cursor-pointer group hover:border-yellow-500/50 transition-colors"
-                >
-                    <div className="flex items-center">
-                        <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center text-xl mr-3">
-                            📹
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-white text-sm">Practice at Home</h4>
-                            <p className="text-xs text-gray-400">Unlock {currentBelt?.name} training</p>
-                        </div>
-                    </div>
-                    <div className="text-gray-500 group-hover:text-yellow-400 transition-colors">→</div>
-                </div>
-            )}
-
             {/* Recent Feedback */}
             <div className="space-y-4">
                 <h3 className="font-bold text-gray-200 px-2 text-sm uppercase tracking-wider">Coach Feedback</h3>
