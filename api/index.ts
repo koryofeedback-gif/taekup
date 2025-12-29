@@ -4164,7 +4164,7 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
   if (proofType === 'TRUST') {
     const client = await pool.connect();
     try {
-      // Check per-challenge daily limit
+      // Check per-challenge daily limit (TRUST submissions)
       // Use Postgres DATE_TRUNC in UTC to avoid timezone mismatch with JS Date
       const countResult = await client.query(
         `SELECT COUNT(*) as count FROM challenge_submissions 
@@ -4179,6 +4179,26 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
           error: 'Daily mission complete',
           message: 'Daily Mission Complete! You can earn XP for this challenge again tomorrow.',
           limitReached: true,
+          alreadyCompleted: true
+        });
+      }
+      
+      // ALSO check if there's already a pending/approved VIDEO for this challenge (block double-dipping)
+      const existingVideoResult = await client.query(
+        `SELECT id, status FROM challenge_videos 
+         WHERE student_id = $1::uuid AND challenge_id = $2
+         AND status IN ('pending', 'approved')
+         AND created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')`,
+        [studentId, challengeType]
+      );
+      
+      if (existingVideoResult.rows.length > 0) {
+        const videoStatus = existingVideoResult.rows[0].status;
+        return res.status(429).json({
+          error: 'Already submitted with video',
+          message: videoStatus === 'approved' 
+            ? 'You already completed this challenge with video proof today!' 
+            : 'You have a video pending review for this challenge. Wait for coach approval!',
           alreadyCompleted: true
         });
       }
@@ -4248,6 +4268,22 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
         return res.status(429).json({
           error: 'Already submitted',
           message: 'You already submitted a video for this challenge today. Try again tomorrow!',
+          alreadyCompleted: true
+        });
+      }
+      
+      // ALSO check if already submitted via TRUST for this challenge today (block double-dipping)
+      const existingTrustResult = await client.query(
+        `SELECT id FROM challenge_submissions 
+         WHERE student_id = $1::uuid AND answer = $2 AND proof_type = 'TRUST'
+         AND completed_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')`,
+        [studentId, challengeType]
+      );
+      
+      if (existingTrustResult.rows.length > 0) {
+        return res.status(429).json({
+          error: 'Already completed without video',
+          message: 'You already completed this challenge today without video. Try a different challenge!',
           alreadyCompleted: true
         });
       }

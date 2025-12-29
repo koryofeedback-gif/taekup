@@ -3109,6 +3109,25 @@ export function registerRoutes(app: Express) {
             alreadyCompleted: true
           });
         }
+        
+        // ALSO check if there's already a pending/approved VIDEO for this challenge (block double-dipping)
+        const existingVideoResult = await db.execute(sql`
+          SELECT id, status FROM challenge_videos 
+          WHERE student_id = ${studentId}::uuid AND challenge_id = ${challengeType}
+          AND status IN ('pending', 'approved')
+          AND created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
+        `);
+        
+        if ((existingVideoResult as any[]).length > 0) {
+          const videoStatus = (existingVideoResult as any[])[0].status;
+          return res.status(429).json({
+            error: 'Already submitted with video',
+            message: videoStatus === 'approved' 
+              ? 'You already completed this challenge with video proof today!' 
+              : 'You have a video pending review for this challenge. Wait for coach approval!',
+            alreadyCompleted: true
+          });
+        }
 
           // Create TRUST submission - instant XP with deterministic challenge_id
           // Include Global Rank metadata for World Rankings
@@ -3160,6 +3179,21 @@ export function registerRoutes(app: Express) {
           return res.status(429).json({
             error: 'Already submitted',
             message: 'You already submitted a video for this challenge today. Try again tomorrow!',
+            alreadyCompleted: true
+          });
+        }
+        
+        // ALSO check if already submitted via TRUST for this challenge today (block double-dipping)
+        const existingTrustResult = await db.execute(sql`
+          SELECT id FROM challenge_submissions 
+          WHERE student_id = ${studentId}::uuid AND answer = ${challengeType} AND proof_type = 'TRUST'
+          AND completed_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC')
+        `);
+        
+        if ((existingTrustResult as any[]).length > 0) {
+          return res.status(429).json({
+            error: 'Already completed without video',
+            message: 'You already completed this challenge today without video. Try a different challenge!',
             alreadyCompleted: true
           });
         }
