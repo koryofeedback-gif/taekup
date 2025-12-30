@@ -84,12 +84,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                 The world's first martial arts platform with built-in <span className="text-white font-medium">DojoMint™ Protocol</span>. Start Free, Stay for the Profit.
                             </p>
 
-                            {/* PROFIT CALCULATOR */}
-                            <div className="w-full max-w-2xl mx-auto bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 rounded-2xl border border-zinc-700 p-6 md:p-8 shadow-2xl mb-8">
-                                <div className="flex items-center justify-center gap-2 mb-6">
-                                    <span className="text-2xl">💰</span>
-                                    <h3 className="text-xl font-bold text-white">Profit Calculator</h3>
+                            {/* DOJOMINT PROTOCOL SIMULATOR */}
+                            <div className="w-full max-w-2xl mx-auto bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 rounded-2xl border border-cyan-500/30 p-6 md:p-8 shadow-2xl mb-8">
+                                <div className="flex items-center justify-center gap-2 mb-2">
+                                    <span className="text-2xl">⚡</span>
+                                    <h3 className="text-xl font-bold text-white">DojoMint™ Protocol Simulator</h3>
                                 </div>
+                                <p className="text-zinc-500 text-sm text-center mb-6">See how our proprietary protocol generates passive income for your club</p>
                                 
                                 <div className="mb-6">
                                     <div className="flex justify-between items-center mb-3">
@@ -113,16 +114,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4 mb-6">
-                                    <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                                        <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Expected Subscribers</p>
-                                        <p className="text-2xl font-black text-cyan-400">{profitCalculation.subscribers}</p>
-                                        <p className="text-zinc-600 text-xs">@ 40% adoption rate</p>
+                                <div className="space-y-3 mb-6">
+                                    <div className="flex justify-between items-center bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                                        <span className="text-zinc-400 text-sm">Protocol Revenue</span>
+                                        <span className="text-xl font-black text-cyan-400">+${profitCalculation.monthlyRevenue.toFixed(0)}</span>
                                     </div>
-                                    <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                                        <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Your Monthly Share</p>
-                                        <p className="text-2xl font-black text-cyan-400">${profitCalculation.monthlyRevenue.toFixed(0)}</p>
-                                        <p className="text-zinc-600 text-xs">70% of $4.99/sub</p>
+                                    <div className="flex justify-between items-center bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                                        <span className="text-zinc-400 text-sm">Platform Cost</span>
+                                        <span className="text-xl font-bold text-zinc-400">-${profitCalculation.planCost}</span>
                                     </div>
                                 </div>
 
@@ -131,8 +130,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                     <p className={`text-4xl md:text-5xl font-black ${profitCalculation.netProfit >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
                                         {profitCalculation.netProfit >= 0 ? '+' : '-'}${Math.abs(profitCalculation.netProfit).toFixed(0)}<span className="text-lg text-zinc-500">/mo</span>
                                     </p>
-                                    <p className="text-zinc-500 text-sm mt-2">
-                                        After ${profitCalculation.planCost}/mo plan cost
+                                    <p className="text-zinc-500 text-xs mt-2">
+                                        Your software doesn't cost money — it makes money.
                                     </p>
                                 </div>
                             </div>
