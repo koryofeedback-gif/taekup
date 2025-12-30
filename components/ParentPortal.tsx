@@ -2217,6 +2217,33 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                 )}
 
+                {/* FUTURE - Featured Section */}
+                <div 
+                    onClick={() => setActiveTab('journey')}
+                    className="mt-4 bg-gradient-to-r from-purple-900/60 via-indigo-900/60 to-cyan-900/60 rounded-xl p-4 border border-purple-500/40 cursor-pointer hover:border-purple-400/60 transition-all relative overflow-hidden group"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute top-2 right-2">
+                        <span className="bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                            ✨ NEW
+                        </span>
+                    </div>
+                    <div className="relative z-10 flex items-start space-x-3">
+                        <div className="text-4xl">🔮</div>
+                        <div className="flex-1">
+                            <h4 className="font-bold text-white text-base mb-1">Future Path</h4>
+                            <p className="text-xs text-gray-300 leading-relaxed">
+                                See your martial arts journey ahead! AI predicts your <span className="text-cyan-400 font-semibold">Black Belt date</span>, 
+                                shows upcoming promotions, and tracks the skills you need to master.
+                            </p>
+                            <div className="flex items-center mt-2 text-purple-300 text-xs font-medium">
+                                <span>Explore your destiny</span>
+                                <span className="ml-1 group-hover:translate-x-1 transition-transform">→</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Next Belt Progress */}
                 <div className="mt-6 space-y-4">
                     {/* Overall Progress Bar */}
