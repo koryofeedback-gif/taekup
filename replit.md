@@ -4,7 +4,15 @@
 TaekUp is a comprehensive martial arts club management platform designed to streamline operations for martial arts schools. It provides tools for managing students, coaches, and parents, enhancing engagement through gamification and AI-powered features. The platform supports two brands: MyTaek (ecosystem landing page, red theme) and TaekUp (management application, cyan theme). Its purpose is to offer an all-in-one solution for martial arts club owners, coaches, and parents, improving administrative efficiency and student engagement.
 
 ## User Preferences
-None specified yet.
+- User is based in France (Gex area), targeting European market
+- Business model: Clubs pay subscription ($24.99-$199/mo), clubs sell Parent Premium ($4.99) with revenue share
+
+## Trademarked Feature Names (IP Protection)
+- **DojoMint™ Protocol** - Revenue sharing system (formerly "Revenue Engine")
+- **ChronosBelt™ Predictor** - AI belt promotion prediction (formerly "Black Belt Time Machine")  
+- **HonorXP™** - Points/XP system
+- **Global Shogun Rank™** - Leaderboard system
+- **Legacy Cards™** - Digital student athlete cards (formerly "Fighter Cards")
 
 ## System Architecture
 
@@ -35,7 +43,7 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **Personal Best Tracking**: PB comparison based on sort_order (ASC for time, DESC for reps)
     - **Weekly Reset**: Challenges can be replayed each week, week_number tracking
     - **Premium Lock**: Video submissions require premium subscription
-- **Belt Systems**: Supports 11 martial arts (WT, ITF, Karate, BJJ, Judo, Hapkido, Tang Soo Do, Aikido, Krav Maga, Kung Fu) plus custom belt configurations. Includes an AI-powered "Black Belt Time Machine" for promotion predictions.
+- **Belt Systems**: Supports 11 martial arts (WT, ITF, Karate, BJJ, Judo, Hapkido, Tang Soo Do, Aikido, Krav Maga, Kung Fu) plus custom belt configurations. Includes AI-powered "ChronosBelt™ Predictor" for promotion predictions.
 - **AI Features**:
     - **TaekBot**: Conversational AI assistant for martial arts, context-aware, multi-language.
     - **AI Class Planner**: Generates lesson plans based on belt level, focus, duration, and student count.

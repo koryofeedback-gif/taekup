@@ -228,7 +228,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                 </div>
             </div>
 
-            {/* Leaderboard Widget - Dual View: Monthly Effort / Belt Progress */}
+            {/* Global Shogun Rank™ Widget - Dual View: Monthly Effort / Belt Progress */}
             <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-4">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-white flex items-center">
@@ -1987,7 +1987,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
                                     <span className="relative text-base md:text-lg">🥇</span>
-                                    <span className="relative hidden sm:inline">Leaderboard</span>
+                                    <span className="relative hidden sm:inline">Shogun Rank™</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('world-rankings')}
