@@ -54,14 +54,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
             {/* --- HERO SECTION --- */}
             <div className="relative pt-20 pb-16 md:pt-32 md:pb-24 px-6 overflow-hidden border-b border-zinc-800">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black opacity-80"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-green-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-yellow-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
                 <div className="relative z-10 max-w-6xl mx-auto text-center flex flex-col items-center">
                     {showSignup ? (
                         <>
                             <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight text-white tracking-tighter">
-                                START YOUR <span className="text-transparent bg-clip-text bg-gradient-to-b from-green-400 to-green-600">14-DAY WEALTH CHALLENGE.</span>
+                                START YOUR <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-600">14-DAY WEALTH CHALLENGE.</span>
                             </h1>
                             <p className="text-xl text-zinc-400 mb-10">
                                 No credit card required. See your first profit projection in 2 minutes.
@@ -72,13 +72,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         </>
                     ) : (
                         <>
-                            <p className="text-green-400 font-mono text-xs uppercase tracking-widest font-bold mb-6 flex items-center">
-                                <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                            <p className="text-cyan-400 font-mono text-xs uppercase tracking-widest font-bold mb-6 flex items-center">
+                                <span className="w-2 h-2 bg-cyan-400 rounded-full mr-2 animate-pulse"></span>
                                 DojoMint™ Protocol Active
                             </p>
                             <h1 className="text-4xl md:text-7xl font-black mb-6 leading-tight text-white tracking-tighter">
                                 Why pay for management software?<br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-yellow-400 to-green-400">Let your software pay your rent.</span>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-400">Let your software pay your rent.</span>
                             </h1>
                             <p className="text-lg md:text-xl text-zinc-400 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
                                 The world's first martial arts platform with built-in <span className="text-white font-medium">DojoMint™ Protocol</span>. Start Free, Stay for the Profit.
@@ -102,9 +102,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                         max="200"
                                         value={studentCount}
                                         onChange={(e) => setStudentCount(parseInt(e.target.value))}
-                                        className="w-full h-3 bg-zinc-700 rounded-full appearance-none cursor-pointer accent-green-500"
+                                        className="w-full h-3 bg-zinc-700 rounded-full appearance-none cursor-pointer accent-cyan-500"
                                         style={{
-                                            background: `linear-gradient(to right, #22c55e 0%, #22c55e ${((studentCount - 10) / 190) * 100}%, #3f3f46 ${((studentCount - 10) / 190) * 100}%, #3f3f46 100%)`
+                                            background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${((studentCount - 10) / 190) * 100}%, #3f3f46 ${((studentCount - 10) / 190) * 100}%, #3f3f46 100%)`
                                         }}
                                     />
                                     <div className="flex justify-between text-xs text-zinc-600 mt-1">
@@ -121,14 +121,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                     </div>
                                     <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
                                         <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Your Monthly Share</p>
-                                        <p className="text-2xl font-black text-green-400">${profitCalculation.monthlyRevenue.toFixed(0)}</p>
+                                        <p className="text-2xl font-black text-cyan-400">${profitCalculation.monthlyRevenue.toFixed(0)}</p>
                                         <p className="text-zinc-600 text-xs">70% of $4.99/sub</p>
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-green-900/30 to-yellow-900/30 rounded-xl p-5 border border-green-500/30 text-center">
+                                <div className="bg-gradient-to-r from-cyan-900/30 to-teal-900/30 rounded-xl p-5 border border-cyan-500/30 text-center">
                                     <p className="text-zinc-400 text-xs uppercase font-bold mb-1">Your Net Monthly Profit</p>
-                                    <p className={`text-4xl md:text-5xl font-black ${profitCalculation.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    <p className={`text-4xl md:text-5xl font-black ${profitCalculation.netProfit >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
                                         {profitCalculation.netProfit >= 0 ? '+' : '-'}${Math.abs(profitCalculation.netProfit).toFixed(0)}<span className="text-lg text-zinc-500">/mo</span>
                                     </p>
                                     <p className="text-zinc-500 text-sm mt-2">
@@ -139,7 +139,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
 
                             <button
                                 onClick={() => setShowSignup(true)}
-                                className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 px-12 rounded-full transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(34,197,94,0.4)] text-lg md:text-xl uppercase tracking-wide"
+                                className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-black py-5 px-12 rounded-full transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(6,182,212,0.4)] text-lg md:text-xl uppercase tracking-wide"
                             >
                                 Start My 14-Day Wealth Challenge
                             </button>
@@ -169,8 +169,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                 <p className="text-zinc-400 text-xs uppercase font-bold mb-1">Traditional Software</p>
                                 <p className="text-white font-bold text-sm md:text-base">Kicksite / Maat</p>
                             </div>
-                            <div className="p-4 md:p-6 text-center bg-gradient-to-r from-green-900/30 to-cyan-900/30">
-                                <p className="text-green-400 text-xs uppercase font-bold mb-1">The Future</p>
+                            <div className="p-4 md:p-6 text-center bg-gradient-to-r from-cyan-900/30 to-teal-900/30">
+                                <p className="text-cyan-400 text-xs uppercase font-bold mb-1">The Future</p>
                                 <p className="text-white font-bold text-sm md:text-base">TaekUp™ (DojoMint)</p>
                             </div>
                         </div>
@@ -185,8 +185,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                             </div>
                             <div className="p-4 md:p-6 bg-zinc-900/50 text-center flex items-center justify-center">
                                 <div>
-                                    <span className="text-green-400 font-black text-lg md:text-2xl">$0</span>
-                                    <p className="text-green-400/70 text-xs mt-1">Covered by Profit</p>
+                                    <span className="text-cyan-400 font-black text-lg md:text-2xl">$0</span>
+                                    <p className="text-cyan-400/70 text-xs mt-1">Covered by Profit</p>
                                 </div>
                             </div>
                         </div>
@@ -201,8 +201,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                             </div>
                             <div className="p-4 md:p-6 bg-zinc-900/50 text-center flex items-center justify-center">
                                 <div>
-                                    <span className="text-yellow-400 font-black text-lg md:text-xl">Unlimited</span>
-                                    <p className="text-yellow-400/70 text-xs mt-1">DojoMint™ Protocol</p>
+                                    <span className="text-teal-400 font-black text-lg md:text-xl">Unlimited</span>
+                                    <p className="text-teal-400/70 text-xs mt-1">DojoMint™ Protocol</p>
                                 </div>
                             </div>
                         </div>
@@ -261,13 +261,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         </p>
                     </div>
 
-                    <div className="group bg-zinc-900 rounded-xl border border-zinc-800 p-8 hover:bg-zinc-800 hover:border-green-500 transition-all duration-500 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl font-black text-white group-hover:text-green-500 transition-colors">03</div>
-                        <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-700 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:scale-110 transition-transform">
+                    <div className="group bg-zinc-900 rounded-xl border border-zinc-800 p-8 hover:bg-zinc-800 hover:border-teal-500 transition-all duration-500 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl font-black text-white group-hover:text-teal-500 transition-colors">03</div>
+                        <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-700 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:scale-110 transition-transform">
                             💰
                         </div>
                         <h2 className="text-2xl font-bold mb-2 text-white">DojoMint™ Protocol</h2>
-                        <p className="text-green-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Software That Pays You</p>
+                        <p className="text-teal-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Software That Pays You</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
                             Parents upgrade to Premium, you earn 70% of every subscription. Your software pays for itself.
                         </p>
@@ -330,17 +330,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
 
             {/* --- FINAL CTA SECTION --- */}
             <div className="py-20 md:py-32 relative overflow-hidden border-t border-zinc-900 bg-gradient-to-b from-black to-zinc-900">
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[800px] h-[400px] bg-green-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[800px] h-[400px] bg-cyan-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="max-w-3xl mx-auto text-center">
-                        <div className="inline-block mb-6 p-4 bg-green-500/10 rounded-full border border-green-500/50">
+                        <div className="inline-block mb-6 p-4 bg-cyan-500/10 rounded-full border border-cyan-500/50">
                             <span className="text-4xl">💸</span>
                         </div>
 
                         <h2 className="text-3xl md:text-5xl font-black text-white mb-6 tracking-tighter leading-tight">
                             READY TO STOP PAYING<br />
-                            <span className="text-green-400">AND START EARNING?</span>
+                            <span className="text-cyan-400">AND START EARNING?</span>
                         </h2>
                         <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
                             Join the revolution. Start your 14-day wealth challenge today and see how much profit you could be making.
@@ -348,7 +348,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
 
                         <button 
                             onClick={() => setShowSignup(true)}
-                            className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 px-12 rounded-full shadow-[0_0_40px_rgba(34,197,94,0.4)] transform hover:scale-105 transition-all text-lg uppercase tracking-wide"
+                            className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-black py-5 px-12 rounded-full shadow-[0_0_40px_rgba(6,182,212,0.4)] transform hover:scale-105 transition-all text-lg uppercase tracking-wide"
                         >
                             Start My 14-Day Wealth Challenge
                         </button>
