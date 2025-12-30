@@ -673,10 +673,10 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         </div>
                     </div>
                     
-                    {/* Holiday Schedule Setting - Improves ChronosBelt™ Predictor accuracy */}
+                    {/* Holiday Schedule Setting - Improves Black Belt Time Machine accuracy */}
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
                         <label className="block text-sm text-gray-400 mb-1">Holiday Schedule</label>
-                        <p className="text-xs text-gray-500 mb-3">This affects the accuracy of the ChronosBelt™ Predictor for parents.</p>
+                        <p className="text-xs text-gray-500 mb-3">This affects the accuracy of the Black Belt Time Machine prediction for parents.</p>
                         <select 
                             value={data.holidaySchedule || 'minimal'} 
                             onChange={e => onUpdateData({ holidaySchedule: e.target.value as any })}
