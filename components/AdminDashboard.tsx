@@ -3076,6 +3076,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     </div>
                 </Modal>
             )}
+
+            {/* Legal Footer */}
+            <div className="mt-12 pt-6 border-t border-gray-800 text-center">
+                <p className="text-gray-600 text-[10px] leading-relaxed max-w-3xl mx-auto px-4">
+                    © 2025 mytaek Inc. All rights reserved.<br />
+                    TaekUp, DojoMint™, SenseiVault™, and ChronosBelt™ are trademarks of mytaek Inc. The visual design of Legacy Cards™ and the Gamification UI are protected intellectual property. The Revenue Share Algorithm is a proprietary trade secret. Unauthorized copying or reverse engineering is strictly prohibited.
+                </p>
+            </div>
         </div>
     );
 };

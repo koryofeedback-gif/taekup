@@ -359,12 +359,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
 
             {/* --- FOOTER --- */}
             <div className="py-12 text-center bg-black border-t border-zinc-800">
-                <div className="max-w-3xl mx-auto px-6">
+                <div className="max-w-4xl mx-auto px-6">
                     <p className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-4">
                         The Martial Arts Revolution
                     </p>
-                    <div className="flex justify-center items-center opacity-60">
+                    <div className="flex justify-center items-center opacity-60 mb-8">
                         <span className="text-2xl font-bold text-white tracking-wider">MYTAEK</span>
+                    </div>
+                    
+                    {/* Legal / Copyright */}
+                    <div className="border-t border-zinc-800 pt-6 mt-6">
+                        <p className="text-zinc-600 text-[10px] leading-relaxed max-w-3xl mx-auto">
+                            © 2025 mytaek Inc. All rights reserved.<br />
+                            TaekUp, DojoMint™, SenseiVault™, and ChronosBelt™ are trademarks of mytaek Inc. The visual design of Legacy Cards™ and the Gamification UI are protected intellectual property. The Revenue Share Algorithm is a proprietary trade secret. Unauthorized copying or reverse engineering is strictly prohibited.
+                        </p>
                     </div>
                 </div>
             </div>
