@@ -30,7 +30,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
     const PREMIUM_PRICE = 4.99;
     const CLUB_SHARE = 0.70;
     const ADOPTION_RATE = 0.40;
-    const PLAN_COST = studentCount <= 30 ? 0 : studentCount <= 60 ? 29 : studentCount <= 100 ? 49 : studentCount <= 150 ? 79 : 99;
+    const PLAN_COST = studentCount <= 25 ? 24.99 : studentCount <= 50 ? 39.99 : studentCount <= 80 ? 69 : studentCount <= 150 ? 129 : 199;
 
     const profitCalculation = useMemo(() => {
         const subscribers = Math.round(studentCount * ADOPTION_RATE);
