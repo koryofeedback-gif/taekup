@@ -2303,14 +2303,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <p className="text-[10px] text-gray-400 mt-1">Classes & booking</p>
                 </div>
 
-                {/* Future */}
+                {/* Future - Featured */}
                 <div 
                     onClick={() => setActiveTab('journey')}
-                    className="bg-gradient-to-br from-indigo-900/80 to-indigo-950 border border-indigo-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-indigo-500/70 transition-all relative"
+                    className="bg-gradient-to-br from-purple-800/90 via-indigo-800/90 to-cyan-800/90 border border-purple-500/60 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-purple-400/80 transition-all relative overflow-hidden"
                 >
-                    <div className="text-3xl mb-2">🔮</div>
-                    <h4 className="font-bold text-white text-sm">Future</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Black Belt prediction</p>
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 animate-pulse"></div>
+                    <div className="absolute top-1 right-1">
+                        <span className="bg-cyan-500 text-[8px] text-white font-bold px-1.5 py-0.5 rounded">NEW</span>
+                    </div>
+                    <div className="relative z-10">
+                        <div className="text-3xl mb-2">🔮</div>
+                        <h4 className="font-bold text-white text-sm">Future</h4>
+                        <p className="text-[10px] text-cyan-300 mt-1">Black Belt prediction</p>
+                    </div>
                 </div>
 
                 {/* Stats */}
@@ -5484,9 +5490,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 };
 
 const NavButton: React.FC<{ icon: string; label: string; active: boolean; onClick: () => void; isPremium?: boolean }> = ({ icon, label, active, onClick, isPremium }) => (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center min-w-[50px] w-full h-full relative transition-colors ${active ? 'text-sky-300' : 'text-gray-500 hover:text-gray-300'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center justify-center min-w-[50px] w-full h-full relative transition-colors ${active ? 'text-sky-300' : 'text-gray-400 hover:text-gray-200'}`}>
         <span className={`text-xl mb-1 transition-transform ${active ? 'scale-110' : ''}`}>{icon}</span>
-        <span className="text-[9px] font-medium tracking-wide">{label}</span>
+        <span className={`text-[9px] tracking-wide ${active ? 'font-bold' : 'font-semibold'}`}>{label}</span>
         {isPremium && <span className="absolute top-2 right-1 w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.8)]"></span>}
     </button>
 );
