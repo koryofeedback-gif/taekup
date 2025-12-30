@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SignupForm } from '../components/SignupForm';
 import { SEO } from '../components/SEO';
@@ -13,6 +13,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [showSignup, setShowSignup] = useState(false);
+    const [studentCount, setStudentCount] = useState(50);
 
     useEffect(() => {
         if (searchParams.get('signup') === 'true') {
@@ -26,26 +27,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
         navigate('/wizard');
     };
 
+    const PREMIUM_PRICE = 4.99;
+    const CLUB_SHARE = 0.70;
+    const ADOPTION_RATE = 0.40;
+    const PLAN_COST = studentCount <= 30 ? 0 : studentCount <= 60 ? 29 : studentCount <= 100 ? 49 : studentCount <= 150 ? 79 : 99;
+
+    const profitCalculation = useMemo(() => {
+        const subscribers = Math.round(studentCount * ADOPTION_RATE);
+        const clubRevenue = subscribers * PREMIUM_PRICE * CLUB_SHARE;
+        const netProfit = clubRevenue - PLAN_COST;
+        return {
+            subscribers,
+            monthlyRevenue: clubRevenue,
+            planCost: PLAN_COST,
+            netProfit
+        };
+    }, [studentCount, PLAN_COST]);
+
     return (
         <div className="bg-black min-h-screen font-sans text-white selection:bg-cyan-600 selection:text-white">
             <SEO
-                title="TaekUp - The Growth Engine for Martial Arts | MyTaek"
-                description="TaekUp isn't just management software. It's a Growth Engine that gamifies retention, automates pedagogy, and turns your roster into revenue."
+                title="TaekUp - Software That Pays Your Rent | DojoMint Protocol"
+                description="Why pay for management software? Let your software pay your rent. The world's first martial arts platform with built-in DojoMint™ Protocol."
             />
             
             {/* --- HERO SECTION --- */}
-            <div className="relative pt-32 pb-24 px-6 overflow-hidden border-b border-zinc-800">
+            <div className="relative pt-20 pb-16 md:pt-32 md:pb-24 px-6 overflow-hidden border-b border-zinc-800">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black opacity-80"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-green-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-yellow-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
                 <div className="relative z-10 max-w-6xl mx-auto text-center flex flex-col items-center">
                     {showSignup ? (
                         <>
                             <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight text-white tracking-tighter">
-                                START YOUR <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-700">FREE TRIAL.</span>
+                                START YOUR <span className="text-transparent bg-clip-text bg-gradient-to-b from-green-400 to-green-600">14-DAY WEALTH CHALLENGE.</span>
                             </h1>
                             <p className="text-xl text-zinc-400 mb-10">
-                                No credit card required. Unlock your dojang's full potential today.
+                                No credit card required. See your first profit projection in 2 minutes.
                             </p>
                             <div className="w-full max-w-md">
                                 <SignupForm onSignupSuccess={handleSignupSuccess} />
@@ -53,41 +72,169 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         </>
                     ) : (
                         <>
-                            <p className="text-cyan-400 font-mono text-xs uppercase tracking-widest font-bold mb-6">
-                                The Future of Martial Arts Business
+                            <p className="text-green-400 font-mono text-xs uppercase tracking-widest font-bold mb-6 flex items-center">
+                                <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                                DojoMint™ Protocol Active
                             </p>
-                            <h1 className="text-5xl md:text-8xl font-black mb-8 leading-tight text-white tracking-tighter">
-                                EVERY STEP TAKES<br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-700">YOU UP.</span>
+                            <h1 className="text-4xl md:text-7xl font-black mb-6 leading-tight text-white tracking-tighter">
+                                Why pay for management software?<br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-yellow-400 to-green-400">Let your software pay your rent.</span>
                             </h1>
-                            <p className="text-xl md:text-2xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed font-light">
-                                TaekUp™ isn't just management software. It's a <span className="text-white font-medium">Growth Engine</span> that gamifies retention, automates pedagogy, and turns your roster into revenue.
+                            <p className="text-lg md:text-xl text-zinc-400 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
+                                The world's first martial arts platform with built-in <span className="text-white font-medium">DojoMint™ Protocol</span>. Start Free, Stay for the Profit.
                             </p>
 
-                            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
-                                <button
-                                    onClick={() => setShowSignup(true)}
-                                    className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-4 px-10 rounded-full transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(6,182,212,0.3)] text-lg"
-                                >
-                                    Start Free Trial
-                                </button>
-                                <button
-                                    onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                                    className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold py-4 px-10 rounded-full transition-all text-lg"
-                                >
-                                    See Features
-                                </button>
+                            {/* PROFIT CALCULATOR */}
+                            <div className="w-full max-w-2xl mx-auto bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 rounded-2xl border border-zinc-700 p-6 md:p-8 shadow-2xl mb-8">
+                                <div className="flex items-center justify-center gap-2 mb-6">
+                                    <span className="text-2xl">💰</span>
+                                    <h3 className="text-xl font-bold text-white">Profit Calculator</h3>
+                                </div>
+                                
+                                <div className="mb-6">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <label className="text-zinc-400 text-sm font-medium">Number of Students</label>
+                                        <span className="text-2xl font-black text-white">{studentCount}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="10"
+                                        max="200"
+                                        value={studentCount}
+                                        onChange={(e) => setStudentCount(parseInt(e.target.value))}
+                                        className="w-full h-3 bg-zinc-700 rounded-full appearance-none cursor-pointer accent-green-500"
+                                        style={{
+                                            background: `linear-gradient(to right, #22c55e 0%, #22c55e ${((studentCount - 10) / 190) * 100}%, #3f3f46 ${((studentCount - 10) / 190) * 100}%, #3f3f46 100%)`
+                                        }}
+                                    />
+                                    <div className="flex justify-between text-xs text-zinc-600 mt-1">
+                                        <span>10</span>
+                                        <span>200</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                                        <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Expected Subscribers</p>
+                                        <p className="text-2xl font-black text-cyan-400">{profitCalculation.subscribers}</p>
+                                        <p className="text-zinc-600 text-xs">@ 40% adoption rate</p>
+                                    </div>
+                                    <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                                        <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Your Monthly Share</p>
+                                        <p className="text-2xl font-black text-green-400">${profitCalculation.monthlyRevenue.toFixed(0)}</p>
+                                        <p className="text-zinc-600 text-xs">70% of $4.99/sub</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-gradient-to-r from-green-900/30 to-yellow-900/30 rounded-xl p-5 border border-green-500/30 text-center">
+                                    <p className="text-zinc-400 text-xs uppercase font-bold mb-1">Your Net Monthly Profit</p>
+                                    <p className={`text-4xl md:text-5xl font-black ${profitCalculation.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                        {profitCalculation.netProfit >= 0 ? '+' : '-'}${Math.abs(profitCalculation.netProfit).toFixed(0)}<span className="text-lg text-zinc-500">/mo</span>
+                                    </p>
+                                    <p className="text-zinc-500 text-sm mt-2">
+                                        After ${profitCalculation.planCost}/mo plan cost
+                                    </p>
+                                </div>
                             </div>
-                            <p className="mt-8 text-zinc-600 text-xs font-semibold tracking-widest uppercase">
-                                Powered by MyTaek™
+
+                            <button
+                                onClick={() => setShowSignup(true)}
+                                className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 px-12 rounded-full transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(34,197,94,0.4)] text-lg md:text-xl uppercase tracking-wide"
+                            >
+                                Start My 14-Day Wealth Challenge
+                            </button>
+                            <p className="mt-4 text-zinc-500 text-sm">
+                                No Credit Card Required
                             </p>
                         </>
                     )}
                 </div>
             </div>
 
+            {/* --- COMPARISON TABLE SECTION --- */}
+            <div className="py-20 md:py-32 px-6 bg-zinc-950 border-b border-zinc-800">
+                <div className="max-w-4xl mx-auto">
+                    <div className="text-center mb-12">
+                        <p className="text-cyan-400 font-mono text-xs uppercase tracking-widest font-bold mb-4">See The Difference</p>
+                        <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
+                            Stop Losing Money on Software
+                        </h2>
+                    </div>
+
+                    <div className="overflow-hidden rounded-2xl border border-zinc-700 shadow-2xl">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-3 bg-zinc-800">
+                            <div className="p-4 md:p-6 border-r border-zinc-700"></div>
+                            <div className="p-4 md:p-6 border-r border-zinc-700 text-center">
+                                <p className="text-zinc-400 text-xs uppercase font-bold mb-1">Traditional Software</p>
+                                <p className="text-white font-bold text-sm md:text-base">Kicksite / Maat</p>
+                            </div>
+                            <div className="p-4 md:p-6 text-center bg-gradient-to-r from-green-900/30 to-cyan-900/30">
+                                <p className="text-green-400 text-xs uppercase font-bold mb-1">The Future</p>
+                                <p className="text-white font-bold text-sm md:text-base">TaekUp™ (DojoMint)</p>
+                            </div>
+                        </div>
+
+                        {/* Row 1: Monthly Cost */}
+                        <div className="grid grid-cols-3 border-t border-zinc-700">
+                            <div className="p-4 md:p-6 border-r border-zinc-700 bg-zinc-900 flex items-center">
+                                <span className="text-zinc-300 font-medium text-sm md:text-base">Monthly Cost</span>
+                            </div>
+                            <div className="p-4 md:p-6 border-r border-zinc-700 bg-zinc-900 text-center flex items-center justify-center">
+                                <span className="text-red-400 font-bold text-lg md:text-2xl">$49 - $199</span>
+                            </div>
+                            <div className="p-4 md:p-6 bg-zinc-900/50 text-center flex items-center justify-center">
+                                <div>
+                                    <span className="text-green-400 font-black text-lg md:text-2xl">$0</span>
+                                    <p className="text-green-400/70 text-xs mt-1">Covered by Profit</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Row 2: Income Generator */}
+                        <div className="grid grid-cols-3 border-t border-zinc-700">
+                            <div className="p-4 md:p-6 border-r border-zinc-700 bg-zinc-900 flex items-center">
+                                <span className="text-zinc-300 font-medium text-sm md:text-base">Income Generator</span>
+                            </div>
+                            <div className="p-4 md:p-6 border-r border-zinc-700 bg-zinc-900 text-center flex items-center justify-center">
+                                <span className="text-zinc-500 font-bold text-lg md:text-xl">None</span>
+                            </div>
+                            <div className="p-4 md:p-6 bg-zinc-900/50 text-center flex items-center justify-center">
+                                <div>
+                                    <span className="text-yellow-400 font-black text-lg md:text-xl">Unlimited</span>
+                                    <p className="text-yellow-400/70 text-xs mt-1">DojoMint™ Protocol</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Row 3: Gamification */}
+                        <div className="grid grid-cols-3 border-t border-zinc-700">
+                            <div className="p-4 md:p-6 border-r border-zinc-700 bg-zinc-900 flex items-center">
+                                <span className="text-zinc-300 font-medium text-sm md:text-base">Gamification</span>
+                            </div>
+                            <div className="p-4 md:p-6 border-r border-zinc-700 bg-zinc-900 text-center flex items-center justify-center">
+                                <span className="text-zinc-500 font-bold text-lg md:text-xl">Basic</span>
+                            </div>
+                            <div className="p-4 md:p-6 bg-zinc-900/50 text-center flex items-center justify-center">
+                                <div>
+                                    <span className="text-cyan-400 font-black text-sm md:text-lg">Legacy Cards™ & HonorXP™</span>
+                                    <p className="text-cyan-400/70 text-xs mt-1">Full Engagement System</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* --- FEATURES TRIFECTA --- */}
-            <div id="features" className="container mx-auto px-6 -mt-12 relative z-20 pb-32">
+            <div id="features" className="container mx-auto px-6 py-20 md:py-32">
+                <div className="text-center mb-12">
+                    <p className="text-cyan-400 font-mono text-xs uppercase tracking-widest font-bold mb-4">Full Platform</p>
+                    <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
+                        Everything You Need to Grow
+                    </h2>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     
                     <div className="group bg-zinc-900 rounded-xl border border-zinc-800 p-8 hover:bg-zinc-800 hover:border-cyan-500 transition-all duration-500 shadow-2xl relative overflow-hidden">
@@ -98,7 +245,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         <h2 className="text-2xl font-bold mb-2 text-white">Pedagogy First</h2>
                         <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">AI-Powered Teaching</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
-                            AI Lesson Planners, 30-Second Grading, and automated feedback that sounds like YOU. We help you teach better.
+                            AI Lesson Planners, 30-Second Grading, and automated feedback that sounds like YOU.
                         </p>
                     </div>
 
@@ -110,19 +257,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         <h2 className="text-2xl font-bold mb-2 text-white">Gamified Retention</h2>
                         <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Addictive Progress</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
-                            Dojang Rivals™, Legacy Cards™, and a ChronosBelt™ Predictor. We make kids addicted to progress.
+                            Dojang Rivals™, Legacy Cards™, and a ChronosBelt™ Predictor. Kids get addicted to progress.
                         </p>
                     </div>
 
-                    <div className="group bg-zinc-900 rounded-xl border border-zinc-800 p-8 hover:bg-zinc-800 hover:border-cyan-500 transition-all duration-500 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl font-black text-white group-hover:text-cyan-500 transition-colors">03</div>
-                        <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:scale-110 transition-transform">
+                    <div className="group bg-zinc-900 rounded-xl border border-zinc-800 p-8 hover:bg-zinc-800 hover:border-green-500 transition-all duration-500 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl font-black text-white group-hover:text-green-500 transition-colors">03</div>
+                        <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-700 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:scale-110 transition-transform">
                             💰
                         </div>
                         <h2 className="text-2xl font-bold mb-2 text-white">DojoMint™ Protocol</h2>
-                        <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Software That Pays You</p>
+                        <p className="text-green-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Software That Pays You</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
-                            Upload home practice content, parents upgrade to Premium, and you earn a share of every subscription. Your software pays for itself.
+                            Parents upgrade to Premium, you earn 70% of every subscription. Your software pays for itself.
                         </p>
                     </div>
 
@@ -134,7 +281,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         <h2 className="text-2xl font-bold mb-2 text-white">The Ecosystem</h2>
                         <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">One Connected World</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
-                            Manage the club with TaekUp™. Teach kids with TaekFunDo™. Train athletes with TikTaek™. One connected world.
+                            Manage with TaekUp™. Teach kids with TaekFunDo™. Train athletes with TikTaek™.
                         </p>
                     </div>
 
@@ -142,15 +289,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
             </div>
 
             {/* --- UNLIMITED SECTION --- */}
-            <div className="bg-black py-32 relative overflow-hidden border-t border-zinc-900">
+            <div className="bg-black py-20 md:py-32 relative overflow-hidden border-t border-zinc-900">
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
                         <div>
-                            <h2 className="text-5xl font-black text-white mb-6 tracking-tighter leading-tight">
+                            <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tighter leading-tight">
                                 GROW YOUR EMPIRE,<br /><span className="text-cyan-500">NOT YOUR BILLS.</span>
                             </h2>
                             <p className="text-xl text-zinc-400 leading-relaxed max-w-md">
-                                Competitors punish you for succeeding. They charge extra for every new location, every new staff member, and every new feature. <span className="text-white font-medium">We don't.</span>
+                                Competitors punish you for succeeding. They charge extra for every new location, staff member, and feature. <span className="text-white font-medium">We don't.</span>
                             </p>
                         </div>
 
@@ -159,21 +306,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                 <div className="text-cyan-500 font-black text-4xl mr-6 mt-[-8px] leading-none">01.</div>
                                 <div>
                                     <h4 className="text-xl font-bold text-white mb-2">Unlimited Locations</h4>
-                                    <p className="text-zinc-500 leading-relaxed">Open 10 new branches? No extra fee. Manage your entire franchise from one screen without paying a "Location Tax."</p>
+                                    <p className="text-zinc-500 leading-relaxed">Open 10 new branches? No extra fee. Manage your entire franchise from one screen.</p>
                                 </div>
                             </div>
                             <div className="flex items-start">
                                 <div className="text-white font-black text-4xl mr-6 mt-[-8px] leading-none">02.</div>
                                 <div>
                                     <h4 className="text-xl font-bold text-white mb-2">Unlimited Staff</h4>
-                                    <p className="text-zinc-500 leading-relaxed">Add as many coaches, admins, and assistants as you need. We believe your team should grow with you, free of charge.</p>
+                                    <p className="text-zinc-500 leading-relaxed">Add as many coaches, admins, and assistants as you need, free of charge.</p>
                                 </div>
                             </div>
                             <div className="flex items-start">
                                 <div className="text-zinc-700 font-black text-4xl mr-6 mt-[-8px] leading-none">03.</div>
                                 <div>
                                     <h4 className="text-xl font-bold text-white mb-2">Unlimited Classes</h4>
-                                    <p className="text-zinc-500 leading-relaxed">Run 100 classes a week? Great. Schedule as much as you want without limits. Your schedule is yours to control.</p>
+                                    <p className="text-zinc-500 leading-relaxed">Schedule as many classes as you want. Your schedule is yours to control.</p>
                                 </div>
                             </div>
                         </div>
@@ -181,53 +328,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                 </div>
             </div>
 
-            {/* --- PROFIT ENGINE SECTION --- */}
-            <div className="py-32 relative overflow-hidden border-t border-zinc-900">
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[800px] h-[400px] bg-yellow-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+            {/* --- FINAL CTA SECTION --- */}
+            <div className="py-20 md:py-32 relative overflow-hidden border-t border-zinc-900 bg-gradient-to-b from-black to-zinc-900">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[800px] h-[400px] bg-green-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
                 <div className="container mx-auto px-6 relative z-10">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-block mb-6 p-4 bg-yellow-500/10 rounded-full border border-yellow-500/50">
+                    <div className="max-w-3xl mx-auto text-center">
+                        <div className="inline-block mb-6 p-4 bg-green-500/10 rounded-full border border-green-500/50">
                             <span className="text-4xl">💸</span>
                         </div>
 
-                        <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter leading-tight">
-                            STOP PAYING FOR SOFTWARE.<br />
-                            <span className="text-yellow-500">LET SOFTWARE PAY YOU.</span>
+                        <h2 className="text-3xl md:text-5xl font-black text-white mb-6 tracking-tighter leading-tight">
+                            READY TO STOP PAYING<br />
+                            <span className="text-green-400">AND START EARNING?</span>
                         </h2>
-                        <p className="text-xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-                            Every other platform is a monthly expense. TaekUp™ is an asset. When parents upgrade to Premium, you earn a share with our <span className="font-bold text-white">DojoMint™ Protocol</span>.
+                        <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+                            Join the revolution. Start your 14-day wealth challenge today and see how much profit you could be making.
                         </p>
-
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-12">
-                            <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 w-full md:w-auto min-w-[240px] opacity-70">
-                                <p className="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-2">The Old Way</p>
-                                <p className="text-red-400 text-4xl font-black">-$199/mo</p>
-                                <p className="text-zinc-600 text-sm mt-2">Pure Expense</p>
-                            </div>
-                            <div className="text-zinc-600 font-black text-4xl">VS</div>
-                            <div className="bg-zinc-900 p-8 rounded-xl border-2 border-yellow-500/60 w-full md:w-auto min-w-[260px] shadow-[0_0_40px_rgba(234,179,8,0.2)] scale-105">
-                                <p className="text-yellow-500 text-xs uppercase font-bold tracking-wider mb-2">TaekUp™ Way</p>
-                                <p className="text-green-400 text-4xl font-black">+$450/mo</p>
-                                <p className="text-green-400/70 text-sm mt-2">Net Profit</p>
-                            </div>
-                        </div>
 
                         <button 
                             onClick={() => setShowSignup(true)}
-                            className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-bold py-4 px-12 rounded-full shadow-lg transform hover:scale-105 transition-all text-lg"
+                            className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-black py-5 px-12 rounded-full shadow-[0_0_40px_rgba(34,197,94,0.4)] transform hover:scale-105 transition-all text-lg uppercase tracking-wide"
                         >
-                            Start Trial to See the Math
+                            Start My 14-Day Wealth Challenge
                         </button>
-                        <p className="text-zinc-600 text-sm mt-6">Based on a standard club with 150 students.</p>
+                        <p className="text-zinc-600 text-sm mt-4">No Credit Card Required</p>
                     </div>
                 </div>
             </div>
 
-            {/* --- CTA SECTION --- */}
-            <div className="py-24 text-center bg-gradient-to-t from-zinc-900 to-black relative border-t border-zinc-800">
+            {/* --- FOOTER --- */}
+            <div className="py-12 text-center bg-black border-t border-zinc-800">
                 <div className="max-w-3xl mx-auto px-6">
-                    <p className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-6">
+                    <p className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-4">
                         The Martial Arts Revolution
                     </p>
                     <div className="flex justify-center items-center opacity-60">
