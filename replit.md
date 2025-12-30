@@ -4,7 +4,12 @@
 TaekUp is a comprehensive martial arts club management platform designed to streamline operations for martial arts schools. It provides tools for managing students, coaches, and parents, enhancing engagement through gamification and AI-powered features. The platform supports two brands: MyTaek (ecosystem landing page, red theme) and TaekUp (management application, cyan theme). Its purpose is to offer an all-in-one solution for martial arts club owners, coaches, and parents, improving administrative efficiency and student engagement.
 
 ## User Preferences
-None specified yet.
+- **Rebranded UI Terms (Dec 2024)**: For IP protection, the following UI text has been rebranded:
+  - "Revenue Engine" → "DojoMint™ Protocol"
+  - "Black Belt Time Machine" → "ChronosBelt™ Predictor"
+  - "XP" → "HonorXP™" (display text only, not variable names)
+  - "Leaderboard" → "Global Shogun Rank™" (display text only)
+  - "Fighter Cards" → "Legacy Cards™"
 
 ## System Architecture
 

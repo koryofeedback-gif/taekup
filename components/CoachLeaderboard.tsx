@@ -152,7 +152,7 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                            <span className="text-3xl">🏆</span> Dojang Leaderboard
+                            <span className="text-3xl">🏆</span> Global Shogun Rank™
                         </h2>
                         <p className="text-gray-400 text-sm mt-1">Click on any student to view their challenge history</p>
                     </div>

@@ -110,7 +110,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         <h2 className="text-2xl font-bold mb-2 text-white">Gamified Retention</h2>
                         <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Addictive Progress</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
-                            Dojang Rivals™, Fighter Cards, and a Black Belt Time Machine™. We make kids addicted to progress.
+                            Dojang Rivals™, Legacy Cards™, and a ChronosBelt™ Predictor. We make kids addicted to progress.
                         </p>
                     </div>
 
@@ -119,7 +119,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg text-white transform group-hover:scale-110 transition-transform">
                             💰
                         </div>
-                        <h2 className="text-2xl font-bold mb-2 text-white">Revenue Engine</h2>
+                        <h2 className="text-2xl font-bold mb-2 text-white">DojoMint™ Protocol</h2>
                         <p className="text-cyan-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Software That Pays You</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
                             Upload home practice content, parents upgrade to Premium, and you earn a share of every subscription. Your software pays for itself.
@@ -196,7 +196,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                             <span className="text-yellow-500">LET SOFTWARE PAY YOU.</span>
                         </h2>
                         <p className="text-xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-                            Every other platform is a monthly expense. TaekUp™ is an asset. When parents upgrade to Premium, you earn a share with our <span className="font-bold text-white">Club Revenue Engine™</span>.
+                            Every other platform is a monthly expense. TaekUp™ is an asset. When parents upgrade to Premium, you earn a share with our <span className="font-bold text-white">DojoMint™ Protocol</span>.
                         </p>
 
                         <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-12">

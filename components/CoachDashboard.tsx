@@ -1882,7 +1882,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 </div>
                                 <div className="min-w-0">
                                     <h1 className="text-base md:text-xl font-bold text-white truncate">
-                                        {activeView === 'grading' ? `Today's Class` : activeView === 'schedule' ? `Schedule` : activeView === 'planner' ? 'Planner' : activeView === 'challenges' ? 'Challenges' : activeView === 'leaderboard' ? 'Leaderboard' : activeView === 'world-rankings' ? 'World Rankings' : 'Videos'}
+                                        {activeView === 'grading' ? `Today's Class` : activeView === 'schedule' ? `Schedule` : activeView === 'planner' ? 'Planner' : activeView === 'challenges' ? 'Challenges' : activeView === 'leaderboard' ? 'Global Shogun Rank™' : activeView === 'world-rankings' ? 'World Rankings' : 'Videos'}
                                     </h1>
                                     <p className="text-xs md:text-sm text-gray-400 flex items-center gap-1 md:gap-2 truncate">
                                         <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500"></span> <span className="hidden xs:inline">Coach</span> {coachName}</span>
@@ -1987,7 +1987,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
                                     <span className="relative text-base md:text-lg">🥇</span>
-                                    <span className="relative hidden sm:inline">Leaderboard</span>
+                                    <span className="relative hidden sm:inline">Shogun Rank</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('world-rankings')}

@@ -2195,7 +2195,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <p className="text-2xl font-bold text-white mt-1">{student.attendanceCount} <span className="text-xs font-normal text-gray-500">classes</span></p>
                     </div>
                     <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Total XP</p>
+                        <p className="text-xs text-gray-400 uppercase tracking-wider">Total HonorXP™</p>
                         <p className="text-2xl font-bold text-cyan-400 mt-1">{(student.lifetimeXp || serverTotalXP || 0).toLocaleString()}</p>
                     </div>
                 </div>
@@ -2210,7 +2210,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <span className="text-xl mr-2">🌍</span>
                             <div>
                                 <p className="text-xs text-cyan-300 font-bold">World Rank #{worldRankData.myRank}</p>
-                                <p className="text-[10px] text-gray-400">{worldRankData.myGlobalXP} Global XP</p>
+                                <p className="text-[10px] text-gray-400">{worldRankData.myGlobalXP} Global HonorXP™</p>
                             </div>
                         </div>
                         <span className="text-cyan-400 text-xs">View →</span>
@@ -2276,7 +2276,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         {atDailyLimit ? (
                             <span className="text-green-400">✓ Complete!</span>
                         ) : habitXpToday > 0 ? (
-                            <span className="text-yellow-400">{habitXpToday} XP today</span>
+                            <span className="text-yellow-400">{habitXpToday} HonorXP™ today</span>
                         ) : (
                             'Check daily habits'
                         )}
@@ -2290,7 +2290,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 >
                     <div className="text-3xl mb-2">⚔️</div>
                     <h4 className="font-bold text-white text-sm">Arena</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Challenges & XP</p>
+                    <p className="text-[10px] text-gray-400 mt-1">Challenges & HonorXP™</p>
                 </div>
 
                 {/* Schedule */}
@@ -2494,13 +2494,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     <span>{studentStats.xpTrend[13]?.dayName}</span>
                                 </div>
                                 <p className="text-xs text-center text-gray-500 mt-3">
-                                    Total: <span className="text-yellow-400 font-bold">+{studentStats.xpTrend.reduce((sum, d) => sum + d.xp, 0)} XP</span> this period
+                                    Total: <span className="text-yellow-400 font-bold">+{studentStats.xpTrend.reduce((sum, d) => sum + d.xp, 0)} HonorXP™</span> this period
                                 </p>
                             </>
                         ) : (
                             <div className="text-center py-6">
                                 <div className="text-3xl mb-2">⚡</div>
-                                <p className="text-gray-400 text-sm">No XP earned yet. Start training!</p>
+                                <p className="text-gray-400 text-sm">No HonorXP™ earned yet. Start training!</p>
                             </div>
                         )}
                     </div>
@@ -2602,9 +2602,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 {isPremiumContent && <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">Premium</span>}
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-xs text-gray-500">{isCompleted ? 'Completed!' : 'Watch to earn XP'}</p>
+                                                <p className="text-xs text-gray-500">{isCompleted ? 'Completed!' : 'Watch to earn HonorXP™'}</p>
                                                 <span className={`text-xs font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
-                                                    {isCompleted ? `+${xpReward} XP earned` : `+${xpReward} XP`}
+                                                    {isCompleted ? `+${xpReward} HonorXP™ earned` : `+${xpReward} HonorXP™`}
                                                 </span>
                                             </div>
                                         </div>
@@ -3468,7 +3468,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-black text-purple-400">{allTimeLeaderboard.find(p => p.isYou)?.displayXP ?? 0}</div>
-                                <div className="text-[10px] text-gray-400 uppercase">Total XP</div>
+                                <div className="text-[10px] text-gray-400 uppercase">Total HonorXP™</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-black text-yellow-400">{dailyStreak}🔥</div>
@@ -3485,7 +3485,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div>
                                     <p className="text-white font-bold text-sm">{dailyStreak}-Day Streak!</p>
                                     <p className="text-orange-300 text-xs">
-                                        {dailyStreak >= 7 ? '2x XP Bonus Active!' : '1.5x XP Bonus Active!'}
+                                        {dailyStreak >= 7 ? '2x HonorXP™ Bonus Active!' : '1.5x HonorXP™ Bonus Active!'}
                                     </p>
                                 </div>
                             </div>
@@ -4429,7 +4429,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     <div className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 p-4 rounded-xl border border-yellow-500/30 mb-4">
                                         <div className="flex items-center justify-between mb-2">
                                             <h4 className="font-bold text-white flex items-center">
-                                                <span className="mr-2">🏆</span> Dojang Leaderboard
+                                                <span className="mr-2">🏆</span> Global Shogun Rank™
                                             </h4>
                                             <div className="flex text-xs">
                                                 <button 
@@ -4452,16 +4452,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                         <p className="text-xs text-gray-400">
                                             {leaderboardMode === 'monthly' 
-                                                ? 'XP earned this month - fresh competition!' 
-                                                : 'Lifetime XP - legends of the dojo'}
+                                                ? 'HonorXP™ earned this month - fresh competition!' 
+                                                : 'Lifetime HonorXP™ - legends of the dojo'}
                                         </p>
                                     </div>
                                     
                                     {leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
                                         <p className="text-gray-500 text-center py-8 italic">
                                             {leaderboardMode === 'monthly' 
-                                                ? 'No XP earned this month yet. Start training!' 
-                                                : 'No XP recorded yet. Complete challenges to rank up!'}
+                                                ? 'No HonorXP™ earned this month yet. Start training!' 
+                                                : 'No HonorXP™ recorded yet. Complete challenges to rank up!'}
                                         </p>
                                     ) : (
                                         leaderboard.filter(p => p.displayXP > 0).map((player) => {
@@ -4496,7 +4496,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     </div>
                                                 </div>
                                                 <div className="text-right flex items-center gap-2">
-                                                    <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} XP</p>
+                                                    <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} HonorXP™</p>
                                                     {player.isYou && <span className="text-gray-500 text-xs">→</span>}
                                                 </div>
                                             </div>
@@ -4521,7 +4521,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <p className="text-gray-400 text-xs mb-1">Your Global Rank</p>
                                                     <p className="text-3xl font-black text-cyan-400">#{worldRankData.myRank}</p>
                                                     <p className="text-gray-500 text-xs">of {worldRankData.totalStudents.toLocaleString()} students worldwide</p>
-                                                    <p className="text-purple-400 text-sm mt-1">{worldRankData.myGlobalXP.toLocaleString()} Global XP</p>
+                                                    <p className="text-purple-400 text-sm mt-1">{worldRankData.myGlobalXP.toLocaleString()} Global HonorXP™</p>
                                                 </div>
                                                 
                                                 {isPremium ? (
@@ -4529,12 +4529,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         onClick={() => setShowGlobalLeaderboard(!showGlobalLeaderboard)}
                                                         className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm"
                                                     >
-                                                        {showGlobalLeaderboard ? 'Hide' : 'View'} Global Leaderboard
+                                                        {showGlobalLeaderboard ? 'Hide' : 'View'} Global Shogun Rank™
                                                     </button>
                                                 ) : (
                                                     <div className="bg-gray-800/50 rounded-lg p-3 text-center border border-yellow-500/30">
                                                         <span className="text-yellow-400 mr-2">🔒</span>
-                                                        <span className="text-gray-400 text-sm">Upgrade to Premium to see full global leaderboard</span>
+                                                        <span className="text-gray-400 text-sm">Upgrade to Premium to see full Global Shogun Rank™</span>
                                                     </div>
                                                 )}
                                                 
@@ -4584,7 +4584,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <p className="text-gray-400 text-sm">Complete challenges to earn Global XP and appear on the World Rankings!</p>
+                                                            <p className="text-gray-400 text-sm">Complete challenges to earn Global HonorXP™ and appear on the World Rankings!</p>
                                                             <p className="text-gray-500 text-xs mt-2">Only challenges with video proof count toward global rankings.</p>
                                                         </>
                                                     )}
@@ -4595,7 +4595,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         onClick={() => setShowGlobalLeaderboard(!showGlobalLeaderboard)}
                                                         className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm"
                                                     >
-                                                        {showGlobalLeaderboard ? 'Hide' : 'View'} Global Leaderboard
+                                                        {showGlobalLeaderboard ? 'Hide' : 'View'} Global Shogun Rank™
                                                     </button>
                                                 )}
                                                 
@@ -4621,7 +4621,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <p className="text-[10px] text-gray-500">{player.club_name} • {player.country || 'Unknown'}</p>
                                                                     </div>
                                                                 </div>
-                                                                <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()}</p>
+                                                                <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()} HonorXP™</p>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -4661,7 +4661,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 </div>
                                             )}
                                             <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
-                                                <p className="text-yellow-400 font-bold">+{mysteryXpAwarded} XP earned!</p>
+                                                <p className="text-yellow-400 font-bold">+{mysteryXpAwarded} HonorXP™ earned!</p>
                                             </div>
                                             <p className="text-gray-500 text-xs mt-4">Come back tomorrow for a new challenge!</p>
                                         </div>
@@ -4675,7 +4675,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             <div className="p-4">
                                                 <div className="flex justify-between items-center mb-4">
                                                     <span className="text-gray-400 text-sm">Reward:</span>
-                                                    <span className="text-yellow-400 font-black text-sm">+15 XP (correct) / +5 XP (trying)</span>
+                                                    <span className="text-yellow-400 font-black text-sm">+15 HonorXP™ (correct) / +5 HonorXP™ (trying)</span>
                                                 </div>
                                                 
                                                 {mysteryChallenge.type === 'quiz' && mysteryChallenge.quizData ? (
