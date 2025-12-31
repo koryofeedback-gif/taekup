@@ -5344,8 +5344,14 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    // Ensure has_demo_data column exists (for production migration)
+    // Ensure required columns exist (for production migration)
     await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS has_demo_data BOOLEAN DEFAULT false`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS lifetime_xp INTEGER DEFAULT 0`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS global_xp INTEGER DEFAULT 0`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS premium_status TEXT DEFAULT 'none'`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS premium_started_at TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE attendance_events ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false`);
     
     const clubResult = await client.query('SELECT id, has_demo_data FROM clubs WHERE id = $1::uuid', [clubId]);
     if (clubResult.rows.length === 0) {
