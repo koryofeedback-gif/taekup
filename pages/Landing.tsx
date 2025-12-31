@@ -52,7 +52,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
             />
             
             {/* --- HERO SECTION --- */}
-            <div className="relative pt-20 pb-16 md:pt-32 md:pb-24 px-6 overflow-hidden border-b border-zinc-800">
+            <div className="relative pt-16 pb-16 md:pt-24 md:pb-24 px-6 overflow-hidden border-b border-zinc-800">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black opacity-80"></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none"></div>
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none"></div>
@@ -72,10 +72,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         </>
                     ) : (
                         <>
-                            <h1 className="text-5xl md:text-8xl font-black mb-8 leading-tight text-white tracking-tighter">
-                                WHY PAY FOR SOFTWARE? <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-600">LET IT PAY YOUR RENT.</span>
-                            </h1>
                             <div className="flex items-center gap-3 mb-6">
                                 <span className="relative flex h-3 w-3">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -85,6 +81,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                     DojoMint™ Protocol Active
                                 </p>
                             </div>
+                            <h1 className="text-5xl md:text-8xl font-black mb-8 leading-tight text-white tracking-tighter">
+                                WHY PAY FOR SOFTWARE? <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-600">LET IT PAY YOUR RENT.</span>
+                            </h1>
                             <p className="text-lg md:text-xl text-zinc-400 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
                                 The world's first martial arts platform with built-in <span className="text-white font-medium">DojoMint™ Protocol</span>. Start Free, Stay for the Profit.
                             </p>
