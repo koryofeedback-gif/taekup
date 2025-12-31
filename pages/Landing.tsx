@@ -277,7 +277,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         <h2 className="text-2xl font-bold mb-2 text-white">DojoMint™ Protocol</h2>
                         <p className="text-teal-400 font-mono text-xs mb-4 uppercase tracking-widest font-bold">Software That Pays You</p>
                         <p className="text-zinc-400 leading-relaxed text-sm">
-                            Parents upgrade to Premium, you earn 70% of every subscription. Your software pays for itself.
+                            Our proprietary revenue engine works silently in the background, generating passive income as your academy grows.
                         </p>
                     </div>
 
