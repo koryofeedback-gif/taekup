@@ -2309,7 +2309,7 @@ Return ONLY valid JSON, no markdown.`;
 
   // Try Gemini first with multiple model fallbacks
   if (gemini) {
-    const geminiModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];
+    const geminiModels = ['gemini-2.0-flash'];
     for (const modelName of geminiModels) {
       try {
         console.log(`[DailyChallenge] Trying Gemini model: ${modelName}`);
