@@ -55,11 +55,18 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
         }
     }, [initialData, loggedInUserType]);
     
+    const navigate = useNavigate();
+    
     if (initialData) {
         return (
             <>
                 <SEO title="Setup | TaekUp" />
-                <SetupWizard initialData={initialData} onComplete={onSetupComplete} />
+                <SetupWizard 
+                    initialData={initialData} 
+                    clubId={initialData.clubId}
+                    onComplete={onSetupComplete}
+                    onSkipToDemo={() => navigate('/admin')}
+                />
             </>
         );
     }

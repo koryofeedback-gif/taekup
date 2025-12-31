@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
@@ -590,6 +590,90 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ c
     </button>
 );
 
+const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
+    const [hasDemoData, setHasDemoData] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    
+    useEffect(() => {
+        if (clubId) {
+            fetch(`/api/club/${clubId}/data`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.club?.hasDemoData) {
+                        setHasDemoData(true);
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [clubId]);
+    
+    const handleClearDemo = async () => {
+        if (!clubId) return;
+        setLoading(true);
+        
+        try {
+            const response = await fetch('/api/demo/clear', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId }),
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                setHasDemoData(false);
+                setShowConfirm(false);
+                window.location.reload();
+            }
+        } catch (err) {
+            console.error('Failed to clear demo data:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    if (!hasDemoData) return null;
+    
+    return (
+        <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                        <label className="block text-sm font-bold text-amber-300">Demo Mode Active</label>
+                        <p className="text-xs text-gray-400">Your dashboard is showing sample data. Clear it when ready to add real students.</p>
+                    </div>
+                </div>
+                {showConfirm ? (
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">Delete all demo data?</span>
+                        <button 
+                            onClick={handleClearDemo}
+                            disabled={loading}
+                            className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-sm font-bold disabled:opacity-50"
+                        >
+                            {loading ? 'Clearing...' : 'Yes, Clear'}
+                        </button>
+                        <button 
+                            onClick={() => setShowConfirm(false)}
+                            className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={() => setShowConfirm(true)}
+                        className="bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 px-4 py-2 rounded text-sm font-bold border border-amber-600/50"
+                    >
+                        Clear Demo Data
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
     const [activeSubTab, setActiveSubTab] = useState<'general' | 'belts' | 'locations' | 'rules'>('general');
 
@@ -763,6 +847,9 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             </div>
                         )}
                     </div>
+                    
+                    {/* Demo Data Management */}
+                    <DemoDataSection clubId={clubId} />
                 </div>
             )}
 

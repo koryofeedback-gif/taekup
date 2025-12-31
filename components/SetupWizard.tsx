@@ -10,18 +10,21 @@ import { Step4Rules } from './wizard/Step4Rules';
 import { Step5AddPeople } from './wizard/Step5AddPeople';
 import { Step6Branding } from './wizard/Step6Branding';
 import { SetupComplete } from './wizard/SetupComplete';
+import { StepDemoChoice } from './wizard/StepDemoChoice';
 import { WT_BELTS } from '../constants';
 
 interface SetupWizardProps {
   initialData: SignupData;
+  clubId?: string;
   onComplete: (data: WizardData) => void;
+  onSkipToDemo?: () => void;
 }
 
 const STORAGE_KEY = 'taekup_wizard_draft';
 
-export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplete }) => {
+export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, onComplete, onSkipToDemo }) => {
   const navigate = useNavigate();
-  // Key to force re-render of steps when resetting
+  const [showDemoChoice, setShowDemoChoice] = useState(true);
   const [formKey, setFormKey] = useState(0);
 
   // Initialize state from LocalStorage if available, otherwise use defaults
@@ -197,6 +200,28 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, onComplet
 
   if (isComplete) {
     return <SetupComplete onGoToDashboard={() => onComplete(wizardData)} />;
+  }
+
+  if (showDemoChoice && clubId) {
+    return (
+      <div className="container mx-auto px-6 py-12 md:py-20">
+        <div className="max-w-4xl mx-auto bg-gray-800/50 rounded-lg border border-gray-700 shadow-2xl">
+          <div className="p-6 md:p-8">
+            <StepDemoChoice 
+              clubId={clubId}
+              onChooseFresh={() => setShowDemoChoice(false)}
+              onChooseDemo={() => {
+                if (onSkipToDemo) {
+                  onSkipToDemo();
+                } else {
+                  navigate('/admin');
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const renderStep = () => {

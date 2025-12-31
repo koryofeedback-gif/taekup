@@ -325,7 +325,7 @@ export function registerRoutes(app: Express) {
       const clubResult = await db.execute(sql`
         SELECT id, name, owner_email, owner_name, country, city, art_type, 
                wizard_data, trial_start, trial_end, trial_status, status,
-               world_rankings_enabled
+               world_rankings_enabled, has_demo_data
         FROM clubs WHERE id = ${clubId}::uuid
       `);
       const club = (clubResult as any[])[0];
@@ -403,7 +403,8 @@ export function registerRoutes(app: Express) {
           trialEnd: club.trial_end,
           trialStatus: club.trial_status,
           status: club.status,
-          worldRankingsEnabled: club.world_rankings_enabled || false
+          worldRankingsEnabled: club.world_rankings_enabled || false,
+          hasDemoData: club.has_demo_data || false
         },
         wizardData
       });
