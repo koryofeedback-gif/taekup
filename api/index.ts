@@ -5344,6 +5344,9 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
+    // Ensure has_demo_data column exists (for production migration)
+    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS has_demo_data BOOLEAN DEFAULT false`);
+    
     const clubResult = await client.query('SELECT id, has_demo_data FROM clubs WHERE id = $1::uuid', [clubId]);
     if (clubResult.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Club not found' });
@@ -5405,6 +5408,9 @@ async function handleDemoClear(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
+    // Ensure has_demo_data column exists (for production migration)
+    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS has_demo_data BOOLEAN DEFAULT false`);
+    
     const clubResult = await client.query('SELECT id, has_demo_data FROM clubs WHERE id = $1::uuid', [clubId]);
     if (clubResult.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Club not found' });
