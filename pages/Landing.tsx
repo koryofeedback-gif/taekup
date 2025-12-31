@@ -72,13 +72,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                         </>
                     ) : (
                         <>
-                            <p className="text-cyan-400 font-mono text-xs uppercase tracking-widest font-bold mb-6 flex items-center">
-                                <span className="w-2 h-2 bg-cyan-400 rounded-full mr-2 animate-pulse"></span>
-                                DojoMint™ Protocol Active
-                            </p>
-                            <h1 className="text-4xl md:text-7xl font-black mb-6 leading-tight text-white tracking-tighter">
-                                Why pay for management software?<br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-400">Let your software pay your rent.</span>
+                            <div className="flex items-center gap-3 mb-6">
+                                <span className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500 shadow-[0_0_8px_2px_rgba(6,182,212,0.6)]"></span>
+                                </span>
+                                <p className="text-cyan-400 font-mono text-xs uppercase tracking-widest font-bold">
+                                    DojoMint™ Protocol Active
+                                </p>
+                            </div>
+                            <h1 className="text-5xl md:text-8xl font-black mb-8 leading-tight text-white tracking-tighter">
+                                WHY PAY FOR SOFTWARE? <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-600">LET IT PAY YOUR RENT.</span>
                             </h1>
                             <p className="text-lg md:text-xl text-zinc-400 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
                                 The world's first martial arts platform with built-in <span className="text-white font-medium">DojoMint™ Protocol</span>. Start Free, Stay for the Profit.
