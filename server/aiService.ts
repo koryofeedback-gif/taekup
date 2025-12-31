@@ -505,7 +505,7 @@ export async function generateWelcomeEmail(params: {
   }
 
   try {
-    const model = gemini.getGenerativeModel({ model: 'gemini-pro' });
+    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `Write a warm welcome email for a new student joining a martial arts school:
 - School: ${params.clubName}
 - Student: ${params.studentName}

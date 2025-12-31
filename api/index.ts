@@ -899,7 +899,7 @@ async function handleWelcomeEmail(req: VercelRequest, res: VercelResponse) {
     return res.json({ email: `Dear ${parentName || 'Parent'},\n\nWelcome to ${clubName || 'Your Dojo'}! We're thrilled to have ${studentName || 'your child'} join us.\n\nBest regards,\nThe ${clubName || 'Your Dojo'} Team` });
   }
 
-  const model = gemini.getGenerativeModel({ model: 'gemini-pro' });
+  const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
   const prompt = `Write a welcome email for ${studentName || 'Student'} joining ${clubName || 'Your Dojo'}, addressed to ${parentName || 'Parent'}. Art type: ${artType || 'martial arts'}. Write in ${language || 'English'}.`;
   const result = await model.generateContent(prompt);
   return res.json({ email: result.response.text() });
@@ -5297,6 +5297,137 @@ async function handleStudentStats(req: VercelRequest, res: VercelResponse, stude
 }
 
 // =====================================================
+// DEMO MODE - Sample Data Management
+// =====================================================
+
+const DEMO_STUDENTS = [
+  { name: 'Daniel LaRusso', belt: 'Green', parentName: 'Lucille LaRusso', premiumStatus: 'parent_paid' },
+  { name: 'Johnny Lawrence', belt: 'Black', parentName: 'Laura Lawrence', premiumStatus: 'parent_paid' },
+  { name: 'Robby Keene', belt: 'Brown', parentName: 'Shannon Keene', premiumStatus: 'none' },
+  { name: 'Miguel Diaz', belt: 'Red', parentName: 'Carmen Diaz', premiumStatus: 'parent_paid' },
+  { name: 'Samantha LaRusso', belt: 'Blue', parentName: 'Amanda LaRusso', premiumStatus: 'parent_paid' },
+  { name: 'Hawk Moskowitz', belt: 'Red', parentName: 'Paula Moskowitz', premiumStatus: 'none' },
+  { name: 'Demetri Alexopoulos', belt: 'Green', parentName: 'Maria Alexopoulos', premiumStatus: 'parent_paid' },
+  { name: 'Tory Nichols', belt: 'Blue', parentName: 'Karen Nichols', premiumStatus: 'none' },
+  { name: 'Chris Evans', belt: 'Yellow', parentName: 'Sarah Evans', premiumStatus: 'parent_paid' },
+  { name: 'Aisha Robinson', belt: 'Orange', parentName: 'Diane Robinson', premiumStatus: 'none' },
+  { name: 'Kenny Payne', belt: 'White', parentName: 'Shawn Payne', premiumStatus: 'parent_paid' },
+  { name: 'Devon Lee', belt: 'Yellow', parentName: 'Grace Lee', premiumStatus: 'none' },
+  { name: 'Moon Park', belt: 'Orange', parentName: 'Jin Park', premiumStatus: 'parent_paid' },
+  { name: 'Kyler Stevens', belt: 'White', parentName: 'Brad Stevens', premiumStatus: 'none' },
+  { name: 'Bert Miller', belt: 'Yellow', parentName: 'Tom Miller', premiumStatus: 'none' },
+  { name: 'Nate Johnson', belt: 'Green', parentName: 'Rick Johnson', premiumStatus: 'parent_paid' },
+  { name: 'Yasmine Chen', belt: 'Blue', parentName: 'Lin Chen', premiumStatus: 'none' },
+  { name: 'Louie Kim', belt: 'Orange', parentName: 'David Kim', premiumStatus: 'parent_paid' },
+];
+
+const CLASS_NAMES = ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'];
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomDate(daysAgo: number): Date {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  date.setHours(randomInt(9, 20), randomInt(0, 59), 0, 0);
+  return date;
+}
+
+async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { clubId } = parseBody(req);
+  if (!clubId) {
+    return res.status(400).json({ success: false, message: 'Club ID is required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const clubResult = await client.query('SELECT id, has_demo_data FROM clubs WHERE id = $1::uuid', [clubId]);
+    if (clubResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Club not found' });
+    }
+    
+    if (clubResult.rows[0].has_demo_data) {
+      return res.json({ success: false, message: 'Demo data already loaded. Clear it first from dashboard settings.' });
+    }
+
+    const studentIds: string[] = [];
+    for (const demoStudent of DEMO_STUDENTS) {
+      const lifetimeXp = randomInt(200, 2500);
+      const globalXp = randomInt(50, 500);
+      const premiumStarted = demoStudent.premiumStatus === 'parent_paid' ? randomDate(randomInt(7, 60)).toISOString() : null;
+      const joinDate = randomDate(randomInt(30, 180)).toISOString();
+      
+      const insertResult = await client.query(`
+        INSERT INTO students (club_id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, premium_started_at, join_date, is_demo, created_at)
+        VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10::timestamptz, true, NOW())
+        RETURNING id
+      `, [clubId, demoStudent.name, demoStudent.belt, demoStudent.parentName, 
+          `${demoStudent.name.toLowerCase().replace(' ', '.')}@demo.taekup.com`,
+          lifetimeXp, globalXp, demoStudent.premiumStatus, premiumStarted, joinDate]);
+      
+      studentIds.push(insertResult.rows[0].id);
+    }
+
+    for (const studentId of studentIds) {
+      const attendanceCount = randomInt(8, 15);
+      for (let i = 0; i < attendanceCount; i++) {
+        const attendedAt = randomDate(randomInt(0, 30)).toISOString();
+        const className = CLASS_NAMES[randomInt(0, CLASS_NAMES.length - 1)];
+        
+        await client.query(`
+          INSERT INTO attendance_events (club_id, student_id, attended_at, class_name, is_demo)
+          VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4, true)
+        `, [clubId, studentId, attendedAt, className]);
+      }
+    }
+
+    await client.query('UPDATE clubs SET has_demo_data = true WHERE id = $1::uuid', [clubId]);
+
+    return res.json({ success: true, message: 'Demo data loaded successfully', studentCount: studentIds.length });
+  } catch (error: any) {
+    console.error('[Demo Load] Error:', error.message);
+    return res.status(500).json({ success: false, message: `Failed to load demo data: ${error.message}` });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleDemoClear(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'DELETE') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { clubId } = parseBody(req);
+  if (!clubId) {
+    return res.status(400).json({ success: false, message: 'Club ID is required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const clubResult = await client.query('SELECT id, has_demo_data FROM clubs WHERE id = $1::uuid', [clubId]);
+    if (clubResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Club not found' });
+    }
+    
+    if (!clubResult.rows[0].has_demo_data) {
+      return res.json({ success: false, message: 'No demo data to clear' });
+    }
+
+    await client.query('DELETE FROM attendance_events WHERE club_id = $1::uuid AND is_demo = true', [clubId]);
+    const deleteResult = await client.query('DELETE FROM students WHERE club_id = $1::uuid AND is_demo = true', [clubId]);
+    await client.query('UPDATE clubs SET has_demo_data = false WHERE id = $1::uuid', [clubId]);
+
+    return res.json({ success: true, message: 'Demo data cleared successfully', deletedCount: deleteResult.rowCount });
+  } catch (error: any) {
+    console.error('[Demo Clear] Error:', error.message);
+    return res.status(500).json({ success: false, message: `Failed to clear demo data: ${error.message}` });
+  } finally {
+    client.release();
+  }
+}
+
+// =====================================================
 // SUPER ADMIN - DAILY TRAINING MANAGEMENT
 // =====================================================
 
@@ -5796,6 +5927,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const studentStatsMatch = path.match(/^\/students\/([^/]+)\/stats\/?$/);
     if (studentStatsMatch) return await handleStudentStats(req, res, studentStatsMatch[1]);
+
+    // Demo Mode
+    if (path === '/demo/load' || path === '/demo/load/') return await handleDemoLoad(req, res);
+    if (path === '/demo/clear' || path === '/demo/clear/') return await handleDemoClear(req, res);
 
     return res.status(404).json({ error: 'Not found', path });
   } catch (error: any) {
