@@ -90,11 +90,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                     <span className="text-2xl">⚡</span>
                                     <h3 className="text-xl font-bold text-white">DojoMint™ Protocol Simulator</h3>
                                 </div>
-                                <p className="text-zinc-500 text-sm text-center mb-6">See how our proprietary protocol generates passive income for your club</p>
+                                <p className="text-zinc-500 text-sm text-center mb-6">See how our proprietary protocol generates passive income for your academy</p>
                                 
                                 <div className="mb-6">
                                     <div className="flex justify-between items-center mb-3">
-                                        <label className="text-zinc-400 text-sm font-medium">Number of Students</label>
+                                        <label className="text-zinc-400 text-sm font-medium">Total Academy Students</label>
                                         <span className="text-2xl font-black text-white">{studentCount}</span>
                                     </div>
                                     <input
@@ -114,23 +114,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 mb-6">
-                                    <div className="flex justify-between items-center bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-                                        <span className="text-zinc-400 text-sm">Protocol Revenue</span>
-                                        <span className="text-xl font-black text-cyan-400">+${profitCalculation.monthlyRevenue.toFixed(0)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-                                        <span className="text-zinc-400 text-sm">Platform Cost</span>
-                                        <span className="text-xl font-bold text-zinc-400">-${profitCalculation.planCost}</span>
-                                    </div>
-                                </div>
-
                                 <div className="bg-gradient-to-r from-cyan-900/30 to-teal-900/30 rounded-xl p-5 border border-cyan-500/30 text-center">
-                                    <p className="text-zinc-400 text-xs uppercase font-bold mb-1">Your Net Monthly Profit</p>
-                                    <p className={`text-4xl md:text-5xl font-black ${profitCalculation.netProfit >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
-                                        {profitCalculation.netProfit >= 0 ? '+' : '-'}${Math.abs(profitCalculation.netProfit).toFixed(0)}<span className="text-lg text-zinc-500">/mo</span>
+                                    <p className="text-zinc-400 text-xs uppercase font-bold mb-2">Estimated DojoMint™ Generation</p>
+                                    
+                                    <div className="flex items-center justify-center gap-3 mb-3">
+                                        <span className="text-zinc-500 text-sm">Platform Fee:</span>
+                                        {profitCalculation.netProfit >= 0 ? (
+                                            <span className="text-zinc-500 line-through">${profitCalculation.planCost.toFixed(0)}</span>
+                                        ) : (
+                                            <span className="text-zinc-400">${profitCalculation.planCost.toFixed(0)}</span>
+                                        )}
+                                        {profitCalculation.netProfit >= 0 && (
+                                            <span className="text-cyan-400 font-bold">$0</span>
+                                        )}
+                                    </div>
+                                    
+                                    <p className="text-4xl md:text-5xl font-black text-cyan-400">
+                                        +${profitCalculation.monthlyRevenue.toFixed(0)}<span className="text-lg text-zinc-500">/mo</span>
                                     </p>
-                                    <p className="text-zinc-500 text-xs mt-2">
+                                    
+                                    {profitCalculation.netProfit > 0 && (
+                                        <p className="text-green-400 text-sm font-bold mt-3">
+                                            Extra Profit: +${profitCalculation.netProfit.toFixed(0)}/month
+                                        </p>
+                                    )}
+                                    
+                                    <p className="text-zinc-500 text-xs mt-3">
                                         Your software doesn't cost money — it makes money.
                                     </p>
                                 </div>
