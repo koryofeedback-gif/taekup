@@ -505,7 +505,7 @@ export async function generateWelcomeEmail(params: {
   }
 
   try {
-    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const prompt = `Write a warm welcome email for a new student joining a martial arts school:
 - School: ${params.clubName}
 - Student: ${params.studentName}
@@ -580,7 +580,7 @@ IMPORTANT: You MUST mention their specific score of ${params.score || 'their res
   if (gemini) {
     try {
       console.log('[VideoFeedback] Trying Gemini...');
-      const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const result = await model.generateContent(prompt);
       const feedback = result.response.text();
       if (feedback) {

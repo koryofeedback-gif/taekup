@@ -899,7 +899,7 @@ async function handleWelcomeEmail(req: VercelRequest, res: VercelResponse) {
     return res.json({ email: `Dear ${parentName || 'Parent'},\n\nWelcome to ${clubName || 'Your Dojo'}! We're thrilled to have ${studentName || 'your child'} join us.\n\nBest regards,\nThe ${clubName || 'Your Dojo'} Team` });
   }
 
-  const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
   const prompt = `Write a welcome email for ${studentName || 'Student'} joining ${clubName || 'Your Dojo'}, addressed to ${parentName || 'Parent'}. Art type: ${artType || 'martial arts'}. Write in ${language || 'English'}.`;
   const result = await model.generateContent(prompt);
   return res.json({ email: result.response.text() });
