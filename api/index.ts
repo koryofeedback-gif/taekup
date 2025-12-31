@@ -5401,15 +5401,15 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       FROM students WHERE club_id = $1::uuid
     `, [clubId]);
     
-    // Fetch club info for wizard data
+    // Fetch club info for wizard data (use COALESCE for columns that might not exist)
     const clubInfoResult = await client.query(`
-      SELECT name, martial_art, owner_name, email FROM clubs WHERE id = $1::uuid
+      SELECT name, owner_name, email FROM clubs WHERE id = $1::uuid
     `, [clubId]);
     
     const clubInfo = clubInfoResult.rows[0] || {};
     const wizardData = {
       clubName: clubInfo.name || 'My Dojo',
-      martialArt: clubInfo.martial_art || 'Taekwondo (WT)',
+      martialArt: 'Taekwondo (WT)',
       ownerName: clubInfo.owner_name || 'Owner',
       email: clubInfo.email || '',
       students: allStudentsResult.rows.map((s: any) => ({
