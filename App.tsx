@@ -65,7 +65,15 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
                     initialData={initialData} 
                     clubId={initialData.clubId}
                     onComplete={onSetupComplete}
-                    onSkipToDemo={() => navigate('/app/admin')}
+                    onSkipToDemo={() => {
+                        // Ensure session is persisted before navigating
+                        localStorage.setItem('taekup_user_type', 'owner');
+                        localStorage.setItem('taekup_user_name', initialData.clubName || 'Owner');
+                        if (initialData.clubId) {
+                            localStorage.setItem('taekup_club_id', initialData.clubId);
+                        }
+                        navigate('/app/admin');
+                    }}
                 />
             </>
         );
