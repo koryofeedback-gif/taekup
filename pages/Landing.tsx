@@ -85,67 +85,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                             </p>
 
                             {/* DOJOMINT PROTOCOL SIMULATOR */}
-                            <div className="w-full max-w-2xl mx-auto bg-black rounded-2xl border-2 border-cyan-400 p-6 md:p-8 shadow-[0_0_40px_#00ffff,0_0_80px_#00ffff40] mb-8 relative overflow-hidden">
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,255,0.1),transparent_70%)]"></div>
-                                <div className="relative z-10">
-                                    <div className="flex items-center justify-center gap-2 mb-2">
-                                        <span className="text-3xl" style={{filter: 'drop-shadow(0 0 10px #ffff00)'}}>⚡</span>
-                                        <h3 className="text-2xl font-black text-cyan-400" style={{textShadow: '0 0 20px #00ffff, 0 0 40px #00ffff'}}>DojoMint™ Protocol Simulator</h3>
+                            <div className="w-full max-w-2xl mx-auto bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 rounded-2xl border border-cyan-500/30 p-6 md:p-8 shadow-2xl mb-8">
+                                <div className="flex items-center justify-center gap-2 mb-2">
+                                    <span className="text-2xl">⚡</span>
+                                    <h3 className="text-xl font-bold text-white">DojoMint™ Protocol Simulator</h3>
+                                </div>
+                                <p className="text-zinc-500 text-sm text-center mb-6">See how our proprietary protocol generates passive income for your academy</p>
+                                
+                                <div className="mb-6">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <label className="text-zinc-400 text-sm font-medium">Total Academy Students</label>
+                                        <span className="text-2xl font-black text-white">{studentCount}</span>
                                     </div>
-                                    <p className="text-cyan-300 text-sm text-center mb-6">See how our proprietary protocol generates passive income for your academy</p>
-                                    
-                                    <div className="mb-6">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-white text-sm font-bold">Total Academy Students</label>
-                                            <span className="text-3xl font-black text-cyan-400" style={{textShadow: '0 0 15px #00ffff'}}>{studentCount}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="10"
-                                            max="200"
-                                            value={studentCount}
-                                            onChange={(e) => setStudentCount(parseInt(e.target.value))}
-                                            className="w-full h-4 rounded-full appearance-none cursor-pointer"
-                                            style={{
-                                                background: `linear-gradient(to right, #00ffff 0%, #00ffff ${((studentCount - 10) / 190) * 100}%, #333 ${((studentCount - 10) / 190) * 100}%, #333 100%)`,
-                                                boxShadow: '0 0 10px #00ffff80'
-                                            }}
-                                        />
-                                        <div className="flex justify-between text-xs text-cyan-400 mt-1 font-bold">
-                                            <span>10</span>
-                                            <span>200</span>
-                                        </div>
+                                    <input
+                                        type="range"
+                                        min="10"
+                                        max="200"
+                                        value={studentCount}
+                                        onChange={(e) => setStudentCount(parseInt(e.target.value))}
+                                        className="w-full h-3 bg-zinc-700 rounded-full appearance-none cursor-pointer accent-cyan-500"
+                                        style={{
+                                            background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${((studentCount - 10) / 190) * 100}%, #3f3f46 ${((studentCount - 10) / 190) * 100}%, #3f3f46 100%)`
+                                        }}
+                                    />
+                                    <div className="flex justify-between text-xs text-zinc-600 mt-1">
+                                        <span>10</span>
+                                        <span>200</span>
                                     </div>
+                                </div>
 
-                                    <div className="bg-black/80 rounded-xl p-6 border-2 border-lime-400 text-center shadow-[0_0_30px_#00ff0080,inset_0_0_30px_#00ff0020]">
-                                        <p className="text-lime-400 text-xs uppercase font-black mb-3 tracking-widest" style={{textShadow: '0 0 10px #00ff00'}}>Estimated DojoMint™ Generation</p>
-                                        
-                                        <div className="flex items-center justify-center gap-3 mb-4">
-                                            <span className="text-white text-sm font-medium">Platform Fee:</span>
-                                            {profitCalculation.netProfit >= 0 ? (
-                                                <span className="text-zinc-500 line-through text-lg">${profitCalculation.planCost.toFixed(0)}</span>
-                                            ) : (
-                                                <span className="text-white text-lg font-bold">${profitCalculation.planCost.toFixed(0)}</span>
-                                            )}
-                                            {profitCalculation.netProfit >= 0 && (
-                                                <span className="text-lime-400 font-black text-xl" style={{textShadow: '0 0 15px #00ff00'}}>$0</span>
-                                            )}
-                                        </div>
-                                        
-                                        <p className="text-6xl md:text-7xl font-black text-cyan-400" style={{textShadow: '0 0 30px #00ffff, 0 0 60px #00ffff'}}>
-                                            +${profitCalculation.monthlyRevenue.toFixed(0)}<span className="text-2xl text-cyan-300">/mo</span>
-                                        </p>
-                                        
-                                        {profitCalculation.netProfit > 0 && (
-                                            <p className="text-lime-400 text-lg font-black mt-4" style={{textShadow: '0 0 15px #00ff00'}}>
-                                                Extra Profit: +${profitCalculation.netProfit.toFixed(0)}/month
-                                            </p>
+                                <div className="bg-gradient-to-r from-cyan-900/30 to-teal-900/30 rounded-xl p-5 border border-cyan-500/30 text-center">
+                                    <p className="text-zinc-400 text-xs uppercase font-bold mb-2">Estimated DojoMint™ Generation</p>
+                                    
+                                    <div className="flex items-center justify-center gap-3 mb-3">
+                                        <span className="text-zinc-500 text-sm">Platform Fee:</span>
+                                        {profitCalculation.netProfit >= 0 ? (
+                                            <span className="text-zinc-500 line-through">${profitCalculation.planCost.toFixed(0)}</span>
+                                        ) : (
+                                            <span className="text-zinc-400">${profitCalculation.planCost.toFixed(0)}</span>
                                         )}
-                                        
-                                        <p className="text-zinc-400 text-sm mt-4 font-medium">
-                                            Your software doesn't cost money — it makes money.
-                                        </p>
+                                        {profitCalculation.netProfit >= 0 && (
+                                            <span className="text-cyan-400 font-bold">$0</span>
+                                        )}
                                     </div>
+                                    
+                                    <p className="text-4xl md:text-5xl font-black text-cyan-400">
+                                        +${profitCalculation.monthlyRevenue.toFixed(0)}<span className="text-lg text-zinc-500">/mo</span>
+                                    </p>
+                                    
+                                    {profitCalculation.netProfit > 0 && (
+                                        <p className="text-green-400 text-sm font-bold mt-3">
+                                            Extra Profit: +${profitCalculation.netProfit.toFixed(0)}/month
+                                        </p>
+                                    )}
+                                    
+                                    <p className="text-zinc-500 text-xs mt-3">
+                                        Your software doesn't cost money — it makes money.
+                                    </p>
                                 </div>
                             </div>
 
