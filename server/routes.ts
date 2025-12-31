@@ -11,6 +11,7 @@ import { db } from './db';
 import { sql } from 'drizzle-orm';
 import s3Storage from './services/s3StorageService';
 import { calculateArenaGlobalScore, calculateLocalXp, type ChallengeTypeKey, type ChallengeTierKey } from '../services/gamificationService';
+import { loadDemoData, clearDemoData } from './demoService';
 
 let cachedProducts: any[] | null = null;
 let cacheTimestamp: number = 0;
@@ -5518,6 +5519,54 @@ export function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error('[FamilyChallenges] Seed error:', error.message);
       res.status(500).json({ error: 'Failed to seed family challenges' });
+    }
+  });
+
+  // =====================================================
+  // DEMO MODE ENDPOINTS
+  // =====================================================
+  
+  // Load demo data for a club
+  app.post('/api/demo/load', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.body;
+      
+      if (!clubId) {
+        return res.status(400).json({ error: 'Club ID is required' });
+      }
+      
+      const result = await loadDemoData(clubId);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error: any) {
+      console.error('[Demo] Load error:', error.message);
+      res.status(500).json({ error: 'Failed to load demo data' });
+    }
+  });
+  
+  // Clear demo data for a club
+  app.delete('/api/demo/clear', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.body;
+      
+      if (!clubId) {
+        return res.status(400).json({ error: 'Club ID is required' });
+      }
+      
+      const result = await clearDemoData(clubId);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error: any) {
+      console.error('[Demo] Clear error:', error.message);
+      res.status(500).json({ error: 'Failed to clear demo data' });
     }
   });
 }

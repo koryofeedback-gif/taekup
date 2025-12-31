@@ -26,6 +26,7 @@ export const clubs = pgTable('clubs', {
   wizardData: jsonb('wizard_data'),
   worldRankingsEnabled: boolean('world_rankings_enabled').default(false),
   globalScore: integer('global_score').default(0),
+  hasDemoData: boolean('has_demo_data').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -109,6 +110,7 @@ export const students = pgTable('students', {
   videoApprovalStreak: integer('video_approval_streak').default(0), // Consecutive approved videos
   videoRejectionCount: integer('video_rejection_count').default(0), // Total rejected videos (for demotion)
   lastSpotCheckAt: timestamp('last_spot_check_at', { withTimezone: true }), // Last random spot-check
+  isDemo: boolean('is_demo').default(false), // Demo data flag for cleanup
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -160,6 +162,7 @@ export const attendanceEvents = pgTable('attendance_events', {
   studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
   attendedAt: timestamp('attended_at', { withTimezone: true }).defaultNow(),
   className: varchar('class_name', { length: 255 }),
+  isDemo: boolean('is_demo').default(false), // Demo data flag for cleanup
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
