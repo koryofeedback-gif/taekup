@@ -5359,7 +5359,42 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
     }
     
     if (clubResult.rows[0].has_demo_data) {
-      return res.json({ success: false, message: 'Demo data already loaded. Clear it first from dashboard settings.' });
+      // Demo already loaded - return existing wizard data so user can still access dashboard
+      const allStudentsResult = await client.query(`
+        SELECT id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, is_demo
+        FROM students WHERE club_id = $1::uuid
+      `, [clubId]);
+      
+      const clubInfoResult = await client.query(`
+        SELECT name, owner_name FROM clubs WHERE id = $1::uuid
+      `, [clubId]);
+      
+      const clubInfo = clubInfoResult.rows[0] || {};
+      const wizardData = {
+        clubName: clubInfo.name || 'My Dojo',
+        martialArt: 'Taekwondo (WT)',
+        ownerName: clubInfo.owner_name || 'Owner',
+        email: '',
+        students: allStudentsResult.rows.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          belt: s.belt,
+          parentName: s.parent_name,
+          parentEmail: s.parent_email,
+          lifetimeXp: s.lifetime_xp || 0,
+          globalXp: s.global_xp || 0,
+          premiumStatus: s.premium_status || 'none',
+          isDemo: s.is_demo || false,
+        })),
+        coaches: [],
+        belts: [],
+        schedule: [],
+        events: [],
+        curriculum: [],
+        classes: [],
+      };
+      
+      return res.json({ success: true, message: 'Demo data already exists', studentCount: allStudentsResult.rows.length, wizardData });
     }
 
     const studentIds: string[] = [];
