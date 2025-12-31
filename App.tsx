@@ -72,7 +72,8 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
                         if (initialData.clubId) {
                             localStorage.setItem('taekup_club_id', initialData.clubId);
                         }
-                        navigate('/app/admin');
+                        // Force page reload to ensure React state picks up localStorage changes
+                        window.location.href = '/app/admin';
                     }}
                 />
             </>
