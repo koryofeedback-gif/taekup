@@ -65,7 +65,7 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
                     initialData={initialData} 
                     clubId={initialData.clubId}
                     onComplete={onSetupComplete}
-                    onSkipToDemo={() => navigate('/admin')}
+                    onSkipToDemo={() => navigate('/app/admin')}
                 />
             </>
         );
