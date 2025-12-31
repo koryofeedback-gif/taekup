@@ -214,7 +214,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
                 if (onSkipToDemo) {
                   onSkipToDemo();
                 } else {
-                  navigate('/admin');
+                  navigate('/app/admin');
                 }
               }}
             />
