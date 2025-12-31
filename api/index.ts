@@ -5395,7 +5395,44 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
 
     await client.query('UPDATE clubs SET has_demo_data = true WHERE id = $1::uuid', [clubId]);
 
-    return res.json({ success: true, message: 'Demo data loaded successfully', studentCount: studentIds.length });
+    // Fetch all students (including newly added demo ones) for wizard data
+    const allStudentsResult = await client.query(`
+      SELECT id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, is_demo
+      FROM students WHERE club_id = $1::uuid
+    `, [clubId]);
+    
+    // Fetch club info for wizard data
+    const clubInfoResult = await client.query(`
+      SELECT name, martial_art, owner_name, email FROM clubs WHERE id = $1::uuid
+    `, [clubId]);
+    
+    const clubInfo = clubInfoResult.rows[0] || {};
+    const wizardData = {
+      clubName: clubInfo.name || 'My Dojo',
+      martialArt: clubInfo.martial_art || 'Taekwondo (WT)',
+      ownerName: clubInfo.owner_name || 'Owner',
+      email: clubInfo.email || '',
+      students: allStudentsResult.rows.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        belt: s.belt,
+        parentName: s.parent_name,
+        parentEmail: s.parent_email,
+        lifetimeXp: s.lifetime_xp || 0,
+        globalXp: s.global_xp || 0,
+        premiumStatus: s.premium_status || 'none',
+        isDemo: s.is_demo || false,
+      })),
+      coaches: [],
+      belts: [],
+      schedule: [],
+      events: [],
+      curriculum: [],
+      classes: [],
+    };
+
+    console.log('[Demo Load] Success:', studentIds.length, 'demo students, total students:', allStudentsResult.rows.length);
+    return res.json({ success: true, message: 'Demo data loaded successfully', studentCount: studentIds.length, wizardData });
   } catch (error: any) {
     console.error('[Demo Load] Error:', error.message);
     return res.status(500).json({ success: false, message: `Failed to load demo data: ${error.message}` });

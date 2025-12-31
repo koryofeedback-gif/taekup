@@ -25,6 +25,12 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
       const result = await response.json();
       
       if (result.success) {
+        // Save fresh wizard data to localStorage so dashboard sees demo students
+        if (result.wizardData) {
+          localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
+          // Also clear any draft data
+          localStorage.removeItem('taekup_wizard_draft');
+        }
         onChooseDemo();
       } else {
         setError(result.message || 'Failed to load demo data');

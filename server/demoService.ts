@@ -36,7 +36,7 @@ function randomDate(daysAgo: number): Date {
   return date;
 }
 
-export async function loadDemoData(clubId: string): Promise<{ success: boolean; message: string; studentCount: number }> {
+export async function loadDemoData(clubId: string): Promise<{ success: boolean; message: string; studentCount: number; wizardData?: any }> {
   console.log('[DemoService] Starting loadDemoData for clubId:', clubId);
   try {
     const existingClub = await db.select().from(clubs).where(eq(clubs.id, clubId)).limit(1);
@@ -93,11 +93,41 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
       .set({ hasDemoData: true })
       .where(eq(clubs.id, clubId));
 
-    console.log('[DemoService] Demo data loaded successfully:', insertedStudents.length, 'students');
+    // Fetch ALL students for this club (including any existing real ones + new demo ones)
+    const allStudents = await db.select().from(students).where(eq(students.clubId, clubId));
+    
+    // Build wizard data with fresh student list
+    const club = existingClub[0];
+    const wizardData = {
+      clubName: club.name || 'My Dojo',
+      martialArt: club.martialArt || 'Taekwondo (WT)',
+      ownerName: club.ownerName || 'Owner',
+      email: club.email || '',
+      students: allStudents.map(s => ({
+        id: s.id,
+        name: s.name,
+        belt: s.belt,
+        parentName: s.parentName,
+        parentEmail: s.parentEmail,
+        lifetimeXp: s.lifetimeXp || 0,
+        globalXp: s.globalXp || 0,
+        premiumStatus: s.premiumStatus || 'none',
+        isDemo: s.isDemo || false,
+      })),
+      coaches: [],
+      belts: [],
+      schedule: [],
+      events: [],
+      curriculum: [],
+      classes: [],
+    };
+
+    console.log('[DemoService] Demo data loaded successfully:', insertedStudents.length, 'students, returning wizardData with', allStudents.length, 'total students');
     return { 
       success: true, 
       message: 'Demo data loaded successfully', 
-      studentCount: insertedStudents.length 
+      studentCount: insertedStudents.length,
+      wizardData,
     };
   } catch (error: any) {
     console.error('[DemoService] Error loading demo data:', error.message);
