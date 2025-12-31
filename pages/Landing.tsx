@@ -85,19 +85,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                             </p>
 
                             {/* DOJOMINT PROTOCOL SIMULATOR */}
-                            <div className="w-full max-w-2xl mx-auto bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-2xl border-2 border-cyan-400/50 p-6 md:p-8 shadow-[0_0_60px_rgba(6,182,212,0.3)] mb-8 relative overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-transparent to-teal-500/5 animate-pulse"></div>
+                            <div className="w-full max-w-2xl mx-auto bg-black rounded-2xl border-2 border-cyan-400 p-6 md:p-8 shadow-[0_0_40px_#00ffff,0_0_80px_#00ffff40] mb-8 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,255,0.1),transparent_70%)]"></div>
                                 <div className="relative z-10">
                                     <div className="flex items-center justify-center gap-2 mb-2">
-                                        <span className="text-2xl animate-bounce">⚡</span>
-                                        <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-300 to-teal-300 bg-clip-text text-transparent">DojoMint™ Protocol Simulator</h3>
+                                        <span className="text-3xl" style={{filter: 'drop-shadow(0 0 10px #ffff00)'}}>⚡</span>
+                                        <h3 className="text-2xl font-black text-cyan-400" style={{textShadow: '0 0 20px #00ffff, 0 0 40px #00ffff'}}>DojoMint™ Protocol Simulator</h3>
                                     </div>
-                                    <p className="text-cyan-200/60 text-sm text-center mb-6">See how our proprietary protocol generates passive income for your academy</p>
+                                    <p className="text-cyan-300 text-sm text-center mb-6">See how our proprietary protocol generates passive income for your academy</p>
                                     
                                     <div className="mb-6">
                                         <div className="flex justify-between items-center mb-3">
-                                            <label className="text-cyan-200/80 text-sm font-medium">Total Academy Students</label>
-                                            <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-white">{studentCount}</span>
+                                            <label className="text-white text-sm font-bold">Total Academy Students</label>
+                                            <span className="text-3xl font-black text-cyan-400" style={{textShadow: '0 0 15px #00ffff'}}>{studentCount}</span>
                                         </div>
                                         <input
                                             type="range"
@@ -105,43 +105,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                             max="200"
                                             value={studentCount}
                                             onChange={(e) => setStudentCount(parseInt(e.target.value))}
-                                            className="w-full h-3 bg-zinc-700 rounded-full appearance-none cursor-pointer accent-cyan-400"
+                                            className="w-full h-4 rounded-full appearance-none cursor-pointer"
                                             style={{
-                                                background: `linear-gradient(to right, #22d3ee 0%, #06b6d4 ${((studentCount - 10) / 190) * 100}%, #3f3f46 ${((studentCount - 10) / 190) * 100}%, #3f3f46 100%)`
+                                                background: `linear-gradient(to right, #00ffff 0%, #00ffff ${((studentCount - 10) / 190) * 100}%, #333 ${((studentCount - 10) / 190) * 100}%, #333 100%)`,
+                                                boxShadow: '0 0 10px #00ffff80'
                                             }}
                                         />
-                                        <div className="flex justify-between text-xs text-cyan-400/50 mt-1">
+                                        <div className="flex justify-between text-xs text-cyan-400 mt-1 font-bold">
                                             <span>10</span>
                                             <span>200</span>
                                         </div>
                                     </div>
 
-                                    <div className="bg-gradient-to-br from-cyan-500/20 via-teal-500/15 to-emerald-500/20 rounded-xl p-5 border border-cyan-400/40 text-center shadow-[inset_0_0_30px_rgba(6,182,212,0.1)]">
-                                        <p className="text-cyan-300 text-xs uppercase font-bold mb-2 tracking-wider">Estimated DojoMint™ Generation</p>
+                                    <div className="bg-black/80 rounded-xl p-6 border-2 border-lime-400 text-center shadow-[0_0_30px_#00ff0080,inset_0_0_30px_#00ff0020]">
+                                        <p className="text-lime-400 text-xs uppercase font-black mb-3 tracking-widest" style={{textShadow: '0 0 10px #00ff00'}}>Estimated DojoMint™ Generation</p>
                                         
-                                        <div className="flex items-center justify-center gap-3 mb-3">
-                                            <span className="text-cyan-200/60 text-sm">Platform Fee:</span>
+                                        <div className="flex items-center justify-center gap-3 mb-4">
+                                            <span className="text-white text-sm font-medium">Platform Fee:</span>
                                             {profitCalculation.netProfit >= 0 ? (
-                                                <span className="text-zinc-500 line-through">${profitCalculation.planCost.toFixed(0)}</span>
+                                                <span className="text-zinc-500 line-through text-lg">${profitCalculation.planCost.toFixed(0)}</span>
                                             ) : (
-                                                <span className="text-cyan-200/80">${profitCalculation.planCost.toFixed(0)}</span>
+                                                <span className="text-white text-lg font-bold">${profitCalculation.planCost.toFixed(0)}</span>
                                             )}
                                             {profitCalculation.netProfit >= 0 && (
-                                                <span className="text-emerald-400 font-bold animate-pulse">$0</span>
+                                                <span className="text-lime-400 font-black text-xl" style={{textShadow: '0 0 15px #00ff00'}}>$0</span>
                                             )}
                                         </div>
                                         
-                                        <p className="text-5xl md:text-6xl font-black bg-gradient-to-r from-cyan-300 via-teal-300 to-emerald-300 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-                                            +${profitCalculation.monthlyRevenue.toFixed(0)}<span className="text-lg text-cyan-300/50">/mo</span>
+                                        <p className="text-6xl md:text-7xl font-black text-cyan-400" style={{textShadow: '0 0 30px #00ffff, 0 0 60px #00ffff'}}>
+                                            +${profitCalculation.monthlyRevenue.toFixed(0)}<span className="text-2xl text-cyan-300">/mo</span>
                                         </p>
                                         
                                         {profitCalculation.netProfit > 0 && (
-                                            <p className="text-emerald-400 text-sm font-bold mt-3 animate-pulse">
+                                            <p className="text-lime-400 text-lg font-black mt-4" style={{textShadow: '0 0 15px #00ff00'}}>
                                                 Extra Profit: +${profitCalculation.netProfit.toFixed(0)}/month
                                             </p>
                                         )}
                                         
-                                        <p className="text-cyan-200/50 text-xs mt-3">
+                                        <p className="text-zinc-400 text-sm mt-4 font-medium">
                                             Your software doesn't cost money — it makes money.
                                         </p>
                                     </div>
