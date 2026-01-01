@@ -30,6 +30,13 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
           localStorage.removeItem('taekup_wizard_data');
           localStorage.removeItem('taekup_wizard_draft');
           localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
+          
+          // CRITICAL: Set session keys so App.tsx recognizes user as logged in
+          localStorage.setItem('taekup_user_type', 'owner');
+          localStorage.setItem('taekup_user_name', result.wizardData.ownerName || 'Demo Owner');
+          localStorage.setItem('taekup_club_id', clubId);
+          localStorage.setItem('taekup_wizard_complete', 'true');
+          
           // Force full page reload to ensure App state re-initializes with fresh data
           window.location.href = '/app/admin';
           return;
