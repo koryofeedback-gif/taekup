@@ -2,25 +2,32 @@ import { db } from './db';
 import { students, attendanceEvents, clubs } from './schema';
 import { eq, and } from 'drizzle-orm';
 
+function getUpcomingBirthday(daysFromNow: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  date.setFullYear(date.getFullYear() - 12);
+  return date.toISOString().split('T')[0];
+}
+
 const DEMO_STUDENTS = [
-  { name: 'Daniel LaRusso', belt: 'Green', parentName: 'Lucille LaRusso', premiumStatus: 'parent_paid' as const },
-  { name: 'Johnny Lawrence', belt: 'Black', parentName: 'Laura Lawrence', premiumStatus: 'parent_paid' as const },
-  { name: 'Robby Keene', belt: 'Brown', parentName: 'Shannon Keene', premiumStatus: 'none' as const },
-  { name: 'Miguel Diaz', belt: 'Red', parentName: 'Carmen Diaz', premiumStatus: 'parent_paid' as const },
-  { name: 'Samantha LaRusso', belt: 'Blue', parentName: 'Amanda LaRusso', premiumStatus: 'parent_paid' as const },
-  { name: 'Hawk Moskowitz', belt: 'Red', parentName: 'Paula Moskowitz', premiumStatus: 'none' as const },
-  { name: 'Demetri Alexopoulos', belt: 'Green', parentName: 'Maria Alexopoulos', premiumStatus: 'parent_paid' as const },
-  { name: 'Tory Nichols', belt: 'Blue', parentName: 'Karen Nichols', premiumStatus: 'none' as const },
-  { name: 'Chris Evans', belt: 'Yellow', parentName: 'Sarah Evans', premiumStatus: 'parent_paid' as const },
-  { name: 'Aisha Robinson', belt: 'Orange', parentName: 'Diane Robinson', premiumStatus: 'none' as const },
-  { name: 'Kenny Payne', belt: 'White', parentName: 'Shawn Payne', premiumStatus: 'parent_paid' as const },
-  { name: 'Devon Lee', belt: 'Yellow', parentName: 'Grace Lee', premiumStatus: 'none' as const },
-  { name: 'Moon Park', belt: 'Orange', parentName: 'Jin Park', premiumStatus: 'parent_paid' as const },
-  { name: 'Kyler Stevens', belt: 'White', parentName: 'Brad Stevens', premiumStatus: 'none' as const },
-  { name: 'Bert Miller', belt: 'Yellow', parentName: 'Tom Miller', premiumStatus: 'none' as const },
-  { name: 'Nate Johnson', belt: 'Green', parentName: 'Rick Johnson', premiumStatus: 'parent_paid' as const },
-  { name: 'Yasmine Chen', belt: 'Blue', parentName: 'Lin Chen', premiumStatus: 'none' as const },
-  { name: 'Louie Kim', belt: 'Orange', parentName: 'David Kim', premiumStatus: 'parent_paid' as const },
+  { name: 'Daniel LaRusso', belt: 'Green', parentName: 'Lucille LaRusso', premiumStatus: 'parent_paid' as const, birthday: getUpcomingBirthday(3), isAtRisk: false },
+  { name: 'Johnny Lawrence', belt: 'Black', parentName: 'Laura Lawrence', premiumStatus: 'parent_paid' as const, birthday: getUpcomingBirthday(14), isAtRisk: false },
+  { name: 'Robby Keene', belt: 'Brown', parentName: 'Shannon Keene', premiumStatus: 'none' as const, birthday: null, isAtRisk: true },
+  { name: 'Miguel Diaz', belt: 'Red', parentName: 'Carmen Diaz', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
+  { name: 'Samantha LaRusso', belt: 'Blue', parentName: 'Amanda LaRusso', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
+  { name: 'Hawk Moskowitz', belt: 'Red', parentName: 'Paula Moskowitz', premiumStatus: 'none' as const, birthday: null, isAtRisk: true },
+  { name: 'Demetri Alexopoulos', belt: 'Green', parentName: 'Maria Alexopoulos', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
+  { name: 'Tory Nichols', belt: 'Blue', parentName: 'Karen Nichols', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
+  { name: 'Chris Evans', belt: 'Yellow', parentName: 'Sarah Evans', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
+  { name: 'Aisha Robinson', belt: 'Orange', parentName: 'Diane Robinson', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
+  { name: 'Kenny Payne', belt: 'White', parentName: 'Shawn Payne', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
+  { name: 'Devon Lee', belt: 'Yellow', parentName: 'Grace Lee', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
+  { name: 'Moon Park', belt: 'Orange', parentName: 'Jin Park', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
+  { name: 'Kyler Stevens', belt: 'White', parentName: 'Brad Stevens', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
+  { name: 'Bert Miller', belt: 'Yellow', parentName: 'Tom Miller', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
+  { name: 'Nate Johnson', belt: 'Green', parentName: 'Rick Johnson', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
+  { name: 'Yasmine Chen', belt: 'Blue', parentName: 'Lin Chen', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
+  { name: 'Louie Kim', belt: 'Orange', parentName: 'David Kim', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
 ];
 
 const CLASS_NAMES = ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'];
@@ -30,7 +37,6 @@ const DEMO_SKILLS = [
   { id: 'technique', name: 'Technique', isActive: true },
   { id: 'focus', name: 'Focus', isActive: true },
   { id: 'power', name: 'Power', isActive: true },
-  { id: 'respect', name: 'Respect', isActive: true },
 ];
 
 const DEMO_COACHES = [
@@ -59,16 +65,21 @@ const DEMO_SCHEDULE = [
 ];
 
 export const DEMO_WORLD_RANKINGS = [
-  { rank: 1, name: 'Johnny Lawrence', belt: 'Black', globalXp: 4850, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 2, name: 'Miguel Diaz', belt: 'Red', globalXp: 4320, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 3, name: 'Robby Keene', belt: 'Brown', globalXp: 3980, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 4, name: 'Samantha LaRusso', belt: 'Blue', globalXp: 3650, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 5, name: 'Hawk Moskowitz', belt: 'Red', globalXp: 3420, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 6, name: 'Tory Nichols', belt: 'Blue', globalXp: 3180, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 7, name: 'Daniel LaRusso', belt: 'Green', globalXp: 2890, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 8, name: 'Demetri Alexopoulos', belt: 'Green', globalXp: 2540, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 9, name: 'Kenny Payne', belt: 'White', globalXp: 2210, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 10, name: 'Devon Lee', belt: 'Yellow', globalXp: 1980, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 1, name: 'Kenji Tanaka', belt: 'Black', globalXp: 5200, clubName: 'Tokyo Martial Arts Academy', sport: 'Karate', country: 'Japan', city: 'Tokyo' },
+  { rank: 2, name: 'Johnny Lawrence', belt: 'Black', globalXp: 4850, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 3, name: 'Lucas Silva', belt: 'Brown', globalXp: 4500, clubName: 'Gracie Barra Rio', sport: 'BJJ', country: 'Brazil', city: 'Rio de Janeiro' },
+  { rank: 4, name: 'Miguel Diaz', belt: 'Red', globalXp: 4320, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 5, name: 'Yuki Nakamura', belt: 'Black', globalXp: 4100, clubName: 'Kodokan Judo Institute', sport: 'Judo', country: 'Japan', city: 'Osaka' },
+  { rank: 6, name: 'Robby Keene', belt: 'Brown', globalXp: 3980, clubName: 'Miyagi-Do Karate', sport: 'Karate', country: 'USA', city: 'Los Angeles' },
+  { rank: 7, name: 'Min-Jun Park', belt: 'Red', globalXp: 3800, clubName: 'Seoul Tigers TKD', sport: 'Taekwondo', country: 'South Korea', city: 'Seoul' },
+  { rank: 8, name: 'Samantha LaRusso', belt: 'Blue', globalXp: 3650, clubName: 'Miyagi-Do Karate', sport: 'Karate', country: 'USA', city: 'Los Angeles' },
+  { rank: 9, name: 'Carlos Martinez', belt: 'Purple', globalXp: 3500, clubName: 'Alliance BJJ Madrid', sport: 'BJJ', country: 'Spain', city: 'Madrid' },
+  { rank: 10, name: 'Hawk Moskowitz', belt: 'Red', globalXp: 3420, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 11, name: 'Amir Hassan', belt: 'Black', globalXp: 3300, clubName: 'Tehran Champions', sport: 'Taekwondo', country: 'Iran', city: 'Tehran' },
+  { rank: 12, name: 'Tory Nichols', belt: 'Blue', globalXp: 3180, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 13, name: 'Wei Chen', belt: 'Black', globalXp: 3050, clubName: 'Shaolin Kung Fu Academy', sport: 'Kung Fu', country: 'China', city: 'Beijing' },
+  { rank: 14, name: 'Daniel LaRusso', belt: 'Green', globalXp: 2890, clubName: 'Miyagi-Do Karate', sport: 'Karate', country: 'USA', city: 'Los Angeles' },
+  { rank: 15, name: 'Emma Thompson', belt: 'Blue', globalXp: 2750, clubName: 'London BJJ Academy', sport: 'BJJ', country: 'UK', city: 'London' },
 ];
 
 function randomInt(min: number, max: number): number {
@@ -109,7 +120,8 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
       globalXp: randomInt(50, 500),
       premiumStatus: demoStudent.premiumStatus,
       premiumStartedAt: demoStudent.premiumStatus === 'parent_paid' ? randomDate(randomInt(7, 60)) : null,
-      joinDate: randomDate(randomInt(30, 180)),
+      joinDate: demoStudent.isAtRisk ? randomDate(60) : randomDate(randomInt(30, 180)),
+      birthdate: demoStudent.birthday ? new Date(demoStudent.birthday) : null,
       isDemo: true,
     }));
     
@@ -117,7 +129,11 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
     console.log('[DemoService] Inserted', insertedStudents.length, 'students');
     
     const attendanceValues: any[] = [];
+    const atRiskNames = DEMO_STUDENTS.filter(s => s.isAtRisk).map(s => s.name);
     for (const student of insertedStudents) {
+      if (atRiskNames.includes(student.name)) {
+        continue;
+      }
       const attendanceCount = randomInt(8, 15);
       for (let i = 0; i < attendanceCount; i++) {
         attendanceValues.push({
@@ -151,19 +167,31 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
       email: club.ownerEmail || '',
       branches: 1,
       branchNames: ['Main Location'],
-      students: allStudents.map(s => ({
-        id: s.id,
-        name: s.name,
-        belt: s.belt,
-        parentName: s.parentName,
-        parentEmail: s.parentEmail,
-        lifetimeXp: s.lifetimeXp || 0,
-        globalXp: s.globalXp || 0,
-        premiumStatus: s.premiumStatus || 'none',
-        isDemo: s.isDemo || false,
-        totalPoints: randomInt(50, 500),
-        attendanceCount: randomInt(8, 25),
-      })),
+      students: allStudents.map(s => {
+        const demoInfo = DEMO_STUDENTS.find(d => d.name === s.name);
+        const isAtRisk = demoInfo?.isAtRisk || false;
+        const historyLength = isAtRisk ? 0 : randomInt(8, 15);
+        const performanceHistory = isAtRisk ? [] : Array.from({ length: historyLength }, (_, i) => ({
+          date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
+          score: randomInt(70, 100),
+        }));
+        return {
+          id: s.id,
+          name: s.name,
+          belt: s.belt,
+          parentName: s.parentName,
+          parentEmail: s.parentEmail,
+          birthday: s.birthdate?.toISOString?.()?.split('T')[0] || demoInfo?.birthday || null,
+          lifetimeXp: s.lifetimeXp || 0,
+          globalXp: s.globalXp || 0,
+          premiumStatus: s.premiumStatus || 'none',
+          isDemo: s.isDemo || false,
+          totalPoints: isAtRisk ? 0 : randomInt(50, 500),
+          attendanceCount: performanceHistory.length,
+          joinDate: s.joinDate?.toISOString?.() || s.joinDate || new Date().toISOString(),
+          performanceHistory,
+        };
+      }),
       coaches: DEMO_COACHES,
       belts: DEMO_BELTS,
       skills: DEMO_SKILLS,

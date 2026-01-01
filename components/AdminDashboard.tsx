@@ -2682,6 +2682,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 </div>
 
                 <div className="p-6 md:p-12 max-w-7xl mx-auto">
+                    {data.isDemo && (
+                        <div className="mb-4 bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white py-2 px-4 rounded-lg shadow-lg text-center font-bold text-sm flex items-center justify-center gap-2">
+                            <span className="text-lg">🎮</span> DEMO MODE - Sample data for demonstration purposes
+                        </div>
+                    )}
                     {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} />}
                     {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} />}
                     {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
