@@ -1,6 +1,6 @@
 import { db } from './db';
 import { students, attendanceEvents, clubs } from './schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 
 function getUpcomingBirthday(daysFromNow: number): string {
   const date = new Date();
@@ -216,9 +216,13 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
     };
 
     // Save wizardData to database so it persists after logout/cache clear
-    await db.update(clubs)
-      .set({ wizardData: wizardData as any })
-      .where(eq(clubs.id, clubId));
+    // Use raw SQL because the column is wizard_data (snake_case) not wizardData
+    await db.execute(sql`
+      UPDATE clubs 
+      SET wizard_data = ${JSON.stringify(wizardData)}::jsonb,
+          updated_at = NOW()
+      WHERE id = ${clubId}::uuid
+    `);
     
     console.log('[DemoService] Demo data loaded and saved to database:', insertedStudents.length, 'students, returning wizardData with', allStudents.length, 'total students');
     return { 
