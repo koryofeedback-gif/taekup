@@ -5403,6 +5403,9 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
         events: [],
         curriculum: [],
         classes: [],
+        skills: [],
+        customChallenges: [],
+        privateSlots: [],
       };
       
       return res.json({ success: true, message: 'Demo data already exists', studentCount: allStudentsResult.rows.length, wizardData });
@@ -5486,6 +5489,9 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       events: [],
       curriculum: [],
       classes: [],
+      skills: [],
+      customChallenges: [],
+      privateSlots: [],
     };
 
     console.log('[Demo Load] Success:', studentIds.length, 'demo students, total students:', allStudentsResult.rows.length);
