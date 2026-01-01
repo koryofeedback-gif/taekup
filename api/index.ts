@@ -5369,6 +5369,11 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
         SELECT name, owner_name FROM clubs WHERE id = $1::uuid
       `, [clubId]);
       
+      // Also fetch coaches
+      const coachesResult = await client.query(`
+        SELECT id, name, email, phone, is_active FROM coaches WHERE club_id = $1::uuid
+      `, [clubId]);
+      
       const clubInfo = clubInfoResult.rows[0] || {};
       const wizardData = {
         clubName: clubInfo.name || 'My Dojo',
@@ -5386,7 +5391,13 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
           premiumStatus: s.premium_status || 'none',
           isDemo: s.is_demo || false,
         })),
-        coaches: [],
+        coaches: coachesResult.rows.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone || '',
+          isActive: c.is_active,
+        })),
         belts: [],
         schedule: [],
         events: [],
@@ -5436,9 +5447,14 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       FROM students WHERE club_id = $1::uuid
     `, [clubId]);
     
-    // Fetch club info for wizard data (use COALESCE for columns that might not exist)
+    // Fetch club info for wizard data
     const clubInfoResult = await client.query(`
-      SELECT name, owner_name, email FROM clubs WHERE id = $1::uuid
+      SELECT name, owner_name FROM clubs WHERE id = $1::uuid
+    `, [clubId]);
+    
+    // Fetch coaches
+    const coachesResult = await client.query(`
+      SELECT id, name, email, phone, is_active FROM coaches WHERE club_id = $1::uuid
     `, [clubId]);
     
     const clubInfo = clubInfoResult.rows[0] || {};
@@ -5446,7 +5462,7 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       clubName: clubInfo.name || 'My Dojo',
       martialArt: 'Taekwondo (WT)',
       ownerName: clubInfo.owner_name || 'Owner',
-      email: clubInfo.email || '',
+      email: '',
       students: allStudentsResult.rows.map((s: any) => ({
         id: s.id,
         name: s.name,
@@ -5458,7 +5474,13 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
         premiumStatus: s.premium_status || 'none',
         isDemo: s.is_demo || false,
       })),
-      coaches: [],
+      coaches: coachesResult.rows.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        phone: c.phone || '',
+        isActive: c.is_active,
+      })),
       belts: [],
       schedule: [],
       events: [],
