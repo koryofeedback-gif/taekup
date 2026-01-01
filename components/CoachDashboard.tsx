@@ -880,7 +880,7 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
                         <option>Teens/Adults</option>
                     </select>
                     <select value={beltLevel} onChange={e => setBeltLevel(e.target.value)} className="bg-gray-800 border border-gray-600 rounded p-2 text-white">
-                        {data.belts.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                        {(data.belts || []).map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                     </select>
                     <select value={duration} onChange={e => setDuration(e.target.value)} className="bg-gray-800 border border-gray-600 rounded p-2 text-white">
                         <option value="30">30 min class</option>
@@ -947,7 +947,14 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
 // --- MAIN DASHBOARD COMPONENT ---
 
 export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName, onUpdateStudents, onUpdateData, onBack, userType, onGoToAdmin, clubId }) => {
-    const [students, setStudents] = useState<Student[]>(() => data.students.map(s => ({ ...s, totalPoints: s.totalPoints || 0 })));
+    // Defensive: ensure data arrays exist
+    const safeStudents = data.students || [];
+    const safeBelts = data.belts || [];
+    const safeSkills = data.skills || [];
+    const safeSchedule = data.schedule || [];
+    const isDemo = data.isDemo === true;
+    
+    const [students, setStudents] = useState<Student[]>(() => safeStudents.map(s => ({ ...s, totalPoints: s.totalPoints || 0 })));
     const [sessionScores, setSessionScores] = useState<SessionScores>({});
     const [bonusPoints, setBonusPoints] = useState<Record<string, number>>({});
     const [homeworkPoints, setHomeworkPoints] = useState<Record<string, number>>({});
@@ -1395,8 +1402,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     };
 
     const handlePromote = async (student: Student) => {
-        const currentBeltIndex = data.belts.findIndex(b => b.id === student.beltId);
-        const nextBelt = data.belts[currentBeltIndex + 1];
+        const belts = data.belts || [];
+        const currentBeltIndex = belts.findIndex(b => b.id === student.beltId);
+        const nextBelt = belts[currentBeltIndex + 1];
         
         if (nextBelt) {
             setProcessingPromotion(student.id);
@@ -1858,7 +1866,14 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
     return (
         <div className="container mx-auto px-4 py-8">
-             {confirmation.show && (
+            {/* Demo Mode Banner */}
+            {isDemo && (
+                <div className="mb-4 bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white py-2 px-4 rounded-lg shadow-lg text-center font-bold text-sm flex items-center justify-center gap-2">
+                    <span className="text-lg">🎮</span> DEMO MODE - Sample data for demonstration purposes
+                </div>
+            )}
+            
+            {confirmation.show && (
                 <div className="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[60] animate-pulse">
                     ✅ {confirmation.message}
                 </div>
@@ -2037,7 +2052,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         <label htmlFor="belt-filter" className="text-xs font-medium text-gray-400 mr-2">Filter by Belt:</label>
                                         <select id="belt-filter" value={activeBeltFilter} onChange={e => setActiveBeltFilter(e.target.value)} className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-1 px-2 focus:ring-sky-500 focus:border-sky-500">
                                             <option value="all">All Belts</option>
-                                            {data.belts.map(belt => <option key={belt.id} value={belt.id}>{belt.name}</option>)}
+                                            {(data.belts || []).map(belt => <option key={belt.id} value={belt.id}>{belt.name}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -2149,8 +2164,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     </button>
                                                 ) : hasMaxStripes && !data.gradingRequirementEnabled ? (
                                                     (() => {
-                                                        const currentBeltIndex = data.belts.findIndex(b => b.id === student.beltId);
-                                                        const nextBelt = data.belts[currentBeltIndex + 1];
+                                                        const beltsArr = data.belts || [];
+                                                        const currentBeltIndex = beltsArr.findIndex(b => b.id === student.beltId);
+                                                        const nextBelt = beltsArr[currentBeltIndex + 1];
                                                         return nextBelt ? (
                                                             <button 
                                                                 onClick={() => handlePromote(student)}
