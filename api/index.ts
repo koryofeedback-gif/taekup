@@ -5323,6 +5323,39 @@ const DEMO_STUDENTS = [
 
 const CLASS_NAMES = ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'];
 
+const DEMO_SKILLS = [
+  { id: 'discipline', name: 'Discipline', isActive: true },
+  { id: 'technique', name: 'Technique', isActive: true },
+  { id: 'focus', name: 'Focus', isActive: true },
+  { id: 'power', name: 'Power', isActive: true },
+  { id: 'respect', name: 'Respect', isActive: true },
+];
+
+const DEMO_COACHES = [
+  { id: 'coach-1', name: 'Sensei John Kreese', email: 'kreese@demo.taekup.com', location: 'Main Location', assignedClasses: ['Sparring Team', 'Adult Class'] },
+  { id: 'coach-2', name: 'Master Daniel LaRusso', email: 'daniel@demo.taekup.com', location: 'Main Location', assignedClasses: ['Kids Class', 'General Class'] },
+];
+
+const DEMO_BELTS = [
+  { id: 'white', name: 'White', color1: '#FFFFFF' },
+  { id: 'yellow', name: 'Yellow', color1: '#FFD700' },
+  { id: 'orange', name: 'Orange', color1: '#FF8C00' },
+  { id: 'green', name: 'Green', color1: '#228B22' },
+  { id: 'blue', name: 'Blue', color1: '#0066CC' },
+  { id: 'red', name: 'Red', color1: '#CC0000' },
+  { id: 'brown', name: 'Brown', color1: '#8B4513' },
+  { id: 'black', name: 'Black', color1: '#000000' },
+];
+
+const DEMO_SCHEDULE = [
+  { id: 's1', day: 'Monday', time: '16:00', duration: 60, className: 'Kids Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's2', day: 'Monday', time: '18:00', duration: 90, className: 'Adult Class', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's3', day: 'Wednesday', time: '16:00', duration: 60, className: 'Kids Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's4', day: 'Wednesday', time: '18:00', duration: 90, className: 'Sparring Team', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'green' },
+  { id: 's5', day: 'Friday', time: '16:00', duration: 60, className: 'General Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's6', day: 'Saturday', time: '10:00', duration: 120, className: 'Tournament Prep', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'blue' },
+];
+
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -5376,10 +5409,12 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       
       const clubInfo = clubInfoResult.rows[0] || {};
       const wizardData = {
-        clubName: clubInfo.name || 'My Dojo',
+        clubName: clubInfo.name || 'Cobra Kai Dojo',
         martialArt: 'Taekwondo (WT)',
-        ownerName: clubInfo.owner_name || 'Owner',
+        ownerName: clubInfo.owner_name || 'Sensei',
         email: '',
+        branches: 1,
+        branchNames: ['Main Location'],
         students: allStudentsResult.rows.map((s: any) => ({
           id: s.id,
           name: s.name,
@@ -5390,22 +5425,27 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
           globalXp: s.global_xp || 0,
           premiumStatus: s.premium_status || 'none',
           isDemo: s.is_demo || false,
+          totalPoints: randomInt(50, 500),
+          attendanceCount: randomInt(8, 25),
         })),
-        coaches: coachesResult.rows.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          email: c.email,
-          phone: c.phone || '',
-          isActive: c.is_active,
-        })),
-        belts: [],
-        schedule: [],
-        events: [],
+        coaches: DEMO_COACHES,
+        belts: DEMO_BELTS,
+        skills: DEMO_SKILLS,
+        schedule: DEMO_SCHEDULE,
+        events: [
+          { id: 'e1', title: 'Belt Test', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), type: 'promotion' },
+          { id: 'e2', title: 'Tournament', date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), type: 'competition' },
+        ],
         curriculum: [],
-        classes: [],
-        skills: [],
+        classes: CLASS_NAMES,
         customChallenges: [],
         privateSlots: [],
+        pointsPerStripe: 100,
+        stripesPerBelt: 4,
+        homeworkBonus: true,
+        coachBonus: true,
+        worldRankingsEnabled: true,
+        isDemo: true,
       };
       
       return res.json({ success: true, message: 'Demo data already exists', studentCount: allStudentsResult.rows.length, wizardData });
@@ -5462,10 +5502,12 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
     
     const clubInfo = clubInfoResult.rows[0] || {};
     const wizardData = {
-      clubName: clubInfo.name || 'My Dojo',
+      clubName: clubInfo.name || 'Cobra Kai Dojo',
       martialArt: 'Taekwondo (WT)',
-      ownerName: clubInfo.owner_name || 'Owner',
+      ownerName: clubInfo.owner_name || 'Sensei',
       email: '',
+      branches: 1,
+      branchNames: ['Main Location'],
       students: allStudentsResult.rows.map((s: any) => ({
         id: s.id,
         name: s.name,
@@ -5476,22 +5518,27 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
         globalXp: s.global_xp || 0,
         premiumStatus: s.premium_status || 'none',
         isDemo: s.is_demo || false,
+        totalPoints: randomInt(50, 500),
+        attendanceCount: randomInt(8, 25),
       })),
-      coaches: coachesResult.rows.map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        email: c.email,
-        phone: c.phone || '',
-        isActive: c.is_active,
-      })),
-      belts: [],
-      schedule: [],
-      events: [],
+      coaches: DEMO_COACHES,
+      belts: DEMO_BELTS,
+      skills: DEMO_SKILLS,
+      schedule: DEMO_SCHEDULE,
+      events: [
+        { id: 'e1', title: 'Belt Test', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), type: 'promotion' },
+        { id: 'e2', title: 'Tournament', date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), type: 'competition' },
+      ],
       curriculum: [],
-      classes: [],
-      skills: [],
+      classes: CLASS_NAMES,
       customChallenges: [],
       privateSlots: [],
+      pointsPerStripe: 100,
+      stripesPerBelt: 4,
+      homeworkBonus: true,
+      coachBonus: true,
+      worldRankingsEnabled: true,
+      isDemo: true,
     };
 
     console.log('[Demo Load] Success:', studentIds.length, 'demo students, total students:', allStudentsResult.rows.length);
