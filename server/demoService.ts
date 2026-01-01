@@ -168,6 +168,7 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
       belts: DEMO_BELTS,
       skills: DEMO_SKILLS,
       schedule: DEMO_SCHEDULE,
+      worldRankings: DEMO_WORLD_RANKINGS,
       events: [
         { id: 'e1', title: 'Belt Test', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), type: 'promotion' },
         { id: 'e2', title: 'Tournament', date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), type: 'competition' },

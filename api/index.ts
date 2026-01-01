@@ -5356,6 +5356,19 @@ const DEMO_SCHEDULE = [
   { id: 's6', day: 'Saturday', time: '10:00', duration: 120, className: 'Tournament Prep', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'blue' },
 ];
 
+const DEMO_WORLD_RANKINGS = [
+  { rank: 1, name: 'Johnny Lawrence', belt: 'Black', globalXp: 4850, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 2, name: 'Miguel Diaz', belt: 'Red', globalXp: 4320, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 3, name: 'Robby Keene', belt: 'Brown', globalXp: 3980, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 4, name: 'Samantha LaRusso', belt: 'Blue', globalXp: 3650, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 5, name: 'Hawk Moskowitz', belt: 'Red', globalXp: 3420, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 6, name: 'Tory Nichols', belt: 'Blue', globalXp: 3180, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 7, name: 'Daniel LaRusso', belt: 'Green', globalXp: 2890, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 8, name: 'Demetri Alexopoulos', belt: 'Green', globalXp: 2540, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 9, name: 'Kenny Payne', belt: 'White', globalXp: 2210, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 10, name: 'Devon Lee', belt: 'Yellow', globalXp: 1980, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+];
+
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -5432,6 +5445,7 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
         belts: DEMO_BELTS,
         skills: DEMO_SKILLS,
         schedule: DEMO_SCHEDULE,
+        worldRankings: DEMO_WORLD_RANKINGS,
         events: [
           { id: 'e1', title: 'Belt Test', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), type: 'promotion' },
           { id: 'e2', title: 'Tournament', date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), type: 'competition' },
@@ -5525,6 +5539,7 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       belts: DEMO_BELTS,
       skills: DEMO_SKILLS,
       schedule: DEMO_SCHEDULE,
+      worldRankings: DEMO_WORLD_RANKINGS,
       events: [
         { id: 'e1', title: 'Belt Test', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), type: 'promotion' },
         { id: 'e2', title: 'Tournament', date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), type: 'competition' },
