@@ -1008,7 +1008,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         f2Stats: { head: 0, body: 0, takedowns: 0, punches: 0 }
     });
 
-    const activeSkills = useMemo(() => data.skills.filter(s => s.isActive), [data.skills]);
+    const activeSkills = useMemo(() => (data.skills || []).filter(s => s.isActive), [data.skills]);
     
     // Use custom branch names if available, otherwise generate generic ones
     const locations = useMemo(() => 

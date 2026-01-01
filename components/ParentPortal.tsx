@@ -1741,7 +1741,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // 3. Velocity Calculation (Points per Class)
         const calculatePointsPerClass = () => {
             // Base points from active skills (e.g. 4 skills * 2 pts = 8 max)
-            const activeSkillCount = Math.max(1, data.skills.filter(s => s.isActive).length);
+            const activeSkillCount = Math.max(1, (data.skills || []).filter(s => s.isActive).length);
             const maxSkillPoints = activeSkillCount * 2;
             
             // Average realistic performance (assuming mostly Greens/Yellows) - 85% efficiency
@@ -2789,7 +2789,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // DYNAMICALLY CALCULATE STATS BASED ON CLUB'S SKILLS
         const history = student.performanceHistory || [];
         const recentHistory = history.slice(-10); // Last 10 classes
-        const activeSkills = data.skills.filter(s => s.isActive);
+        const activeSkills = (data.skills || []).filter(s => s.isActive);
 
         const calcAvg = (skillId: string) => {
             if (recentHistory.length === 0) return 75; // Default start
