@@ -142,6 +142,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Fetch World Rankings data - use dedicated endpoint for accurate rank
     useEffect(() => {
         const fetchWorldRankings = async () => {
+            // Demo mode - return demo data instead of fetching
+            if (data.isDemo) {
+                setWorldRankData({
+                    myRank: 7,
+                    totalStudents: 105,
+                    myGlobalXP: (student as any).globalXp || 2890,
+                    topPlayers: [
+                        { id: 'd1', name: 'Johnny Lawrence', global_xp: 4850, club_name: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA' },
+                        { id: 'd2', name: 'Miguel Diaz', global_xp: 4320, club_name: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA' },
+                        { id: 'd3', name: 'Robby Keene', global_xp: 3980, club_name: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA' },
+                        { id: 'd4', name: 'Samantha LaRusso', global_xp: 3650, club_name: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA' },
+                        { id: 'd5', name: 'Hawk Moskowitz', global_xp: 3420, club_name: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA' },
+                    ],
+                    message: undefined
+                });
+                setWorldRankLoading(false);
+                return;
+            }
+            
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             if (!student.id || !uuidRegex.test(student.id)) return;
             
@@ -188,7 +207,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         fetchWorldRankings();
         const interval = setInterval(fetchWorldRankings, 60000); // Refresh every minute
         return () => clearInterval(interval);
-    }, [student.id, isPremium]);
+    }, [student.id, isPremium, data.isDemo]);
     
     // Fetch Student Stats for Insights tab
     useEffect(() => {

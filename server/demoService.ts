@@ -25,6 +25,52 @@ const DEMO_STUDENTS = [
 
 const CLASS_NAMES = ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'];
 
+const DEMO_SKILLS = [
+  { id: 'discipline', name: 'Discipline', isActive: true },
+  { id: 'technique', name: 'Technique', isActive: true },
+  { id: 'focus', name: 'Focus', isActive: true },
+  { id: 'power', name: 'Power', isActive: true },
+  { id: 'respect', name: 'Respect', isActive: true },
+];
+
+const DEMO_COACHES = [
+  { id: 'coach-1', name: 'Sensei John Kreese', email: 'kreese@demo.taekup.com', location: 'Main Location', assignedClasses: ['Sparring Team', 'Adult Class'] },
+  { id: 'coach-2', name: 'Master Daniel LaRusso', email: 'daniel@demo.taekup.com', location: 'Main Location', assignedClasses: ['Kids Class', 'General Class'] },
+];
+
+const DEMO_BELTS = [
+  { id: 'white', name: 'White', color: '#FFFFFF' },
+  { id: 'yellow', name: 'Yellow', color: '#FFD700' },
+  { id: 'orange', name: 'Orange', color: '#FF8C00' },
+  { id: 'green', name: 'Green', color: '#228B22' },
+  { id: 'blue', name: 'Blue', color: '#0066CC' },
+  { id: 'red', name: 'Red', color: '#CC0000' },
+  { id: 'brown', name: 'Brown', color: '#8B4513' },
+  { id: 'black', name: 'Black', color: '#000000' },
+];
+
+const DEMO_SCHEDULE = [
+  { id: 's1', day: 'Monday', time: '16:00', duration: 60, className: 'Kids Class', location: 'Main Location' },
+  { id: 's2', day: 'Monday', time: '18:00', duration: 90, className: 'Adult Class', location: 'Main Location' },
+  { id: 's3', day: 'Wednesday', time: '16:00', duration: 60, className: 'Kids Class', location: 'Main Location' },
+  { id: 's4', day: 'Wednesday', time: '18:00', duration: 90, className: 'Sparring Team', location: 'Main Location' },
+  { id: 's5', day: 'Friday', time: '16:00', duration: 60, className: 'General Class', location: 'Main Location' },
+  { id: 's6', day: 'Saturday', time: '10:00', duration: 120, className: 'Tournament Prep', location: 'Main Location' },
+];
+
+export const DEMO_WORLD_RANKINGS = [
+  { rank: 1, name: 'Johnny Lawrence', belt: 'Black', globalXp: 4850, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 2, name: 'Miguel Diaz', belt: 'Red', globalXp: 4320, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 3, name: 'Robby Keene', belt: 'Brown', globalXp: 3980, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 4, name: 'Samantha LaRusso', belt: 'Blue', globalXp: 3650, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 5, name: 'Hawk Moskowitz', belt: 'Red', globalXp: 3420, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 6, name: 'Tory Nichols', belt: 'Blue', globalXp: 3180, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 7, name: 'Daniel LaRusso', belt: 'Green', globalXp: 2890, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 8, name: 'Demetri Alexopoulos', belt: 'Green', globalXp: 2540, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 9, name: 'Kenny Payne', belt: 'White', globalXp: 2210, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  { rank: 10, name: 'Devon Lee', belt: 'Yellow', globalXp: 1980, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+];
+
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -96,13 +142,15 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
     // Fetch ALL students for this club (including any existing real ones + new demo ones)
     const allStudents = await db.select().from(students).where(eq(students.clubId, clubId));
     
-    // Build wizard data with fresh student list
+    // Build wizard data with fresh student list and complete demo data
     const club = existingClub[0];
     const wizardData = {
-      clubName: club.name || 'My Dojo',
-      martialArt: club.martialArt || 'Taekwondo (WT)',
-      ownerName: club.ownerName || 'Owner',
-      email: club.email || '',
+      clubName: club.name || 'Cobra Kai Dojo',
+      martialArt: club.artType || 'Taekwondo (WT)',
+      ownerName: club.ownerName || 'Sensei',
+      email: club.ownerEmail || '',
+      branches: 1,
+      branchNames: ['Main Location'],
       students: allStudents.map(s => ({
         id: s.id,
         name: s.name,
@@ -113,13 +161,27 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
         globalXp: s.globalXp || 0,
         premiumStatus: s.premiumStatus || 'none',
         isDemo: s.isDemo || false,
+        totalPoints: randomInt(50, 500),
+        attendanceCount: randomInt(8, 25),
       })),
-      coaches: [],
-      belts: [],
-      schedule: [],
-      events: [],
+      coaches: DEMO_COACHES,
+      belts: DEMO_BELTS,
+      skills: DEMO_SKILLS,
+      schedule: DEMO_SCHEDULE,
+      events: [
+        { id: 'e1', title: 'Belt Test', date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), type: 'promotion' },
+        { id: 'e2', title: 'Tournament', date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), type: 'competition' },
+      ],
       curriculum: [],
-      classes: [],
+      classes: CLASS_NAMES,
+      customChallenges: [],
+      privateSlots: [],
+      pointsPerStripe: 100,
+      stripesPerBelt: 4,
+      homeworkBonus: true,
+      coachBonus: true,
+      worldRankingsEnabled: true,
+      isDemo: true,
     };
 
     console.log('[DemoService] Demo data loaded successfully:', insertedStudents.length, 'students, returning wizardData with', allStudents.length, 'total students');

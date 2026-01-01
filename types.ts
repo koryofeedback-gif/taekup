@@ -346,4 +346,6 @@ export interface WizardData {
   worldRankingsEnabled?: boolean;
   // Selected subscription plan index for Profit Engine Simulator
   selectedPlanIndex?: number;
+  // Demo mode flag
+  isDemo?: boolean;
 }

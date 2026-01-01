@@ -2809,7 +2809,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                     {/* WORLD RANKINGS VIEW */}
                     {activeView === 'world-rankings' && (
-                        <WorldRankings clubId={clubId} />
+                        <WorldRankings clubId={clubId} isDemo={data.isDemo} />
                     )}
 
                     {/* Footer Actions (Only for Grading View) */}

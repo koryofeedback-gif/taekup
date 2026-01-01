@@ -38,7 +38,34 @@ interface RankingsStats {
 interface WorldRankingsProps {
   clubId?: string;
   isAdmin?: boolean;
+  isDemo?: boolean;
 }
+
+const DEMO_WORLD_RANKINGS: StudentRanking[] = [
+  { rank: 1, id: 'd1', name: 'Johnny Lawrence', belt: 'Black', globalXp: 4850, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 2, rankChange: 1 },
+  { rank: 2, id: 'd2', name: 'Miguel Diaz', belt: 'Red', globalXp: 4320, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 1, rankChange: -1 },
+  { rank: 3, id: 'd3', name: 'Robby Keene', belt: 'Brown', globalXp: 3980, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 3, rankChange: 0 },
+  { rank: 4, id: 'd4', name: 'Samantha LaRusso', belt: 'Blue', globalXp: 3650, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 5, rankChange: 1 },
+  { rank: 5, id: 'd5', name: 'Hawk Moskowitz', belt: 'Red', globalXp: 3420, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 4, rankChange: -1 },
+  { rank: 6, id: 'd6', name: 'Tory Nichols', belt: 'Blue', globalXp: 3180, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 7, rankChange: 1 },
+  { rank: 7, id: 'd7', name: 'Daniel LaRusso', belt: 'Green', globalXp: 2890, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 6, rankChange: -1 },
+  { rank: 8, id: 'd8', name: 'Demetri Alexopoulos', belt: 'Green', globalXp: 2540, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 9, rankChange: 1 },
+  { rank: 9, id: 'd9', name: 'Kenny Payne', belt: 'White', globalXp: 2210, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 10, rankChange: 1 },
+  { rank: 10, id: 'd10', name: 'Devon Lee', belt: 'Yellow', globalXp: 1980, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 8, rankChange: -2 },
+];
+
+const DEMO_CLUB_RANKINGS: ClubRanking[] = [
+  { rank: 1, id: 'c1', name: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', studentCount: 45, totalGlobalXp: 18980, avgGlobalXp: 421, globalScore: 9540 },
+  { rank: 2, id: 'c2', name: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', studentCount: 32, totalGlobalXp: 10520, avgGlobalXp: 328, globalScore: 7280 },
+  { rank: 3, id: 'c3', name: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', studentCount: 28, totalGlobalXp: 8520, avgGlobalXp: 304, globalScore: 5890 },
+];
+
+const DEMO_STATS: RankingsStats = {
+  participatingClubs: 3,
+  totalStudents: 105,
+  sportsRepresented: 1,
+  countriesRepresented: 1,
+};
 
 const BELT_COLORS: Record<string, { bg: string; text: string; border?: string }> = {
   'white': { bg: 'bg-white', text: 'text-gray-800', border: 'border border-gray-300' },
@@ -172,7 +199,7 @@ const getAvatarColor = (name: string): string => {
   return colors[index];
 };
 
-export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = false }) => {
+export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = false, isDemo = false }) => {
   const [category, setCategory] = useState<'students' | 'clubs'>('students');
   const [sport, setSport] = useState<string>('all');
   const [country, setCountry] = useState<string>('all');
@@ -185,6 +212,16 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isDemo) {
+      setSports(['Taekwondo']);
+      setCountries(['USA']);
+      setStats(DEMO_STATS);
+      setStudentRankings(DEMO_WORLD_RANKINGS);
+      setClubRankings(DEMO_CLUB_RANKINGS);
+      setIsLoading(false);
+      return;
+    }
+    
     const fetchFilters = async () => {
       try {
         const [sportsRes, countriesRes, statsRes] = await Promise.all([
@@ -210,9 +247,19 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
       }
     };
     fetchFilters();
-  }, []);
+  }, [isDemo]);
 
   useEffect(() => {
+    if (isDemo) {
+      if (category === 'students') {
+        setStudentRankings(DEMO_WORLD_RANKINGS);
+      } else {
+        setClubRankings(DEMO_CLUB_RANKINGS);
+      }
+      setIsLoading(false);
+      return;
+    }
+    
     const fetchRankings = async () => {
       setIsLoading(true);
       setError(null);
@@ -244,7 +291,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
     };
     
     fetchRankings();
-  }, [category, sport, country]);
+  }, [category, sport, country, isDemo]);
 
   const RankChangeIndicator = ({ change }: { change: number | null }) => {
     if (change === null || change === undefined || Number.isNaN(change)) {
