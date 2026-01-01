@@ -357,23 +357,35 @@ export function registerRoutes(app: Express) {
         return matchedBelt?.id || savedBelts[0]?.id || 'white';
       };
       
-      const students = (studentsResult as any[]).map(s => ({
-        id: s.id,
-        name: s.name,
-        parentEmail: s.parent_email,
-        parentName: s.parent_name,
-        parentPhone: s.parent_phone,
-        beltId: getBeltIdFromName(s.belt),
-        birthday: s.birthdate,
-        joinDate: s.join_date || s.created_at || new Date().toISOString(),
-        totalXP: s.total_xp || 0,
-        totalPoints: s.total_points || 0,
-        lifetimeXp: s.total_xp || 0,
-        currentStreak: 0,
-        stripeCount: s.stripes || 0,
-        performanceHistory: [],
-        homeDojo: { character: [], chores: [], school: [], health: [] }
-      }));
+      // Preserve extra fields from saved wizard_data (performanceHistory, isDemo, etc.)
+      const savedStudents = savedWizardData.students || [];
+      const students = (studentsResult as any[]).map(s => {
+        // Find matching saved student to preserve extra fields
+        const saved = savedStudents.find((ws: any) => 
+          ws.id === s.id || ws.name === s.name
+        ) || {};
+        return {
+          id: s.id,
+          name: s.name,
+          parentEmail: s.parent_email,
+          parentName: s.parent_name,
+          parentPhone: s.parent_phone,
+          beltId: getBeltIdFromName(s.belt),
+          birthday: s.birthdate?.toISOString?.()?.split('T')[0] || saved.birthday || null,
+          joinDate: s.join_date || s.created_at || saved.joinDate || new Date().toISOString(),
+          totalXP: s.total_xp || 0,
+          totalPoints: s.total_points || saved.totalPoints || 0,
+          lifetimeXp: s.total_xp || saved.lifetimeXp || 0,
+          globalXp: saved.globalXp || 0,
+          currentStreak: saved.currentStreak || 0,
+          stripeCount: s.stripes || 0,
+          performanceHistory: saved.performanceHistory || [],
+          attendanceCount: saved.attendanceCount || 0,
+          premiumStatus: saved.premiumStatus || 'none',
+          isDemo: saved.isDemo || false,
+          homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] }
+        };
+      });
 
       const coaches = (coachesResult as any[]).map(c => ({
         id: c.id,
@@ -553,23 +565,36 @@ export function registerRoutes(app: Express) {
           };
           
           // Replace students with database records (with proper UUIDs)
-          wizardData.students = (studentsResult as any[]).map(s => ({
-            id: s.id,
-            name: s.name,
-            clubId: user.club_id,
-            parentEmail: s.parent_email,
-            parentName: s.parent_name,
-            parentPhone: s.parent_phone,
-            beltId: getBeltIdFromName(s.belt),
-            birthday: s.birthdate,
-            totalXP: s.total_xp || 0,
-            totalPoints: s.total_points || 0,
-            lifetimeXp: s.total_xp || 0,
-            currentStreak: 0,
-            stripeCount: s.stripes || 0,
-            performanceHistory: [],
-            homeDojo: { character: [], chores: [], school: [], health: [] }
-          }));
+          // Preserve extra fields from saved wizard_data (performanceHistory, isDemo, etc.)
+          const savedStudents = wizardData.students || [];
+          wizardData.students = (studentsResult as any[]).map(s => {
+            // Find matching saved student to preserve extra fields
+            const saved = savedStudents.find((ws: any) => 
+              ws.id === s.id || ws.name === s.name
+            ) || {};
+            return {
+              id: s.id,
+              name: s.name,
+              clubId: user.club_id,
+              parentEmail: s.parent_email,
+              parentName: s.parent_name,
+              parentPhone: s.parent_phone,
+              beltId: getBeltIdFromName(s.belt),
+              birthday: s.birthdate?.toISOString?.()?.split('T')[0] || saved.birthday || null,
+              totalXP: s.total_xp || 0,
+              totalPoints: s.total_points || saved.totalPoints || 0,
+              lifetimeXp: s.total_xp || saved.lifetimeXp || 0,
+              globalXp: saved.globalXp || 0,
+              currentStreak: saved.currentStreak || 0,
+              stripeCount: s.stripes || 0,
+              performanceHistory: saved.performanceHistory || [],
+              attendanceCount: saved.attendanceCount || 0,
+              joinDate: saved.joinDate || new Date().toISOString(),
+              premiumStatus: saved.premiumStatus || 'none',
+              isDemo: saved.isDemo || false,
+              homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] }
+            };
+          });
           
           // Also fetch coaches with proper UUIDs
           const coachesResult = await db.execute(sql`
