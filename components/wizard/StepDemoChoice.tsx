@@ -25,11 +25,14 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
       const result = await response.json();
       
       if (result.success) {
-        // Save fresh wizard data to localStorage so dashboard sees demo students
+        // Clear old data first, then save fresh wizard data
         if (result.wizardData) {
-          localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
-          // Also clear any draft data
+          localStorage.removeItem('taekup_wizard_data');
           localStorage.removeItem('taekup_wizard_draft');
+          localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
+          // Force full page reload to ensure App state re-initializes with fresh data
+          window.location.href = '/app/admin';
+          return;
         }
         onChooseDemo();
       } else {
