@@ -154,6 +154,8 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
     await db.update(clubs)
       .set({ hasDemoData: true })
       .where(eq(clubs.id, clubId));
+    
+    console.log('[DemoService] Fetching all students for wizard data...');
 
     // Fetch ALL students for this club (including any existing real ones + new demo ones)
     const allStudents = await db.select().from(students).where(eq(students.clubId, clubId));
@@ -213,7 +215,12 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
       isDemo: true,
     };
 
-    console.log('[DemoService] Demo data loaded successfully:', insertedStudents.length, 'students, returning wizardData with', allStudents.length, 'total students');
+    // Save wizardData to database so it persists after logout/cache clear
+    await db.update(clubs)
+      .set({ wizardData: wizardData as any })
+      .where(eq(clubs.id, clubId));
+    
+    console.log('[DemoService] Demo data loaded and saved to database:', insertedStudents.length, 'students, returning wizardData with', allStudents.length, 'total students');
     return { 
       success: true, 
       message: 'Demo data loaded successfully', 
