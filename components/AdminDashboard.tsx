@@ -427,6 +427,10 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
 
 const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void }> = ({ data, onUpdateData, onOpenModal }) => {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // DEBUG: Log schedule data when tab renders
+    console.log('[ScheduleTab] Rendering with schedule:', data.schedule?.length, 'items');
+    console.log('[ScheduleTab] First 3 items:', data.schedule?.slice(0, 3));
 
     const handleRemoveClass = (id: string) => {
         if(confirm('Remove this class from the schedule?')) {
