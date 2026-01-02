@@ -9,28 +9,36 @@ function getUpcomingBirthday(daysFromNow: number): string {
   return date.toISOString().split('T')[0];
 }
 
+const DEMO_BRANCHES = ['Main Location', 'Downtown Studio', 'West Side Dojo'];
+
+const DEMO_LOCATION_CLASSES: Record<string, string[]> = {
+  'Main Location': ['Beginner Class', 'General Class', 'Adult Class', 'Sparring Team'],
+  'Downtown Studio': ['Kids Class', 'General Class'],
+  'West Side Dojo': ['Teen Class', 'General Class'],
+};
+
 const DEMO_STUDENTS = [
-  { name: 'Daniel LaRusso', belt: 'Green', parentName: 'Lucille LaRusso', premiumStatus: 'parent_paid' as const, birthday: getUpcomingBirthday(3), isAtRisk: false },
-  { name: 'Johnny Lawrence', belt: 'Black', parentName: 'Laura Lawrence', premiumStatus: 'parent_paid' as const, birthday: getUpcomingBirthday(14), isAtRisk: false },
-  { name: 'Robby Keene', belt: 'Brown', parentName: 'Shannon Keene', premiumStatus: 'none' as const, birthday: null, isAtRisk: true },
-  { name: 'Miguel Diaz', belt: 'Red', parentName: 'Carmen Diaz', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
-  { name: 'Samantha LaRusso', belt: 'Blue', parentName: 'Amanda LaRusso', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
-  { name: 'Hawk Moskowitz', belt: 'Red', parentName: 'Paula Moskowitz', premiumStatus: 'none' as const, birthday: null, isAtRisk: true },
-  { name: 'Demetri Alexopoulos', belt: 'Green', parentName: 'Maria Alexopoulos', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
-  { name: 'Tory Nichols', belt: 'Blue', parentName: 'Karen Nichols', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
-  { name: 'Chris Evans', belt: 'Yellow', parentName: 'Sarah Evans', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
-  { name: 'Aisha Robinson', belt: 'Orange', parentName: 'Diane Robinson', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
-  { name: 'Kenny Payne', belt: 'White', parentName: 'Shawn Payne', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
-  { name: 'Devon Lee', belt: 'Yellow', parentName: 'Grace Lee', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
-  { name: 'Moon Park', belt: 'Orange', parentName: 'Jin Park', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
-  { name: 'Kyler Stevens', belt: 'White', parentName: 'Brad Stevens', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
-  { name: 'Bert Miller', belt: 'Yellow', parentName: 'Tom Miller', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
-  { name: 'Nate Johnson', belt: 'Green', parentName: 'Rick Johnson', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
-  { name: 'Yasmine Chen', belt: 'Blue', parentName: 'Lin Chen', premiumStatus: 'none' as const, birthday: null, isAtRisk: false },
-  { name: 'Louie Kim', belt: 'Orange', parentName: 'David Kim', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false },
+  { name: 'Daniel LaRusso', belt: 'Green', parentName: 'Lucille LaRusso', premiumStatus: 'parent_paid' as const, birthday: getUpcomingBirthday(3), isAtRisk: false, location: 'Main Location', assignedClass: 'Adult Class' },
+  { name: 'Johnny Lawrence', belt: 'Black', parentName: 'Laura Lawrence', premiumStatus: 'parent_paid' as const, birthday: getUpcomingBirthday(14), isAtRisk: false, location: 'Main Location', assignedClass: 'Sparring Team' },
+  { name: 'Robby Keene', belt: 'Brown', parentName: 'Shannon Keene', premiumStatus: 'none' as const, birthday: null, isAtRisk: true, location: 'Main Location', assignedClass: 'Adult Class' },
+  { name: 'Miguel Diaz', belt: 'Red', parentName: 'Carmen Diaz', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false, location: 'Main Location', assignedClass: 'Sparring Team' },
+  { name: 'Samantha LaRusso', belt: 'Blue', parentName: 'Amanda LaRusso', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false, location: 'Main Location', assignedClass: 'Adult Class' },
+  { name: 'Hawk Moskowitz', belt: 'Red', parentName: 'Paula Moskowitz', premiumStatus: 'none' as const, birthday: null, isAtRisk: true, location: 'Main Location', assignedClass: 'Sparring Team' },
+  { name: 'Demetri Alexopoulos', belt: 'Green', parentName: 'Maria Alexopoulos', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'General Class' },
+  { name: 'Tory Nichols', belt: 'Blue', parentName: 'Karen Nichols', premiumStatus: 'none' as const, birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'General Class' },
+  { name: 'Chris Evans', belt: 'Yellow', parentName: 'Sarah Evans', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'Kids Class' },
+  { name: 'Aisha Robinson', belt: 'Orange', parentName: 'Diane Robinson', premiumStatus: 'none' as const, birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'Kids Class' },
+  { name: 'Kenny Payne', belt: 'White', parentName: 'Shawn Payne', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'Teen Class' },
+  { name: 'Devon Lee', belt: 'Yellow', parentName: 'Grace Lee', premiumStatus: 'none' as const, birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'Teen Class' },
+  { name: 'Moon Park', belt: 'Orange', parentName: 'Jin Park', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'General Class' },
+  { name: 'Kyler Stevens', belt: 'White', parentName: 'Brad Stevens', premiumStatus: 'none' as const, birthday: null, isAtRisk: false, location: 'Main Location', assignedClass: 'Beginner Class' },
+  { name: 'Bert Miller', belt: 'Yellow', parentName: 'Tom Miller', premiumStatus: 'none' as const, birthday: null, isAtRisk: false, location: 'Main Location', assignedClass: 'Beginner Class' },
+  { name: 'Nate Johnson', belt: 'Green', parentName: 'Rick Johnson', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'General Class' },
+  { name: 'Yasmine Chen', belt: 'Blue', parentName: 'Lin Chen', premiumStatus: 'none' as const, birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'Teen Class' },
+  { name: 'Louie Kim', belt: 'Orange', parentName: 'David Kim', premiumStatus: 'parent_paid' as const, birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'General Class' },
 ];
 
-const CLASS_NAMES = ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'];
+const CLASS_NAMES = ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team', 'Teen Class', 'Beginner Class'];
 
 const DEMO_SKILLS = [
   { id: 'discipline', name: 'Discipline', isActive: true },
@@ -56,13 +64,55 @@ const DEMO_BELTS = [
 ];
 
 const DEMO_SCHEDULE = [
-  { id: 's1', day: 'Monday', time: '16:00', duration: 60, className: 'Kids Class', location: 'Main Location' },
-  { id: 's2', day: 'Monday', time: '18:00', duration: 90, className: 'Adult Class', location: 'Main Location' },
-  { id: 's3', day: 'Wednesday', time: '16:00', duration: 60, className: 'Kids Class', location: 'Main Location' },
-  { id: 's4', day: 'Wednesday', time: '18:00', duration: 90, className: 'Sparring Team', location: 'Main Location' },
-  { id: 's5', day: 'Friday', time: '16:00', duration: 60, className: 'General Class', location: 'Main Location' },
-  { id: 's6', day: 'Saturday', time: '10:00', duration: 120, className: 'Tournament Prep', location: 'Main Location' },
+  // Main Location
+  { id: 's1', day: 'Monday', time: '17:00', duration: 60, className: 'Beginner Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's2', day: 'Monday', time: '18:30', duration: 90, className: 'Adult Class', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's3', day: 'Wednesday', time: '17:00', duration: 60, className: 'Beginner Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's4', day: 'Wednesday', time: '18:30', duration: 90, className: 'Sparring Team', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'green' },
+  { id: 's5', day: 'Friday', time: '18:00', duration: 90, className: 'Adult Class', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's6', day: 'Saturday', time: '09:00', duration: 120, className: 'Sparring Team', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'blue' },
+  // Downtown Studio
+  { id: 's7', day: 'Monday', time: '15:30', duration: 45, className: 'Kids Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's8', day: 'Tuesday', time: '16:00', duration: 60, className: 'General Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's9', day: 'Wednesday', time: '15:30', duration: 45, className: 'Kids Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's10', day: 'Thursday', time: '16:00', duration: 60, className: 'General Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's11', day: 'Saturday', time: '10:00', duration: 60, className: 'Kids Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  // West Side Dojo
+  { id: 's12', day: 'Tuesday', time: '17:00', duration: 60, className: 'Teen Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's13', day: 'Tuesday', time: '18:30', duration: 60, className: 'General Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's14', day: 'Thursday', time: '17:00', duration: 60, className: 'Teen Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's15', day: 'Thursday', time: '18:30', duration: 60, className: 'General Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's16', day: 'Saturday', time: '11:00', duration: 90, className: 'Teen Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'yellow' },
 ];
+
+function getDemoPrivateSlots() {
+  const slots = [];
+  const coaches = ['Master Daniel LaRusso', 'Sensei John Kreese'];
+  const locations = ['Main Location', 'Downtown Studio', 'West Side Dojo'];
+  const times = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
+  const prices = [40, 50, 60];
+  
+  for (let i = 0; i < 8; i++) {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + i + 1);
+    const isBooked = i < 3;
+    const bookedStudent = isBooked ? DEMO_STUDENTS[i % DEMO_STUDENTS.length] : null;
+    
+    slots.push({
+      id: `ps${i + 1}`,
+      date: futureDate.toISOString().split('T')[0],
+      time: times[i % times.length],
+      duration: 60,
+      coachName: coaches[i % coaches.length],
+      location: locations[i % locations.length],
+      price: prices[i % prices.length],
+      isBooked,
+      bookedBy: bookedStudent?.name || null,
+      bookedByParent: bookedStudent?.parentName || null,
+    });
+  }
+  return slots;
+}
 
 export const DEMO_WORLD_RANKINGS = [
   { rank: 1, name: 'Kenji Tanaka', belt: 'Black', globalXp: 5200, clubName: 'Tokyo Martial Arts Academy', sport: 'Karate', country: 'Japan', city: 'Tokyo' },
@@ -167,8 +217,9 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
       martialArt: club.artType || 'Taekwondo (WT)',
       ownerName: club.ownerName || 'Sensei',
       email: club.ownerEmail || '',
-      branches: 1,
-      branchNames: ['Main Location'],
+      branches: 3,
+      branchNames: DEMO_BRANCHES,
+      locationClasses: DEMO_LOCATION_CLASSES,
       students: allStudents.map(s => {
         const demoInfo = DEMO_STUDENTS.find(d => d.name === s.name);
         const isAtRisk = demoInfo?.isAtRisk || false;
@@ -192,6 +243,8 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
           attendanceCount: performanceHistory.length,
           joinDate: s.joinDate?.toISOString?.() || s.joinDate || new Date().toISOString(),
           performanceHistory,
+          location: demoInfo?.location || 'Main Location',
+          assignedClass: demoInfo?.assignedClass || 'General Class',
         };
       }),
       coaches: DEMO_COACHES,
@@ -206,7 +259,7 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
       curriculum: [],
       classes: CLASS_NAMES,
       customChallenges: [],
-      privateSlots: [],
+      privateSlots: getDemoPrivateSlots(),
       pointsPerStripe: 100,
       stripesPerBelt: 4,
       homeworkBonus: true,
