@@ -146,8 +146,8 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                 <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-2xl">
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h3 className="text-xl font-bold text-white flex items-center"><span className="mr-2">💸</span> Profit Engine Simulator</h3>
-                            <p className="text-gray-400 text-sm">See how Premium Subscriptions offset your software costs.</p>
+                            <h3 className="text-xl font-bold text-white flex items-center"><span className="mr-2">🏦</span> SenseiVault™ Estimator</h3>
+                            <p className="text-gray-400 text-sm">See how DojoMint™ protocol turns student engagement into net profit.</p>
                         </div>
                         <div className="bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
                             <span className="text-xs text-gray-500 uppercase block">Your Plan</span>
@@ -168,7 +168,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                     <div className="grid md:grid-cols-2 gap-10">
                         <div>
                             <label className="block text-sm text-gray-300 mb-4">
-                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> students subscribe to Premium on <span className="text-cyan-400 font-semibold">{selectedTier.name}</span>...
+                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> Active Warriors upgrade via the app...
                             </label>
                             <input 
                                 type="range" 
@@ -189,17 +189,38 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
 
                         <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700 text-center relative overflow-hidden">
                             {revenue.profit > 0 && (
-                                <div className="absolute top-0 right-0 bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-bl-lg shadow-lg">
-                                    SOFTWARE IS FREE
+                                <div className="absolute top-0 right-0 bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-bl-lg shadow-lg animate-pulse">
+                                    🎉 100% COVERED
                                 </div>
                             )}
-                            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Your Net Monthly Profit</p>
-                            <p className={`text-4xl font-extrabold ${revenue.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-2">
-                                After revenue share & {selectedTier.name} cost
-                            </p>
+                            <div className="mb-4 space-y-1">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-400">Your Platform Cost:</span>
+                                    <span>
+                                        {revenue.profit > 0 ? (
+                                            <>
+                                                <span className="line-through text-gray-500">${selectedTier.price.toFixed(2)}</span>
+                                                <span className="ml-2 text-green-400 font-bold">(FREE) ✅</span>
+                                            </>
+                                        ) : (
+                                            <span className="text-white font-semibold">${selectedTier.price.toFixed(2)}</span>
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-400">Your DojoMint™ Income:</span>
+                                    <span className="text-green-400 font-semibold">+${revenue.clubRevenue.toFixed(2)}</span>
+                                </div>
+                            </div>
+                            <div className="border-t border-gray-700 pt-4">
+                                <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Net Monthly Profit</p>
+                                <p className={`text-4xl font-extrabold ${revenue.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)} {revenue.profit > 0 && '🚀'}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    (Paid via Performance Royalty)
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -427,10 +448,6 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
 
 const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void }> = ({ data, onUpdateData, onOpenModal }) => {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    
-    // DEBUG: Log schedule data when tab renders
-    console.log('[ScheduleTab] Rendering with schedule:', data.schedule?.length, 'items');
-    console.log('[ScheduleTab] First 3 items:', data.schedule?.slice(0, 3));
 
     const handleRemoveClass = (id: string) => {
         if(confirm('Remove this class from the schedule?')) {

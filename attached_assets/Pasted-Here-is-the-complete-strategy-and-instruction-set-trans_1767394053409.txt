@@ -1,0 +1,98 @@
+Here is the complete strategy and instruction set translated into English, ready for you to use with your developer or Replit agent.
+
+---
+
+### **Strategic Update: SenseiVault™ Estimator**
+
+Here is the refined, strategic version for the Demo environment:
+
+#### **1. Rebranding (Prestige & Protection)**
+
+The name "Profit Engine Simulator" is too dry and technical. We need to make it sound proprietary and valuable.
+
+* ❌ **Old:** Profit Engine Simulator
+* ✅ **Strategic Proposal:** **SenseiVault™ Estimator**
+* *Why?* The word "Vault" implies security and stored wealth.
+
+
+
+#### **2. Description Text (The Hook)**
+
+**Current Text:** "See how Premium Subscriptions offset your software costs."
+*Critique:* This explicitly mentions "Subscriptions," which we want to obscure to prevent Kicksite from copying the model.
+
+* ✅ **Strategic Proposal:**
+> **"See how DojoMint™ protocol turns student engagement into net profit."**
+
+
+
+#### **3. Visual Logic (The Visual Magic)**
+
+**Current Logic:** "If 40% of your 25 students subscribe..."
+**New Logic:** We need to make the result more dramatic.
+In the Demo, when the slider moves and hits the Break-even Point, a **compelling animation** must trigger:
+
+1. The software cost ($24.99) should be **crossed out** (Strikethrough).
+2. A bright green badge should appear: **🎉 100% COVERED** (or "SOFTWARE IS FREE").
+3. The profit number (+$9.91) must become **Large and Green**.
+
+#### **4. Final Copy for UI (Copy-Paste this)**
+
+Give this exact text block to Replit/Developer to implement in the UI:
+
+```text
+HEADER: SenseiVault™ Estimator
+SUB-HEADER: Activate DojoMint™ to cover your platform costs automatically.
+
+[ SLIDER INTERFACE ]
+Label: "If 40% of your Active Warriors upgrade via the app..."
+
+[ RESULT BOX ]
+--------------------------------------------------
+Your Platform Cost:      $̶2̶4̶.̶9̶9̶   (FREE) ✅
+Your DojoMint™ Income:   +$34.90
+--------------------------------------------------
+NET MONTHLY PROFIT:      +$9.91 🚀
+--------------------------------------------------
+(Paid via Performance Royalty)
+
+```
+
+#### **5. Default State (Psychological Trigger)**
+
+**Crucial Psychological Note:**
+When the "Load Sample Dojo" (Demo) loads, **DO NOT set the slider to 0%.**
+Set the slider default to **40% or 50%**.
+
+* *Why?* The very first thing the instructor sees should be the color **Green** and the word **PROFIT**.
+* They should have to "break" it (slide it left to lose money), rather than "fix" it. This triggers **Loss Aversion**.
+
+---
+
+### **Prompt for Replit (To implement this immediately)**
+
+You can copy and paste the block below directly into Replit:
+
+```text
+I need to update the "Profit Calculator" component in the Dashboard (specifically for the Demo Mode). Please apply these changes to the UI text and logic:
+
+1. REBRANDING:
+   - Change the Title from "Profit Engine Simulator" to "SenseiVault™ Estimator".
+   - Change the Subtitle to: "See how DojoMint™ protocol turns student engagement into net profit."
+
+2. UI TEXT UPDATES:
+   - Change the slider label to: "If [X]% of your Active Warriors upgrade via the app..."
+   - Change the footer note to: "(Paid via Performance Royalty)"
+
+3. VISUAL LOGIC (Crucial):
+   - When the calculated income exceeds the software cost ($24.99):
+     a. Apply a strikethrough effect to the "$24.99" cost (e.g., $̶2̶4̶.̶9̶9̶).
+     b. Display a green badge next to it that says "FREE" or "100% COVERED".
+     c. Highlight the "Net Monthly Profit" in bold Green text.
+
+4. DEFAULT STATE:
+   - When the component loads, set the default slider percentage to 40% (so the user immediately sees a profit state).
+
+Please implement this using the new brand terms (DojoMint™, SenseiVault™, Active Warriors).
+
+```

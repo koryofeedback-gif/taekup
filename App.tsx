@@ -1033,11 +1033,6 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
     
     console.log('[AdminRouteGuard] Render:', { effectiveUserType, hasData: !!dataToUse, isLoadingData });
     
-    // DEBUG: Log schedule and privateSlots count on render
-    if (dataToUse) {
-        console.log('[AdminRouteGuard] Data loaded - schedule:', dataToUse.schedule?.length, 'privateSlots:', dataToUse.privateSlots?.length, 'branches:', dataToUse.branches);
-    }
-    
     // Show loading only when explicitly loading from API
     if (isLoadingData) {
         return (
