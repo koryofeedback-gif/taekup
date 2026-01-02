@@ -2201,7 +2201,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                             </div>
                             {data.clubSponsoredPremium && (
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-indigo-300">Club-Sponsored Premium</span>
+                                    <span className="text-indigo-300">DojoMint™ Reseller</span>
                                     <span className="text-indigo-300 font-bold">+${bulkCost.toFixed(2)}</span>
                                 </div>
                             )}
@@ -2215,68 +2215,58 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Manage Payment Method</button>
                 </div>
 
-                {/* Sponsored Premium Toggle */}
+                {/* DojoMint Digital Reseller */}
                 <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 p-6 rounded-lg border border-indigo-500/30">
                     <div className="flex items-start space-x-4">
                         <div className="bg-indigo-600 p-3 rounded-lg text-2xl">💎</div>
                         <div className="flex-1">
-                            <h3 className="text-xl font-bold text-white mb-1">Club-Sponsored Premium</h3>
-                            <p className="text-sm text-gray-300 mb-2">
-                                Unlock Premium for ALL parents and turn it into a <span className="text-green-400 font-bold">new revenue stream</span>.
-                            </p>
-                            <p className="text-xs text-indigo-300 mb-4">
-                                Parents see: "💎 Premium Included by {data.clubName} - FREE"
+                            <h3 className="text-xl font-bold text-white mb-1">DojoMint™ Digital Reseller</h3>
+                            <p className="text-sm text-gray-300 mb-4">
+                                Unlock a new revenue stream. Set a "Digital Tech Fee" for your students. We cover the platform costs, and you keep the majority margin.
                             </p>
                             
                             <div className="bg-indigo-950/50 p-4 rounded border border-indigo-500/30 mb-4">
-                                <p className="font-bold text-green-400 mb-2 text-sm">💡 THE PROFIT PLAY:</p>
-                                <div className="text-sm text-indigo-100 space-y-1 mb-3">
-                                    <p>1. You pay us <span className="text-white font-bold">$1.99/student</span></p>
-                                    <p>2. Add a <span className="text-white font-bold">$5-10 "Tech Fee"</span> to your registration</p>
-                                    <p>3. <span className="text-green-400 font-bold">Keep the difference as profit!</span></p>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-xs text-gray-400 uppercase font-bold">Set Student Tech Fee</label>
+                                        <div className="flex items-center mt-1">
+                                            <span className="text-white text-xl font-bold mr-2">$</span>
+                                            <input 
+                                                type="number" 
+                                                defaultValue="7.00" 
+                                                step="0.50"
+                                                min="3"
+                                                max="15"
+                                                className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white font-bold text-lg w-24 focus:outline-none focus:border-indigo-500"
+                                            />
+                                            <span className="text-gray-400 ml-2">/student/mo</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="text-xs text-gray-400 uppercase font-bold">TaekUp Wholesale Rate</label>
+                                        <div className="flex items-center mt-1">
+                                            <span className="text-gray-500 font-medium blur-sm select-none">$X.XX</span>
+                                            <span className="ml-2 text-xs text-indigo-400 bg-indigo-900/50 px-2 py-1 rounded">Base Platform Fee</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {totalStudents > 0 && (
+                                        <div className="bg-green-900/30 p-4 rounded border border-green-500/30">
+                                            <label className="text-xs text-green-300 uppercase font-bold">Your Monthly Profit ({totalStudents} students)</label>
+                                            <p className="text-3xl font-extrabold text-green-400 mt-1">${(totalStudents * 5.01).toFixed(2)}</p>
+                                            <p className="text-xs text-green-300/70 mt-1">Net margin after platform fees</p>
+                                        </div>
+                                    )}
+                                    
+                                    {totalStudents === 0 && (
+                                        <div className="bg-green-900/30 p-4 rounded border border-green-500/30">
+                                            <label className="text-xs text-green-300 uppercase font-bold">Your Monthly Profit (50 students example)</label>
+                                            <p className="text-3xl font-extrabold text-green-400 mt-1">$250.50</p>
+                                            <p className="text-xs text-green-300/70 mt-1">Net margin after platform fees</p>
+                                        </div>
+                                    )}
                                 </div>
-                                
-                                {totalStudents > 0 && (
-                                    <div className="bg-green-900/30 p-3 rounded border border-green-500/30 mt-3">
-                                        <p className="text-xs text-green-300 uppercase font-bold mb-2">Your Potential (with {totalStudents} students):</p>
-                                        <div className="grid grid-cols-2 gap-2 text-sm">
-                                            <div>
-                                                <p className="text-gray-400">You Pay TaekUp</p>
-                                                <p className="text-white font-bold">${(totalStudents * 1.99).toFixed(2)}/mo</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-400">You Charge Parents ($7 fee)</p>
-                                                <p className="text-white font-bold">${(totalStudents * 7).toFixed(2)}/mo</p>
-                                            </div>
-                                        </div>
-                                        <div className="mt-2 pt-2 border-t border-green-500/30">
-                                            <div className="flex justify-between">
-                                                <span className="text-green-300 font-bold">Your Monthly Profit</span>
-                                                <span className="text-green-400 font-extrabold text-lg">${(totalStudents * 5.01).toFixed(2)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {totalStudents === 0 && (
-                                    <div className="bg-gray-800/50 p-3 rounded border border-gray-600 mt-3">
-                                        <p className="text-xs text-gray-400 uppercase font-bold mb-2">Example with 50 students:</p>
-                                        <div className="grid grid-cols-3 gap-2 text-sm text-center">
-                                            <div>
-                                                <p className="text-gray-500 text-xs">Your Cost</p>
-                                                <p className="text-white font-bold">$99.50</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-500 text-xs">You Charge</p>
-                                                <p className="text-white font-bold">$350</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-500 text-xs">Your Profit</p>
-                                                <p className="text-green-400 font-bold">$250.50</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             <div className="flex items-center justify-between">
@@ -2292,7 +2282,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                     </span>
                                 </div>
                                 {data.clubSponsoredPremium && (
-                                    <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">Profit Mode Active</span>
+                                    <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">Reseller Mode Active</span>
                                 )}
                             </div>
                         </div>
@@ -2307,7 +2297,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <span className="text-3xl mr-2">💰</span>
                         <div>
                             <h3 className="font-bold text-white text-lg">Club Wallet</h3>
-                            <p className="text-sm text-gray-400">Your earnings from Premium parent subscriptions</p>
+                            <p className="text-sm text-gray-400">Your DojoMint™ earnings</p>
                         </div>
                     </div>
                     
@@ -2320,12 +2310,12 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
                             <div className="text-sm text-gray-300 space-y-2">
                                 <div className="flex justify-between">
-                                    <span>Active Subscribers</span>
+                                    <span>Legacy Activations</span>
                                     <span className="font-bold text-white">0</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Your Commission</span>
-                                    <span className="font-bold text-green-400">70%</span>
+                                    <span>Your Net Margin</span>
+                                    <span className="font-bold text-green-400">~72%</span>
                                 </div>
                             </div>
                         </div>
