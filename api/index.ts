@@ -5388,13 +5388,55 @@ const DEMO_BELTS = [
 ];
 
 const DEMO_SCHEDULE = [
-  { id: 's1', day: 'Monday', time: '16:00', duration: 60, className: 'Kids Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
-  { id: 's2', day: 'Monday', time: '18:00', duration: 90, className: 'Adult Class', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
-  { id: 's3', day: 'Wednesday', time: '16:00', duration: 60, className: 'Kids Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
-  { id: 's4', day: 'Wednesday', time: '18:00', duration: 90, className: 'Sparring Team', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'green' },
-  { id: 's5', day: 'Friday', time: '16:00', duration: 60, className: 'General Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
-  { id: 's6', day: 'Saturday', time: '10:00', duration: 120, className: 'Tournament Prep', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'blue' },
+  // Main Location
+  { id: 's1', day: 'Monday', time: '17:00', duration: 60, className: 'Beginner Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's2', day: 'Monday', time: '18:30', duration: 90, className: 'Adult Class', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's3', day: 'Wednesday', time: '17:00', duration: 60, className: 'Beginner Class', location: 'Main Location', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's4', day: 'Wednesday', time: '18:30', duration: 90, className: 'Sparring Team', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'green' },
+  { id: 's5', day: 'Friday', time: '18:00', duration: 90, className: 'Adult Class', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's6', day: 'Saturday', time: '09:00', duration: 120, className: 'Sparring Team', location: 'Main Location', instructor: 'Sensei John Kreese', beltRequirement: 'blue' },
+  // Downtown Studio
+  { id: 's7', day: 'Monday', time: '15:30', duration: 45, className: 'Kids Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's8', day: 'Tuesday', time: '16:00', duration: 60, className: 'General Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's9', day: 'Wednesday', time: '15:30', duration: 45, className: 'Kids Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's10', day: 'Thursday', time: '16:00', duration: 60, className: 'General Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  { id: 's11', day: 'Saturday', time: '10:00', duration: 60, className: 'Kids Class', location: 'Downtown Studio', instructor: 'Master Daniel LaRusso', beltRequirement: 'All' },
+  // West Side Dojo
+  { id: 's12', day: 'Tuesday', time: '17:00', duration: 60, className: 'Teen Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's13', day: 'Tuesday', time: '18:30', duration: 60, className: 'General Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's14', day: 'Thursday', time: '17:00', duration: 60, className: 'Teen Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's15', day: 'Thursday', time: '18:30', duration: 60, className: 'General Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'All' },
+  { id: 's16', day: 'Saturday', time: '11:00', duration: 90, className: 'Teen Class', location: 'West Side Dojo', instructor: 'Sensei John Kreese', beltRequirement: 'yellow' },
 ];
+
+function getDemoPrivateSlots() {
+  const slots = [];
+  const coaches = ['Master Daniel LaRusso', 'Sensei John Kreese'];
+  const locations = ['Main Location', 'Downtown Studio', 'West Side Dojo'];
+  const times = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
+  const prices = [40, 50, 60];
+  
+  for (let i = 0; i < 8; i++) {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + i + 1);
+    const isBooked = i < 3;
+    const bookedStudent = isBooked ? DEMO_STUDENTS[i % DEMO_STUDENTS.length] : null;
+    
+    slots.push({
+      id: `ps${i + 1}`,
+      date: futureDate.toISOString().split('T')[0],
+      time: times[i % times.length],
+      duration: 60,
+      coach: coaches[i % coaches.length],
+      location: locations[i % locations.length],
+      price: prices[i % prices.length],
+      isBooked,
+      bookedBy: bookedStudent?.name || null,
+      bookedByParent: bookedStudent?.parentName || null,
+    });
+  }
+  return slots;
+}
 
 const DEMO_WORLD_RANKINGS = [
   // Top performers from diverse countries and martial arts
@@ -5524,7 +5566,7 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
         curriculum: [],
         classes: CLASS_NAMES,
         customChallenges: [],
-        privateSlots: [],
+        privateSlots: getDemoPrivateSlots(),
         pointsPerStripe: 100,
         stripesPerBelt: 4,
         homeworkBonus: true,
@@ -5654,7 +5696,7 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       curriculum: [],
       classes: CLASS_NAMES,
       customChallenges: [],
-      privateSlots: [],
+      privateSlots: getDemoPrivateSlots(),
       pointsPerStripe: 100,
       stripesPerBelt: 4,
       homeworkBonus: true,
