@@ -5427,7 +5427,7 @@ function getDemoPrivateSlots() {
       date: futureDate.toISOString().split('T')[0],
       time: times[i % times.length],
       duration: 60,
-      coach: coaches[i % coaches.length],
+      coachName: coaches[i % coaches.length],
       location: locations[i % locations.length],
       price: prices[i % prices.length],
       isBooked,
