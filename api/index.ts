@@ -5668,7 +5668,9 @@ async function handleDemoClear(req: VercelRequest, res: VercelResponse) {
 
     await client.query('DELETE FROM attendance_events WHERE club_id = $1::uuid AND is_demo = true', [clubId]);
     const deleteResult = await client.query('DELETE FROM students WHERE club_id = $1::uuid AND is_demo = true', [clubId]);
-    await client.query('UPDATE clubs SET has_demo_data = false WHERE id = $1::uuid', [clubId]);
+    
+    // CRITICAL: Also clear wizard_data so fresh demo data can be loaded
+    await client.query('UPDATE clubs SET has_demo_data = false, wizard_data = NULL WHERE id = $1::uuid', [clubId]);
 
     return res.json({ success: true, message: 'Demo data cleared successfully', deletedCount: deleteResult.rowCount });
   } catch (error: any) {

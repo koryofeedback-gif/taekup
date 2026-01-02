@@ -256,9 +256,12 @@ export async function clearDemoData(clubId: string): Promise<{ success: boolean;
       .where(and(eq(students.clubId, clubId), eq(students.isDemo, true)))
       .returning();
 
-    await db.update(clubs)
-      .set({ hasDemoData: false })
-      .where(eq(clubs.id, clubId));
+    // CRITICAL: Also clear wizard_data so fresh demo data can be loaded
+    await db.execute(sql`
+      UPDATE clubs 
+      SET has_demo_data = false, wizard_data = NULL
+      WHERE id = ${clubId}::uuid
+    `);
 
     return { 
       success: true, 
