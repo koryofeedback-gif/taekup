@@ -629,6 +629,11 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       country: savedWizardData.country || club.country || 'US',
     };
 
+    // Check if demo data exists (students with demo names or wizard_data with demo flag)
+    const hasDemoData = students.length > 0 && students.some((s: any) => 
+      ['Daniel LaRusso', 'Johnny Lawrence', 'Miguel Diaz', 'Robby Keene', 'Sam LaRusso', 'Hawk Moskowitz'].includes(s.name)
+    );
+
     return res.json({
       success: true,
       club: {
@@ -640,7 +645,8 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
         trialEnd: club.trial_end,
         trialStatus: club.trial_status,
         status: club.status,
-        worldRankingsEnabled: club.world_rankings_enabled || false
+        worldRankingsEnabled: club.world_rankings_enabled || false,
+        hasDemoData: hasDemoData
       },
       wizardData
     });

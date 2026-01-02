@@ -675,13 +675,9 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
     };
     
     const handleReloadDemo = async () => {
-        if (!clubId) {
-            alert('No clubId found!');
-            return;
-        }
+        if (!clubId) return;
         setLoading(true);
         setMessage('Clearing old data...');
-        alert('Reload started for club: ' + clubId);
         
         try {
             const clearRes = await fetch('/api/demo/clear', {
