@@ -4756,23 +4756,24 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         );
       }
 
-      // If very few real rankings, append demo world rankings for showcase
-      if (rankings.length < 15 && !sport && !country) {
-        const existingNames = new Set(rankings.map(r => r.name));
+      // ALWAYS include diverse demo world rankings for showcase (global platform demo)
+      // Only add if not filtering by specific sport/country
+      if (!sport && !country && offset === 0) {
+        const existingNames = new Set(rankings.map(r => r.name.toLowerCase()));
         const demoRankings = DEMO_WORLD_RANKINGS
-          .filter(d => !existingNames.has(d.name))
+          .filter(d => !existingNames.has(d.name.toLowerCase()))
           .map((d, i) => ({
             ...d,
-            rank: rankings.length + i + 1,
             id: `demo-${i}`,
             rankChange: null,
             isDemo: true
           }));
-        const combinedRankings = [...rankings, ...demoRankings].slice(0, limit);
+        const combinedRankings = [...rankings, ...demoRankings];
         // Re-rank by globalXp
         combinedRankings.sort((a, b) => b.globalXp - a.globalXp);
-        combinedRankings.forEach((r, i) => r.rank = offset + i + 1);
-        return res.json({ category: 'students', rankings: combinedRankings, total: combinedRankings.length });
+        combinedRankings.forEach((r, i) => r.rank = i + 1);
+        const finalRankings = combinedRankings.slice(0, limit);
+        return res.json({ category: 'students', rankings: finalRankings, total: finalRankings.length });
       }
 
       return res.json({ category: 'students', rankings, total: rankings.length });
