@@ -5341,7 +5341,6 @@ const DEMO_SKILLS = [
   { id: 'technique', name: 'Technique', isActive: true },
   { id: 'focus', name: 'Focus', isActive: true },
   { id: 'power', name: 'Power', isActive: true },
-  { id: 'respect', name: 'Respect', isActive: true },
 ];
 
 const DEMO_COACHES = [
@@ -5370,16 +5369,22 @@ const DEMO_SCHEDULE = [
 ];
 
 const DEMO_WORLD_RANKINGS = [
-  { rank: 1, name: 'Johnny Lawrence', belt: 'Black', globalXp: 4850, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 2, name: 'Miguel Diaz', belt: 'Red', globalXp: 4320, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 3, name: 'Robby Keene', belt: 'Brown', globalXp: 3980, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 4, name: 'Samantha LaRusso', belt: 'Blue', globalXp: 3650, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 5, name: 'Hawk Moskowitz', belt: 'Red', globalXp: 3420, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 6, name: 'Tory Nichols', belt: 'Blue', globalXp: 3180, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 7, name: 'Daniel LaRusso', belt: 'Green', globalXp: 2890, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 8, name: 'Demetri Alexopoulos', belt: 'Green', globalXp: 2540, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 9, name: 'Kenny Payne', belt: 'White', globalXp: 2210, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
-  { rank: 10, name: 'Devon Lee', belt: 'Yellow', globalXp: 1980, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles' },
+  // Top performers from diverse countries and martial arts
+  { rank: 1, name: 'Park Tae-joon', belt: 'Black', globalXp: 5200, clubName: 'Korea Tigers Academy', sport: 'Taekwondo WT', country: 'South Korea', city: 'Seoul' },
+  { rank: 2, name: 'Yuki Tanaka', belt: 'Black', globalXp: 4980, clubName: 'Tokyo Martial Arts', sport: 'Karate', country: 'Japan', city: 'Tokyo' },
+  { rank: 3, name: 'Lucas Silva', belt: 'Black', globalXp: 4850, clubName: 'Gracie Barra Rio', sport: 'BJJ', country: 'Brazil', city: 'Rio de Janeiro' },
+  { rank: 4, name: 'Ali Hosseini', belt: 'Black', globalXp: 4720, clubName: 'Tehran Champions', sport: 'Taekwondo WT', country: 'Iran', city: 'Tehran' },
+  { rank: 5, name: 'Johnny Lawrence', belt: 'Black', globalXp: 4650, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo ITF', country: 'USA', city: 'Los Angeles' },
+  { rank: 6, name: 'Maria Garcia', belt: 'Red', globalXp: 4420, clubName: 'Madrid Warriors', sport: 'Taekwondo WT', country: 'Spain', city: 'Madrid' },
+  { rank: 7, name: 'Chen Wei', belt: 'Black', globalXp: 4280, clubName: 'Beijing Kung Fu', sport: 'Kung Fu', country: 'China', city: 'Beijing' },
+  { rank: 8, name: 'Miguel Diaz', belt: 'Red', globalXp: 4150, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo ITF', country: 'USA', city: 'Los Angeles' },
+  { rank: 9, name: 'Ahmed Hassan', belt: 'Brown', globalXp: 3980, clubName: 'Cairo Fighters', sport: 'Judo', country: 'Egypt', city: 'Cairo' },
+  { rank: 10, name: 'Sophie Martin', belt: 'Brown', globalXp: 3850, clubName: 'Paris Dojo', sport: 'Karate', country: 'France', city: 'Paris' },
+  { rank: 11, name: 'Robby Keene', belt: 'Brown', globalXp: 3720, clubName: 'Miyagi-Do Karate', sport: 'Karate', country: 'USA', city: 'Los Angeles' },
+  { rank: 12, name: 'Kim Min-su', belt: 'Blue', globalXp: 3580, clubName: 'Busan Elite', sport: 'Hapkido', country: 'South Korea', city: 'Busan' },
+  { rank: 13, name: 'Fatima Al-Rashid', belt: 'Blue', globalXp: 3450, clubName: 'Dubai Martial Arts', sport: 'Taekwondo WT', country: 'UAE', city: 'Dubai' },
+  { rank: 14, name: 'Samantha LaRusso', belt: 'Blue', globalXp: 3320, clubName: 'Miyagi-Do Karate', sport: 'Karate', country: 'USA', city: 'Los Angeles' },
+  { rank: 15, name: 'Dimitri Petrov', belt: 'Blue', globalXp: 3180, clubName: 'Moscow Academy', sport: 'Judo', country: 'Russia', city: 'Moscow' },
 ];
 
 function randomInt(min: number, max: number): number {
@@ -5423,16 +5428,7 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
         SELECT wizard_data FROM clubs WHERE id = $1::uuid
       `, [clubId]);
       
-      if (clubDataResult.rows[0]?.wizard_data) {
-        return res.json({ 
-          success: true, 
-          message: 'Demo data already exists', 
-          studentCount: clubDataResult.rows[0].wizard_data.students?.length || 0, 
-          wizardData: clubDataResult.rows[0].wizard_data 
-        });
-      }
-      
-      // Fallback if wizard_data not saved - fetch and build fresh
+      // ALWAYS regenerate wizard_data fresh to ensure new skills/rankings/at-risk logic is applied
       const allStudentsResult = await client.query(`
         SELECT id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, is_demo, birthdate, join_date
         FROM students WHERE club_id = $1::uuid
