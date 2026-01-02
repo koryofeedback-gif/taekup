@@ -183,7 +183,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                 <span>100%</span>
                             </div>
                             <p className="text-xs text-gray-500 mt-3">
-                                <span className="text-white font-semibold">{revenue.subscribers}</span> Premium subscriber{revenue.subscribers !== 1 ? 's' : ''}
+                                <span className="text-white font-semibold">{revenue.subscribers}</span> Legacy Activation{revenue.subscribers !== 1 ? 's' : ''}
                             </p>
                         </div>
 
