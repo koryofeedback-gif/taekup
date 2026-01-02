@@ -594,6 +594,7 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
     const [hasDemoData, setHasDemoData] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+    const [message, setMessage] = useState('');
     
     useEffect(() => {
         if (clubId) {
@@ -611,6 +612,7 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
     const handleClearDemo = async () => {
         if (!clubId) return;
         setLoading(true);
+        setMessage('');
         
         try {
             const response = await fetch('/api/demo/clear', {
@@ -624,51 +626,149 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
                 setHasDemoData(false);
                 setShowConfirm(false);
                 window.location.reload();
+            } else {
+                setMessage(result.message || 'Failed to clear');
             }
         } catch (err) {
             console.error('Failed to clear demo data:', err);
+            setMessage('Network error');
         } finally {
             setLoading(false);
         }
     };
     
-    if (!hasDemoData) return null;
+    const handleLoadDemo = async () => {
+        if (!clubId) return;
+        setLoading(true);
+        setMessage('');
+        
+        try {
+            const response = await fetch('/api/demo/load', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId }),
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                setHasDemoData(true);
+                setMessage('Demo loaded! Refreshing...');
+                setTimeout(() => window.location.reload(), 500);
+            } else {
+                setMessage(result.message || 'Failed to load');
+            }
+        } catch (err) {
+            console.error('Failed to load demo data:', err);
+            setMessage('Network error');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    const handleReloadDemo = async () => {
+        if (!clubId) return;
+        setLoading(true);
+        setMessage('Clearing old data...');
+        
+        try {
+            await fetch('/api/demo/clear', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId }),
+            });
+            
+            setMessage('Loading fresh demo data...');
+            
+            const response = await fetch('/api/demo/load', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId }),
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                setMessage('Demo reloaded! Refreshing...');
+                setTimeout(() => window.location.reload(), 500);
+            } else {
+                setMessage(result.message || 'Failed to reload');
+            }
+        } catch (err) {
+            console.error('Failed to reload demo data:', err);
+            setMessage('Network error');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    if (hasDemoData) {
+        return (
+            <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">⚠️</span>
+                        <div>
+                            <label className="block text-sm font-bold text-amber-300">Demo Mode Active</label>
+                            <p className="text-xs text-gray-400">Your dashboard is showing sample data. Clear it when ready to add real students.</p>
+                            {message && <p className="text-xs text-cyan-400 mt-1">{message}</p>}
+                        </div>
+                    </div>
+                    {showConfirm ? (
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400">Delete all demo data?</span>
+                            <button 
+                                onClick={handleClearDemo}
+                                disabled={loading}
+                                className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-sm font-bold disabled:opacity-50"
+                            >
+                                {loading ? 'Clearing...' : 'Yes, Clear'}
+                            </button>
+                            <button 
+                                onClick={() => setShowConfirm(false)}
+                                className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={handleReloadDemo}
+                                disabled={loading}
+                                className="bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 px-4 py-2 rounded text-sm font-bold border border-cyan-600/50 disabled:opacity-50"
+                            >
+                                {loading ? 'Loading...' : 'Reload Demo'}
+                            </button>
+                            <button 
+                                onClick={() => setShowConfirm(true)}
+                                className="bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 px-4 py-2 rounded text-sm font-bold border border-amber-600/50"
+                            >
+                                Clear Demo
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
     
     return (
-        <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-4">
+        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <span className="text-2xl">⚠️</span>
+                    <span className="text-2xl">🎭</span>
                     <div>
-                        <label className="block text-sm font-bold text-amber-300">Demo Mode Active</label>
-                        <p className="text-xs text-gray-400">Your dashboard is showing sample data. Clear it when ready to add real students.</p>
+                        <label className="block text-sm font-bold text-gray-300">Demo Mode</label>
+                        <p className="text-xs text-gray-400">Load sample data to explore all features with realistic examples.</p>
+                        {message && <p className="text-xs text-cyan-400 mt-1">{message}</p>}
                     </div>
                 </div>
-                {showConfirm ? (
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">Delete all demo data?</span>
-                        <button 
-                            onClick={handleClearDemo}
-                            disabled={loading}
-                            className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-sm font-bold disabled:opacity-50"
-                        >
-                            {loading ? 'Clearing...' : 'Yes, Clear'}
-                        </button>
-                        <button 
-                            onClick={() => setShowConfirm(false)}
-                            className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                ) : (
-                    <button 
-                        onClick={() => setShowConfirm(true)}
-                        className="bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 px-4 py-2 rounded text-sm font-bold border border-amber-600/50"
-                    >
-                        Clear Demo Data
-                    </button>
-                )}
+                <button 
+                    onClick={handleLoadDemo}
+                    disabled={loading}
+                    className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded text-sm font-bold disabled:opacity-50"
+                >
+                    {loading ? 'Loading...' : 'Load Demo Data'}
+                </button>
             </div>
         </div>
     );
