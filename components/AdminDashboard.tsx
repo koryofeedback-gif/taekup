@@ -675,7 +675,11 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
     };
     
     const handleReloadDemo = async () => {
-        if (!clubId) return;
+        if (!clubId) {
+            alert('DEBUG: No clubId available!');
+            return;
+        }
+        alert(`DEBUG: Reloading demo for clubId: ${clubId}`);
         setLoading(true);
         setMessage('Clearing old data...');
         
@@ -699,6 +703,8 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
             const result = await response.json();
             console.log('[DemoReload] Load result:', result);
             console.log('[DemoReload] wizardData received:', !!result.wizardData);
+            
+            alert(`DEBUG: API response - success: ${result.success}, schedule: ${result.wizardData?.schedule?.length || 0}, privateSlots: ${result.wizardData?.privateSlots?.length || 0}`);
             
             if (result.success) {
                 // CRITICAL: Update localStorage with fresh wizard_data so page reload uses it
