@@ -651,6 +651,15 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
             
             const result = await response.json();
             if (result.success) {
+                // CRITICAL: Update localStorage with fresh wizard_data so page reload uses it
+                if (result.wizardData) {
+                    const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+                    if (isImpersonating) {
+                        sessionStorage.setItem('impersonation_wizard_data', JSON.stringify(result.wizardData));
+                    } else {
+                        localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
+                    }
+                }
                 setHasDemoData(true);
                 setMessage('Demo loaded! Refreshing...');
                 setTimeout(() => window.location.reload(), 500);
@@ -687,6 +696,19 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
             
             const result = await response.json();
             if (result.success) {
+                // CRITICAL: Update localStorage with fresh wizard_data so page reload uses it
+                if (result.wizardData) {
+                    const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+                    if (isImpersonating) {
+                        sessionStorage.setItem('impersonation_wizard_data', JSON.stringify(result.wizardData));
+                    } else {
+                        localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
+                    }
+                    console.log('[DemoReload] Updated localStorage with fresh wizard_data:', 
+                        'students:', result.wizardData.students?.length,
+                        'skills:', result.wizardData.skills?.length,
+                        'worldRankings:', result.wizardData.worldRankings?.length);
+                }
                 setMessage('Demo reloaded! Refreshing...');
                 setTimeout(() => window.location.reload(), 500);
             } else {
