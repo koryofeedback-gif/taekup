@@ -259,9 +259,23 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
   useEffect(() => {
     if (isDemo) {
       if (category === 'students') {
-        setStudentRankings(DEMO_WORLD_RANKINGS);
+        let filtered = DEMO_WORLD_RANKINGS;
+        if (sport !== 'all') {
+          filtered = filtered.filter(r => r.sport === sport);
+        }
+        if (country !== 'all') {
+          filtered = filtered.filter(r => r.country === country);
+        }
+        setStudentRankings(filtered.map((r, i) => ({ ...r, rank: i + 1 })));
       } else {
-        setClubRankings(DEMO_CLUB_RANKINGS);
+        let filtered = DEMO_CLUB_RANKINGS;
+        if (sport !== 'all') {
+          filtered = filtered.filter(r => r.sport === sport);
+        }
+        if (country !== 'all') {
+          filtered = filtered.filter(r => r.country === country);
+        }
+        setClubRankings(filtered.map((r, i) => ({ ...r, rank: i + 1 })));
       }
       setIsLoading(false);
       return;
