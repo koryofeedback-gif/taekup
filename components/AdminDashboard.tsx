@@ -710,11 +710,15 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
                         localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
                     }
                     
-                    // Debug: Check birthday fields
+                    // Debug: Check all demo data fields
                     const studentsWithBirthday = result.wizardData.students?.filter((s: any) => s.birthday) || [];
                     console.log('[DemoReload] Students with birthday:', studentsWithBirthday.length, studentsWithBirthday.map((s: any) => ({ name: s.name, birthday: s.birthday })));
                     console.log('[DemoReload] Skills count:', result.wizardData.skills?.length);
                     console.log('[DemoReload] World Rankings count:', result.wizardData.worldRankings?.length);
+                    console.log('[DemoReload] Schedule count:', result.wizardData.schedule?.length);
+                    console.log('[DemoReload] Private Slots count:', result.wizardData.privateSlots?.length);
+                    console.log('[DemoReload] Branches:', result.wizardData.branches, result.wizardData.branchNames);
+                    console.log('[DemoReload] Location Classes:', result.wizardData.locationClasses);
                     
                     setMessage(`Demo loaded! ${studentsWithBirthday.length} birthdays found. Refreshing...`);
                 } else {
