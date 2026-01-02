@@ -5300,25 +5300,32 @@ async function handleStudentStats(req: VercelRequest, res: VercelResponse, stude
 // DEMO MODE - Sample Data Management
 // =====================================================
 
+function getUpcomingBirthday(daysFromNow: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  date.setFullYear(date.getFullYear() - 12);
+  return date.toISOString().split('T')[0];
+}
+
 const DEMO_STUDENTS = [
-  { name: 'Daniel LaRusso', belt: 'Green', parentName: 'Lucille LaRusso', premiumStatus: 'parent_paid' },
-  { name: 'Johnny Lawrence', belt: 'Black', parentName: 'Laura Lawrence', premiumStatus: 'parent_paid' },
-  { name: 'Robby Keene', belt: 'Brown', parentName: 'Shannon Keene', premiumStatus: 'none' },
-  { name: 'Miguel Diaz', belt: 'Red', parentName: 'Carmen Diaz', premiumStatus: 'parent_paid' },
-  { name: 'Samantha LaRusso', belt: 'Blue', parentName: 'Amanda LaRusso', premiumStatus: 'parent_paid' },
-  { name: 'Hawk Moskowitz', belt: 'Red', parentName: 'Paula Moskowitz', premiumStatus: 'none' },
-  { name: 'Demetri Alexopoulos', belt: 'Green', parentName: 'Maria Alexopoulos', premiumStatus: 'parent_paid' },
-  { name: 'Tory Nichols', belt: 'Blue', parentName: 'Karen Nichols', premiumStatus: 'none' },
-  { name: 'Chris Evans', belt: 'Yellow', parentName: 'Sarah Evans', premiumStatus: 'parent_paid' },
-  { name: 'Aisha Robinson', belt: 'Orange', parentName: 'Diane Robinson', premiumStatus: 'none' },
-  { name: 'Kenny Payne', belt: 'White', parentName: 'Shawn Payne', premiumStatus: 'parent_paid' },
-  { name: 'Devon Lee', belt: 'Yellow', parentName: 'Grace Lee', premiumStatus: 'none' },
-  { name: 'Moon Park', belt: 'Orange', parentName: 'Jin Park', premiumStatus: 'parent_paid' },
-  { name: 'Kyler Stevens', belt: 'White', parentName: 'Brad Stevens', premiumStatus: 'none' },
-  { name: 'Bert Miller', belt: 'Yellow', parentName: 'Tom Miller', premiumStatus: 'none' },
-  { name: 'Nate Johnson', belt: 'Green', parentName: 'Rick Johnson', premiumStatus: 'parent_paid' },
-  { name: 'Yasmine Chen', belt: 'Blue', parentName: 'Lin Chen', premiumStatus: 'none' },
-  { name: 'Louie Kim', belt: 'Orange', parentName: 'David Kim', premiumStatus: 'parent_paid' },
+  { name: 'Daniel LaRusso', belt: 'Green', parentName: 'Lucille LaRusso', premiumStatus: 'parent_paid', birthday: getUpcomingBirthday(3), isAtRisk: false },
+  { name: 'Johnny Lawrence', belt: 'Black', parentName: 'Laura Lawrence', premiumStatus: 'parent_paid', birthday: getUpcomingBirthday(14), isAtRisk: false },
+  { name: 'Robby Keene', belt: 'Brown', parentName: 'Shannon Keene', premiumStatus: 'none', birthday: null, isAtRisk: true },
+  { name: 'Miguel Diaz', belt: 'Red', parentName: 'Carmen Diaz', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
+  { name: 'Samantha LaRusso', belt: 'Blue', parentName: 'Amanda LaRusso', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
+  { name: 'Hawk Moskowitz', belt: 'Red', parentName: 'Paula Moskowitz', premiumStatus: 'none', birthday: null, isAtRisk: true },
+  { name: 'Demetri Alexopoulos', belt: 'Green', parentName: 'Maria Alexopoulos', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
+  { name: 'Tory Nichols', belt: 'Blue', parentName: 'Karen Nichols', premiumStatus: 'none', birthday: null, isAtRisk: false },
+  { name: 'Chris Evans', belt: 'Yellow', parentName: 'Sarah Evans', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
+  { name: 'Aisha Robinson', belt: 'Orange', parentName: 'Diane Robinson', premiumStatus: 'none', birthday: null, isAtRisk: false },
+  { name: 'Kenny Payne', belt: 'White', parentName: 'Shawn Payne', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
+  { name: 'Devon Lee', belt: 'Yellow', parentName: 'Grace Lee', premiumStatus: 'none', birthday: null, isAtRisk: false },
+  { name: 'Moon Park', belt: 'Orange', parentName: 'Jin Park', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
+  { name: 'Kyler Stevens', belt: 'White', parentName: 'Brad Stevens', premiumStatus: 'none', birthday: null, isAtRisk: false },
+  { name: 'Bert Miller', belt: 'Yellow', parentName: 'Tom Miller', premiumStatus: 'none', birthday: null, isAtRisk: false },
+  { name: 'Nate Johnson', belt: 'Green', parentName: 'Rick Johnson', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
+  { name: 'Yasmine Chen', belt: 'Blue', parentName: 'Lin Chen', premiumStatus: 'none', birthday: null, isAtRisk: false },
+  { name: 'Louie Kim', belt: 'Orange', parentName: 'David Kim', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
 ];
 
 const CLASS_NAMES = ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'];
@@ -5405,17 +5412,30 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
     }
     
     if (clubResult.rows[0].has_demo_data) {
-      // Demo already loaded - return existing wizard data so user can still access dashboard
+      // Demo already loaded - return existing wizard data from database
+      const clubDataResult = await client.query(`
+        SELECT wizard_data FROM clubs WHERE id = $1::uuid
+      `, [clubId]);
+      
+      if (clubDataResult.rows[0]?.wizard_data) {
+        return res.json({ 
+          success: true, 
+          message: 'Demo data already exists', 
+          studentCount: clubDataResult.rows[0].wizard_data.students?.length || 0, 
+          wizardData: clubDataResult.rows[0].wizard_data 
+        });
+      }
+      
+      // Fallback if wizard_data not saved - fetch and build fresh
       const allStudentsResult = await client.query(`
-        SELECT id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, is_demo
+        SELECT id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, is_demo, birthdate, join_date
         FROM students WHERE club_id = $1::uuid
       `, [clubId]);
       
       const clubInfoResult = await client.query(`
-        SELECT name, owner_name FROM clubs WHERE id = $1::uuid
+        SELECT name, owner_name, art_type FROM clubs WHERE id = $1::uuid
       `, [clubId]);
       
-      // Also fetch coaches
       const coachesResult = await client.query(`
         SELECT id, name, email, phone, is_active FROM coaches WHERE club_id = $1::uuid
       `, [clubId]);
@@ -5423,25 +5443,43 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       const clubInfo = clubInfoResult.rows[0] || {};
       const wizardData = {
         clubName: clubInfo.name || 'Cobra Kai Dojo',
-        martialArt: 'Taekwondo (WT)',
+        martialArt: clubInfo.art_type || 'Taekwondo (WT)',
         ownerName: clubInfo.owner_name || 'Sensei',
         email: '',
         branches: 1,
         branchNames: ['Main Location'],
-        students: allStudentsResult.rows.map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          belt: s.belt,
-          parentName: s.parent_name,
-          parentEmail: s.parent_email,
-          lifetimeXp: s.lifetime_xp || 0,
-          globalXp: s.global_xp || 0,
-          premiumStatus: s.premium_status || 'none',
-          isDemo: s.is_demo || false,
-          totalPoints: randomInt(50, 500),
-          attendanceCount: randomInt(8, 25),
-        })),
-        coaches: DEMO_COACHES,
+        students: allStudentsResult.rows.map((s: any) => {
+          const demoInfo = DEMO_STUDENTS.find(d => d.name === s.name);
+          const isAtRisk = demoInfo?.isAtRisk || false;
+          const historyLength = isAtRisk ? 0 : randomInt(8, 15);
+          const performanceHistory = isAtRisk ? [] : Array.from({ length: historyLength }, (_, i) => ({
+            date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
+            score: randomInt(70, 100),
+          }));
+          return {
+            id: s.id,
+            name: s.name,
+            belt: s.belt,
+            parentName: s.parent_name,
+            parentEmail: s.parent_email,
+            birthday: s.birthdate ? new Date(s.birthdate).toISOString().split('T')[0] : demoInfo?.birthday || null,
+            lifetimeXp: s.lifetime_xp || 0,
+            globalXp: s.global_xp || 0,
+            premiumStatus: s.premium_status || 'none',
+            isDemo: s.is_demo || false,
+            totalPoints: isAtRisk ? 0 : randomInt(50, 500),
+            attendanceCount: performanceHistory.length,
+            joinDate: s.join_date?.toISOString?.() || s.join_date || new Date().toISOString(),
+            performanceHistory,
+          };
+        }),
+        coaches: coachesResult.rows.length > 0 ? coachesResult.rows.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          isActive: c.is_active,
+        })) : DEMO_COACHES,
         belts: DEMO_BELTS,
         skills: DEMO_SKILLS,
         schedule: DEMO_SCHEDULE,
@@ -5462,30 +5500,45 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
         isDemo: true,
       };
       
+      // Save wizard_data to database for future
+      await client.query(`
+        UPDATE clubs 
+        SET wizard_data = $2::jsonb, updated_at = NOW()
+        WHERE id = $1::uuid
+      `, [clubId, JSON.stringify(wizardData)]);
+      
       return res.json({ success: true, message: 'Demo data already exists', studentCount: allStudentsResult.rows.length, wizardData });
     }
 
     const studentIds: string[] = [];
+    const atRiskNames: string[] = [];
     for (const demoStudent of DEMO_STUDENTS) {
+      if (demoStudent.isAtRisk) atRiskNames.push(demoStudent.name);
       const lifetimeXp = randomInt(200, 2500);
       const globalXp = randomInt(50, 500);
       const premiumStarted = demoStudent.premiumStatus === 'parent_paid' ? randomDate(randomInt(7, 60)).toISOString() : null;
-      const joinDate = randomDate(randomInt(30, 180)).toISOString();
+      const joinDate = demoStudent.isAtRisk ? randomDate(60).toISOString() : randomDate(randomInt(30, 180)).toISOString();
+      const birthdate = demoStudent.birthday ? new Date(demoStudent.birthday).toISOString() : null;
       
       const insertResult = await client.query(`
-        INSERT INTO students (club_id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, premium_started_at, join_date, is_demo, created_at)
-        VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10::timestamptz, true, NOW())
+        INSERT INTO students (club_id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, premium_started_at, join_date, birthdate, is_demo, created_at)
+        VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10::timestamptz, $11::date, true, NOW())
         RETURNING id
       `, [clubId, demoStudent.name, demoStudent.belt, demoStudent.parentName, 
           `${demoStudent.name.toLowerCase().replace(' ', '.')}@demo.taekup.com`,
-          lifetimeXp, globalXp, demoStudent.premiumStatus, premiumStarted, joinDate]);
+          lifetimeXp, globalXp, demoStudent.premiumStatus, premiumStarted, joinDate, birthdate]);
       
       studentIds.push(insertResult.rows[0].id);
     }
 
-    for (const studentId of studentIds) {
+    // Insert attendance only for non-at-risk students
+    for (let i = 0; i < studentIds.length; i++) {
+      const studentId = studentIds[i];
+      const studentName = DEMO_STUDENTS[i].name;
+      if (atRiskNames.includes(studentName)) continue;
+      
       const attendanceCount = randomInt(8, 15);
-      for (let i = 0; i < attendanceCount; i++) {
+      for (let j = 0; j < attendanceCount; j++) {
         const attendedAt = randomDate(randomInt(0, 30)).toISOString();
         const className = CLASS_NAMES[randomInt(0, CLASS_NAMES.length - 1)];
         
@@ -5500,13 +5553,13 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
 
     // Fetch all students (including newly added demo ones) for wizard data
     const allStudentsResult = await client.query(`
-      SELECT id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, is_demo
+      SELECT id, name, belt, parent_name, parent_email, lifetime_xp, global_xp, premium_status, is_demo, birthdate, join_date
       FROM students WHERE club_id = $1::uuid
     `, [clubId]);
     
     // Fetch club info for wizard data
     const clubInfoResult = await client.query(`
-      SELECT name, owner_name FROM clubs WHERE id = $1::uuid
+      SELECT name, owner_name, art_type FROM clubs WHERE id = $1::uuid
     `, [clubId]);
     
     // Fetch coaches
@@ -5517,25 +5570,43 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
     const clubInfo = clubInfoResult.rows[0] || {};
     const wizardData = {
       clubName: clubInfo.name || 'Cobra Kai Dojo',
-      martialArt: 'Taekwondo (WT)',
+      martialArt: clubInfo.art_type || 'Taekwondo (WT)',
       ownerName: clubInfo.owner_name || 'Sensei',
       email: '',
       branches: 1,
       branchNames: ['Main Location'],
-      students: allStudentsResult.rows.map((s: any) => ({
-        id: s.id,
-        name: s.name,
-        belt: s.belt,
-        parentName: s.parent_name,
-        parentEmail: s.parent_email,
-        lifetimeXp: s.lifetime_xp || 0,
-        globalXp: s.global_xp || 0,
-        premiumStatus: s.premium_status || 'none',
-        isDemo: s.is_demo || false,
-        totalPoints: randomInt(50, 500),
-        attendanceCount: randomInt(8, 25),
-      })),
-      coaches: DEMO_COACHES,
+      students: allStudentsResult.rows.map((s: any) => {
+        const demoInfo = DEMO_STUDENTS.find(d => d.name === s.name);
+        const isAtRisk = demoInfo?.isAtRisk || false;
+        const historyLength = isAtRisk ? 0 : randomInt(8, 15);
+        const performanceHistory = isAtRisk ? [] : Array.from({ length: historyLength }, (_, i) => ({
+          date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
+          score: randomInt(70, 100),
+        }));
+        return {
+          id: s.id,
+          name: s.name,
+          belt: s.belt,
+          parentName: s.parent_name,
+          parentEmail: s.parent_email,
+          birthday: s.birthdate ? new Date(s.birthdate).toISOString().split('T')[0] : demoInfo?.birthday || null,
+          lifetimeXp: s.lifetime_xp || 0,
+          globalXp: s.global_xp || 0,
+          premiumStatus: s.premium_status || 'none',
+          isDemo: s.is_demo || false,
+          totalPoints: isAtRisk ? 0 : randomInt(50, 500),
+          attendanceCount: performanceHistory.length,
+          joinDate: s.join_date?.toISOString?.() || s.join_date || new Date().toISOString(),
+          performanceHistory,
+        };
+      }),
+      coaches: coachesResult.rows.length > 0 ? coachesResult.rows.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        isActive: c.is_active,
+      })) : DEMO_COACHES,
       belts: DEMO_BELTS,
       skills: DEMO_SKILLS,
       schedule: DEMO_SCHEDULE,
@@ -5555,6 +5626,13 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       worldRankingsEnabled: true,
       isDemo: true,
     };
+
+    // CRITICAL: Save wizard_data to database so it persists after logout/login
+    await client.query(`
+      UPDATE clubs 
+      SET wizard_data = $2::jsonb, updated_at = NOW()
+      WHERE id = $1::uuid
+    `, [clubId, JSON.stringify(wizardData)]);
 
     console.log('[Demo Load] Success:', studentIds.length, 'demo students, total students:', allStudentsResult.rows.length);
     return res.json({ success: true, message: 'Demo data loaded successfully', studentCount: studentIds.length, wizardData });
