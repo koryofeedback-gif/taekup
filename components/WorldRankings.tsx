@@ -42,29 +42,36 @@ interface WorldRankingsProps {
 }
 
 const DEMO_WORLD_RANKINGS: StudentRanking[] = [
-  { rank: 1, id: 'd1', name: 'Johnny Lawrence', belt: 'Black', globalXp: 4850, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 2, rankChange: 1 },
-  { rank: 2, id: 'd2', name: 'Miguel Diaz', belt: 'Red', globalXp: 4320, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 1, rankChange: -1 },
-  { rank: 3, id: 'd3', name: 'Robby Keene', belt: 'Brown', globalXp: 3980, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 3, rankChange: 0 },
-  { rank: 4, id: 'd4', name: 'Samantha LaRusso', belt: 'Blue', globalXp: 3650, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 5, rankChange: 1 },
-  { rank: 5, id: 'd5', name: 'Hawk Moskowitz', belt: 'Red', globalXp: 3420, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 4, rankChange: -1 },
-  { rank: 6, id: 'd6', name: 'Tory Nichols', belt: 'Blue', globalXp: 3180, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 7, rankChange: 1 },
-  { rank: 7, id: 'd7', name: 'Daniel LaRusso', belt: 'Green', globalXp: 2890, clubName: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 6, rankChange: -1 },
-  { rank: 8, id: 'd8', name: 'Demetri Alexopoulos', belt: 'Green', globalXp: 2540, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 9, rankChange: 1 },
-  { rank: 9, id: 'd9', name: 'Kenny Payne', belt: 'White', globalXp: 2210, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 10, rankChange: 1 },
-  { rank: 10, id: 'd10', name: 'Devon Lee', belt: 'Yellow', globalXp: 1980, clubName: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', previousRank: 8, rankChange: -2 },
+  { rank: 1, id: 'd1', name: 'Park Tae-joon', belt: 'Black', globalXp: 5200, clubName: 'Korea Tigers Academy', sport: 'Taekwondo WT', country: 'South Korea', city: 'Seoul', previousRank: 1, rankChange: 0 },
+  { rank: 2, id: 'd2', name: 'Yuki Tanaka', belt: 'Black', globalXp: 4980, clubName: 'Tokyo Martial Arts', sport: 'Karate', country: 'Japan', city: 'Tokyo', previousRank: 3, rankChange: 1 },
+  { rank: 3, id: 'd3', name: 'Lucas Silva', belt: 'Black', globalXp: 4850, clubName: 'Gracie Barra Rio', sport: 'BJJ', country: 'Brazil', city: 'Rio de Janeiro', previousRank: 2, rankChange: -1 },
+  { rank: 4, id: 'd4', name: 'Ali Hosseini', belt: 'Black', globalXp: 4720, clubName: 'Tehran Champions', sport: 'Taekwondo WT', country: 'Iran', city: 'Tehran', previousRank: 5, rankChange: 1 },
+  { rank: 5, id: 'd5', name: 'Johnny Lawrence', belt: 'Black', globalXp: 4650, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo ITF', country: 'USA', city: 'Los Angeles', previousRank: 4, rankChange: -1 },
+  { rank: 6, id: 'd6', name: 'Maria Garcia', belt: 'Red', globalXp: 4420, clubName: 'Madrid Warriors', sport: 'Taekwondo WT', country: 'Spain', city: 'Madrid', previousRank: 7, rankChange: 1 },
+  { rank: 7, id: 'd7', name: 'Chen Wei', belt: 'Black', globalXp: 4280, clubName: 'Beijing Kung Fu', sport: 'Kung Fu', country: 'China', city: 'Beijing', previousRank: 6, rankChange: -1 },
+  { rank: 8, id: 'd8', name: 'Miguel Diaz', belt: 'Red', globalXp: 4150, clubName: 'Cobra Kai Dojo', sport: 'Taekwondo ITF', country: 'USA', city: 'Los Angeles', previousRank: 8, rankChange: 0 },
+  { rank: 9, id: 'd9', name: 'Ahmed Hassan', belt: 'Brown', globalXp: 3980, clubName: 'Cairo Fighters', sport: 'Judo', country: 'Egypt', city: 'Cairo', previousRank: 10, rankChange: 1 },
+  { rank: 10, id: 'd10', name: 'Sophie Martin', belt: 'Brown', globalXp: 3850, clubName: 'Paris Dojo', sport: 'Karate', country: 'France', city: 'Paris', previousRank: 9, rankChange: -1 },
+  { rank: 11, id: 'd11', name: 'Robby Keene', belt: 'Brown', globalXp: 3720, clubName: 'Miyagi-Do Karate', sport: 'Karate', country: 'USA', city: 'Los Angeles', previousRank: 11, rankChange: 0 },
+  { rank: 12, id: 'd12', name: 'Kim Min-su', belt: 'Blue', globalXp: 3580, clubName: 'Busan Elite', sport: 'Hapkido', country: 'South Korea', city: 'Busan', previousRank: 13, rankChange: 1 },
+  { rank: 13, id: 'd13', name: 'Fatima Al-Rashid', belt: 'Blue', globalXp: 3450, clubName: 'Dubai Martial Arts', sport: 'Taekwondo WT', country: 'UAE', city: 'Dubai', previousRank: 12, rankChange: -1 },
+  { rank: 14, id: 'd14', name: 'Samantha LaRusso', belt: 'Blue', globalXp: 3320, clubName: 'Miyagi-Do Karate', sport: 'Karate', country: 'USA', city: 'Los Angeles', previousRank: 14, rankChange: 0 },
+  { rank: 15, id: 'd15', name: 'Dimitri Petrov', belt: 'Blue', globalXp: 3180, clubName: 'Moscow Academy', sport: 'Judo', country: 'Russia', city: 'Moscow', previousRank: 15, rankChange: 0 },
 ];
 
 const DEMO_CLUB_RANKINGS: ClubRanking[] = [
-  { rank: 1, id: 'c1', name: 'Cobra Kai Dojo', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', studentCount: 45, totalGlobalXp: 18980, avgGlobalXp: 421, globalScore: 9540 },
-  { rank: 2, id: 'c2', name: 'Miyagi-Do Karate', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', studentCount: 32, totalGlobalXp: 10520, avgGlobalXp: 328, globalScore: 7280 },
-  { rank: 3, id: 'c3', name: 'Eagle Fang', sport: 'Taekwondo', country: 'USA', city: 'Los Angeles', studentCount: 28, totalGlobalXp: 8520, avgGlobalXp: 304, globalScore: 5890 },
+  { rank: 1, id: 'c1', name: 'Korea Tigers Academy', sport: 'Taekwondo WT', country: 'South Korea', city: 'Seoul', studentCount: 68, totalGlobalXp: 24500, avgGlobalXp: 360, globalScore: 12250 },
+  { rank: 2, id: 'c2', name: 'Tokyo Martial Arts', sport: 'Karate', country: 'Japan', city: 'Tokyo', studentCount: 52, totalGlobalXp: 19800, avgGlobalXp: 380, globalScore: 9900 },
+  { rank: 3, id: 'c3', name: 'Gracie Barra Rio', sport: 'BJJ', country: 'Brazil', city: 'Rio de Janeiro', studentCount: 45, totalGlobalXp: 17200, avgGlobalXp: 382, globalScore: 8600 },
+  { rank: 4, id: 'c4', name: 'Tehran Champions', sport: 'Taekwondo WT', country: 'Iran', city: 'Tehran', studentCount: 38, totalGlobalXp: 14200, avgGlobalXp: 373, globalScore: 7100 },
+  { rank: 5, id: 'c5', name: 'Cobra Kai Dojo', sport: 'Taekwondo ITF', country: 'USA', city: 'Los Angeles', studentCount: 45, totalGlobalXp: 18980, avgGlobalXp: 421, globalScore: 9540 },
 ];
 
 const DEMO_STATS: RankingsStats = {
-  participatingClubs: 3,
-  totalStudents: 105,
-  sportsRepresented: 1,
-  countriesRepresented: 1,
+  participatingClubs: 12,
+  totalStudents: 420,
+  sportsRepresented: 7,
+  countriesRepresented: 11,
 };
 
 const BELT_COLORS: Record<string, { bg: string; text: string; border?: string }> = {
@@ -213,8 +220,8 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
 
   useEffect(() => {
     if (isDemo) {
-      setSports(['Taekwondo']);
-      setCountries(['USA']);
+      setSports(['Taekwondo WT', 'Taekwondo ITF', 'Karate', 'BJJ', 'Judo', 'Kung Fu', 'Hapkido']);
+      setCountries(['South Korea', 'Japan', 'Brazil', 'Iran', 'USA', 'Spain', 'China', 'Egypt', 'France', 'UAE', 'Russia']);
       setStats(DEMO_STATS);
       setStudentRankings(DEMO_WORLD_RANKINGS);
       setClubRankings(DEMO_CLUB_RANKINGS);
