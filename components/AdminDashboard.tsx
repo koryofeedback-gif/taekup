@@ -168,7 +168,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                     <div className="grid md:grid-cols-2 gap-10">
                         <div>
                             <label className="block text-sm text-gray-300 mb-4">
-                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> Active Warriors upgrade via the app...
+                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> Active Warriors unlock their SenseiVault™ Access...
                             </label>
                             <input 
                                 type="range" 
