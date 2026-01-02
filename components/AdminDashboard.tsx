@@ -680,11 +680,13 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
         setMessage('Clearing old data...');
         
         try {
-            await fetch('/api/demo/clear', {
+            const clearRes = await fetch('/api/demo/clear', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ clubId }),
             });
+            const clearResult = await clearRes.json();
+            console.log('[DemoReload] Clear result:', clearResult);
             
             setMessage('Loading fresh demo data...');
             
@@ -695,6 +697,9 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
             });
             
             const result = await response.json();
+            console.log('[DemoReload] Load result:', result);
+            console.log('[DemoReload] wizardData received:', !!result.wizardData);
+            
             if (result.success) {
                 // CRITICAL: Update localStorage with fresh wizard_data so page reload uses it
                 if (result.wizardData) {
@@ -704,13 +709,19 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
                     } else {
                         localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
                     }
-                    console.log('[DemoReload] Updated localStorage with fresh wizard_data:', 
-                        'students:', result.wizardData.students?.length,
-                        'skills:', result.wizardData.skills?.length,
-                        'worldRankings:', result.wizardData.worldRankings?.length);
+                    
+                    // Debug: Check birthday fields
+                    const studentsWithBirthday = result.wizardData.students?.filter((s: any) => s.birthday) || [];
+                    console.log('[DemoReload] Students with birthday:', studentsWithBirthday.length, studentsWithBirthday.map((s: any) => ({ name: s.name, birthday: s.birthday })));
+                    console.log('[DemoReload] Skills count:', result.wizardData.skills?.length);
+                    console.log('[DemoReload] World Rankings count:', result.wizardData.worldRankings?.length);
+                    
+                    setMessage(`Demo loaded! ${studentsWithBirthday.length} birthdays found. Refreshing...`);
+                } else {
+                    console.error('[DemoReload] No wizardData in response!');
+                    setMessage('Warning: No wizard data returned. Refreshing anyway...');
                 }
-                setMessage('Demo reloaded! Refreshing...');
-                setTimeout(() => window.location.reload(), 500);
+                setTimeout(() => window.location.reload(), 1000);
             } else {
                 setMessage(result.message || 'Failed to reload');
             }
