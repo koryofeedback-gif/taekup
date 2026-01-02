@@ -5334,27 +5334,35 @@ function getUpcomingBirthday(daysFromNow: number): string {
 }
 
 const DEMO_STUDENTS = [
-  { name: 'Daniel LaRusso', belt: 'Green', parentName: 'Lucille LaRusso', premiumStatus: 'parent_paid', birthday: getUpcomingBirthday(3), isAtRisk: false },
-  { name: 'Johnny Lawrence', belt: 'Black', parentName: 'Laura Lawrence', premiumStatus: 'parent_paid', birthday: getUpcomingBirthday(14), isAtRisk: false },
-  { name: 'Robby Keene', belt: 'Brown', parentName: 'Shannon Keene', premiumStatus: 'none', birthday: null, isAtRisk: true },
-  { name: 'Miguel Diaz', belt: 'Red', parentName: 'Carmen Diaz', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
-  { name: 'Samantha LaRusso', belt: 'Blue', parentName: 'Amanda LaRusso', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
-  { name: 'Hawk Moskowitz', belt: 'Red', parentName: 'Paula Moskowitz', premiumStatus: 'none', birthday: null, isAtRisk: true },
-  { name: 'Demetri Alexopoulos', belt: 'Green', parentName: 'Maria Alexopoulos', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
-  { name: 'Tory Nichols', belt: 'Blue', parentName: 'Karen Nichols', premiumStatus: 'none', birthday: null, isAtRisk: false },
-  { name: 'Chris Evans', belt: 'Yellow', parentName: 'Sarah Evans', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
-  { name: 'Aisha Robinson', belt: 'Orange', parentName: 'Diane Robinson', premiumStatus: 'none', birthday: null, isAtRisk: false },
-  { name: 'Kenny Payne', belt: 'White', parentName: 'Shawn Payne', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
-  { name: 'Devon Lee', belt: 'Yellow', parentName: 'Grace Lee', premiumStatus: 'none', birthday: null, isAtRisk: false },
-  { name: 'Moon Park', belt: 'Orange', parentName: 'Jin Park', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
-  { name: 'Kyler Stevens', belt: 'White', parentName: 'Brad Stevens', premiumStatus: 'none', birthday: null, isAtRisk: false },
-  { name: 'Bert Miller', belt: 'Yellow', parentName: 'Tom Miller', premiumStatus: 'none', birthday: null, isAtRisk: false },
-  { name: 'Nate Johnson', belt: 'Green', parentName: 'Rick Johnson', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
-  { name: 'Yasmine Chen', belt: 'Blue', parentName: 'Lin Chen', premiumStatus: 'none', birthday: null, isAtRisk: false },
-  { name: 'Louie Kim', belt: 'Orange', parentName: 'David Kim', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false },
+  { name: 'Daniel LaRusso', belt: 'Green', parentName: 'Lucille LaRusso', premiumStatus: 'parent_paid', birthday: getUpcomingBirthday(3), isAtRisk: false, location: 'Downtown Studio', assignedClass: 'Kids Class' },
+  { name: 'Johnny Lawrence', belt: 'Black', parentName: 'Laura Lawrence', premiumStatus: 'parent_paid', birthday: getUpcomingBirthday(14), isAtRisk: false, location: 'Main Location', assignedClass: 'Adult Class' },
+  { name: 'Robby Keene', belt: 'Brown', parentName: 'Shannon Keene', premiumStatus: 'none', birthday: null, isAtRisk: true, location: 'Main Location', assignedClass: 'Sparring Team' },
+  { name: 'Miguel Diaz', belt: 'Red', parentName: 'Carmen Diaz', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false, location: 'Main Location', assignedClass: 'Adult Class' },
+  { name: 'Samantha LaRusso', belt: 'Blue', parentName: 'Amanda LaRusso', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'Kids Class' },
+  { name: 'Hawk Moskowitz', belt: 'Red', parentName: 'Paula Moskowitz', premiumStatus: 'none', birthday: null, isAtRisk: true, location: 'Main Location', assignedClass: 'Sparring Team' },
+  { name: 'Demetri Alexopoulos', belt: 'Green', parentName: 'Maria Alexopoulos', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'General Class' },
+  { name: 'Tory Nichols', belt: 'Blue', parentName: 'Karen Nichols', premiumStatus: 'none', birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'Teen Class' },
+  { name: 'Chris Evans', belt: 'Yellow', parentName: 'Sarah Evans', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'Kids Class' },
+  { name: 'Aisha Robinson', belt: 'Orange', parentName: 'Diane Robinson', premiumStatus: 'none', birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'Teen Class' },
+  { name: 'Kenny Payne', belt: 'White', parentName: 'Shawn Payne', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false, location: 'Main Location', assignedClass: 'Beginner Class' },
+  { name: 'Devon Lee', belt: 'Yellow', parentName: 'Grace Lee', premiumStatus: 'none', birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'Kids Class' },
+  { name: 'Moon Park', belt: 'Orange', parentName: 'Jin Park', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'General Class' },
+  { name: 'Kyler Stevens', belt: 'White', parentName: 'Brad Stevens', premiumStatus: 'none', birthday: null, isAtRisk: false, location: 'Main Location', assignedClass: 'Beginner Class' },
+  { name: 'Bert Miller', belt: 'Yellow', parentName: 'Tom Miller', premiumStatus: 'none', birthday: null, isAtRisk: false, location: 'Downtown Studio', assignedClass: 'General Class' },
+  { name: 'Nate Johnson', belt: 'Green', parentName: 'Rick Johnson', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'Teen Class' },
+  { name: 'Yasmine Chen', belt: 'Blue', parentName: 'Lin Chen', premiumStatus: 'none', birthday: null, isAtRisk: false, location: 'Main Location', assignedClass: 'Adult Class' },
+  { name: 'Louie Kim', belt: 'Orange', parentName: 'David Kim', premiumStatus: 'parent_paid', birthday: null, isAtRisk: false, location: 'West Side Dojo', assignedClass: 'General Class' },
 ];
 
-const CLASS_NAMES = ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'];
+const DEMO_LOCATIONS = ['Main Location', 'Downtown Studio', 'West Side Dojo'];
+
+const DEMO_LOCATION_CLASSES: Record<string, string[]> = {
+  'Main Location': ['Adult Class', 'Beginner Class', 'Sparring Team'],
+  'Downtown Studio': ['Kids Class', 'General Class'],
+  'West Side Dojo': ['Teen Class', 'General Class'],
+};
+
+const CLASS_NAMES = ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team', 'Teen Class', 'Beginner Class'];
 
 const DEMO_SKILLS = [
   { id: 'discipline', name: 'Discipline', isActive: true },
@@ -5468,8 +5476,9 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
         martialArt: clubInfo.art_type || 'Taekwondo (WT)',
         ownerName: clubInfo.owner_name || 'Sensei',
         email: '',
-        branches: 1,
-        branchNames: ['Main Location'],
+        branches: DEMO_LOCATIONS.length,
+        branchNames: DEMO_LOCATIONS,
+        locationClasses: DEMO_LOCATION_CLASSES,
         students: allStudentsResult.rows.map((s: any) => {
           const demoInfo = DEMO_STUDENTS.find(d => d.name === s.name);
           const isAtRisk = demoInfo?.isAtRisk || false;
@@ -5493,6 +5502,8 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
             attendanceCount: performanceHistory.length,
             joinDate: s.join_date?.toISOString?.() || s.join_date || new Date().toISOString(),
             performanceHistory,
+            location: demoInfo?.location || '',
+            assignedClass: demoInfo?.assignedClass || '',
           };
         }),
         coaches: coachesResult.rows.length > 0 ? coachesResult.rows.map((c: any) => ({
@@ -5595,8 +5606,9 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
       martialArt: clubInfo.art_type || 'Taekwondo (WT)',
       ownerName: clubInfo.owner_name || 'Sensei',
       email: '',
-      branches: 1,
-      branchNames: ['Main Location'],
+      branches: DEMO_LOCATIONS.length,
+      branchNames: DEMO_LOCATIONS,
+      locationClasses: DEMO_LOCATION_CLASSES,
       students: allStudentsResult.rows.map((s: any) => {
         const demoInfo = DEMO_STUDENTS.find(d => d.name === s.name);
         const isAtRisk = demoInfo?.isAtRisk || false;
@@ -5620,6 +5632,8 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
           attendanceCount: performanceHistory.length,
           joinDate: s.join_date?.toISOString?.() || s.join_date || new Date().toISOString(),
           performanceHistory,
+          location: demoInfo?.location || '',
+          assignedClass: demoInfo?.assignedClass || '',
         };
       }),
       coaches: coachesResult.rows.length > 0 ? coachesResult.rows.map((c: any) => ({
