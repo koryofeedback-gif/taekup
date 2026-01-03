@@ -5389,11 +5389,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 }}
             />
 
-             {/* Preview Header for Owner */}
-            <div className="bg-yellow-600 text-white text-xs font-bold text-center py-2 sticky top-0 z-50 shadow-md flex justify-between px-4 items-center">
-                <span>PREVIEW MODE</span>
-                <button onClick={onBack} className="underline text-yellow-100 hover:text-white">Close</button>
-            </div>
+            {/* Demo Mode Banner */}
+            {data.isDemo && (
+                <div className="bg-gradient-to-r from-cyan-600 via-teal-600 to-cyan-600 text-white text-xs font-bold py-2 px-4 sticky top-0 z-50 shadow-lg flex items-center justify-center space-x-3 animate-pulse">
+                    <span className="text-lg">🎮</span> DEMO MODE - Sample data for demonstration purposes
+                </div>
+            )}
+
+             {/* Preview Header for Owner (non-demo mode) */}
+            {!data.isDemo && (
+                <div className="bg-yellow-600 text-white text-xs font-bold text-center py-2 sticky top-0 z-50 shadow-md flex justify-between px-4 items-center">
+                    <span>PREVIEW MODE</span>
+                    <button onClick={onBack} className="underline text-yellow-100 hover:text-white">Close</button>
+                </div>
+            )}
 
             {/* Club Sponsored Premium Badge - Always Visible */}
             {data.clubSponsoredPremium && (
