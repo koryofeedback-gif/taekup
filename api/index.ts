@@ -4688,6 +4688,7 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         // Columns likely already exist, ignore error
       }
 
+      // IMPORTANT: Exclude demo students from real rankings
       let query = `
         SELECT 
           s.id,
@@ -4705,6 +4706,7 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         WHERE c.world_rankings_enabled = true
           AND c.status = 'active'
           AND COALESCE(s.global_xp, 0) > 0
+          AND COALESCE(s.is_demo, false) = false
       `;
       const params: any[] = [];
       let paramCount = 0;
@@ -4756,28 +4758,12 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
         );
       }
 
-      // ALWAYS include diverse demo world rankings for showcase (global platform demo)
-      // Only add if not filtering by specific sport/country
-      if (!sport && !country && offset === 0) {
-        const existingNames = new Set(rankings.map(r => r.name.toLowerCase()));
-        const demoRankings = DEMO_WORLD_RANKINGS
-          .filter(d => !existingNames.has(d.name.toLowerCase()))
-          .map((d, i) => ({
-            ...d,
-            id: `demo-${i}`,
-            rankChange: null,
-            isDemo: true
-          }));
-        const combinedRankings = [...rankings, ...demoRankings];
-        // Re-rank by globalXp
-        combinedRankings.sort((a, b) => b.globalXp - a.globalXp);
-        combinedRankings.forEach((r, i) => r.rank = i + 1);
-        const finalRankings = combinedRankings.slice(0, limit);
-        return res.json({ category: 'students', rankings: finalRankings, total: finalRankings.length });
-      }
+      // REMOVED: Demo world rankings injection - now demo/real data are completely separate
+      // Demo students are filtered out by the is_demo = false clause in the query
 
       return res.json({ category: 'students', rankings, total: rankings.length });
     } else if (category === 'clubs') {
+      // Exclude demo students from club rankings calculation
       let query = `
         SELECT 
           c.id,
@@ -4789,7 +4775,7 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
           COALESCE(SUM(s.global_xp), 0) as total_global_xp,
           CASE WHEN COUNT(s.id) > 0 THEN COALESCE(SUM(s.global_xp), 0) / COUNT(s.id) ELSE 0 END as avg_global_xp
         FROM clubs c
-        LEFT JOIN students s ON s.club_id = c.id
+        LEFT JOIN students s ON s.club_id = c.id AND COALESCE(s.is_demo, false) = false
         WHERE c.world_rankings_enabled = true
           AND c.status = 'active'
         GROUP BY c.id, c.name, c.art_type, c.country, c.city
@@ -4884,10 +4870,12 @@ async function handleWorldRankingsStats(req: VercelRequest, res: VercelResponse)
       SELECT COUNT(*) as count FROM clubs WHERE world_rankings_enabled = true AND status = 'active'
     `);
     
+    // Exclude demo students from stats count
     const studentsResult = await client.query(`
       SELECT COUNT(*) as count FROM students s
       JOIN clubs c ON s.club_id = c.id
       WHERE c.world_rankings_enabled = true AND c.status = 'active'
+        AND COALESCE(s.is_demo, false) = false
     `);
     
     const sportsResult = await client.query(`
@@ -5101,6 +5089,7 @@ async function handleStudentWorldRank(req: VercelRequest, res: VercelResponse, s
     }
 
     // Count how many students have MORE global XP (rank = count + 1)
+    // IMPORTANT: Exclude demo students from rank calculation
     const rankResult = await client.query(`
       SELECT COUNT(*) as higher_count
       FROM students s
@@ -5108,9 +5097,10 @@ async function handleStudentWorldRank(req: VercelRequest, res: VercelResponse, s
       WHERE c.world_rankings_enabled = true
         AND c.status = 'active'
         AND COALESCE(s.global_xp, 0) > $1
+        AND COALESCE(s.is_demo, false) = false
     `, [myGlobalXP]);
 
-    // Get total count of ranked students
+    // Get total count of ranked students (excluding demo)
     const totalResult = await client.query(`
       SELECT COUNT(*) as total
       FROM students s
@@ -5118,6 +5108,7 @@ async function handleStudentWorldRank(req: VercelRequest, res: VercelResponse, s
       WHERE c.world_rankings_enabled = true
         AND c.status = 'active'
         AND COALESCE(s.global_xp, 0) > 0
+        AND COALESCE(s.is_demo, false) = false
     `);
 
     const higherCount = Number(rankResult.rows[0]?.higher_count || 0);

@@ -4996,6 +4996,7 @@ export function registerRoutes(app: Express) {
         }
 
         // Get top students globally (from clubs that opted in)
+        // IMPORTANT: Exclude demo students from real rankings
         let query = sql`
           SELECT 
             s.id,
@@ -5013,6 +5014,7 @@ export function registerRoutes(app: Express) {
           WHERE c.world_rankings_enabled = true
             AND c.status = 'active'
             AND COALESCE(s.global_xp, 0) > 0
+            AND COALESCE(s.is_demo, false) = false
         `;
 
         if (sport && sport !== 'all') {
@@ -5253,10 +5255,12 @@ export function registerRoutes(app: Express) {
         SELECT COUNT(*) as count FROM clubs WHERE world_rankings_enabled = true AND status = 'active'
       `);
       
+      // Exclude demo students from stats count
       const studentsResult = await db.execute(sql`
         SELECT COUNT(*) as count FROM students s
         JOIN clubs c ON s.club_id = c.id
         WHERE c.world_rankings_enabled = true AND c.status = 'active'
+          AND COALESCE(s.is_demo, false) = false
       `);
       
       const sportsResult = await db.execute(sql`
@@ -5315,6 +5319,7 @@ export function registerRoutes(app: Express) {
       }
 
       // Count how many students have MORE global XP (rank = count + 1)
+      // IMPORTANT: Exclude demo students from rank calculation
       const rankResult = await db.execute(sql`
         SELECT COUNT(*) as higher_count
         FROM students s
@@ -5322,9 +5327,10 @@ export function registerRoutes(app: Express) {
         WHERE c.world_rankings_enabled = true
           AND c.status = 'active'
           AND COALESCE(s.global_xp, 0) > ${myGlobalXP}
+          AND COALESCE(s.is_demo, false) = false
       `);
 
-      // Get total count of ranked students
+      // Get total count of ranked students (excluding demo)
       const totalResult = await db.execute(sql`
         SELECT COUNT(*) as total
         FROM students s
@@ -5332,6 +5338,7 @@ export function registerRoutes(app: Express) {
         WHERE c.world_rankings_enabled = true
           AND c.status = 'active'
           AND COALESCE(s.global_xp, 0) > 0
+          AND COALESCE(s.is_demo, false) = false
       `);
 
       const higherCount = Number((rankResult as any[])[0]?.higher_count || 0);
