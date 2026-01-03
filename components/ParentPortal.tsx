@@ -10,6 +10,20 @@ import { ChallengeToast } from './ChallengeToast';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { useStudentProgress } from '../hooks/useStudentProgress';
 import SparkMD5 from 'spark-md5';
+import { 
+    DEMO_PARENT_LEADERBOARD, 
+    DEMO_STUDENT_STATS, 
+    DEMO_HABITS_STATUS, 
+    DEMO_CUSTOM_HABITS,
+    DEMO_RIVAL_STATS,
+    DEMO_DAILY_CHALLENGE,
+    DEMO_GAUNTLET_CHALLENGES,
+    DEMO_ARENA_CHALLENGES,
+    DEMO_CHALLENGE_HISTORY,
+    DEMO_FAMILY_CHALLENGES,
+    DEMO_SCHEDULE,
+    getDemoPrivateSlots
+} from '../shared/demoData';
 
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -119,6 +133,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     
     // Fetch fresh leaderboard data from API
     useEffect(() => {
+        // Demo mode - use demo leaderboard data
+        if (data.isDemo) {
+            setApiLeaderboardData(DEMO_PARENT_LEADERBOARD);
+            setLeaderboardLoading(false);
+            return;
+        }
+        
         const fetchLeaderboard = async () => {
             if (!student.clubId) return;
             setLeaderboardLoading(true);
@@ -137,7 +158,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         fetchLeaderboard();
         const interval = setInterval(fetchLeaderboard, 30000);
         return () => clearInterval(interval);
-    }, [student.clubId]);
+    }, [student.clubId, data.isDemo]);
     
     // Fetch World Rankings data - use dedicated endpoint for accurate rank
     useEffect(() => {
@@ -211,6 +232,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     
     // Fetch Student Stats for Insights tab
     useEffect(() => {
+        // Demo mode - use demo stats
+        if (data.isDemo) {
+            if (activeTab === 'insights') {
+                setStudentStats(DEMO_STUDENT_STATS);
+                setStatsLoading(false);
+            }
+            return;
+        }
+        
         const fetchStats = async () => {
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             if (!student.id || !uuidRegex.test(student.id)) return;
@@ -230,10 +260,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         };
         fetchStats();
-    }, [student.id, activeTab]);
+    }, [student.id, activeTab, data.isDemo]);
     
     // Fetch total XP directly from server as single source of truth
     useEffect(() => {
+        // Demo mode - use demo XP
+        if (data.isDemo) {
+            setServerTotalXP(DEMO_RIVAL_STATS.xp);
+            return;
+        }
+        
         const fetchServerXP = async () => {
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             if (!student.id || !uuidRegex.test(student.id)) return;
@@ -252,7 +288,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Refresh every 10 seconds
         const interval = setInterval(fetchServerXP, 10000);
         return () => clearInterval(interval);
-    }, [student.id]);
+    }, [student.id, data.isDemo]);
     
     // Rivals State
     const [selectedRival, setSelectedRival] = useState<string>('');
@@ -365,6 +401,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     
     // Fetch family challenges from database
     useEffect(() => {
+        // Demo mode - use demo family challenges
+        if (data.isDemo) {
+            setFamilyChallengesList([
+                { id: 'fc1', name: 'Family Stretch Session', description: 'Complete a 10-minute stretch routine together', icon: '👨‍👩‍👧', category: 'Focus' as const, demo_video_url: null },
+                { id: 'fc2', name: 'Partner Kick Drills', description: 'Practice 20 kicks each with a family member holding pads', icon: '🥋', category: 'Strength' as const, demo_video_url: null },
+                { id: 'fc3', name: 'Reaction Time Challenge', description: 'See who can catch the falling ruler faster!', icon: '⚡', category: 'Speed' as const, demo_video_url: null },
+            ]);
+            return;
+        }
+        
         const fetchFamilyChallenges = async () => {
             try {
                 const response = await fetch('/api/family-challenges');
@@ -377,10 +423,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         };
         fetchFamilyChallenges();
-    }, []);
+    }, [data.isDemo]);
     
     // Fetch family challenge status from backend on load
     useEffect(() => {
+        // Demo mode - use demo completed challenges
+        if (data.isDemo) {
+            setCompletedFamilyToday(['fc1']); // Show one as completed in demo
+            return;
+        }
+        
         const fetchFamilyChallengeStatus = async () => {
             if (!student.id) return;
             
@@ -399,7 +451,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         };
         
         fetchFamilyChallengeStatus();
-    }, [student.id]);
+    }, [student.id, data.isDemo]);
     
     // Submit family challenge to backend (XP calculated server-side)
     const submitFamilyChallenge = async (challengeId: string, won: boolean) => {
@@ -629,6 +681,27 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     
     // Fetch AI-powered Daily Mystery Challenge
     useEffect(() => {
+        // Demo mode - use demo mystery challenge
+        if (data.isDemo) {
+            setMysteryChallenge({
+                id: 'demo-mystery-1',
+                title: "Martial Arts Wisdom",
+                description: "Test your knowledge of martial arts traditions!",
+                type: 'quiz',
+                xpReward: 50,
+                quizData: {
+                    question: "What is the traditional training hall called in Korean martial arts?",
+                    options: ["Dojo", "Dojang", "Gym", "Studio"],
+                    correctIndex: 1,
+                    explanation: "Dojang (도장) is the Korean word for a martial arts training hall."
+                }
+            });
+            setMysteryCompleted(false);
+            setLoadingMysteryChallenge(false);
+            setMysterySource('static');
+            return;
+        }
+        
         const fetchDailyChallenge = async () => {
             if (!studentBeltName || !student.id) return;
             
@@ -777,6 +850,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     useEffect(() => {
         if (activeTab !== 'rivals' || !student.id) return;
         
+        // Demo mode - use demo challenge history
+        if (data.isDemo) {
+            setChallengeHistory(DEMO_CHALLENGE_HISTORY.map(h => ({
+                id: h.id,
+                challengeName: h.challengeName,
+                icon: h.icon,
+                category: 'Power',
+                status: h.status,
+                proofType: 'TRUST',
+                xpAwarded: h.xpEarned,
+                score: 50,
+                mode: 'solo',
+                completedAt: h.completedAt
+            })));
+            return;
+        }
+        
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(student.id)) return;
         
@@ -793,7 +883,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         };
         
         fetchOwnHistory();
-    }, [activeTab, student.id]);
+    }, [activeTab, student.id, data.isDemo]);
     
     // Fetch student's history for leaderboard viewing
     const fetchStudentHistory = async (targetStudent: Student) => {
@@ -944,6 +1034,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     // Fetch Warrior's Gauntlet data
     useEffect(() => {
+        // Demo mode - use demo gauntlet data
+        if (data.isDemo) {
+            const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+            const themes: Record<string, string> = {
+                'Monday': 'Engine', 'Tuesday': 'Foundation', 'Wednesday': 'Evasion',
+                'Thursday': 'Explosion', 'Friday': 'Animal', 'Saturday': 'Defense', 'Sunday': 'Flow'
+            };
+            setGauntletData({
+                dayOfWeek,
+                dayTheme: themes[dayOfWeek] || 'Engine',
+                weekNumber: 1,
+                challenges: [
+                    { id: 'g1', name: 'High Knees Endurance', description: '3 minutes of high knees - count total reps!', icon: '🔥', score_type: 'reps', sort_order: 'DESC', target_value: 200, demo_video_url: null, personalBest: 185, pbHasVideo: false, submittedThisWeek: false, thisWeekScore: null },
+                    { id: 'g2', name: 'Plank Hold', description: 'Hold plank position as long as possible', icon: '🧱', score_type: 'seconds', sort_order: 'DESC', target_value: 120, demo_video_url: null, personalBest: 72, pbHasVideo: true, submittedThisWeek: true, thisWeekScore: 72 },
+                ]
+            });
+            setGauntletLoading(false);
+            return;
+        }
+        
         const fetchGauntlet = async () => {
             if (!student.id) return;
             setGauntletLoading(true);
@@ -958,7 +1068,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         };
         fetchGauntlet();
-    }, [student.id]);
+    }, [student.id, data.isDemo]);
     
     // Submit Gauntlet Challenge
     const submitGauntletChallenge = async (proofType: 'TRUST' | 'VIDEO') => {
@@ -1347,6 +1457,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     
     // Fetch habit status and custom habits on mount
     useEffect(() => {
+        // Demo mode - use demo habit data
+        if (data.isDemo) {
+            setHomeDojoChecks({ 'Did you practice kicks today?': true, 'Did you review your forms?': true });
+            setHabitXpToday(6);
+            setDailyXpCap(15);
+            setAtDailyLimit(false);
+            setDailyStreak(5);
+            setRivalStats(prev => ({ ...prev, xp: DEMO_RIVAL_STATS.xp }));
+            return;
+        }
+        
         if (!studentId || !isValidUUID(studentId)) {
             console.warn('[HomeDojo] Invalid student ID, skipping habit fetch:', studentId);
             return;
@@ -1407,7 +1528,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         };
         fetchHabitData();
-    }, [studentId]);
+    }, [studentId, data.isDemo]);
 
     // Time Machine State
     const [simulatedAttendance, setSimulatedAttendance] = useState(2); // Default 2x week

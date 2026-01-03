@@ -128,3 +128,133 @@ export function randomDate(daysAgo: number): Date {
   date.setHours(randomInt(9, 20), randomInt(0, 59), 0, 0);
   return date;
 }
+
+// Demo Parent Dashboard Data
+export const DEMO_PARENT_LEADERBOARD = [
+  { id: 'd1', name: 'Henry Lee', totalXP: 2850, monthlyXP: 420, belt: 'black', stripes: 1 },
+  { id: 'd2', name: 'Ethan Williams', totalXP: 2340, monthlyXP: 380, belt: 'red', stripes: 2 },
+  { id: 'd3', name: 'Sophia Martinez', totalXP: 2180, monthlyXP: 350, belt: 'blue', stripes: 3 },
+  { id: 'd4', name: 'Amelia Martin', totalXP: 1920, monthlyXP: 290, belt: 'brown', stripes: 1 },
+  { id: 'd5', name: 'Lucas Chen', totalXP: 1780, monthlyXP: 275, belt: 'green', stripes: 2 },
+  { id: 'd6', name: 'Liam Taylor', totalXP: 1650, monthlyXP: 240, belt: 'green', stripes: 1 },
+  { id: 'd7', name: 'Emma Johnson', totalXP: 1520, monthlyXP: 220, belt: 'orange', stripes: 3 },
+  { id: 'd8', name: 'Ava Wilson', totalXP: 1380, monthlyXP: 195, belt: 'orange', stripes: 2 },
+  { id: 'd9', name: 'Charlotte White', totalXP: 1240, monthlyXP: 180, belt: 'green', stripes: 1 },
+  { id: 'd10', name: 'Isabella Moore', totalXP: 1100, monthlyXP: 165, belt: 'blue', stripes: 1 },
+];
+
+export const DEMO_STUDENT_STATS = {
+  attendanceDates: [
+    new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  ],
+  xpTrend: [
+    { date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], xp: 45, dayName: 'Mon' },
+    { date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], xp: 0, dayName: 'Tue' },
+    { date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], xp: 80, dayName: 'Wed' },
+    { date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], xp: 25, dayName: 'Thu' },
+    { date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], xp: 60, dayName: 'Fri' },
+    { date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], xp: 40, dayName: 'Sat' },
+    { date: new Date().toISOString().split('T')[0], xp: 35, dayName: 'Sun' },
+  ],
+  characterDevelopment: {
+    technique: { name: 'Technique', score: 78, trend: 'up', description: 'Form and execution quality' },
+    discipline: { name: 'Discipline', score: 85, trend: 'up', description: 'Consistency and focus' },
+    consistency: { name: 'Consistency', score: 72, trend: 'stable', description: 'Regular practice habits' },
+  },
+  categoryBreakdown: [
+    { category: 'Power', submissions: 8, approved: 7, xpEarned: 280 },
+    { category: 'Technique', submissions: 12, approved: 11, xpEarned: 440 },
+    { category: 'Flexibility', submissions: 5, approved: 5, xpEarned: 200 },
+  ],
+  totalSubmissions: 25,
+  approvalRate: 92,
+};
+
+export const DEMO_HABITS_STATUS = {
+  todayChecked: ['habit-1', 'habit-3'],
+  streak: 5,
+  lastCheckDate: new Date().toISOString().split('T')[0],
+  weeklyProgress: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: false, sun: false },
+};
+
+export const DEMO_CUSTOM_HABITS = [
+  { id: 'habit-1', question: 'Did you practice kicks today?', icon: '🦵', xp: 10 },
+  { id: 'habit-2', question: 'Did you stretch for 10 minutes?', icon: '🧘', xp: 5 },
+  { id: 'habit-3', question: 'Did you review your forms?', icon: '🥋', xp: 15 },
+  { id: 'habit-4', question: 'Did you help a training partner?', icon: '🤝', xp: 10 },
+];
+
+export const DEMO_RIVAL_STATS = {
+  xp: 1520,
+  wins: 12,
+  losses: 3,
+  streak: 4,
+  rank: 7,
+};
+
+export const DEMO_DAILY_CHALLENGE = {
+  id: 'dc-demo-1',
+  name: '50 Roundhouse Kicks',
+  category: 'Power',
+  difficulty: 'MEDIUM',
+  xpReward: 40,
+  globalPoints: 15,
+  description: 'Complete 50 roundhouse kicks with proper form. Alternate legs for balance.',
+  icon: '🦵',
+  videoRequired: false,
+  completed: false,
+};
+
+export const DEMO_GAUNTLET_CHALLENGES = [
+  { id: 'g1', name: 'Engine Builder', category: 'Engine', day: 'Monday', xp: 20, globalXp: 5, description: '3 minutes of high knees', completed: false, personalBest: null },
+  { id: 'g2', name: 'Foundation Hold', category: 'Foundation', day: 'Tuesday', xp: 20, globalXp: 5, description: '60 second plank hold', completed: true, personalBest: '72 seconds' },
+];
+
+export const DEMO_ARENA_CHALLENGES = [
+  { id: 'a1', name: 'Speed Punches', category: 'Power', difficulty: 'EASY', xp: 10, globalXp: 3, icon: '👊', coachPick: false },
+  { id: 'a2', name: 'Flying Side Kick', category: 'Technique', difficulty: 'HARD', xp: 70, globalXp: 25, icon: '🦅', coachPick: true, demoVideo: 'https://example.com/demo' },
+  { id: 'a3', name: 'Flexibility Flow', category: 'Flexibility', difficulty: 'MEDIUM', xp: 40, globalXp: 15, icon: '🧘', coachPick: false },
+  { id: 'a4', name: 'Tornado Kick Combo', category: 'Technique', difficulty: 'EPIC', xp: 100, globalXp: 35, icon: '🌪️', coachPick: true, demoVideo: 'https://example.com/tornado' },
+];
+
+export const DEMO_CURRICULUM = [
+  { id: 'cur1', title: 'White Belt Basics', belt: 'white', items: [
+    { id: 'c1', name: 'Front Stance', type: 'video', duration: '3:45', completed: true, xp: 20 },
+    { id: 'c2', name: 'Low Block', type: 'video', duration: '4:20', completed: true, xp: 20 },
+    { id: 'c3', name: 'Front Kick', type: 'video', duration: '5:10', completed: false, xp: 25 },
+  ]},
+  { id: 'cur2', title: 'Yellow Belt Forms', belt: 'yellow', items: [
+    { id: 'c4', name: 'Taegeuk 1 - Full Form', type: 'video', duration: '8:30', completed: false, xp: 50 },
+    { id: 'c5', name: 'Stance Transitions', type: 'video', duration: '6:15', completed: false, xp: 30 },
+  ]},
+];
+
+export const DEMO_FAMILY_CHALLENGES = [
+  { id: 'fc1', name: 'Family Stretch Session', description: 'Complete a 10-minute stretch routine together', xp: 30, icon: '👨‍👩‍👧', expires: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: 'fc2', name: 'Partner Kick Drills', description: 'Practice 20 kicks each with a family member holding pads', xp: 50, icon: '🥋', expires: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() },
+];
+
+export const DEMO_CHALLENGE_HISTORY = [
+  { id: 'h1', challengeName: 'Speed Punches', completedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), status: 'VERIFIED', xpEarned: 40, icon: '👊' },
+  { id: 'h2', challengeName: 'Tornado Kick', completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), status: 'VERIFIED', xpEarned: 100, icon: '🌪️' },
+  { id: 'h3', challengeName: 'Flexibility Flow', completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), status: 'PENDING', xpEarned: 40, icon: '🧘' },
+  { id: 'h4', challengeName: 'Engine Builder', completedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), status: 'COMPLETED', xpEarned: 20, icon: '🔥' },
+];
+
+export const DEMO_ATHLETE_CARD_STATS = {
+  totalXP: 1520,
+  globalRank: 7,
+  totalStudents: 105,
+  classesAttended: 47,
+  challengesCompleted: 25,
+  currentStreak: 5,
+  longestStreak: 12,
+  powerScore: 82,
+  techniqueScore: 78,
+  disciplineScore: 85,
+  joinDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+};
