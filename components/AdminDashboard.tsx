@@ -141,9 +141,8 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                 </button>
             </div>
 
-            {/* Revenue Simulator */}
-            {!data.clubSponsoredPremium && (
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-2xl">
+            {/* Revenue Simulator - Always show */}
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-2xl">
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h3 className="text-xl font-bold text-white flex items-center"><span className="mr-2">🏦</span> {data.isDemo ? 'SenseiVault™ Estimator' : 'Revenue Estimator'}</h3>
@@ -223,8 +222,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+            </div>
         </div>
     );
 }
