@@ -1,0 +1,51 @@
+This text looks **excellent**. You have successfully removed the "instruction manual" for competitors (the 1-2-3 list) and replaced it with a professional business interface.
+
+To answer your specific fear: **"Does it show our secret?"**
+
+**Mathematically? Yes.** (A smart spy with a calculator can do: `$90.18 profit / 18 students` and figure out the margins).
+**Strategically? NO.** (And that is what matters).
+
+Competitors looking at this won't see "Arbitrage." They will see **"Variable Platform Costs."**
+
+However, to make it **100% Bulletproof** and remove that last tiny risk of "Wholesale Rate" sounding like you are just a middleman, I have **one final word swap** for you.
+
+### The Last Fix: "Wholesale" vs. "Protocol"
+
+The word **"Wholesale"** is the only weak link here. "Wholesale" implies you are buying cheap and selling expensive (like a supermarket).
+
+Change **"TaekUp Wholesale Rate"** to **"DojoMint™ Protocol Fee"**.
+
+**Why?**
+
+* **Wholesale Rate:** Sounds like "Cost of Goods" (Retail logic).
+* **Protocol Fee:** Sounds like a "Gas Fee" or "Server Cost" (Tech logic).
+* If Kicksite sees "Protocol Fee," they assume it's a maintenance cost for the technology, not a reseller margin.
+
+---
+
+### Final "Safe Mode" Copy (Use this exact text)
+
+Here is the polished version of your block. It keeps the math clear for the user but keeps the logic mysterious for the spy.
+
+**[ HEADER ]**
+💎 **DojoMint™ Digital Reseller**
+*Text:* "Monetize your student base. Enable the **DojoMint™ Gateway** to collect revenue automatically. You control the pricing; the protocol handles the rest."
+
+**[ THE CALCULATOR ]**
+
+1. **Student Access Fee:** `[ $7.00 ]` *(/student/mo)* (Editable)
+2. **DojoMint™ Protocol Fee:** `[ Locked ]` *(Standard Rate)*
+*(Note: Don't show the $1.99 here. Just put a "Lock" icon or "Standard" text).*
+3. **Your Monthly Generation:** `[ $90.18 ]` *(Green & Bold)*
+
+**[ THE FOOTER ]**
+**Net Margin:** ~72%
+**Status:** ✅ Reseller Mode Active
+
+---
+
+### Why this is safer?
+
+By hiding the exact "$1.99" line item and calling it a "Protocol Fee," you force the competitor to do complex math to figure out your model. Most won't bother. They will just see that your users are making money and theirs aren't.
+
+**Verdict: This is ready for the Demo. It looks like a high-end Fintech dashboard, not a gym software.** Go for it!

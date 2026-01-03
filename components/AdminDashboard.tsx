@@ -2222,13 +2222,13 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="flex-1">
                             <h3 className="text-xl font-bold text-white mb-1">DojoMint™ Digital Reseller</h3>
                             <p className="text-sm text-gray-300 mb-4">
-                                Unlock a new revenue stream. Set a "Digital Tech Fee" for your students. We cover the platform costs, and you keep the majority margin.
+                                Monetize your student base. Enable the <span className="text-indigo-300 font-semibold">DojoMint™ Gateway</span> to collect revenue automatically. You control the pricing; the protocol handles the rest.
                             </p>
                             
                             <div className="bg-indigo-950/50 p-4 rounded border border-indigo-500/30 mb-4">
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="text-xs text-gray-400 uppercase font-bold">Set Student Tech Fee</label>
+                                        <label className="text-xs text-gray-400 uppercase font-bold">Student Access Fee</label>
                                         <div className="flex items-center mt-1">
                                             <span className="text-white text-xl font-bold mr-2">$</span>
                                             <input 
@@ -2244,26 +2244,28 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                     </div>
                                     
                                     <div>
-                                        <label className="text-xs text-gray-400 uppercase font-bold">TaekUp Wholesale Rate</label>
+                                        <label className="text-xs text-gray-400 uppercase font-bold">DojoMint™ Protocol Fee</label>
                                         <div className="flex items-center mt-1">
-                                            <span className="text-gray-500 font-medium blur-sm select-none">$X.XX</span>
-                                            <span className="ml-2 text-xs text-indigo-400 bg-indigo-900/50 px-2 py-1 rounded">Base Platform Fee</span>
+                                            <span className="text-gray-500 flex items-center">
+                                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                Standard Rate
+                                            </span>
                                         </div>
                                     </div>
                                     
                                     {totalStudents > 0 && (
                                         <div className="bg-green-900/30 p-4 rounded border border-green-500/30">
-                                            <label className="text-xs text-green-300 uppercase font-bold">Your Monthly Profit ({totalStudents} students)</label>
+                                            <label className="text-xs text-green-300 uppercase font-bold">Your Monthly Generation ({totalStudents} students)</label>
                                             <p className="text-3xl font-extrabold text-green-400 mt-1">${(totalStudents * 5.01).toFixed(2)}</p>
-                                            <p className="text-xs text-green-300/70 mt-1">Net margin after platform fees</p>
+                                            <p className="text-xs text-green-300/70 mt-1">Net Margin: ~72%</p>
                                         </div>
                                     )}
                                     
                                     {totalStudents === 0 && (
                                         <div className="bg-green-900/30 p-4 rounded border border-green-500/30">
-                                            <label className="text-xs text-green-300 uppercase font-bold">Your Monthly Profit (50 students example)</label>
+                                            <label className="text-xs text-green-300 uppercase font-bold">Your Monthly Generation (50 students example)</label>
                                             <p className="text-3xl font-extrabold text-green-400 mt-1">$250.50</p>
-                                            <p className="text-xs text-green-300/70 mt-1">Net margin after platform fees</p>
+                                            <p className="text-xs text-green-300/70 mt-1">Net Margin: ~72%</p>
                                         </div>
                                     )}
                                 </div>
