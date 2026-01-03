@@ -457,6 +457,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const submitFamilyChallenge = async (challengeId: string, won: boolean) => {
         if (!student.id) return { success: false };
         
+        // Demo mode - simulate success without API call
+        if (data.isDemo) {
+            const xpAwarded = won ? 25 : 10;
+            setCompletedFamilyToday(prev => [...prev, challengeId]);
+            setRivalStats(prev => ({ ...prev, xp: prev.xp + xpAwarded }));
+            return { success: true, xpAwarded, newTotalXp: rivalStats.xp + xpAwarded };
+        }
+        
         setFamilyChallengeSubmitting(true);
         try {
             const response = await fetch('/api/family-challenges/submit', {
@@ -912,6 +920,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             return;
         }
         
+        // Demo mode - handle locally without API call
+        if (data.isDemo) {
+            const quizData = mysteryChallenge.quizData;
+            const isCorrect = selectedIndex === quizData?.correctIndex;
+            const xpAwarded = isCorrect ? 50 : 10;
+            
+            setMysteryCompleted(true);
+            setMysteryXpAwarded(xpAwarded);
+            setMysteryWasCorrect(isCorrect);
+            setMysteryCompletionMessage(isCorrect ? `Correct! +${xpAwarded} HonorXP` : 'Not quite! Try again tomorrow.');
+            setQuizExplanation(quizData?.explanation || '');
+            setRivalStats(prev => ({ ...prev, xp: prev.xp + xpAwarded }));
+            return;
+        }
+        
         setSubmittingMystery(true);
         
         // Debug: Log current student data
@@ -1074,6 +1097,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const submitGauntletChallenge = async (proofType: 'TRUST' | 'VIDEO') => {
         if (!selectedGauntletChallenge || !student.id || !gauntletScore) return;
         
+        // Demo mode - simulate success without API call
+        if (data.isDemo) {
+            const xpAwarded = proofType === 'VIDEO' ? 40 : 20;
+            setGauntletResult({
+                success: true,
+                message: `Gauntlet complete! +${xpAwarded} HonorXP`,
+                xp: xpAwarded,
+                isNewPB: parseInt(gauntletScore) > 100,
+            });
+            setRivalStats(prev => ({ ...prev, xp: prev.xp + xpAwarded }));
+            setGauntletScore('');
+            setSelectedGauntletChallenge(null);
+            return;
+        }
+        
         // Prevent double-click race condition
         if (gauntletSubmitRef.current) return;
         gauntletSubmitRef.current = true;
@@ -1143,6 +1181,29 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Solo Arena submission (Trust vs Video)
     const submitSoloChallenge = async (proofType: 'TRUST' | 'VIDEO', videoUrl?: string, challengeXp?: number) => {
         if (!selectedChallenge || !student.id) return;
+        
+        // Demo mode - simulate success without API call
+        if (data.isDemo) {
+            const xpAwarded = challengeXp || 15;
+            setSoloResult({ success: true, message: `Challenge complete! +${xpAwarded} HonorXP`, xp: xpAwarded });
+            setRivalStats(prev => ({ ...prev, xp: prev.xp + xpAwarded }));
+            setDailyCompletedChallenges(prev => new Set([...prev, selectedChallenge]));
+            setChallengeHistory(prev => [...prev, {
+                id: `demo-${Date.now()}`,
+                challengeName: getChallengeInfo(selectedChallenge).name,
+                icon: '🏆',
+                category: getChallengeInfo(selectedChallenge).category,
+                status: 'approved',
+                proofType,
+                xpAwarded,
+                score: parseInt(soloScore) || 0,
+                mode: 'solo',
+                completedAt: new Date().toISOString()
+            }]);
+            setSoloScore('');
+            setSelectedChallenge(null);
+            return;
+        }
         
         // Prevent double-click race condition
         if (soloSubmitRef.current) return;
@@ -1608,6 +1669,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Prevent double-clicks on already completed habits
         if (homeDojoChecks[habitId]) return;
         
+        // Demo mode - just update UI without API call
+        if (data.isDemo) {
+            setHomeDojoChecks(prev => ({ ...prev, [habitId]: true }));
+            setHabitXpEarned(prev => ({ ...prev, [habitId]: 3 }));
+            setHabitXpToday(prev => prev + 3);
+            setRivalStats(prev => ({ ...prev, xp: prev.xp + 3 }));
+            setTimeout(() => setHabitXpEarned(prev => ({ ...prev, [habitId]: 0 })), 2000);
+            return;
+        }
+        
         // Validate we have a valid UUID before making API calls
         if (!studentId || !isValidUUID(studentId)) {
             console.warn('[HomeDojo] Cannot save habit - invalid student ID:', studentId);
@@ -1978,6 +2049,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     // Fetch student's videos on mount and refresh every 30 seconds
     useEffect(() => {
+        // Demo mode - use empty video list (demo doesn't have uploaded videos)
+        if (data.isDemo) {
+            setMyVideos([]);
+            return;
+        }
+        
         if (hasPremiumAccess && student.id) {
             fetchMyVideos();
             // Auto-refresh to pick up coach feedback updates
@@ -1986,7 +2063,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }, 30000);
             return () => clearInterval(interval);
         }
-    }, [hasPremiumAccess, student.id]);
+    }, [hasPremiumAccess, student.id, data.isDemo]);
 
     const fetchMyVideos = async () => {
         try {
