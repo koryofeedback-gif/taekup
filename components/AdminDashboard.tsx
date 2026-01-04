@@ -194,7 +194,7 @@ const MarginCalculatorCard: React.FC<{
                 <div className="flex-1">
                     <h3 className="text-xl font-bold text-white mb-1">DojoMint™ Universal Access</h3>
                     <p className="text-sm text-gray-300 mb-4">
-                        Sponsor the app. Increase your tuition. Keep the difference.
+                        Sponsor the app for your students. You pay a flat "Club Rate," and the app becomes FREE for all parents. Increase your gym tuition to cover it and keep the profit.
                     </p>
                     
                     <div className="bg-gray-900/60 p-5 rounded-lg border border-gray-700 mb-4">
