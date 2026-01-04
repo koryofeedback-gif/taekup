@@ -183,7 +183,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                 <span>100%</span>
                             </div>
                             <p className="text-xs text-gray-500 mt-3">
-                                <span className="text-white font-semibold">{revenue.subscribers}</span> {data.isDemo ? `Legacy Activation${revenue.subscribers !== 1 ? 's' : ''}` : `Premium Subscriber${revenue.subscribers !== 1 ? 's' : ''}`}
+                                <span className="text-white font-semibold">{revenue.subscribers}</span> Legacy Activation{revenue.subscribers !== 1 ? 's' : ''}
                             </p>
                         </div>
 
@@ -217,9 +217,11 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                 <p className={`text-4xl font-extrabold ${revenue.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                     {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)} {revenue.profit > 0 && '🚀'}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    {data.isDemo ? '(Paid via Performance Royalty)' : '(Derived from: $7.00 Student Fee - $1.99 Protocol Fee)'}
-                                </p>
+                                {data.isDemo && (
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        (Paid via Performance Royalty)
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
