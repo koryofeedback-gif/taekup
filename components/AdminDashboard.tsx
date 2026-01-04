@@ -69,6 +69,111 @@ const Modal: React.FC<{ children: React.ReactNode; onClose: () => void; title: s
     </div>
 );
 
+// --- DEMO MARGIN CALCULATOR CARD (Demo Mode - Fee Locked) ---
+const DemoMarginCalculatorCard: React.FC<{
+    totalStudents: number;
+    clubSponsoredPremium: boolean;
+    onToggle: () => void;
+}> = ({ totalStudents, clubSponsoredPremium, onToggle }) => {
+    const [parentPrice] = useState(7.00);
+    const youKeep = 5.01;
+    const marginPercent = 72;
+    const monthlyProfit = youKeep * (totalStudents > 0 ? totalStudents : 50);
+    const displayStudents = totalStudents > 0 ? totalStudents : 50;
+    
+    return (
+        <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 p-6 rounded-lg border border-indigo-500/30">
+            <div className="flex items-start space-x-4">
+                <div className="bg-indigo-600 p-3 rounded-lg text-2xl">💎</div>
+                <div className="flex-1">
+                    <h3 className="text-xl font-bold text-white mb-1">DojoMint™ Custom Monetization</h3>
+                    <p className="text-sm text-gray-300 mb-4">
+                        Set your own pricing. Parents pay you directly; we handle the tech.
+                    </p>
+                    
+                    <div className="bg-gray-900/60 p-5 rounded-lg border border-gray-700 mb-4">
+                        {/* Price Input - LARGE */}
+                        <div className="mb-6">
+                            <label className="text-xs text-gray-400 uppercase font-bold tracking-wider">Set Parent Price</label>
+                            <div className="flex items-baseline mt-2">
+                                <span className="text-white text-3xl font-bold mr-1">$</span>
+                                <input 
+                                    type="number" 
+                                    value={parentPrice}
+                                    disabled
+                                    className="bg-gray-800 border-2 border-indigo-500/50 rounded-lg px-4 py-3 text-white font-extrabold text-3xl w-28 focus:outline-none text-center cursor-not-allowed opacity-80"
+                                />
+                                <span className="text-gray-400 ml-2 text-sm">/student/mo</span>
+                            </div>
+                        </div>
+                        
+                        {/* Margin Bar Visual */}
+                        <div className="mb-5">
+                            <div className="flex justify-between text-xs mb-1">
+                                <span className="text-gray-500">Your Margin</span>
+                                <span className="text-green-400 font-bold">~{marginPercent}%</span>
+                            </div>
+                            <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+                                <div 
+                                    className="bg-gradient-to-r from-green-500 to-emerald-400 h-3 rounded-full"
+                                    style={{ width: `${marginPercent}%` }}
+                                />
+                            </div>
+                        </div>
+                        
+                        {/* Cost Breakdown - Fee is LOCKED */}
+                        <div className="flex items-end justify-between mb-4 gap-3">
+                            {/* Gateway Fee - LOCKED, no price shown */}
+                            <div className="flex-shrink-0">
+                                <p className="text-[9px] text-gray-600 uppercase">Gateway & Protocol Fee</p>
+                                <p className="text-gray-500 text-sm flex items-center">
+                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                    Standard Rate
+                                </p>
+                            </div>
+                            
+                            {/* Equals Sign */}
+                            <div className="text-gray-600 text-lg pb-1">=</div>
+                            
+                            {/* You Keep - LARGE & GREEN */}
+                            <div className="flex-1 bg-green-900/30 p-4 rounded-lg border border-green-500/40 text-center">
+                                <p className="text-[10px] text-green-300 uppercase tracking-wider font-bold mb-1">You Keep</p>
+                                <p className="text-green-400 text-3xl font-black">${youKeep.toFixed(2)}</p>
+                                <p className="text-green-300/60 text-[10px] mt-1">per student/mo</p>
+                            </div>
+                        </div>
+                        
+                        {/* Monthly Projection */}
+                        <div className="bg-gradient-to-r from-green-900/40 to-emerald-900/40 p-4 rounded-lg border border-green-500/30 text-center">
+                            <p className="text-xs text-green-300/80 uppercase tracking-wider mb-1">
+                                Monthly Revenue Projection ({displayStudents} {totalStudents > 0 ? 'students' : 'example'})
+                            </p>
+                            <p className="text-4xl font-black text-green-400">${monthlyProfit.toFixed(2)}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            <button 
+                                onClick={onToggle}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${clubSponsoredPremium ? 'bg-green-500' : 'bg-gray-600'}`}
+                            >
+                                <span className={`${clubSponsoredPremium ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
+                            </button>
+                            <span className="ml-3 text-sm font-medium text-white">
+                                {clubSponsoredPremium ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        {clubSponsoredPremium && (
+                            <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">Gateway Active</span>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- MARGIN CALCULATOR CARD (Real Mode) ---
 const MarginCalculatorCard: React.FC<{
     totalStudents: number;
@@ -2326,81 +2431,12 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
 
                 {/* DojoMint Monetization Card - Different UI for Demo vs Real */}
                 {data.isDemo ? (
-                    /* DEMO MODE - Original DojoMint Reseller UI */
-                    <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 p-6 rounded-lg border border-indigo-500/30">
-                        <div className="flex items-start space-x-4">
-                            <div className="bg-indigo-600 p-3 rounded-lg text-2xl">💎</div>
-                            <div className="flex-1">
-                                <h3 className="text-xl font-bold text-white mb-1">DojoMint™ Digital Reseller</h3>
-                                <p className="text-sm text-gray-300 mb-4">
-                                    Monetize your student base. Enable the <span className="text-indigo-300 font-semibold">DojoMint™ Gateway</span> to collect revenue automatically. You control the pricing; the protocol handles the rest.
-                                </p>
-                                
-                                <div className="bg-indigo-950/50 p-4 rounded border border-indigo-500/30 mb-4">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="text-xs text-gray-400 uppercase font-bold">Student Access Fee</label>
-                                            <div className="flex items-center mt-1">
-                                                <span className="text-white text-xl font-bold mr-2">$</span>
-                                                <input 
-                                                    type="number" 
-                                                    defaultValue="7.00" 
-                                                    step="0.50"
-                                                    min="3"
-                                                    max="15"
-                                                    className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white font-bold text-lg w-24 focus:outline-none focus:border-indigo-500"
-                                                />
-                                                <span className="text-gray-400 ml-2">/student/mo</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div>
-                                            <label className="text-xs text-gray-400 uppercase font-bold">DojoMint™ Protocol Fee</label>
-                                            <div className="flex items-center mt-1">
-                                                <span className="text-gray-500 flex items-center">
-                                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
-                                                    Standard Rate
-                                                </span>
-                                            </div>
-                                        </div>
-                                        
-                                        {totalStudents > 0 && (
-                                            <div className="bg-green-900/30 p-4 rounded border border-green-500/30">
-                                                <label className="text-xs text-green-300 uppercase font-bold">Your Monthly Generation ({totalStudents} students)</label>
-                                                <p className="text-3xl font-extrabold text-green-400 mt-1">${(totalStudents * 5.01).toFixed(2)}</p>
-                                                <p className="text-xs text-green-300/70 mt-1">Net Margin: ~72%</p>
-                                            </div>
-                                        )}
-                                        
-                                        {totalStudents === 0 && (
-                                            <div className="bg-green-900/30 p-4 rounded border border-green-500/30">
-                                                <label className="text-xs text-green-300 uppercase font-bold">Your Monthly Generation (50 students example)</label>
-                                                <p className="text-3xl font-extrabold text-green-400 mt-1">$250.50</p>
-                                                <p className="text-xs text-green-300/70 mt-1">Net Margin: ~72%</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        <button 
-                                            onClick={() => onUpdateData({ clubSponsoredPremium: !data.clubSponsoredPremium })}
-                                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${data.clubSponsoredPremium ? 'bg-green-500' : 'bg-gray-600'}`}
-                                        >
-                                            <span className={`${data.clubSponsoredPremium ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
-                                        </button>
-                                        <span className="ml-3 text-sm font-medium text-white">
-                                            {data.clubSponsoredPremium ? 'Enabled' : 'Disabled'}
-                                        </span>
-                                    </div>
-                                    {data.clubSponsoredPremium && (
-                                        <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">Reseller Mode Active</span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    /* DEMO MODE - Same layout as Real Mode but with LOCKED fee */
+                    <DemoMarginCalculatorCard 
+                        totalStudents={totalStudents}
+                        clubSponsoredPremium={data.clubSponsoredPremium}
+                        onToggle={() => onUpdateData({ clubSponsoredPremium: !data.clubSponsoredPremium })}
+                    />
                 ) : (
                     /* REAL MODE - Margin Calculator Style UI */
                     <MarginCalculatorCard 
