@@ -6164,6 +6164,95 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// Record content view/completion
+async function handleContentView(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const client = await pool.connect();
+  try {
+    const { contentId, studentId, completed, xpAwarded } = req.body;
+    
+    if (!contentId) {
+      return res.status(400).json({ error: 'Content ID is required' });
+    }
+
+    // Check if content exists
+    const contentCheck = await client.query(
+      `SELECT id FROM curriculum_content WHERE id = $1::uuid LIMIT 1`,
+      [contentId]
+    );
+    if (contentCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    // Check if student exists
+    let validStudentId = null;
+    if (studentId) {
+      const studentCheck = await client.query(
+        `SELECT id FROM students WHERE id = $1::uuid LIMIT 1`,
+        [studentId]
+      );
+      if (studentCheck.rows.length > 0) {
+        validStudentId = studentId;
+      }
+    }
+
+    // Check for existing view
+    const existingView = await client.query(
+      `SELECT id, completed FROM content_views 
+       WHERE content_id = $1::uuid 
+       AND ${validStudentId ? 'student_id = $2::uuid' : 'student_id IS NULL'}
+       LIMIT 1`,
+      validStudentId ? [contentId, validStudentId] : [contentId]
+    );
+
+    if (existingView.rows.length > 0) {
+      // Update existing view if completing
+      if (completed && !existingView.rows[0].completed) {
+        await client.query(
+          `UPDATE content_views 
+           SET completed = true, completed_at = NOW(), xp_awarded = $1
+           WHERE id = $2::uuid`,
+          [xpAwarded || 0, existingView.rows[0].id]
+        );
+        
+        await client.query(
+          `UPDATE curriculum_content 
+           SET completion_count = COALESCE(completion_count, 0) + 1
+           WHERE id = $1::uuid`,
+          [contentId]
+        );
+      }
+      return res.json({ success: true, action: 'updated' });
+    }
+
+    // Create new view record
+    await client.query(
+      `INSERT INTO content_views (content_id, student_id, completed, completed_at, xp_awarded, viewed_at)
+       VALUES ($1::uuid, ${validStudentId ? '$2::uuid' : 'NULL'}, $${validStudentId ? 3 : 2}, ${completed ? 'NOW()' : 'NULL'}, $${validStudentId ? 4 : 3}, NOW())`,
+      validStudentId 
+        ? [contentId, validStudentId, completed || false, xpAwarded || 0]
+        : [contentId, completed || false, xpAwarded || 0]
+    );
+
+    // Increment view count
+    await client.query(
+      `UPDATE curriculum_content 
+       SET view_count = COALESCE(view_count, 0) + 1
+       ${completed ? ', completion_count = COALESCE(completion_count, 0) + 1' : ''}
+       WHERE id = $1::uuid`,
+      [contentId]
+    );
+
+    return res.json({ success: true, action: 'created' });
+  } catch (error: any) {
+    console.error('[Content View] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to record content view' });
+  } finally {
+    client.release();
+  }
+}
+
 // Get content completions for analytics (who completed what)
 async function handleContentCompletions(req: VercelRequest, res: VercelResponse, clubId: string) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -6388,6 +6477,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Content Management (Creator Hub)
     if (path === '/content/sync' || path === '/content/sync/') return await handleContentSync(req, res);
+    if (path === '/content/view' || path === '/content/view/') return await handleContentView(req, res);
     
     const contentCompletionsMatch = path.match(/^\/content\/completions\/([^/]+)\/?$/);
     if (contentCompletionsMatch) return await handleContentCompletions(req, res, contentCompletionsMatch[1]);

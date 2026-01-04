@@ -235,6 +235,19 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
         return state.completedContentIds.includes(contentId);
     }, [state.completedContentIds]);
     
+    const trackView = useCallback((contentId: string): void => {
+        fetch('/api/content/view', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contentId,
+                studentId: student.id,
+                completed: false,
+                xpAwarded: 0
+            })
+        }).catch(err => console.warn('Failed to record content view:', err));
+    }, [student.id]);
+    
     const hasPendingChanges = state.pendingMutations.length > 0;
     
     return {
@@ -243,6 +256,7 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
         xp: state.xp,
         completeContent,
         isCompleted,
+        trackView,
         hasPendingChanges
     };
 }
