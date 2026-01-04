@@ -146,8 +146,8 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                 <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-2xl">
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h3 className="text-xl font-bold text-white flex items-center"><span className="mr-2">🏦</span> {data.isDemo ? 'SenseiVault™ Estimator' : 'Revenue Estimator'}</h3>
-                            <p className="text-gray-400 text-sm">{data.isDemo ? 'See how DojoMint™ protocol turns student engagement into net profit.' : 'See how Parent Premium subscriptions can generate additional revenue for your club.'}</p>
+                            <h3 className="text-xl font-bold text-white flex items-center"><span className="mr-2">🏦</span> {data.isDemo ? 'SenseiVault™ Estimator' : 'SenseiVault™ Live Projection'}</h3>
+                            <p className="text-gray-400 text-sm">{data.isDemo ? 'See how DojoMint™ protocol turns student engagement into net profit.' : 'Monitor your active DojoMint™ revenue against your platform fees.'}</p>
                         </div>
                         <div className="bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
                             <span className="text-xs text-gray-500 uppercase block">Your Plan</span>
@@ -168,7 +168,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                     <div className="grid md:grid-cols-2 gap-10">
                         <div>
                             <label className="block text-sm text-gray-300 mb-4">
-                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> {data.isDemo ? 'Active Warriors unlock their SenseiVault™ Access...' : 'students subscribe to Parent Premium...'}
+                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> {data.isDemo ? 'Active Warriors unlock their SenseiVault™ Access...' : 'students become Active Legacy Activations...'}
                             </label>
                             <input 
                                 type="range" 
@@ -208,7 +208,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-400">{data.isDemo ? 'Your DojoMint™ Income:' : 'Your Premium Income:'}</span>
+                                    <span className="text-gray-400">{data.isDemo ? 'Your DojoMint™ Income:' : 'Your DojoMint™ Revenue:'}</span>
                                     <span className="text-green-400 font-semibold">+${revenue.clubRevenue.toFixed(2)}</span>
                                 </div>
                             </div>
@@ -218,7 +218,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                     {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)} {revenue.profit > 0 && '🚀'}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-2">
-                                    {data.isDemo ? '(Paid via Performance Royalty)' : '(Based on $7.00 price - $1.99 wholesale)'}
+                                    {data.isDemo ? '(Paid via Performance Royalty)' : '(Derived from: $7.00 Student Fee - $1.99 Protocol Fee)'}
                                 </p>
                             </div>
                         </div>
@@ -2201,7 +2201,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                             </div>
                             {data.clubSponsoredPremium && (
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-indigo-300">{data.isDemo ? 'DojoMint™ Reseller' : 'Parent Premium (Wholesale)'}</span>
+                                    <span className="text-indigo-300">{data.isDemo ? 'DojoMint™ Reseller' : 'DojoMint™ Protocol Cost'}</span>
                                     <span className="text-indigo-300 font-bold">+${bulkCost.toFixed(2)}</span>
                                 </div>
                             )}
@@ -2221,12 +2221,12 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="bg-indigo-600 p-3 rounded-lg text-2xl">💎</div>
                         <div className="flex-1">
                             <h3 className="text-xl font-bold text-white mb-1">
-                                {data.isDemo ? 'DojoMint™ Digital Reseller' : 'Parent Premium Program'}
+                                {data.isDemo ? 'DojoMint™ Digital Reseller' : 'DojoMint™ Gateway'}
                             </h3>
                             <p className="text-sm text-gray-300 mb-4">
                                 {data.isDemo 
                                     ? <>Monetize your student base. Enable the <span className="text-indigo-300 font-semibold">DojoMint™ Gateway</span> to collect revenue automatically. You control the pricing; the protocol handles the rest.</>
-                                    : <>Offer premium features to parents and earn revenue. You set the price parents pay, we handle billing. You keep the difference between your price and our wholesale cost.</>
+                                    : <>Activate the <span className="text-indigo-300 font-semibold">DojoMint™ Gateway</span> to unlock parent premium subscriptions. You set the Student Fee; the protocol handles the rest.</>
                                 }
                             </p>
                             
@@ -2234,7 +2234,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-xs text-gray-400 uppercase font-bold">
-                                            {data.isDemo ? 'Student Access Fee' : 'Your Price to Parents'}
+                                            {data.isDemo ? 'Student Access Fee' : 'Student Fee'}
                                         </label>
                                         <div className="flex items-center mt-1">
                                             <span className="text-white text-xl font-bold mr-2">$</span>
@@ -2262,7 +2262,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                         </div>
                                     ) : (
                                         <div>
-                                            <label className="text-xs text-gray-400 uppercase font-bold">Wholesale Cost (TaekUp Fee)</label>
+                                            <label className="text-xs text-gray-400 uppercase font-bold">DojoMint™ Protocol Fee</label>
                                             <div className="flex items-center mt-1">
                                                 <span className="text-amber-400 font-bold">$1.99</span>
                                                 <span className="text-gray-400 ml-1">/student/mo</span>
@@ -2278,7 +2278,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                             </label>
                                             <p className="text-3xl font-extrabold text-green-400 mt-1">${(totalStudents * 5.01).toFixed(2)}</p>
                                             <p className="text-xs text-green-300/70 mt-1">
-                                                {data.isDemo ? 'Net Margin: ~72%' : `Based on $7.00 price - $1.99 wholesale = $5.01 × ${totalStudents} students`}
+                                                {data.isDemo ? 'Net Margin: ~72%' : `$7.00 Student Fee - $1.99 Protocol Fee = $5.01 × ${totalStudents}`}
                                             </p>
                                         </div>
                                     )}
@@ -2290,7 +2290,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                             </label>
                                             <p className="text-3xl font-extrabold text-green-400 mt-1">$250.50</p>
                                             <p className="text-xs text-green-300/70 mt-1">
-                                                {data.isDemo ? 'Net Margin: ~72%' : '$7.00 - $1.99 = $5.01 × 50 students'}
+                                                {data.isDemo ? 'Net Margin: ~72%' : '$7.00 Student Fee - $1.99 Protocol Fee = $5.01 × 50'}
                                             </p>
                                         </div>
                                     )}
@@ -2311,7 +2311,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                 </div>
                                 {data.clubSponsoredPremium && (
                                     <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">
-                                        {data.isDemo ? 'Reseller Mode Active' : 'Premium Active'}
+                                        {data.isDemo ? 'Reseller Mode Active' : 'Gateway Active'}
                                     </span>
                                 )}
                             </div>
@@ -2327,7 +2327,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <span className="text-3xl mr-2">💰</span>
                         <div>
                             <h3 className="font-bold text-white text-lg">Club Wallet</h3>
-                            <p className="text-sm text-gray-400">{data.isDemo ? 'Your DojoMint™ earnings' : 'Your premium subscription earnings'}</p>
+                            <p className="text-sm text-gray-400">{data.isDemo ? 'Your DojoMint™ earnings' : 'Your DojoMint™ payouts'}</p>
                         </div>
                     </div>
                     
@@ -2340,7 +2340,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
                             <div className="text-sm text-gray-300 space-y-2">
                                 <div className="flex justify-between">
-                                    <span>{data.isDemo ? 'Legacy Activations' : 'Active Subscribers'}</span>
+                                    <span>{data.isDemo ? 'Legacy Activations' : 'Active Legacy Holders'}</span>
                                     <span className="font-bold text-white">0</span>
                                 </div>
                                 <div className="flex justify-between">
