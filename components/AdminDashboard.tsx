@@ -1718,7 +1718,8 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         // Sync to database when publishing
         if (clubId && newStatus === 'live') {
             try {
-                await fetch('/api/content/sync', {
+                console.log('[CreatorHub] Syncing content to database:', { clubId, content: content.title });
+                const response = await fetch('/api/content/sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1726,9 +1727,13 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                         content: { ...content, status: 'live' }
                     })
                 });
+                const result = await response.json();
+                console.log('[CreatorHub] Sync result:', result);
             } catch (err) {
-                console.error('Failed to sync content:', err);
+                console.error('[CreatorHub] Failed to sync content:', err);
             }
+        } else {
+            console.log('[CreatorHub] Not syncing:', { clubId, newStatus });
         }
     };
 

@@ -1941,6 +1941,7 @@ export function registerRoutes(app: Express) {
   app.post('/api/content/sync', async (req: Request, res: Response) => {
     try {
       const { clubId, content } = req.body;
+      console.log('[Content Sync] Received:', { clubId, contentTitle: content?.title });
       
       if (!clubId || !content) {
         return res.status(400).json({ error: 'Club ID and content are required' });
