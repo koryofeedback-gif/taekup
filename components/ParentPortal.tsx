@@ -2417,7 +2417,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                 </div>
                 
-                {/* World Rank Preview - only show if they have global XP */}
+                {/* Global Shogun League Preview - only show if they have global XP */}
                 {worldRankData.myRank && worldRankData.myGlobalXP > 0 && (
                     <div 
                         onClick={() => setActiveTab('rivals')}
@@ -2426,7 +2426,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <div className="flex items-center">
                             <span className="text-xl mr-2">🌍</span>
                             <div>
-                                <p className="text-xs text-cyan-300 font-bold">World Rank #{worldRankData.myRank}</p>
+                                <p className="text-xs text-cyan-300 font-bold">Global Shogun Rank™ #{worldRankData.myRank}</p>
                                 <p className="text-[10px] text-gray-400">{worldRankData.myGlobalXP} Global HonorXP™</p>
                             </div>
                         </div>
@@ -4721,11 +4721,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         })
                                     )}
                                     
-                                    {/* WORLD RANKINGS SECTION */}
+                                    {/* GLOBAL SHOGUN LEAGUE SECTION */}
                                     <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 p-4 rounded-xl border border-cyan-500/30 mt-6">
                                         <div className="flex items-center justify-between mb-3">
                                             <h4 className="font-bold text-white flex items-center">
-                                                <span className="mr-2">🌍</span> World Rankings
+                                                <span className="mr-2">🌍</span> Global Shogun League
                                             </h4>
                                             {worldRankLoading && (
                                                 <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
@@ -4796,12 +4796,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <div className="text-center py-4">
                                                     {worldRankData.message?.includes('opted') ? (
                                                         <>
-                                                            <p className="text-yellow-400 text-sm">Your club hasn't joined World Rankings yet.</p>
-                                                            <p className="text-gray-500 text-xs mt-2">Ask your club owner to enable World Rankings in settings!</p>
+                                                            <p className="text-yellow-400 text-sm">Your club hasn't joined the Global Shogun League yet.</p>
+                                                            <p className="text-gray-500 text-xs mt-2">Ask your club owner to enable Global Shogun League in settings!</p>
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <p className="text-gray-400 text-sm">Complete challenges to earn Global HonorXP™ and appear on the World Rankings!</p>
+                                                            <p className="text-gray-400 text-sm">Complete challenges to earn Global HonorXP™ and appear on the Global Shogun League!</p>
                                                             <p className="text-gray-500 text-xs mt-2">Only challenges with video proof count toward global rankings.</p>
                                                         </>
                                                     )}
