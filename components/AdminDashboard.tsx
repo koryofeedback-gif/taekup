@@ -69,16 +69,13 @@ const Modal: React.FC<{ children: React.ReactNode; onClose: () => void; title: s
     </div>
 );
 
-// --- DEMO MARGIN CALCULATOR CARD (Demo Mode - Fee Locked) ---
+// --- DEMO MARGIN CALCULATOR CARD (Demo Mode - Matches Real but with LOCKED values for FOMO) ---
 const DemoMarginCalculatorCard: React.FC<{
     totalStudents: number;
     clubSponsoredPremium: boolean;
     onToggle: () => void;
 }> = ({ totalStudents, clubSponsoredPremium, onToggle }) => {
-    const [parentPrice] = useState(7.00);
-    const youKeep = 5.01;
-    const marginPercent = 72;
-    const monthlyProfit = youKeep * (totalStudents > 0 ? totalStudents : 50);
+    const [tuitionIncrease] = useState(10.00);
     const displayStudents = totalStudents > 0 ? totalStudents : 50;
     
     return (
@@ -86,69 +83,71 @@ const DemoMarginCalculatorCard: React.FC<{
             <div className="flex items-start space-x-4">
                 <div className="bg-indigo-600 p-3 rounded-lg text-2xl">💎</div>
                 <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-1">DojoMint™ Custom Monetization</h3>
+                    <h3 className="text-xl font-bold text-white mb-1">DojoMint™ Universal Access</h3>
                     <p className="text-sm text-gray-300 mb-4">
-                        Set your own pricing. Parents pay you directly; we handle the tech.
+                        Sponsor the app for your students. You pay a flat "Club Rate," and the app becomes FREE for all parents. Increase your gym tuition to cover it and keep the profit.
                     </p>
                     
                     <div className="bg-gray-900/60 p-5 rounded-lg border border-gray-700 mb-4">
-                        {/* Price Input - LARGE */}
+                        {/* Tuition Increase Input - LARGE but disabled */}
                         <div className="mb-6">
-                            <label className="text-xs text-gray-400 uppercase font-bold tracking-wider">Set Parent Price</label>
+                            <label className="text-xs text-gray-400 uppercase font-bold tracking-wider">Projected Tuition Increase</label>
                             <div className="flex items-baseline mt-2">
                                 <span className="text-white text-3xl font-bold mr-1">$</span>
                                 <input 
                                     type="number" 
-                                    value={parentPrice}
+                                    value={tuitionIncrease}
                                     disabled
                                     className="bg-gray-800 border-2 border-indigo-500/50 rounded-lg px-4 py-3 text-white font-extrabold text-3xl w-28 focus:outline-none text-center cursor-not-allowed opacity-80"
                                 />
                                 <span className="text-gray-400 ml-2 text-sm">/student/mo</span>
                             </div>
+                            <p className="text-[10px] text-gray-500 mt-1">Amount you add to membership</p>
                         </div>
                         
-                        {/* Margin Bar Visual */}
-                        <div className="mb-5">
-                            <div className="flex justify-between text-xs mb-1">
-                                <span className="text-gray-500">Your Margin</span>
-                                <span className="text-green-400 font-bold">~{marginPercent}%</span>
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
-                                <div 
-                                    className="bg-gradient-to-r from-green-500 to-emerald-400 h-3 rounded-full"
-                                    style={{ width: `${marginPercent}%` }}
-                                />
-                            </div>
-                        </div>
-                        
-                        {/* Cost Breakdown - Fee is LOCKED */}
+                        {/* Cost Breakdown - LOCKED values for FOMO */}
                         <div className="flex items-end justify-between mb-4 gap-3">
-                            {/* Gateway Fee - LOCKED, no price shown */}
+                            {/* Club Rate - LOCKED with Exclusive B2B Rate */}
                             <div className="flex-shrink-0">
-                                <p className="text-[9px] text-gray-600 uppercase">Gateway & Protocol Fee</p>
-                                <p className="text-gray-500 text-sm flex items-center">
-                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
-                                    Standard Rate
+                                <p className="text-[9px] text-gray-600 uppercase">DojoMint™ Club Rate</p>
+                                <p className="text-amber-400 text-sm flex items-center font-medium">
+                                    <span className="mr-1">🔒</span>
+                                    Exclusive B2B Rate
                                 </p>
+                                <p className="text-[9px] text-gray-500">(Billed to Club)</p>
                             </div>
                             
                             {/* Equals Sign */}
-                            <div className="text-gray-600 text-lg pb-1">=</div>
+                            <div className="text-gray-600 text-lg pb-3">=</div>
                             
-                            {/* You Keep - LARGE & GREEN */}
+                            {/* Net Profit - LOCKED with Calculate in Dashboard */}
                             <div className="flex-1 bg-green-900/30 p-4 rounded-lg border border-green-500/40 text-center">
-                                <p className="text-[10px] text-green-300 uppercase tracking-wider font-bold mb-1">You Keep</p>
-                                <p className="text-green-400 text-3xl font-black">${youKeep.toFixed(2)}</p>
+                                <p className="text-[10px] text-green-300 uppercase tracking-wider font-bold mb-1">Net Profit</p>
+                                <p className="text-green-400 text-lg font-bold flex items-center justify-center">
+                                    <span className="mr-1">🔒</span>
+                                    Calculate in Dashboard
+                                </p>
                                 <p className="text-green-300/60 text-[10px] mt-1">per student/mo</p>
                             </div>
                         </div>
                         
-                        {/* Monthly Projection */}
+                        {/* Free for Students Banner */}
+                        <div className="bg-sky-900/30 p-3 rounded-lg border border-sky-500/30 text-center mb-4">
+                            <p className="text-sky-300 text-sm font-medium flex items-center justify-center">
+                                <span className="mr-2">✨</span>
+                                The app becomes FREE for your students.
+                            </p>
+                        </div>
+                        
+                        {/* Monthly Projection - LOCKED */}
                         <div className="bg-gradient-to-r from-green-900/40 to-emerald-900/40 p-4 rounded-lg border border-green-500/30 text-center">
                             <p className="text-xs text-green-300/80 uppercase tracking-wider mb-1">
-                                Monthly Revenue Projection ({displayStudents} {totalStudents > 0 ? 'students' : 'example'})
+                                Monthly Profit ({displayStudents} {totalStudents > 0 ? 'students' : 'example'})
                             </p>
-                            <p className="text-4xl font-black text-green-400">${monthlyProfit.toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-green-400 flex items-center justify-center">
+                                <span className="mr-2">🔒</span>
+                                Unlock with Real Club
+                            </p>
                         </div>
                     </div>
 
@@ -165,7 +164,7 @@ const DemoMarginCalculatorCard: React.FC<{
                             </span>
                         </div>
                         {clubSponsoredPremium && (
-                            <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">Gateway Active</span>
+                            <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">Universal Access Active</span>
                         )}
                     </div>
                 </div>
