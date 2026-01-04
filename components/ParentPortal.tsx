@@ -2809,11 +2809,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 const xpReward = video.xpReward || 10;
                                 const isPremiumContent = video.pricingType === 'premium';
                                 
-                                const handleComplete = (e: React.MouseEvent) => {
+                                const handleComplete = async (e: React.MouseEvent) => {
                                     e.preventDefault();
                                     const awarded = completeContent(video.id, xpReward);
                                     if (awarded) {
                                         setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
+                                        // Track completion for coach visibility
+                                        try {
+                                            await fetch('/api/content/view', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ 
+                                                    contentId: video.id, 
+                                                    studentId: student.id,
+                                                    completed: true,
+                                                    xpAwarded: xpReward
+                                                })
+                                            });
+                                        } catch (err) {
+                                            console.error('Failed to track completion:', err);
+                                        }
                                     }
                                     window.open(video.url, '_blank');
                                 };
