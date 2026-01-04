@@ -2773,18 +2773,32 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {!hasPremiumAccess && renderPremiumLock("The Practice Dojo", `Help your child practice at home. Unlock training missions and videos.`)}
 
                 <div className={`space-y-6 pb-20 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none overflow-hidden h-[500px]' : ''}`}>
-                    <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 p-4 rounded-xl shadow-lg relative overflow-hidden">
-                        <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-4 -mt-2">🥋</div>
-                        <h3 className="font-bold text-white relative z-10">Current Mission: {currentBelt?.name}</h3>
-                        <p className="text-sm text-yellow-100 relative z-10 mt-1">
-                            {hasVideos ? "Master these skills to earn your next stripe." : "Complete these family challenges to build discipline."}
+                    <div className="bg-gradient-to-r from-emerald-700 to-teal-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
+                        <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-4 -mt-2">📚</div>
+                        <h3 className="font-bold text-white text-lg relative z-10">Sensei Academy</h3>
+                        <p className="text-sm text-emerald-100 relative z-10 mt-1">
+                            {hasVideos 
+                                ? "Training videos and resources from your instructor. Watch and practice at home!" 
+                                : "Complete these family challenges to build discipline together."}
                         </p>
+                        {hasVideos && (
+                            <p className="text-[11px] text-emerald-200/70 relative z-10 mt-2">
+                                ✓ Your progress is tracked and visible to your coach
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
-                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider pl-1">
-                            {hasVideos ? "My Curriculum" : "Family Missions"}
-                        </h4>
+                        <div className="flex items-center justify-between pl-1">
+                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">
+                                {hasVideos ? "Training Library" : "Family Missions"}
+                            </h4>
+                            {hasVideos && (
+                                <span className="text-[10px] text-gray-500">
+                                    {studentVideos.filter(v => isContentCompleted(v.id)).length}/{studentVideos.length} completed
+                                </span>
+                            )}
+                        </div>
                         
                         {hasVideos ? (
                             studentVideos
@@ -2795,11 +2809,29 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 const xpReward = video.xpReward || 10;
                                 const isPremiumContent = video.pricingType === 'premium';
                                 
-                                const handleComplete = (e: React.MouseEvent) => {
+                                const handleComplete = async (e: React.MouseEvent) => {
                                     e.preventDefault();
-                                    const awarded = completeContent(video.id, xpReward);
-                                    if (awarded) {
-                                        setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
+                                    if (!isCompleted) {
+                                        const awarded = completeContent(video.id, xpReward);
+                                        if (awarded) {
+                                            // Add to LOCAL XP only (not global)
+                                            setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
+                                            // Track completion in database for coach visibility
+                                            try {
+                                                await fetch('/api/content/view', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ 
+                                                        contentId: video.id, 
+                                                        studentId: student.id,
+                                                        completed: true,
+                                                        xpAwarded: xpReward
+                                                    })
+                                                });
+                                            } catch (err) {
+                                                console.error('Failed to track content view:', err);
+                                            }
+                                        }
                                     }
                                     window.open(video.url, '_blank');
                                 };
@@ -2808,10 +2840,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     <div 
                                         key={idx} 
                                         onClick={handleComplete}
-                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border flex group cursor-pointer transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : 'border-gray-700 hover:border-sky-500'}`}
+                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border flex group cursor-pointer transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : 'border-gray-700 hover:border-emerald-500'}`}
                                     >
                                         <div className={`w-24 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-300 ${isCompleted ? 'bg-green-900/30' : 'bg-gray-900'}`}>
-                                            {isCompleted ? '✅' : (video.contentType === 'document' ? '📄' : '🥋')}
+                                            {isCompleted ? '✅' : (video.contentType === 'document' ? '📄' : '🎬')}
                                         </div>
                                         <div className="p-4 flex-1">
                                             <div className="flex items-center gap-2">
@@ -2819,14 +2851,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 {isPremiumContent && <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">Premium</span>}
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-xs text-gray-500">{isCompleted ? 'Completed!' : 'Watch to earn HonorXP™'}</p>
-                                                <span className={`text-xs font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
-                                                    {isCompleted ? `+${xpReward} HonorXP™ earned` : `+${xpReward} HonorXP™`}
+                                                <p className="text-xs text-gray-500">{isCompleted ? 'Watched ✓' : (video.contentType === 'document' ? 'Read to learn' : 'Watch to learn')}</p>
+                                                <span className={`text-xs font-bold ${isCompleted ? 'text-green-400' : 'text-cyan-400'}`}>
+                                                    {isCompleted ? `+${xpReward} Local XP` : `+${xpReward} Local XP`}
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="flex items-center px-4">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${isCompleted ? 'bg-green-500 shadow-green-600/30' : 'bg-sky-500 group-hover:bg-sky-400 shadow-blue-600/30'}`}>
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${isCompleted ? 'bg-green-500 shadow-green-600/30' : 'bg-emerald-500 group-hover:bg-emerald-400 shadow-emerald-600/30'}`}>
                                                 <span className="text-white text-xs">{isCompleted ? '✓' : '▶'}</span>
                                             </div>
                                         </div>
@@ -2867,8 +2899,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         )}
                     </div>
 
-                    <div className="mt-8 p-4 bg-gray-800/50 rounded-lg text-center border border-gray-700/50">
-                        <p className="text-xs text-gray-500">Need more help? Ask your instructor during next class!</p>
+                    {/* Info Section */}
+                    <div className="mt-6 space-y-3">
+                        <div className="p-4 bg-gradient-to-r from-cyan-900/30 to-teal-900/30 rounded-xl border border-cyan-700/30">
+                            <div className="flex items-start gap-3">
+                                <span className="text-xl">💡</span>
+                                <div>
+                                    <h5 className="font-bold text-cyan-300 text-sm">How It Works</h5>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Watch the training videos shared by your instructor. When you complete them, 
+                                        your coach can see your progress and you earn <span className="text-cyan-400 font-bold">Local XP</span> for your club ranking.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-3 bg-gray-800/50 rounded-lg text-center border border-gray-700/50">
+                            <p className="text-xs text-gray-500">📞 Questions about the curriculum? Ask your instructor at your next class!</p>
+                        </div>
                     </div>
                 </div>
             </div>
