@@ -6080,6 +6080,81 @@ async function handleGauntletSubmit(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// Sync curriculum content to database (called when publishing from Creator Hub)
+async function handleContentSync(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const client = await pool.connect();
+  try {
+    const { clubId, content } = req.body;
+    console.log('[Content Sync] Received:', { clubId, contentTitle: content?.title });
+    
+    if (!clubId || !content) {
+      return res.status(400).json({ error: 'Club ID and content are required' });
+    }
+
+    const { id, title, url, beltId, contentType, status, pricingType, xpReward, description } = content;
+    
+    // Check if ID is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isValidUuid = uuidRegex.test(id);
+    
+    // Check if content already exists
+    let existingId = null;
+    if (isValidUuid) {
+      const existing = await client.query(
+        `SELECT id FROM curriculum_content WHERE id = $1::uuid LIMIT 1`,
+        [id]
+      );
+      if (existing.rows.length > 0) {
+        existingId = existing.rows[0].id;
+      }
+    } else {
+      // Try to find by title+url match for the same club
+      const existing = await client.query(
+        `SELECT id FROM curriculum_content WHERE club_id = $1::uuid AND title = $2 AND url = $3 LIMIT 1`,
+        [clubId, title, url]
+      );
+      if (existing.rows.length > 0) {
+        existingId = existing.rows[0].id;
+      }
+    }
+
+    if (existingId) {
+      // Update existing content
+      await client.query(`
+        UPDATE curriculum_content 
+        SET title = $1, url = $2, belt_id = $3, 
+            content_type = $4, status = $5,
+            pricing_type = $6, xp_reward = $7,
+            description = $8, updated_at = NOW()
+        WHERE id = $9::uuid
+      `, [title, url, beltId || 'all', contentType || 'video', status || 'draft',
+          pricingType || 'free', xpReward || 10, description || null, existingId]);
+      
+      console.log('[Content Sync] Updated:', existingId);
+      return res.json({ success: true, action: 'updated', contentId: existingId });
+    }
+
+    // Insert new content (let DB generate UUID)
+    const result = await client.query(`
+      INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, created_at, updated_at)
+      VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+      RETURNING id
+    `, [clubId, title, url, beltId || 'all', contentType || 'video', status || 'draft',
+        pricingType || 'free', xpReward || 10, description || null]);
+    
+    const newId = result.rows[0]?.id;
+    console.log('[Content Sync] Created:', newId);
+    return res.json({ success: true, action: 'created', contentId: newId });
+  } catch (error: any) {
+    console.error('[Content Sync] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to sync content' });
+  } finally {
+    client.release();
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -6250,6 +6325,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const studentStatsMatch = path.match(/^\/students\/([^/]+)\/stats\/?$/);
     if (studentStatsMatch) return await handleStudentStats(req, res, studentStatsMatch[1]);
+
+    // Content Management (Creator Hub)
+    if (path === '/content/sync' || path === '/content/sync/') return await handleContentSync(req, res);
 
     // Demo Mode
     if (path === '/demo/load' || path === '/demo/load/') return await handleDemoLoad(req, res);
