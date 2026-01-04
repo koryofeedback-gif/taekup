@@ -2809,29 +2809,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 const xpReward = video.xpReward || 10;
                                 const isPremiumContent = video.pricingType === 'premium';
                                 
-                                const handleComplete = async (e: React.MouseEvent) => {
+                                const handleComplete = (e: React.MouseEvent) => {
                                     e.preventDefault();
-                                    if (!isCompleted) {
-                                        const awarded = completeContent(video.id, xpReward);
-                                        if (awarded) {
-                                            // Add to LOCAL XP only (not global)
-                                            setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
-                                            // Track completion in database for coach visibility
-                                            try {
-                                                await fetch('/api/content/view', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ 
-                                                        contentId: video.id, 
-                                                        studentId: student.id,
-                                                        completed: true,
-                                                        xpAwarded: xpReward
-                                                    })
-                                                });
-                                            } catch (err) {
-                                                console.error('Failed to track content view:', err);
-                                            }
-                                        }
+                                    const awarded = completeContent(video.id, xpReward);
+                                    if (awarded) {
+                                        setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
                                     }
                                     window.open(video.url, '_blank');
                                 };
@@ -2851,9 +2833,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 {isPremiumContent && <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">Premium</span>}
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-xs text-gray-500">{isCompleted ? 'Watched ✓' : (video.contentType === 'document' ? 'Read to learn' : 'Watch to learn')}</p>
-                                                <span className={`text-xs font-bold ${isCompleted ? 'text-green-400' : 'text-cyan-400'}`}>
-                                                    {isCompleted ? `+${xpReward} Local XP` : `+${xpReward} Local XP`}
+                                                <p className="text-xs text-gray-500">{isCompleted ? 'Completed!' : 'Watch to earn HonorXP™'}</p>
+                                                <span className={`text-xs font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                    {isCompleted ? `+${xpReward} HonorXP™ earned` : `+${xpReward} HonorXP™`}
                                                 </span>
                                             </div>
                                         </div>
@@ -2899,23 +2881,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         )}
                     </div>
 
-                    {/* Info Section */}
-                    <div className="mt-6 space-y-3">
-                        <div className="p-4 bg-gradient-to-r from-cyan-900/30 to-teal-900/30 rounded-xl border border-cyan-700/30">
-                            <div className="flex items-start gap-3">
-                                <span className="text-xl">💡</span>
-                                <div>
-                                    <h5 className="font-bold text-cyan-300 text-sm">How It Works</h5>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                        Watch the training videos shared by your instructor. When you complete them, 
-                                        your coach can see your progress and you earn <span className="text-cyan-400 font-bold">Local XP</span> for your club ranking.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-3 bg-gray-800/50 rounded-lg text-center border border-gray-700/50">
-                            <p className="text-xs text-gray-500">📞 Questions about the curriculum? Ask your instructor at your next class!</p>
-                        </div>
+                    <div className="mt-8 p-4 bg-gray-800/50 rounded-lg text-center border border-gray-700/50">
+                        <p className="text-xs text-gray-500">Questions? Ask your instructor at your next class!</p>
                     </div>
                 </div>
             </div>
