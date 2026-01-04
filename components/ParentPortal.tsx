@@ -66,7 +66,7 @@ interface ParentPortalProps {
 const getBelt = (beltId: string, belts: Belt[]) => belts.find(b => b.id === beltId);
 
 export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack, onUpdateStudent }) => {
-    const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'home-dojo' | 'rivals'>('home');
+    const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'rivals'>('home');
     const [isPremium, setIsPremium] = useState(false); // Toggle to simulate upgrade
     const [serverConfirmedPremium, setServerConfirmedPremium] = useState(false); // Premium status from API
     const [missionChecks, setMissionChecks] = useState<Record<string, boolean>>({});
@@ -295,7 +295,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [challengeResult, setChallengeResult] = useState<'pending' | 'win' | 'loss' | null>(null);
     const [isSimulatingChallenge, setIsSimulatingChallenge] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState<string>('');
-    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery'>('arena');
+    const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery' | 'daily'>('arena');
     const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
     const [challengeHistory, setChallengeHistory] = useState<Array<{
         id: string;
@@ -2482,32 +2482,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <p className="text-[10px] text-gray-400 mt-1">Digital ID & Rarity</p>
                 </div>
 
-                {/* Dojo Quests */}
-                <div 
-                    onClick={() => setActiveTab('home-dojo')}
-                    className="bg-gradient-to-br from-green-900/80 to-green-950 border border-green-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-green-500/70 transition-all relative"
-                >
-                    <div className="text-3xl mb-2">🏠</div>
-                    <h4 className="font-bold text-white text-sm">Dojo Quests</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">
-                        {atDailyLimit ? (
-                            <span className="text-green-400">✓ Complete!</span>
-                        ) : habitXpToday > 0 ? (
-                            <span className="text-yellow-400">{habitXpToday} HonorXP™ today</span>
-                        ) : (
-                            'Daily Habits & XP'
-                        )}
-                    </p>
-                </div>
-
-                {/* Battle Arena */}
+                {/* Battle Arena - Now includes Daily Quests */}
                 <div 
                     onClick={() => setActiveTab('rivals')}
-                    className="bg-gradient-to-br from-orange-900/80 to-orange-950 border border-orange-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-orange-500/70 transition-all"
+                    className="bg-gradient-to-br from-orange-900/80 to-orange-950 border border-orange-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-orange-500/70 transition-all relative"
                 >
                     <div className="text-3xl mb-2">⚔️</div>
                     <h4 className="font-bold text-white text-sm">Battle Arena</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Leagues & Challenges</p>
+                    <p className="text-[10px] text-gray-400 mt-1">
+                        {atDailyLimit ? (
+                            <span className="text-green-400">✓ Quests Done!</span>
+                        ) : habitXpToday > 0 ? (
+                            <span className="text-yellow-400">{habitXpToday} XP today</span>
+                        ) : (
+                            'Challenges & Quests'
+                        )}
+                    </p>
                 </div>
 
                 {/* Training Ops */}
@@ -3714,9 +3704,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     )}
 
                     {/* Navigation Tabs */}
-                    <div className="grid grid-cols-4 gap-3 p-3 bg-gradient-to-br from-gray-900/90 via-gray-800/90 to-gray-900/90 rounded-2xl border border-gray-600/30 shadow-xl backdrop-blur-sm">
+                    <div className="grid grid-cols-5 gap-2 p-3 bg-gradient-to-br from-gray-900/90 via-gray-800/90 to-gray-900/90 rounded-2xl border border-gray-600/30 shadow-xl backdrop-blur-sm">
                         {[
                             { id: 'arena', label: 'Arena', icon: '🎯', badge: 0, color: 'from-orange-500 via-red-500 to-pink-500', glow: 'shadow-orange-500/40', hoverGlow: 'hover:shadow-orange-400/30' },
+                            { id: 'daily', label: 'Quests', icon: '📋', badge: atDailyLimit ? 0 : 1, color: 'from-green-500 via-emerald-500 to-teal-500', glow: 'shadow-green-500/40', hoverGlow: 'hover:shadow-green-400/30' },
                             { id: 'mystery', label: 'Mystery', icon: '🎁', badge: mysteryCompleted ? 0 : 1, color: 'from-violet-500 via-purple-500 to-fuchsia-500', glow: 'shadow-purple-500/40', hoverGlow: 'hover:shadow-purple-400/30' },
                             { id: 'family', label: 'Family', icon: '👨‍👧', badge: 0, color: 'from-rose-500 via-pink-500 to-red-400', glow: 'shadow-pink-500/40', hoverGlow: 'hover:shadow-pink-400/30' },
                             { id: 'leaderboard', label: 'Ranks', icon: '🏆', badge: 0, color: 'from-amber-400 via-yellow-500 to-orange-400', glow: 'shadow-yellow-500/40', hoverGlow: 'hover:shadow-yellow-400/30' },
@@ -4637,6 +4628,333 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+                            )}
+
+                            {/* DAILY QUESTS VIEW - Merged from Home Dojo */}
+                            {rivalsView === 'daily' && (
+                                <div className="space-y-4">
+                                    {/* Header */}
+                                    <div className="bg-gradient-to-r from-green-800 to-teal-900 p-5 rounded-xl shadow-lg relative overflow-hidden">
+                                        <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-2 -mt-2">📋</div>
+                                        <h3 className="font-bold text-white text-lg relative z-10">Daily Quests</h3>
+                                        <p className="text-sm text-green-100 relative z-10 mt-1">
+                                            Building character starts at home.
+                                        </p>
+                                    </div>
+
+                                    {/* Controls */}
+                                    <div className="flex justify-between items-center">
+                                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Today's Check-in</h4>
+                                        <button 
+                                            onClick={() => {
+                                                if (!hasPremiumAccess) {
+                                                    alert("Upgrade to Premium to customize habits!");
+                                                    setIsPremium(true);
+                                                    return;
+                                                }
+                                                setIsEditingHabits(!isEditingHabits);
+                                            }}
+                                            className={`text-xs font-bold px-3 py-1 rounded-full border transition-colors flex items-center ${hasPremiumAccess ? 'bg-gray-800 text-sky-300 border-sky-500 hover:bg-gray-700' : 'bg-gray-800 text-gray-500 border-gray-600'}`}
+                                        >
+                                            {!hasPremiumAccess && <span className="mr-1">🔒</span>}
+                                            {isEditingHabits ? 'Done' : 'Customize'}
+                                        </button>
+                                    </div>
+
+                                    {/* XP Progress Bar */}
+                                    {(() => {
+                                        const currentCap = hasPremiumAccess ? HOME_DOJO_PREMIUM_CAP : (dailyXpCap > 0 ? dailyXpCap : HOME_DOJO_FREE_CAP);
+                                        const habitsRemaining = Math.max(0, Math.floor((currentCap - habitXpToday) / HOME_DOJO_BASE_XP));
+                                        const maxHabits = currentCap === HOME_DOJO_PREMIUM_CAP ? 7 : 3;
+                                        const isComplete = habitXpToday >= currentCap || atDailyLimit;
+                                        
+                                        return (
+                                            <div className={`p-4 rounded-xl ${isComplete ? 'bg-gradient-to-r from-green-900/60 to-emerald-900/60 border border-green-500/50' : 'bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700'}`}>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className={`font-bold text-sm ${isComplete ? 'text-green-400' : 'text-gray-300'}`}>
+                                                        {isComplete ? '🎉 Daily Goal Complete!' : 'Today\'s Progress'}
+                                                    </span>
+                                                    <span className={`font-black text-lg ${isComplete ? 'text-green-300' : 'text-yellow-400'}`}>
+                                                        {habitXpToday} / {currentCap} XP
+                                                    </span>
+                                                </div>
+                                                <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className={`h-full rounded-full transition-all duration-500 ${isComplete ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-yellow-500 to-orange-400'}`}
+                                                        style={{ width: `${Math.min(100, (habitXpToday / currentCap) * 100)}%` }}
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-gray-500 mt-1.5 text-center">
+                                                    {habitsRemaining > 0 ? `${habitsRemaining} of ${maxHabits} habits remaining today` : 'All habits complete!'}
+                                                </p>
+                                                
+                                                {!hasPremiumAccess && (
+                                                    <div className="mt-3 p-2 bg-purple-900/30 rounded-lg border border-purple-500/30 text-center">
+                                                        <p className="text-[11px] text-purple-300">
+                                                            👑 <span className="font-bold">Premium unlocks 7 daily habits</span> for more XP & faster progress
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Success Message */}
+                                    {successMessage && (
+                                        <div className="p-4 rounded-xl bg-gradient-to-r from-yellow-900/60 to-amber-900/60 border border-yellow-500/50 text-center animate-pulse">
+                                            <span className="text-2xl mr-2">🌟</span>
+                                            <span className="font-black text-yellow-300 text-lg">{successMessage}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Habit Tracker List */}
+                                    {!isEditingHabits ? (
+                                        <div className="space-y-3">
+                                            {customHabitList.filter(h => h.isActive).map(habit => {
+                                                const isCompleted = homeDojoChecks[habit.id];
+                                                const isLoading = habitLoading[habit.id];
+                                                const isDisabled = !isCompleted && atDailyLimit;
+                                                
+                                                return (
+                                                <div 
+                                                    key={habit.id}
+                                                    onClick={() => !isDisabled && !isLoading && toggleHabitCheck(habit.id, habit.question)}
+                                                    className={`p-4 rounded-xl border transition-all flex items-center justify-between group relative
+                                                        ${isCompleted 
+                                                            ? 'bg-green-900/20 border-green-500/50 cursor-default' 
+                                                            : isDisabled
+                                                                ? 'bg-gray-900/50 border-gray-800 cursor-not-allowed opacity-50'
+                                                                : isLoading
+                                                                    ? 'bg-gray-800 border-gray-600 cursor-wait opacity-70'
+                                                                    : 'bg-gray-800 border-gray-700 hover:border-gray-500 cursor-pointer'}`}
+                                                >
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className="text-3xl bg-gray-900 w-12 h-12 rounded-full flex items-center justify-center shadow-inner">
+                                                            {habitLoading[habit.id] ? (
+                                                                <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                                                            ) : habit.icon}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className={`font-bold text-base ${homeDojoChecks[habit.id] ? 'text-green-400' : 'text-white'}`}>
+                                                                {habit.title || habit.question}
+                                                            </h4>
+                                                            <p className="text-xs text-gray-400 mt-0.5">{habit.question}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        {habitXpEarned[habit.id] > 0 && (
+                                                            <span className="text-green-400 font-black text-sm animate-pulse">+{habitXpEarned[habit.id]} XP</span>
+                                                        )}
+                                                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
+                                                            ${homeDojoChecks[habit.id] ? 'bg-green-500 border-green-500 scale-110' : 'border-gray-600 group-hover:border-gray-400'}`}>
+                                                            {homeDojoChecks[habit.id] && <span className="text-white font-bold">✓</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                            })}
+                                            {customHabitList.filter(h => h.isActive).length === 0 && (
+                                                <p className="text-gray-500 text-center italic py-8">No active habits. Click customize to add some!</p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        // EDIT MODE (Premium Only)
+                                        <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 animate-fade-in">
+                                            <h4 className="font-bold text-white mb-4 flex items-center">
+                                                <span className="text-xl mr-2">⚙️</span> Habit Builder
+                                            </h4>
+                                            
+                                            {/* Custom Habit Creation */}
+                                            <div className="mb-4">
+                                                {!showCustomForm ? (
+                                                    <button 
+                                                        onClick={() => setShowCustomForm(true)}
+                                                        className="w-full p-3 border-2 border-dashed border-cyan-500/50 rounded-xl text-cyan-400 hover:bg-cyan-900/20 transition-colors flex items-center justify-center space-x-2"
+                                                    >
+                                                        <span className="text-xl">+</span>
+                                                        <span className="font-bold">Create Custom Habit</span>
+                                                    </button>
+                                                ) : (
+                                                    <div className="bg-gray-900 p-4 rounded-xl border border-cyan-500/30 space-y-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <h5 className="font-bold text-cyan-400 text-sm">New Custom Habit</h5>
+                                                            <button onClick={() => setShowCustomForm(false)} className="text-gray-500 hover:text-white">✕</button>
+                                                        </div>
+                                                        
+                                                        {/* Icon Picker */}
+                                                        <div>
+                                                            <label className="text-xs text-gray-400 mb-1 block">Choose an Icon</label>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {['🎯', '💪', '📖', '🧘', '🏃', '💤', '🙏', '🎨', '🎵', '🧹', '💧', '🍎'].map(emoji => (
+                                                                    <button
+                                                                        key={emoji}
+                                                                        onClick={() => setCustomHabitIcon(emoji)}
+                                                                        className={`text-2xl p-2 rounded-lg transition-all ${customHabitIcon === emoji ? 'bg-cyan-600 scale-110' : 'bg-gray-800 hover:bg-gray-700'}`}
+                                                                    >
+                                                                        {emoji}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {/* Question Input */}
+                                                        <div>
+                                                            <label className="text-xs text-gray-400 mb-1 block">Habit Question</label>
+                                                            <input
+                                                                type="text"
+                                                                value={customHabitQuestion}
+                                                                onChange={(e) => setCustomHabitQuestion(e.target.value)}
+                                                                placeholder="Did they practice 10 minutes of forms?"
+                                                                className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                                                            />
+                                                        </div>
+                                                        
+                                                        {/* Category Selector */}
+                                                        <div>
+                                                            <label className="text-xs text-gray-400 mb-1 block">Category</label>
+                                                            <select
+                                                                value={customHabitCategory}
+                                                                onChange={(e) => setCustomHabitCategory(e.target.value as Habit['category'])}
+                                                                className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                                                            >
+                                                                <option value="Custom">Custom</option>
+                                                                <option value="Martial Arts">Martial Arts</option>
+                                                                <option value="Health">Health</option>
+                                                                <option value="School">School</option>
+                                                                <option value="Character">Character</option>
+                                                                <option value="Family">Family</option>
+                                                            </select>
+                                                        </div>
+                                                        
+                                                        {/* Add Button */}
+                                                        <button
+                                                            onClick={handleCreateCustomHabit}
+                                                            disabled={!customHabitQuestion.trim()}
+                                                            className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-2 rounded-lg transition-colors"
+                                                        >
+                                                            Add Custom Habit
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Premium Habit Packs */}
+                                            <div className="mb-4">
+                                                <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Habit Packs</h5>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {Object.entries(habitPacks).map(([key, pack]) => {
+                                                        const alreadyAdded = pack.habits.every(h => customHabitList.some(ch => ch.id === h.id));
+                                                        return (
+                                                            <div key={key} className="bg-gray-900 p-3 rounded-lg border border-gray-700">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <span className="text-2xl">{pack.icon}</span>
+                                                                        <div>
+                                                                            <span className="font-bold text-white text-sm">{pack.name}</span>
+                                                                            <span className="text-[10px] text-gray-400 block">{pack.description}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            if (!alreadyAdded && studentId) {
+                                                                                setCustomHabitList(prev => [...prev, ...pack.habits]);
+                                                                                for (const habit of pack.habits) {
+                                                                                    try {
+                                                                                        await fetch('/api/habits/custom', {
+                                                                                            method: 'POST',
+                                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                                            body: JSON.stringify({ 
+                                                                                                studentId, 
+                                                                                                title: habit.title || habit.question,
+                                                                                                icon: habit.icon,
+                                                                                                habitId: habit.id
+                                                                                            })
+                                                                                        });
+                                                                                    } catch (e) {
+                                                                                        console.error('Failed to save pack habit:', e);
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                        disabled={alreadyAdded}
+                                                                        className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                                                                            alreadyAdded 
+                                                                                ? 'bg-green-900/50 text-green-400 border border-green-900' 
+                                                                                : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                                                                        }`}
+                                                                    >
+                                                                        {alreadyAdded ? '✓ Added' : '+ Add'}
+                                                                    </button>
+                                                                </div>
+                                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                                    {pack.habits.map(h => (
+                                                                        <span key={h.id} className="text-[10px] bg-gray-800 text-gray-300 px-2 py-0.5 rounded">
+                                                                            {h.icon} {h.title}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Existing Custom Habits */}
+                                            {customHabitList.filter(h => h.isCustom).length > 0 && (
+                                                <div className="mb-4">
+                                                    <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Your Custom Habits</h5>
+                                                    <div className="space-y-2">
+                                                        {customHabitList.filter(h => h.isCustom).map(habit => (
+                                                            <div key={habit.id} className="flex items-center justify-between p-3 bg-cyan-900/20 rounded border border-cyan-500/30">
+                                                                <div className="flex items-center space-x-3">
+                                                                    <span className="text-2xl">{habit.icon}</span>
+                                                                    <div>
+                                                                        <span className="text-sm text-white block">{habit.title || habit.question}</span>
+                                                                        <span className="text-[10px] text-cyan-400">{habit.category}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={async () => {
+                                                                        setCustomHabitList(prev => prev.filter(h => h.id !== habit.id));
+                                                                        try {
+                                                                            await fetch(`/api/habits/custom/${habit.id}`, { method: 'DELETE' });
+                                                                        } catch (e) { console.error('Failed to delete habit:', e); }
+                                                                    }}
+                                                                    className="px-3 py-1 rounded text-xs font-bold bg-red-900/50 text-red-400 border border-red-900 hover:bg-red-900/80 transition-colors"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Preset Habits */}
+                                            <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Preset Habits</h5>
+                                            <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                                                {PRESET_HABITS.map(preset => {
+                                                    const isActive = customHabitList.some(h => h.question === preset.question);
+                                                    return (
+                                                        <div key={preset.id} className="flex items-center justify-between p-3 bg-gray-900/50 rounded border border-gray-700">
+                                                            <div className="flex items-center space-x-3">
+                                                                <span className="text-2xl">{preset.icon}</span>
+                                                                <span className="text-sm text-gray-300">{preset.question}</span>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleToggleCustomHabit(preset)}
+                                                                className={`px-3 py-1 rounded text-xs font-bold transition-colors ${isActive ? 'bg-red-900/50 text-red-400 border border-red-900' : 'bg-green-900/50 text-green-400 border border-green-900'}`}
+                                                            >
+                                                                {isActive ? 'Remove' : 'Add'}
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-4 text-center">Changes save automatically.</p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -5620,7 +5938,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {activeTab === 'journey' && renderJourney()}
                 {activeTab === 'booking' && renderBooking()}
                 {activeTab === 'rivals' && renderRivals()}
-                {activeTab === 'home-dojo' && renderHomeDojo()}
             </div>
 
             {/* Student History Modal */}
@@ -5703,9 +6020,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             <div className="fixed bottom-0 w-full max-w-md bg-gray-800 border-t border-gray-700 pb-safe z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
                 <div className="flex justify-between items-center h-16 px-2 overflow-x-auto no-scrollbar">
                     <NavButton icon="🏠" label="HQ" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                    <NavButton icon="🥋" label="Dojo" active={activeTab === 'home-dojo'} onClick={() => setActiveTab('home-dojo')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="⚔️" label="Arena" active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
                     <NavButton icon="🔮" label="Chronos" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
+                    <NavButton icon="📊" label="Stats" active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="💎" label="Upgrade" active={activeTab === 'card'} onClick={() => setActiveTab('card')} isPremium={!hasPremiumAccess} />
                 </div>
             </div>
