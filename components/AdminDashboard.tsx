@@ -1618,30 +1618,36 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     const [filterType, setFilterType] = useState<'all' | 'video' | 'document'>('all');
     const [filterAccess, setFilterAccess] = useState<'all' | 'free' | 'premium'>('all');
     
-    // Completions data for analytics
-    const [completions, setCompletions] = useState<ContentCompletion[]>([]);
-    const [loadingCompletions, setLoadingCompletions] = useState(false);
-    
-    // Fetch completions when analytics tab is active
-    useEffect(() => {
-        if (activeTab === 'analytics' && clubId) {
-            setLoadingCompletions(true);
-            fetch(`/api/content/completions/${clubId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setCompletions(data.completions || []);
-                    }
-                })
-                .catch(err => console.error('Failed to fetch completions:', err))
-                .finally(() => setLoadingCompletions(false));
-        }
-    }, [activeTab, clubId]);
-
     const customTags = data.customVideoTags || [];
     const allTags = [...DEFAULT_VIDEO_TAGS, ...customTags.map(t => ({ id: t, name: t, icon: '🏷️' }))];
     const courses = data.courses || [];
     const curriculum = data.curriculum || [];
+    
+    // Derive completions from local student data
+    const localCompletions = useMemo(() => {
+        const completionsList: ContentCompletion[] = [];
+        data.students.forEach(student => {
+            const completedIds = student.completedContentIds || [];
+            completedIds.forEach(contentId => {
+                const content = curriculum.find(c => c.id === contentId);
+                if (content) {
+                    completionsList.push({
+                        viewId: `${student.id}-${contentId}`,
+                        contentId: contentId,
+                        contentTitle: content.title,
+                        contentType: content.contentType || 'video',
+                        beltId: content.beltId || 'all',
+                        studentId: student.id,
+                        studentName: student.name,
+                        studentBelt: student.beltId || '',
+                        completedAt: '',
+                        xpAwarded: content.xpReward || 10
+                    });
+                }
+            });
+        });
+        return completionsList;
+    }, [data.students, curriculum]);
 
     const toggleTag = (tagId: string) => {
         const updated = newVideo.tags.includes(tagId)
@@ -2384,13 +2390,11 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                         <h3 className="font-bold text-white mb-4">Recent Completions</h3>
                         <p className="text-xs text-gray-500 mb-4">Students who marked content as completed</p>
-                        {loadingCompletions ? (
-                            <p className="text-gray-500 italic">Loading completions...</p>
-                        ) : completions.length === 0 ? (
+                        {localCompletions.length === 0 ? (
                             <p className="text-gray-500 italic">No completions recorded yet. When students mark content as done in Sensei Academy, they'll appear here.</p>
                         ) : (
                             <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                                {completions.map((completion) => (
+                                {localCompletions.map((completion) => (
                                     <div key={completion.viewId} className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg border border-gray-700">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold">
@@ -2402,10 +2406,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-green-400 font-bold text-sm">+{completion.xpAwarded} XP</p>
-                                            <p className="text-xs text-gray-500">
-                                                {completion.completedAt ? new Date(completion.completedAt).toLocaleDateString() : 'Recently'}
-                                            </p>
+                                            <p className="text-green-400 font-bold text-sm">+{completion.xpAwarded} HonorXP™</p>
                                         </div>
                                     </div>
                                 ))}

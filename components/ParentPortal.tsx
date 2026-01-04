@@ -608,7 +608,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         totalPoints: localTotalPoints, 
         xp: progressXp,
         completeContent,
-        trackView,
         isCompleted: isContentCompleted
     } = useStudentProgress({ student, onUpdateStudent });
     
@@ -2812,7 +2811,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 
                                 const handleWatch = (e: React.MouseEvent) => {
                                     e.stopPropagation();
-                                    trackView(video.id);
                                     window.open(video.url, '_blank');
                                 };
                                 
