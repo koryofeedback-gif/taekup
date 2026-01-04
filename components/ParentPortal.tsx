@@ -2535,6 +2535,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <h4 className="font-bold text-white text-sm">Warrior Stats</h4>
                     <p className="text-[10px] text-gray-400 mt-1">Skills & Analytics</p>
                 </div>
+
+                {/* Sensei Academy - Practice Content */}
+                <div 
+                    onClick={() => setActiveTab('practice')}
+                    className="bg-gradient-to-br from-emerald-900/80 to-emerald-950 border border-emerald-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-emerald-500/70 transition-all"
+                >
+                    <div className="text-3xl mb-2">📚</div>
+                    <h4 className="font-bold text-white text-sm">Sensei Academy</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">Curriculum & Videos</p>
+                </div>
             </div>
 
             {/* Sensei Intel Section */}
