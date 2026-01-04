@@ -2472,55 +2472,55 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             
             {/* Quick Action Cards */}
             <div className="grid grid-cols-2 gap-3">
-                {/* Athlete Card */}
+                {/* Legacy Card */}
                 <div 
                     onClick={() => setActiveTab('card')}
                     className="bg-gradient-to-br from-blue-900/80 to-blue-950 border border-blue-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-blue-500/70 transition-all"
                 >
                     <div className="text-3xl mb-2">🏅</div>
-                    <h4 className="font-bold text-white text-sm">Athlete Card</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Digital ID & stats</p>
+                    <h4 className="font-bold text-white text-sm">Legacy Card</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">Digital ID & Rarity</p>
                 </div>
 
-                {/* Home Dojo */}
+                {/* Dojo Quests */}
                 <div 
                     onClick={() => setActiveTab('home-dojo')}
                     className="bg-gradient-to-br from-green-900/80 to-green-950 border border-green-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-green-500/70 transition-all relative"
                 >
                     <div className="text-3xl mb-2">🏠</div>
-                    <h4 className="font-bold text-white text-sm">Home Dojo</h4>
+                    <h4 className="font-bold text-white text-sm">Dojo Quests</h4>
                     <p className="text-[10px] text-gray-400 mt-1">
                         {atDailyLimit ? (
                             <span className="text-green-400">✓ Complete!</span>
                         ) : habitXpToday > 0 ? (
                             <span className="text-yellow-400">{habitXpToday} HonorXP™ today</span>
                         ) : (
-                            'Check daily habits'
+                            'Daily Habits & XP'
                         )}
                     </p>
                 </div>
 
-                {/* Arena */}
+                {/* Battle Arena */}
                 <div 
                     onClick={() => setActiveTab('rivals')}
                     className="bg-gradient-to-br from-orange-900/80 to-orange-950 border border-orange-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-orange-500/70 transition-all"
                 >
                     <div className="text-3xl mb-2">⚔️</div>
-                    <h4 className="font-bold text-white text-sm">Arena</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Challenges & HonorXP™</p>
+                    <h4 className="font-bold text-white text-sm">Battle Arena</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">Leagues & Challenges</p>
                 </div>
 
-                {/* Schedule */}
+                {/* Training Ops */}
                 <div 
                     onClick={() => setActiveTab('booking')}
                     className="bg-gradient-to-br from-purple-900/80 to-purple-950 border border-purple-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-purple-500/70 transition-all"
                 >
                     <div className="text-3xl mb-2">📅</div>
-                    <h4 className="font-bold text-white text-sm">Schedule</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Classes & booking</p>
+                    <h4 className="font-bold text-white text-sm">Training Ops</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">Book Classes</p>
                 </div>
 
-                {/* Future - Featured */}
+                {/* Chronos Forecast - Featured */}
                 <div 
                     onClick={() => setActiveTab('journey')}
                     className="bg-gradient-to-br from-purple-800/90 via-indigo-800/90 to-cyan-800/90 border border-purple-500/60 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-purple-400/80 transition-all relative overflow-hidden"
@@ -2531,26 +2531,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                     <div className="relative z-10">
                         <div className="text-3xl mb-2">🔮</div>
-                        <h4 className="font-bold text-white text-sm">Future</h4>
-                        <p className="text-[10px] text-cyan-300 mt-1">Black Belt prediction</p>
+                        <h4 className="font-bold text-white text-sm">Chronos Forecast</h4>
+                        <p className="text-[10px] text-cyan-300 mt-1">AI Black Belt Date</p>
                     </div>
                 </div>
 
-                {/* Stats */}
+                {/* Warrior Stats */}
                 <div 
                     onClick={() => setActiveTab('insights')}
                     className="bg-gradient-to-br from-cyan-900/80 to-cyan-950 border border-cyan-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-cyan-500/70 transition-all"
                 >
                     <div className="text-3xl mb-2">📊</div>
-                    <h4 className="font-bold text-white text-sm">Stats</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Progress & insights</p>
+                    <h4 className="font-bold text-white text-sm">Warrior Stats</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">Skills & Analytics</p>
                 </div>
             </div>
 
-            {/* Coach Feedback Section */}
+            {/* Sensei Intel Section */}
             <div className="space-y-3">
                 <h3 className="font-bold text-gray-200 text-sm uppercase tracking-wider flex items-center">
-                    <span className="mr-2">💬</span> Coach Feedback
+                    <span className="mr-2">💬</span> Sensei Intel
                     {student.feedbackHistory && student.feedbackHistory.length > 0 && (
                         <span className="ml-2 bg-sky-500/20 text-sky-400 text-[10px] px-2 py-0.5 rounded-full">{student.feedbackHistory.length}</span>
                     )}
@@ -2567,7 +2567,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     ))
                 ) : (
                     <div className="text-center py-6 text-gray-500 bg-gray-800/30 rounded-xl border border-dashed border-gray-700 text-sm">
-                        No feedback yet. Keep training hard!
+                        No active missions yet. Keep training hard!
                     </div>
                 )}
             </div>
@@ -5702,12 +5702,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             {/* Bottom Navigation */}
             <div className="fixed bottom-0 w-full max-w-md bg-gray-800 border-t border-gray-700 pb-safe z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
                 <div className="flex justify-between items-center h-16 px-2 overflow-x-auto no-scrollbar">
-                    <NavButton icon="🏠" label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                    <NavButton icon="🏠" label="HQ" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
                     <NavButton icon="🥋" label="Dojo" active={activeTab === 'home-dojo'} onClick={() => setActiveTab('home-dojo')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="⚔️" label="Arena" active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
-                    <NavButton icon="📊" label="Stats" active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} isPremium={!hasPremiumAccess} />
-                    <NavButton icon="🔮" label="Future" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
-                    <NavButton icon="🏅" label="Card" active={activeTab === 'card'} onClick={() => setActiveTab('card')} isPremium={!hasPremiumAccess} />
+                    <NavButton icon="🔮" label="Chronos" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
+                    <NavButton icon="💎" label="Upgrade" active={activeTab === 'card'} onClick={() => setActiveTab('card')} isPremium={!hasPremiumAccess} />
                 </div>
             </div>
 
