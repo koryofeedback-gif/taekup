@@ -6164,6 +6164,57 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// Get content completions for analytics (who completed what)
+async function handleContentCompletions(req: VercelRequest, res: VercelResponse, clubId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const client = await pool.connect();
+  try {
+    const completions = await client.query(`
+      SELECT 
+        cv.id as view_id,
+        cv.content_id,
+        cv.student_id,
+        cv.completed,
+        cv.completed_at,
+        cv.xp_awarded,
+        cv.viewed_at,
+        cc.title as content_title,
+        cc.content_type,
+        cc.belt_id,
+        s.name as student_name,
+        s.belt as student_belt
+      FROM content_views cv
+      JOIN curriculum_content cc ON cv.content_id = cc.id
+      LEFT JOIN students s ON cv.student_id = s.id
+      WHERE cc.club_id = $1::uuid AND cv.completed = true
+      ORDER BY cv.completed_at DESC
+      LIMIT 100
+    `, [clubId]);
+
+    return res.json({
+      success: true,
+      completions: completions.rows.map(c => ({
+        viewId: c.view_id,
+        contentId: c.content_id,
+        contentTitle: c.content_title,
+        contentType: c.content_type,
+        beltId: c.belt_id,
+        studentId: c.student_id,
+        studentName: c.student_name || 'Unknown Student',
+        studentBelt: c.student_belt,
+        completedAt: c.completed_at,
+        xpAwarded: c.xp_awarded
+      }))
+    });
+  } catch (error: any) {
+    console.error('[Content Completions] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to get content completions' });
+  } finally {
+    client.release();
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -6337,6 +6388,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Content Management (Creator Hub)
     if (path === '/content/sync' || path === '/content/sync/') return await handleContentSync(req, res);
+    
+    const contentCompletionsMatch = path.match(/^\/content\/completions\/([^/]+)\/?$/);
+    if (contentCompletionsMatch) return await handleContentCompletions(req, res, contentCompletionsMatch[1]);
 
     // Demo Mode
     if (path === '/demo/load' || path === '/demo/load/') return await handleDemoLoad(req, res);

@@ -2809,23 +2809,31 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 const xpReward = video.xpReward || 10;
                                 const isPremiumContent = video.pricingType === 'premium';
                                 
-                                const handleComplete = (e: React.MouseEvent) => {
-                                    e.preventDefault();
-                                    const awarded = completeContent(video.id, xpReward);
-                                    if (awarded) {
-                                        setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
-                                    }
+                                const handleWatch = (e: React.MouseEvent) => {
+                                    e.stopPropagation();
                                     window.open(video.url, '_blank');
+                                };
+                                
+                                const handleMarkComplete = (e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    if (!isCompleted) {
+                                        const awarded = completeContent(video.id, xpReward);
+                                        if (awarded) {
+                                            setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
+                                        }
+                                    }
                                 };
                                 
                                 return (
                                     <div 
                                         key={idx} 
-                                        onClick={handleComplete}
-                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border flex group cursor-pointer transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : 'border-gray-700 hover:border-emerald-500'}`}
+                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border flex group transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : 'border-gray-700'}`}
                                     >
-                                        <div className={`w-24 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-300 ${isCompleted ? 'bg-green-900/30' : 'bg-gray-900'}`}>
-                                            {isCompleted ? '✅' : (video.contentType === 'document' ? '📄' : '🎬')}
+                                        <div 
+                                            onClick={handleWatch}
+                                            className={`w-24 flex items-center justify-center text-4xl cursor-pointer hover:scale-110 transition-transform duration-300 ${isCompleted ? 'bg-green-900/30' : 'bg-gray-900 hover:bg-gray-800'}`}
+                                        >
+                                            {video.contentType === 'document' ? '📄' : '🎬'}
                                         </div>
                                         <div className="p-4 flex-1">
                                             <div className="flex items-center gap-2">
@@ -2833,16 +2841,32 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 {isPremiumContent && <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">Premium</span>}
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-xs text-gray-500">{isCompleted ? 'Completed!' : 'Watch to earn HonorXP™'}</p>
+                                                <p className="text-xs text-gray-500">{isCompleted ? 'Completed!' : 'Watch then mark as done'}</p>
                                                 <span className={`text-xs font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
                                                     {isCompleted ? `+${xpReward} HonorXP™ earned` : `+${xpReward} HonorXP™`}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center px-4">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${isCompleted ? 'bg-green-500 shadow-green-600/30' : 'bg-emerald-500 group-hover:bg-emerald-400 shadow-emerald-600/30'}`}>
-                                                <span className="text-white text-xs">{isCompleted ? '✓' : '▶'}</span>
-                                            </div>
+                                        <div className="flex items-center gap-3 px-4">
+                                            <button
+                                                onClick={handleWatch}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg bg-emerald-500 hover:bg-emerald-400 shadow-emerald-600/30 transition-colors"
+                                                title="Watch video"
+                                            >
+                                                <span className="text-white text-xs">▶</span>
+                                            </button>
+                                            <button
+                                                onClick={handleMarkComplete}
+                                                disabled={isCompleted}
+                                                className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
+                                                    isCompleted 
+                                                        ? 'bg-green-500 shadow-green-600/30 cursor-default' 
+                                                        : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-gray-500 hover:border-green-400'
+                                                }`}
+                                                title={isCompleted ? 'Completed' : 'Mark as done'}
+                                            >
+                                                <span className="text-white text-xs">{isCompleted ? '✓' : ''}</span>
+                                            </button>
                                         </div>
                                     </div>
                                 );

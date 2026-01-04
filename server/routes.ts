@@ -2131,6 +2131,54 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Content Analytics - Get detailed completions (who completed what)
+  app.get('/api/content/completions/:clubId', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+
+      const completions = await db.execute(sql`
+        SELECT 
+          cv.id as view_id,
+          cv.content_id,
+          cv.student_id,
+          cv.completed,
+          cv.completed_at,
+          cv.xp_awarded,
+          cv.viewed_at,
+          cc.title as content_title,
+          cc.content_type,
+          cc.belt_id,
+          s.name as student_name,
+          s.belt as student_belt
+        FROM content_views cv
+        JOIN curriculum_content cc ON cv.content_id = cc.id
+        LEFT JOIN students s ON cv.student_id = s.id
+        WHERE cc.club_id = ${clubId}::uuid AND cv.completed = true
+        ORDER BY cv.completed_at DESC
+        LIMIT 100
+      `);
+
+      res.json({
+        success: true,
+        completions: (completions as any[]).map(c => ({
+          viewId: c.view_id,
+          contentId: c.content_id,
+          contentTitle: c.content_title,
+          contentType: c.content_type,
+          beltId: c.belt_id,
+          studentId: c.student_id,
+          studentName: c.student_name || 'Unknown Student',
+          studentBelt: c.student_belt,
+          completedAt: c.completed_at,
+          xpAwarded: c.xp_awarded
+        }))
+      });
+    } catch (error: any) {
+      console.error('[Content Completions] Error:', error.message);
+      res.status(500).json({ error: 'Failed to get content completions' });
+    }
+  });
+
   // =====================================================
   // RIVALS CHALLENGES API - Real-time student challenges
   // =====================================================
