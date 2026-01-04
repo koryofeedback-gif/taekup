@@ -345,6 +345,16 @@ export function registerRoutes(app: Express) {
         FROM coaches WHERE club_id = ${clubId}::uuid AND is_active = true
       `);
 
+      // Fetch curriculum content from database
+      const curriculumResult = await db.execute(sql`
+        SELECT id, title, description, url, thumbnail_url, content_type, belt_id, 
+               tags, duration, status, pricing_type, price, xp_reward, order_index,
+               view_count, completion_count, author_name, publish_at, created_at
+        FROM curriculum_content 
+        WHERE club_id = ${clubId}::uuid AND status = 'live'
+        ORDER BY order_index ASC, created_at DESC
+      `);
+
       const savedWizardData = club.wizard_data || {};
       const savedBelts = savedWizardData.belts || [];
       
@@ -395,10 +405,34 @@ export function registerRoutes(app: Express) {
         assignedClasses: c.assigned_classes || []
       }));
 
+      // Map curriculum content from database to frontend format
+      const curriculum = (curriculumResult as any[]).map(c => ({
+        id: c.id,
+        title: c.title,
+        description: c.description || '',
+        url: c.url || '',
+        thumbnailUrl: c.thumbnail_url,
+        contentType: c.content_type || 'video',
+        beltId: c.belt_id || 'all',
+        tags: c.tags || [],
+        duration: c.duration,
+        status: c.status || 'live',
+        pricingType: c.pricing_type || 'free',
+        price: c.price || 0,
+        xpReward: c.xp_reward || 10,
+        orderIndex: c.order_index || 0,
+        viewCount: c.view_count || 0,
+        completionCount: c.completion_count || 0,
+        authorName: c.author_name,
+        publishAt: c.publish_at,
+        createdAt: c.created_at
+      }));
+
       const wizardData = {
         ...savedWizardData,
         students,
         coaches,
+        curriculum,
         clubName: savedWizardData.clubName || club.name,
         ownerName: savedWizardData.ownerName || club.owner_name || '',
         country: savedWizardData.country || club.country || 'US',

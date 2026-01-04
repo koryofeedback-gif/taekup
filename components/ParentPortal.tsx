@@ -1619,7 +1619,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const progressPercent = (currentBeltStripes / data.stripesPerBelt) * 100;
 
     // Filter Curriculum for this student
-    const studentVideos = (data.curriculum || []).filter(v => v.beltId === student.beltId);
+    const studentVideos = (data.curriculum || []).filter(v => v.beltId === student.beltId || v.beltId === 'all' || !v.beltId);
 
     const toggleMission = (id: string) => {
         setMissionChecks(prev => ({ ...prev, [id]: !prev[id] }));
