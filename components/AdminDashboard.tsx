@@ -2443,48 +2443,96 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                 )}
             </div>
 
-            {/* Club Wallet */}
+            {/* Club Wallet / External Profit Tracker - Conditional based on mode */}
             <div className="mt-8">
-                <div className="bg-gradient-to-b from-yellow-900/20 to-gray-800 p-6 rounded-xl border border-yellow-600/30">
-                    <div className="flex items-center mb-4">
-                        <span className="text-3xl mr-2">💰</span>
-                        <div>
-                            <h3 className="font-bold text-white text-lg">Club Wallet</h3>
-                            <p className="text-sm text-gray-400">{data.isDemo ? 'Your DojoMint™ earnings' : 'Your DojoMint™ payouts'}</p>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
-                            <p className="text-xs text-gray-500 uppercase">Available Payout</p>
-                            <p className="text-3xl font-bold text-green-400">$0.00</p>
-                        </div>
-                        
-                        <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
-                            <div className="text-sm text-gray-300 space-y-2">
-                                <div className="flex justify-between">
-                                    <span>{data.isDemo ? 'Legacy Activations' : 'Active Legacy Holders'}</span>
-                                    <span className="font-bold text-white">0</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Your Net Margin</span>
-                                    <span className="font-bold text-green-400">~72%</span>
-                                </div>
+                {data.isDemo ? (
+                    /* DEMO MODE (Reseller) - Show Club Wallet + Connect Bank Account */
+                    <div className="bg-gradient-to-b from-yellow-900/20 to-gray-800 p-6 rounded-xl border border-yellow-600/30">
+                        <div className="flex items-center mb-4">
+                            <span className="text-3xl mr-2">💰</span>
+                            <div>
+                                <h3 className="font-bold text-white text-lg">Club Wallet</h3>
+                                <p className="text-sm text-gray-400">Your DojoMint™ earnings</p>
                             </div>
                         </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
+                                <p className="text-xs text-gray-500 uppercase">Available Payout</p>
+                                <p className="text-3xl font-bold text-green-400">$0.00</p>
+                            </div>
+                            
+                            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                                <div className="text-sm text-gray-300 space-y-2">
+                                    <div className="flex justify-between">
+                                        <span>Legacy Activations</span>
+                                        <span className="font-bold text-white">0</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Your Net Margin</span>
+                                        <span className="font-bold text-green-400">~72%</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div className="flex flex-col justify-center">
-                            <button 
-                                onClick={handleConnectBank}
-                                disabled={connectingBank}
-                                className="w-full bg-sky-500 hover:bg-sky-400 disabled:bg-gray-600 text-white font-bold py-3 rounded text-sm"
-                            >
-                                {connectingBank ? 'Connecting...' : 'Connect Bank Account'}
-                            </button>
-                            <p className="text-[10px] text-gray-500 text-center mt-2">Secure payouts via Stripe Connect</p>
+                            <div className="flex flex-col justify-center">
+                                <button 
+                                    onClick={handleConnectBank}
+                                    disabled={connectingBank}
+                                    className="w-full bg-sky-500 hover:bg-sky-400 disabled:bg-gray-600 text-white font-bold py-3 rounded text-sm"
+                                >
+                                    {connectingBank ? 'Connecting...' : 'Connect Bank Account'}
+                                </button>
+                                <p className="text-[10px] text-gray-500 text-center mt-2">Secure payouts via Stripe Connect</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : data.clubSponsoredPremium ? (
+                    /* REAL MODE + UNIVERSAL ACCESS ACTIVE - External Profit Tracker (No bank needed) */
+                    <div className="bg-gradient-to-b from-green-900/20 to-gray-800 p-6 rounded-xl border border-green-600/30">
+                        <div className="flex items-center mb-4">
+                            <span className="text-3xl mr-2">📊</span>
+                            <div>
+                                <h3 className="font-bold text-white text-lg">External Profit Tracker</h3>
+                                <p className="text-sm text-gray-400">This profit is collected by you directly via your gym tuition.</p>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                                <div className="text-sm text-gray-300 space-y-2">
+                                    <div className="flex justify-between">
+                                        <span>Students Covered</span>
+                                        <span className="font-bold text-white">{totalStudents}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Your Tuition Increase</span>
+                                        <span className="font-bold text-green-400">You set this</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-green-900/30 p-4 rounded-lg border border-green-500/30">
+                                <p className="text-xs text-green-300 uppercase mb-1">How This Works</p>
+                                <p className="text-sm text-gray-300">
+                                    You pay us the Club Rate. You raise your gym tuition by whatever amount you choose. 
+                                    <span className="text-green-400 font-medium"> The difference is your profit — collected directly by you.</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    /* REAL MODE + UNIVERSAL ACCESS INACTIVE - Show minimal info */
+                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-6 rounded-xl border border-gray-700">
+                        <div className="flex items-center mb-4">
+                            <span className="text-3xl mr-2">💎</span>
+                            <div>
+                                <h3 className="font-bold text-white text-lg">DojoMint™ Not Active</h3>
+                                <p className="text-sm text-gray-400">Enable Universal Access above to unlock monetization features.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
