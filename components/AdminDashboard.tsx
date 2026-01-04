@@ -75,7 +75,7 @@ const DemoMarginCalculatorCard: React.FC<{
     clubSponsoredPremium: boolean;
     onToggle: () => void;
 }> = ({ totalStudents, clubSponsoredPremium, onToggle }) => {
-    const [tuitionIncrease] = useState(10.00);
+    const [tuitionIncrease, setTuitionIncrease] = useState(10.00);
     const displayStudents = totalStudents > 0 ? totalStudents : 50;
     
     return (
@@ -89,7 +89,7 @@ const DemoMarginCalculatorCard: React.FC<{
                     </p>
                     
                     <div className="bg-gray-900/60 p-5 rounded-lg border border-gray-700 mb-4">
-                        {/* Tuition Increase Input - LARGE but disabled */}
+                        {/* Tuition Increase Input - LARGE and EDITABLE for demo play */}
                         <div className="mb-6">
                             <label className="text-xs text-gray-400 uppercase font-bold tracking-wider">Projected Tuition Increase</label>
                             <div className="flex items-baseline mt-2">
@@ -97,8 +97,12 @@ const DemoMarginCalculatorCard: React.FC<{
                                 <input 
                                     type="number" 
                                     value={tuitionIncrease}
-                                    disabled
-                                    className="bg-gray-800 border-2 border-indigo-500/50 rounded-lg px-4 py-3 text-white font-extrabold text-3xl w-28 focus:outline-none text-center cursor-not-allowed opacity-80"
+                                    onChange={(e) => setTuitionIncrease(Math.max(2, Math.min(50, parseFloat(e.target.value) || 0)))}
+                                    step="1.00"
+                                    min="2"
+                                    max="50"
+                                    placeholder="Amount you add to membership"
+                                    className="bg-gray-800 border-2 border-indigo-500/50 rounded-lg px-4 py-3 text-white font-extrabold text-3xl w-28 focus:outline-none focus:border-indigo-400 text-center"
                                 />
                                 <span className="text-gray-400 ml-2 text-sm">/student/mo</span>
                             </div>
@@ -2410,13 +2414,27 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                             </div>
                             {data.clubSponsoredPremium && (
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-indigo-300">{data.isDemo ? 'DojoMint™ Reseller' : 'DojoMint™ Protocol Cost'}</span>
-                                    <span className="text-indigo-300 font-bold">+${bulkCost.toFixed(2)}</span>
+                                    <span className="text-indigo-300">{data.isDemo ? 'Universal Access Add-on' : 'DojoMint™ Club Rate'}</span>
+                                    {data.isDemo ? (
+                                        <span className="text-amber-400 font-bold flex items-center">
+                                            <span className="mr-1">🔒</span>
+                                            B2B Rate
+                                        </span>
+                                    ) : (
+                                        <span className="text-indigo-300 font-bold">+${bulkCost.toFixed(2)}</span>
+                                    )}
                                 </div>
                             )}
                             <div className="flex justify-between items-center pt-2 border-t border-gray-600 mt-2">
-                                <span className="text-white font-bold">Total Monthly</span>
-                                <span className="text-xl font-extrabold text-white">${totalBill.toFixed(2)}</span>
+                                <span className="text-white font-bold">{data.isDemo ? 'Total Monthly' : 'Total Monthly'}</span>
+                                {data.isDemo ? (
+                                    <span className="text-lg font-bold text-amber-400 flex items-center">
+                                        <span className="mr-1">🔒</span>
+                                        Calculated at Checkout
+                                    </span>
+                                ) : (
+                                    <span className="text-xl font-extrabold text-white">${totalBill.toFixed(2)}</span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -2445,45 +2463,47 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
             {/* Club Wallet / External Profit Tracker - Conditional based on mode */}
             <div className="mt-8">
                 {data.isDemo ? (
-                    /* DEMO MODE (Reseller) - Show Club Wallet + Connect Bank Account */
-                    <div className="bg-gradient-to-b from-yellow-900/20 to-gray-800 p-6 rounded-xl border border-yellow-600/30">
+                    /* DEMO MODE - External Profit Tracker (Universal Access model) */
+                    <div className="bg-gradient-to-b from-green-900/20 to-gray-800 p-6 rounded-xl border border-green-600/30">
                         <div className="flex items-center mb-4">
-                            <span className="text-3xl mr-2">💰</span>
+                            <span className="text-3xl mr-2">📊</span>
                             <div>
-                                <h3 className="font-bold text-white text-lg">Club Wallet</h3>
-                                <p className="text-sm text-gray-400">Your DojoMint™ earnings</p>
+                                <h3 className="font-bold text-white text-lg">External Profit Tracker</h3>
+                                <p className="text-sm text-gray-400">Your tuition-based revenue projection</p>
                             </div>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                             <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
-                                <p className="text-xs text-gray-500 uppercase">Available Payout</p>
-                                <p className="text-3xl font-bold text-green-400">$0.00</p>
+                                <p className="text-xs text-gray-500 uppercase">Total Tuition Collected</p>
+                                <p className="text-xl font-bold text-amber-400 flex items-center justify-center">
+                                    <span className="mr-1">🔒</span>
+                                    Unlock
+                                </p>
                             </div>
                             
-                            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
-                                <div className="text-sm text-gray-300 space-y-2">
-                                    <div className="flex justify-between">
-                                        <span>Legacy Activations</span>
-                                        <span className="font-bold text-white">0</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Your Net Margin</span>
-                                        <span className="font-bold text-green-400">~72%</span>
-                                    </div>
-                                </div>
+                            <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
+                                <p className="text-xs text-gray-500 uppercase">Platform Fees</p>
+                                <p className="text-xl font-bold text-amber-400 flex items-center justify-center">
+                                    <span className="mr-1">🔒</span>
+                                    B2B Rate
+                                </p>
                             </div>
-
-                            <div className="flex flex-col justify-center">
-                                <button 
-                                    onClick={handleConnectBank}
-                                    disabled={connectingBank}
-                                    className="w-full bg-sky-500 hover:bg-sky-400 disabled:bg-gray-600 text-white font-bold py-3 rounded text-sm"
-                                >
-                                    {connectingBank ? 'Connecting...' : 'Connect Bank Account'}
-                                </button>
-                                <p className="text-[10px] text-gray-500 text-center mt-2">Secure payouts via Stripe Connect</p>
+                            
+                            <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
+                                <p className="text-xs text-gray-500 uppercase">Net Profit</p>
+                                <p className="text-xl font-bold text-amber-400 flex items-center justify-center">
+                                    <span className="mr-1">🔒</span>
+                                    Calculate
+                                </p>
                             </div>
+                        </div>
+                        
+                        <div className="bg-green-900/30 p-4 rounded-lg border border-green-500/30">
+                            <p className="text-sm text-gray-300 flex items-start">
+                                <span className="text-green-400 mr-2 mt-0.5">✅</span>
+                                <span>This profit is collected by you directly via your gym membership fees.</span>
+                            </p>
                         </div>
                     </div>
                 ) : data.clubSponsoredPremium ? (
