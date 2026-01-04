@@ -1617,8 +1617,9 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         setNewVideo({...newVideo, tags: updated});
     };
 
-    const handleAddContent = () => {
+    const handleAddContent = async () => {
         if(!newVideo.title || !newVideo.url) return;
+        const finalStatus = newVideo.publishAt ? 'draft' : newVideo.status;
         const item: CurriculumItem = {
             id: `vid-${Date.now()}`,
             title: newVideo.title,
@@ -1628,7 +1629,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             description: newVideo.description || 'Uploaded by Instructor',
             authorName: data.ownerName,
             contentType: newVideo.contentType,
-            status: newVideo.publishAt ? 'draft' : newVideo.status, // If scheduled, start as draft
+            status: finalStatus, // If scheduled, start as draft
             pricingType: newVideo.pricingType,
             xpReward: newVideo.xpReward,
             viewCount: 0,
@@ -1637,6 +1638,19 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         };
         onUpdateData({ curriculum: [...curriculum, item] });
         setNewVideo({ title: '', url: '', beltId: 'all', tags: [], contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '' });
+        
+        // Sync to database if publishing immediately
+        if (clubId && finalStatus === 'live') {
+            try {
+                await fetch('/api/content/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clubId, content: item })
+                });
+            } catch (err) {
+                console.error('Failed to sync content:', err);
+            }
+        }
     };
 
     // Filter content based on search and filters
@@ -1691,11 +1705,31 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         setShowCourseForm(false);
     };
 
-    const toggleContentStatus = (contentId: string) => {
+    const toggleContentStatus = async (contentId: string) => {
+        const content = curriculum.find(c => c.id === contentId);
+        if (!content) return;
+        
+        const newStatus = content.status === 'live' ? 'draft' : 'live';
         const updated = curriculum.map(c => 
-            c.id === contentId ? { ...c, status: (c.status === 'live' ? 'draft' : 'live') as 'draft' | 'live' } : c
+            c.id === contentId ? { ...c, status: newStatus as 'draft' | 'live' } : c
         );
         onUpdateData({ curriculum: updated });
+        
+        // Sync to database when publishing
+        if (clubId && newStatus === 'live') {
+            try {
+                await fetch('/api/content/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clubId,
+                        content: { ...content, status: 'live' }
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to sync content:', err);
+            }
+        }
     };
 
     const toggleCourseStatus = (courseId: string) => {

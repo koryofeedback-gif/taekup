@@ -1937,6 +1937,72 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Sync curriculum content to database (called when publishing)
+  app.post('/api/content/sync', async (req: Request, res: Response) => {
+    try {
+      const { clubId, content } = req.body;
+      
+      if (!clubId || !content) {
+        return res.status(400).json({ error: 'Club ID and content are required' });
+      }
+
+      const { id, title, url, beltId, contentType, status, pricingType, xpReward, description } = content;
+      
+      // Check if ID is a valid UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isValidUuid = uuidRegex.test(id);
+      
+      // Check if content already exists by title+url (for non-UUID IDs) or by UUID
+      let existingId = null;
+      if (isValidUuid) {
+        const existing = await db.execute(sql`
+          SELECT id FROM curriculum_content WHERE id = ${id}::uuid LIMIT 1
+        `);
+        if ((existing as any[]).length > 0) {
+          existingId = (existing as any[])[0].id;
+        }
+      } else {
+        // Try to find by title+url match for the same club
+        const existing = await db.execute(sql`
+          SELECT id FROM curriculum_content WHERE club_id = ${clubId}::uuid AND title = ${title} AND url = ${url} LIMIT 1
+        `);
+        if ((existing as any[]).length > 0) {
+          existingId = (existing as any[])[0].id;
+        }
+      }
+
+      if (existingId) {
+        // Update existing content
+        await db.execute(sql`
+          UPDATE curriculum_content 
+          SET title = ${title}, url = ${url}, belt_id = ${beltId || 'all'}, 
+              content_type = ${contentType || 'video'}, status = ${status || 'draft'},
+              pricing_type = ${pricingType || 'free'}, xp_reward = ${xpReward || 10},
+              description = ${description || null}, updated_at = NOW()
+          WHERE id = ${existingId}::uuid
+        `);
+        return res.json({ success: true, action: 'updated', contentId: existingId });
+      }
+
+      // Insert new content (let DB generate UUID)
+      const result = await db.execute(sql`
+        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, created_at, updated_at)
+        VALUES (
+          ${clubId}::uuid, ${title}, ${url}, ${beltId || 'all'}, 
+          ${contentType || 'video'}, ${status || 'draft'}, ${pricingType || 'free'}, 
+          ${xpReward || 10}, ${description || null}, NOW(), NOW()
+        )
+        RETURNING id
+      `);
+      
+      const newId = (result as any[])[0]?.id;
+      res.json({ success: true, action: 'created', contentId: newId });
+    } catch (error: any) {
+      console.error('[Content Sync] Error:', error.message);
+      res.status(500).json({ error: 'Failed to sync content' });
+    }
+  });
+
   // Content Analytics - Record content view/completion
   app.post('/api/content/view', async (req: Request, res: Response) => {
     try {
