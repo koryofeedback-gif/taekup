@@ -201,6 +201,10 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
         
         syncTimeoutRef.current = setTimeout(() => {
             if (onUpdateStudent) {
+                const currentXp = student.rivalsStats?.xp || 0;
+                const currentTotalPoints = student.totalPoints || 0;
+                const currentCompletedIds = student.completedContentIds || [];
+                
                 const updatedRivalsStats: RivalsStats = {
                     ...(student.rivalsStats || {
                         wins: 0,
@@ -212,13 +216,13 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
                         familyChallengesCompleted: 0,
                         mysteryBoxCompleted: 0
                     }),
-                    xp: state.xp + xpReward
+                    xp: currentXp + xpReward
                 };
                 
                 onUpdateStudent({
                     ...student,
-                    completedContentIds: [...state.completedContentIds, contentId],
-                    totalPoints: state.totalPoints + xpReward,
+                    completedContentIds: [...currentCompletedIds, contentId],
+                    totalPoints: currentTotalPoints + xpReward,
                     rivalsStats: updatedRivalsStats
                 });
                 
