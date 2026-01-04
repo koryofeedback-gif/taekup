@@ -89,7 +89,7 @@ const DemoMarginCalculatorCard: React.FC<{
                     </p>
                     
                     <div className="bg-gray-900/60 p-5 rounded-lg border border-gray-700 mb-4">
-                        {/* Tuition Increase Input - LARGE and EDITABLE for demo play */}
+                        {/* Tuition Increase Input - Matches Real mode sizing */}
                         <div className="mb-6">
                             <label className="text-xs text-gray-400 uppercase font-bold tracking-wider">Projected Tuition Increase</label>
                             <div className="flex items-baseline mt-2">
@@ -101,7 +101,6 @@ const DemoMarginCalculatorCard: React.FC<{
                                     step="1.00"
                                     min="2"
                                     max="50"
-                                    placeholder="Amount you add to membership"
                                     className="bg-gray-800 border-2 border-indigo-500/50 rounded-lg px-4 py-3 text-white font-extrabold text-3xl w-28 focus:outline-none focus:border-indigo-400 text-center"
                                 />
                                 <span className="text-gray-400 ml-2 text-sm">/student/mo</span>
@@ -109,14 +108,14 @@ const DemoMarginCalculatorCard: React.FC<{
                             <p className="text-[10px] text-gray-500 mt-1">Amount you add to membership</p>
                         </div>
                         
-                        {/* Cost Breakdown - LOCKED values for FOMO */}
+                        {/* Cost Breakdown - LOCKED values, matches Real mode layout */}
                         <div className="flex items-end justify-between mb-4 gap-3">
-                            {/* Club Rate - LOCKED with Exclusive B2B Rate */}
+                            {/* Club Rate - LOCKED */}
                             <div className="flex-shrink-0">
                                 <p className="text-[9px] text-gray-600 uppercase">DojoMint™ Club Rate</p>
-                                <p className="text-amber-400 text-sm flex items-center font-medium">
-                                    <span className="mr-1">🔒</span>
-                                    Exclusive B2B Rate
+                                <p className="text-gray-400 text-lg font-medium flex items-center">
+                                    <span className="mr-1 text-amber-400">🔒</span>
+                                    <span className="text-amber-400">B2B Rate</span>
                                 </p>
                                 <p className="text-[9px] text-gray-500">(Billed to Club)</p>
                             </div>
@@ -124,12 +123,11 @@ const DemoMarginCalculatorCard: React.FC<{
                             {/* Equals Sign */}
                             <div className="text-gray-600 text-lg pb-3">=</div>
                             
-                            {/* Net Profit - LOCKED with Calculate in Dashboard */}
+                            {/* Net Profit - LOCKED */}
                             <div className="flex-1 bg-green-900/30 p-4 rounded-lg border border-green-500/40 text-center">
                                 <p className="text-[10px] text-green-300 uppercase tracking-wider font-bold mb-1">Net Profit</p>
-                                <p className="text-green-400 text-lg font-bold flex items-center justify-center">
+                                <p className="text-amber-400 text-2xl font-black flex items-center justify-center">
                                     <span className="mr-1">🔒</span>
-                                    Calculate in Dashboard
                                 </p>
                                 <p className="text-green-300/60 text-[10px] mt-1">per student/mo</p>
                             </div>
@@ -148,9 +146,9 @@ const DemoMarginCalculatorCard: React.FC<{
                             <p className="text-xs text-green-300/80 uppercase tracking-wider mb-1">
                                 Monthly Profit ({displayStudents} {totalStudents > 0 ? 'students' : 'example'})
                             </p>
-                            <p className="text-2xl font-bold text-green-400 flex items-center justify-center">
+                            <p className="text-3xl font-black text-amber-400 flex items-center justify-center">
                                 <span className="mr-2">🔒</span>
-                                Unlock with Real Club
+                                Unlock
                             </p>
                         </div>
                     </div>
@@ -2473,28 +2471,25 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                             </div>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                            <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
-                                <p className="text-xs text-gray-500 uppercase">Total Tuition Collected</p>
-                                <p className="text-xl font-bold text-amber-400 flex items-center justify-center">
-                                    <span className="mr-1">🔒</span>
-                                    Unlock
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div className="bg-gray-900 p-3 rounded-lg text-center border border-gray-700">
+                                <p className="text-[10px] text-gray-500 uppercase mb-1">Total Tuition</p>
+                                <p className="text-lg font-bold text-amber-400 flex items-center justify-center">
+                                    <span className="mr-1 text-sm">🔒</span>
                                 </p>
                             </div>
                             
-                            <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
-                                <p className="text-xs text-gray-500 uppercase">Platform Fees</p>
-                                <p className="text-xl font-bold text-amber-400 flex items-center justify-center">
-                                    <span className="mr-1">🔒</span>
-                                    B2B Rate
+                            <div className="bg-gray-900 p-3 rounded-lg text-center border border-gray-700">
+                                <p className="text-[10px] text-gray-500 uppercase mb-1">Platform Fees</p>
+                                <p className="text-lg font-bold text-amber-400 flex items-center justify-center">
+                                    <span className="mr-1 text-sm">🔒</span>
                                 </p>
                             </div>
                             
-                            <div className="bg-gray-900 p-4 rounded-lg text-center border border-gray-700">
-                                <p className="text-xs text-gray-500 uppercase">Net Profit</p>
-                                <p className="text-xl font-bold text-amber-400 flex items-center justify-center">
-                                    <span className="mr-1">🔒</span>
-                                    Calculate
+                            <div className="bg-gray-900 p-3 rounded-lg text-center border border-gray-700">
+                                <p className="text-[10px] text-gray-500 uppercase mb-1">Net Profit</p>
+                                <p className="text-lg font-bold text-amber-400 flex items-center justify-center">
+                                    <span className="mr-1 text-sm">🔒</span>
                                 </p>
                             </div>
                         </div>
