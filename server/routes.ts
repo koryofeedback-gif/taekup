@@ -1946,11 +1946,30 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Content ID is required' });
       }
 
+      // Check if content exists first
+      const contentExists = await db.execute(sql`
+        SELECT id FROM curriculum_content WHERE id = ${contentId}::uuid LIMIT 1
+      `);
+      if ((contentExists as any[]).length === 0) {
+        return res.status(404).json({ error: 'Content not found' });
+      }
+
+      // Check if student exists (skip student tracking if not - demo mode)
+      let validStudentId = null;
+      if (studentId) {
+        const studentExists = await db.execute(sql`
+          SELECT id FROM students WHERE id = ${studentId}::uuid LIMIT 1
+        `);
+        if ((studentExists as any[]).length > 0) {
+          validStudentId = studentId;
+        }
+      }
+
       // Check if view already exists for this content/student
       const existingView = await db.execute(sql`
         SELECT id, completed FROM content_views 
         WHERE content_id = ${contentId}::uuid 
-        ${studentId ? sql`AND student_id = ${studentId}::uuid` : sql`AND student_id IS NULL`}
+        ${validStudentId ? sql`AND student_id = ${validStudentId}::uuid` : sql`AND student_id IS NULL`}
         LIMIT 1
       `);
 
@@ -1978,7 +1997,7 @@ export function registerRoutes(app: Express) {
         INSERT INTO content_views (content_id, student_id, completed, completed_at, xp_awarded, viewed_at)
         VALUES (
           ${contentId}::uuid, 
-          ${studentId ? sql`${studentId}::uuid` : sql`NULL`}, 
+          ${validStudentId ? sql`${validStudentId}::uuid` : sql`NULL`}, 
           ${completed || false}, 
           ${completed ? sql`NOW()` : sql`NULL`}, 
           ${xpAwarded || 0}, 
