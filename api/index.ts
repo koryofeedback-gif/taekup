@@ -6087,16 +6087,25 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
   const client = await pool.connect();
   try {
     const { clubId, content } = req.body;
-    console.log('[Content Sync] Received:', { clubId, contentTitle: content?.title });
+    console.log('[Content Sync] Received:', { clubId, contentTitle: content?.title, content });
     
     if (!clubId || !content) {
       return res.status(400).json({ error: 'Club ID and content are required' });
     }
 
+    // Validate clubId is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(clubId)) {
+      return res.status(400).json({ error: 'Invalid club ID format', clubId });
+    }
+
     const { id, title, url, beltId, contentType, status, pricingType, xpReward, description } = content;
     
-    // Check if ID is a valid UUID
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!title) {
+      return res.status(400).json({ error: 'Content title is required' });
+    }
+    
+    // Check if content ID is a valid UUID
     const isValidUuid = uuidRegex.test(id);
     
     // Check if content already exists
@@ -6148,8 +6157,8 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
     console.log('[Content Sync] Created:', newId);
     return res.json({ success: true, action: 'created', contentId: newId });
   } catch (error: any) {
-    console.error('[Content Sync] Error:', error.message);
-    return res.status(500).json({ error: 'Failed to sync content' });
+    console.error('[Content Sync] Error:', error.message, error.stack);
+    return res.status(500).json({ error: 'Failed to sync content', details: error.message });
   } finally {
     client.release();
   }
