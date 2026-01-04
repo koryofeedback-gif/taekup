@@ -126,18 +126,22 @@ const MarginCalculatorCard: React.FC<{
                             </div>
                         </div>
                         
-                        {/* Cost Breakdown */}
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            {/* Platform Tech Cost - Small & Gray */}
-                            <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
-                                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Platform Tech Cost</p>
-                                <p className="text-gray-400 text-lg font-medium">-${PLATFORM_COST.toFixed(2)}</p>
+                        {/* Cost Breakdown - Emphasize Net Payout */}
+                        <div className="flex items-end justify-between mb-4 gap-3">
+                            {/* Gateway Fee - SMALL, GRAY, Fine Print Style */}
+                            <div className="flex-shrink-0">
+                                <p className="text-[9px] text-gray-600 uppercase">Gateway & Protocol Fee</p>
+                                <p className="text-gray-500 text-sm">-$1.99</p>
                             </div>
                             
-                            {/* You Keep - Large & Green */}
-                            <div className="bg-green-900/30 p-3 rounded border border-green-500/40">
-                                <p className="text-[10px] text-green-300 uppercase tracking-wider font-bold">You Keep</p>
-                                <p className="text-green-400 text-2xl font-extrabold">${youKeep.toFixed(2)}</p>
+                            {/* Equals Sign */}
+                            <div className="text-gray-600 text-lg pb-1">=</div>
+                            
+                            {/* You Keep - LARGE & GREEN, Emphasized */}
+                            <div className="flex-1 bg-green-900/30 p-4 rounded-lg border border-green-500/40 text-center">
+                                <p className="text-[10px] text-green-300 uppercase tracking-wider font-bold mb-1">You Keep</p>
+                                <p className="text-green-400 text-3xl font-black">${youKeep.toFixed(2)}</p>
+                                <p className="text-green-300/60 text-[10px] mt-1">per student/mo</p>
                             </div>
                         </div>
                         
