@@ -951,9 +951,23 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
         // But data.students contains the original wizardStudent with local ID
         // We need to update by matching the original local student ID
         const originalLocalId = effectiveStudentId;
+        
+        console.log('[handleUpdateStudent] Received update:', {
+            updatedStudentId: updatedStudent.id,
+            originalLocalId,
+            totalPoints: updatedStudent.totalPoints,
+            rivalsXp: updatedStudent.rivalsStats?.xp,
+            dataStudentsIds: data.students.map(s => s.id)
+        });
+        
         const updatedStudents = data.students.map(s => 
             s.id === originalLocalId ? { ...updatedStudent, id: originalLocalId } : s
         );
+        
+        console.log('[handleUpdateStudent] After map, updated student totalPoints:', 
+            updatedStudents.find(s => s.id === originalLocalId)?.totalPoints
+        );
+        
         onUpdateStudents(updatedStudents);
     };
 

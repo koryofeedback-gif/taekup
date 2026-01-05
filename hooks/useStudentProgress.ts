@@ -205,6 +205,15 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
                 const currentTotalPoints = student.totalPoints || 0;
                 const currentCompletedIds = student.completedContentIds || [];
                 
+                console.log('[useStudentProgress] Before update:', {
+                    studentId: student.id,
+                    currentXp,
+                    currentTotalPoints,
+                    xpReward,
+                    newXp: currentXp + xpReward,
+                    newTotalPoints: currentTotalPoints + xpReward
+                });
+                
                 const updatedRivalsStats: RivalsStats = {
                     ...(student.rivalsStats || {
                         wins: 0,
@@ -219,16 +228,26 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
                     xp: currentXp + xpReward
                 };
                 
-                onUpdateStudent({
+                const updatedStudent = {
                     ...student,
                     completedContentIds: [...currentCompletedIds, contentId],
                     totalPoints: currentTotalPoints + xpReward,
                     rivalsStats: updatedRivalsStats
+                };
+                
+                console.log('[useStudentProgress] Calling onUpdateStudent with:', {
+                    id: updatedStudent.id,
+                    totalPoints: updatedStudent.totalPoints,
+                    rivalsXp: updatedStudent.rivalsStats.xp
                 });
+                
+                onUpdateStudent(updatedStudent);
                 
                 setTimeout(() => {
                     dispatch({ type: 'CLEAR_ALL_PENDING' });
                 }, 500);
+            } else {
+                console.warn('[useStudentProgress] onUpdateStudent is not defined!');
             }
         }, 100);
         
