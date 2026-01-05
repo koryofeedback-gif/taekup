@@ -4533,25 +4533,18 @@ export function registerRoutes(app: Express) {
       // Award XP using the unified awardXP function
       const result = await awardXP(studentId, xp, source || 'content', { contentId });
       
-      // Insert into xp_transactions for persistence (like Daily Mystery)
+      // Insert into xp_transactions for persistence (local XP only - no global XP for content)
       await db.execute(sql`
         INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
         VALUES (${studentId}::uuid, ${xp}, 'EARN', 'content_completion', NOW())
       `);
       
-      // Award Global XP for World Rankings (max 2 points per content for fairness)
-      const globalXp = Math.min(xp, 2);
-      await db.execute(sql`
-        UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalXp} WHERE id = ${studentId}::uuid
-      `);
-      
-      console.log(`[AwardXP] XP awarded: ${xp} local, +${globalXp} global for student ${studentId}`);
+      console.log(`[AwardXP] Local XP awarded: ${xp} for student ${studentId}`);
 
       res.json({ 
         success: true, 
         newTotalXp: result.newTotal,
-        xpAwarded: xp,
-        globalXp
+        xpAwarded: xp
       });
     } catch (error: any) {
       console.error('[AwardXP] Error:', error.message);

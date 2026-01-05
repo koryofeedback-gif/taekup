@@ -6225,17 +6225,10 @@ async function handleAwardXp(req: VercelRequest, res: VercelResponse, studentId:
     const student = studentCheck.rows[0];
     const reason = source || `Content completion: ${contentId || 'curriculum'}`;
     
-    // Use the unified XP helper
+    // Use the unified XP helper (local XP only - no global XP for content)
     const newTotal = await applyXpDelta(client, studentId, xp, reason);
     
-    // Also update global_xp for World Rankings (max 2 bonus points per content)
-    const globalBonus = Math.min(xp, 2);
-    await client.query(
-      `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid`,
-      [globalBonus, studentId]
-    );
-    
-    console.log(`[Award XP] ${student.name}: +${xp} XP (${reason}) → Total: ${newTotal}`);
+    console.log(`[Award XP] ${student.name}: +${xp} local XP (${reason}) → Total: ${newTotal}`);
     
     return res.json({
       success: true,
