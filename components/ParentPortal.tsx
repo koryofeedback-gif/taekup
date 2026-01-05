@@ -6151,8 +6151,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className={`font-bold text-lg ${entry.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {entry.amount >= 0 ? '+' : ''}{entry.amount}
+                                                    <p className={`font-bold text-lg ${entry.type === 'EARN' ? 'text-green-400' : 'text-red-400'}`}>
+                                                        {entry.type === 'EARN' ? '+' : '-'}{entry.amount}
                                                     </p>
                                                     <p className="text-[10px] text-yellow-500 font-bold">XP</p>
                                                 </div>
