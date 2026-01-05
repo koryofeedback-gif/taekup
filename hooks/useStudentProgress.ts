@@ -183,17 +183,20 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
             payload: { contentId, xpDelta: xpReward }
         });
         
-        // Record view/completion in analytics database
-        fetch('/api/content/view', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contentId,
-                studentId: student.id,
-                completed: true,
-                xpAwarded: xpReward
-            })
-        }).catch(err => console.warn('Failed to record content view:', err));
+        // Record view/completion in analytics database (only for UUID content IDs from Creator Hub)
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contentId);
+        if (isUUID) {
+            fetch('/api/content/view', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contentId,
+                    studentId: student.id,
+                    completed: true,
+                    xpAwarded: xpReward
+                })
+            }).catch(err => console.warn('Failed to record content view:', err));
+        }
         
         if (syncTimeoutRef.current) {
             clearTimeout(syncTimeoutRef.current);
@@ -204,15 +207,6 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
                 const currentXp = student.rivalsStats?.xp || 0;
                 const currentTotalPoints = student.totalPoints || 0;
                 const currentCompletedIds = student.completedContentIds || [];
-                
-                console.log('[useStudentProgress] Before update:', {
-                    studentId: student.id,
-                    currentXp,
-                    currentTotalPoints,
-                    xpReward,
-                    newXp: currentXp + xpReward,
-                    newTotalPoints: currentTotalPoints + xpReward
-                });
                 
                 const updatedRivalsStats: RivalsStats = {
                     ...(student.rivalsStats || {
@@ -228,26 +222,16 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
                     xp: currentXp + xpReward
                 };
                 
-                const updatedStudent = {
+                onUpdateStudent({
                     ...student,
                     completedContentIds: [...currentCompletedIds, contentId],
                     totalPoints: currentTotalPoints + xpReward,
                     rivalsStats: updatedRivalsStats
-                };
-                
-                console.log('[useStudentProgress] Calling onUpdateStudent with:', {
-                    id: updatedStudent.id,
-                    totalPoints: updatedStudent.totalPoints,
-                    rivalsXp: updatedStudent.rivalsStats.xp
                 });
-                
-                onUpdateStudent(updatedStudent);
                 
                 setTimeout(() => {
                     dispatch({ type: 'CLEAR_ALL_PENDING' });
                 }, 500);
-            } else {
-                console.warn('[useStudentProgress] onUpdateStudent is not defined!');
             }
         }, 100);
         

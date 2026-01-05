@@ -79,6 +79,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [apiLeaderboardData, setApiLeaderboardData] = useState<Array<{id: string; name: string; totalXP: number; monthlyXP: number; belt?: string; stripes?: number}>>([]);
     const [leaderboardLoading, setLeaderboardLoading] = useState(false);
     const [serverTotalXP, setServerTotalXP] = useState<number>(0);
+    const xpUpdateGraceRef = useRef<number>(0); // Timestamp of last local XP update
     
     // World Rankings state
     const [worldRankData, setWorldRankData] = useState<{
@@ -273,12 +274,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const fetchServerXP = async () => {
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             if (!student.id || !uuidRegex.test(student.id)) return;
+            
+            // Skip fetch during grace period after local XP update (5 seconds)
+            if (Date.now() - xpUpdateGraceRef.current < 5000) {
+                return;
+            }
+            
             try {
                 const response = await fetch(`/api/habits/status?studentId=${student.id}`);
                 const result = await response.json();
                 if (typeof result.totalXp === 'number') {
                     setServerTotalXP(result.totalXp);
-                    console.log('[ServerXP] Fetched total XP:', result.totalXp);
                 }
             } catch (err) {
                 console.error('[ServerXP] Failed to fetch:', err);
@@ -2821,6 +2827,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         if (awarded) {
                                             setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
                                             setServerTotalXP(prev => prev + xpReward);
+                                            xpUpdateGraceRef.current = Date.now();
                                         }
                                     }
                                 };
