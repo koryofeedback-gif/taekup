@@ -4479,6 +4479,41 @@ export function registerRoutes(app: Express) {
   });
 
   // =====================================================
+  // XP HISTORY - Get XP transaction history for a student
+  // =====================================================
+  app.get('/api/students/:id/xp-history', async (req: Request, res: Response) => {
+    try {
+      const studentId = req.params.id;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid student ID format' });
+      }
+
+      const result = await db.execute(sql`
+        SELECT id, amount, type, reason, created_at
+        FROM xp_transactions
+        WHERE student_id = ${studentId}::uuid
+        ORDER BY created_at DESC
+        LIMIT 50
+      `);
+
+      const history = (result as any[]).map((row: any) => ({
+        id: row.id,
+        amount: parseInt(row.amount, 10),
+        type: row.type,
+        reason: row.reason,
+        createdAt: row.created_at
+      }));
+
+      res.json({ success: true, history });
+    } catch (error: any) {
+      console.error('[XP History] Error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch XP history' });
+    }
+  });
+
+  // =====================================================
   // AWARD XP - Generic endpoint for content completion XP
   // =====================================================
   app.post('/api/students/:id/award-xp', async (req: Request, res: Response) => {

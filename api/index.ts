@@ -6164,6 +6164,43 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// Get XP transaction history for a student
+async function handleXpHistory(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const client = await pool.connect();
+  try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!studentId || !uuidRegex.test(studentId)) {
+      return res.status(400).json({ error: 'Invalid student ID format' });
+    }
+
+    // Fetch XP transactions (last 50)
+    const result = await client.query(`
+      SELECT id, amount, type, reason, created_at
+      FROM xp_transactions
+      WHERE student_id = $1::uuid
+      ORDER BY created_at DESC
+      LIMIT 50
+    `, [studentId]);
+
+    const history = result.rows.map(row => ({
+      id: row.id,
+      amount: parseInt(row.amount, 10),
+      type: row.type,
+      reason: row.reason,
+      createdAt: row.created_at
+    }));
+
+    return res.json({ success: true, history });
+  } catch (error: any) {
+    console.error('[XP History] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch XP history' });
+  } finally {
+    client.release();
+  }
+}
+
 // Award XP to student (for local curriculum content completion)
 async function handleAwardXp(req: VercelRequest, res: VercelResponse, studentId: string) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -6524,6 +6561,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const studentStatsMatch = path.match(/^\/students\/([^/]+)\/stats\/?$/);
     if (studentStatsMatch) return await handleStudentStats(req, res, studentStatsMatch[1]);
+
+    // XP History (for student progress tracking)
+    const xpHistoryMatch = path.match(/^\/students\/([^/]+)\/xp-history\/?$/);
+    if (xpHistoryMatch) return await handleXpHistory(req, res, xpHistoryMatch[1]);
 
     // Direct XP Award (for local curriculum content that doesn't have UUID)
     const awardXpMatch = path.match(/^\/students\/([^/]+)\/award-xp\/?$/);

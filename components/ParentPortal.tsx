@@ -328,8 +328,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             xpAwarded: number;
             completedAt: string;
         }>;
+        xpHistory: Array<{
+            id: string;
+            amount: number;
+            type: string;
+            reason: string;
+            createdAt: string;
+        }>;
         loading: boolean;
-    }>({ student: null, history: [], loading: false });
+        historyTab: 'challenges' | 'xp';
+    }>({ student: null, history: [], xpHistory: [], loading: false, historyTab: 'challenges' });
     const [rivalStats, setRivalStats] = useState(() => {
         // Initialize from student's saved stats or use defaults
         if (student.rivalsStats) {
@@ -905,14 +913,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     
     // Fetch student's history for leaderboard viewing
     const fetchStudentHistory = async (targetStudent: Student) => {
-        setViewingStudentHistory({ student: targetStudent, history: [], loading: true });
+        setViewingStudentHistory({ student: targetStudent, history: [], xpHistory: [], loading: true, historyTab: 'challenges' });
         try {
-            const response = await fetch(`/api/challenges/history?studentId=${targetStudent.id}`);
-            const data = await response.json();
+            // Fetch both challenge history and XP history in parallel
+            const [challengeRes, xpRes] = await Promise.all([
+                fetch(`/api/challenges/history?studentId=${targetStudent.id}`),
+                fetch(`/api/students/${targetStudent.id}/xp-history`)
+            ]);
+            const challengeData = await challengeRes.json();
+            const xpData = await xpRes.json();
             setViewingStudentHistory({
                 student: targetStudent,
-                history: data.history || [],
-                loading: false
+                history: challengeData.history || [],
+                xpHistory: xpData.history || [],
+                loading: false,
+                historyTab: 'challenges'
             });
         } catch (error) {
             console.error('[History] Failed to fetch student history:', error);
@@ -6002,7 +6017,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
             {/* Student History Modal */}
             {viewingStudentHistory.student && (
-                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingStudentHistory({ student: null, history: [], loading: false })}>
+                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingStudentHistory({ student: null, history: [], xpHistory: [], loading: false, historyTab: 'challenges' })}>
                     <div className="bg-gray-900 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden border border-gray-700 shadow-2xl" onClick={e => e.stopPropagation()}>
                         <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 p-4 border-b border-gray-700">
                             <div className="flex items-center justify-between">
@@ -6010,13 +6025,37 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                         <span>📜</span> {viewingStudentHistory.student.name}'s History
                                     </h3>
-                                    <p className="text-xs text-gray-400">Challenge submissions and achievements</p>
+                                    <p className="text-xs text-gray-400">Activity log and HonorXP earnings</p>
                                 </div>
                                 <button 
-                                    onClick={() => setViewingStudentHistory({ student: null, history: [], loading: false })}
+                                    onClick={() => setViewingStudentHistory({ student: null, history: [], xpHistory: [], loading: false, historyTab: 'challenges' })}
                                     className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
                                 >
                                     ✕
+                                </button>
+                            </div>
+                            
+                            {/* Tabs */}
+                            <div className="flex gap-2 mt-3">
+                                <button
+                                    onClick={() => setViewingStudentHistory(prev => ({ ...prev, historyTab: 'challenges' }))}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
+                                        viewingStudentHistory.historyTab === 'challenges' 
+                                            ? 'bg-purple-600 text-white' 
+                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                    }`}
+                                >
+                                    ⚔️ Challenges
+                                </button>
+                                <button
+                                    onClick={() => setViewingStudentHistory(prev => ({ ...prev, historyTab: 'xp' }))}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
+                                        viewingStudentHistory.historyTab === 'xp' 
+                                            ? 'bg-yellow-600 text-white' 
+                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                    }`}
+                                >
+                                    ⭐ XP Log
                                 </button>
                             </div>
                         </div>
@@ -6027,49 +6066,100 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     <div className="text-4xl animate-spin mb-3">⏳</div>
                                     <p className="text-gray-400 text-sm">Loading history...</p>
                                 </div>
-                            ) : viewingStudentHistory.history.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <div className="text-4xl mb-3">🥋</div>
-                                    <p className="text-gray-400 text-sm">No challenge history yet</p>
-                                    <p className="text-gray-500 text-xs mt-1">Complete challenges to build your history!</p>
-                                </div>
-                            ) : (
-                                viewingStudentHistory.history.map(entry => {
-                                    const date = new Date(entry.completedAt);
-                                    const dateDisplay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                    
-                                    const statusConfig: Record<string, { badge: string; color: string; bg: string }> = {
-                                        'PENDING': { badge: '🟡 In Review', color: 'text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/30' },
-                                        'VERIFIED': { badge: '🟢 Verified', color: 'text-green-400', bg: 'bg-green-900/20 border-green-500/30' },
-                                        'COMPLETED': { badge: '✅ Completed', color: 'text-green-400', bg: 'bg-gray-800 border-gray-600' },
-                                    };
-                                    const config = statusConfig[entry.status] || statusConfig['COMPLETED'];
-                                    
-                                    return (
-                                        <div 
-                                            key={entry.id} 
-                                            className={`flex items-center justify-between p-3 rounded-xl border ${config.bg}`}
-                                        >
-                                            <div className="flex items-center">
-                                                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl mr-3">
-                                                    {entry.icon || '⚡'}
+                            ) : viewingStudentHistory.historyTab === 'challenges' ? (
+                                viewingStudentHistory.history.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <div className="text-4xl mb-3">🥋</div>
+                                        <p className="text-gray-400 text-sm">No challenge history yet</p>
+                                        <p className="text-gray-500 text-xs mt-1">Complete challenges to build your history!</p>
+                                    </div>
+                                ) : (
+                                    viewingStudentHistory.history.map(entry => {
+                                        const date = new Date(entry.completedAt);
+                                        const dateDisplay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                        
+                                        const statusConfig: Record<string, { badge: string; color: string; bg: string }> = {
+                                            'PENDING': { badge: '🟡 In Review', color: 'text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/30' },
+                                            'VERIFIED': { badge: '🟢 Verified', color: 'text-green-400', bg: 'bg-green-900/20 border-green-500/30' },
+                                            'COMPLETED': { badge: '✅ Completed', color: 'text-green-400', bg: 'bg-gray-800 border-gray-600' },
+                                        };
+                                        const config = statusConfig[entry.status] || statusConfig['COMPLETED'];
+                                        
+                                        return (
+                                            <div 
+                                                key={entry.id} 
+                                                className={`flex items-center justify-between p-3 rounded-xl border ${config.bg}`}
+                                            >
+                                                <div className="flex items-center">
+                                                    <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl mr-3">
+                                                        {entry.icon || '⚡'}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-white text-sm">{entry.challengeName}</p>
+                                                        <p className="text-[10px] text-gray-400">
+                                                            {entry.category} • {dateDisplay} • {entry.proofType === 'VIDEO' ? '📹 Video' : '✓ Trust'}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-bold text-white text-sm">{entry.challengeName}</p>
-                                                    <p className="text-[10px] text-gray-400">
-                                                        {entry.category} • {dateDisplay} • {entry.proofType === 'VIDEO' ? '📹 Video' : '✓ Trust'}
+                                                <div className="text-right">
+                                                    <p className={`font-bold text-xs ${config.color}`}>{config.badge}</p>
+                                                    <p className="text-[10px] text-yellow-500 font-bold">
+                                                        +{entry.category === 'Mystery' ? (entry.xpAwarded >= 10 ? 15 : 5) : entry.xpAwarded} XP
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className={`font-bold text-xs ${config.color}`}>{config.badge}</p>
-                                                <p className="text-[10px] text-yellow-500 font-bold">
-                                                    +{entry.category === 'Mystery' ? (entry.xpAwarded >= 10 ? 15 : 5) : entry.xpAwarded} XP
-                                                </p>
+                                        );
+                                    })
+                                )
+                            ) : (
+                                viewingStudentHistory.xpHistory.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <div className="text-4xl mb-3">⭐</div>
+                                        <p className="text-gray-400 text-sm">No XP transactions yet</p>
+                                        <p className="text-gray-500 text-xs mt-1">Complete activities to earn HonorXP!</p>
+                                    </div>
+                                ) : (
+                                    viewingStudentHistory.xpHistory.map(entry => {
+                                        const date = new Date(entry.createdAt);
+                                        const dateDisplay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                        const timeDisplay = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                                        
+                                        const reasonLabels: Record<string, { icon: string; label: string }> = {
+                                            'content_completion': { icon: '📚', label: 'Sensei Academy' },
+                                            'daily_challenge': { icon: '🎯', label: 'Daily Mystery' },
+                                            'arena_challenge': { icon: '⚔️', label: 'Battle Arena' },
+                                            'gauntlet': { icon: '🏋️', label: 'Daily Training' },
+                                            'habit': { icon: '🏠', label: 'Home Dojo' },
+                                            'bonus': { icon: '🎁', label: 'Bonus' },
+                                        };
+                                        const reasonConfig = reasonLabels[entry.reason] || { icon: '⭐', label: entry.reason };
+                                        
+                                        return (
+                                            <div 
+                                                key={entry.id} 
+                                                className="flex items-center justify-between p-3 rounded-xl border bg-gray-800 border-gray-600"
+                                            >
+                                                <div className="flex items-center">
+                                                    <div className="w-10 h-10 rounded-full bg-yellow-900/30 flex items-center justify-center text-xl mr-3">
+                                                        {reasonConfig.icon}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-white text-sm">{reasonConfig.label}</p>
+                                                        <p className="text-[10px] text-gray-400">
+                                                            {dateDisplay} • {timeDisplay}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className={`font-bold text-lg ${entry.type === 'EARN' ? 'text-green-400' : 'text-red-400'}`}>
+                                                        {entry.type === 'EARN' ? '+' : '-'}{entry.amount}
+                                                    </p>
+                                                    <p className="text-[10px] text-yellow-500 font-bold">XP</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })
+                                        );
+                                    })
+                                )
                             )}
                         </div>
                     </div>
