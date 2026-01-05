@@ -201,7 +201,7 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
             }).catch(err => console.warn('Failed to record content view:', err));
         } else if (isStudentUUID && xpReward > 0) {
             // For non-UUID content OR when content/view can't run, use direct XP award
-            console.log(`[Content] Awarding ${xpReward} XP to student ${student.id}`);
+            console.log(`[Content] Awarding ${xpReward} XP to student ${student.id}, contentId: ${contentId}`);
             fetch(`/api/students/${student.id}/award-xp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -210,7 +210,17 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
                     source: 'content',
                     contentId
                 })
-            }).catch(err => console.warn('Failed to award XP:', err));
+            })
+            .then(response => {
+                console.log(`[Content] Award XP response status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log(`[Content] Award XP result:`, data);
+            })
+            .catch(err => console.error('[Content] Failed to award XP:', err));
+        } else {
+            console.log(`[Content] Skipping XP award - isStudentUUID: ${isStudentUUID}, xpReward: ${xpReward}, studentId: ${student.id}`);
         }
         
         if (syncTimeoutRef.current) {
