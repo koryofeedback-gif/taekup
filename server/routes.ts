@@ -2055,6 +2055,11 @@ export function registerRoutes(app: Express) {
             SET completion_count = COALESCE(completion_count, 0) + 1
             WHERE id = ${contentId}::uuid
           `);
+          
+          // Award XP to student's total_xp (single source of truth)
+          if (validStudentId && xpAwarded > 0) {
+            await awardXP(validStudentId, xpAwarded, 'content', { contentId });
+          }
         }
         return res.json({ success: true, action: 'updated' });
       }
@@ -2079,6 +2084,11 @@ export function registerRoutes(app: Express) {
         ${completed ? sql`, completion_count = COALESCE(completion_count, 0) + 1` : sql``}
         WHERE id = ${contentId}::uuid
       `);
+
+      // Award XP to student's total_xp if completing (single source of truth)
+      if (completed && validStudentId && xpAwarded > 0) {
+        await awardXP(validStudentId, xpAwarded, 'content', { contentId });
+      }
 
       res.json({ success: true, action: 'created' });
     } catch (error: any) {
@@ -4437,6 +4447,37 @@ export function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error('[SyncRivals] Error:', error.message);
       res.status(500).json({ error: 'Failed to sync rivals stats' });
+    }
+  });
+
+  // =====================================================
+  // AWARD XP - Generic endpoint for content completion XP
+  // =====================================================
+  app.post('/api/students/:id/award-xp', async (req: Request, res: Response) => {
+    try {
+      const studentId = req.params.id;
+      const { xp, source, contentId } = req.body;
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(studentId)) {
+        return res.status(400).json({ error: 'Invalid student ID format' });
+      }
+
+      if (!xp || typeof xp !== 'number' || xp <= 0) {
+        return res.status(400).json({ error: 'Valid XP amount is required' });
+      }
+
+      // Award XP using the unified awardXP function
+      const result = await awardXP(studentId, xp, source || 'content', { contentId });
+
+      res.json({ 
+        success: true, 
+        newTotalXp: result.newTotal,
+        xpAwarded: xp
+      });
+    } catch (error: any) {
+      console.error('[AwardXP] Error:', error.message);
+      res.status(500).json({ error: 'Failed to award XP' });
     }
   });
 
