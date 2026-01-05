@@ -2820,6 +2820,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         const awarded = completeContent(video.id, xpReward);
                                         if (awarded) {
                                             setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
+                                            setServerTotalXP(prev => prev + xpReward);
                                         }
                                     }
                                 };
