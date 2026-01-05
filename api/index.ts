@@ -6164,6 +6164,56 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// Award XP to student (for local curriculum content completion)
+async function handleAwardXp(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const client = await pool.connect();
+  try {
+    const { xp, contentId, source } = req.body;
+    
+    if (!xp || typeof xp !== 'number' || xp <= 0) {
+      return res.status(400).json({ error: 'Valid XP amount is required' });
+    }
+
+    // Verify student exists
+    const studentCheck = await client.query(
+      `SELECT id, name, total_xp FROM students WHERE id = $1::uuid LIMIT 1`,
+      [studentId]
+    );
+    if (studentCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    const student = studentCheck.rows[0];
+    const reason = source || `Content completion: ${contentId || 'curriculum'}`;
+    
+    // Use the unified XP helper
+    const newTotal = await applyXpDelta(client, studentId, xp, reason);
+    
+    // Also update global_xp for World Rankings (max 2 bonus points per content)
+    const globalBonus = Math.min(xp, 2);
+    await client.query(
+      `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid`,
+      [globalBonus, studentId]
+    );
+    
+    console.log(`[Award XP] ${student.name}: +${xp} XP (${reason}) → Total: ${newTotal}`);
+    
+    return res.json({
+      success: true,
+      newTotal,
+      awarded: xp,
+      studentId
+    });
+  } catch (error: any) {
+    console.error('[Award XP] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to award XP', details: error.message });
+  } finally {
+    client.release();
+  }
+}
+
 // Record content view/completion
 async function handleContentView(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -6474,6 +6524,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const studentStatsMatch = path.match(/^\/students\/([^/]+)\/stats\/?$/);
     if (studentStatsMatch) return await handleStudentStats(req, res, studentStatsMatch[1]);
+
+    // Direct XP Award (for local curriculum content that doesn't have UUID)
+    const awardXpMatch = path.match(/^\/students\/([^/]+)\/award-xp\/?$/);
+    if (awardXpMatch) return await handleAwardXp(req, res, awardXpMatch[1]);
 
     // Content Management (Creator Hub)
     if (path === '/content/sync' || path === '/content/sync/') return await handleContentSync(req, res);
