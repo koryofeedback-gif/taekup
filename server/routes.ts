@@ -4539,13 +4539,13 @@ export function registerRoutes(app: Express) {
         VALUES (${studentId}::uuid, ${xp}, 'EARN', 'content_completion', NOW())
       `);
       
-      // Award Global XP for World Rankings (1 point per 10 local XP)
-      const globalXp = Math.max(1, Math.floor(xp / 10));
+      // Award Global XP for World Rankings (max 2 points per content for fairness)
+      const globalXp = Math.min(xp, 2);
       await db.execute(sql`
         UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalXp} WHERE id = ${studentId}::uuid
       `);
       
-      console.log(`[AwardXP] XP awarded: ${xp} local, ${globalXp} global for student ${studentId}`);
+      console.log(`[AwardXP] XP awarded: ${xp} local, +${globalXp} global for student ${studentId}`);
 
       res.json({ 
         success: true, 
