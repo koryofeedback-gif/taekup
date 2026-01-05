@@ -188,7 +188,7 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
         const isContentUUID = uuidRegex.test(contentId);
         
         // Record view/completion in analytics database (only for UUID content IDs from Creator Hub)
-        if (isContentUUID) {
+        if (isContentUUID && isStudentUUID) {
             fetch('/api/content/view', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -199,10 +199,8 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
                     xpAwarded: xpReward
                 })
             }).catch(err => console.warn('Failed to record content view:', err));
-        }
-        
-        // Award XP to student's total_xp for non-UUID content (UUID content gets XP via /api/content/view)
-        if (!isContentUUID && isStudentUUID && xpReward > 0) {
+        } else if (isStudentUUID && xpReward > 0) {
+            // For non-UUID content OR when content/view can't run, use direct XP award
             fetch(`/api/students/${student.id}/award-xp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
