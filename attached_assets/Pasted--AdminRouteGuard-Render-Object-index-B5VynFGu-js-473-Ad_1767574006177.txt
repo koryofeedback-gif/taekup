@@ -1,0 +1,30 @@
+[AdminRouteGuard] Render: Object
+index-B5VynFGu.js:473 [AdminDashboardWrapper] Rendering with data: Object
+index-B5VynFGu.js:473 [AdminRouteGuard] Render: Object
+index-B5VynFGu.js:473 [AdminDashboardWrapper] Rendering with data: Object
+index-B5VynFGu.js:473 [AdminRouteGuard] Render: Object
+index-B5VynFGu.js:473 [AdminDashboardWrapper] Rendering with data: Object
+index-B5VynFGu.js:473 [ParentPortal] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89
+index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true
+index-B5VynFGu.js:455 [HomeDojo] Recalc limit: xpToday: 0 cap: 9 atLimit: false
+index-B5VynFGu.js:455 [HomeDojo] Fetching habits for student: ae252cbe-6349-4c76-ba78-7457ced59b89
+index-B5VynFGu.js:455 [HomeDojo] Premium status changed, cap set to: 9
+6index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true
+index-B5VynFGu.js:455 [MysteryChallenge] Loaded from API: Spirit of Taekwondo
+2index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true
+index-B5VynFGu.js:455 [HomeDojo] XP hydrated from DB: 1481
+index-B5VynFGu.js:455 [HomeDojo] Streak hydrated from DB: 0
+2index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true
+index-B5VynFGu.js:473 [ParentPortal] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89
+index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true
+index-B5VynFGu.js:455 [SyncRivals] Updated XP from 1491 to 1481 (database truth)
+index-B5VynFGu.js:473 [ParentPortal] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89
+4index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true
+index-B5VynFGu.js:455 [HomeDojo] Recalc limit: xpToday: 0 cap: 21 atLimit: false
+index-B5VynFGu.js:455 [HomeDojo] Premium status changed, cap set to: 21
+index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true
+index-B5VynFGu.js:455 [Premium] Upgrade saved to database
+3index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true
+index-B5VynFGu.js:473 [ParentPortal] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89
+13index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true
+8index-B5VynFGu.js:455 [HomeDojo] Using student ID: ae252cbe-6349-4c76-ba78-7457ced59b89 valid UUID: true

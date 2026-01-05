@@ -643,6 +643,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         onUpdateStudent(updatedStudent);
         
         // Also sync with database to get accurate XP from all sources
+        // Skip during grace period after local XP update (5 seconds)
+        if (Date.now() - xpUpdateGraceRef.current < 5000) {
+            return;
+        }
+        
         try {
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             if (uuidRegex.test(student.id)) {
@@ -660,7 +665,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 if (result.success && typeof result.totalXp === 'number') {
                     // Update local state and shared state with database truth if different
                     if (result.totalXp !== rivalStats.xp) {
-                        console.log(`[SyncRivals] Updated XP from ${rivalStats.xp} to ${result.totalXp} (database truth)`);
                         setRivalStats(prev => ({ ...prev, xp: result.totalXp }));
                         // Re-update shared student state with correct XP
                         onUpdateStudent({
