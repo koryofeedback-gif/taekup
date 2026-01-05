@@ -201,6 +201,7 @@ export function useStudentProgress({ student, onUpdateStudent }: UseStudentProgr
             }).catch(err => console.warn('Failed to record content view:', err));
         } else if (isStudentUUID && xpReward > 0) {
             // For non-UUID content OR when content/view can't run, use direct XP award
+            console.log(`[Content] Awarding ${xpReward} XP to student ${student.id}`);
             fetch(`/api/students/${student.id}/award-xp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
