@@ -947,8 +947,12 @@ const ParentPortalRoute: React.FC<ParentPortalRouteProps> = ({
     }
 
     const handleUpdateStudent = (updatedStudent: Student) => {
+        // The updatedStudent.id is the resolvedStudentId (database UUID)
+        // But data.students contains the original wizardStudent with local ID
+        // We need to update by matching the original local student ID
+        const originalLocalId = effectiveStudentId;
         const updatedStudents = data.students.map(s => 
-            s.id === updatedStudent.id ? updatedStudent : s
+            s.id === originalLocalId ? { ...updatedStudent, id: originalLocalId } : s
         );
         onUpdateStudents(updatedStudents);
     };
