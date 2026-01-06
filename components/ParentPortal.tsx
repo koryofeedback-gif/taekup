@@ -5146,31 +5146,27 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             
                                             {!worldRankLoading && worldRankData.myRank !== null ? (
                                             <div className="space-y-3">
-                                                <div className="bg-gray-800/50 rounded-lg p-3 text-center">
-                                                    <p className="text-gray-400 text-xs mb-1">Your Global Rank</p>
-                                                    <p className="text-3xl font-black text-cyan-400">#{worldRankData.myRank}</p>
+                                                {/* Your Rank - Always visible */}
+                                                <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-lg p-4 text-center border border-cyan-500/30">
+                                                    <p className="text-gray-400 text-xs mb-1">🌍 Your Global Rank</p>
+                                                    <p className="text-4xl font-black text-cyan-400">#{worldRankData.myRank}</p>
                                                     <p className="text-gray-500 text-xs">of {worldRankData.totalStudents.toLocaleString()} students worldwide</p>
-                                                    <p className="text-purple-400 text-sm mt-1">{worldRankData.myGlobalXP.toLocaleString()} Global HonorXP™</p>
+                                                    <p className="text-purple-400 text-sm mt-2 font-bold">{worldRankData.myGlobalXP.toLocaleString()} Global HonorXP™</p>
                                                 </div>
                                                 
-                                                {isPremium ? (
-                                                    <button
-                                                        onClick={() => setShowGlobalLeaderboard(!showGlobalLeaderboard)}
-                                                        className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm"
-                                                    >
-                                                        {showGlobalLeaderboard ? 'Hide' : 'View'} Global Shogun Rank™
-                                                    </button>
-                                                ) : (
-                                                    <div className="bg-gray-800/50 rounded-lg p-3 text-center border border-yellow-500/30">
-                                                        <span className="text-yellow-400 mr-2">🔒</span>
-                                                        <span className="text-gray-400 text-sm">Upgrade to Premium to see full Global Shogun Rank™</span>
-                                                    </div>
-                                                )}
-                                                
-                                                {showGlobalLeaderboard && isPremium && worldRankData.topPlayers.length > 0 && (
-                                                    <div className="space-y-2 mt-3">
-                                                        <p className="text-gray-400 text-xs font-bold">Top 10 Worldwide</p>
-                                                        {worldRankData.topPlayers.map((player, index) => (
+                                                {/* Global Leaderboard Preview/Full */}
+                                                <div className="relative">
+                                                    {/* Leaderboard Content - Blurred for Free users */}
+                                                    <div className={`space-y-2 ${!isPremium ? 'blur-sm pointer-events-none' : ''}`}>
+                                                        <p className="text-gray-400 text-xs font-bold flex items-center gap-2">
+                                                            🏆 Top 10 Worldwide
+                                                            {isPremium && worldRankData.topPlayers.length > 0 && worldRankData.topPlayers[0] && (
+                                                                <span className="text-yellow-400 text-[10px]">
+                                                                    ({(worldRankData.topPlayers[0].global_xp - worldRankData.myGlobalXP).toLocaleString()} pts behind #1)
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                        {worldRankData.topPlayers.slice(0, isPremium ? 10 : 3).map((player, index) => (
                                                             <div 
                                                                 key={player.id} 
                                                                 className={`flex items-center justify-between p-2 rounded-lg border ${
@@ -5201,7 +5197,24 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             </div>
                                                         ))}
                                                     </div>
-                                                )}
+                                                    
+                                                    {/* Premium Overlay for Free users */}
+                                                    {!isPremium && (
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/60 rounded-lg">
+                                                            <div className="text-center p-4">
+                                                                <p className="text-2xl mb-2">🔒</p>
+                                                                <p className="text-white font-bold text-sm mb-1">See where you stand among</p>
+                                                                <p className="text-cyan-400 font-black text-lg">{worldRankData.totalStudents.toLocaleString()} students worldwide</p>
+                                                                <button 
+                                                                    onClick={() => setShowUpgradeModal && setShowUpgradeModal(true)}
+                                                                    className="mt-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold py-2 px-4 rounded-lg text-sm transition-all"
+                                                                >
+                                                                    Unlock Global Rank™
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         ) : (
                                             <div className="space-y-3">
