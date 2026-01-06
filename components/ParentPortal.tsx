@@ -5233,7 +5233,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             See how your child ranks among<br/>
                                                             <span className="text-cyan-400 font-bold">{worldRankData.totalStudents.toLocaleString()} warriors worldwide</span>
                                                         </p>
-                                                        <button className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold py-3 px-6 rounded-xl text-sm transition-all shadow-lg">
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setShowUpgradeModal(true);
+                                                            }}
+                                                            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold py-3 px-6 rounded-xl text-sm transition-all shadow-lg"
+                                                        >
                                                             🏆 Unlock World Rankings
                                                         </button>
                                                     </div>
