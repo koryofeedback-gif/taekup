@@ -1657,23 +1657,48 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     const handleGenerateAdvice = async () => {
         setIsGeneratingAdvice(true);
-        // Construct a summary from recent history
+        
+        // Build comprehensive context for AI
+        const beltName = currentBelt?.name || 'beginner';
+        const martialArt = (data as any).beltSystem || (data as any).martialArt || 'Taekwondo';
+        const totalXP = student.totalXP || rivalStats.xp || 0;
+        const attendanceCount = studentStats?.attendanceDates?.length || 0;
+        
+        // Get recent grading scores
         const recentStats = student.performanceHistory?.slice(-3) || [];
-        let summary = "General improvement";
+        let gradingContext = '';
+        let lowestSkill = '';
+        let highestSkill = '';
+        
         if (recentStats.length > 0) {
-             const latest = recentStats[recentStats.length - 1];
-             // Simple heuristic: find lowest score
-             let lowestSkill = '';
-             let lowestVal = 2;
-             Object.entries(latest.scores).forEach(([skillId, score]) => {
-                 const skillName = data.skills.find(s => s.id === skillId)?.name || skillId;
-                 if (typeof score === 'number' && score < lowestVal) {
-                     lowestVal = score;
-                     lowestSkill = skillName;
-                 }
-             });
-             if (lowestSkill) summary = `Struggling slightly with ${lowestSkill}`;
+            const latest = recentStats[recentStats.length - 1];
+            let lowestVal = 3;
+            let highestVal = 0;
+            
+            const skillScores: string[] = [];
+            Object.entries(latest.scores).forEach(([skillId, score]) => {
+                const skillName = data.skills.find(s => s.id === skillId)?.name || skillId;
+                if (typeof score === 'number') {
+                    skillScores.push(`${skillName}: ${score}/2`);
+                    if (score < lowestVal) { lowestVal = score; lowestSkill = skillName; }
+                    if (score > highestVal) { highestVal = score; highestSkill = skillName; }
+                }
+            });
+            gradingContext = skillScores.join(', ');
         }
+        
+        // Construct detailed summary
+        const summaryParts = [
+            `Sport: ${martialArt}`,
+            `Current belt: ${beltName}`,
+            `Total XP: ${totalXP}`,
+            `Classes attended (90 days): ${attendanceCount}`,
+        ];
+        if (gradingContext) summaryParts.push(`Recent grading scores: ${gradingContext}`);
+        if (lowestSkill) summaryParts.push(`Area needing work: ${lowestSkill}`);
+        if (highestSkill) summaryParts.push(`Strong area: ${highestSkill}`);
+        
+        const summary = summaryParts.join('. ');
         
         const advice = await generateParentingAdvice(student.name, summary, language);
         setParentingAdvice(advice);
