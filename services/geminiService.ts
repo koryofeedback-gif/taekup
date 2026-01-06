@@ -134,11 +134,11 @@ export const generatePromotionMessage = async (studentName: string, newBeltName:
 };
 
 export const generateParentingAdvice = async (studentName: string, performanceSummary: string, language: string = 'English'): Promise<string> => {
-  const fallback = "Try turning practice into a game! See who can stand on one leg the longest to build balance and focus.";
+  const fallback = "Consider asking about what techniques they practiced today. Showing genuine interest reinforces the value of their training.";
   
   try {
     const response = await aiAPI.taekbotResponse(
-      `Give one specific, fun parenting tip to help ${studentName} improve at home. Recent performance: "${performanceSummary}". Keep it under 50 words. Write in ${language}.`,
+      `You are an experienced martial arts instructor giving professional parenting advice. Based on ${studentName}'s recent performance: "${performanceSummary}", provide ONE specific, actionable insight for their parent. Focus on: mental discipline, character development, training habits, or communication strategies. Be professional and insightful - avoid childish suggestions. Keep under 60 words. Write in ${language}.`,
       { language }
     );
     return response || fallback;
