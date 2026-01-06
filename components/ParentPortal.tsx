@@ -2941,20 +2941,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }
 
     const renderJourney = () => {
-        // Construct timeline events from student history
-        const timelineEvents = [
-            { date: student.joinDate, title: 'Joined the Family', type: 'start', icon: '🎉' },
-            ...(student.lastPromotionDate ? [{ date: student.lastPromotionDate, title: `Promoted to ${currentBelt?.name}`, type: 'promotion', icon: '🥋' }] : []),
-            ...(student.feedbackHistory?.filter(f => f.text.includes('Award') || f.text.includes('Certificate')).map(f => ({
-                date: f.date, title: 'Award Earned', type: 'award', icon: '🏆'
-            })) || [])
-        ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Newest first
-
-        // Mock data if timeline is empty
-        if (timelineEvents.length < 2) {
-             timelineEvents.push({ date: '2024-01-01', title: 'First Class Attended', type: 'class', icon: '✅' });
-        }
-
         return (
             <div className="relative h-full min-h-[500px]">
                 {/* CHRONOS FORECAST - ChronosBelt™ Predictor */}
@@ -3062,39 +3048,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             </div>
                         </div>
                     </div>
-                </div>
-
-                {/* JOURNEY TIMELINE - Premium Feature */}
-                <div className="relative">
-                    {!hasPremiumAccess && renderPremiumLock("Belt Journey Timeline", "See a visual timeline of your child's entire martial arts career. Relive every promotion and milestone.")}
-                    
-                    <div className={`space-y-6 pb-20 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none overflow-hidden h-[400px]' : ''}`}>
-                        <div className="text-center py-6">
-                        <div className="w-24 h-24 bg-sky-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-sky-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-                            <span className="text-4xl">🚀</span>
-                        </div>
-                        <h3 className="text-xl font-bold text-white">Your Journey</h3>
-                        <p className="text-sm text-gray-400">Started {new Date(student.joinDate).toLocaleDateString()}</p>
-                    </div>
-
-                    <div className="relative pl-8 border-l-2 border-gray-700 space-y-8 ml-6">
-                        {timelineEvents.map((event, i) => (
-                            <div key={i} className="relative">
-                                <div className="absolute -left-[41px] bg-gray-900 border-2 border-sky-500 rounded-full w-10 h-10 flex items-center justify-center text-xl shadow-lg shadow-blue-900/50">
-                                    {event.icon}
-                                </div>
-                                <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm hover:border-sky-500/50 transition-colors">
-                                    <span className="text-xs font-bold text-sky-300 uppercase tracking-wide">{new Date(event.date).toLocaleDateString()}</span>
-                                    <h4 className="font-bold text-white text-lg mt-1">{event.title}</h4>
-                                </div>
-                            </div>
-                        ))}
-                         <div className="relative">
-                            <div className="absolute -left-[35px] bg-gray-700 rounded-full w-7 h-7 flex items-center justify-center text-xs">🏁</div>
-                            <p className="text-gray-500 text-sm italic pt-1">The journey began here.</p>
-                        </div>
-                    </div>
-                </div>
                 </div>
             </div>
         );
