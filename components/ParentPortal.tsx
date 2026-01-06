@@ -302,7 +302,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [isSimulatingChallenge, setIsSimulatingChallenge] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState<string>('');
     const [rivalsView, setRivalsView] = useState<'arena' | 'leaderboard' | 'weekly' | 'inbox' | 'teams' | 'family' | 'mystery' | 'daily'>('arena');
-    const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime'>('monthly');
+    const [leaderboardMode, setLeaderboardMode] = useState<'monthly' | 'alltime' | 'world'>('monthly');
     const [challengeHistory, setChallengeHistory] = useState<Array<{
         id: string;
         challengeName: string;
