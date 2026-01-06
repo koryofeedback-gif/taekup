@@ -5049,83 +5049,96 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             ? 'bg-purple-600 text-white' 
                                                             : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
                                                     }`}
-                                                >This Month</button>
+                                                >📅 Month</button>
                                                 <button 
                                                     onClick={() => setLeaderboardMode('alltime')}
-                                                    className={`px-3 py-1 rounded-r-lg font-bold transition-all ${
+                                                    className={`px-3 py-1 font-bold transition-all ${
                                                         leaderboardMode === 'alltime' 
                                                             ? 'bg-purple-600 text-white' 
                                                             : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
                                                     }`}
-                                                >All-Time</button>
+                                                >🏆 All-Time</button>
+                                                <button 
+                                                    onClick={() => setLeaderboardMode('world')}
+                                                    className={`px-3 py-1 rounded-r-lg font-bold transition-all ${
+                                                        leaderboardMode === 'world' 
+                                                            ? 'bg-cyan-600 text-white' 
+                                                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                                                    }`}
+                                                >🌍 World</button>
                                             </div>
                                         </div>
                                         <p className="text-xs text-gray-400">
                                             {leaderboardMode === 'monthly' 
                                                 ? 'HonorXP™ earned this month - fresh competition!' 
-                                                : 'Lifetime HonorXP™ - legends of the dojo'}
+                                                : leaderboardMode === 'alltime'
+                                                ? 'Lifetime HonorXP™ - legends of the dojo'
+                                                : 'Compete with warriors worldwide!'}
                                         </p>
                                     </div>
                                     
-                                    {leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
-                                        <p className="text-gray-500 text-center py-8 italic">
-                                            {leaderboardMode === 'monthly' 
-                                                ? 'No HonorXP™ earned this month yet. Start training!' 
-                                                : 'No HonorXP™ recorded yet. Complete challenges to rank up!'}
-                                        </p>
-                                    ) : (
-                                        leaderboard.filter(p => p.displayXP > 0).map((player) => {
-                                            const fullStudent = data.students.find(s => s.id === player.id);
-                                            const canViewHistory = player.isYou;
-                                            return (
-                                            <div 
-                                                key={player.id} 
-                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                                                    player.isYou 
-                                                        ? 'bg-cyan-900/30 border-cyan-500/50 hover:border-cyan-400 cursor-pointer hover:scale-[1.02]' 
-                                                        : 'bg-gray-800 border-gray-700'
-                                                }`}
-                                                onClick={() => canViewHistory && fullStudent && fetchStudentHistory(fullStudent)}
-                                            >
-                                                <div className="flex items-center">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mr-3 ${
-                                                        player.rank === 1 ? 'bg-yellow-500 text-black' :
-                                                        player.rank === 2 ? 'bg-gray-400 text-black' :
-                                                        player.rank === 3 ? 'bg-orange-600 text-white' :
-                                                        'bg-gray-700 text-gray-400'
-                                                    }`}>
-                                                        {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : player.rank}
+                                    {/* LOCAL LEADERBOARD - Monthly/All-Time */}
+                                    {(leaderboardMode === 'monthly' || leaderboardMode === 'alltime') && (
+                                        <>
+                                            {leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
+                                                <p className="text-gray-500 text-center py-8 italic">
+                                                    {leaderboardMode === 'monthly' 
+                                                        ? 'No HonorXP™ earned this month yet. Start training!' 
+                                                        : 'No HonorXP™ recorded yet. Complete challenges to rank up!'}
+                                                </p>
+                                            ) : (
+                                                leaderboard.filter(p => p.displayXP > 0).map((player) => {
+                                                    const fullStudent = data.students.find(s => s.id === player.id);
+                                                    const canViewHistory = player.isYou;
+                                                    return (
+                                                    <div 
+                                                        key={player.id} 
+                                                        className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                                            player.isYou 
+                                                                ? 'bg-cyan-900/30 border-cyan-500/50 hover:border-cyan-400 cursor-pointer hover:scale-[1.02]' 
+                                                                : 'bg-gray-800 border-gray-700'
+                                                        }`}
+                                                        onClick={() => canViewHistory && fullStudent && fetchStudentHistory(fullStudent)}
+                                                    >
+                                                        <div className="flex items-center">
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mr-3 ${
+                                                                player.rank === 1 ? 'bg-yellow-500 text-black' :
+                                                                player.rank === 2 ? 'bg-gray-400 text-black' :
+                                                                player.rank === 3 ? 'bg-orange-600 text-white' :
+                                                                'bg-gray-700 text-gray-400'
+                                                            }`}>
+                                                                {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : player.rank}
+                                                            </div>
+                                                            <div>
+                                                                <p className={`font-bold text-sm ${player.isYou ? 'text-cyan-400' : 'text-white'}`}>
+                                                                    {player.name} {player.isYou && '(You)'}
+                                                                </p>
+                                                                <p className="text-[10px] text-gray-500">
+                                                                    {data.belts.find(b => b.id === player.beltId)?.name || 'Student'}{player.isYou && ' • Tap to view history'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right flex items-center gap-2">
+                                                            <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} HonorXP™</p>
+                                                            {player.isYou && <span className="text-gray-500 text-xs">→</span>}
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className={`font-bold text-sm ${player.isYou ? 'text-cyan-400' : 'text-white'}`}>
-                                                            {player.name} {player.isYou && '(You)'}
-                                                        </p>
-                                                        <p className="text-[10px] text-gray-500">
-                                                            {data.belts.find(b => b.id === player.beltId)?.name || 'Student'}{player.isYou && ' • Tap to view history'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right flex items-center gap-2">
-                                                    <p className="font-bold text-purple-400">{player.displayXP.toLocaleString()} HonorXP™</p>
-                                                    {player.isYou && <span className="text-gray-500 text-xs">→</span>}
-                                                </div>
-                                            </div>
-                                        );
-                                        })
+                                                );
+                                                })
+                                            )}
+                                        </>
                                     )}
                                     
-                                    {/* GLOBAL SHOGUN LEAGUE SECTION */}
-                                    <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 p-4 rounded-xl border border-cyan-500/30 mt-6">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="font-bold text-white flex items-center">
-                                                <span className="mr-2">🌍</span> Global Shogun League
-                                            </h4>
+                                    {/* WORLD RANKING - Global Shogun League */}
+                                    {leaderboardMode === 'world' && (
+                                        <div className="space-y-3">
                                             {worldRankLoading && (
-                                                <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                                                <div className="flex justify-center py-4">
+                                                    <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                                                </div>
                                             )}
-                                        </div>
-                                        
-                                        {worldRankData.myRank !== null ? (
+                                            
+                                            {!worldRankLoading && worldRankData.myRank !== null ? (
                                             <div className="space-y-3">
                                                 <div className="bg-gray-800/50 rounded-lg p-3 text-center">
                                                     <p className="text-gray-400 text-xs mb-1">Your Global Rank</p>
@@ -5238,7 +5251,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 )}
                                             </div>
                                         )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
