@@ -5301,6 +5301,69 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         )}
                                         </div>
                                     )}
+                                    
+                                    {/* Upgrade to Premium Modal for Ranks View */}
+                                    {showUpgradeModal && (
+                                        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
+                                            <div className="bg-gradient-to-b from-gray-900 to-gray-950 rounded-2xl p-6 max-w-sm w-full border border-yellow-500/50 shadow-2xl">
+                                                <div className="text-center mb-5">
+                                                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                                                        <span className="text-4xl">🏆</span>
+                                                    </div>
+                                                    <h3 className="text-xl font-black text-white">Unlock Your Child's</h3>
+                                                    <h3 className="text-2xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Full Potential</h3>
+                                                </div>
+                                                
+                                                <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-5">
+                                                    <ul className="text-sm space-y-3">
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">🌍</span>
+                                                            <span className="text-white">Global Shogun Rank™</span>
+                                                        </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">🔮</span>
+                                                            <span className="text-white">AI Belt Predictions</span>
+                                                        </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">📊</span>
+                                                            <span className="text-white">Custom Home Habits</span>
+                                                        </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">📹</span>
+                                                            <span className="text-white">Video Proof (2x XP)</span>
+                                                        </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">🎴</span>
+                                                            <span className="text-white">Digital Legacy Card™</span>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                                
+                                                <div className="text-center mb-4">
+                                                    <p className="text-gray-400 text-sm">All this for just</p>
+                                                    <p className="text-3xl font-black text-white">$4.99<span className="text-lg text-gray-400 font-normal">/mo</span></p>
+                                                </div>
+                                                
+                                                <div className="space-y-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowUpgradeModal(false);
+                                                            setActiveTab('home');
+                                                        }}
+                                                        className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg"
+                                                    >
+                                                        Unlock Premium
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setShowUpgradeModal(false)}
+                                                        className="w-full py-2 text-gray-500 text-sm hover:text-gray-400"
+                                                    >
+                                                        Maybe Later
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
