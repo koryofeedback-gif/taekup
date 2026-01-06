@@ -4266,43 +4266,63 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         );
                                     })()}
 
-                                    {/* Upgrade to Premium Modal */}
+                                    {/* Upgrade to Premium Modal - Compelling "Full Potential" Design */}
                                     {showUpgradeModal && (
-                                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-                                            <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-purple-500 shadow-2xl">
-                                                <div className="text-center mb-6">
-                                                    <span className="text-5xl">👑</span>
-                                                    <h3 className="text-2xl font-black text-white mt-4">Unlock Video Proof</h3>
-                                                    <p className="text-gray-400 mt-2">
-                                                        Premium members can submit video proof for coach verification and earn <span className="text-yellow-400 font-bold">2x XP</span> per challenge!
-                                                    </p>
+                                        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
+                                            <div className="bg-gradient-to-b from-gray-900 to-gray-950 rounded-2xl p-6 max-w-sm w-full border border-yellow-500/50 shadow-2xl">
+                                                <div className="text-center mb-5">
+                                                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                                                        <span className="text-4xl">🏆</span>
+                                                    </div>
+                                                    <h3 className="text-xl font-black text-white">Unlock Your Child's</h3>
+                                                    <h3 className="text-2xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Full Potential</h3>
                                                 </div>
                                                 
-                                                <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 rounded-xl border border-purple-500/50 mb-6">
-                                                    <h4 className="font-bold text-white mb-2">Premium Benefits:</h4>
-                                                    <ul className="text-sm text-gray-300 space-y-2">
-                                                        <li className="flex items-center gap-2"><span>✅</span> Video proof submissions (2x XP)</li>
-                                                        <li className="flex items-center gap-2"><span>✅</span> Coach feedback on technique</li>
-                                                        <li className="flex items-center gap-2"><span>✅</span> Progress analytics & insights</li>
-                                                        <li className="flex items-center gap-2"><span>✅</span> Digital athlete card</li>
+                                                <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-5">
+                                                    <ul className="text-sm space-y-3">
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">🌍</span>
+                                                            <span className="text-white">Global Shogun Rank™</span>
+                                                        </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">🔮</span>
+                                                            <span className="text-white">AI Belt Predictions</span>
+                                                        </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">📊</span>
+                                                            <span className="text-white">Custom Home Habits</span>
+                                                        </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">📹</span>
+                                                            <span className="text-white">Video Proof (2x XP)</span>
+                                                        </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">🎴</span>
+                                                            <span className="text-white">Digital Legacy Card™</span>
+                                                        </li>
                                                     </ul>
                                                 </div>
                                                 
-                                                <div className="flex gap-3">
-                                                    <button
-                                                        onClick={() => setShowUpgradeModal(false)}
-                                                        className="flex-1 py-3 rounded-xl font-bold bg-gray-700 text-gray-300 hover:bg-gray-600"
-                                                    >
-                                                        Maybe Later
-                                                    </button>
+                                                <div className="text-center mb-4">
+                                                    <p className="text-gray-400 text-sm">All this for just</p>
+                                                    <p className="text-3xl font-black text-white">$4.99<span className="text-lg text-gray-400 font-normal">/mo</span></p>
+                                                </div>
+                                                
+                                                <div className="space-y-2">
                                                     <button
                                                         onClick={() => {
                                                             setShowUpgradeModal(false);
                                                             setActiveTab('home');
                                                         }}
-                                                        className="flex-1 py-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500"
+                                                        className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg"
                                                     >
-                                                        Upgrade Now
+                                                        Unlock Premium
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setShowUpgradeModal(false)}
+                                                        className="w-full py-2 text-gray-500 text-sm hover:text-gray-400"
+                                                    >
+                                                        Maybe Later
                                                     </button>
                                                 </div>
                                             </div>
@@ -5145,76 +5165,79 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             )}
                                             
                                             {!worldRankLoading && worldRankData.myRank !== null ? (
-                                            <div className="space-y-3">
-                                                {/* Your Rank - Always visible */}
-                                                <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-lg p-4 text-center border border-cyan-500/30">
-                                                    <p className="text-gray-400 text-xs mb-1">🌍 Your Global Rank</p>
-                                                    <p className="text-4xl font-black text-cyan-400">#{worldRankData.myRank}</p>
-                                                    <p className="text-gray-500 text-xs">of {worldRankData.totalStudents.toLocaleString()} students worldwide</p>
-                                                    <p className="text-purple-400 text-sm mt-2 font-bold">{worldRankData.myGlobalXP.toLocaleString()} Global HonorXP™</p>
+                                            <div className="space-y-4">
+                                                {/* Your Rank Card - Always visible */}
+                                                <div className="bg-gray-800 rounded-xl p-5 text-center border border-gray-700">
+                                                    <p className="text-gray-400 text-xs mb-2">🌍 Your Global Rank</p>
+                                                    <p className="text-5xl font-black bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">#{worldRankData.myRank}</p>
+                                                    <p className="text-gray-500 text-sm mt-1">of {worldRankData.totalStudents.toLocaleString()} warriors worldwide</p>
+                                                    <div className="mt-3 inline-block bg-purple-900/50 px-4 py-2 rounded-full border border-purple-500/30">
+                                                        <span className="text-purple-400 font-bold">{worldRankData.myGlobalXP.toLocaleString()}</span>
+                                                        <span className="text-gray-400 text-sm ml-1">Global HonorXP™</span>
+                                                    </div>
                                                 </div>
                                                 
-                                                {/* Global Leaderboard Preview/Full */}
-                                                <div className="relative">
-                                                    {/* Leaderboard Content - Blurred for Free users */}
-                                                    <div className={`space-y-2 ${!isPremium ? 'blur-sm pointer-events-none' : ''}`}>
-                                                        <p className="text-gray-400 text-xs font-bold flex items-center gap-2">
+                                                {/* Global Leaderboard - Premium Only */}
+                                                {isPremium ? (
+                                                    <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                                                        <p className="text-white text-sm font-bold mb-3 flex items-center gap-2">
                                                             🏆 Top 10 Worldwide
-                                                            {isPremium && worldRankData.topPlayers.length > 0 && worldRankData.topPlayers[0] && (
+                                                            {worldRankData.topPlayers.length > 0 && worldRankData.topPlayers[0] && (
                                                                 <span className="text-yellow-400 text-[10px]">
-                                                                    ({(worldRankData.topPlayers[0].global_xp - worldRankData.myGlobalXP).toLocaleString()} pts behind #1)
+                                                                    ({(worldRankData.topPlayers[0].global_xp - worldRankData.myGlobalXP).toLocaleString()} pts to #1)
                                                                 </span>
                                                             )}
                                                         </p>
-                                                        {worldRankData.topPlayers.slice(0, isPremium ? 10 : 3).map((player, index) => (
-                                                            <div 
-                                                                key={player.id} 
-                                                                className={`flex items-center justify-between p-2 rounded-lg border ${
-                                                                    player.id === student.id 
-                                                                        ? 'bg-cyan-900/30 border-cyan-500/50' 
-                                                                        : 'bg-gray-800/50 border-gray-700'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center">
-                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-xs mr-2 ${
-                                                                        index === 0 ? 'bg-yellow-500 text-black' :
-                                                                        index === 1 ? 'bg-gray-400 text-black' :
-                                                                        index === 2 ? 'bg-orange-600 text-white' :
-                                                                        'bg-gray-700 text-gray-400'
-                                                                    }`}>
-                                                                        {index + 1}
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className={`font-bold text-xs ${player.id === student.id ? 'text-cyan-400' : 'text-white'}`}>
-                                                                            {player.name} {player.id === student.id && '(You)'}
-                                                                        </p>
-                                                                        <p className="text-[10px] text-gray-500">
-                                                                            {player.club_name} • {player.country || 'Unknown'}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                                <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()}</p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    
-                                                    {/* Premium Overlay for Free users */}
-                                                    {!isPremium && (
-                                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/60 rounded-lg">
-                                                            <div className="text-center p-4">
-                                                                <p className="text-2xl mb-2">🔒</p>
-                                                                <p className="text-white font-bold text-sm mb-1">See where you stand among</p>
-                                                                <p className="text-cyan-400 font-black text-lg">{worldRankData.totalStudents.toLocaleString()} students worldwide</p>
-                                                                <button 
-                                                                    onClick={() => setShowUpgradeModal && setShowUpgradeModal(true)}
-                                                                    className="mt-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold py-2 px-4 rounded-lg text-sm transition-all"
+                                                        <div className="space-y-2">
+                                                            {worldRankData.topPlayers.map((player, index) => (
+                                                                <div 
+                                                                    key={player.id} 
+                                                                    className={`flex items-center justify-between p-2 rounded-lg ${
+                                                                        player.id === student.id 
+                                                                            ? 'bg-cyan-900/40 border border-cyan-500/50' 
+                                                                            : 'bg-gray-900/50'
+                                                                    }`}
                                                                 >
-                                                                    Unlock Global Rank™
-                                                                </button>
-                                                            </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs ${
+                                                                            index === 0 ? 'bg-yellow-500 text-black' :
+                                                                            index === 1 ? 'bg-gray-400 text-black' :
+                                                                            index === 2 ? 'bg-orange-600 text-white' :
+                                                                            'bg-gray-700 text-gray-400'
+                                                                        }`}>
+                                                                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className={`font-bold text-sm ${player.id === student.id ? 'text-cyan-400' : 'text-white'}`}>
+                                                                                {player.name} {player.id === student.id && '(You)'}
+                                                                            </p>
+                                                                            <p className="text-[10px] text-gray-500">{player.club_name}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="font-bold text-cyan-400 text-sm">{player.global_xp.toLocaleString()}</p>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    )}
-                                                </div>
+                                                    </div>
+                                                ) : (
+                                                    /* Locked Section for Free Users */
+                                                    <div 
+                                                        onClick={() => setShowUpgradeModal(true)}
+                                                        className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl p-6 border border-yellow-500/30 cursor-pointer hover:border-yellow-500/60 transition-all text-center"
+                                                    >
+                                                        <div className="w-16 h-16 mx-auto mb-4 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                                                            <span className="text-4xl">🔒</span>
+                                                        </div>
+                                                        <h4 className="text-white font-bold text-lg mb-2">Global Shogun League™</h4>
+                                                        <p className="text-gray-400 text-sm mb-4">
+                                                            See how your child ranks among<br/>
+                                                            <span className="text-cyan-400 font-bold">{worldRankData.totalStudents.toLocaleString()} warriors worldwide</span>
+                                                        </p>
+                                                        <button className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold py-3 px-6 rounded-xl text-sm transition-all shadow-lg">
+                                                            🏆 Unlock World Rankings
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="space-y-3">
