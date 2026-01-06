@@ -2996,24 +2996,27 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         )}
                     </div>
 
-                    {/* Time Machine Slider - FREE: Locked | PREMIUM: Unlocked */}
-                    <div className="relative">
-                        {!hasPremiumAccess && (
-                            <div className="absolute inset-0 bg-gray-900/90 backdrop-blur-sm rounded-xl z-10 flex flex-col items-center justify-center p-4 text-center">
-                                <span className="text-3xl mb-2">⏰</span>
-                                <p className="text-white text-sm font-bold mb-1">Time Machine</p>
-                                <p className="text-gray-400 text-xs mb-3 max-w-[200px]">
-                                    See how training <span className="text-green-400 font-bold">2x or 3x per week</span> could fast-track {student.name.split(' ')[0]}'s journey by <span className="text-green-400 font-bold">years</span>!
-                                </p>
-                                <button
-                                    onClick={() => setShowUpgradeModal(true)}
-                                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg shadow-purple-500/30"
-                                >
-                                    🔮 Unlock Future Vision
-                                </button>
+                    {/* Time Machine Slider - FREE: Locked Card | PREMIUM: Unlocked Slider */}
+                    {!hasPremiumAccess ? (
+                        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 p-5 rounded-xl border border-purple-500/30 text-center">
+                            <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30">
+                                <span className="text-2xl">⏰</span>
                             </div>
-                        )}
-                        <div className={`bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-4 ${!hasPremiumAccess ? 'opacity-40' : ''}`}>
+                            <h4 className="text-white font-bold text-base mb-2">Time Machine</h4>
+                            <p className="text-gray-300 text-xs leading-relaxed mb-4">
+                                What if {student.name.split(' ')[0]} trained <span className="text-green-400 font-bold">2x or 3x per week</span>?
+                                <br/>
+                                <span className="text-gray-400">Unlock to see how much faster they could reach Black Belt!</span>
+                            </p>
+                            <button
+                                onClick={() => setShowUpgradeModal(true)}
+                                className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-sm hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg shadow-purple-500/30"
+                            >
+                                🔮 Unlock Future Vision
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-4">
                             <div className="flex justify-between text-xs text-gray-300 mb-2">
                                 <span>Training Frequency</span>
                                 <span className="font-bold text-purple-300">{simulatedAttendance} Classes / Week</span>
@@ -3022,9 +3025,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 type="range" 
                                 min="1" max="6" step="1"
                                 value={simulatedAttendance} 
-                                onChange={(e) => hasPremiumAccess && setSimulatedAttendance(parseInt(e.target.value))}
-                                disabled={!hasPremiumAccess}
-                                className={`w-full h-2 bg-gray-700 rounded-lg appearance-none ${hasPremiumAccess ? 'cursor-pointer accent-purple-500' : 'cursor-not-allowed accent-gray-600'}`}
+                                onChange={(e) => setSimulatedAttendance(parseInt(e.target.value))}
+                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
                             />
                             <div className="flex justify-between text-[10px] text-gray-500 mt-1">
                                 <span>Relaxed (1x)</span>
@@ -3032,7 +3034,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <span>Elite (6x)</span>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Road to Final Belt Progress - Always visible */}
                     <div>
