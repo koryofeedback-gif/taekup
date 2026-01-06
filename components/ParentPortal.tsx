@@ -2999,14 +2999,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {/* Time Machine Slider - FREE: Locked | PREMIUM: Unlocked */}
                     <div className="relative">
                         {!hasPremiumAccess && (
-                            <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm rounded-xl z-10 flex flex-col items-center justify-center">
-                                <span className="text-2xl mb-1">🔒</span>
-                                <p className="text-gray-400 text-xs font-medium">Time Machine Locked</p>
+                            <div className="absolute inset-0 bg-gray-900/90 backdrop-blur-sm rounded-xl z-10 flex flex-col items-center justify-center p-4 text-center">
+                                <span className="text-3xl mb-2">⏰</span>
+                                <p className="text-white text-sm font-bold mb-1">Time Machine</p>
+                                <p className="text-gray-400 text-xs mb-3 max-w-[200px]">
+                                    See how training <span className="text-green-400 font-bold">2x or 3x per week</span> could fast-track {student.name.split(' ')[0]}'s journey by <span className="text-green-400 font-bold">years</span>!
+                                </p>
                                 <button
                                     onClick={() => setShowUpgradeModal(true)}
-                                    className="mt-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold hover:from-purple-500 hover:to-pink-500 transition-all"
+                                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg shadow-purple-500/30"
                                 >
-                                    Unlock Future Vision
+                                    🔮 Unlock Future Vision
                                 </button>
                             </div>
                         )}
