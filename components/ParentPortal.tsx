@@ -2622,37 +2622,73 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const maxXp = studentStats?.xpTrend ? Math.max(...studentStats.xpTrend.map(d => d.xp), 1) : 1;
 
         return (
-            <div className="relative h-full min-h-[500px]">
-                {!hasPremiumAccess && renderPremiumLock("Growth Analytics", "Visualize your child's character development. See trends in Focus, Discipline, and Effort over time.")}
+            <div className="relative h-full min-h-[500px] space-y-6 pb-20">
                 
-                <div className={`space-y-6 pb-20 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none overflow-hidden h-[500px]' : ''}`}>
+                {/* AI Parenting Coach - Always Visible with Free/Premium Separation */}
+                <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 p-5 rounded-2xl border border-indigo-500/30 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                            <span className="text-2xl">🧠</span>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-white text-base">AI Parenting Coach</h3>
+                            <p className="text-xs text-indigo-300">Personalized guidance for {student.name.split(' ')[0]}'s journey</p>
+                        </div>
+                    </div>
                     
-                    {/* AI Parenting Coach */}
-                    <div className="bg-gradient-to-r from-indigo-900/50 to-blue-900/50 p-6 rounded-2xl border border-indigo-500/30 shadow-lg">
-                        <h3 className="font-bold text-white mb-2 flex items-center">
-                            <span className="mr-2 text-xl">🧠</span> AI Parenting Coach
-                        </h3>
-                        <p className="text-xs text-indigo-200 mb-4">Get personalized advice on how to support {student.name} based on recent class performance.</p>
-                        
-                        {parentingAdvice ? (
+                    {hasPremiumAccess ? (
+                        /* PREMIUM: Full AI Analysis */
+                        parentingAdvice ? (
                             <div className="bg-indigo-950/50 p-4 rounded-xl border border-indigo-500/30">
-                                <p className="text-sm text-indigo-100 italic">"{parentingAdvice}"</p>
-                                <button onClick={() => setParentingAdvice(null)} className="text-xs text-indigo-400 mt-2 hover:text-white">Generate New Tip</button>
+                                <p className="text-sm text-indigo-100 italic leading-relaxed">"{parentingAdvice}"</p>
+                                <button onClick={() => setParentingAdvice(null)} className="text-xs text-indigo-400 mt-3 hover:text-white transition-colors">
+                                    ✨ Generate New Insight
+                                </button>
                             </div>
                         ) : (
                             <button 
                                 onClick={handleGenerateAdvice} 
                                 disabled={isGeneratingAdvice}
-                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex justify-center items-center"
+                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex justify-center items-center"
                             >
                                 {isGeneratingAdvice ? (
-                                    <span className="animate-pulse">Analyzing progress...</span>
+                                    <span className="animate-pulse">🔮 Analyzing {student.name.split(' ')[0]}'s progress...</span>
                                 ) : (
-                                    "✨ Generate Advice"
+                                    "✨ Get Personalized Advice"
                                 )}
                             </button>
-                        )}
-                    </div>
+                        )
+                    ) : (
+                        /* FREE: Generic Tip + Locked Premium Button */
+                        <div className="space-y-4">
+                            <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
+                                <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">💡 General Tip</p>
+                                <p className="text-sm text-gray-300 italic">
+                                    "Encourage your child to practice their stances at home for 5 minutes daily. Consistency builds champions!"
+                                </p>
+                            </div>
+                            <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 p-4 rounded-xl border border-indigo-500/20 text-center">
+                                <p className="text-xs text-gray-400 mb-3">
+                                    Want advice <span className="text-indigo-400 font-bold">specific to {student.name.split(' ')[0]}</span>?
+                                    <br/>
+                                    <span className="text-gray-500">Get insights like: "Focus is improving but discipline needs work. Try asking about breathing technique tonight."</span>
+                                </p>
+                                <button
+                                    onClick={() => setShowUpgradeModal(true)}
+                                    className="w-full py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/30"
+                                >
+                                    🧠 Unlock AI Coach
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                
+                {/* Growth Analytics Section - Premium Only */}
+                <div className="relative">
+                    {!hasPremiumAccess && renderPremiumLock("Growth Analytics", "Visualize your child's character development. See trends in Focus, Discipline, and Effort over time.")}
+                    
+                    <div className={`space-y-6 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none overflow-hidden h-[400px]' : ''}`}>
 
                     {/* Character Development - Real Data */}
                     <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-lg">
@@ -2784,6 +2820,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 </div>
                             </>
                         )}
+                    </div>
                     </div>
                 </div>
             </div>
