@@ -1144,7 +1144,7 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
       [totalPoints, xpEarned, studentId]
     );
 
-    // Log XP transaction for monthly leaderboard tracking
+    // Log XP transaction for monthly leaderboard tracking (only this single entry)
     if (xpEarned > 0) {
       await client.query(
         `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
@@ -1152,37 +1152,6 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
         [studentId, xpEarned]
       );
       console.log('[Grading] Logged XP transaction:', studentId, '+', xpEarned, 'XP');
-    }
-
-    // Log PTS transaction for monthly effort widget tracking
-    const ptsEarned = sessionPts || 0;
-    if (ptsEarned > 0) {
-      try {
-        // Try to add PTS_EARN enum value if it doesn't exist (safe ALTER)
-        await client.query(`
-          DO $$
-          BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'PTS_EARN' 
-              AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'xp_transaction_type')) THEN
-              ALTER TYPE xp_transaction_type ADD VALUE 'PTS_EARN';
-            END IF;
-          END
-          $$;
-        `);
-      } catch (enumError: any) {
-        console.log('[Grading] PTS_EARN enum check (may already exist):', enumError.message);
-      }
-      
-      try {
-        await client.query(
-          `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-           VALUES ($1::uuid, $2, 'PTS_EARN', 'Class grading PTS', NOW())`,
-          [studentId, ptsEarned]
-        );
-        console.log('[Grading] Logged PTS transaction:', studentId, '+', ptsEarned, 'PTS');
-      } catch (ptsError: any) {
-        console.error('[Grading] Failed to log PTS transaction:', ptsError.message);
-      }
     }
 
     console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
@@ -4974,34 +4943,12 @@ async function handleStudentGlobalXp(req: VercelRequest, res: VercelResponse, st
       });
     }
 
-    // Award global XP
+    // Award global XP (no transaction log - just updates the column for World Rankings)
     await client.query(`
       UPDATE students 
       SET global_xp = COALESCE(global_xp, 0) + $1, updated_at = NOW()
       WHERE id = $2::uuid
     `, [sessionGlobalXp, studentId]);
-
-    // Ensure GLOBAL_EARN enum value exists
-    try {
-      await client.query(`
-        DO $$
-        BEGIN
-          IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'GLOBAL_EARN' 
-            AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'xp_transaction_type')) THEN
-            ALTER TYPE xp_transaction_type ADD VALUE 'GLOBAL_EARN';
-          END IF;
-        END
-        $$;
-      `);
-    } catch (enumError: any) {
-      console.log('[Global XP] GLOBAL_EARN enum check:', enumError.message);
-    }
-
-    // Log the global XP transaction (use different type so it doesn't count in local leaderboard)
-    await client.query(`
-      INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-      VALUES ($1::uuid, $2, 'GLOBAL_EARN', 'Global grading', NOW())
-    `, [studentId, sessionGlobalXp]);
 
     console.log(`[Global XP] Student ${studentId}: +${sessionGlobalXp} (attendance: ${attendanceXp}, performance: ${performanceXp})`);
 
