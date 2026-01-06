@@ -5036,44 +5036,50 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             {/* LEADERBOARD VIEW - Dual Mode: Monthly / All-Time */}
                             {rivalsView === 'leaderboard' && (
                                 <div className="space-y-2">
-                                    <div className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 p-4 rounded-xl border border-yellow-500/30 mb-4">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="font-bold text-white flex items-center">
-                                                <span className="mr-2">🏆</span> Global Shogun Rank™
-                                            </h4>
-                                            <div className="flex text-xs">
+                                    <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 rounded-xl border border-gray-700 mb-4">
+                                        <div className="flex items-center justify-center gap-1 mb-3">
+                                            {/* Club Rankings */}
+                                            <div className="flex items-center bg-gray-900/50 rounded-lg p-1">
+                                                <span className="text-[10px] text-gray-500 px-2">🏠 Club</span>
                                                 <button 
                                                     onClick={() => setLeaderboardMode('monthly')}
-                                                    className={`px-3 py-1 rounded-l-lg font-bold transition-all ${
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                                         leaderboardMode === 'monthly' 
-                                                            ? 'bg-purple-600 text-white' 
-                                                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                                                            ? 'bg-purple-600 text-white shadow-lg' 
+                                                            : 'text-gray-400 hover:text-white'
                                                     }`}
-                                                >📅 Month</button>
+                                                >This Month</button>
                                                 <button 
                                                     onClick={() => setLeaderboardMode('alltime')}
-                                                    className={`px-3 py-1 font-bold transition-all ${
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                                         leaderboardMode === 'alltime' 
-                                                            ? 'bg-purple-600 text-white' 
-                                                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                                                            ? 'bg-purple-600 text-white shadow-lg' 
+                                                            : 'text-gray-400 hover:text-white'
                                                     }`}
-                                                >🏆 All-Time</button>
+                                                >All-Time</button>
+                                            </div>
+                                            
+                                            <span className="text-gray-600 mx-1">|</span>
+                                            
+                                            {/* World Rankings */}
+                                            <div className="flex items-center bg-gray-900/50 rounded-lg p-1">
                                                 <button 
                                                     onClick={() => setLeaderboardMode('world')}
-                                                    className={`px-3 py-1 rounded-r-lg font-bold transition-all ${
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
                                                         leaderboardMode === 'world' 
-                                                            ? 'bg-cyan-600 text-white' 
-                                                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                                                            ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' 
+                                                            : 'text-gray-400 hover:text-white'
                                                     }`}
                                                 >🌍 World</button>
                                             </div>
                                         </div>
-                                        <p className="text-xs text-gray-400">
+                                        
+                                        <p className="text-xs text-center text-gray-400">
                                             {leaderboardMode === 'monthly' 
-                                                ? 'HonorXP™ earned this month - fresh competition!' 
+                                                ? '🏠 Your club\'s monthly leaderboard' 
                                                 : leaderboardMode === 'alltime'
-                                                ? 'Lifetime HonorXP™ - legends of the dojo'
-                                                : 'Compete with warriors worldwide!'}
+                                                ? '🏠 Your club\'s all-time champions'
+                                                : '🌍 Global Shogun League - compete worldwide!'}
                                         </p>
                                     </div>
                                     
