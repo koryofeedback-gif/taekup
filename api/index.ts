@@ -1154,38 +1154,7 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
       console.log('[Grading] Logged XP transaction:', studentId, '+', xpEarned, 'XP');
     }
 
-    // Log PTS transaction for monthly effort widget tracking
-    const ptsEarned = sessionPts || 0;
-    if (ptsEarned > 0) {
-      try {
-        // Try to add PTS_EARN enum value if it doesn't exist (safe ALTER)
-        await client.query(`
-          DO $$
-          BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'PTS_EARN' 
-              AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'xp_transaction_type')) THEN
-              ALTER TYPE xp_transaction_type ADD VALUE 'PTS_EARN';
-            END IF;
-          END
-          $$;
-        `);
-      } catch (enumError: any) {
-        console.log('[Grading] PTS_EARN enum check (may already exist):', enumError.message);
-      }
-      
-      try {
-        await client.query(
-          `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-           VALUES ($1::uuid, $2, 'PTS_EARN', 'Class grading PTS', NOW())`,
-          [studentId, ptsEarned]
-        );
-        console.log('[Grading] Logged PTS transaction:', studentId, '+', ptsEarned, 'PTS');
-      } catch (ptsError: any) {
-        console.error('[Grading] Failed to log PTS transaction:', ptsError.message);
-      }
-    }
-
-    console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
+    console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, 'total_xp:', xpEarned);
     return res.json({ success: true });
   } catch (error: any) {
     console.error('[Grading] Update error:', error.message);
@@ -6175,11 +6144,12 @@ async function handleXpHistory(req: VercelRequest, res: VercelResponse, studentI
       return res.status(400).json({ error: 'Invalid student ID format' });
     }
 
-    // Fetch XP transactions (last 50)
+    // Fetch XP transactions (last 50) - exclude internal tracking types
     const result = await client.query(`
       SELECT id, amount, type, reason, created_at
       FROM xp_transactions
       WHERE student_id = $1::uuid
+        AND type NOT IN ('PTS_EARN', 'GLOBAL_EARN')
       ORDER BY created_at DESC
       LIMIT 50
     `, [studentId]);

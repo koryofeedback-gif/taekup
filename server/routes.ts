@@ -4494,6 +4494,7 @@ export function registerRoutes(app: Express) {
         SELECT id, amount, type, reason, created_at
         FROM xp_transactions
         WHERE student_id = ${studentId}::uuid
+          AND type NOT IN ('PTS_EARN', 'GLOBAL_EARN')
         ORDER BY created_at DESC
         LIMIT 50
       `);
