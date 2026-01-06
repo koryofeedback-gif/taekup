@@ -2677,7 +2677,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     onClick={() => setShowUpgradeModal(true)}
                                     className="w-full py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/30"
                                 >
-                                    🧠 Unlock AI Coach
+                                    🔒 Unlock AI Coach
                                 </button>
                             </div>
                         </div>
