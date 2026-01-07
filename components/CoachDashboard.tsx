@@ -993,6 +993,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const [focusedVideoIndex, setFocusedVideoIndex] = useState(0);
     const [approvedCount, setApprovedCount] = useState(0);
     const [rejectedCount, setRejectedCount] = useState(0);
+    const [videoCategoryFilter, setVideoCategoryFilter] = useState<string>('all');
 
     // Focus Mode and Notes History State
     const [focusMode, setFocusMode] = useState(false);
@@ -1016,6 +1017,14 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     });
 
     const activeSkills = useMemo(() => (data.skills || []).filter(s => s.isActive), [data.skills]);
+    
+    // Filtered videos based on category filter
+    const filteredVideos = useMemo(() => 
+        videoCategoryFilter === 'all' 
+            ? pendingVideos 
+            : pendingVideos.filter(v => v.challenge_category === videoCategoryFilter),
+        [pendingVideos, videoCategoryFilter]
+    );
     
     // Use custom branch names if available, otherwise generate generic ones
     const locations = useMemo(() => 
@@ -1624,13 +1633,13 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
     // Batch Review Keyboard Shortcuts
     useEffect(() => {
-        if (!batchMode || activeView !== 'videos' || pendingVideos.length === 0) return;
+        if (!batchMode || activeView !== 'videos' || filteredVideos.length === 0) return;
         
         const handleKeyDown = (e: KeyboardEvent) => {
             // Ignore if typing in an input
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
             
-            const currentVideo = pendingVideos[focusedVideoIndex];
+            const currentVideo = filteredVideos[focusedVideoIndex];
             if (!currentVideo) return;
             
             switch (e.code) {
@@ -1645,7 +1654,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 case 'ArrowRight':
                 case 'KeyN':
                     e.preventDefault();
-                    setFocusedVideoIndex(prev => Math.min(prev + 1, pendingVideos.length - 1));
+                    setFocusedVideoIndex(prev => Math.min(prev + 1, filteredVideos.length - 1));
                     break;
                 case 'ArrowLeft':
                 case 'KeyP':
@@ -1660,7 +1669,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [batchMode, activeView, pendingVideos, focusedVideoIndex]);
+    }, [batchMode, activeView, filteredVideos, focusedVideoIndex]);
 
     // Batch approve helper (quick approve without notes)
     const handleBatchApprove = async (video: any) => {
@@ -1860,6 +1869,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             case 'flexibility': return '🧘';
             case 'speed': return '⚡';
             case 'endurance': return '🔥';
+            case 'academy': return '📚';
+            case 'coach picks': return '⭐';
             default: return '🏆';
         }
     };
@@ -2439,14 +2450,35 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                                 {/* Stats Cards + Batch Mode Toggle */}
                                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                                    <div className="flex gap-4 flex-wrap">
+                                    <div className="flex gap-4 flex-wrap items-center">
                                         <div className="bg-gradient-to-br from-orange-900/40 to-orange-800/20 rounded-xl px-6 py-4 border border-orange-500/30 flex items-center gap-3">
                                             <span className="text-2xl">📹</span>
                                             <div>
-                                                <div className="text-2xl font-black text-orange-400">{pendingVideos.length}</div>
+                                                <div className="text-2xl font-black text-orange-400">
+                                                    {videoCategoryFilter === 'all' 
+                                                        ? pendingVideos.length 
+                                                        : pendingVideos.filter(v => v.challenge_category === videoCategoryFilter).length}
+                                                </div>
                                                 <div className="text-gray-400 text-xs">Pending</div>
                                             </div>
                                         </div>
+                                        {/* Category Filter */}
+                                        <select
+                                            value={videoCategoryFilter}
+                                            onChange={e => {
+                                                setVideoCategoryFilter(e.target.value);
+                                                setFocusedVideoIndex(0);
+                                            }}
+                                            className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                                        >
+                                            <option value="all">All Categories</option>
+                                            <option value="academy">📚 Academy</option>
+                                            <option value="Coach Picks">⭐ Coach Picks</option>
+                                            <option value="Power">💪 Power</option>
+                                            <option value="Technique">🎯 Technique</option>
+                                            <option value="Flexibility">🧘 Flexibility</option>
+                                            <option value="gauntlet">🔥 Daily Training</option>
+                                        </select>
                                         <div className="bg-gray-800 rounded-xl px-6 py-4 border border-gray-700 flex items-center gap-3">
                                             <span className="text-2xl">✅</span>
                                             <div>
@@ -2481,7 +2513,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 </div>
 
                                 {/* Batch Mode Instructions */}
-                                {batchMode && pendingVideos.length > 0 && (
+                                {batchMode && filteredVideos.length > 0 && (
                                     <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-xl p-4 border border-cyan-500/30">
                                         <div className="flex items-center justify-between flex-wrap gap-4">
                                             <div className="flex items-center gap-4">
@@ -2500,7 +2532,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 </div>
                                             </div>
                                             <div className="text-gray-400 text-sm">
-                                                Video {focusedVideoIndex + 1} of {pendingVideos.length}
+                                                Video {focusedVideoIndex + 1} of {filteredVideos.length}
                                             </div>
                                         </div>
                                     </div>
@@ -2528,7 +2560,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     <div className="space-y-4">
                                         {/* Thumbnail Grid */}
                                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                                            {pendingVideos.map((video, index) => (
+                                            {filteredVideos.map((video, index) => (
                                                 <button
                                                     key={video.id}
                                                     onClick={() => setFocusedVideoIndex(index)}
@@ -2573,14 +2605,14 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         </div>
 
                                         {/* Focused Video - Large Preview */}
-                                        {pendingVideos[focusedVideoIndex] && (
+                                        {filteredVideos[focusedVideoIndex] && (
                                             <div className="bg-gray-800 rounded-xl border-2 border-cyan-500 overflow-hidden">
                                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                                                     {/* Video Player */}
                                                     <div className="relative bg-black aspect-video">
                                                         <video 
-                                                            key={pendingVideos[focusedVideoIndex].id}
-                                                            src={pendingVideos[focusedVideoIndex].video_url}
+                                                            key={filteredVideos[focusedVideoIndex].id}
+                                                            src={filteredVideos[focusedVideoIndex].video_url}
                                                             className="w-full h-full object-contain"
                                                             controls
                                                             autoPlay
@@ -2592,35 +2624,35 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     <div className="p-6 flex flex-col justify-between">
                                                         <div>
                                                             <div className="flex items-center gap-3 mb-4 flex-wrap">
-                                                                <h4 className="text-2xl font-bold text-white">{pendingVideos[focusedVideoIndex].student_name}</h4>
-                                                                {pendingVideos[focusedVideoIndex].ai_flag === 'red' && (
+                                                                <h4 className="text-2xl font-bold text-white">{filteredVideos[focusedVideoIndex].student_name}</h4>
+                                                                {filteredVideos[focusedVideoIndex].ai_flag === 'red' && (
                                                                     <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full font-bold border border-red-500/50">
-                                                                        ⚠️ {pendingVideos[focusedVideoIndex].ai_flag_reason || 'Flagged'}
+                                                                        ⚠️ {filteredVideos[focusedVideoIndex].ai_flag_reason || 'Flagged'}
                                                                     </span>
                                                                 )}
-                                                                {pendingVideos[focusedVideoIndex].ai_flag === 'yellow' && (
+                                                                {filteredVideos[focusedVideoIndex].ai_flag === 'yellow' && (
                                                                     <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded-full font-bold border border-yellow-500/50">
-                                                                        ⚡ {pendingVideos[focusedVideoIndex].ai_flag_reason || 'Review'}
+                                                                        ⚡ {filteredVideos[focusedVideoIndex].ai_flag_reason || 'Review'}
                                                                     </span>
                                                                 )}
-                                                                {pendingVideos[focusedVideoIndex].is_spot_check && (
+                                                                {filteredVideos[focusedVideoIndex].is_spot_check && (
                                                                     <span className="bg-cyan-500/20 text-cyan-400 text-xs px-2 py-1 rounded-full font-bold">
                                                                         🔍 Spot Check
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <p className="text-gray-400 mb-2">{pendingVideos[focusedVideoIndex].student_belt} Belt</p>
+                                                            <p className="text-gray-400 mb-2">{filteredVideos[focusedVideoIndex].student_belt} Belt</p>
                                                             <div className="bg-gray-900/50 rounded-lg p-4">
-                                                                <p className="text-white font-medium mb-1">{pendingVideos[focusedVideoIndex].challenge_name || 'Challenge'}</p>
+                                                                <p className="text-white font-medium mb-1">{filteredVideos[focusedVideoIndex].challenge_name || 'Challenge'}</p>
                                                                 <div className="flex items-center gap-2 text-sm">
-                                                                    <span className="text-gray-500">{pendingVideos[focusedVideoIndex].challenge_category}</span>
-                                                                    {pendingVideos[focusedVideoIndex].video_duration && (
+                                                                    <span className="text-gray-500">{filteredVideos[focusedVideoIndex].challenge_category}</span>
+                                                                    {filteredVideos[focusedVideoIndex].video_duration && (
                                                                         <>
                                                                             <span className="text-gray-600">•</span>
-                                                                            <span className={pendingVideos[focusedVideoIndex].video_duration < 3 ? 'text-yellow-400 font-bold' : 'text-gray-400'}>
-                                                                                {pendingVideos[focusedVideoIndex].video_duration < 60 
-                                                                                    ? `${Math.round(pendingVideos[focusedVideoIndex].video_duration)}s` 
-                                                                                    : `${Math.floor(pendingVideos[focusedVideoIndex].video_duration / 60)}m ${Math.round(pendingVideos[focusedVideoIndex].video_duration % 60)}s`}
+                                                                            <span className={filteredVideos[focusedVideoIndex].video_duration < 3 ? 'text-yellow-400 font-bold' : 'text-gray-400'}>
+                                                                                {filteredVideos[focusedVideoIndex].video_duration < 60 
+                                                                                    ? `${Math.round(filteredVideos[focusedVideoIndex].video_duration)}s` 
+                                                                                    : `${Math.floor(filteredVideos[focusedVideoIndex].video_duration / 60)}m ${Math.round(filteredVideos[focusedVideoIndex].video_duration % 60)}s`}
                                                                             </span>
                                                                         </>
                                                                     )}
@@ -2628,21 +2660,21 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                             </div>
                                                             <div className="mt-4 flex items-center gap-2">
                                                                 <span className="text-gray-400">XP Award:</span>
-                                                                <span className="text-green-400 font-bold text-xl">{pendingVideos[focusedVideoIndex].xp_awarded || 40} XP</span>
+                                                                <span className="text-green-400 font-bold text-xl">{filteredVideos[focusedVideoIndex].xp_awarded || 40} XP</span>
                                                             </div>
                                                         </div>
                                                         
                                                         {/* Quick Action Buttons */}
                                                         <div className="flex gap-3 mt-6">
                                                             <button
-                                                                onClick={() => handleBatchApprove(pendingVideos[focusedVideoIndex])}
+                                                                onClick={() => handleBatchApprove(filteredVideos[focusedVideoIndex])}
                                                                 disabled={isProcessingVideo}
                                                                 className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 text-lg"
                                                             >
                                                                 {isProcessingVideo ? '...' : '✅ Approve (Space)'}
                                                             </button>
                                                             <button
-                                                                onClick={() => handleBatchReject(pendingVideos[focusedVideoIndex])}
+                                                                onClick={() => handleBatchReject(filteredVideos[focusedVideoIndex])}
                                                                 disabled={isProcessingVideo}
                                                                 className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 text-lg"
                                                             >
@@ -2659,9 +2691,14 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                             <span className="text-orange-400">●</span> Pending Video Submissions
+                                            {videoCategoryFilter !== 'all' && (
+                                                <span className="text-sm font-normal text-gray-400">
+                                                    ({videoCategoryFilter === 'academy' ? '📚 Academy' : videoCategoryFilter})
+                                                </span>
+                                            )}
                                         </h3>
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                            {pendingVideos.map(video => (
+                                            {pendingVideos.filter(v => videoCategoryFilter === 'all' || v.challenge_category === videoCategoryFilter).map(video => (
                                                 <div key={video.id} className={`bg-gray-800 rounded-xl border overflow-hidden hover:border-orange-500/50 transition-all ${
                                                     video.ai_flag === 'red' ? 'border-red-500' :
                                                     video.ai_flag === 'yellow' ? 'border-yellow-500' :
@@ -2715,11 +2752,13 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                             <p className="text-sm font-medium text-white mb-1">{video.challenge_name || 'Challenge'}</p>
                                                             <div className="flex items-center gap-2 text-xs text-gray-500">
                                                                 <span className={`px-2 py-0.5 rounded ${
+                                                                    video.challenge_category === 'academy' ? 'bg-cyan-900/50 text-cyan-400' :
                                                                     video.challenge_category === 'Power' ? 'bg-red-900/50 text-red-400' :
                                                                     video.challenge_category === 'Technique' ? 'bg-blue-900/50 text-blue-400' :
+                                                                    video.challenge_category === 'Coach Picks' ? 'bg-amber-900/50 text-amber-400' :
                                                                     'bg-purple-900/50 text-purple-400'
                                                                 }`}>
-                                                                    {video.challenge_category || 'General'}
+                                                                    {video.challenge_category === 'academy' ? '📚 Academy' : video.challenge_category || 'General'}
                                                                 </span>
                                                                 <span>•</span>
                                                                 <span>{new Date(video.created_at).toLocaleDateString()}</span>

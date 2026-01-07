@@ -1586,7 +1586,9 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         pricingType: 'free' as 'free' | 'premium',
         xpReward: 10,
         description: '',
-        publishAt: '' // Scheduled publishing date
+        publishAt: '', // Scheduled publishing date
+        requiresVideo: false, // Requires video proof of technique
+        videoAccess: 'premium' as 'premium' | 'free' // Who can submit video proof
     });
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
     
@@ -1624,10 +1626,12 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             xpReward: newVideo.xpReward,
             viewCount: 0,
             completionCount: 0,
-            publishAt: newVideo.publishAt || undefined
+            publishAt: newVideo.publishAt || undefined,
+            requiresVideo: newVideo.requiresVideo,
+            videoAccess: newVideo.requiresVideo ? newVideo.videoAccess : undefined
         };
         onUpdateData({ curriculum: [...curriculum, item] });
-        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '' });
+        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium' });
         
         // Sync to database if publishing immediately
         if (clubId && finalStatus === 'live') {
@@ -1883,6 +1887,37 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                         </p>
                                     )}
                                 </div>
+                                {/* Video Verification */}
+                                <div className="bg-gray-700/50 p-3 rounded border border-gray-600">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={newVideo.requiresVideo}
+                                            onChange={e => setNewVideo({...newVideo, requiresVideo: e.target.checked})}
+                                            className="w-4 h-4 rounded border-gray-500 bg-gray-600 text-cyan-500 focus:ring-cyan-500"
+                                        />
+                                        <span className="text-sm text-white">Require Video Proof</span>
+                                        <span className="text-xs text-gray-400 ml-auto">Students must submit practice video</span>
+                                    </label>
+                                    {newVideo.requiresVideo && (
+                                        <div className="mt-3 pl-7">
+                                            <label className="block text-xs text-gray-400 mb-1">Who Can Submit Video</label>
+                                            <select
+                                                value={newVideo.videoAccess}
+                                                onChange={e => setNewVideo({...newVideo, videoAccess: e.target.value as 'premium' | 'free'})}
+                                                className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                            >
+                                                <option value="premium">Premium Only</option>
+                                                <option value="free">Free for All</option>
+                                            </select>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {newVideo.videoAccess === 'premium' 
+                                                    ? 'Only premium users can submit video proof for this content'
+                                                    : 'All users can submit video proof (great for key techniques!)'}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
                                 <div>
                                     <label className="block text-xs text-gray-400 mb-2">Tags</label>
                                     <div className="flex flex-wrap gap-2">
@@ -1925,10 +1960,15 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                             <div className="flex items-center gap-3">
                                                 <span className="text-2xl">{vid.contentType === 'document' ? '📄' : '📹'}</span>
                                                 <div>
-                                                    <p className="font-bold text-white text-sm flex items-center gap-2">
+                                                    <p className="font-bold text-white text-sm flex items-center gap-2 flex-wrap">
                                                         {vid.title}
                                                         <span className="text-xs px-2 py-0.5 bg-green-600/20 text-green-400 rounded">LIVE</span>
                                                         {vid.pricingType === 'premium' && <span className="text-xs px-2 py-0.5 bg-yellow-600/20 text-yellow-400 rounded">PREMIUM</span>}
+                                                        {vid.requiresVideo && (
+                                                            <span className={`text-xs px-2 py-0.5 rounded ${vid.videoAccess === 'free' ? 'bg-cyan-600/20 text-cyan-400' : 'bg-purple-600/20 text-purple-400'}`}>
+                                                                {vid.videoAccess === 'free' ? '📹 VIDEO' : '📹 VIDEO+'}
+                                                            </span>
+                                                        )}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
                                                         {vid.beltId === 'all' ? 'All Belts' : data.belts.find(b => b.id === vid.beltId)?.name}
@@ -1965,7 +2005,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                         <div className="flex items-center gap-3">
                                             <span className="text-2xl">{vid.contentType === 'document' ? '📄' : '📹'}</span>
                                             <div>
-                                                <p className="font-bold text-white text-sm flex items-center gap-2">
+                                                <p className="font-bold text-white text-sm flex items-center gap-2 flex-wrap">
                                                     {vid.title}
                                                     {vid.publishAt ? (
                                                         <span className="text-xs px-2 py-0.5 bg-sky-600/20 text-sky-400 rounded">
@@ -1973,6 +2013,11 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                                         </span>
                                                     ) : (
                                                         <span className="text-xs px-2 py-0.5 bg-gray-600/50 text-gray-400 rounded">DRAFT</span>
+                                                    )}
+                                                    {vid.requiresVideo && (
+                                                        <span className={`text-xs px-2 py-0.5 rounded ${vid.videoAccess === 'free' ? 'bg-cyan-600/20 text-cyan-400' : 'bg-purple-600/20 text-purple-400'}`}>
+                                                            {vid.videoAccess === 'free' ? '📹 VIDEO' : '📹 VIDEO+'}
+                                                        </span>
                                                     )}
                                                 </p>
                                                 <p className="text-xs text-gray-500">

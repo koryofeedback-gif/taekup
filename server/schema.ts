@@ -441,6 +441,8 @@ export const curriculumContent = pgTable('curriculum_content', {
   completionCount: integer('completion_count').default(0),
   authorName: varchar('author_name', { length: 255 }),
   publishAt: timestamp('publish_at', { withTimezone: true }),
+  requiresVideo: boolean('requires_video').default(false), // Requires video proof of technique
+  videoAccess: varchar('video_access', { length: 20 }).default('premium'), // 'premium' or 'free'
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

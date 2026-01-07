@@ -72,6 +72,8 @@ export interface CurriculumItem {
     completionCount?: number;
     thumbnailUrl?: string;
     publishAt?: string; // ISO date for scheduled publishing
+    requiresVideo?: boolean; // Requires video proof of technique completion
+    videoAccess?: 'premium' | 'free'; // Who can submit video proof (default: premium)
 }
 
 export interface CurriculumCourse {

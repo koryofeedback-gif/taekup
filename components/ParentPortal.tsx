@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory, RivalsStats, HolidayScheduleType } from '../types';
+import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory, RivalsStats, HolidayScheduleType, CurriculumItem } from '../types';
 import { calculateClassXP } from '../services/gamificationService';
 import { HOLIDAY_PRESETS } from '../types';
 import { BeltIcon, CalendarIcon } from './icons/FeatureIcons';
@@ -575,6 +575,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         createdAt: string;
     }>>([]);
     const videoInputRef = useRef<HTMLInputElement>(null);
+    
+    // Academy Video Upload State (for content requiring video proof)
+    const [academyVideoMode, setAcademyVideoMode] = useState(false);
+    const [selectedAcademyContent, setSelectedAcademyContent] = useState<CurriculumItem | null>(null);
+    const academyVideoRef = useRef(false);
     
     // Solo Arena State (Trust vs Verify flow)
     const [soloScore, setSoloScore] = useState<string>('');
@@ -2353,6 +2358,107 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         }
     };
 
+    // Academy Video Upload Handler (for Sensei Academy content requiring video proof)
+    const handleAcademyVideoUpload = async () => {
+        if (!videoFile || !selectedAcademyContent) return;
+        
+        // Prevent double-click
+        if (academyVideoRef.current || isUploadingVideo) return;
+        academyVideoRef.current = true;
+        
+        setIsUploadingVideo(true);
+        setVideoUploadProgress(0);
+        setVideoUploadError(null);
+
+        try {
+            // Calculate video fingerprint
+            setVideoUploadProgress(5);
+            const videoHash = await calculateVideoHash(videoFile);
+            setVideoUploadProgress(10);
+
+            const presignedResponse = await fetch('/api/videos/presigned-upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    challengeId: `academy-${selectedAcademyContent.id}`,
+                    filename: videoFile.name,
+                    contentType: videoFile.type,
+                    isAcademy: true
+                })
+            });
+
+            if (!presignedResponse.ok) {
+                const errorData = await presignedResponse.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to get upload URL');
+            }
+
+            const { uploadUrl, key, publicUrl } = await presignedResponse.json();
+            setVideoUploadProgress(20);
+
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                body: videoFile,
+                headers: { 'Content-Type': videoFile.type }
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error('Failed to upload video');
+            }
+            setVideoUploadProgress(80);
+
+            // Save video to database with 'academy' category
+            const clubId = localStorage.getItem('taekup_club_id');
+            if (!clubId) {
+                throw new Error('Club information not found');
+            }
+
+            const xpReward = selectedAcademyContent.xpReward || 10;
+            
+            const saveResponse = await fetch('/api/videos/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    clubId,
+                    challengeId: `academy-${selectedAcademyContent.id}`,
+                    challengeName: selectedAcademyContent.title,
+                    challengeCategory: 'academy',
+                    videoUrl: publicUrl,
+                    videoKey: key,
+                    videoHash,
+                    score: 0,
+                    xpAwarded: xpReward
+                })
+            });
+
+            const saveResult = await saveResponse.json().catch(() => ({}));
+            
+            if (!saveResponse.ok) {
+                throw new Error(saveResult.message || 'Failed to save video record');
+            }
+
+            setVideoUploadProgress(100);
+            setVideoUploadError(null);
+            
+            setTimeout(() => {
+                setShowVideoUpload(false);
+                setVideoFile(null);
+                setVideoUploadProgress(0);
+                setAcademyVideoMode(false);
+                setSelectedAcademyContent(null);
+                alert('Video submitted! Your coach will review it and award XP once approved.');
+            }, 500);
+
+        } catch (error: any) {
+            console.error('Academy video upload error:', error);
+            setVideoUploadError(error.message || 'Upload failed');
+        } finally {
+            setIsUploadingVideo(false);
+            academyVideoRef.current = false;
+        }
+    };
+
     const renderPremiumLock = (featureName: string, description: string) => {
         if (hasPremiumAccess) return null;
         return (
@@ -2756,6 +2862,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             {freeVideos.map((video, idx) => {
                                 const isCompleted = isContentCompleted(video.id);
                                 const xpReward = video.xpReward || 10;
+                                const requiresVideo = video.requiresVideo;
+                                const videoAccessLocked = requiresVideo && video.videoAccess === 'premium' && !hasPremiumAccess;
                                 
                                 const handleWatch = (e: React.MouseEvent) => {
                                     e.stopPropagation();
@@ -2764,6 +2872,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 
                                 const handleMarkComplete = (e: React.MouseEvent) => {
                                     e.stopPropagation();
+                                    if (requiresVideo) return; // Must submit video instead
                                     if (!isCompleted) {
                                         const awarded = completeContent(video.id, xpReward);
                                         if (awarded) {
@@ -2774,23 +2883,41 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     }
                                 };
                                 
+                                const handleVideoSubmit = (e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    if (videoAccessLocked) {
+                                        setShowUpgradeModal(true);
+                                        return;
+                                    }
+                                    setSelectedAcademyContent(video);
+                                    setAcademyVideoMode(true);
+                                    setShowVideoUpload(true);
+                                };
+                                
                                 return (
                                     <div 
                                         key={idx} 
-                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border flex group transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : 'border-gray-700'}`}
+                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border flex group transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : requiresVideo ? 'border-purple-500/30' : 'border-gray-700'}`}
                                     >
                                         <div 
                                             onClick={handleWatch}
-                                            className={`w-24 flex items-center justify-center text-4xl cursor-pointer hover:scale-110 transition-transform duration-300 ${isCompleted ? 'bg-green-900/30' : 'bg-gray-900 hover:bg-gray-800'}`}
+                                            className={`w-24 flex items-center justify-center text-4xl cursor-pointer hover:scale-110 transition-transform duration-300 ${isCompleted ? 'bg-green-900/30' : requiresVideo ? 'bg-purple-900/30' : 'bg-gray-900 hover:bg-gray-800'}`}
                                         >
                                             {video.contentType === 'document' ? '📄' : '🎬'}
                                         </div>
                                         <div className="p-4 flex-1">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <h4 className={`font-bold text-sm ${isCompleted ? 'text-green-400' : 'text-white'}`}>{video.title}</h4>
+                                                {requiresVideo && (
+                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${videoAccessLocked ? 'bg-purple-500/30 text-purple-300' : 'bg-cyan-500/30 text-cyan-300'}`}>
+                                                        {videoAccessLocked ? '🔒 VIDEO' : '📹 VIDEO'}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-xs text-gray-500">{isCompleted ? 'Completed!' : 'Watch then mark as done'}</p>
+                                                <p className="text-xs text-gray-500">
+                                                    {isCompleted ? 'Completed!' : requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
+                                                </p>
                                                 <span className={`text-xs font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
                                                     {isCompleted ? `+${xpReward} HonorXP™ earned` : `+${xpReward} HonorXP™`}
                                                 </span>
@@ -2804,18 +2931,35 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             >
                                                 <span className="text-white text-xs">▶</span>
                                             </button>
-                                            <button
-                                                onClick={handleMarkComplete}
-                                                disabled={isCompleted}
-                                                className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
-                                                    isCompleted 
-                                                        ? 'bg-green-500 shadow-green-600/30 cursor-default' 
-                                                        : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-gray-500 hover:border-green-400'
-                                                }`}
-                                                title={isCompleted ? 'Completed' : 'Mark as done'}
-                                            >
-                                                <span className="text-white text-xs">{isCompleted ? '✓' : ''}</span>
-                                            </button>
+                                            {requiresVideo ? (
+                                                <button
+                                                    onClick={handleVideoSubmit}
+                                                    disabled={isCompleted}
+                                                    className={`px-3 py-1.5 rounded-full flex items-center justify-center shadow-lg transition-all text-xs font-bold ${
+                                                        isCompleted 
+                                                            ? 'bg-green-500 shadow-green-600/30 cursor-default text-white' 
+                                                            : videoAccessLocked
+                                                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500'
+                                                                : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
+                                                    }`}
+                                                    title={isCompleted ? 'Completed' : videoAccessLocked ? 'Premium Only' : 'Submit Video'}
+                                                >
+                                                    {isCompleted ? '✓ Done' : videoAccessLocked ? '🔒 Unlock' : '📹 Submit'}
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={handleMarkComplete}
+                                                    disabled={isCompleted}
+                                                    className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
+                                                        isCompleted 
+                                                            ? 'bg-green-500 shadow-green-600/30 cursor-default' 
+                                                            : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-gray-500 hover:border-green-400'
+                                                    }`}
+                                                    title={isCompleted ? 'Completed' : 'Mark as done'}
+                                                >
+                                                    <span className="text-white text-xs">{isCompleted ? '✓' : ''}</span>
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -2838,8 +2982,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     {premiumVideos.map((video, idx) => {
                                         const isLocked = !hasPremiumAccess;
                                         const isCompleted = !isLocked && isContentCompleted(video.id);
-                                        // Admin sets XP directly in Creator Hub - no automatic multiplier
                                         const xpReward = video.xpReward || 10;
+                                        const requiresVideo = video.requiresVideo;
                                         
                                         const handleClick = () => {
                                             if (isLocked) {
@@ -2862,6 +3006,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 setShowUpgradeModal(true);
                                                 return;
                                             }
+                                            if (requiresVideo) return; // Must submit video instead
                                             if (!isCompleted) {
                                                 const awarded = completeContent(video.id, xpReward);
                                                 if (awarded) {
@@ -2870,6 +3015,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     xpUpdateGraceRef.current = Date.now();
                                                 }
                                             }
+                                        };
+                                        
+                                        const handleVideoSubmit = (e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            if (isLocked) {
+                                                setShowUpgradeModal(true);
+                                                return;
+                                            }
+                                            setSelectedAcademyContent(video);
+                                            setAcademyVideoMode(true);
+                                            setShowVideoUpload(true);
                                         };
                                         
                                         return (
@@ -2897,17 +3053,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     {isLocked ? '🔒' : video.contentType === 'document' ? '📄' : '🎬'}
                                                 </div>
                                                 <div className="p-4 flex-1">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-2 flex-wrap">
                                                         <h4 className={`font-bold text-sm ${isLocked ? 'text-amber-300' : isCompleted ? 'text-green-400' : 'text-amber-200'}`}>
                                                             {video.title}
                                                         </h4>
                                                         <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/30 text-amber-300 rounded-full font-bold">
                                                             LEGACY
                                                         </span>
+                                                        {requiresVideo && !isLocked && (
+                                                            <span className="text-[10px] px-1.5 py-0.5 bg-cyan-500/30 text-cyan-300 rounded-full font-bold">
+                                                                📹 VIDEO
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <p className="text-xs text-gray-400">
-                                                            {isLocked ? 'Unlock to access' : isCompleted ? 'Completed!' : 'Watch then mark as done'}
+                                                            {isLocked ? 'Unlock to access' : isCompleted ? 'Completed!' : requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
                                                         </p>
                                                         <span className={`text-xs font-black ${isLocked ? 'text-amber-400 animate-pulse' : isCompleted ? 'text-green-400' : 'text-amber-300'}`}>
                                                             {isCompleted ? `+${xpReward} HonorXP™ earned` : `+${xpReward} HonorXP™`}
@@ -2932,18 +3093,33 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             >
                                                                 <span className="text-white text-xs">▶</span>
                                                             </button>
-                                                            <button
-                                                                onClick={handleMarkComplete}
-                                                                disabled={isCompleted}
-                                                                className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
-                                                                    isCompleted 
-                                                                        ? 'bg-green-500 shadow-green-600/30 cursor-default' 
-                                                                        : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-amber-500 hover:border-green-400'
-                                                                }`}
-                                                                title={isCompleted ? 'Completed' : 'Mark as done'}
-                                                            >
-                                                                <span className="text-white text-xs">{isCompleted ? '✓' : ''}</span>
-                                                            </button>
+                                                            {requiresVideo ? (
+                                                                <button
+                                                                    onClick={handleVideoSubmit}
+                                                                    disabled={isCompleted}
+                                                                    className={`px-3 py-1.5 rounded-full flex items-center justify-center shadow-lg transition-all text-xs font-bold ${
+                                                                        isCompleted 
+                                                                            ? 'bg-green-500 shadow-green-600/30 cursor-default text-white' 
+                                                                            : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
+                                                                    }`}
+                                                                    title={isCompleted ? 'Completed' : 'Submit Video'}
+                                                                >
+                                                                    {isCompleted ? '✓ Done' : '📹 Submit'}
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={handleMarkComplete}
+                                                                    disabled={isCompleted}
+                                                                    className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
+                                                                        isCompleted 
+                                                                            ? 'bg-green-500 shadow-green-600/30 cursor-default' 
+                                                                            : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-amber-500 hover:border-green-400'
+                                                                    }`}
+                                                                    title={isCompleted ? 'Completed' : 'Mark as done'}
+                                                                >
+                                                                    <span className="text-white text-xs">{isCompleted ? '✓' : ''}</span>
+                                                                </button>
+                                                            )}
                                                         </>
                                                     )}
                                                 </div>
@@ -4464,10 +4640,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     {/* Video Upload Modal */}
                                     {showVideoUpload && (
                                         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-                                            <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-purple-500 shadow-2xl">
+                                            <div className={`bg-gray-900 rounded-2xl p-6 max-w-md w-full shadow-2xl border ${academyVideoMode ? 'border-cyan-500' : 'border-purple-500'}`}>
                                                 <div className="flex items-center justify-between mb-4">
                                                     <h3 className="text-xl font-black text-white flex items-center gap-2">
-                                                        <span className="text-2xl">🎬</span> Video Proof
+                                                        <span className="text-2xl">{academyVideoMode ? '📚' : '🎬'}</span> 
+                                                        {academyVideoMode ? 'Technique Proof' : 'Video Proof'}
                                                     </h3>
                                                     <button 
                                                         onClick={() => {
@@ -4475,6 +4652,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             setVideoFile(null);
                                                             setVideoUploadError(null);
                                                             setGauntletVideoMode(false);
+                                                            setAcademyVideoMode(false);
+                                                            setSelectedAcademyContent(null);
                                                         }}
                                                         className="text-gray-400 hover:text-white text-2xl"
                                                     >
@@ -4482,15 +4661,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     </button>
                                                 </div>
 
-                                                {/* Challenge Info */}
-                                                <div className="bg-gray-800 rounded-xl p-4 mb-4">
+                                                {/* Challenge/Content Info */}
+                                                <div className={`rounded-xl p-4 mb-4 ${academyVideoMode ? 'bg-cyan-900/30' : 'bg-gray-800'}`}>
                                                     <p className="text-gray-400 text-xs mb-1">Submitting for:</p>
                                                     <p className="text-white font-bold">
-                                                        {gauntletVideoMode 
-                                                            ? gauntletData?.challenges?.find((c: any) => c.id === selectedGauntletChallenge)?.name || 'Daily Training Challenge'
-                                                            : challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge)?.name || 'Unknown Challenge'}
+                                                        {academyVideoMode 
+                                                            ? selectedAcademyContent?.title || 'Training Content'
+                                                            : gauntletVideoMode 
+                                                                ? gauntletData?.challenges?.find((c: any) => c.id === selectedGauntletChallenge)?.name || 'Daily Training Challenge'
+                                                                : challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge)?.name || 'Unknown Challenge'}
                                                     </p>
-                                                    {videoScore && (
+                                                    {academyVideoMode && selectedAcademyContent && (
+                                                        <p className="text-sm mt-1 text-cyan-400">
+                                                            +{selectedAcademyContent.xpReward || 10} HonorXP™ on approval
+                                                        </p>
+                                                    )}
+                                                    {!academyVideoMode && videoScore && (
                                                         <p className={`text-sm mt-1 ${gauntletVideoMode ? 'text-orange-400' : 'text-green-400'}`}>
                                                             ✅ Score: {videoScore}
                                                         </p>
@@ -4555,11 +4741,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
                                                 {/* Submit Button */}
                                                 <button
-                                                    onClick={handleVideoUpload}
-                                                    disabled={!videoFile || isUploadingVideo || !videoScore}
+                                                    onClick={academyVideoMode ? handleAcademyVideoUpload : handleVideoUpload}
+                                                    disabled={!videoFile || isUploadingVideo || (!academyVideoMode && !videoScore)}
                                                     className={`w-full mt-4 py-4 rounded-xl font-bold text-lg transition-all ${
-                                                        videoFile && !isUploadingVideo && videoScore
-                                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg'
+                                                        videoFile && !isUploadingVideo && (academyVideoMode || videoScore)
+                                                            ? academyVideoMode 
+                                                                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg'
+                                                                : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg'
                                                             : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                                                     }`}
                                                 >
@@ -4573,13 +4761,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         </span>
                                                     ) : (
                                                         <span className="flex items-center justify-center gap-2">
-                                                            <span>🚀</span> Submit for Verification
+                                                            <span>🚀</span> {academyVideoMode ? 'Submit Technique Video' : 'Submit for Verification'}
                                                         </span>
                                                     )}
                                                 </button>
 
                                                 <p className="text-gray-500 text-xs text-center mt-3">
-                                                    Your coach will review and verify your video within 24 hours
+                                                    {academyVideoMode 
+                                                        ? 'Your coach will review and award XP once approved'
+                                                        : 'Your coach will review and verify your video within 24 hours'}
                                                 </p>
                                             </div>
                                         </div>
