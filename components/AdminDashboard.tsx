@@ -2083,18 +2083,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                             </div>
                         </div>
 
-                        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                            <h3 className="font-bold text-white mb-3 text-sm">XP Rewards Guide</h3>
-                            <div className="space-y-2 text-xs text-gray-400">
-                                <p>Students earn XP when they complete your content:</p>
-                                <div className="bg-gray-900/50 p-2 rounded space-y-1">
-                                    <p>📹 Short video: <span className="text-sky-400">5-10 XP</span></p>
-                                    <p>📹 Full tutorial: <span className="text-sky-400">15-25 XP</span></p>
-                                    <p>📄 Practice sheet: <span className="text-sky-400">5 XP</span></p>
-                                    <p>📚 Complete course: <span className="text-sky-400">50-100 XP</span></p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             )}
