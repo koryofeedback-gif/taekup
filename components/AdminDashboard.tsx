@@ -1943,6 +1943,12 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                             onChange={e => setNewVideo({...newVideo, xpReward: parseInt(e.target.value) || 0})}
                                             className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                         />
+                                        {newVideo.pricingType === 'premium' && newVideo.xpReward < 25 && (
+                                            <p className="text-[10px] text-amber-400 mt-1">💡 Tip: Premium content works best with 30-45 XP</p>
+                                        )}
+                                        {newVideo.pricingType === 'free' && newVideo.xpReward > 20 && (
+                                            <p className="text-[10px] text-sky-400 mt-1">💡 Tip: Free content usually has 10-15 XP</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
