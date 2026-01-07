@@ -2897,69 +2897,75 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 return (
                                     <div 
                                         key={idx} 
-                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border flex group transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : requiresVideo ? 'border-purple-500/30' : 'border-gray-700'}`}
+                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : requiresVideo ? 'border-cyan-500/30' : 'border-gray-700'}`}
                                     >
-                                        <div 
-                                            onClick={handleWatch}
-                                            className={`w-24 flex items-center justify-center text-4xl cursor-pointer hover:scale-110 transition-transform duration-300 ${isCompleted ? 'bg-green-900/30' : requiresVideo ? 'bg-purple-900/30' : 'bg-gray-900 hover:bg-gray-800'}`}
-                                        >
-                                            {video.contentType === 'document' ? '📄' : '🎬'}
-                                        </div>
-                                        <div className="p-4 flex-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <h4 className={`font-bold text-sm ${isCompleted ? 'text-green-400' : 'text-white'}`}>{video.title}</h4>
-                                                {requiresVideo && (
-                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${videoAccessLocked ? 'bg-purple-500/30 text-purple-300' : 'bg-cyan-500/30 text-cyan-300'}`}>
-                                                        {videoAccessLocked ? '🔒 VIDEO' : '📹 VIDEO'}
+                                        <div className="flex">
+                                            <div 
+                                                onClick={handleWatch}
+                                                className={`w-20 min-h-[80px] flex items-center justify-center text-3xl cursor-pointer hover:scale-110 transition-transform duration-300 ${isCompleted ? 'bg-green-900/30' : requiresVideo ? 'bg-cyan-900/30' : 'bg-gray-900 hover:bg-gray-800'}`}
+                                            >
+                                                {video.contentType === 'document' ? '📄' : '🎬'}
+                                            </div>
+                                            <div className="p-3 flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                    <h4 className={`font-bold text-sm ${isCompleted ? 'text-green-400' : 'text-white'}`}>{video.title}</h4>
+                                                    {requiresVideo && (
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${videoAccessLocked ? 'bg-purple-500/30 text-purple-300' : 'bg-cyan-500/30 text-cyan-300'}`}>
+                                                            {videoAccessLocked ? '🔒 VIDEO' : '📹 VIDEO'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {video.description && (
+                                                    <p className="text-xs text-gray-400 mb-2 line-clamp-2">{video.description}</p>
+                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-[11px] text-gray-500">
+                                                        {isCompleted ? 'Completed!' : requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
+                                                    </p>
+                                                    <span className={`text-[11px] font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                        +{xpReward} HonorXP™
                                                     </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-3">
+                                                <button
+                                                    onClick={handleWatch}
+                                                    className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg bg-emerald-500 hover:bg-emerald-400 shadow-emerald-600/30 transition-colors"
+                                                    title="Watch video"
+                                                >
+                                                    <span className="text-white text-sm">▶</span>
+                                                </button>
+                                                {requiresVideo ? (
+                                                    <button
+                                                        onClick={handleVideoSubmit}
+                                                        disabled={isCompleted}
+                                                        className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-lg transition-all text-xs font-bold ${
+                                                            isCompleted 
+                                                                ? 'bg-green-500 shadow-green-600/30 cursor-default text-white' 
+                                                                : videoAccessLocked
+                                                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500'
+                                                                    : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
+                                                        }`}
+                                                        title={isCompleted ? 'Completed' : videoAccessLocked ? 'Premium Only' : 'Submit Video'}
+                                                    >
+                                                        {isCompleted ? '✓' : videoAccessLocked ? '🔒' : '📹'}
+                                                        <span className="hidden sm:inline">{isCompleted ? 'Done' : videoAccessLocked ? 'Unlock' : 'Submit'}</span>
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={handleMarkComplete}
+                                                        disabled={isCompleted}
+                                                        className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-lg transition-all ${
+                                                            isCompleted 
+                                                                ? 'bg-green-500 shadow-green-600/30 cursor-default' 
+                                                                : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-gray-500 hover:border-green-400'
+                                                        }`}
+                                                        title={isCompleted ? 'Completed' : 'Mark as done'}
+                                                    >
+                                                        <span className="text-white text-sm">{isCompleted ? '✓' : ''}</span>
+                                                    </button>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-xs text-gray-500">
-                                                    {isCompleted ? 'Completed!' : requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
-                                                </p>
-                                                <span className={`text-xs font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
-                                                    {isCompleted ? `+${xpReward} HonorXP™ earned` : `+${xpReward} HonorXP™`}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 px-4">
-                                            <button
-                                                onClick={handleWatch}
-                                                className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg bg-emerald-500 hover:bg-emerald-400 shadow-emerald-600/30 transition-colors"
-                                                title="Watch video"
-                                            >
-                                                <span className="text-white text-xs">▶</span>
-                                            </button>
-                                            {requiresVideo ? (
-                                                <button
-                                                    onClick={handleVideoSubmit}
-                                                    disabled={isCompleted}
-                                                    className={`px-3 py-1.5 rounded-full flex items-center justify-center shadow-lg transition-all text-xs font-bold ${
-                                                        isCompleted 
-                                                            ? 'bg-green-500 shadow-green-600/30 cursor-default text-white' 
-                                                            : videoAccessLocked
-                                                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500'
-                                                                : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
-                                                    }`}
-                                                    title={isCompleted ? 'Completed' : videoAccessLocked ? 'Premium Only' : 'Submit Video'}
-                                                >
-                                                    {isCompleted ? '✓ Done' : videoAccessLocked ? '🔒 Unlock' : '📹 Submit'}
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={handleMarkComplete}
-                                                    disabled={isCompleted}
-                                                    className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
-                                                        isCompleted 
-                                                            ? 'bg-green-500 shadow-green-600/30 cursor-default' 
-                                                            : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-gray-500 hover:border-green-400'
-                                                    }`}
-                                                    title={isCompleted ? 'Completed' : 'Mark as done'}
-                                                >
-                                                    <span className="text-white text-xs">{isCompleted ? '✓' : ''}</span>
-                                                </button>
-                                            )}
                                         </div>
                                     </div>
                                 );
@@ -3032,7 +3038,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             <div 
                                                 key={`premium-${idx}`}
                                                 onClick={handleClick}
-                                                className={`rounded-xl overflow-hidden shadow-lg border flex group transition-all cursor-pointer ${
+                                                className={`rounded-xl overflow-hidden shadow-lg border transition-all cursor-pointer ${
                                                     isLocked 
                                                         ? 'bg-gradient-to-r from-amber-900/20 to-yellow-900/20 border-amber-500/30 hover:border-amber-400/50' 
                                                         : isCompleted 
@@ -3040,88 +3046,94 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             : 'bg-gradient-to-r from-amber-900/30 to-yellow-900/30 border-amber-500/50'
                                                 }`}
                                             >
-                                                <div 
-                                                    onClick={handleWatch}
-                                                    className={`w-24 flex items-center justify-center text-4xl transition-transform duration-300 ${
-                                                        isLocked 
-                                                            ? 'bg-amber-900/30' 
-                                                            : isCompleted 
-                                                                ? 'bg-green-900/30 hover:scale-110' 
-                                                                : 'bg-amber-900/40 hover:scale-110'
-                                                    }`}
-                                                >
-                                                    {isLocked ? '🔒' : video.contentType === 'document' ? '📄' : '🎬'}
-                                                </div>
-                                                <div className="p-4 flex-1">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <h4 className={`font-bold text-sm ${isLocked ? 'text-amber-300' : isCompleted ? 'text-green-400' : 'text-amber-200'}`}>
-                                                            {video.title}
-                                                        </h4>
-                                                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/30 text-amber-300 rounded-full font-bold">
-                                                            LEGACY
-                                                        </span>
-                                                        {requiresVideo && !isLocked && (
-                                                            <span className="text-[10px] px-1.5 py-0.5 bg-cyan-500/30 text-cyan-300 rounded-full font-bold">
-                                                                📹 VIDEO
+                                                <div className="flex">
+                                                    <div 
+                                                        onClick={handleWatch}
+                                                        className={`w-20 min-h-[80px] flex items-center justify-center text-3xl transition-transform duration-300 ${
+                                                            isLocked 
+                                                                ? 'bg-amber-900/30' 
+                                                                : isCompleted 
+                                                                    ? 'bg-green-900/30 hover:scale-110' 
+                                                                    : 'bg-amber-900/40 hover:scale-110'
+                                                        }`}
+                                                    >
+                                                        {isLocked ? '🔒' : video.contentType === 'document' ? '📄' : '🎬'}
+                                                    </div>
+                                                    <div className="p-3 flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                            <h4 className={`font-bold text-sm ${isLocked ? 'text-amber-300' : isCompleted ? 'text-green-400' : 'text-amber-200'}`}>
+                                                                {video.title}
+                                                            </h4>
+                                                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/30 text-amber-300 rounded-full font-bold">
+                                                                LEGACY
                                                             </span>
+                                                            {requiresVideo && !isLocked && (
+                                                                <span className="text-[10px] px-1.5 py-0.5 bg-cyan-500/30 text-cyan-300 rounded-full font-bold">
+                                                                    📹 VIDEO
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {video.description && (
+                                                            <p className="text-xs text-gray-400 mb-2 line-clamp-2">{video.description}</p>
                                                         )}
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-[11px] text-gray-400">
+                                                                {isLocked ? 'Unlock to access' : isCompleted ? 'Completed!' : requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
+                                                            </p>
+                                                            <span className={`text-[11px] font-black ${isLocked ? 'text-amber-400 animate-pulse' : isCompleted ? 'text-green-400' : 'text-amber-300'}`}>
+                                                                +{xpReward} HonorXP™
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <p className="text-xs text-gray-400">
-                                                            {isLocked ? 'Unlock to access' : isCompleted ? 'Completed!' : requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
-                                                        </p>
-                                                        <span className={`text-xs font-black ${isLocked ? 'text-amber-400 animate-pulse' : isCompleted ? 'text-green-400' : 'text-amber-300'}`}>
-                                                            {isCompleted ? `+${xpReward} HonorXP™ earned` : `+${xpReward} HonorXP™`}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3 px-4">
-                                                    {isLocked ? (
-                                                        <button
-                                                            onClick={handleWatch}
-                                                            className="px-3 py-1.5 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 transition-colors"
-                                                            title="Unlock with Premium"
-                                                        >
-                                                            <span className="text-black text-xs font-bold">Unlock</span>
-                                                        </button>
-                                                    ) : (
-                                                        <>
+                                                    <div className="flex items-center gap-2 px-3">
+                                                        {isLocked ? (
                                                             <button
                                                                 onClick={handleWatch}
-                                                                className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg bg-amber-500 hover:bg-amber-400 shadow-amber-600/30 transition-colors"
-                                                                title="Watch video"
+                                                                className="px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 transition-colors"
+                                                                title="Unlock with Premium"
                                                             >
-                                                                <span className="text-white text-xs">▶</span>
+                                                                <span className="text-black text-xs font-bold">🔓 Unlock</span>
                                                             </button>
-                                                            {requiresVideo ? (
+                                                        ) : (
+                                                            <>
                                                                 <button
-                                                                    onClick={handleVideoSubmit}
-                                                                    disabled={isCompleted}
-                                                                    className={`px-3 py-1.5 rounded-full flex items-center justify-center shadow-lg transition-all text-xs font-bold ${
-                                                                        isCompleted 
-                                                                            ? 'bg-green-500 shadow-green-600/30 cursor-default text-white' 
-                                                                            : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
-                                                                    }`}
-                                                                    title={isCompleted ? 'Completed' : 'Submit Video'}
+                                                                    onClick={handleWatch}
+                                                                    className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg bg-amber-500 hover:bg-amber-400 shadow-amber-600/30 transition-colors"
+                                                                    title="Watch video"
                                                                 >
-                                                                    {isCompleted ? '✓ Done' : '📹 Submit'}
+                                                                    <span className="text-white text-sm">▶</span>
                                                                 </button>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={handleMarkComplete}
-                                                                    disabled={isCompleted}
-                                                                    className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
-                                                                        isCompleted 
-                                                                            ? 'bg-green-500 shadow-green-600/30 cursor-default' 
-                                                                            : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-amber-500 hover:border-green-400'
-                                                                    }`}
-                                                                    title={isCompleted ? 'Completed' : 'Mark as done'}
-                                                                >
-                                                                    <span className="text-white text-xs">{isCompleted ? '✓' : ''}</span>
-                                                                </button>
-                                                            )}
-                                                        </>
-                                                    )}
+                                                                {requiresVideo ? (
+                                                                    <button
+                                                                        onClick={handleVideoSubmit}
+                                                                        disabled={isCompleted}
+                                                                        className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-lg transition-all text-xs font-bold ${
+                                                                            isCompleted 
+                                                                                ? 'bg-green-500 shadow-green-600/30 cursor-default text-white' 
+                                                                                : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
+                                                                        }`}
+                                                                        title={isCompleted ? 'Completed' : 'Submit Video'}
+                                                                    >
+                                                                        {isCompleted ? '✓' : '📹'}
+                                                                        <span className="hidden sm:inline">{isCompleted ? 'Done' : 'Submit'}</span>
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={handleMarkComplete}
+                                                                        disabled={isCompleted}
+                                                                        className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-lg transition-all ${
+                                                                            isCompleted 
+                                                                                ? 'bg-green-500 shadow-green-600/30 cursor-default' 
+                                                                                : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-amber-500 hover:border-green-400'
+                                                                        }`}
+                                                                        title={isCompleted ? 'Completed' : 'Mark as done'}
+                                                                    >
+                                                                        <span className="text-white text-sm">{isCompleted ? '✓' : ''}</span>
+                                                                    </button>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -4654,6 +4666,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             setGauntletVideoMode(false);
                                                             setAcademyVideoMode(false);
                                                             setSelectedAcademyContent(null);
+                                                            academyVideoRef.current = false;
                                                         }}
                                                         className="text-gray-400 hover:text-white text-2xl"
                                                     >
