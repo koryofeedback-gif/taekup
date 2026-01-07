@@ -1576,7 +1576,6 @@ const DEFAULT_VIDEO_TAGS = [
 ];
 
 const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
-    const [activeTab, setActiveTab] = useState<'content' | 'courses'>('content');
     const [newVideo, setNewVideo] = useState({ 
         title: '', 
         url: '', 
@@ -1589,14 +1588,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         description: '',
         publishAt: '' // Scheduled publishing date
     });
-    const [newCourse, setNewCourse] = useState({
-        title: '',
-        description: '',
-        beltId: 'all',
-        xpReward: 50,
-        status: 'draft' as 'draft' | 'live'
-    });
-    const [showCourseForm, setShowCourseForm] = useState(false);
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
     
     // Search and filter state
@@ -1607,7 +1598,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     
     const customTags = data.customVideoTags || [];
     const allTags = [...DEFAULT_VIDEO_TAGS, ...customTags.map(t => ({ id: t, name: t, icon: '🏷️' }))];
-    const courses = data.courses || [];
     const curriculum = data.curriculum || [];
 
     const toggleTag = (tagId: string) => {
@@ -1689,22 +1679,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         return () => clearInterval(interval);
     }, [curriculum]);
 
-    const handleAddCourse = () => {
-        if(!newCourse.title) return;
-        const course = {
-            id: `course-${Date.now()}`,
-            title: newCourse.title,
-            description: newCourse.description,
-            beltId: newCourse.beltId,
-            xpReward: newCourse.xpReward,
-            status: newCourse.status,
-            items: []
-        };
-        onUpdateData({ courses: [...courses, course] });
-        setNewCourse({ title: '', description: '', beltId: 'all', xpReward: 50, status: 'draft' });
-        setShowCourseForm(false);
-    };
-
     const toggleContentStatus = async (contentId: string) => {
         const content = curriculum.find(c => c.id === contentId);
         if (!content) return;
@@ -1737,27 +1711,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         }
     };
 
-    const toggleCourseStatus = (courseId: string) => {
-        const updated = courses.map(c => 
-            c.id === courseId ? { ...c, status: (c.status === 'live' ? 'draft' : 'live') as 'draft' | 'live' } : c
-        );
-        onUpdateData({ courses: updated });
-    };
-
-    const addContentToCourse = (contentId: string, courseId: string) => {
-        const updated = curriculum.map(c => 
-            c.id === contentId ? { ...c, courseId } : c
-        );
-        onUpdateData({ curriculum: updated });
-    };
-
-    const removeContentFromCourse = (contentId: string) => {
-        const updated = curriculum.map(c => 
-            c.id === contentId ? { ...c, courseId: undefined } : c
-        );
-        onUpdateData({ curriculum: updated });
-    };
-
     const liveContent = filterContent(curriculum.filter(c => c.status === 'live'));
     const draftContent = filterContent(curriculum.filter(c => c.status !== 'live'));
     const scheduledContent = draftContent.filter(c => c.publishAt);
@@ -1765,25 +1718,9 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
 
     return (
         <div>
-            <SectionHeader title="Creator Hub" description="Create courses, upload content, and track your curriculum performance." />
-            
-            <div className="flex gap-2 mb-6 border-b border-gray-700 pb-4">
-                <button 
-                    onClick={() => setActiveTab('content')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'content' ? 'bg-sky-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                >
-                    📹 Content Library
-                </button>
-                <button 
-                    onClick={() => setActiveTab('courses')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'courses' ? 'bg-sky-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                >
-                    📚 Courses
-                </button>
-            </div>
+            <SectionHeader title="Creator Hub" description="Upload and manage your training content." />
 
-            {activeTab === 'content' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
                         {/* Search and Filter Bar */}
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
@@ -2077,190 +2014,14 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     <p className="text-xs text-white/70">Premium</p>
                                 </div>
                                 <div className="bg-white/10 p-3 rounded">
-                                    <p className="text-3xl font-bold text-white">{courses.length}</p>
-                                    <p className="text-xs text-white/70">Courses</p>
+                                    <p className="text-3xl font-bold text-white">{draftContent.length}</p>
+                                    <p className="text-xs text-white/70">Drafts</p>
                                 </div>
                             </div>
                         </div>
 
                     </div>
                 </div>
-            )}
-
-            {activeTab === 'courses' && (
-                <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <p className="text-gray-400">Bundle your content into structured courses for better learning paths.</p>
-                        <button 
-                            onClick={() => setShowCourseForm(!showCourseForm)}
-                            className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-4 rounded"
-                        >
-                            + Create Course
-                        </button>
-                    </div>
-
-                    {showCourseForm && (
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <h3 className="font-bold text-white mb-4">New Course</h3>
-                            <div className="space-y-4">
-                                <input 
-                                    type="text" 
-                                    placeholder="Course Title (e.g. Yellow Belt Mastery)" 
-                                    value={newCourse.title} 
-                                    onChange={e => setNewCourse({...newCourse, title: e.target.value})}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
-                                />
-                                <textarea 
-                                    placeholder="Course Description" 
-                                    value={newCourse.description} 
-                                    onChange={e => setNewCourse({...newCourse, description: e.target.value})}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white h-20"
-                                />
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Belt Level</label>
-                                        <select 
-                                            value={newCourse.beltId}
-                                            onChange={e => setNewCourse({...newCourse, beltId: e.target.value})}
-                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                        >
-                                            <option value="all">All Belts</option>
-                                            {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Course XP</label>
-                                        <input 
-                                            type="number" 
-                                            min="0"
-                                            value={newCourse.xpReward}
-                                            onChange={e => setNewCourse({...newCourse, xpReward: parseInt(e.target.value) || 0})}
-                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Status</label>
-                                        <select 
-                                            value={newCourse.status}
-                                            onChange={e => setNewCourse({...newCourse, status: e.target.value as 'draft' | 'live'})}
-                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                        >
-                                            <option value="draft">Draft</option>
-                                            <option value="live">Live</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button onClick={handleAddCourse} className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded">
-                                        Create Course
-                                    </button>
-                                    <button onClick={() => setShowCourseForm(false)} className="bg-gray-600 hover:bg-gray-500 text-white py-2 px-4 rounded">
-                                        Cancel
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid gap-6">
-                        {courses.length === 0 && !showCourseForm && (
-                            <div className="bg-gray-800 p-8 rounded-lg border border-gray-700 text-center">
-                                <p className="text-4xl mb-4">📚</p>
-                                <p className="text-white font-bold mb-2">No Courses Yet</p>
-                                <p className="text-gray-400 text-sm mb-4">Create your first course to bundle content into a structured learning path.</p>
-                                <button 
-                                    onClick={() => setShowCourseForm(true)}
-                                    className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-4 rounded"
-                                >
-                                    Create Your First Course
-                                </button>
-                            </div>
-                        )}
-                        {courses.map(course => {
-                            const courseContent = curriculum.filter(c => c.courseId === course.id);
-                            return (
-                                <div key={course.id} className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-white text-lg flex items-center gap-2">
-                                                📚 {course.title}
-                                                <span className={`text-xs px-2 py-0.5 rounded ${course.status === 'live' ? 'bg-green-600/20 text-green-400' : 'bg-gray-600/50 text-gray-400'}`}>
-                                                    {course.status === 'live' ? 'LIVE' : 'DRAFT'}
-                                                </span>
-                                            </h3>
-                                            <p className="text-gray-400 text-sm mt-1">{course.description || 'No description'}</p>
-                                            <p className="text-xs text-gray-500 mt-2">
-                                                {course.beltId === 'all' ? 'All Belts' : data.belts.find(b => b.id === course.beltId)?.name}
-                                                <span className="mx-2">•</span>
-                                                {course.xpReward} XP on completion
-                                                <span className="mx-2">•</span>
-                                                {courseContent.length} items
-                                            </p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button 
-                                                onClick={() => toggleCourseStatus(course.id)}
-                                                className={`text-xs px-3 py-1 rounded ${course.status === 'live' ? 'bg-yellow-600/20 text-yellow-400' : 'bg-green-600/20 text-green-400'}`}
-                                            >
-                                                {course.status === 'live' ? 'Unpublish' : 'Publish'}
-                                            </button>
-                                            <button 
-                                                onClick={() => onUpdateData({ courses: courses.filter(c => c.id !== course.id) })}
-                                                className="text-xs px-3 py-1 rounded bg-red-600/20 text-red-400"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="border-t border-gray-700 pt-4">
-                                        <p className="text-xs text-gray-500 mb-2">COURSE CONTENT</p>
-                                        {courseContent.length === 0 ? (
-                                            <p className="text-gray-500 italic text-sm">No content added yet. Add content from the library below.</p>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {courseContent.map((item, idx) => (
-                                                    <div key={item.id} className="flex items-center justify-between bg-gray-900/50 p-2 rounded">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-gray-500 text-sm w-6">{idx + 1}.</span>
-                                                            <span>{item.contentType === 'document' ? '📄' : '📹'}</span>
-                                                            <span className="text-white text-sm">{item.title}</span>
-                                                        </div>
-                                                        <button 
-                                                            onClick={() => removeContentFromCourse(item.id)}
-                                                            className="text-red-400 hover:text-red-300 text-xs"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {curriculum.filter(c => !c.courseId).length > 0 && (
-                                            <div className="mt-4">
-                                                <p className="text-xs text-gray-500 mb-2">ADD CONTENT</p>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {curriculum.filter(c => !c.courseId).map(item => (
-                                                        <button 
-                                                            key={item.id}
-                                                            onClick={() => addContentToCourse(item.id, course.id)}
-                                                            className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded flex items-center gap-1"
-                                                        >
-                                                            + {item.title}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
         </div>
     );
 }
