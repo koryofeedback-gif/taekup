@@ -3034,9 +3034,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const rarity = getRarity(ovr);
 
         // Generate achievements for back of card (with null checks)
-        // Use lifetime_xp (normalized XP for Dojang Rivals) as the source of truth
-        // Fall back to serverTotalXP for demo mode or when lifetimeXp not set
-        const actualXP = student.lifetimeXp || serverTotalXP || 0;
+        // Use rivalStats.xp as primary source (tracks real-time XP), fall back to student.lifetimeXp or serverTotalXP
+        const actualXP = rivalStats.xp || student.lifetimeXp || serverTotalXP || 0;
         const achievements = [
             { icon: '🎯', label: 'Classes Attended', value: student.attendanceCount || 0 },
             { icon: '🏆', label: 'Total Wins', value: rivalStats?.wins || 0 },
