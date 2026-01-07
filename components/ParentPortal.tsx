@@ -1502,8 +1502,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             icon: '🦁',
             description: 'For school & concentration',
             habits: [
-                { id: 'scholars_mind', question: 'Finished homework before screens/play?', category: 'School' as const, icon: '📚', isActive: true, title: "Scholar's Mind", isCustom: true },
-                { id: 'prepare_battle', question: 'Packed their own school bag the night before?', category: 'School' as const, icon: '🎒', isActive: true, title: 'Prepare for Battle', isCustom: true },
+                { id: 'homework_strike', question: 'Completed homework before play or screens?', category: 'School' as const, icon: '📚', isActive: true, title: 'Homework Strike', isCustom: true },
+                { id: 'gear_up', question: 'Packed school bag the night before?', category: 'School' as const, icon: '🎒', isActive: true, title: 'Gear Up', isCustom: true },
             ]
         },
         peace: {
@@ -1511,8 +1511,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             icon: '🕊️',
             description: 'For sibling harmony',
             habits: [
-                { id: 'shield_silence', question: 'Walked away from an argument instead of yelling?', category: 'Character' as const, icon: '🤐', isActive: true, title: 'Shield of Silence', isCustom: true },
-                { id: 'kindness_warrior', question: 'Said something nice to a sibling or parent?', category: 'Family' as const, icon: '👼', isActive: true, title: 'Kindness Warrior', isCustom: true },
+                { id: 'peace_treaty', question: 'Resolved a conflict without yelling?', category: 'Character' as const, icon: '🤝', isActive: true, title: 'Peace Treaty', isCustom: true },
+                { id: 'kindness_warrior', question: 'Said something kind to a sibling or parent?', category: 'Character' as const, icon: '👼', isActive: true, title: 'Kindness Warrior', isCustom: true },
             ]
         },
         health: {
@@ -1520,8 +1520,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             icon: '🥦',
             description: 'For health & nutrition',
             habits: [
-                { id: 'fuel_machine', question: 'Ate vegetables/healthy food without complaining?', category: 'Health' as const, icon: '⚡', isActive: true, title: 'Fuel the Machine', isCustom: true },
-                { id: 'potion_life', question: 'Drank water instead of soda/juice?', category: 'Health' as const, icon: '💧', isActive: true, title: 'Potion of Life', isCustom: true },
+                { id: 'veggie_powerup', question: 'Ate vegetables at a meal without complaining?', category: 'Health' as const, icon: '🥦', isActive: true, title: 'Veggie Power-Up', isCustom: true },
+                { id: 'hydration_quest', question: 'Drank 6+ glasses of water today?', category: 'Health' as const, icon: '💧', isActive: true, title: 'Hydration Quest', isCustom: true },
             ]
         }
     };
