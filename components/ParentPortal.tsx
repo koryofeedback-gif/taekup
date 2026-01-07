@@ -2576,14 +2576,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                 </div>
 
-                {/* AI Insights */}
+                {/* Sensei Mind */}
                 <div 
                     onClick={() => setActiveTab('insights')}
                     className="bg-gradient-to-br from-indigo-900/80 to-purple-950 border border-indigo-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-indigo-500/70 transition-all"
                 >
                     <div className="text-3xl mb-2">🧠</div>
-                    <h4 className="font-bold text-white text-sm">AI Insights</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Parenting Coach</p>
+                    <h4 className="font-bold text-white text-sm">Sensei Mind</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">AI Training Intel</p>
                 </div>
 
                 {/* Sensei Academy - Practice Content */}
