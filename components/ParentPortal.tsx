@@ -3084,16 +3084,27 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         };
 
+        // FREE vs PREMIUM card styling
+        const freeCardStyle = {
+            gradient: 'from-blue-600 via-blue-500 to-blue-700',
+            glow: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]',
+            textColor: 'text-blue-300',
+            borderColor: 'border-blue-500',
+            name: 'BASIC',
+            icon: '🥋'
+        };
+
+        const cardStyle = hasPremiumAccess ? rarity : freeCardStyle;
+
         return (
             <div className="relative h-full min-h-[500px] flex flex-col items-center pb-20">
-                {!hasPremiumAccess && renderPremiumLock("Athlete Card", "Unlock your official Athlete Card with tracked stats like Focus, Power, and Discipline.")}
                 
-                <div className={`w-full max-w-xs mt-4 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none' : ''}`}>
+                <div className="w-full max-w-xs mt-4">
                     
                     {/* Rarity Badge */}
                     <div className="flex justify-center mb-3">
-                        <div className={`px-4 py-1 rounded-full bg-gradient-to-r ${rarity.gradient} text-black text-xs font-black uppercase tracking-widest flex items-center gap-1 ${rarity.glow}`}>
-                            {rarity.icon} {rarity.name} {rarity.icon}
+                        <div className={`px-4 py-1 rounded-full bg-gradient-to-r ${cardStyle.gradient} ${hasPremiumAccess ? 'text-black' : 'text-white'} text-xs font-black uppercase tracking-widest flex items-center gap-1 ${cardStyle.glow}`}>
+                            {cardStyle.icon} {cardStyle.name} {cardStyle.icon}
                         </div>
                     </div>
 
@@ -3116,21 +3127,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 className="absolute inset-0"
                                 style={{ backfaceVisibility: 'hidden' }}
                             >
-                                <div className={`bg-gradient-to-b ${rarity.gradient} p-1 rounded-[20px] ${rarity.glow} transform hover:scale-[1.02] transition-transform duration-300 h-full`}>
-                                    <div className={`bg-gradient-to-b from-gray-900 via-black to-gray-900 rounded-[18px] p-4 relative overflow-hidden ${rarity.borderColor} border h-full flex flex-col`}>
+                                <div className={`bg-gradient-to-b ${cardStyle.gradient} p-1 rounded-[20px] ${cardStyle.glow} transform hover:scale-[1.02] transition-transform duration-300 h-full`}>
+                                    <div className={`bg-gradient-to-b from-gray-900 via-black to-gray-900 rounded-[18px] p-4 relative overflow-hidden ${cardStyle.borderColor} border h-full flex flex-col`}>
                                         
-                                        {/* Holographic Shimmer Effect */}
-                                        <div 
-                                            className="absolute inset-0 opacity-30 pointer-events-none"
-                                            style={{
-                                                background: 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.3) 30%, transparent 40%, transparent 60%, rgba(255,255,255,0.2) 70%, transparent 80%)',
-                                                backgroundSize: '200% 100%',
-                                                animation: 'shimmer 3s infinite linear'
-                                            }}
-                                        />
+                                        {/* Holographic Shimmer Effect - Premium Only */}
+                                        {hasPremiumAccess && (
+                                            <div 
+                                                className="absolute inset-0 opacity-30 pointer-events-none"
+                                                style={{
+                                                    background: 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.3) 30%, transparent 40%, transparent 60%, rgba(255,255,255,0.2) 70%, transparent 80%)',
+                                                    backgroundSize: '200% 100%',
+                                                    animation: 'shimmer 3s infinite linear'
+                                                }}
+                                            />
+                                        )}
                                         
-                                        {/* Sparkles for Legendary/Diamond */}
-                                        {ovr >= 90 && sparklePositions.map((pos, i) => (
+                                        {/* Sparkles for Legendary/Diamond - Premium Only */}
+                                        {hasPremiumAccess && ovr >= 90 && sparklePositions.map((pos, i) => (
                                             <Sparkle key={i} delay={i * 300} position={pos} />
                                         ))}
                                         
@@ -3140,7 +3153,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         {/* Top Stats */}
                                         <div className="flex justify-between items-start relative z-10 mb-2">
                                             <div>
-                                                <span className={`text-5xl font-black ${rarity.textColor} italic drop-shadow-lg`}>{ovr}</span>
+                                                <span className={`text-5xl font-black ${cardStyle.textColor} italic drop-shadow-lg`}>{ovr}</span>
                                                 <span className="block text-[10px] text-gray-300 font-bold uppercase">OVR</span>
                                             </div>
                                             <div className="text-right">
@@ -3151,7 +3164,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
                                         {/* Photo Area with Glow */}
                                         <div className="relative z-10 flex-1 flex items-end justify-center mb-3">
-                                            <div className={`w-28 h-28 rounded-full ${rarity.borderColor} border-4 overflow-hidden ${rarity.glow} bg-gray-800`}>
+                                            <div className={`w-28 h-28 rounded-full ${cardStyle.borderColor} border-4 overflow-hidden ${hasPremiumAccess ? cardStyle.glow : ''} bg-gray-800`}>
                                                 {student.photo ? (
                                                     <img src={student.photo} className="w-full h-full object-cover" alt={student.name} />
                                                 ) : (
@@ -3163,7 +3176,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         {/* Name */}
                                         <div className="relative z-10 text-center mb-4">
                                             <h2 className={`text-xl font-black text-white uppercase tracking-tight italic drop-shadow-lg`}>{student.name}</h2>
-                                            <div className={`h-0.5 w-16 bg-gradient-to-r from-transparent ${rarity.gradient.includes('amber') ? 'via-amber-400' : rarity.gradient.includes('cyan') ? 'via-cyan-400' : rarity.gradient.includes('yellow') ? 'via-yellow-400' : 'via-gray-400'} to-transparent mx-auto mt-1`}></div>
+                                            <div className={`h-0.5 w-16 bg-gradient-to-r from-transparent ${hasPremiumAccess ? (rarity.gradient.includes('amber') ? 'via-amber-400' : rarity.gradient.includes('cyan') ? 'via-cyan-400' : rarity.gradient.includes('yellow') ? 'via-yellow-400' : 'via-gray-400') : 'via-blue-400'} to-transparent mx-auto mt-1`}></div>
                                         </div>
 
                                         {/* Stats Grid */}
@@ -3202,23 +3215,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     transform: 'rotateY(180deg)'
                                 }}
                             >
-                                <div className={`bg-gradient-to-b ${rarity.gradient} p-1 rounded-[20px] ${rarity.glow} h-full`}>
-                                    <div className={`bg-gradient-to-b from-gray-900 via-black to-gray-900 rounded-[18px] p-4 relative overflow-hidden ${rarity.borderColor} border h-full flex flex-col`}>
+                                <div className={`bg-gradient-to-b ${cardStyle.gradient} p-1 rounded-[20px] ${cardStyle.glow} h-full`}>
+                                    <div className={`bg-gradient-to-b from-gray-900 via-black to-gray-900 rounded-[18px] p-4 relative overflow-hidden ${cardStyle.borderColor} border h-full flex flex-col`}>
                                         
-                                        {/* Holographic Shimmer */}
-                                        <div 
-                                            className="absolute inset-0 opacity-20 pointer-events-none"
-                                            style={{
-                                                background: 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.3) 30%, transparent 40%)',
-                                                backgroundSize: '200% 100%',
-                                                animation: 'shimmer 3s infinite linear'
-                                            }}
-                                        />
+                                        {/* Holographic Shimmer - Premium Only */}
+                                        {hasPremiumAccess && (
+                                            <div 
+                                                className="absolute inset-0 opacity-20 pointer-events-none"
+                                                style={{
+                                                    background: 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.3) 30%, transparent 40%)',
+                                                    backgroundSize: '200% 100%',
+                                                    animation: 'shimmer 3s infinite linear'
+                                                }}
+                                            />
+                                        )}
                                         
                                         {/* Header */}
                                         <div className="text-center mb-4 relative z-10">
-                                            <h3 className={`text-lg font-black ${rarity.textColor} uppercase tracking-wide`}>🏆 Achievements</h3>
-                                            <div className={`h-0.5 w-24 bg-gradient-to-r ${rarity.gradient} mx-auto mt-1`}></div>
+                                            <h3 className={`text-lg font-black ${cardStyle.textColor} uppercase tracking-wide`}>🏆 Achievements</h3>
+                                            <div className={`h-0.5 w-24 bg-gradient-to-r ${cardStyle.gradient} mx-auto mt-1`}></div>
                                         </div>
 
                                         {/* Achievements Grid */}
@@ -3229,7 +3244,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         <span className="text-lg">{ach.icon}</span>
                                                         <span className="text-gray-300 text-xs">{ach.label}</span>
                                                     </div>
-                                                    <span className={`font-bold text-sm ${rarity.textColor}`}>{ach.value}</span>
+                                                    <span className={`font-bold text-sm ${cardStyle.textColor}`}>{ach.value}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -3265,14 +3280,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         </div>
                     </div>
 
-                    {/* Share/Download Button - Only for Premium */}
-                    {hasPremiumAccess && (
+                    {/* Share/Download Button - Premium gets download, Free gets upgrade prompt */}
+                    {hasPremiumAccess ? (
                         <button 
                             onClick={(e) => { e.stopPropagation(); handleShareCard(); }}
                             className={`mt-4 w-full py-3 rounded-xl bg-gradient-to-r ${rarity.gradient} text-black font-bold text-sm flex items-center justify-center gap-2 ${rarity.glow} hover:scale-[1.02] active:scale-95 transition-transform`}
                         >
-                            📥 Download Card
+                            📥 Download & Print Card
                         </button>
+                    ) : (
+                        <div className="mt-4 space-y-3">
+                            <button 
+                                onClick={() => setShowUpgradeModal(true)}
+                                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-transform shadow-lg"
+                            >
+                                👑 Upgrade for Gold Card + Download
+                            </button>
+                            <p className="text-center text-[10px] text-gray-500">
+                                Premium unlocks holographic gold card with print & download
+                            </p>
+                        </div>
                     )}
                 </div>
 
