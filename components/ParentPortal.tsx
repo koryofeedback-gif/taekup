@@ -2838,9 +2838,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     {premiumVideos.map((video, idx) => {
                                         const isLocked = !hasPremiumAccess;
                                         const isCompleted = !isLocked && isContentCompleted(video.id);
-                                        // Premium content has DOUBLE XP
-                                        const baseXp = video.xpReward || 10;
-                                        const xpReward = hasPremiumAccess ? baseXp * 2 : baseXp * 3; // Show 3x for locked (FOMO)
+                                        // Admin sets XP directly in Creator Hub - no automatic multiplier
+                                        const xpReward = video.xpReward || 10;
                                         
                                         const handleClick = () => {
                                             if (isLocked) {
