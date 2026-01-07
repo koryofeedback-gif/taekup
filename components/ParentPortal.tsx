@@ -4662,8 +4662,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         <button 
                                             onClick={() => {
                                                 if (!hasPremiumAccess) {
-                                                    alert("Upgrade to Premium to customize habits!");
-                                                    setIsPremium(true);
+                                                    setShowUpgradeModal(true);
                                                     return;
                                                 }
                                                 setIsEditingHabits(!isEditingHabits);
@@ -5673,9 +5672,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Toggle Edit Mode (Premium Check)
         const toggleEditMode = () => {
             if (!hasPremiumAccess) {
-                // Trigger premium lock visually or alert
-                alert("Upgrade to Premium to customize habits!");
-                setIsPremium(true); // Simulate upgrade flow
+                setShowUpgradeModal(true);
                 return;
             }
             setIsEditingHabits(!isEditingHabits);
