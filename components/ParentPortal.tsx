@@ -3035,7 +3035,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
         // Generate achievements for back of card (with null checks)
         // Use lifetime_xp (normalized XP for Dojang Rivals) as the source of truth
-        const actualXP = student.lifetimeXp || 0;
+        // Fall back to serverTotalXP for demo mode or when lifetimeXp not set
+        const actualXP = student.lifetimeXp || serverTotalXP || 0;
         const achievements = [
             { icon: '🎯', label: 'Classes Attended', value: student.attendanceCount || 0 },
             { icon: '🏆', label: 'Total Wins', value: rivalStats?.wins || 0 },
