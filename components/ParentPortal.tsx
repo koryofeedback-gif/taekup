@@ -2415,7 +2415,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
             const xpReward = selectedAcademyContent.xpReward || 10;
             
-            const saveResponse = await fetch('/api/videos/save', {
+            const saveResponse = await fetch('/api/videos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
