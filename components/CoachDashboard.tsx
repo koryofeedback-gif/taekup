@@ -2408,60 +2408,28 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     {/* VIDEOS VIEW */}
                     {activeView === 'videos' && (
                         <div className="p-6">
-                            <div className="space-y-6">
-                                {/* Feature Explainer Panel */}
-                                <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 rounded-xl p-4 border border-indigo-500/30">
-                                    <div className="flex items-start gap-4">
-                                        <span className="text-3xl">🤖</span>
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-white mb-2">Smart Video Review System</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                                <div className="bg-gray-800/50 rounded-lg p-3">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-green-400">⭐</span>
-                                                        <span className="font-bold text-white">Trust Tiers</span>
-                                                    </div>
-                                                    <p className="text-gray-400 text-xs">
-                                                        Students with 10+ approved videos become <span className="text-green-400">Verified</span> and get instant XP. Only 1-in-10 are spot-checked.
-                                                    </p>
-                                                </div>
-                                                <div className="bg-gray-800/50 rounded-lg p-3">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-cyan-400">⚡</span>
-                                                        <span className="font-bold text-white">Speed Mode</span>
-                                                    </div>
-                                                    <p className="text-gray-400 text-xs">
-                                                        Use keyboard shortcuts in Speed Mode: <kbd className="bg-gray-700 px-1 rounded text-xs">SPACE</kbd>=Approve, <kbd className="bg-gray-700 px-1 rounded text-xs">X</kbd>=Reject
-                                                    </p>
-                                                </div>
-                                                <div className="bg-gray-800/50 rounded-lg p-3">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-yellow-400">🔍</span>
-                                                        <span className="font-bold text-white">AI Flags</span>
-                                                    </div>
-                                                    <p className="text-gray-400 text-xs">
-                                                        <span className="text-red-400">Red</span>=duplicates, <span className="text-yellow-400">Yellow</span>=suspicious patterns. Auto-flagged for your review.
-                                                    </p>
-                                                </div>
-                                            </div>
+                            <div className="space-y-4">
+                                {/* Header Row - Clean Stats Bar */}
+                                <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                                    <div className="flex items-center gap-6">
+                                        {/* Pending Count */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-orange-400 font-black text-2xl">
+                                                {videoCategoryFilter === 'all' 
+                                                    ? pendingVideos.length 
+                                                    : pendingVideos.filter(v => v.challenge_category === videoCategoryFilter).length}
+                                            </span>
+                                            <span className="text-gray-400 text-sm">Pending</span>
+                                        </div>
+                                        <div className="w-px h-6 bg-gray-600"></div>
+                                        {/* Session Stats */}
+                                        <div className="flex items-center gap-4 text-sm">
+                                            <span className="text-green-400">✓ {approvedCount}</span>
+                                            <span className="text-red-400">✗ {rejectedCount}</span>
                                         </div>
                                     </div>
-                                </div>
-
-                                {/* Stats Cards + Batch Mode Toggle */}
-                                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                                    <div className="flex gap-4 flex-wrap items-center">
-                                        <div className="bg-gradient-to-br from-orange-900/40 to-orange-800/20 rounded-xl px-6 py-4 border border-orange-500/30 flex items-center gap-3">
-                                            <span className="text-2xl">📹</span>
-                                            <div>
-                                                <div className="text-2xl font-black text-orange-400">
-                                                    {videoCategoryFilter === 'all' 
-                                                        ? pendingVideos.length 
-                                                        : pendingVideos.filter(v => v.challenge_category === videoCategoryFilter).length}
-                                                </div>
-                                                <div className="text-gray-400 text-xs">Pending</div>
-                                            </div>
-                                        </div>
+                                    
+                                    <div className="flex items-center gap-3">
                                         {/* Category Filter */}
                                         <select
                                             value={videoCategoryFilter}
@@ -2469,9 +2437,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 setVideoCategoryFilter(e.target.value);
                                                 setFocusedVideoIndex(0);
                                             }}
-                                            className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                                            className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500"
                                         >
-                                            <option value="all">All Categories</option>
+                                            <option value="all">All</option>
                                             <option value="academy">📚 Academy</option>
                                             <option value="Coach Picks">⭐ Coach Picks</option>
                                             <option value="Power">💪 Power</option>
@@ -2479,37 +2447,23 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                             <option value="Flexibility">🧘 Flexibility</option>
                                             <option value="gauntlet">🔥 Daily Training</option>
                                         </select>
-                                        <div className="bg-gray-800 rounded-xl px-6 py-4 border border-gray-700 flex items-center gap-3">
-                                            <span className="text-2xl">✅</span>
-                                            <div>
-                                                <div className="text-2xl font-black text-green-400">{approvedCount}</div>
-                                                <div className="text-gray-400 text-xs">Approved</div>
-                                            </div>
-                                        </div>
-                                        <div className="bg-gray-800 rounded-xl px-6 py-4 border border-gray-700 flex items-center gap-3">
-                                            <span className="text-2xl">❌</span>
-                                            <div>
-                                                <div className="text-2xl font-black text-red-400">{rejectedCount}</div>
-                                                <div className="text-gray-400 text-xs">Rejected</div>
-                                            </div>
-                                        </div>
+                                        
+                                        {/* Speed Mode Toggle */}
+                                        <button
+                                            onClick={() => {
+                                                setBatchMode(!batchMode);
+                                                setFocusedVideoIndex(0);
+                                            }}
+                                            className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${
+                                                batchMode 
+                                                    ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30' 
+                                                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                        >
+                                            <span>⚡</span>
+                                            {batchMode ? 'Exit' : 'Speed Mode'}
+                                        </button>
                                     </div>
-                                    
-                                    {/* Batch Mode Toggle */}
-                                    <button
-                                        onClick={() => {
-                                            setBatchMode(!batchMode);
-                                            setFocusedVideoIndex(0);
-                                        }}
-                                        className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${
-                                            batchMode 
-                                                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30' 
-                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                        }`}
-                                    >
-                                        <span>⚡</span>
-                                        {batchMode ? 'Exit Speed Mode' : 'Speed Review Mode'}
-                                    </button>
                                 </div>
 
                                 {/* Batch Mode Instructions */}
