@@ -1,0 +1,74 @@
+Based on the **Sensei Academy** interface and the "Legacy" gamification model we established, here is the best way to split the content between Free and Premium.
+
+The goal is to make the **Free** version useful enough to build a habit, but make the **Premium** version necessary for *promotion* and *faster leveling up*.
+
+### The "Curriculum & XP" Split Strategy
+
+#### 1. Free Tier (The "Initiate" Access)
+
+* **Content:**
+* **The Basics:** "How to tie your belt," "Dojo Etiquette," and "Warm-up routines."
+* **Current Belt Preview:** Only the **first 2 videos** of their *current* belt requirement (e.g., "Basic Stance" and "Punch 1").
+* **PDFs:** All PDF guides (static content is less valuable than video).
+
+
+* **XP Reward:**
+* Standard XP (e.g., +10 XP per video).
+* **Cap:** They can only earn XP from these videos once.
+
+
+
+#### 2. Premium Tier (The "Legacy" Access) 💎
+
+* **Content:**
+* **Full Curriculum:** The complete video library for their belt (Forms/Poomsae, Sparring drills, Self-defense).
+* **"Next Level" Peek:** Access to view the videos for the *next* belt level (kids love seeing what comes next).
+* **Exclusive Skills:** "Cool" content like "Flying Kicks," "Board Breaking Tips," or "Weapon Training."
+
+
+* **XP Reward:**
+* **Double XP:** +20 XP per video.
+* **Repeatable Practice:** Earn +5 XP every time they re-watch and practice (capped daily) to encourage grinding.
+
+
+
+---
+
+### UI Implementation (Visual Strategy)
+
+Do not hide the Premium videos in the Free version. **Show them, but lock them.** This creates "Visual FOMO" (Fear Of Missing Out).
+
+**[ UI Layout Suggestion for Developer ]**
+
+**1. The "Open" Section (Top of List):**
+
+* 🎥 **Video:** "White Belt Form - Part 1"
+* **Status:** ▶️ Play (Free)
+* **Reward:** ⭐ +15 XP
+
+**2. The "Locked" Section (Below):**
+
+* 🎥 **Video:** "White Belt Form - Full Routine"
+* **Status:** 🔒 **Locked** (Premium Only)
+* **Reward:** ⭐ **+50 XP** (High value!)
+
+**3. The "Trigger":**
+When a parent clicks the locked video, show this pop-up:
+
+> **"Master the Moves at Home"**
+> *Unlock the full video curriculum to help [Child Name] prepare for their next belt test.*
+> [ Upgrade to Legacy - $4.99 ]
+
+### Why this works?
+
+* **For the Parent:** They see the "Free" videos are good, but incomplete. If they want their child to pass the belt test, they realize the "Full Routine" video is worth $4.99 alone.
+* **For the Child:** They see the **+50 XP** behind the lock. They will beg their parents to unlock it so they can rank up in the **Global Leaderboard**.
+
+### Admin Setup for Coach
+
+In the "Creator Hub" (Coach Admin), add a simple toggle next to each uploaded video:
+
+* [ ] **Public (Free)**
+* [✅] **Legacy Only (Premium)**
+
+*Recommendation:* Tell coaches to mark 20% of their content as "Public" and 80% as "Legacy Only."
