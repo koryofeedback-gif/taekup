@@ -1575,21 +1575,8 @@ const DEFAULT_VIDEO_TAGS = [
     { id: 'black-belt', name: 'Black Belt', icon: '⬛' },
 ];
 
-interface ContentCompletion {
-    viewId: string;
-    contentId: string;
-    contentTitle: string;
-    contentType: string;
-    beltId: string;
-    studentId: string;
-    studentName: string;
-    studentBelt: string;
-    completedAt: string;
-    xpAwarded: number;
-}
-
 const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
-    const [activeTab, setActiveTab] = useState<'content' | 'courses' | 'analytics'>('content');
+    const [activeTab, setActiveTab] = useState<'content' | 'courses'>('content');
     const [newVideo, setNewVideo] = useState({ 
         title: '', 
         url: '', 
@@ -1622,32 +1609,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     const allTags = [...DEFAULT_VIDEO_TAGS, ...customTags.map(t => ({ id: t, name: t, icon: '🏷️' }))];
     const courses = data.courses || [];
     const curriculum = data.curriculum || [];
-    
-    // Derive completions from local student data
-    const localCompletions = useMemo(() => {
-        const completionsList: ContentCompletion[] = [];
-        data.students.forEach(student => {
-            const completedIds = student.completedContentIds || [];
-            completedIds.forEach(contentId => {
-                const content = curriculum.find(c => c.id === contentId);
-                if (content) {
-                    completionsList.push({
-                        viewId: `${student.id}-${contentId}`,
-                        contentId: contentId,
-                        contentTitle: content.title,
-                        contentType: content.contentType || 'video',
-                        beltId: content.beltId || 'all',
-                        studentId: student.id,
-                        studentName: student.name,
-                        studentBelt: student.beltId || '',
-                        completedAt: '',
-                        xpAwarded: content.xpReward || 10
-                    });
-                }
-            });
-        });
-        return completionsList;
-    }, [data.students, curriculum]);
 
     const toggleTag = (tagId: string) => {
         const updated = newVideo.tags.includes(tagId)
@@ -1800,8 +1761,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     const liveContent = filterContent(curriculum.filter(c => c.status === 'live'));
     const draftContent = filterContent(curriculum.filter(c => c.status !== 'live'));
     const scheduledContent = draftContent.filter(c => c.publishAt);
-    const totalViews = curriculum.reduce((sum, c) => sum + (c.viewCount || 0), 0);
-    const totalCompletions = curriculum.reduce((sum, c) => sum + (c.completionCount || 0), 0);
     const hasActiveFilters = searchQuery || filterBelt !== 'all' || filterType !== 'all' || filterAccess !== 'all';
 
     return (
@@ -1820,12 +1779,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'courses' ? 'bg-sky-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                 >
                     📚 Courses
-                </button>
-                <button 
-                    onClick={() => setActiveTab('analytics')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'analytics' ? 'bg-sky-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                >
-                    📊 Analytics
                 </button>
             </div>
 
@@ -2120,8 +2073,8 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     <p className="text-xs text-white/70">Published</p>
                                 </div>
                                 <div className="bg-white/10 p-3 rounded">
-                                    <p className="text-3xl font-bold text-white">{totalViews}</p>
-                                    <p className="text-xs text-white/70">Total Views</p>
+                                    <p className="text-3xl font-bold text-white">{curriculum.filter(c => c.pricingType === 'premium').length}</p>
+                                    <p className="text-xs text-white/70">Premium</p>
                                 </div>
                                 <div className="bg-white/10 p-3 rounded">
                                     <p className="text-3xl font-bold text-white">{courses.length}</p>
@@ -2320,107 +2273,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                 </div>
             )}
 
-            {activeTab === 'analytics' && (
-                <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <p className="text-gray-400 text-sm">Total Content</p>
-                            <p className="text-3xl font-bold text-white mt-1">{curriculum.length}</p>
-                            <p className="text-xs text-gray-500 mt-1">{liveContent.length} published</p>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <p className="text-gray-400 text-sm">Total Views</p>
-                            <p className="text-3xl font-bold text-white mt-1">{totalViews}</p>
-                            <p className="text-xs text-gray-500 mt-1">All time</p>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <p className="text-gray-400 text-sm">Completions</p>
-                            <p className="text-3xl font-bold text-white mt-1">{totalCompletions}</p>
-                            <p className="text-xs text-gray-500 mt-1">{totalViews > 0 ? Math.round((totalCompletions / totalViews) * 100) : 0}% completion rate</p>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <p className="text-gray-400 text-sm">Courses</p>
-                            <p className="text-3xl font-bold text-white mt-1">{courses.length}</p>
-                            <p className="text-xs text-gray-500 mt-1">{courses.filter(c => c.status === 'live').length} live</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                        <h3 className="font-bold text-white mb-4">Content Performance</h3>
-                        {curriculum.length === 0 ? (
-                            <p className="text-gray-500 italic">No content to analyze yet.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {[...curriculum].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 10).map((item, idx) => (
-                                    <div key={item.id} className="flex items-center gap-4">
-                                        <span className="text-gray-500 w-6 text-right">{idx + 1}.</span>
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-white text-sm font-medium">{item.title}</p>
-                                                <p className="text-gray-400 text-sm">{item.viewCount || 0} views</p>
-                                            </div>
-                                            <div className="w-full bg-gray-700 rounded-full h-2 mt-1">
-                                                <div 
-                                                    className="bg-sky-500 h-2 rounded-full" 
-                                                    style={{ width: `${totalViews > 0 ? ((item.viewCount || 0) / totalViews) * 100 : 0}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                        <h3 className="font-bold text-white mb-4">Content by Belt Level</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {['all', ...data.belts.map(b => b.id)].map(beltId => {
-                                const count = curriculum.filter(c => c.beltId === beltId).length;
-                                const belt = beltId === 'all' ? null : data.belts.find(b => b.id === beltId);
-                                return (
-                                    <div key={beltId} className="bg-gray-900/50 p-3 rounded text-center">
-                                        {belt ? (
-                                            <div className="w-8 h-8 rounded-full mx-auto mb-2" style={{ backgroundColor: belt.color1 }}></div>
-                                        ) : (
-                                            <div className="w-8 h-8 rounded-full mx-auto mb-2 bg-gradient-to-r from-sky-500 to-purple-500"></div>
-                                        )}
-                                        <p className="text-white font-bold">{count}</p>
-                                        <p className="text-xs text-gray-500">{belt?.name || 'All Belts'}</p>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                        <h3 className="font-bold text-white mb-4">Recent Completions</h3>
-                        <p className="text-xs text-gray-500 mb-4">Students who marked content as completed</p>
-                        {localCompletions.length === 0 ? (
-                            <p className="text-gray-500 italic">No completions recorded yet. When students mark content as done in Sensei Academy, they'll appear here.</p>
-                        ) : (
-                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                                {localCompletions.map((completion) => (
-                                    <div key={completion.viewId} className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg border border-gray-700">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold">
-                                                {completion.studentName.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <p className="text-white font-medium text-sm">{completion.studentName}</p>
-                                                <p className="text-xs text-gray-400">completed "{completion.contentTitle}"</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-green-400 font-bold text-sm">+{completion.xpAwarded} HonorXP™</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
