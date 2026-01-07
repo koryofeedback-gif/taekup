@@ -2715,11 +2715,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const renderPractice = () => {
         const hasVideos = studentVideos.length > 0;
         
+        // Separate free and premium content
+        const allVideos = studentVideos.filter(v => v.status === 'live' || !v.status);
+        const freeVideos = allVideos.filter(v => v.pricingType !== 'premium');
+        const premiumVideos = allVideos.filter(v => v.pricingType === 'premium');
+        
         return (
             <div className="relative h-full min-h-[500px]">
-                {!hasPremiumAccess && renderPremiumLock("The Practice Dojo", `Help your child practice at home. Unlock training missions and videos.`)}
-
-                <div className={`space-y-6 pb-20 ${!hasPremiumAccess ? 'filter blur-md opacity-40 pointer-events-none overflow-hidden h-[500px]' : ''}`}>
+                <div className="space-y-6 pb-20">
                     <div className="bg-gradient-to-r from-emerald-700 to-teal-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
                         <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-4 -mt-2">📚</div>
                         <h3 className="font-bold text-white text-lg relative z-10">Sensei Academy</h3>
@@ -2742,19 +2745,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             </h4>
                             {hasVideos && (
                                 <span className="text-[10px] text-gray-500">
-                                    {studentVideos.filter(v => isContentCompleted(v.id)).length}/{studentVideos.length} completed
+                                    {freeVideos.filter(v => isContentCompleted(v.id)).length}/{freeVideos.length} completed
                                 </span>
                             )}
                         </div>
                         
                         {hasVideos ? (
-                            studentVideos
-                                .filter(v => v.status === 'live' || !v.status)
-                                .filter(v => v.pricingType !== 'premium' || hasPremiumAccess)
-                                .map((video, idx) => {
+                            <>
+                            {/* FREE CONTENT - Always accessible */}
+                            {freeVideos.map((video, idx) => {
                                 const isCompleted = isContentCompleted(video.id);
                                 const xpReward = video.xpReward || 10;
-                                const isPremiumContent = video.pricingType === 'premium';
                                 
                                 const handleWatch = (e: React.MouseEvent) => {
                                     e.stopPropagation();
@@ -2787,7 +2788,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         <div className="p-4 flex-1">
                                             <div className="flex items-center gap-2">
                                                 <h4 className={`font-bold text-sm ${isCompleted ? 'text-green-400' : 'text-white'}`}>{video.title}</h4>
-                                                {isPremiumContent && <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">Premium</span>}
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <p className="text-xs text-gray-500">{isCompleted ? 'Completed!' : 'Watch then mark as done'}</p>
@@ -2819,7 +2819,141 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                     </div>
                                 );
-                            })
+                            })}
+                            
+                            {/* PREMIUM CONTENT - Locked for free users, accessible for premium */}
+                            {premiumVideos.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    <div className="flex items-center gap-2 pl-1">
+                                        <h4 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                                            <span>👑</span> Legacy Collection
+                                        </h4>
+                                        {hasPremiumAccess && (
+                                            <span className="text-[10px] text-amber-500/70">
+                                                {premiumVideos.filter(v => isContentCompleted(v.id)).length}/{premiumVideos.length} completed
+                                            </span>
+                                        )}
+                                    </div>
+                                    
+                                    {premiumVideos.map((video, idx) => {
+                                        const isLocked = !hasPremiumAccess;
+                                        const isCompleted = !isLocked && isContentCompleted(video.id);
+                                        // Premium content has DOUBLE XP
+                                        const baseXp = video.xpReward || 10;
+                                        const xpReward = hasPremiumAccess ? baseXp * 2 : baseXp * 3; // Show 3x for locked (FOMO)
+                                        
+                                        const handleClick = () => {
+                                            if (isLocked) {
+                                                setShowUpgradeModal(true);
+                                            }
+                                        };
+                                        
+                                        const handleWatch = (e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            if (isLocked) {
+                                                setShowUpgradeModal(true);
+                                                return;
+                                            }
+                                            window.open(video.url, '_blank');
+                                        };
+                                        
+                                        const handleMarkComplete = (e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            if (isLocked) {
+                                                setShowUpgradeModal(true);
+                                                return;
+                                            }
+                                            if (!isCompleted) {
+                                                const awarded = completeContent(video.id, xpReward);
+                                                if (awarded) {
+                                                    setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
+                                                    setServerTotalXP(prev => prev + xpReward);
+                                                    xpUpdateGraceRef.current = Date.now();
+                                                }
+                                            }
+                                        };
+                                        
+                                        return (
+                                            <div 
+                                                key={`premium-${idx}`}
+                                                onClick={handleClick}
+                                                className={`rounded-xl overflow-hidden shadow-lg border flex group transition-all cursor-pointer ${
+                                                    isLocked 
+                                                        ? 'bg-gradient-to-r from-amber-900/20 to-yellow-900/20 border-amber-500/30 hover:border-amber-400/50' 
+                                                        : isCompleted 
+                                                            ? 'bg-green-900/10 border-green-500/50' 
+                                                            : 'bg-gradient-to-r from-amber-900/30 to-yellow-900/30 border-amber-500/50'
+                                                }`}
+                                            >
+                                                <div 
+                                                    onClick={handleWatch}
+                                                    className={`w-24 flex items-center justify-center text-4xl transition-transform duration-300 ${
+                                                        isLocked 
+                                                            ? 'bg-amber-900/30' 
+                                                            : isCompleted 
+                                                                ? 'bg-green-900/30 hover:scale-110' 
+                                                                : 'bg-amber-900/40 hover:scale-110'
+                                                    }`}
+                                                >
+                                                    {isLocked ? '🔒' : video.contentType === 'document' ? '📄' : '🎬'}
+                                                </div>
+                                                <div className="p-4 flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className={`font-bold text-sm ${isLocked ? 'text-amber-300' : isCompleted ? 'text-green-400' : 'text-amber-200'}`}>
+                                                            {video.title}
+                                                        </h4>
+                                                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/30 text-amber-300 rounded-full font-bold">
+                                                            LEGACY
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <p className="text-xs text-gray-400">
+                                                            {isLocked ? 'Unlock to access' : isCompleted ? 'Completed!' : 'Watch then mark as done'}
+                                                        </p>
+                                                        <span className={`text-xs font-black ${isLocked ? 'text-amber-400 animate-pulse' : isCompleted ? 'text-green-400' : 'text-amber-300'}`}>
+                                                            {isCompleted ? `+${xpReward} HonorXP™ earned` : `+${xpReward} HonorXP™`}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 px-4">
+                                                    {isLocked ? (
+                                                        <button
+                                                            onClick={handleWatch}
+                                                            className="px-3 py-1.5 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 transition-colors"
+                                                            title="Unlock with Premium"
+                                                        >
+                                                            <span className="text-black text-xs font-bold">Unlock</span>
+                                                        </button>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                onClick={handleWatch}
+                                                                className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg bg-amber-500 hover:bg-amber-400 shadow-amber-600/30 transition-colors"
+                                                                title="Watch video"
+                                                            >
+                                                                <span className="text-white text-xs">▶</span>
+                                                            </button>
+                                                            <button
+                                                                onClick={handleMarkComplete}
+                                                                disabled={isCompleted}
+                                                                className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
+                                                                    isCompleted 
+                                                                        ? 'bg-green-500 shadow-green-600/30 cursor-default' 
+                                                                        : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-amber-500 hover:border-green-400'
+                                                                }`}
+                                                                title={isCompleted ? 'Completed' : 'Mark as done'}
+                                                            >
+                                                                <span className="text-white text-xs">{isCompleted ? '✓' : ''}</span>
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            </>
                         ) : (
                             // Fallback: Family Missions if no videos
                             <div className="space-y-3">
