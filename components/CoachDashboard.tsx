@@ -2440,12 +2440,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                             className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-500"
                                         >
                                             <option value="all">All</option>
+                                            <option value="gauntlet">🔥 Daily Training</option>
                                             <option value="academy">📚 Academy</option>
                                             <option value="Coach Picks">⭐ Coach Picks</option>
-                                            <option value="Power">💪 Power</option>
-                                            <option value="Technique">🎯 Technique</option>
-                                            <option value="Flexibility">🧘 Flexibility</option>
-                                            <option value="gauntlet">🔥 Daily Training</option>
                                         </select>
                                         
                                         {/* Speed Mode Toggle */}
