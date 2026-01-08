@@ -2620,6 +2620,40 @@ export function registerRoutes(app: Express) {
         WHERE id = ${videoId}::uuid
       `);
 
+      // Update Trust Tier System for student
+      if (studentId) {
+        if (status === 'approved') {
+          // Increment approval streak and update trust tier
+          const studentResult = await db.execute(sql`
+            UPDATE students 
+            SET video_approval_streak = COALESCE(video_approval_streak, 0) + 1,
+                trust_tier = CASE 
+                  WHEN COALESCE(video_approval_streak, 0) + 1 >= 25 THEN 'trusted'
+                  WHEN COALESCE(video_approval_streak, 0) + 1 >= 10 THEN 'verified'
+                  ELSE COALESCE(trust_tier, 'unverified')
+                END,
+                updated_at = NOW()
+            WHERE id = ${studentId}::uuid
+            RETURNING video_approval_streak, trust_tier
+          `);
+          const updatedStudent = (studentResult as any[])[0];
+          if (updatedStudent) {
+            console.log('[TrustTier] Student', studentId, 'streak:', updatedStudent.video_approval_streak, 'tier:', updatedStudent.trust_tier);
+          }
+        } else if (status === 'rejected') {
+          // Reset streak and demote to unverified
+          await db.execute(sql`
+            UPDATE students 
+            SET video_approval_streak = 0,
+                video_rejection_count = COALESCE(video_rejection_count, 0) + 1,
+                trust_tier = 'unverified',
+                updated_at = NOW()
+            WHERE id = ${studentId}::uuid
+          `);
+          console.log('[TrustTier] Student', studentId, 'rejected - reset to unverified');
+        }
+      }
+
       // Award XP to student if approved using unified XP service
       if (status === 'approved' && xpAwarded > 0 && studentId) {
         await awardXP(studentId, xpAwarded, 'video', { videoId, type: 'video_verify' });
