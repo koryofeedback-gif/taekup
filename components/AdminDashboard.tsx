@@ -1610,7 +1610,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     };
 
     const handleAddContent = async () => {
-        if(!newVideo.title || !newVideo.url) return;
+        if(!newVideo.title) return;
         const finalStatus = newVideo.publishAt ? 'draft' : newVideo.status;
         const item: CurriculumItem = {
             id: `vid-${Date.now()}`,
@@ -1783,7 +1783,10 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                         </div>
 
                         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <h3 className="font-bold text-white mb-4">Add New Content</h3>
+                            <h3 className="font-bold text-white mb-2">Add New Content</h3>
+                            <p className="text-xs text-gray-400 mb-4">
+                                📚 Content appears in <span className="text-cyan-400">Sensei Academy</span> (Parent Portal → Practice tab)
+                            </p>
                             <div className="space-y-4">
                                 <div className="flex gap-2 mb-4">
                                     <button 
@@ -1804,7 +1807,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 />
                                 <input 
                                     type="text" 
-                                    placeholder={newVideo.contentType === 'video' ? "Video URL (YouTube, Vimeo, or direct link)" : "Document URL (Google Drive, Dropbox, or direct link)"} 
+                                    placeholder={newVideo.contentType === 'video' ? "Video URL - optional (YouTube, Vimeo, etc)" : "Document URL - optional (Google Drive, Dropbox, etc)"} 
                                     value={newVideo.url} 
                                     onChange={e => setNewVideo({...newVideo, url: e.target.value})}
                                     className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
@@ -1919,27 +1922,30 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-400 mb-2">Tags</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {allTags.map(tag => (
-                                            <button
-                                                key={tag.id}
-                                                type="button"
-                                                onClick={() => toggleTag(tag.id)}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                                    newVideo.tags.includes(tag.id)
-                                                        ? 'bg-sky-500 text-white'
-                                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                                }`}
-                                            >
-                                                {tag.icon} {tag.name}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    <label className="block text-xs text-gray-400 mb-2">Tags (comma-separated)</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g. Forms, Yellow Belt, Self-Defense" 
+                                        value={newVideo.tags.join(', ')}
+                                        onChange={e => {
+                                            const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                                            setNewVideo({...newVideo, tags});
+                                        }}
+                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                    />
+                                    {newVideo.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            {newVideo.tags.map((tag, i) => (
+                                                <span key={i} className="px-2 py-0.5 bg-sky-500/20 text-sky-300 rounded-full text-xs">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 <button 
                                     onClick={handleAddContent} 
-                                    disabled={!newVideo.title || !newVideo.url}
+                                    disabled={!newVideo.title}
                                     className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-2 rounded"
                                 >
                                     {newVideo.publishAt ? '📅 Schedule Content' : (newVideo.status === 'live' ? '📤 Publish Content' : '💾 Save as Draft')}
