@@ -1786,6 +1786,8 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                             <h3 className="font-bold text-white mb-2">Add New Content</h3>
                             <p className="text-xs text-gray-400 mb-4">
                                 📚 Content appears in <span className="text-cyan-400">Sensei Academy</span> (Parent Portal → Practice tab)
+                                <br/>
+                                📹 Video proofs go to <span className="text-orange-400">Coach Dashboard → Videos</span> for review
                             </p>
                             <div className="space-y-4">
                                 <div className="flex gap-2 mb-4">
