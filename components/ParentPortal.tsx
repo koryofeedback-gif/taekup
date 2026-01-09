@@ -6485,6 +6485,35 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Feedback filter state
     const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
     const [feedbackTypeFilter, setFeedbackTypeFilter] = useState<'all' | 'academy' | 'arena'>('all');
+    
+    // Track seen feedback for notification badge
+    const [seenFeedbackIds, setSeenFeedbackIds] = useState<Set<string>>(() => {
+        try {
+            const saved = localStorage.getItem(`seen-feedback-${student.id}`);
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch { return new Set(); }
+    });
+    
+    // Count of feedback with new responses (approved/rejected that haven't been seen)
+    const unseenFeedbackCount = myVideos.filter(v => 
+        (v.status === 'approved' || v.status === 'rejected') && !seenFeedbackIds.has(v.id)
+    ).length;
+    
+    // Mark all feedback as seen when visiting Feedback tab
+    useEffect(() => {
+        if (activeTab === 'feedback' && myVideos.length > 0) {
+            const reviewedIds = myVideos
+                .filter(v => v.status === 'approved' || v.status === 'rejected')
+                .map(v => v.id);
+            if (reviewedIds.length > 0) {
+                const newSeen = new Set([...seenFeedbackIds, ...reviewedIds]);
+                setSeenFeedbackIds(newSeen);
+                try {
+                    localStorage.setItem(`seen-feedback-${student.id}`, JSON.stringify([...newSeen]));
+                } catch {}
+            }
+        }
+    }, [activeTab, myVideos, student.id]);
 
     const renderFeedback = () => {
         // Combine all video submissions
@@ -6951,7 +6980,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <div className="flex justify-between items-center h-16 px-2 overflow-x-auto no-scrollbar">
                     <NavButton icon="🏠" label="HQ" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
                     <NavButton icon="⚔️" label="Arena" active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
-                    <NavButton icon="💬" label="Feedback" active={activeTab === 'feedback'} onClick={() => setActiveTab('feedback')} />
+                    <NavButton icon="💬" label="Feedback" active={activeTab === 'feedback'} onClick={() => setActiveTab('feedback')} badge={unseenFeedbackCount} />
                     <NavButton icon="🔮" label="Chronos" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="🧠" label="Sensei" active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} isPremium={!hasPremiumAccess} />
                 </div>
@@ -6961,10 +6990,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     );
 };
 
-const NavButton: React.FC<{ icon: string; label: string; active: boolean; onClick: () => void; isPremium?: boolean }> = ({ icon, label, active, onClick, isPremium }) => (
+const NavButton: React.FC<{ icon: string; label: string; active: boolean; onClick: () => void; isPremium?: boolean; badge?: number }> = ({ icon, label, active, onClick, isPremium, badge }) => (
     <button onClick={onClick} className={`flex flex-col items-center justify-center min-w-[50px] w-full h-full relative transition-colors ${active ? 'text-sky-300' : 'text-gray-400 hover:text-gray-200'}`}>
         <span className={`text-xl mb-1 transition-transform ${active ? 'scale-110' : ''}`}>{icon}</span>
         <span className={`text-[9px] tracking-wide ${active ? 'font-bold' : 'font-semibold'}`}>{label}</span>
         {isPremium && <span className="absolute top-2 right-1 w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.8)]"></span>}
+        {badge && badge > 0 && (
+            <span className="absolute -top-0.5 right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
+                {badge > 9 ? '9+' : badge}
+            </span>
+        )}
     </button>
 );
