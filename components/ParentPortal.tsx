@@ -2886,6 +2886,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 
                                 const handleVideoSubmit = (e: React.MouseEvent) => {
                                     e.stopPropagation();
+                                    e.preventDefault();
+                                    console.log('Free video Submit clicked!', { video, videoAccessLocked, isCompleted });
                                     if (videoAccessLocked) {
                                         setShowUpgradeModal(true);
                                         return;
@@ -2938,6 +2940,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 </button>
                                                 {requiresVideo ? (
                                                     <button
+                                                        type="button"
                                                         onClick={handleVideoSubmit}
                                                         disabled={isCompleted}
                                                         className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-lg transition-all text-xs font-bold ${
@@ -3026,6 +3029,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         
                                         const handleVideoSubmit = (e: React.MouseEvent) => {
                                             e.stopPropagation();
+                                            e.preventDefault();
+                                            console.log('Submit clicked!', { video, isLocked, isCompleted });
                                             if (isLocked) {
                                                 setShowUpgradeModal(true);
                                                 return;
@@ -3106,6 +3111,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 </button>
                                                                 {requiresVideo ? (
                                                                     <button
+                                                                        type="button"
                                                                         onClick={handleVideoSubmit}
                                                                         disabled={isCompleted}
                                                                         className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-lg transition-all text-xs font-bold ${
