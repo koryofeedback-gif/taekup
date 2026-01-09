@@ -74,6 +74,7 @@ export interface CurriculumItem {
     publishAt?: string; // ISO date for scheduled publishing
     requiresVideo?: boolean; // Requires video proof of technique completion
     videoAccess?: 'premium' | 'free'; // Who can submit video proof (default: premium)
+    maxPerWeek?: number; // Limit completions per week (undefined = unlimited), enforces 1x/day
 }
 
 export interface CurriculumCourse {

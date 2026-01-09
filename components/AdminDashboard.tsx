@@ -1588,7 +1588,8 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         description: '',
         publishAt: '', // Scheduled publishing date
         requiresVideo: false, // Requires video proof of technique
-        videoAccess: 'premium' as 'premium' | 'free' // Who can submit video proof
+        videoAccess: 'premium' as 'premium' | 'free', // Who can submit video proof
+        maxPerWeek: null as number | null // Limit completions per week (null = unlimited)
     });
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
     
@@ -1628,10 +1629,11 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             completionCount: 0,
             publishAt: newVideo.publishAt || undefined,
             requiresVideo: newVideo.requiresVideo,
-            videoAccess: newVideo.requiresVideo ? newVideo.videoAccess : undefined
+            videoAccess: newVideo.requiresVideo ? newVideo.videoAccess : undefined,
+            maxPerWeek: newVideo.maxPerWeek || undefined
         };
         onUpdateData({ curriculum: [...curriculum, item] });
-        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium' });
+        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium', maxPerWeek: null });
         
         // Sync to database if publishing immediately
         if (clubId && finalStatus === 'live') {
@@ -1922,6 +1924,29 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                             </p>
                                         </div>
                                     )}
+                                </div>
+                                {/* Weekly Limit - Prevent Overtraining */}
+                                <div className="bg-gray-700/50 p-3 rounded border border-gray-600">
+                                    <label className="block text-xs text-gray-400 mb-2">Weekly Limit (Injury Prevention)</label>
+                                    <select
+                                        value={newVideo.maxPerWeek === null ? '' : newVideo.maxPerWeek}
+                                        onChange={e => setNewVideo({...newVideo, maxPerWeek: e.target.value ? parseInt(e.target.value) : null})}
+                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                    >
+                                        <option value="">Unlimited (no limit)</option>
+                                        <option value="1">1x per week</option>
+                                        <option value="2">2x per week</option>
+                                        <option value="3">3x per week</option>
+                                        <option value="4">4x per week</option>
+                                        <option value="5">5x per week</option>
+                                        <option value="6">6x per week</option>
+                                        <option value="7">7x per week (daily)</option>
+                                    </select>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {newVideo.maxPerWeek 
+                                            ? `Students can complete max ${newVideo.maxPerWeek}x/week, 1x/day to prevent overtraining`
+                                            : 'No weekly limit - students can complete anytime (1x per day still enforced)'}
+                                    </p>
                                 </div>
                                 <div>
                                     <label className="block text-xs text-gray-400 mb-2">Tags (comma-separated)</label>

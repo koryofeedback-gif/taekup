@@ -443,6 +443,7 @@ export const curriculumContent = pgTable('curriculum_content', {
   publishAt: timestamp('publish_at', { withTimezone: true }),
   requiresVideo: boolean('requires_video').default(false), // Requires video proof of technique
   videoAccess: varchar('video_access', { length: 20 }).default('premium'), // 'premium' or 'free'
+  maxPerWeek: integer('max_per_week'), // Limit completions per week (null = unlimited), enforces 1x/day
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
