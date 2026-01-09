@@ -56,6 +56,7 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **Courses**: Bundle content into structured courses with ordering, publish/unpublish workflow
     - **Analytics**: Track views, completions, revenue metrics, content performance by belt level
     - **Monetization**: Free vs premium content, XP rewards for completion (10-100 XP per item)
+    - **Training Limits**: maxPerWeek (1-7x) for injury prevention, auto-enforces 1x/day max, localStorage tracking with auto-reset at midnight/new week
 - **Coach Dashboard**: Handles grading, attendance, AI lesson planning, sparring tracking, challenge building, and personal schedule.
     - **Trust Tier System**: Students earn verification status after 10+ consecutive approved videos, enabling auto-XP with 1-in-10 spot-check sampling
         - **Unverified**: Default tier, all videos require coach review
