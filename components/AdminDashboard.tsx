@@ -1581,6 +1581,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         url: '', 
         beltId: 'all', 
         tags: [] as string[],
+        tagsInput: '', // Raw input value for tags field
         contentType: 'video' as 'video' | 'document',
         status: 'draft' as 'draft' | 'live',
         pricingType: 'free' as 'free' | 'premium',
@@ -1633,7 +1634,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             maxPerWeek: newVideo.maxPerWeek || undefined
         };
         onUpdateData({ curriculum: [...curriculum, item] });
-        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium', maxPerWeek: null });
+        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], tagsInput: '', contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium', maxPerWeek: null });
         
         // Sync to database if publishing immediately
         if (clubId && finalStatus === 'live') {
@@ -1953,10 +1954,15 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     <input 
                                         type="text" 
                                         placeholder="e.g. Forms, Yellow Belt, Self-Defense" 
-                                        value={newVideo.tags.join(', ')}
+                                        value={newVideo.tagsInput ?? newVideo.tags.join(', ')}
                                         onChange={e => {
+                                            const rawValue = e.target.value;
+                                            const parsedTags = rawValue.split(',').map(t => t.trim()).filter(t => t);
+                                            setNewVideo({...newVideo, tags: parsedTags, tagsInput: rawValue});
+                                        }}
+                                        onBlur={e => {
                                             const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
-                                            setNewVideo({...newVideo, tags});
+                                            setNewVideo({...newVideo, tags, tagsInput: tags.join(', ')});
                                         }}
                                         className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                     />

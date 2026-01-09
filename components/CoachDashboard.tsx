@@ -2693,9 +2693,15 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                             <div className="text-right">
                                                                 <div className="flex items-center gap-1 text-orange-400">
                                                                     <span className="text-xl">{getCategoryEmoji(video.challenge_category)}</span>
-                                                                    <span className="font-bold">{video.score || 0}</span>
+                                                                    <span className="font-bold">
+                                                                        {video.challenge_category === 'academy' 
+                                                                            ? `${video.xp_awarded || 10} XP` 
+                                                                            : (video.score || 0)}
+                                                                    </span>
                                                                 </div>
-                                                                <p className="text-xs text-gray-500">Claimed Score</p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {video.challenge_category === 'academy' ? 'XP Reward' : 'Claimed Score'}
+                                                                </p>
                                                             </div>
                                                         </div>
 
