@@ -573,6 +573,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         voteCount: number;
         coachNotes?: string;
         createdAt: string;
+        challengeCategory?: string;
     }>>([]);
     const videoInputRef = useRef<HTMLInputElement>(null);
     
@@ -3140,6 +3141,63 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     })}
                                 </div>
                             )}
+                            
+                            {/* Academy Video Submissions - Show feedback here */}
+                            {(() => {
+                                const academyVideos = myVideos.filter(v => v.challengeCategory === 'academy' || v.challengeName?.includes('academy'));
+                                if (academyVideos.length === 0) return null;
+                                return (
+                                    <div className="mt-4 bg-gray-800/50 p-4 rounded-xl border border-cyan-500/30">
+                                        <h5 className="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
+                                            <span>📹</span> My Technique Submissions
+                                        </h5>
+                                        <div className="space-y-3 max-h-48 overflow-y-auto">
+                                            {academyVideos.map(video => (
+                                                <div key={video.id} className={`bg-gray-700/50 p-3 rounded-lg border-l-4 ${
+                                                    video.status === 'pending' ? 'border-yellow-500' : 
+                                                    video.status === 'approved' ? 'border-green-500' : 'border-red-500'
+                                                }`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-lg">
+                                                                {video.status === 'pending' ? '⏳' : video.status === 'approved' ? '✅' : '❌'}
+                                                            </span>
+                                                            <div>
+                                                                <p className="text-sm text-white font-medium">{video.challengeName}</p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {video.status === 'pending' && 'Awaiting coach review'}
+                                                                    {video.status === 'approved' && !video.coachNotes && 'Approved!'}
+                                                                    {video.status === 'rejected' && !video.coachNotes && 'Needs improvement'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                                            video.status === 'pending' ? 'bg-yellow-900/50 text-yellow-400' :
+                                                            video.status === 'approved' ? 'bg-green-900/50 text-green-400' : 
+                                                            'bg-red-900/50 text-red-400'
+                                                        }`}>
+                                                            {video.status === 'pending' ? 'Pending' : video.status === 'approved' ? 'Approved' : 'Rejected'}
+                                                        </span>
+                                                    </div>
+                                                    {video.coachNotes && (
+                                                        <div className={`mt-2 p-2 rounded-lg text-sm ${
+                                                            video.status === 'approved' ? 'bg-green-900/30 border border-green-700/50' : 
+                                                            'bg-red-900/30 border border-red-700/50'
+                                                        }`}>
+                                                            <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                                                                <span>💬</span> Coach Feedback:
+                                                            </p>
+                                                            <p className={`${video.status === 'approved' ? 'text-green-300' : 'text-red-300'}`}>
+                                                                {video.coachNotes}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                             </>
                         ) : (
                             // Fallback: Family Missions if no videos
@@ -4596,14 +4654,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     )}
 
 
-                                    {/* My Video Submissions - Premium Only */}
-                                    {hasPremiumAccess && myVideos.length > 0 && (
+                                    {/* My Video Submissions - Premium Only (excludes Academy videos) */}
+                                    {hasPremiumAccess && myVideos.filter(v => v.challengeCategory !== 'academy').length > 0 && (
                                         <div className="bg-gray-800/50 p-4 rounded-xl border border-purple-500/30">
                                             <h5 className="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
-                                                <span>📹</span> My Video Submissions
+                                                <span>📹</span> My Arena Submissions
                                             </h5>
                                             <div className="space-y-3 max-h-64 overflow-y-auto">
-                                                {myVideos.map(video => (
+                                                {myVideos.filter(v => v.challengeCategory !== 'academy').map(video => (
                                                     <div key={video.id} className={`bg-gray-700/50 p-3 rounded-lg border-l-4 ${
                                                         video.status === 'pending' ? 'border-yellow-500' : 
                                                         video.status === 'approved' ? 'border-green-500' : 'border-red-500'
