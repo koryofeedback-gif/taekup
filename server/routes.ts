@@ -406,27 +406,31 @@ export function registerRoutes(app: Express) {
       }));
 
       // Map curriculum content from database to frontend format
-      const curriculum = (curriculumResult as any[]).map(c => ({
-        id: c.id,
-        title: c.title,
-        description: c.description || '',
-        url: c.url || '',
-        thumbnailUrl: c.thumbnail_url,
-        contentType: c.content_type || 'video',
-        beltId: c.belt_id || 'all',
-        tags: c.tags || [],
-        duration: c.duration,
-        status: c.status || 'live',
-        pricingType: c.pricing_type || 'free',
-        price: c.price || 0,
-        xpReward: c.xp_reward || 10,
-        orderIndex: c.order_index || 0,
-        viewCount: c.view_count || 0,
-        completionCount: c.completion_count || 0,
-        authorName: c.author_name,
-        publishAt: c.publish_at,
-        createdAt: c.created_at
-      }));
+      const curriculum = (curriculumResult as any[]).map(c => {
+        const tagsArr = Array.isArray(c.tags) ? c.tags : [];
+        return {
+          id: c.id,
+          title: c.title,
+          description: c.description || '',
+          url: c.url || '',
+          thumbnailUrl: c.thumbnail_url,
+          contentType: c.content_type || 'video',
+          beltId: c.belt_id || 'all',
+          tags: tagsArr,
+          category: tagsArr.join(','),
+          duration: c.duration,
+          status: c.status || 'live',
+          pricingType: c.pricing_type || 'free',
+          price: c.price || 0,
+          xpReward: c.xp_reward || 10,
+          orderIndex: c.order_index || 0,
+          viewCount: c.view_count || 0,
+          completionCount: c.completion_count || 0,
+          authorName: c.author_name,
+          publishAt: c.publish_at,
+          createdAt: c.created_at
+        };
+      });
 
       const wizardData = {
         ...savedWizardData,
@@ -1947,7 +1951,10 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Club ID and content are required' });
       }
 
-      const { id, title, url, beltId, contentType, status, pricingType, xpReward, description, requiresVideo, videoAccess, maxPerWeek } = content;
+      const { id, title, url, beltId, contentType, status, pricingType, xpReward, description, requiresVideo, videoAccess, maxPerWeek, category } = content;
+      
+      // Convert comma-separated tags to JSON array for database
+      const tagsArray = category ? category.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
       
       // Check if ID is a valid UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1980,6 +1987,7 @@ export function registerRoutes(app: Express) {
               content_type = ${contentType || 'video'}, status = ${status || 'draft'},
               pricing_type = ${pricingType || 'free'}, xp_reward = ${xpReward || 10},
               description = ${description || null}, 
+              tags = ${JSON.stringify(tagsArray)}::jsonb,
               requires_video = ${requiresVideo || false},
               video_access = ${videoAccess || 'premium'},
               max_per_week = ${maxPerWeek || null},
@@ -1991,11 +1999,11 @@ export function registerRoutes(app: Express) {
 
       // Insert new content (let DB generate UUID)
       const result = await db.execute(sql`
-        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, requires_video, video_access, max_per_week, created_at, updated_at)
+        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, tags, requires_video, video_access, max_per_week, created_at, updated_at)
         VALUES (
           ${clubId}::uuid, ${title}, ${url}, ${beltId || 'all'}, 
           ${contentType || 'video'}, ${status || 'draft'}, ${pricingType || 'free'}, 
-          ${xpReward || 10}, ${description || null}, 
+          ${xpReward || 10}, ${description || null}, ${JSON.stringify(tagsArray)}::jsonb,
           ${requiresVideo || false}, ${videoAccess || 'premium'}, ${maxPerWeek || null},
           NOW(), NOW()
         )
