@@ -2146,7 +2146,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                             className="ml-2" 
                                                             title={`Home Practice: ${student.rivalsStats.xp.toLocaleString()} XP`}
                                                         >
-                                                            {student.rivalsStats.xp >= 5000 ? '🏆' : 
+                                                            {student.rivalsStats.xp >= 50000 ? '🐉' :
+                                                             student.rivalsStats.xp >= 20000 ? '👑' :
+                                                             student.rivalsStats.xp >= 10000 ? '💎' :
+                                                             student.rivalsStats.xp >= 5000 ? '🏆' : 
                                                              student.rivalsStats.xp >= 2000 ? '⚔️' : 
                                                              student.rivalsStats.xp >= 1000 ? '⭐' : '🔥'}
                                                         </span>

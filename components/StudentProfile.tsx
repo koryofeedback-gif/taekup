@@ -452,6 +452,9 @@ const RivalsEngagement: React.FC<{ student: Student }> = ({ student }) => {
     }
     
     const getEngagementLevel = (xp: number) => {
+        if (xp >= 50000) return { level: 'Grandmaster', color: 'text-red-400', bg: 'bg-red-500/20', icon: '🐉' };
+        if (xp >= 20000) return { level: 'Master', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: '👑' };
+        if (xp >= 10000) return { level: 'Legend', color: 'text-pink-400', bg: 'bg-pink-500/20', icon: '💎' };
         if (xp >= 5000) return { level: 'Champion', color: 'text-yellow-400', bg: 'bg-yellow-500/20', icon: '🏆' };
         if (xp >= 2000) return { level: 'Warrior', color: 'text-purple-400', bg: 'bg-purple-500/20', icon: '⚔️' };
         if (xp >= 1000) return { level: 'Rising Star', color: 'text-cyan-400', bg: 'bg-cyan-500/20', icon: '⭐' };
