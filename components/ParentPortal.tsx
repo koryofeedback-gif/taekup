@@ -66,7 +66,7 @@ interface ParentPortalProps {
 const getBelt = (beltId: string, belts: Belt[]) => belts.find(b => b.id === beltId);
 
 export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack, onUpdateStudent }) => {
-    const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'rivals'>('home');
+    const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'rivals' | 'feedback'>('home');
     const [isPremium, setIsPremium] = useState(false); // Toggle to simulate upgrade
     const [serverConfirmedPremium, setServerConfirmedPremium] = useState(false); // Premium status from API
     const [missionChecks, setMissionChecks] = useState<Record<string, boolean>>({});
@@ -6553,6 +6553,199 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         )
     }
 
+    // Feedback filter state
+    const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+    const [feedbackTypeFilter, setFeedbackTypeFilter] = useState<'all' | 'academy' | 'arena'>('all');
+
+    const renderFeedback = () => {
+        // Combine all video submissions
+        const allSubmissions = myVideos.map(video => ({
+            ...video,
+            type: video.challengeCategory === 'academy' ? 'academy' : 'arena',
+            typeLabel: video.challengeCategory === 'academy' ? '📚 Academy' : '⚔️ Arena'
+        }));
+
+        // Apply filters
+        const filteredSubmissions = allSubmissions
+            .filter(v => feedbackFilter === 'all' || v.status === feedbackFilter)
+            .filter(v => feedbackTypeFilter === 'all' || v.type === feedbackTypeFilter)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        // Group by time
+        const today = new Date().toDateString();
+        const thisWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        
+        const todaySubmissions = filteredSubmissions.filter(v => new Date(v.createdAt).toDateString() === today);
+        const thisWeekSubmissions = filteredSubmissions.filter(v => {
+            const date = new Date(v.createdAt);
+            return date.toDateString() !== today && date >= thisWeek;
+        });
+        const olderSubmissions = filteredSubmissions.filter(v => new Date(v.createdAt) < thisWeek);
+
+        const renderSubmissionCard = (video: typeof allSubmissions[0]) => (
+            <div key={video.id} className={`bg-gray-800/80 p-4 rounded-xl border-l-4 transition-all ${
+                video.status === 'pending' ? 'border-yellow-500' : 
+                video.status === 'approved' ? 'border-green-500' : 'border-red-500'
+            }`}>
+                <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xl">
+                            {video.status === 'pending' ? '⏳' : video.status === 'approved' ? '✅' : '❌'}
+                        </span>
+                        <div>
+                            <p className="text-sm text-white font-bold">{video.challengeName}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                    video.type === 'academy' 
+                                        ? 'bg-cyan-900/50 text-cyan-300 border border-cyan-700' 
+                                        : 'bg-purple-900/50 text-purple-300 border border-purple-700'
+                                }`}>
+                                    {video.typeLabel}
+                                </span>
+                                <span className="text-[10px] text-gray-500">
+                                    {new Date(video.createdAt).toLocaleDateString()}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
+                        video.status === 'pending' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-700' :
+                        video.status === 'approved' ? 'bg-green-900/50 text-green-400 border border-green-700' : 
+                        'bg-red-900/50 text-red-400 border border-red-700'
+                    }`}>
+                        {video.status === 'pending' ? 'Pending Review' : video.status === 'approved' ? 'Approved' : 'Needs Revision'}
+                    </span>
+                </div>
+                
+                {video.coachNotes && (
+                    <div className={`mt-3 p-3 rounded-lg ${
+                        video.status === 'approved' ? 'bg-green-900/20 border border-green-700/50' : 
+                        'bg-red-900/20 border border-red-700/50'
+                    }`}>
+                        <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                            <span>💬</span> Coach Feedback:
+                        </p>
+                        <p className={`text-sm ${video.status === 'approved' ? 'text-green-300' : 'text-red-300'}`}>
+                            {video.coachNotes}
+                        </p>
+                    </div>
+                )}
+                
+                {video.status === 'approved' && (
+                    <div className="mt-2 flex items-center gap-2">
+                        <span className="text-xs text-yellow-400 font-bold">+{video.score || 10} HonorXP™</span>
+                        {video.voteCount > 0 && (
+                            <span className="text-xs text-gray-500">• {video.voteCount} votes</span>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+
+        const renderSection = (title: string, submissions: typeof allSubmissions) => {
+            if (submissions.length === 0) return null;
+            return (
+                <div className="mb-4">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-1">{title}</h4>
+                    <div className="space-y-3">
+                        {submissions.map(renderSubmissionCard)}
+                    </div>
+                </div>
+            );
+        };
+
+        return (
+            <div className="relative h-full min-h-[500px]">
+                <div className="space-y-4 pb-20">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-indigo-700 to-purple-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
+                        <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-4 -mt-2">💬</div>
+                        <h3 className="font-bold text-white text-lg relative z-10">Feedback Center</h3>
+                        <p className="text-sm text-indigo-100 relative z-10 mt-1">
+                            All your video submissions and coach feedback in one place
+                        </p>
+                    </div>
+
+                    {/* Stats Summary */}
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 text-center">
+                            <p className="text-2xl font-black text-yellow-400">
+                                {allSubmissions.filter(v => v.status === 'pending').length}
+                            </p>
+                            <p className="text-[10px] text-yellow-500 font-bold uppercase">Pending</p>
+                        </div>
+                        <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-3 text-center">
+                            <p className="text-2xl font-black text-green-400">
+                                {allSubmissions.filter(v => v.status === 'approved').length}
+                            </p>
+                            <p className="text-[10px] text-green-500 font-bold uppercase">Approved</p>
+                        </div>
+                        <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3 text-center">
+                            <p className="text-2xl font-black text-red-400">
+                                {allSubmissions.filter(v => v.status === 'rejected').length}
+                            </p>
+                            <p className="text-[10px] text-red-500 font-bold uppercase">Revision</p>
+                        </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-2">
+                        {/* Status Filter */}
+                        <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
+                            {(['all', 'pending', 'approved', 'rejected'] as const).map(status => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFeedbackFilter(status)}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                        feedbackFilter === status
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    {status === 'all' ? 'All' : status === 'pending' ? '⏳' : status === 'approved' ? '✅' : '❌'}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        {/* Type Filter */}
+                        <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
+                            {(['all', 'academy', 'arena'] as const).map(type => (
+                                <button
+                                    key={type}
+                                    onClick={() => setFeedbackTypeFilter(type)}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                        feedbackTypeFilter === type
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    {type === 'all' ? 'All' : type === 'academy' ? '📚' : '⚔️'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Submissions List */}
+                    {filteredSubmissions.length === 0 ? (
+                        <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700">
+                            <span className="text-5xl mb-4 block">📭</span>
+                            <p className="text-gray-400 font-bold">No submissions yet</p>
+                            <p className="text-gray-500 text-sm mt-1">
+                                Submit videos in Arena or Sensei Academy to see them here
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {renderSection('Today', todaySubmissions)}
+                            {renderSection('This Week', thisWeekSubmissions)}
+                            {renderSection('Earlier', olderSubmissions)}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen bg-gray-900 pb-20 max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-gray-800">
             {/* Real-time Challenge Toast Notification */}
@@ -6602,6 +6795,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {activeTab === 'journey' && renderJourney()}
                 {activeTab === 'booking' && renderBooking()}
                 {activeTab === 'rivals' && renderRivals()}
+                {activeTab === 'feedback' && renderFeedback()}
             </div>
 
             {/* Global Upgrade to Premium Modal - Renders from any tab */}
@@ -6823,9 +7017,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <div className="flex justify-between items-center h-16 px-2 overflow-x-auto no-scrollbar">
                     <NavButton icon="🏠" label="HQ" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
                     <NavButton icon="⚔️" label="Arena" active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
+                    <NavButton icon="💬" label="Feedback" active={activeTab === 'feedback'} onClick={() => setActiveTab('feedback')} />
                     <NavButton icon="🔮" label="Chronos" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="🧠" label="Sensei" active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} isPremium={!hasPremiumAccess} />
-                    <NavButton icon="💎" label="Upgrade" active={activeTab === 'card'} onClick={() => setActiveTab('card')} isPremium={!hasPremiumAccess} />
                 </div>
             </div>
 
