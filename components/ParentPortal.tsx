@@ -3149,7 +3149,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             )}
                             
                             {/* Link to Feedback Center for submissions */}
-                            {myVideos.filter(v => v.challengeCategory === 'academy').length > 0 && (
+                            {myVideos.filter(v => v.challengeCategory === 'academy' || v.challengeId?.startsWith('academy-')).length > 0 && (
                                 <button
                                     onClick={() => setActiveTab('feedback')}
                                     className="mt-4 w-full bg-indigo-900/30 border border-indigo-500/50 p-3 rounded-xl flex items-center justify-between hover:bg-indigo-900/50 transition-all"
@@ -3159,7 +3159,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         <div className="text-left">
                                             <p className="text-sm font-bold text-indigo-300">View Feedback</p>
                                             <p className="text-xs text-gray-500">
-                                                {myVideos.filter(v => v.challengeCategory === 'academy' && v.status === 'pending').length} pending
+                                                {myVideos.filter(v => (v.challengeCategory === 'academy' || v.challengeId?.startsWith('academy-')) && v.status === 'pending').length} pending
                                             </p>
                                         </div>
                                     </div>
@@ -4746,7 +4746,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
 
                                     {/* Link to Feedback Center for Arena submissions */}
-                                    {hasPremiumAccess && myVideos.filter(v => v.challengeCategory !== 'academy').length > 0 && (
+                                    {hasPremiumAccess && myVideos.filter(v => v.challengeCategory !== 'academy' && !v.challengeId?.startsWith('academy-')).length > 0 && (
                                         <button
                                             onClick={() => setActiveTab('feedback')}
                                             className="w-full bg-indigo-900/30 border border-indigo-500/50 p-3 rounded-xl flex items-center justify-between hover:bg-indigo-900/50 transition-all mt-4"
@@ -4756,7 +4756,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <div className="text-left">
                                                     <p className="text-sm font-bold text-indigo-300">View All Feedback</p>
                                                     <p className="text-xs text-gray-500">
-                                                        {myVideos.filter(v => v.challengeCategory !== 'academy' && v.status === 'pending').length} Arena submissions pending
+                                                        {myVideos.filter(v => v.challengeCategory !== 'academy' && !v.challengeId?.startsWith('academy-') && v.status === 'pending').length} Arena submissions pending
                                                     </p>
                                                 </div>
                                             </div>
@@ -6488,10 +6488,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
     const renderFeedback = () => {
         // Combine all video submissions
+        // Detect Academy videos by: challengeCategory = 'academy' OR challengeId starts with 'academy-'
+        const isAcademyVideo = (video: typeof myVideos[0]) => 
+            video.challengeCategory === 'academy' || 
+            video.challengeId?.startsWith('academy-');
+        
         const allSubmissions = myVideos.map(video => ({
             ...video,
-            type: video.challengeCategory === 'academy' ? 'academy' : 'arena',
-            typeLabel: video.challengeCategory === 'academy' ? '📚 Academy' : '⚔️ Arena'
+            type: isAcademyVideo(video) ? 'academy' : 'arena',
+            typeLabel: isAcademyVideo(video) ? '📚 Academy' : '⚔️ Arena'
         }));
 
         // Apply filters
