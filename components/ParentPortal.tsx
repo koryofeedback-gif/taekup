@@ -2135,7 +2135,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     score: v.score,
                     voteCount: v.voteCount || v.vote_count || 0,
                     coachNotes: v.coachNotes || v.coach_notes || '',
-                    createdAt: v.createdAt || v.created_at
+                    createdAt: v.createdAt || v.created_at,
+                    challengeCategory: v.challengeCategory || v.challenge_category || ''
                 })));
             }
         } catch (error) {
