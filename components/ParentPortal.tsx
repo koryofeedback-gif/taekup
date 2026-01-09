@@ -622,6 +622,102 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         return hasVideoSubmission;
     }, [dailyCompletedChallenges, myVideos]);
     
+    // Content completion tracking with daily/weekly limits (for curriculum content)
+    const getWeekKey = useCallback(() => {
+        const now = new Date();
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        const weekNum = Math.ceil((((now.getTime() - startOfYear.getTime()) / 86400000) + startOfYear.getDay() + 1) / 7);
+        return `content-week-${student.id}-${now.getFullYear()}-W${weekNum}`;
+    }, [student.id]);
+    
+    const getContentDayKey = useCallback(() => `content-day-${student.id}-${new Date().toISOString().split('T')[0]}`, [student.id]);
+    
+    // Track content completions with timestamps for limit checking
+    const [dailyContentCompletions, setDailyContentCompletions] = useState<Record<string, number>>(() => {
+        try {
+            const saved = localStorage.getItem(getContentDayKey());
+            return saved ? JSON.parse(saved) : {};
+        } catch { return {}; }
+    });
+    
+    const [weeklyContentCompletions, setWeeklyContentCompletions] = useState<Record<string, number>>(() => {
+        try {
+            const saved = localStorage.getItem(getWeekKey());
+            return saved ? JSON.parse(saved) : {};
+        } catch { return {}; }
+    });
+    
+    // Check if content can be completed (respects daily + weekly limits)
+    const canCompleteContent = useCallback((contentId: string, maxPerWeek?: number): { allowed: boolean; reason?: string; remaining?: number } => {
+        // Check daily limit (1x per day always enforced)
+        if (dailyContentCompletions[contentId]) {
+            return { allowed: false, reason: 'Already completed today. Rest and try again tomorrow!' };
+        }
+        
+        // Check weekly limit if set
+        if (maxPerWeek && maxPerWeek > 0) {
+            const weeklyCount = weeklyContentCompletions[contentId] || 0;
+            if (weeklyCount >= maxPerWeek) {
+                return { allowed: false, reason: `Weekly limit reached (${maxPerWeek}x/week). Rest to prevent overtraining!` };
+            }
+            return { allowed: true, remaining: maxPerWeek - weeklyCount };
+        }
+        
+        return { allowed: true };
+    }, [dailyContentCompletions, weeklyContentCompletions]);
+    
+    // Mark content as completed (updates daily + weekly tracking)
+    const markContentCompleted = useCallback((contentId: string) => {
+        const now = Date.now();
+        
+        // Update daily tracking
+        setDailyContentCompletions(prev => {
+            const updated = { ...prev, [contentId]: now };
+            try { localStorage.setItem(getContentDayKey(), JSON.stringify(updated)); } catch {}
+            return updated;
+        });
+        
+        // Update weekly tracking
+        setWeeklyContentCompletions(prev => {
+            const updated = { ...prev, [contentId]: (prev[contentId] || 0) + 1 };
+            try { localStorage.setItem(getWeekKey(), JSON.stringify(updated)); } catch {}
+            return updated;
+        });
+    }, [getContentDayKey, getWeekKey]);
+    
+    // Reset daily/weekly trackers when day or week changes
+    useEffect(() => {
+        const checkAndResetTrackers = () => {
+            const currentDayKey = getContentDayKey();
+            const currentWeekKey = getWeekKey();
+            
+            // Reset daily if key changed (new day)
+            const storedDayKey = localStorage.getItem(`last-content-day-${student.id}`);
+            if (storedDayKey !== currentDayKey) {
+                setDailyContentCompletions({});
+                try {
+                    localStorage.removeItem(storedDayKey || '');
+                    localStorage.setItem(`last-content-day-${student.id}`, currentDayKey);
+                } catch {}
+            }
+            
+            // Reset weekly if key changed (new week)
+            const storedWeekKey = localStorage.getItem(`last-content-week-${student.id}`);
+            if (storedWeekKey !== currentWeekKey) {
+                setWeeklyContentCompletions({});
+                try {
+                    localStorage.removeItem(storedWeekKey || '');
+                    localStorage.setItem(`last-content-week-${student.id}`, currentWeekKey);
+                } catch {}
+            }
+        };
+        
+        checkAndResetTrackers();
+        // Also check every minute in case session spans midnight
+        const interval = setInterval(checkAndResetTrackers, 60000);
+        return () => clearInterval(interval);
+    }, [student.id, getContentDayKey, getWeekKey]);
+    
     // Use robust progress tracking hook for XP/completion
     const { 
         completedContentIds: localCompletedIds, 
@@ -2443,6 +2539,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             setVideoUploadProgress(100);
             setVideoUploadError(null);
             
+            // Track completion for daily/weekly limits
+            if (selectedAcademyContent.id) {
+                markContentCompleted(selectedAcademyContent.id);
+            }
+            
             setTimeout(() => {
                 setShowVideoUpload(false);
                 setVideoFile(null);
@@ -2867,6 +2968,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 const xpReward = video.xpReward || 10;
                                 const requiresVideo = video.requiresVideo;
                                 const videoAccessLocked = requiresVideo && video.videoAccess === 'premium' && !hasPremiumAccess;
+                                const limitCheck = canCompleteContent(video.id, video.maxPerWeek);
+                                const isLimitBlocked = !limitCheck.allowed;
+                                const weeklyCount = weeklyContentCompletions[video.id] || 0;
                                 
                                 const handleWatch = (e: React.MouseEvent) => {
                                     e.stopPropagation();
@@ -2876,9 +2980,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 const handleMarkComplete = (e: React.MouseEvent) => {
                                     e.stopPropagation();
                                     if (requiresVideo) return; // Must submit video instead
+                                    if (isLimitBlocked) return; // Daily/weekly limit reached
                                     if (!isCompleted) {
                                         const awarded = completeContent(video.id, xpReward);
                                         if (awarded) {
+                                            markContentCompleted(video.id); // Track for daily/weekly limits
                                             setRivalStats(prev => ({ ...prev, xp: prev.xp + xpReward }));
                                             setServerTotalXP(prev => prev + xpReward);
                                             xpUpdateGraceRef.current = Date.now();
@@ -2893,6 +2999,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         setShowUpgradeModal(true);
                                         return;
                                     }
+                                    if (isLimitBlocked) return; // Daily/weekly limit reached
                                     setSelectedAcademyContent(video);
                                     setAcademyVideoMode(true);
                                     setShowVideoUpload(true);
@@ -2901,34 +3008,53 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 return (
                                     <div 
                                         key={idx} 
-                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border transition-colors ${isCompleted ? 'border-green-500/50 bg-green-900/10' : requiresVideo ? 'border-cyan-500/30' : 'border-gray-700'}`}
+                                        className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg border transition-colors ${
+                                            isLimitBlocked ? 'border-orange-500/50 bg-orange-900/10' :
+                                            isCompleted ? 'border-green-500/50 bg-green-900/10' : 
+                                            requiresVideo ? 'border-cyan-500/30' : 'border-gray-700'
+                                        }`}
                                     >
                                         <div className="flex">
                                             <div 
                                                 onClick={handleWatch}
-                                                className={`w-20 min-h-[80px] flex items-center justify-center text-3xl cursor-pointer hover:scale-110 transition-transform duration-300 ${isCompleted ? 'bg-green-900/30' : requiresVideo ? 'bg-cyan-900/30' : 'bg-gray-900 hover:bg-gray-800'}`}
+                                                className={`w-20 min-h-[80px] flex items-center justify-center text-3xl cursor-pointer hover:scale-110 transition-transform duration-300 ${
+                                                    isLimitBlocked ? 'bg-orange-900/30' :
+                                                    isCompleted ? 'bg-green-900/30' : 
+                                                    requiresVideo ? 'bg-cyan-900/30' : 'bg-gray-900 hover:bg-gray-800'
+                                                }`}
                                             >
-                                                {video.contentType === 'document' ? '📄' : '🎬'}
+                                                {isLimitBlocked ? '⏸️' : video.contentType === 'document' ? '📄' : '🎬'}
                                             </div>
                                             <div className="p-3 flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                    <h4 className={`font-bold text-sm ${isCompleted ? 'text-green-400' : 'text-white'}`}>{video.title}</h4>
+                                                    <h4 className={`font-bold text-sm ${isLimitBlocked ? 'text-orange-400' : isCompleted ? 'text-green-400' : 'text-white'}`}>{video.title}</h4>
                                                     {requiresVideo && (
                                                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${videoAccessLocked ? 'bg-purple-500/30 text-purple-300' : 'bg-cyan-500/30 text-cyan-300'}`}>
                                                             {videoAccessLocked ? '🔒 VIDEO' : '📹 VIDEO'}
+                                                        </span>
+                                                    )}
+                                                    {video.maxPerWeek && (
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                                                            isLimitBlocked ? 'bg-orange-500/30 text-orange-300' : 'bg-blue-500/30 text-blue-300'
+                                                        }`}>
+                                                            {weeklyCount}/{video.maxPerWeek} this week
                                                         </span>
                                                     )}
                                                 </div>
                                                 {video.description && (
                                                     <p className="text-xs text-gray-400 mb-2 line-clamp-2">{video.description}</p>
                                                 )}
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <p className="text-[11px] text-gray-500">
-                                                        {isCompleted ? 'Completed!' : requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
+                                                        {isLimitBlocked ? limitCheck.reason : 
+                                                         isCompleted ? 'Completed!' : 
+                                                         requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
                                                     </p>
-                                                    <span className={`text-[11px] font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
-                                                        +{xpReward} HonorXP™
-                                                    </span>
+                                                    {!isLimitBlocked && (
+                                                        <span className={`text-[11px] font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                            +{xpReward} HonorXP™
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 px-3">
@@ -2943,31 +3069,35 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <button
                                                         type="button"
                                                         onClick={handleVideoSubmit}
-                                                        disabled={isCompleted}
+                                                        disabled={isCompleted || isLimitBlocked}
                                                         className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-lg transition-all text-xs font-bold ${
-                                                            isCompleted 
-                                                                ? 'bg-green-500 shadow-green-600/30 cursor-default text-white' 
-                                                                : videoAccessLocked
-                                                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500'
-                                                                    : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
+                                                            isLimitBlocked
+                                                                ? 'bg-orange-600/50 shadow-orange-600/30 cursor-not-allowed text-orange-200'
+                                                                : isCompleted 
+                                                                    ? 'bg-green-500 shadow-green-600/30 cursor-default text-white' 
+                                                                    : videoAccessLocked
+                                                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500'
+                                                                        : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
                                                         }`}
-                                                        title={isCompleted ? 'Completed' : videoAccessLocked ? 'Premium Only' : 'Submit Video'}
+                                                        title={isLimitBlocked ? 'Rest day!' : isCompleted ? 'Completed' : videoAccessLocked ? 'Premium Only' : 'Submit Video'}
                                                     >
-                                                        {isCompleted ? '✓' : videoAccessLocked ? '🔒' : '📹'}
-                                                        <span className="hidden sm:inline">{isCompleted ? 'Done' : videoAccessLocked ? 'Unlock' : 'Submit'}</span>
+                                                        {isLimitBlocked ? '⏸️' : isCompleted ? '✓' : videoAccessLocked ? '🔒' : '📹'}
+                                                        <span className="hidden sm:inline">{isLimitBlocked ? 'Rest' : isCompleted ? 'Done' : videoAccessLocked ? 'Unlock' : 'Submit'}</span>
                                                     </button>
                                                 ) : (
                                                     <button
                                                         onClick={handleMarkComplete}
-                                                        disabled={isCompleted}
+                                                        disabled={isCompleted || isLimitBlocked}
                                                         className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-lg transition-all ${
-                                                            isCompleted 
-                                                                ? 'bg-green-500 shadow-green-600/30 cursor-default' 
-                                                                : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-gray-500 hover:border-green-400'
+                                                            isLimitBlocked
+                                                                ? 'bg-orange-600/50 shadow-orange-600/30 cursor-not-allowed'
+                                                                : isCompleted 
+                                                                    ? 'bg-green-500 shadow-green-600/30 cursor-default' 
+                                                                    : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-gray-500 hover:border-green-400'
                                                         }`}
-                                                        title={isCompleted ? 'Completed' : 'Mark as done'}
+                                                        title={isLimitBlocked ? 'Rest day!' : isCompleted ? 'Completed' : 'Mark as done'}
                                                     >
-                                                        <span className="text-white text-sm">{isCompleted ? '✓' : ''}</span>
+                                                        <span className="text-white text-sm">{isLimitBlocked ? '⏸️' : isCompleted ? '✓' : ''}</span>
                                                     </button>
                                                 )}
                                             </div>

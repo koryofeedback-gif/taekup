@@ -1947,7 +1947,7 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Club ID and content are required' });
       }
 
-      const { id, title, url, beltId, contentType, status, pricingType, xpReward, description } = content;
+      const { id, title, url, beltId, contentType, status, pricingType, xpReward, description, requiresVideo, videoAccess, maxPerWeek } = content;
       
       // Check if ID is a valid UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1979,7 +1979,11 @@ export function registerRoutes(app: Express) {
           SET title = ${title}, url = ${url}, belt_id = ${beltId || 'all'}, 
               content_type = ${contentType || 'video'}, status = ${status || 'draft'},
               pricing_type = ${pricingType || 'free'}, xp_reward = ${xpReward || 10},
-              description = ${description || null}, updated_at = NOW()
+              description = ${description || null}, 
+              requires_video = ${requiresVideo || false},
+              video_access = ${videoAccess || 'premium'},
+              max_per_week = ${maxPerWeek || null},
+              updated_at = NOW()
           WHERE id = ${existingId}::uuid
         `);
         return res.json({ success: true, action: 'updated', contentId: existingId });
@@ -1987,11 +1991,13 @@ export function registerRoutes(app: Express) {
 
       // Insert new content (let DB generate UUID)
       const result = await db.execute(sql`
-        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, created_at, updated_at)
+        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, requires_video, video_access, max_per_week, created_at, updated_at)
         VALUES (
           ${clubId}::uuid, ${title}, ${url}, ${beltId || 'all'}, 
           ${contentType || 'video'}, ${status || 'draft'}, ${pricingType || 'free'}, 
-          ${xpReward || 10}, ${description || null}, NOW(), NOW()
+          ${xpReward || 10}, ${description || null}, 
+          ${requiresVideo || false}, ${videoAccess || 'premium'}, ${maxPerWeek || null},
+          NOW(), NOW()
         )
         RETURNING id
       `);
