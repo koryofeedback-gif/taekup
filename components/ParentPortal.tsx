@@ -2828,6 +2828,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const premiumVideos = allVideos.filter(v => v.pricingType === 'premium');
         
         return (
+            <>
             <div className="relative h-full min-h-[500px]">
                 <div className="space-y-6 pb-20">
                     <div className="bg-gradient-to-r from-emerald-700 to-teal-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
@@ -2887,7 +2888,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 const handleVideoSubmit = (e: React.MouseEvent) => {
                                     e.stopPropagation();
                                     e.preventDefault();
-                                    console.log('Free video Submit clicked!', { video, videoAccessLocked, isCompleted });
                                     if (videoAccessLocked) {
                                         setShowUpgradeModal(true);
                                         return;
@@ -3030,7 +3030,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         const handleVideoSubmit = (e: React.MouseEvent) => {
                                             e.stopPropagation();
                                             e.preventDefault();
-                                            console.log('Submit clicked!', { video, isLocked, isCompleted });
                                             if (isLocked) {
                                                 setShowUpgradeModal(true);
                                                 return;
@@ -3244,6 +3243,129 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                 </div>
             </div>
+            
+            {/* Video Upload Modal for Practice tab */}
+            {showVideoUpload && academyVideoMode && (
+                <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full shadow-2xl border border-cyan-500">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-black text-white flex items-center gap-2">
+                                <span className="text-2xl">📚</span> 
+                                Technique Proof
+                            </h3>
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    setShowVideoUpload(false);
+                                    setVideoFile(null);
+                                    setVideoUploadError(null);
+                                    setAcademyVideoMode(false);
+                                    setSelectedAcademyContent(null);
+                                    academyVideoRef.current = false;
+                                }}
+                                className="text-gray-400 hover:text-white text-2xl"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {/* Content Info */}
+                        <div className="rounded-xl p-4 mb-4 bg-cyan-900/30">
+                            <p className="text-gray-400 text-xs mb-1">Submitting for:</p>
+                            <p className="text-white font-bold">
+                                {selectedAcademyContent?.title || 'Training Content'}
+                            </p>
+                            {selectedAcademyContent && (
+                                <p className="text-sm mt-1 text-cyan-400">
+                                    +{selectedAcademyContent.xpReward || 10} HonorXP™ on approval
+                                </p>
+                            )}
+                        </div>
+
+                        {/* File Upload Area */}
+                        <div 
+                            onClick={() => videoInputRef.current?.click()}
+                            className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                                videoFile 
+                                    ? 'border-cyan-500 bg-cyan-900/20' 
+                                    : 'border-gray-600 hover:border-cyan-400 hover:bg-gray-800/50'
+                            }`}
+                        >
+                            <input
+                                ref={videoInputRef}
+                                type="file"
+                                accept="video/*"
+                                onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                                className="hidden"
+                            />
+                            {videoFile ? (
+                                <div className="text-cyan-400">
+                                    <span className="text-3xl mb-2 block">🎬</span>
+                                    <p className="font-bold">{videoFile.name}</p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        {(videoFile.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <span className="text-4xl mb-2 block">📹</span>
+                                    <p className="text-gray-300 font-bold">Tap to select video</p>
+                                    <p className="text-xs text-gray-500 mt-1">Max 100MB • MP4, MOV, WebM</p>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Upload Progress */}
+                        {isUploadingVideo && (
+                            <div className="mt-4">
+                                <div className="w-full bg-gray-700 rounded-full h-2">
+                                    <div 
+                                        className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all"
+                                        style={{ width: `${videoUploadProgress}%` }}
+                                    ></div>
+                                </div>
+                                <p className="text-xs text-center text-gray-400 mt-2">
+                                    Uploading... {videoUploadProgress}%
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Error Message */}
+                        {videoUploadError && (
+                            <div className="mt-4 p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+                                <p className="text-red-400 text-sm">{videoUploadError}</p>
+                            </div>
+                        )}
+
+                        {/* Submit Button */}
+                        <button
+                            type="button"
+                            onClick={handleAcademyVideoUpload}
+                            disabled={!videoFile || isUploadingVideo}
+                            className={`w-full mt-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                                videoFile && !isUploadingVideo
+                                    ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-500/30'
+                                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                            }`}
+                        >
+                            {isUploadingVideo ? (
+                                <>
+                                    <span className="animate-spin">⏳</span> Uploading...
+                                </>
+                            ) : (
+                                <>
+                                    <span>🚀</span> Submit Technique Video
+                                </>
+                            )}
+                        </button>
+
+                        <p className="text-xs text-center text-gray-500 mt-3">
+                            Your coach will review and award XP once approved
+                        </p>
+                    </div>
+                </div>
+            )}
+        </>
         );
     }
 
