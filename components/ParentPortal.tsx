@@ -6995,7 +6995,7 @@ const NavButton: React.FC<{ icon: string; label: string; active: boolean; onClic
         <span className={`text-xl mb-1 transition-transform ${active ? 'scale-110' : ''}`}>{icon}</span>
         <span className={`text-[9px] tracking-wide ${active ? 'font-bold' : 'font-semibold'}`}>{label}</span>
         {isPremium && <span className="absolute top-2 right-1 w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.8)]"></span>}
-        {badge && badge > 0 && (
+        {badge !== undefined && badge > 0 && (
             <span className="absolute -top-0.5 right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
                 {badge > 9 ? '9+' : badge}
             </span>
