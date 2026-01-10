@@ -361,6 +361,22 @@ const App: React.FC = () => {
                     localStorage.setItem('taekup_signup_data', JSON.stringify(newData));
                     return newData;
                 });
+                
+                // Update subscription status if trial has been converted (user is now paying)
+                if (userData.trialStatus === 'converted') {
+                    const existingSubscription = loadSubscription();
+                    if (existingSubscription && !existingSubscription.planId) {
+                        const updatedSubscription = {
+                            ...existingSubscription,
+                            planId: 'starter' as const, // Mark as subscribed
+                            isTrialActive: false,
+                            isLocked: false
+                        };
+                        setSubscription(updatedSubscription);
+                        saveSubscription(updatedSubscription);
+                        console.log('[Login] Updated subscription status: trial converted to paid');
+                    }
+                }
 
                 // For owners, try to fetch wizard data from database OR use localStorage fallback
                 if (userType === 'owner') {
@@ -422,7 +438,7 @@ const App: React.FC = () => {
             }
             setIsLoadingData(false);
         },
-        [setFinalWizardData]
+        [setFinalWizardData, setSubscription]
     );
 
     const handleLogout = useCallback(() => {

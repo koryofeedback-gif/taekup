@@ -134,6 +134,17 @@ export class WebhookHandlers {
       const club = (clubResult as any[])[0];
       
       if (club) {
+        // Update club's trial status to converted and store subscription ID
+        await db.execute(sql`
+          UPDATE clubs 
+          SET trial_status = 'converted', 
+              stripe_subscription_id = ${subscription.id},
+              stripe_customer_id = ${subscription.customer},
+              updated_at = NOW()
+          WHERE id = ${club.id}::uuid
+        `);
+        console.log('[Webhook] Updated club trial_status to converted:', club.id);
+        
         const alreadySent = await db.execute(
           sql`SELECT id FROM email_log WHERE club_id = ${club.id} AND email_type = 'welcome' LIMIT 1`
         );
