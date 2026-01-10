@@ -1,0 +1,49 @@
+This is a classic "Stripe Logic Loop" bug. It is happening because your Stripe Price Configuration likely has a "Default Free Trial" attached to it, or your code is requesting a trial every time a checkout session is created.
+
+Stripe does not automatically know "this person already had a trial" if the Checkout Session explicitly asks for a trial (or defaults to one).
+
+Here is exactly how to fix this loophole.
+
+The Problem: Hardcoded Trial in Stripe
+Look at your screenshot. It clearly says "14 days free" at the top. This means when your system creates the Checkout Session, it is telling Stripe: "Start a subscription with a 14-day trial." It doesn't care that the user just finished one.
+
+Solution 1: The "Code Logic" Fix (Best Way) 👨‍💻
+You need to tell your developer to change the logic when creating the Checkout Session. They need to use a Conditional Trial.
+
+The Logic:
+
+Check User Status: When the user clicks "Subscribe," check your database.
+
+If New User: Send trial_period_days: 14 to Stripe.
+
+If Expired User: Send trial_period_days: 0 (or do not send the parameter at all) to Stripe.
+
+Instruction for Developer:
+
+"We have a bug where expired users get a second free trial. In the stripe.checkout.sessions.create call, you are currently applying a 14-day trial to everyone.
+
+Please update the code to check user.hasUsedTrial.
+
+If TRUE: Do NOT pass subscription_data.trial_period_days. Force immediate payment.
+
+If FALSE: Pass subscription_data.trial_period_days = 14.
+
+Also, ensure we are passing the existing customer ID (stripe_customer_id) to the session so Stripe knows this is the same person."
+
+Solution 2: The "Dashboard" Fix (Quickest Way) ⚡
+If you configured the Free Trial inside the Stripe Dashboard (under Products > Pricing), you should remove it from there.
+
+Go to Stripe Dashboard > Products.
+
+Click on your "Starter Plan" (or "Pro Plan").
+
+Edit the Price.
+
+Look for "Free Trial" or "Default Trial". Set it to 0 or "None".
+
+Save.
+
+Why this fixes it: Now, Stripe will never give a trial by default. Your developer will have to manually add the trial via code only when a user first signs up. This prevents the Checkout Page from automatically offering it to returning users.
+
+Summary
+Your system is currently blindly offering a trial to anyone who clicks the link. You must add the "If / Else" logic in your backend code to strip that trial away for users who have already used their 14 days.
