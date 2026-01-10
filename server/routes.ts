@@ -464,6 +464,76 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Verify subscription status by checking Stripe directly
+  app.post('/api/club/:clubId/verify-subscription', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      
+      if (!clubId) {
+        return res.status(400).json({ error: 'Club ID is required' });
+      }
+
+      // Get club's owner email to find Stripe customer
+      const clubResult = await db.execute(sql`
+        SELECT id, owner_email, trial_status FROM clubs WHERE id = ${clubId}::uuid
+      `);
+      const club = (clubResult as any[])[0];
+
+      if (!club) {
+        return res.status(404).json({ error: 'Club not found' });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      
+      // Find Stripe customer by email
+      const customers = await stripe.customers.list({
+        email: club.owner_email,
+        limit: 1
+      });
+
+      if (customers.data.length === 0) {
+        return res.json({ 
+          success: true, 
+          hasActiveSubscription: false,
+          trialStatus: club.trial_status 
+        });
+      }
+
+      const customer = customers.data[0];
+      
+      // Check for active subscriptions
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: 'active',
+        limit: 1
+      });
+
+      const hasActiveSubscription = subscriptions.data.length > 0;
+
+      if (hasActiveSubscription && club.trial_status !== 'converted') {
+        // Update database to mark as converted
+        await db.execute(sql`
+          UPDATE clubs 
+          SET trial_status = 'converted',
+              updated_at = NOW()
+          WHERE id = ${clubId}::uuid
+        `);
+        console.log('[VerifySubscription] Updated club', clubId, 'to converted status');
+      }
+
+      return res.json({
+        success: true,
+        hasActiveSubscription,
+        trialStatus: hasActiveSubscription ? 'converted' : club.trial_status,
+        planId: hasActiveSubscription ? (subscriptions.data[0].items.data[0]?.price?.id || 'active') : null
+      });
+
+    } catch (error: any) {
+      console.error('[VerifySubscription] Error:', error.message);
+      return res.status(500).json({ error: 'Failed to verify subscription' });
+    }
+  });
+
   // Simple name-based login - finds existing student or creates new one
   app.post('/api/login-by-name', async (req: Request, res: Response) => {
     try {

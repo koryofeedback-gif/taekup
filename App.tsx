@@ -362,13 +362,54 @@ const App: React.FC = () => {
                     return newData;
                 });
                 
-                // Update subscription status if trial has been converted (user is now paying)
-                if (userData.trialStatus === 'converted') {
+                // For owners, verify subscription status with Stripe directly
+                if (userType === 'owner') {
+                    try {
+                        const verifyResponse = await fetch(`/api/club/${userData.clubId}/verify-subscription`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const verifyResult = await verifyResponse.json();
+                        console.log('[Login] Subscription verification:', verifyResult);
+                        
+                        if (verifyResult.success && verifyResult.hasActiveSubscription) {
+                            const existingSubscription = loadSubscription();
+                            const updatedSubscription = {
+                                ...existingSubscription,
+                                planId: 'starter' as const,
+                                isTrialActive: false,
+                                isLocked: false,
+                                trialEndDate: existingSubscription?.trialEndDate || new Date().toISOString()
+                            };
+                            setSubscription(updatedSubscription);
+                            saveSubscription(updatedSubscription);
+                            console.log('[Login] Updated subscription: active Stripe subscription found');
+                        }
+                    } catch (verifyErr) {
+                        console.error('[Login] Subscription verification failed:', verifyErr);
+                        // Fall back to checking trialStatus from login response
+                        if (userData.trialStatus === 'converted') {
+                            const existingSubscription = loadSubscription();
+                            if (existingSubscription && !existingSubscription.planId) {
+                                const updatedSubscription = {
+                                    ...existingSubscription,
+                                    planId: 'starter' as const,
+                                    isTrialActive: false,
+                                    isLocked: false
+                                };
+                                setSubscription(updatedSubscription);
+                                saveSubscription(updatedSubscription);
+                                console.log('[Login] Updated subscription from trialStatus fallback');
+                            }
+                        }
+                    }
+                } else if (userData.trialStatus === 'converted') {
+                    // For non-owners, still check trialStatus from login response
                     const existingSubscription = loadSubscription();
                     if (existingSubscription && !existingSubscription.planId) {
                         const updatedSubscription = {
                             ...existingSubscription,
-                            planId: 'starter' as const, // Mark as subscribed
+                            planId: 'starter' as const,
                             isTrialActive: false,
                             isLocked: false
                         };
