@@ -2114,11 +2114,54 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const totalStudents = data.students.length;
     const currentTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
     const [connectingBank, setConnectingBank] = useState(false);
+    const [verifiedStatus, setVerifiedStatus] = useState<{ status: string; label: string; color: string; daysLeft: number } | null>(null);
     
     const bulkCost = data.clubSponsoredPremium ? (totalStudents * 1.99) : 0;
     const totalBill = currentTier.price + bulkCost;
 
+    // Verify subscription status with Stripe on mount
+    useEffect(() => {
+        const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
+        if (effectiveClubId) {
+            fetch(`/api/club/${effectiveClubId}/verify-subscription`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.hasActiveSubscription) {
+                    setVerifiedStatus({ status: 'active', label: 'Active', color: 'bg-green-600 text-green-100', daysLeft: -1 });
+                    // Also update localStorage
+                    const savedSub = localStorage.getItem('taekup_subscription');
+                    if (savedSub) {
+                        try {
+                            const sub = JSON.parse(savedSub);
+                            if (!sub.planId) {
+                                sub.planId = 'starter';
+                                sub.isTrialActive = false;
+                                localStorage.setItem('taekup_subscription', JSON.stringify(sub));
+                            }
+                        } catch (e) {}
+                    }
+                }
+            })
+            .catch(err => console.error('[BillingTab] Subscription verification failed:', err));
+        }
+    }, [clubId]);
+
     const getSubscriptionStatus = () => {
+        // First check if user has an active subscription (paid)
+        const savedSubscription = localStorage.getItem('taekup_subscription');
+        if (savedSubscription) {
+            try {
+                const sub = JSON.parse(savedSubscription);
+                if (sub.planId && !sub.isTrialActive) {
+                    return { status: 'active', label: 'Active', color: 'bg-green-600 text-green-100', daysLeft: -1 };
+                }
+            } catch (e) {}
+        }
+        
+        // Fall back to trial logic
         const savedSignup = localStorage.getItem('taekup_signup_data');
         let trialStartDate: string | null = null;
         if (savedSignup) {
@@ -2142,7 +2185,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
         }
     };
 
-    const subscriptionStatus = getSubscriptionStatus();
+    const subscriptionStatus = verifiedStatus || getSubscriptionStatus();
 
     const handleConnectBank = async () => {
         setConnectingBank(true);
