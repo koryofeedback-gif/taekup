@@ -1107,10 +1107,11 @@ export function registerRoutes(app: Express) {
         const club = (clubResult as any[])[0];
         
         if (club) {
-          // Skip trial if they've already had one (expired or converted)
-          if (club.trial_status === 'expired' || club.trial_status === 'converted') {
+          // Skip trial if they have ANY trial status (active, expired, or converted)
+          // This prevents getting multiple trial periods
+          if (club.trial_status) {
             skipTrial = true;
-            console.log(`[/api/checkout] Club ${clubId} already used trial (status: ${club.trial_status}), skipping trial`);
+            console.log(`[/api/checkout] Club ${clubId} has trial_status: ${club.trial_status}, skipping Stripe trial`);
           }
           // Use existing Stripe customer if available
           if (club.stripe_customer_id) {
