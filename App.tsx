@@ -193,6 +193,45 @@ const App: React.FC = () => {
         }
     }, [subscription]);
 
+    // Check for Stripe checkout success and verify subscription immediately
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const checkoutSuccess = params.get('checkout') === 'success' || params.get('session_id');
+        
+        if (checkoutSuccess && loggedInUserType === 'owner') {
+            const clubId = localStorage.getItem('taekup_club_id');
+            if (clubId) {
+                console.log('[Checkout] Detected return from Stripe, verifying subscription...');
+                fetch(`/api/club/${clubId}/verify-subscription`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(result => {
+                    console.log('[Checkout] Subscription verification result:', result);
+                    if (result.success && result.hasActiveSubscription) {
+                        const existingSub = loadSubscription();
+                        const updatedSubscription = {
+                            ...existingSub,
+                            planId: 'starter' as const,
+                            isTrialActive: false,
+                            isLocked: false,
+                            trialEndDate: existingSub?.trialEndDate || new Date().toISOString()
+                        };
+                        setSubscription(updatedSubscription);
+                        saveSubscription(updatedSubscription);
+                        console.log('[Checkout] Subscription updated - trial banner should now be hidden');
+                        
+                        // Clean up URL parameters
+                        const newUrl = window.location.pathname;
+                        window.history.replaceState({}, '', newUrl);
+                    }
+                })
+                .catch(err => console.error('[Checkout] Verification failed:', err));
+            }
+        }
+    }, [loggedInUserType]);
+
     const handleSetupComplete = useCallback(async (data: WizardData) => {
         setIsProcessing(true);
         setFinalWizardData(data);
