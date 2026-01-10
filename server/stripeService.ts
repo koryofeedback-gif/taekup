@@ -15,7 +15,8 @@ export class StripeService {
     successUrl: string,
     cancelUrl: string,
     customerId?: string,
-    metadata?: Record<string, string>
+    metadata?: Record<string, string>,
+    skipTrial: boolean = false
   ) {
     const stripe = await getUncachableStripeClient();
     
@@ -27,10 +28,14 @@ export class StripeService {
       cancel_url: cancelUrl,
       metadata,
       subscription_data: {
-        trial_period_days: 14,
         metadata,
       },
     };
+
+    // Only apply trial for new customers who haven't used one yet
+    if (!skipTrial) {
+      sessionParams.subscription_data.trial_period_days = 14;
+    }
 
     if (customerId) {
       sessionParams.customer = customerId;

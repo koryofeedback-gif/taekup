@@ -1026,6 +1026,29 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'priceId is required' });
       }
 
+      // Check if club has already used their trial
+      let skipTrial = false;
+      let stripeCustomerId: string | undefined;
+      
+      if (clubId) {
+        const clubResult = await db.execute(
+          sql`SELECT trial_status, stripe_customer_id FROM clubs WHERE id = ${clubId}::uuid`
+        );
+        const club = (clubResult as any[])[0];
+        
+        if (club) {
+          // Skip trial if they've already had one (expired or converted)
+          if (club.trial_status === 'expired' || club.trial_status === 'converted') {
+            skipTrial = true;
+            console.log(`[/api/checkout] Club ${clubId} already used trial (status: ${club.trial_status}), skipping trial`);
+          }
+          // Use existing Stripe customer if available
+          if (club.stripe_customer_id) {
+            stripeCustomerId = club.stripe_customer_id as string;
+          }
+        }
+      }
+
       // Use APP_URL for production, fallback to Replit domain or request host
       const baseUrl = process.env.APP_URL || (() => {
         const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0];
@@ -1035,14 +1058,15 @@ export function registerRoutes(app: Express) {
         return `${protocol}://${host}`;
       })();
 
-      console.log(`[/api/checkout] Creating session with:`, { priceId, baseUrl });
+      console.log(`[/api/checkout] Creating session with:`, { priceId, baseUrl, skipTrial });
 
       const session = await stripeService.createCheckoutSession(
         priceId,
         `${baseUrl}/wizard?subscription=success`,
         `${baseUrl}/pricing?subscription=cancelled`,
-        undefined,
-        { clubId: clubId || '', email: email || '' }
+        stripeCustomerId,
+        { clubId: clubId || '', email: email || '' },
+        skipTrial
       );
 
       console.log(`[/api/checkout] Session created:`, { sessionId: session.id, url: session.url });
