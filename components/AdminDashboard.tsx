@@ -180,7 +180,8 @@ const MarginCalculatorCard: React.FC<{
     totalStudents: number;
     clubSponsoredPremium: boolean;
     onToggle: () => void;
-}> = ({ totalStudents, clubSponsoredPremium, onToggle }) => {
+    loading?: boolean;
+}> = ({ totalStudents, clubSponsoredPremium, onToggle, loading }) => {
     const [tuitionIncrease, setTuitionIncrease] = useState(10.00);
     const CLUB_RATE = 1.99;
     
@@ -260,15 +261,16 @@ const MarginCalculatorCard: React.FC<{
                         <div className="flex items-center">
                             <button 
                                 onClick={onToggle}
-                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${clubSponsoredPremium ? 'bg-green-500' : 'bg-gray-600'}`}
+                                disabled={loading}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${clubSponsoredPremium ? 'bg-green-500' : 'bg-gray-600'} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <span className={`${clubSponsoredPremium ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
                             </button>
                             <span className="ml-3 text-sm font-medium text-white">
-                                {clubSponsoredPremium ? 'Enabled' : 'Disabled'}
+                                {loading ? 'Updating...' : (clubSponsoredPremium ? 'Enabled' : 'Disabled')}
                             </span>
                         </div>
-                        {clubSponsoredPremium && (
+                        {clubSponsoredPremium && !loading && (
                             <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">Universal Access Active</span>
                         )}
                     </div>
@@ -440,7 +442,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
     );
 }
 
-const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void, onViewPortal?: (id: string) => void, onEditStudent?: (student: Student) => void }> = ({ data, onUpdateData, onOpenModal, onViewPortal, onEditStudent }) => {
+const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void, onViewPortal?: (id: string) => void, onEditStudent?: (student: Student) => void, clubId?: string }> = ({ data, onUpdateData, onOpenModal, onViewPortal, onEditStudent, clubId }) => {
     const [search, setSearch] = useState('');
     const [locationFilter, setLocationFilter] = useState('All Locations');
     const [classFilter, setClassFilter] = useState('All Classes');
@@ -476,7 +478,17 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 }
                 
                 // Update local state on success
-                onUpdateData({ students: data.students.filter(s => s.id !== id) });
+                const newStudents = data.students.filter(s => s.id !== id);
+                onUpdateData({ students: newStudents });
+                
+                // Sync Universal Access quantity if enabled
+                if (data.clubSponsoredPremium && clubId) {
+                    fetch(`/api/club/${clubId}/universal-access/sync`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ studentCount: newStudents.length || 1 })
+                    }).catch(e => console.log('[UniversalAccess] Sync after delete:', e.message));
+                }
             } catch (err: any) {
                 console.error('Failed to delete student:', err);
                 alert(err.message || 'Failed to delete student');
@@ -2115,8 +2127,49 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const currentTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
     const [connectingBank, setConnectingBank] = useState(false);
     const [verifiedStatus, setVerifiedStatus] = useState<{ status: string; label: string; color: string; daysLeft: number } | null>(null);
+    const [toggleLoading, setToggleLoading] = useState(false);
     
     const bulkCost = data.clubSponsoredPremium ? (totalStudents * 1.99) : 0;
+    
+    const handleUniversalAccessToggle = async () => {
+        if (data.isDemo) {
+            onUpdateData({ clubSponsoredPremium: !data.clubSponsoredPremium });
+            return;
+        }
+        
+        const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
+        if (!effectiveClubId) {
+            alert('Club not found. Please log in again.');
+            return;
+        }
+        
+        setToggleLoading(true);
+        try {
+            const newState = !data.clubSponsoredPremium;
+            const res = await fetch(`/api/club/${effectiveClubId}/universal-access`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    enabled: newState, 
+                    studentCount: totalStudents || 1 
+                })
+            });
+            const result = await res.json();
+            
+            if (result.success) {
+                onUpdateData({ clubSponsoredPremium: newState });
+                console.log('[BillingTab] Universal Access toggled:', result);
+            } else {
+                console.error('[BillingTab] Universal Access toggle failed:', result);
+                alert(result.error || 'Failed to update Universal Access');
+            }
+        } catch (err: any) {
+            console.error('[BillingTab] Universal Access toggle error:', err);
+            alert('Failed to update subscription. Please try again.');
+        } finally {
+            setToggleLoading(false);
+        }
+    };
     const totalBill = currentTier.price + bulkCost;
 
     // Verify subscription status with Stripe on mount
@@ -2342,14 +2395,15 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     <DemoMarginCalculatorCard 
                         totalStudents={totalStudents}
                         clubSponsoredPremium={data.clubSponsoredPremium}
-                        onToggle={() => onUpdateData({ clubSponsoredPremium: !data.clubSponsoredPremium })}
+                        onToggle={handleUniversalAccessToggle}
                     />
                 ) : (
                     /* REAL MODE - Margin Calculator Style UI */
                     <MarginCalculatorCard 
                         totalStudents={totalStudents}
                         clubSponsoredPremium={data.clubSponsoredPremium}
-                        onToggle={() => onUpdateData({ clubSponsoredPremium: !data.clubSponsoredPremium })}
+                        onToggle={handleUniversalAccessToggle}
+                        loading={toggleLoading}
                     />
                 )}
             </div>
@@ -2775,7 +2829,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             ]
         };
         
-        onUpdateData({ students: [...data.students, newStudent] });
+        const newStudents = [...data.students, newStudent];
+        onUpdateData({ students: newStudents });
+        
+        // Sync Universal Access quantity if enabled
+        if (data.clubSponsoredPremium && clubId) {
+            fetch(`/api/club/${clubId}/universal-access/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ studentCount: newStudents.length || 1 })
+            }).catch(e => console.log('[UniversalAccess] Sync after add:', e.message));
+        }
+        
         setModalType(null);
         setTempStudent({});
     };
@@ -2953,7 +3018,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         </div>
                     )}
                     {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} />}
-                    {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} />}
+                    {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
                     {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
                     {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
                     {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}

@@ -538,6 +538,130 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // DojoMint Universal Access - per-student billing toggle
+  app.post('/api/club/:clubId/universal-access', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      const { enabled, studentCount } = req.body;
+      
+      const stripe = await getUncachableStripeClient();
+      if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+      
+      // Get club email
+      const clubResult = await db.execute(sql`
+        SELECT owner_email FROM clubs WHERE id = ${clubId}::uuid
+      `);
+      const club = (clubResult as any[])[0];
+      if (!club) return res.status(404).json({ error: 'Club not found' });
+      
+      const customers = await stripe.customers.list({ email: club.owner_email.toLowerCase().trim(), limit: 1 });
+      if (customers.data.length === 0) {
+        return res.status(400).json({ error: 'No Stripe customer found. Please subscribe first.' });
+      }
+      
+      // Get active subscription
+      const subscriptions = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
+      if (subscriptions.data.length === 0) {
+        const trialingSubs = await stripe.subscriptions.list({ customer: customers.data[0].id, status: 'trialing', limit: 1 });
+        if (trialingSubs.data.length === 0) {
+          return res.status(400).json({ error: 'No active subscription found' });
+        }
+        subscriptions.data = trialingSubs.data;
+      }
+      const subscription = subscriptions.data[0];
+      
+      // Find $1.99/month price
+      const prices = await stripe.prices.list({ active: true, limit: 100 });
+      const uaPrice = prices.data.find(p => 
+        p.unit_amount === 199 && 
+        p.recurring?.interval === 'month' &&
+        (p.metadata?.type === 'universal_access' || p.nickname === 'Universal Access')
+      );
+      
+      if (!uaPrice) {
+        return res.status(500).json({ 
+          error: 'Universal Access price not configured',
+          instructions: 'Create a $1.99/month price in Stripe Dashboard with metadata.type=universal_access'
+        });
+      }
+      
+      // Find existing subscription item
+      const existingItem = subscription.items.data.find(item => {
+        const priceId = typeof item.price === 'string' ? item.price : item.price.id;
+        return priceId === uaPrice.id;
+      });
+      
+      if (enabled) {
+        const quantity = Math.max(1, studentCount || 1);
+        if (existingItem) {
+          await stripe.subscriptionItems.update(existingItem.id, { quantity });
+        } else {
+          await stripe.subscriptionItems.create({
+            subscription: subscription.id,
+            price: uaPrice.id,
+            quantity
+          });
+        }
+        return res.json({ success: true, enabled: true, quantity });
+      } else {
+        if (existingItem) {
+          await stripe.subscriptionItems.del(existingItem.id, { proration_behavior: 'create_prorations' });
+        }
+        return res.json({ success: true, enabled: false });
+      }
+    } catch (error: any) {
+      console.error('[UniversalAccess] Error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
+  // DojoMint Universal Access - sync student count
+  app.post('/api/club/:clubId/universal-access/sync', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      const { studentCount } = req.body;
+      
+      const stripe = await getUncachableStripeClient();
+      if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+      
+      const clubResult = await db.execute(sql`
+        SELECT owner_email FROM clubs WHERE id = ${clubId}::uuid
+      `);
+      const club = (clubResult as any[])[0];
+      if (!club) return res.status(404).json({ error: 'Club not found' });
+      
+      const customers = await stripe.customers.list({ email: club.owner_email.toLowerCase().trim(), limit: 1 });
+      if (customers.data.length === 0) {
+        return res.json({ success: false, message: 'No Stripe customer' });
+      }
+      
+      const subscriptions = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
+      if (subscriptions.data.length === 0) {
+        return res.json({ success: false, message: 'No subscription' });
+      }
+      
+      // Find $1.99/month subscription item
+      const uaItem = subscriptions.data[0].items.data.find(item => {
+        const price = typeof item.price === 'object' ? item.price : null;
+        return price && price.unit_amount === 199 && price.recurring?.interval === 'month';
+      });
+      
+      if (!uaItem) {
+        return res.json({ success: false, message: 'Universal Access not enabled' });
+      }
+      
+      const quantity = Math.max(1, studentCount || 1);
+      if (uaItem.quantity !== quantity) {
+        await stripe.subscriptionItems.update(uaItem.id, { quantity });
+      }
+      
+      return res.json({ success: true, quantity });
+    } catch (error: any) {
+      console.error('[UniversalAccessSync] Error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
   // Simple name-based login - finds existing student or creates new one
   app.post('/api/login-by-name', async (req: Request, res: Response) => {
     try {
