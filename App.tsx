@@ -712,7 +712,9 @@ const AppContent: React.FC<AppContentProps> = ({
     
     if (showPricing && finalWizardData) {
         const clubId = signupData?.clubId || localStorage.getItem('taekup_club_id') || undefined;
-        const email = signupData?.email || localStorage.getItem('taekup_user_email') || undefined;
+        // Use actual club owner email from wizard data (most reliable), fallback to signupData/localStorage
+        const email = finalWizardData.ownerEmail || signupData?.email || localStorage.getItem('taekup_user_email') || undefined;
+        console.log('[App] PricingPage email:', email, 'ownerEmail:', finalWizardData.ownerEmail);
         return (
             <PricingPage
                 students={finalWizardData.students}
