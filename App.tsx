@@ -212,8 +212,8 @@ const App: React.FC = () => {
                 .then(res => res.json())
                 .then(result => {
                     console.log('[App] Subscription verification result:', result);
+                    const existingSub = loadSubscription();
                     if (result.success && result.hasActiveSubscription) {
-                        const existingSub = loadSubscription();
                         const updatedSubscription = {
                             ...existingSub,
                             planId: 'starter' as const,
@@ -224,6 +224,18 @@ const App: React.FC = () => {
                         setSubscription(updatedSubscription);
                         saveSubscription(updatedSubscription);
                         console.log('[App] Subscription updated - trial banner should now be hidden');
+                    } else if (result.success && !result.hasActiveSubscription) {
+                        // No active subscription - ensure trial banner shows
+                        const updatedSubscription = {
+                            ...existingSub,
+                            planId: undefined,
+                            isTrialActive: true,
+                            isLocked: false,
+                            trialEndDate: existingSub?.trialEndDate || new Date().toISOString()
+                        };
+                        setSubscription(updatedSubscription);
+                        saveSubscription(updatedSubscription);
+                        console.log('[App] No active subscription - trial banner should show');
                     }
                 })
                 .catch(err => console.error('[App] Verification failed:', err));
@@ -419,8 +431,8 @@ const App: React.FC = () => {
                         const verifyResult = await verifyResponse.json();
                         console.log('[Login] Subscription verification:', verifyResult);
                         
+                        const existingSubscription = loadSubscription();
                         if (verifyResult.success && verifyResult.hasActiveSubscription) {
-                            const existingSubscription = loadSubscription();
                             const updatedSubscription = {
                                 ...existingSubscription,
                                 planId: 'starter' as const,
@@ -431,6 +443,18 @@ const App: React.FC = () => {
                             setSubscription(updatedSubscription);
                             saveSubscription(updatedSubscription);
                             console.log('[Login] Updated subscription: active Stripe subscription found');
+                        } else if (verifyResult.success && !verifyResult.hasActiveSubscription) {
+                            // No active subscription - ensure trial banner shows
+                            const updatedSubscription = {
+                                ...existingSubscription,
+                                planId: undefined,
+                                isTrialActive: true,
+                                isLocked: false,
+                                trialEndDate: existingSubscription?.trialEndDate || new Date().toISOString()
+                            };
+                            setSubscription(updatedSubscription);
+                            saveSubscription(updatedSubscription);
+                            console.log('[Login] No active subscription - trial banner should show');
                         }
                     } catch (verifyErr) {
                         console.error('[Login] Subscription verification failed:', verifyErr);

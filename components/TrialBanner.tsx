@@ -8,7 +8,8 @@ interface TrialBannerProps {
 }
 
 export const TrialBanner: React.FC<TrialBannerProps> = ({ subscription, onUpgradeClick }) => {
-  if (subscription.planId) {
+  // Only hide if there's a confirmed active subscription (planId + not in trial)
+  if (subscription.planId && !subscription.isTrialActive) {
     return null;
   }
 
