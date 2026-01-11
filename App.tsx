@@ -711,12 +711,16 @@ const AppContent: React.FC<AppContentProps> = ({
         : { isLocked: false, requiredPlan: null, daysRemaining: 14 };
     
     if (showPricing && finalWizardData) {
+        const clubId = signupData?.clubId || localStorage.getItem('taekup_club_id') || undefined;
+        const email = signupData?.email || localStorage.getItem('taekup_user_email') || undefined;
         return (
             <PricingPage
                 students={finalWizardData.students}
                 currentPlanId={subscription?.planId}
                 onSelectPlan={onSelectPlan}
                 onBack={onHidePricing}
+                clubId={clubId}
+                email={email}
             />
         );
     }

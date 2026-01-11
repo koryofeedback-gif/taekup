@@ -86,8 +86,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
-      success_url: `${baseUrl}/app/admin?subscription=success`,
-      cancel_url: `${baseUrl}/app/pricing?subscription=cancelled`,
+      success_url: `${baseUrl}/wizard?subscription=success`,
+      cancel_url: `${baseUrl}/pricing?subscription=cancelled`,
       metadata: { clubId: clubId || '', email: email || '' },
       subscription_data: subscriptionData,
     });
