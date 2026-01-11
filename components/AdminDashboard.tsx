@@ -2141,6 +2141,33 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     sub.isLocked = false;
                     localStorage.setItem('taekup_subscription', JSON.stringify(sub));
                     console.log('[BillingTab] Updated localStorage subscription to active');
+                } else if (result.success && !result.hasActiveSubscription && result.trialStatus === 'active') {
+                    // User is in trial - clear any stale planId and set trial active
+                    const existingSub = localStorage.getItem('taekup_subscription');
+                    let sub = existingSub ? JSON.parse(existingSub) : {};
+                    // Calculate trial end date from signup data
+                    const savedSignup = localStorage.getItem('taekup_signup_data');
+                    let trialEndDate = sub.trialEndDate;
+                    if (savedSignup) {
+                        try {
+                            const parsed = JSON.parse(savedSignup);
+                            if (parsed.trialStartDate) {
+                                const start = new Date(parsed.trialStartDate);
+                                trialEndDate = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                            }
+                        } catch (e) {}
+                    }
+                    if (!trialEndDate) {
+                        trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                    }
+                    sub.planId = null;
+                    sub.isTrialActive = true;
+                    sub.isLocked = false;
+                    sub.trialEndDate = trialEndDate;
+                    localStorage.setItem('taekup_subscription', JSON.stringify(sub));
+                    console.log('[BillingTab] Updated localStorage subscription to trial mode:', sub);
+                    // Dispatch event to notify App.tsx to refresh subscription state
+                    window.dispatchEvent(new Event('subscription-updated'));
                 }
             })
             .catch(err => console.error('[BillingTab] Subscription verification failed:', err));

@@ -226,16 +226,34 @@ const App: React.FC = () => {
                         console.log('[App] Subscription updated - trial banner should now be hidden');
                     } else if (result.success && !result.hasActiveSubscription) {
                         // No active subscription - ensure trial banner shows
+                        // Calculate proper trial end date from signup data
+                        let trialEndDate = existingSub?.trialEndDate;
+                        if (!trialEndDate || trialEndDate === new Date().toISOString().split('T')[0]) {
+                            const savedSignup = localStorage.getItem('taekup_signup_data');
+                            if (savedSignup) {
+                                try {
+                                    const parsed = JSON.parse(savedSignup);
+                                    if (parsed.trialStartDate) {
+                                        const start = new Date(parsed.trialStartDate);
+                                        trialEndDate = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                                    }
+                                } catch (e) {}
+                            }
+                        }
+                        if (!trialEndDate) {
+                            // Fallback: assume trial started now (14 days from now)
+                            trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                        }
                         const updatedSubscription = {
                             ...existingSub,
                             planId: undefined,
                             isTrialActive: true,
                             isLocked: false,
-                            trialEndDate: existingSub?.trialEndDate || new Date().toISOString()
+                            trialEndDate
                         };
                         setSubscription(updatedSubscription);
                         saveSubscription(updatedSubscription);
-                        console.log('[App] No active subscription - trial banner should show');
+                        console.log('[App] No active subscription - trial banner should show, trialEndDate:', trialEndDate);
                     }
                 })
                 .catch(err => console.error('[App] Verification failed:', err));
@@ -251,6 +269,19 @@ const App: React.FC = () => {
             window.history.replaceState({}, '', newUrl);
         }
     }, [loggedInUserType]);
+
+    // Listen for subscription updates from BillingTab
+    useEffect(() => {
+        const handleSubscriptionUpdate = () => {
+            console.log('[App] Received subscription-updated event, reloading from localStorage');
+            const updated = loadSubscription();
+            if (updated) {
+                setSubscription(updated);
+            }
+        };
+        window.addEventListener('subscription-updated', handleSubscriptionUpdate);
+        return () => window.removeEventListener('subscription-updated', handleSubscriptionUpdate);
+    }, []);
 
     const handleSetupComplete = useCallback(async (data: WizardData) => {
         setIsProcessing(true);
