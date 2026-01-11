@@ -2114,6 +2114,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const totalStudents = data.students.length;
     const currentTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
     const [connectingBank, setConnectingBank] = useState(false);
+    const [syncing, setSyncing] = useState(false);
     const [verifiedStatus, setVerifiedStatus] = useState<{ status: string; label: string; color: string; daysLeft: number } | null>(null);
     
     const bulkCost = data.clubSponsoredPremium ? (totalStudents * 1.99) : 0;
@@ -2273,7 +2274,49 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         </div>
                     </div>
                     
-                    <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Manage Payment Method</button>
+                    <div className="flex gap-2">
+                        <button className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Manage Payment Method</button>
+                        <button 
+                            onClick={async () => {
+                                setSyncing(true);
+                                try {
+                                    const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
+                                    if (effectiveClubId) {
+                                        const res = await fetch(`/api/club/${effectiveClubId}/verify-subscription`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' }
+                                        });
+                                        const result = await res.json();
+                                        if (result.success && result.hasActiveSubscription) {
+                                            const sub = JSON.parse(localStorage.getItem('taekup_subscription') || '{}');
+                                            sub.planId = 'starter';
+                                            sub.isTrialActive = false;
+                                            sub.isLocked = false;
+                                            localStorage.setItem('taekup_subscription', JSON.stringify(sub));
+                                            window.location.reload();
+                                        } else {
+                                            alert('No active subscription found in Stripe. Status: ' + (result.trialStatus || 'unknown'));
+                                        }
+                                    }
+                                } catch (err) {
+                                    alert('Failed to sync subscription status');
+                                } finally {
+                                    setSyncing(false);
+                                }
+                            }}
+                            disabled={syncing}
+                            className="px-4 bg-sky-600 hover:bg-sky-500 disabled:bg-gray-600 text-white font-bold py-2 rounded flex items-center gap-2"
+                        >
+                            {syncing ? (
+                                <>
+                                    <span className="animate-spin">⟳</span>
+                                    Syncing...
+                                </>
+                            ) : (
+                                <>⟳ Sync</>
+                            )}
+                        </button>
+                    </div>
                 </div>
 
                 {/* DojoMint Monetization Card - Different UI for Demo vs Real */}
