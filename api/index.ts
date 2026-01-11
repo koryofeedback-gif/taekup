@@ -588,19 +588,47 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
       return res.status(500).json({ error: 'Stripe not configured' });
     }
 
-    const customers = await stripe.customers.list({ email: club.owner_email, limit: 1 });
+    // Search with lowercase email to handle case-insensitivity
+    const emailToSearch = club.owner_email.toLowerCase().trim();
+    console.log(`[VerifySubscription] Searching for customer with email: ${emailToSearch}`);
+    
+    const customers = await stripe.customers.list({ email: emailToSearch, limit: 5 });
+    console.log(`[VerifySubscription] Found ${customers.data.length} customers`);
+    
     if (customers.data.length === 0) {
-      return res.json({ success: true, hasActiveSubscription: false, trialStatus: club.trial_status, searchedEmail: club.owner_email });
+      console.log(`[VerifySubscription] No customer found for email: ${emailToSearch}`);
+      return res.json({ 
+        success: true, 
+        hasActiveSubscription: false, 
+        trialStatus: club.trial_status, 
+        searchedEmail: emailToSearch,
+        debug: { customerCount: 0, reason: 'no_customer_found' }
+      });
     }
 
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customers.data[0].id,
-      limit: 5
-    });
-
-    const hasActiveSubscription = subscriptions.data.some(s => 
-      s.status === 'active' || s.status === 'trialing'
-    );
+    // Check ALL customers for subscriptions (not just the first one)
+    let hasActiveSubscription = false;
+    let foundCustomerId = null;
+    let subscriptionStatuses: string[] = [];
+    
+    for (const customer of customers.data) {
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customer.id,
+        limit: 10
+      });
+      
+      console.log(`[VerifySubscription] Customer ${customer.id} (${customer.email}) has ${subscriptions.data.length} subscriptions`);
+      
+      for (const sub of subscriptions.data) {
+        subscriptionStatuses.push(`${sub.id}:${sub.status}`);
+        if (sub.status === 'active' || sub.status === 'trialing') {
+          hasActiveSubscription = true;
+          foundCustomerId = customer.id;
+        }
+      }
+    }
+    
+    console.log(`[VerifySubscription] Result: hasActiveSubscription=${hasActiveSubscription}, statuses=${subscriptionStatuses.join(', ')}`);
     
     if (hasActiveSubscription && club.trial_status !== 'converted') {
       await client.query(
@@ -613,8 +641,13 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
       success: true,
       hasActiveSubscription,
       trialStatus: hasActiveSubscription ? 'converted' : club.trial_status,
-      customerId: customers.data[0].id,
-      searchedEmail: club.owner_email
+      customerId: foundCustomerId || customers.data[0].id,
+      searchedEmail: emailToSearch,
+      debug: { 
+        customerCount: customers.data.length, 
+        subscriptionStatuses,
+        customerEmails: customers.data.map(c => c.email)
+      }
     });
   } catch (error: any) {
     console.error('[VerifySubscription] Error:', error.message);
