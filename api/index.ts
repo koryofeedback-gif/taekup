@@ -546,6 +546,57 @@ async function handleStripePublishableKey(req: VercelRequest, res: VercelRespons
   return res.json({ publishableKey: key });
 }
 
+async function handleVerifySubscription(req: VercelRequest, res: VercelResponse, clubId: string) {
+  const client = await pool.connect();
+  try {
+    const clubResult = await client.query(
+      `SELECT id, owner_email, trial_status FROM clubs WHERE id = $1::uuid`,
+      [clubId]
+    );
+    const club = clubResult.rows[0];
+    if (!club) {
+      return res.status(404).json({ error: 'Club not found' });
+    }
+
+    const stripe = getStripeClient();
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe not configured' });
+    }
+
+    const customers = await stripe.customers.list({ email: club.owner_email, limit: 1 });
+    if (customers.data.length === 0) {
+      return res.json({ success: true, hasActiveSubscription: false, trialStatus: club.trial_status });
+    }
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customers.data[0].id,
+      status: 'active',
+      limit: 1
+    });
+
+    const hasActiveSubscription = subscriptions.data.length > 0;
+    
+    if (hasActiveSubscription && club.trial_status !== 'converted') {
+      await client.query(
+        `UPDATE clubs SET trial_status = 'converted' WHERE id = $1::uuid`,
+        [clubId]
+      );
+    }
+
+    return res.json({
+      success: true,
+      hasActiveSubscription,
+      trialStatus: hasActiveSubscription ? 'converted' : club.trial_status,
+      customerId: customers.data[0].id
+    });
+  } catch (error: any) {
+    console.error('[VerifySubscription] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to verify subscription' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId: string) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -6475,6 +6526,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const clubDataMatch = path.match(/^\/club\/([^/]+)\/data\/?$/);
     if (clubDataMatch) return await handleGetClubData(req, res, clubDataMatch[1]);
+    
+    const verifySubscriptionMatch = path.match(/^\/club\/([^/]+)\/verify-subscription\/?$/);
+    if (verifySubscriptionMatch && req.method === 'POST') return await handleVerifySubscription(req, res, verifySubscriptionMatch[1]);
     
     const linkParentMatch = path.match(/^\/students\/([^/]+)\/link-parent\/?$/);
     if (linkParentMatch) return await handleLinkParent(req, res, linkParentMatch[1]);
