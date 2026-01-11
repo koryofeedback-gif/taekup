@@ -82,7 +82,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subscriptionData.trial_period_days = 14;
     }
 
-    // Prefill email to avoid user paying with different email than their club account
+    // Create or find Stripe customer to LOCK the email (prevents users from changing email during checkout)
+    let customerId: string | undefined;
+    if (email) {
+      const emailLower = email.toLowerCase().trim();
+      // Check if customer already exists
+      const existingCustomers = await stripe.customers.list({ email: emailLower, limit: 1 });
+      if (existingCustomers.data.length > 0) {
+        customerId = existingCustomers.data[0].id;
+        console.log(`[/api/checkout] Found existing Stripe customer: ${customerId}`);
+      } else {
+        // Create new customer with the club email
+        const newCustomer = await stripe.customers.create({
+          email: emailLower,
+          metadata: { clubId: clubId || '' }
+        });
+        customerId = newCustomer.id;
+        console.log(`[/api/checkout] Created new Stripe customer: ${customerId}`);
+      }
+    }
+
     const sessionConfig: any = {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
@@ -93,8 +112,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subscription_data: subscriptionData,
     };
     
-    // Prefill email field so user pays with the same email as their club account
-    if (email) {
+    // Use customer ID to LOCK email (user cannot change it during checkout)
+    if (customerId) {
+      sessionConfig.customer = customerId;
+    } else if (email) {
+      // Fallback: at least prefill the email
       sessionConfig.customer_email = email;
     }
     

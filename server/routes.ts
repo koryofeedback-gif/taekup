@@ -1133,7 +1133,25 @@ export function registerRoutes(app: Express) {
         return `${protocol}://${host}`;
       })();
 
-      console.log(`[/api/checkout] Creating session with:`, { priceId, baseUrl, skipTrial });
+      // Create or find Stripe customer to LOCK the email (prevents users from changing email during checkout)
+      const stripe = await getUncachableStripeClient();
+      if (!stripeCustomerId && email) {
+        const emailLower = email.toLowerCase().trim();
+        const existingCustomers = await stripe.customers.list({ email: emailLower, limit: 1 });
+        if (existingCustomers.data.length > 0) {
+          stripeCustomerId = existingCustomers.data[0].id;
+          console.log(`[/api/checkout] Found existing Stripe customer: ${stripeCustomerId}`);
+        } else {
+          const newCustomer = await stripe.customers.create({
+            email: emailLower,
+            metadata: { clubId: clubId || '' }
+          });
+          stripeCustomerId = newCustomer.id;
+          console.log(`[/api/checkout] Created new Stripe customer: ${stripeCustomerId}`);
+        }
+      }
+
+      console.log(`[/api/checkout] Creating session with:`, { priceId, baseUrl, skipTrial, customerId: stripeCustomerId });
 
       const session = await stripeService.createCheckoutSession(
         priceId,
@@ -1141,8 +1159,7 @@ export function registerRoutes(app: Express) {
         `${baseUrl}/pricing?subscription=cancelled`,
         stripeCustomerId,
         { clubId: clubId || '', email: email || '' },
-        skipTrial,
-        email // Prefill email so user pays with same email as their club account
+        skipTrial
       );
 
       console.log(`[/api/checkout] Session created:`, { sessionId: session.id, url: session.url });
