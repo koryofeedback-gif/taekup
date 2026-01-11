@@ -657,6 +657,169 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
   }
 }
 
+// DojoMint Universal Access - per-student billing ($1.99/student/month)
+const UNIVERSAL_ACCESS_PRICE_ID = process.env.UNIVERSAL_ACCESS_PRICE_ID || '';
+
+async function handleUniversalAccessToggle(req: VercelRequest, res: VercelResponse, clubId: string) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { enabled, studentCount } = parseBody(req);
+  
+  const stripe = getStripeClient();
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+  
+  const client = await pool.connect();
+  try {
+    // Get club and find Stripe customer
+    const clubResult = await client.query(
+      `SELECT owner_email FROM clubs WHERE id = $1::uuid`,
+      [clubId]
+    );
+    const club = clubResult.rows[0];
+    if (!club) return res.status(404).json({ error: 'Club not found' });
+    
+    const customers = await stripe.customers.list({ email: club.owner_email.toLowerCase().trim(), limit: 1 });
+    if (customers.data.length === 0) {
+      return res.status(400).json({ error: 'No Stripe customer found. Please subscribe first.' });
+    }
+    const customerId = customers.data[0].id;
+    
+    // Get active subscription
+    const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 1 });
+    if (subscriptions.data.length === 0) {
+      // Try trialing subscriptions
+      const trialingSubs = await stripe.subscriptions.list({ customer: customerId, status: 'trialing', limit: 1 });
+      if (trialingSubs.data.length === 0) {
+        return res.status(400).json({ error: 'No active subscription found' });
+      }
+      subscriptions.data = trialingSubs.data;
+    }
+    const subscription = subscriptions.data[0];
+    
+    // Find Universal Access price - must be pre-configured in Stripe and set via environment variable
+    let universalAccessPriceId = UNIVERSAL_ACCESS_PRICE_ID;
+    
+    // If no price ID configured, try to find it by metadata or price amount
+    if (!universalAccessPriceId) {
+      const prices = await stripe.prices.list({ active: true, limit: 100 });
+      const uaPrice = prices.data.find(p => {
+        // Look for $1.99/month price with universal_access metadata
+        return (
+          p.unit_amount === 199 && 
+          p.recurring?.interval === 'month' &&
+          (p.metadata?.type === 'universal_access' || p.nickname === 'Universal Access')
+        );
+      });
+      if (uaPrice) {
+        universalAccessPriceId = uaPrice.id;
+        console.log('[UniversalAccess] Found existing price by metadata:', universalAccessPriceId);
+      }
+    }
+    
+    if (!universalAccessPriceId) {
+      // Price not configured - return error with instructions
+      console.error('[UniversalAccess] UNIVERSAL_ACCESS_PRICE_ID not configured');
+      return res.status(500).json({ 
+        error: 'Universal Access price not configured',
+        instructions: 'Please create a product in Stripe Dashboard with a $1.99/month recurring price and set UNIVERSAL_ACCESS_PRICE_ID environment variable'
+      });
+    }
+    
+    // Find existing Universal Access subscription item
+    const existingItem = subscription.items.data.find(item => {
+      const priceId = typeof item.price === 'string' ? item.price : item.price.id;
+      return priceId === universalAccessPriceId;
+    });
+    
+    if (enabled) {
+      const quantity = Math.max(1, studentCount || 1);
+      
+      if (existingItem) {
+        // Update quantity
+        await stripe.subscriptionItems.update(existingItem.id, { quantity });
+        console.log(`[UniversalAccess] Updated quantity to ${quantity} for club ${clubId}`);
+      } else {
+        // Add new subscription item
+        await stripe.subscriptionItems.create({
+          subscription: subscription.id,
+          price: universalAccessPriceId,
+          quantity
+        });
+        console.log(`[UniversalAccess] Added subscription item with quantity ${quantity} for club ${clubId}`);
+      }
+      
+      return res.json({ success: true, enabled: true, quantity, message: 'Universal Access enabled' });
+    } else {
+      // Disable - remove subscription item
+      if (existingItem) {
+        await stripe.subscriptionItems.del(existingItem.id, { proration_behavior: 'create_prorations' });
+        console.log(`[UniversalAccess] Removed subscription item for club ${clubId}`);
+      }
+      
+      return res.json({ success: true, enabled: false, message: 'Universal Access disabled' });
+    }
+  } catch (error: any) {
+    console.error('[UniversalAccess] Error:', error.message);
+    return res.status(500).json({ error: error.message || 'Failed to update Universal Access' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleUniversalAccessSync(req: VercelRequest, res: VercelResponse, clubId: string) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { studentCount } = parseBody(req);
+  
+  const stripe = getStripeClient();
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+  
+  const client = await pool.connect();
+  try {
+    const clubResult = await client.query(
+      `SELECT owner_email FROM clubs WHERE id = $1::uuid`,
+      [clubId]
+    );
+    const club = clubResult.rows[0];
+    if (!club) return res.status(404).json({ error: 'Club not found' });
+    
+    const customers = await stripe.customers.list({ email: club.owner_email.toLowerCase().trim(), limit: 1 });
+    if (customers.data.length === 0) {
+      return res.json({ success: false, message: 'No Stripe customer' });
+    }
+    
+    const subscriptions = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
+    if (subscriptions.data.length === 0) {
+      return res.json({ success: false, message: 'No subscription' });
+    }
+    
+    const subscription = subscriptions.data[0];
+    
+    // Find Universal Access subscription item by checking for $1.99 price
+    const uaItem = subscription.items.data.find(item => {
+      const price = typeof item.price === 'object' ? item.price : null;
+      return price && price.unit_amount === 199 && price.recurring?.interval === 'month';
+    });
+    
+    if (!uaItem) {
+      return res.json({ success: false, message: 'Universal Access not enabled' });
+    }
+    
+    const quantity = Math.max(1, studentCount || 1);
+    if (uaItem.quantity !== quantity) {
+      await stripe.subscriptionItems.update(uaItem.id, { quantity });
+      console.log(`[UniversalAccess] Synced quantity to ${quantity} for club ${clubId}`);
+    }
+    
+    return res.json({ success: true, quantity, message: 'Quantity synced' });
+  } catch (error: any) {
+    console.error('[UniversalAccessSync] Error:', error.message);
+    return res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId: string) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -6589,6 +6752,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const verifySubscriptionMatch = path.match(/^\/club\/([^/]+)\/verify-subscription\/?$/);
     if (verifySubscriptionMatch && req.method === 'POST') return await handleVerifySubscription(req, res, verifySubscriptionMatch[1]);
+    
+    // Universal Access subscription management
+    const universalAccessToggleMatch = path.match(/^\/club\/([^/]+)\/universal-access\/?$/);
+    if (universalAccessToggleMatch && req.method === 'POST') return await handleUniversalAccessToggle(req, res, universalAccessToggleMatch[1]);
+    
+    const universalAccessSyncMatch = path.match(/^\/club\/([^/]+)\/universal-access\/sync\/?$/);
+    if (universalAccessSyncMatch && req.method === 'POST') return await handleUniversalAccessSync(req, res, universalAccessSyncMatch[1]);
     
     const linkParentMatch = path.match(/^\/students\/([^/]+)\/link-parent\/?$/);
     if (linkParentMatch) return await handleLinkParent(req, res, linkParentMatch[1]);
