@@ -587,7 +587,8 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
       success: true,
       hasActiveSubscription,
       trialStatus: hasActiveSubscription ? 'converted' : club.trial_status,
-      customerId: customers.data[0].id
+      customerId: customers.data[0].id,
+      searchedEmail: club.owner_email
     });
   } catch (error: any) {
     console.error('[VerifySubscription] Error:', error.message);

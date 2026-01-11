@@ -2295,7 +2295,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                             localStorage.setItem('taekup_subscription', JSON.stringify(sub));
                                             window.location.reload();
                                         } else {
-                                            alert('No active subscription found in Stripe. Status: ' + (result.trialStatus || 'unknown'));
+                                            alert('No active subscription found in Stripe.\nSearched email: ' + (result.searchedEmail || 'unknown') + '\nTrial status: ' + (result.trialStatus || 'unknown'));
                                         }
                                     }
                                 } catch (err) {
