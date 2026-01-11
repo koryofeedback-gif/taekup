@@ -2129,20 +2129,17 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
             })
             .then(res => res.json())
             .then(result => {
+                console.log('[BillingTab] Subscription verification result:', result);
                 if (result.success && result.hasActiveSubscription) {
                     setVerifiedStatus({ status: 'active', label: 'Active', color: 'bg-green-600 text-green-100', daysLeft: -1 });
-                    // Also update localStorage
-                    const savedSub = localStorage.getItem('taekup_subscription');
-                    if (savedSub) {
-                        try {
-                            const sub = JSON.parse(savedSub);
-                            if (!sub.planId) {
-                                sub.planId = 'starter';
-                                sub.isTrialActive = false;
-                                localStorage.setItem('taekup_subscription', JSON.stringify(sub));
-                            }
-                        } catch (e) {}
-                    }
+                    // Force update localStorage with active subscription
+                    const existingSub = localStorage.getItem('taekup_subscription');
+                    let sub = existingSub ? JSON.parse(existingSub) : { trialEndDate: new Date().toISOString() };
+                    sub.planId = 'starter';
+                    sub.isTrialActive = false;
+                    sub.isLocked = false;
+                    localStorage.setItem('taekup_subscription', JSON.stringify(sub));
+                    console.log('[BillingTab] Updated localStorage subscription to active');
                 }
             })
             .catch(err => console.error('[BillingTab] Subscription verification failed:', err));

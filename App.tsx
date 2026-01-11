@@ -193,22 +193,25 @@ const App: React.FC = () => {
         }
     }, [subscription]);
 
-    // Check for Stripe checkout success and verify subscription immediately
+    // Auto-verify subscription status on app load for owners
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const checkoutSuccess = params.get('checkout') === 'success' || params.get('session_id');
-        
-        if (checkoutSuccess && loggedInUserType === 'owner') {
+        if (loggedInUserType === 'owner') {
             const clubId = localStorage.getItem('taekup_club_id');
             if (clubId) {
-                console.log('[Checkout] Detected return from Stripe, verifying subscription...');
+                // Check if subscription already shows as active
+                const currentSub = loadSubscription();
+                if (currentSub?.planId && !currentSub?.isTrialActive) {
+                    return; // Already active, no need to verify
+                }
+                
+                console.log('[App] Verifying subscription status with Stripe...');
                 fetch(`/api/club/${clubId}/verify-subscription`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 })
                 .then(res => res.json())
                 .then(result => {
-                    console.log('[Checkout] Subscription verification result:', result);
+                    console.log('[App] Subscription verification result:', result);
                     if (result.success && result.hasActiveSubscription) {
                         const existingSub = loadSubscription();
                         const updatedSubscription = {
@@ -220,15 +223,20 @@ const App: React.FC = () => {
                         };
                         setSubscription(updatedSubscription);
                         saveSubscription(updatedSubscription);
-                        console.log('[Checkout] Subscription updated - trial banner should now be hidden');
-                        
-                        // Clean up URL parameters
-                        const newUrl = window.location.pathname;
-                        window.history.replaceState({}, '', newUrl);
+                        console.log('[App] Subscription updated - trial banner should now be hidden');
                     }
                 })
-                .catch(err => console.error('[Checkout] Verification failed:', err));
+                .catch(err => console.error('[App] Verification failed:', err));
             }
+        }
+        
+        // Also check for Stripe checkout success URL params
+        const params = new URLSearchParams(window.location.search);
+        const checkoutSuccess = params.get('checkout') === 'success' || params.get('session_id');
+        if (checkoutSuccess) {
+            // Clean up URL parameters
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
         }
     }, [loggedInUserType]);
 
