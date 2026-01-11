@@ -2275,7 +2275,38 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     </div>
                     
                     <div className="flex gap-2">
-                        <button className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Manage Payment Method</button>
+                        <button 
+                            onClick={async () => {
+                                try {
+                                    const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
+                                    const verifyRes = await fetch(`/api/club/${effectiveClubId}/verify-subscription`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' }
+                                    });
+                                    const verifyResult = await verifyRes.json();
+                                    if (!verifyResult.customerId) {
+                                        alert('No Stripe customer found. Please subscribe first.');
+                                        return;
+                                    }
+                                    const res = await fetch('/api/customer-portal', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ customerId: verifyResult.customerId })
+                                    });
+                                    const result = await res.json();
+                                    if (result.url) {
+                                        window.location.href = result.url;
+                                    } else {
+                                        alert(result.error || 'Failed to open billing portal');
+                                    }
+                                } catch (err) {
+                                    alert('Failed to open billing portal');
+                                }
+                            }}
+                            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded"
+                        >
+                            Manage Payment Method
+                        </button>
                         <button 
                             onClick={async () => {
                                 setSyncing(true);

@@ -565,7 +565,7 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
 
     const customers = await stripe.customers.list({ email: club.owner_email, limit: 1 });
     if (customers.data.length === 0) {
-      return res.json({ success: true, hasActiveSubscription: false, trialStatus: club.trial_status });
+      return res.json({ success: true, hasActiveSubscription: false, trialStatus: club.trial_status, searchedEmail: club.owner_email });
     }
 
     const subscriptions = await stripe.subscriptions.list({

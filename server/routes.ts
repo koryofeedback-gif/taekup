@@ -495,7 +495,8 @@ export function registerRoutes(app: Express) {
         return res.json({ 
           success: true, 
           hasActiveSubscription: false,
-          trialStatus: club.trial_status 
+          trialStatus: club.trial_status,
+          searchedEmail: club.owner_email
         });
       }
 
@@ -526,7 +527,9 @@ export function registerRoutes(app: Express) {
         success: true,
         hasActiveSubscription,
         trialStatus: hasActiveSubscription ? 'converted' : club.trial_status,
-        planId: hasActiveSubscription ? (subscriptions.data[0].items.data[0]?.price?.id || 'active') : null
+        planId: hasActiveSubscription ? (subscriptions.data[0].items.data[0]?.price?.id || 'active') : null,
+        customerId: customer.id,
+        searchedEmail: club.owner_email
       });
 
     } catch (error: any) {
