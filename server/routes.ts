@@ -502,15 +502,51 @@ export function registerRoutes(app: Express) {
 
       const customer = customers.data[0];
       
-      // Check for active or trialing subscriptions
+      // Check for active or trialing subscriptions - expand price and product data
       const subscriptions = await stripe.subscriptions.list({
         customer: customer.id,
-        limit: 5
+        limit: 5,
+        expand: ['data.items.data.price.product']
       });
 
-      const hasActiveSubscription = subscriptions.data.some(s => 
-        s.status === 'active' || s.status === 'trialing'
-      );
+      // Find the base plan subscription (not Universal Access)
+      const basePlanSub = subscriptions.data.find(s => {
+        if (s.status !== 'active' && s.status !== 'trialing') return false;
+        // Check if this is NOT a Universal Access subscription
+        const item = s.items.data[0];
+        if (!item) return false;
+        const price = item.price;
+        const product = typeof price.product === 'object' ? price.product as any : null;
+        const productName = product?.name || '';
+        // Skip Universal Access subscriptions
+        if (productName.toLowerCase().includes('universal access')) return false;
+        if (price.metadata?.type === 'universal_access') return false;
+        return true;
+      });
+
+      const hasActiveSubscription = !!basePlanSub;
+
+      // Extract plan name from the subscription's price/product
+      let planId = null;
+      let planName = null;
+      if (basePlanSub) {
+        const item = basePlanSub.items.data[0];
+        const price = item?.price;
+        const product = typeof price?.product === 'object' ? price.product as any : null;
+        // Try to get plan from price metadata first
+        planId = price?.metadata?.planId || price?.metadata?.tier || null;
+        // Fallback to product name
+        if (!planId && product?.name) {
+          planName = product.name.toLowerCase();
+          // Map product names to plan IDs
+          if (planName.includes('starter')) planId = 'starter';
+          else if (planName.includes('pro')) planId = 'pro';
+          else if (planName.includes('standard')) planId = 'standard';
+          else if (planName.includes('growth')) planId = 'growth';
+          else if (planName.includes('empire')) planId = 'empire';
+          else planId = planName;
+        }
+      }
 
       if (hasActiveSubscription && club.trial_status !== 'converted') {
         // Update database to mark as converted
@@ -527,7 +563,7 @@ export function registerRoutes(app: Express) {
         success: true,
         hasActiveSubscription,
         trialStatus: hasActiveSubscription ? 'converted' : club.trial_status,
-        planId: hasActiveSubscription ? (subscriptions.data[0].items.data[0]?.price?.id || 'active') : null,
+        planId: planId,
         customerId: customer.id,
         searchedEmail: club.owner_email
       });

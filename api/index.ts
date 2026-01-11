@@ -610,11 +610,13 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
     let hasActiveSubscription = false;
     let foundCustomerId = null;
     let subscriptionStatuses: string[] = [];
+    let planId: string | null = null;
     
     for (const customer of customers.data) {
       const subscriptions = await stripe.subscriptions.list({
         customer: customer.id,
-        limit: 10
+        limit: 10,
+        expand: ['data.items.data.price.product']
       });
       
       console.log(`[VerifySubscription] Customer ${customer.id} (${customer.email}) has ${subscriptions.data.length} subscriptions`);
@@ -622,13 +624,36 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
       for (const sub of subscriptions.data) {
         subscriptionStatuses.push(`${sub.id}:${sub.status}`);
         if (sub.status === 'active' || sub.status === 'trialing') {
-          hasActiveSubscription = true;
-          foundCustomerId = customer.id;
+          // Check if this is the base plan (not Universal Access)
+          const item = sub.items.data[0];
+          const price = item?.price;
+          const product = typeof price?.product === 'object' ? price.product as any : null;
+          const productName = product?.name || '';
+          
+          // Skip Universal Access subscriptions when determining plan
+          const isUA = productName.toLowerCase().includes('universal access') || 
+                       price?.metadata?.type === 'universal_access';
+          
+          if (!isUA) {
+            hasActiveSubscription = true;
+            foundCustomerId = customer.id;
+            // Extract plan from metadata or product name
+            planId = price?.metadata?.planId || price?.metadata?.tier || null;
+            if (!planId && productName) {
+              const pName = productName.toLowerCase();
+              if (pName.includes('starter')) planId = 'starter';
+              else if (pName.includes('pro')) planId = 'pro';
+              else if (pName.includes('standard')) planId = 'standard';
+              else if (pName.includes('growth')) planId = 'growth';
+              else if (pName.includes('empire')) planId = 'empire';
+              else planId = pName;
+            }
+          }
         }
       }
     }
     
-    console.log(`[VerifySubscription] Result: hasActiveSubscription=${hasActiveSubscription}, statuses=${subscriptionStatuses.join(', ')}`);
+    console.log(`[VerifySubscription] Result: hasActiveSubscription=${hasActiveSubscription}, planId=${planId}, statuses=${subscriptionStatuses.join(', ')}`);
     
     if (hasActiveSubscription && club.trial_status !== 'converted') {
       await client.query(
@@ -641,6 +666,7 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
       success: true,
       hasActiveSubscription,
       trialStatus: hasActiveSubscription ? 'converted' : club.trial_status,
+      planId: planId,
       customerId: foundCustomerId || customers.data[0].id,
       searchedEmail: emailToSearch,
       debug: { 

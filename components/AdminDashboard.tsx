@@ -2185,14 +2185,14 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                 console.log('[BillingTab] Subscription verification result:', result);
                 if (result.success && result.hasActiveSubscription) {
                     setVerifiedStatus({ status: 'active', label: 'Active', color: 'bg-green-600 text-green-100', daysLeft: -1 });
-                    // Force update localStorage with active subscription
+                    // Force update localStorage with active subscription - use actual plan from Stripe
                     const existingSub = localStorage.getItem('taekup_subscription');
                     let sub = existingSub ? JSON.parse(existingSub) : { trialEndDate: new Date().toISOString() };
-                    sub.planId = 'starter';
+                    sub.planId = result.planId || 'starter'; // Use actual plan from Stripe
                     sub.isTrialActive = false;
                     sub.isLocked = false;
                     localStorage.setItem('taekup_subscription', JSON.stringify(sub));
-                    console.log('[BillingTab] Updated localStorage subscription to active');
+                    console.log('[BillingTab] Updated localStorage subscription to active with plan:', result.planId);
                     // Dispatch event to notify App.tsx to refresh subscription state and hide trial banner
                     window.dispatchEvent(new Event('subscription-updated'));
                 } else if (result.success && !result.hasActiveSubscription && result.trialStatus === 'active') {
