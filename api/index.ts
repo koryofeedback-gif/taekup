@@ -615,8 +615,7 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
     for (const customer of customers.data) {
       const subscriptions = await stripe.subscriptions.list({
         customer: customer.id,
-        limit: 10,
-        expand: ['data.items.data.price.product']
+        limit: 10
       });
       
       console.log(`[VerifySubscription] Customer ${customer.id} (${customer.email}) has ${subscriptions.data.length} subscriptions`);
@@ -624,21 +623,24 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
       for (const sub of subscriptions.data) {
         subscriptionStatuses.push(`${sub.id}:${sub.status}`);
         if (sub.status === 'active' || sub.status === 'trialing') {
-          // Check if this is the base plan (not Universal Access)
           const item = sub.items.data[0];
-          const price = item?.price;
-          const product = typeof price?.product === 'object' ? price.product as any : null;
+          if (!item) continue;
+          
+          // Fetch the price with product expanded (only 1 level deep - avoids Stripe expand limit)
+          const priceId = item.price.id;
+          const price = await stripe.prices.retrieve(priceId, { expand: ['product'] });
+          const product = typeof price.product === 'object' ? price.product as any : null;
           const productName = product?.name || '';
           
           // Skip Universal Access subscriptions when determining plan
           const isUA = productName.toLowerCase().includes('universal access') || 
-                       price?.metadata?.type === 'universal_access';
+                       price.metadata?.type === 'universal_access';
           
           if (!isUA) {
             hasActiveSubscription = true;
             foundCustomerId = customer.id;
             // Extract plan from metadata or product name
-            planId = price?.metadata?.planId || price?.metadata?.tier || null;
+            planId = price.metadata?.planId || price.metadata?.tier || null;
             if (!planId && productName) {
               const pName = productName.toLowerCase();
               if (pName.includes('starter')) planId = 'starter';
@@ -648,9 +650,11 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
               else if (pName.includes('empire')) planId = 'empire';
               else planId = pName;
             }
+            break; // Found base plan, stop looking
           }
         }
       }
+      if (hasActiveSubscription) break; // Found subscription, stop checking other customers
     }
     
     console.log(`[VerifySubscription] Result: hasActiveSubscription=${hasActiveSubscription}, planId=${planId}, statuses=${subscriptionStatuses.join(', ')}`);
