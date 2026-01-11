@@ -501,14 +501,15 @@ export function registerRoutes(app: Express) {
 
       const customer = customers.data[0];
       
-      // Check for active subscriptions
+      // Check for active or trialing subscriptions
       const subscriptions = await stripe.subscriptions.list({
         customer: customer.id,
-        status: 'active',
-        limit: 1
+        limit: 5
       });
 
-      const hasActiveSubscription = subscriptions.data.length > 0;
+      const hasActiveSubscription = subscriptions.data.some(s => 
+        s.status === 'active' || s.status === 'trialing'
+      );
 
       if (hasActiveSubscription && club.trial_status !== 'converted') {
         // Update database to mark as converted

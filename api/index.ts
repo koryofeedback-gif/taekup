@@ -570,11 +570,12 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
 
     const subscriptions = await stripe.subscriptions.list({
       customer: customers.data[0].id,
-      status: 'active',
-      limit: 1
+      limit: 5
     });
 
-    const hasActiveSubscription = subscriptions.data.length > 0;
+    const hasActiveSubscription = subscriptions.data.some(s => 
+      s.status === 'active' || s.status === 'trialing'
+    );
     
     if (hasActiveSubscription && club.trial_status !== 'converted') {
       await client.query(
