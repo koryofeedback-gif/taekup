@@ -10,12 +10,20 @@ interface TrialBannerProps {
 export const TrialBanner: React.FC<TrialBannerProps> = ({ subscription, onUpgradeClick }) => {
   // Only hide if there's a confirmed active subscription (planId + not in trial)
   if (subscription.planId && !subscription.isTrialActive) {
+    console.log('[TrialBanner] Hidden: has active subscription');
     return null;
   }
 
   const daysRemaining = getDaysRemaining(subscription.trialEndDate);
+  console.log('[TrialBanner] State:', { 
+    planId: subscription.planId, 
+    isTrialActive: subscription.isTrialActive, 
+    trialEndDate: subscription.trialEndDate, 
+    daysRemaining 
+  });
   
   if (daysRemaining <= 0) {
+    console.log('[TrialBanner] Hidden: no days remaining');
     return null;
   }
 
