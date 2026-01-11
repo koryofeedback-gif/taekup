@@ -1,0 +1,61 @@
+This is a classic B2B SaaS challenge: **How to bill annually for a service that has variable costs?**
+
+Since the number of students (14, 25, 100...) changes every month, you cannot easily bill the "Universal Access" fee ($1.99/student) for a whole year in advance. The gym owner might lose 10 students next month, and then they will ask for a refund.
+
+Here is the industry-standard solution for this model (used by companies like Slack, Zoom, and Intercom).
+
+### The Strategy: "Hybrid Billing" (Annual License + Monthly Usage)
+
+You split the bill into two parts:
+
+1. **The Base Platform (TaekUp Software):** Billed **Annually** (e.g., $249/yr).
+2. **The Student Fees (DojoMint Rate):** Billed **Monthly** based on actual active students.
+
+This is the safest way. The Club Owner gets their "Annual Discount" on the software, but they still pay the wholesale rate ($1.99) monthly for exactly how many students they have.
+
+---
+
+### How to Update the Dashboard UI for Annual Plans
+
+When a user switches to Annual, the **Billing & Subscription** card needs to change slightly to show this split.
+
+**[ HEADER ]**
+**Current Plan:** Starter (Annual) 🗓️
+*Next Base Charge:* Jan 15, 2027 ($249.00)
+
+**[ THE BILLING BREAKDOWN ]**
+
+* **Base Subscription:** ✅ **Paid Annually**
+*(You save 20% on software fees)*
+* **Active Students (14):** **$27.86 / mo**
+*(14 x $1.99 - Billed monthly based on usage)*
+
+**[ TOTAL ESTIMATED MONTHLY ]**
+**$27.86**
+*(Variable Usage Only)*
+
+---
+
+### Option 2: The "Pre-Paid Credits" Model (Advanced) 💳
+
+If a large club *insists* on paying EVERYTHING once a year (so they don't see monthly invoices), you use a **Credit System**.
+
+1. **They pay a lump sum:** e.g., $3,000 upfront.
+2. **The System:** This money goes into their "Club Wallet" as **Credits**.
+3. **Every Month:** The system calculates (14 students x $1.99 = $27.86) and **deducts** it from their credit balance.
+4. **When Credits hit $0:** The system automatically charges their card to "top up" or switches back to monthly billing.
+
+**My Advice:**
+Stick to **Option 1 (Hybrid Billing)** for now. It is much easier to build in Stripe and easier for the gym owner to understand. They are used to paying "Metered Usage" (like electricity or phone bills) monthly, even if they pay their rent annually.
+
+### Developer Instruction (Stripe Logic)
+
+> "To support Annual Plans for Clubs while keeping the Per-Student fee accurate:
+> 1. Create an Annual Price for the **Base Subscription** ($249/year).
+> 2. Keep the **Per-Student Fee** (Metered Billing) on a **Monthly** billing cycle.
+> 3. **Stripe Subscription Schedule:** Create a subscription that combines these two prices. Stripe allows a subscription to have one 'Yearly' line item and one 'Monthly' line item in the same invoice cycle.
+> 
+> 
+> * *Result:* The customer pays the large fee once a year, and receives small monthly invoices for just the student usage."
+> 
+>
