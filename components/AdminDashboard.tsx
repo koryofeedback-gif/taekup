@@ -2124,7 +2124,22 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
 
 const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
     const totalStudents = data.students.length;
-    const currentTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
+    const recommendedTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
+    const [subscribedPlanId, setSubscribedPlanId] = useState<string | null>(() => {
+        // Initialize from localStorage if available
+        try {
+            const saved = localStorage.getItem('taekup_subscription');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return parsed.planId || null;
+            }
+        } catch (e) {}
+        return null;
+    });
+    // Use actual subscribed plan if available, otherwise fall back to recommended based on student count
+    const currentTier = subscribedPlanId 
+        ? (PRICING_TIERS.find(t => t.name.toLowerCase() === subscribedPlanId.toLowerCase()) || recommendedTier)
+        : recommendedTier;
     const [connectingBank, setConnectingBank] = useState(false);
     const [verifiedStatus, setVerifiedStatus] = useState<{ status: string; label: string; color: string; daysLeft: number } | null>(null);
     const [toggleLoading, setToggleLoading] = useState(false);
@@ -2186,13 +2201,15 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                 if (result.success && result.hasActiveSubscription) {
                     setVerifiedStatus({ status: 'active', label: 'Active', color: 'bg-green-600 text-green-100', daysLeft: -1 });
                     // Force update localStorage with active subscription - use actual plan from Stripe
+                    const actualPlan = result.planId || 'starter';
+                    setSubscribedPlanId(actualPlan); // Update state to reflect actual plan
                     const existingSub = localStorage.getItem('taekup_subscription');
                     let sub = existingSub ? JSON.parse(existingSub) : { trialEndDate: new Date().toISOString() };
-                    sub.planId = result.planId || 'starter'; // Use actual plan from Stripe
+                    sub.planId = actualPlan;
                     sub.isTrialActive = false;
                     sub.isLocked = false;
                     localStorage.setItem('taekup_subscription', JSON.stringify(sub));
-                    console.log('[BillingTab] Updated localStorage subscription to active with plan:', result.planId);
+                    console.log('[BillingTab] Updated localStorage subscription to active with plan:', actualPlan);
                     // Dispatch event to notify App.tsx to refresh subscription state and hide trial banner
                     window.dispatchEvent(new Event('subscription-updated'));
                 } else if (result.success && !result.hasActiveSubscription && result.trialStatus === 'active') {
