@@ -485,6 +485,31 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
   const protocol = req.headers['x-forwarded-proto'] || 'https';
   const baseUrl = `${protocol}://${host}`;
 
+  // Check if user already has a trial status - skip Stripe trial if so
+  let shouldSkipTrial = false;
+  if (clubId) {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT trial_status FROM clubs WHERE id = $1::uuid`,
+        [clubId]
+      );
+      if (result.rows.length > 0 && result.rows[0].trial_status) {
+        shouldSkipTrial = true;
+        console.log('[Checkout] Skipping Stripe trial for club', clubId, '- already has trial_status:', result.rows[0].trial_status);
+      }
+    } catch (e) {
+      console.error('[Checkout] Error checking trial status:', e);
+    } finally {
+      client.release();
+    }
+  }
+
+  const subscriptionData: any = { metadata: { clubId: clubId || '', email: email || '' } };
+  if (!shouldSkipTrial) {
+    subscriptionData.trial_period_days = 14;
+  }
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{ price: priceId, quantity: 1 }],
@@ -492,7 +517,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
     success_url: `${baseUrl}/app/admin?subscription=success`,
     cancel_url: `${baseUrl}/app/pricing?subscription=cancelled`,
     metadata: { clubId: clubId || '', email: email || '' },
-    subscription_data: { trial_period_days: 14, metadata: { clubId: clubId || '', email: email || '' } },
+    subscription_data: subscriptionData,
   });
   return res.json({ url: session.url });
 }
