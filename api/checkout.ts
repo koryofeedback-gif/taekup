@@ -82,7 +82,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subscriptionData.trial_period_days = 14;
     }
 
-    const session = await stripe.checkout.sessions.create({
+    // Prefill email to avoid user paying with different email than their club account
+    const sessionConfig: any = {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
@@ -90,7 +91,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       cancel_url: `${baseUrl}/pricing?subscription=cancelled`,
       metadata: { clubId: clubId || '', email: email || '' },
       subscription_data: subscriptionData,
-    });
+    };
+    
+    // Prefill email field so user pays with the same email as their club account
+    if (email) {
+      sessionConfig.customer_email = email;
+    }
+    
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log(`[/api/checkout] Session created:`, { sessionId: session.id, url: session.url });
     return res.json({ url: session.url });

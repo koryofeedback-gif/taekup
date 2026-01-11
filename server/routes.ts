@@ -1141,7 +1141,8 @@ export function registerRoutes(app: Express) {
         `${baseUrl}/pricing?subscription=cancelled`,
         stripeCustomerId,
         { clubId: clubId || '', email: email || '' },
-        skipTrial
+        skipTrial,
+        email // Prefill email so user pays with same email as their club account
       );
 
       console.log(`[/api/checkout] Session created:`, { sessionId: session.id, url: session.url });

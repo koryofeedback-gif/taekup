@@ -16,7 +16,8 @@ export class StripeService {
     cancelUrl: string,
     customerId?: string,
     metadata?: Record<string, string>,
-    skipTrial: boolean = false
+    skipTrial: boolean = false,
+    prefillEmail?: string
   ) {
     const stripe = await getUncachableStripeClient();
     
@@ -39,6 +40,9 @@ export class StripeService {
 
     if (customerId) {
       sessionParams.customer = customerId;
+    } else if (prefillEmail) {
+      // Prefill email so user pays with same email as their club account
+      sessionParams.customer_email = prefillEmail;
     }
 
     return await stripe.checkout.sessions.create(sessionParams);
