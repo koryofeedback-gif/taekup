@@ -539,6 +539,7 @@ export function registerRoutes(app: Express) {
   });
 
   // DojoMint Universal Access - per-student billing toggle
+  // HYBRID BILLING: Creates a SEPARATE monthly subscription for UA, works with yearly base plans
   app.post('/api/club/:clubId/universal-access', async (req: Request, res: Response) => {
     try {
       const { clubId } = req.params;
@@ -558,19 +559,9 @@ export function registerRoutes(app: Express) {
       if (customers.data.length === 0) {
         return res.status(400).json({ error: 'No Stripe customer found. Please subscribe first.' });
       }
+      const customerId = customers.data[0].id;
       
-      // Get active subscription
-      const subscriptions = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
-      if (subscriptions.data.length === 0) {
-        const trialingSubs = await stripe.subscriptions.list({ customer: customers.data[0].id, status: 'trialing', limit: 1 });
-        if (trialingSubs.data.length === 0) {
-          return res.status(400).json({ error: 'No active subscription found' });
-        }
-        subscriptions.data = trialingSubs.data;
-      }
-      const subscription = subscriptions.data[0];
-      
-      // Find $1.99/month price
+      // Find $1.99/month UA price
       const prices = await stripe.prices.list({ active: true, limit: 100 });
       const uaPrice = prices.data.find(p => 
         p.unit_amount === 199 && 
@@ -585,27 +576,41 @@ export function registerRoutes(app: Express) {
         });
       }
       
-      // Find existing subscription item
-      const existingItem = subscription.items.data.find(item => {
-        const priceId = typeof item.price === 'string' ? item.price : item.price.id;
-        return priceId === uaPrice.id;
-      });
+      // Find existing UA subscription (separate from base plan) - only active ones
+      const allSubs = await stripe.subscriptions.list({ customer: customerId, limit: 10 });
+      let uaSubscription = allSubs.data.find(sub => 
+        sub.status !== 'canceled' &&
+        sub.items.data.some(item => {
+          const price = typeof item.price === 'object' ? item.price : null;
+          return price && price.id === uaPrice.id;
+        })
+      );
       
       if (enabled) {
         const quantity = Math.max(1, studentCount || 1);
-        if (existingItem) {
-          await stripe.subscriptionItems.update(existingItem.id, { quantity });
+        
+        if (uaSubscription) {
+          // Update existing UA subscription quantity
+          const uaItem = uaSubscription.items.data.find(item => {
+            const price = typeof item.price === 'object' ? item.price : null;
+            return price && price.id === uaPrice.id;
+          });
+          if (uaItem) {
+            await stripe.subscriptionItems.update(uaItem.id, { quantity });
+          }
         } else {
-          await stripe.subscriptionItems.create({
-            subscription: subscription.id,
-            price: uaPrice.id,
-            quantity
+          // Create new monthly subscription for Universal Access
+          uaSubscription = await stripe.subscriptions.create({
+            customer: customerId,
+            items: [{ price: uaPrice.id, quantity }],
+            metadata: { type: 'universal_access', clubId }
           });
         }
-        return res.json({ success: true, enabled: true, quantity });
+        return res.json({ success: true, enabled: true, quantity, subscriptionId: uaSubscription.id });
       } else {
-        if (existingItem) {
-          await stripe.subscriptionItems.del(existingItem.id, { proration_behavior: 'create_prorations' });
+        // Cancel UA subscription if it exists
+        if (uaSubscription) {
+          await stripe.subscriptions.cancel(uaSubscription.id, { prorate: true });
         }
         return res.json({ success: true, enabled: false });
       }
@@ -616,6 +621,7 @@ export function registerRoutes(app: Express) {
   });
 
   // DojoMint Universal Access - sync student count
+  // Finds UA subscription separately from base plan
   app.post('/api/club/:clubId/universal-access/sync', async (req: Request, res: Response) => {
     try {
       const { clubId } = req.params;
@@ -635,16 +641,23 @@ export function registerRoutes(app: Express) {
         return res.json({ success: false, message: 'No Stripe customer' });
       }
       
-      const subscriptions = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
-      if (subscriptions.data.length === 0) {
-        return res.json({ success: false, message: 'No subscription' });
-      }
+      // Find UA subscription (separate from base plan) by looking for $1.99/month price - only active subs
+      const allSubs = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 10 });
+      let uaSubscription = null;
+      let uaItem = null;
       
-      // Find $1.99/month subscription item
-      const uaItem = subscriptions.data[0].items.data.find(item => {
-        const price = typeof item.price === 'object' ? item.price : null;
-        return price && price.unit_amount === 199 && price.recurring?.interval === 'month';
-      });
+      for (const sub of allSubs.data) {
+        if (sub.status === 'canceled') continue;
+        for (const item of sub.items.data) {
+          const price = typeof item.price === 'object' ? item.price : null;
+          if (price && price.unit_amount === 199 && price.recurring?.interval === 'month') {
+            uaSubscription = sub;
+            uaItem = item;
+            break;
+          }
+        }
+        if (uaItem) break;
+      }
       
       if (!uaItem) {
         return res.json({ success: false, message: 'Universal Access not enabled' });

@@ -658,6 +658,7 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
 }
 
 // DojoMint Universal Access - per-student billing ($1.99/student/month)
+// HYBRID BILLING: Creates a SEPARATE monthly subscription for UA, works with yearly base plans
 const UNIVERSAL_ACCESS_PRICE_ID = process.env.UNIVERSAL_ACCESS_PRICE_ID || '';
 
 async function handleUniversalAccessToggle(req: VercelRequest, res: VercelResponse, clubId: string) {
@@ -684,26 +685,13 @@ async function handleUniversalAccessToggle(req: VercelRequest, res: VercelRespon
     }
     const customerId = customers.data[0].id;
     
-    // Get active subscription
-    const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 1 });
-    if (subscriptions.data.length === 0) {
-      // Try trialing subscriptions
-      const trialingSubs = await stripe.subscriptions.list({ customer: customerId, status: 'trialing', limit: 1 });
-      if (trialingSubs.data.length === 0) {
-        return res.status(400).json({ error: 'No active subscription found' });
-      }
-      subscriptions.data = trialingSubs.data;
-    }
-    const subscription = subscriptions.data[0];
-    
-    // Find Universal Access price - must be pre-configured in Stripe and set via environment variable
+    // Find Universal Access price - must be pre-configured in Stripe
     let universalAccessPriceId = UNIVERSAL_ACCESS_PRICE_ID;
     
     // If no price ID configured, try to find it by metadata or price amount
     if (!universalAccessPriceId) {
       const prices = await stripe.prices.list({ active: true, limit: 100 });
       const uaPrice = prices.data.find(p => {
-        // Look for $1.99/month price with universal_access metadata
         return (
           p.unit_amount === 199 && 
           p.recurring?.interval === 'month' &&
@@ -717,43 +705,52 @@ async function handleUniversalAccessToggle(req: VercelRequest, res: VercelRespon
     }
     
     if (!universalAccessPriceId) {
-      // Price not configured - return error with instructions
       console.error('[UniversalAccess] UNIVERSAL_ACCESS_PRICE_ID not configured');
       return res.status(500).json({ 
         error: 'Universal Access price not configured',
-        instructions: 'Please create a product in Stripe Dashboard with a $1.99/month recurring price and set UNIVERSAL_ACCESS_PRICE_ID environment variable'
+        instructions: 'Create a $1.99/month price in Stripe Dashboard with metadata.type=universal_access'
       });
     }
     
-    // Find existing Universal Access subscription item
-    const existingItem = subscription.items.data.find(item => {
-      const priceId = typeof item.price === 'string' ? item.price : item.price.id;
-      return priceId === universalAccessPriceId;
-    });
+    // Find existing UA subscription (separate from base plan) - only active ones
+    const allSubs = await stripe.subscriptions.list({ customer: customerId, limit: 10 });
+    let uaSubscription = allSubs.data.find(sub => 
+      sub.status !== 'canceled' &&
+      sub.items.data.some(item => {
+        const price = typeof item.price === 'object' ? item.price : null;
+        return price && price.id === universalAccessPriceId;
+      })
+    );
     
     if (enabled) {
       const quantity = Math.max(1, studentCount || 1);
       
-      if (existingItem) {
-        // Update quantity
-        await stripe.subscriptionItems.update(existingItem.id, { quantity });
-        console.log(`[UniversalAccess] Updated quantity to ${quantity} for club ${clubId}`);
-      } else {
-        // Add new subscription item
-        await stripe.subscriptionItems.create({
-          subscription: subscription.id,
-          price: universalAccessPriceId,
-          quantity
+      if (uaSubscription) {
+        // Update existing UA subscription quantity
+        const uaItem = uaSubscription.items.data.find(item => {
+          const price = typeof item.price === 'object' ? item.price : null;
+          return price && price.id === universalAccessPriceId;
         });
-        console.log(`[UniversalAccess] Added subscription item with quantity ${quantity} for club ${clubId}`);
+        if (uaItem) {
+          await stripe.subscriptionItems.update(uaItem.id, { quantity });
+          console.log(`[UniversalAccess] Updated quantity to ${quantity} for club ${clubId}`);
+        }
+      } else {
+        // Create new monthly subscription for Universal Access
+        uaSubscription = await stripe.subscriptions.create({
+          customer: customerId,
+          items: [{ price: universalAccessPriceId, quantity }],
+          metadata: { type: 'universal_access', clubId }
+        });
+        console.log(`[UniversalAccess] Created separate UA subscription with quantity ${quantity} for club ${clubId}`);
       }
       
-      return res.json({ success: true, enabled: true, quantity, message: 'Universal Access enabled' });
+      return res.json({ success: true, enabled: true, quantity, subscriptionId: uaSubscription.id, message: 'Universal Access enabled' });
     } else {
-      // Disable - remove subscription item
-      if (existingItem) {
-        await stripe.subscriptionItems.del(existingItem.id, { proration_behavior: 'create_prorations' });
-        console.log(`[UniversalAccess] Removed subscription item for club ${clubId}`);
+      // Disable - cancel UA subscription
+      if (uaSubscription) {
+        await stripe.subscriptions.cancel(uaSubscription.id, { prorate: true });
+        console.log(`[UniversalAccess] Cancelled UA subscription for club ${clubId}`);
       }
       
       return res.json({ success: true, enabled: false, message: 'Universal Access disabled' });
@@ -788,18 +785,21 @@ async function handleUniversalAccessSync(req: VercelRequest, res: VercelResponse
       return res.json({ success: false, message: 'No Stripe customer' });
     }
     
-    const subscriptions = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
-    if (subscriptions.data.length === 0) {
-      return res.json({ success: false, message: 'No subscription' });
+    // Find UA subscription (separate from base plan) by looking for $1.99/month price - only active subs
+    const allSubs = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 10 });
+    let uaItem = null;
+    
+    for (const sub of allSubs.data) {
+      if (sub.status === 'canceled') continue;
+      for (const item of sub.items.data) {
+        const price = typeof item.price === 'object' ? item.price : null;
+        if (price && price.unit_amount === 199 && price.recurring?.interval === 'month') {
+          uaItem = item;
+          break;
+        }
+      }
+      if (uaItem) break;
     }
-    
-    const subscription = subscriptions.data[0];
-    
-    // Find Universal Access subscription item by checking for $1.99 price
-    const uaItem = subscription.items.data.find(item => {
-      const price = typeof item.price === 'object' ? item.price : null;
-      return price && price.unit_amount === 199 && price.recurring?.interval === 'month';
-    });
     
     if (!uaItem) {
       return res.json({ success: false, message: 'Universal Access not enabled' });
