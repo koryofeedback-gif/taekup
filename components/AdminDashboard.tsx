@@ -2141,6 +2141,8 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     sub.isLocked = false;
                     localStorage.setItem('taekup_subscription', JSON.stringify(sub));
                     console.log('[BillingTab] Updated localStorage subscription to active');
+                    // Dispatch event to notify App.tsx to refresh subscription state and hide trial banner
+                    window.dispatchEvent(new Event('subscription-updated'));
                 } else if (result.success && !result.hasActiveSubscription && result.trialStatus === 'active') {
                     // User is in trial - clear any stale planId and set trial active
                     const existingSub = localStorage.getItem('taekup_subscription');
