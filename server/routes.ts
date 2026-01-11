@@ -561,13 +561,19 @@ export function registerRoutes(app: Express) {
       }
       const customerId = customers.data[0].id;
       
-      // Find $1.99/month UA price
-      const prices = await stripe.prices.list({ active: true, limit: 100 });
-      const uaPrice = prices.data.find(p => 
-        p.unit_amount === 199 && 
-        p.recurring?.interval === 'month' &&
-        (p.metadata?.type === 'universal_access' || p.nickname === 'Universal Access')
-      );
+      // Find $1.99/month UA price - check metadata, nickname, or product name
+      const prices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
+      const uaPrice = prices.data.find(p => {
+        if (p.unit_amount !== 199 || p.recurring?.interval !== 'month') return false;
+        // Match by price metadata
+        if (p.metadata?.type === 'universal_access') return true;
+        // Match by price nickname
+        if (p.nickname === 'Universal Access') return true;
+        // Match by product name
+        const productName = typeof p.product === 'object' ? (p.product as any).name : '';
+        if (productName.toLowerCase().includes('universal access')) return true;
+        return false;
+      });
       
       if (!uaPrice) {
         return res.status(500).json({ 

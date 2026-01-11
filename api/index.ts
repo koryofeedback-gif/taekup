@@ -688,19 +688,23 @@ async function handleUniversalAccessToggle(req: VercelRequest, res: VercelRespon
     // Find Universal Access price - must be pre-configured in Stripe
     let universalAccessPriceId = UNIVERSAL_ACCESS_PRICE_ID;
     
-    // If no price ID configured, try to find it by metadata or price amount
+    // If no price ID configured, try to find it by metadata, nickname, or product name
     if (!universalAccessPriceId) {
-      const prices = await stripe.prices.list({ active: true, limit: 100 });
+      const prices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
       const uaPrice = prices.data.find(p => {
-        return (
-          p.unit_amount === 199 && 
-          p.recurring?.interval === 'month' &&
-          (p.metadata?.type === 'universal_access' || p.nickname === 'Universal Access')
-        );
+        if (p.unit_amount !== 199 || p.recurring?.interval !== 'month') return false;
+        // Match by price metadata
+        if (p.metadata?.type === 'universal_access') return true;
+        // Match by price nickname
+        if (p.nickname === 'Universal Access') return true;
+        // Match by product name
+        const productName = typeof p.product === 'object' ? (p.product as any).name : '';
+        if (productName.toLowerCase().includes('universal access')) return true;
+        return false;
       });
       if (uaPrice) {
         universalAccessPriceId = uaPrice.id;
-        console.log('[UniversalAccess] Found existing price by metadata:', universalAccessPriceId);
+        console.log('[UniversalAccess] Found existing price by metadata/product:', universalAccessPriceId);
       }
     }
     
