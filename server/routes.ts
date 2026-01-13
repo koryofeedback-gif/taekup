@@ -650,7 +650,8 @@ export function registerRoutes(app: Express) {
       } else {
         // Cancel UA subscription if it exists
         if (uaSubscription) {
-          await stripe.subscriptions.cancel(uaSubscription.id, { prorate: true });
+          // Use immediate cancellation without proration to avoid payment method requirement
+          await stripe.subscriptions.cancel(uaSubscription.id);
         }
         return res.json({ success: true, enabled: false });
       }
