@@ -522,6 +522,51 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
   return res.json({ url: session.url });
 }
 
+async function handleParentPremiumCheckout(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { studentId, parentEmail, clubId } = parseBody(req);
+  if (!studentId || !parentEmail) return res.status(400).json({ error: 'studentId and parentEmail are required' });
+
+  const stripe = getStripeClient();
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+
+  const PARENT_PREMIUM_PRICE_ID = 'price_1Sp5BPRhYhunDn2j6Yz8dSxD';
+  
+  const host = req.headers.host || 'mytaek.com';
+  const protocol = req.headers['x-forwarded-proto'] || 'https';
+  const baseUrl = `${protocol}://${host}`;
+
+  // Find or create customer
+  const emailLower = parentEmail.toLowerCase().trim();
+  let customerId: string | undefined;
+  const existingCustomers = await stripe.customers.list({ email: emailLower, limit: 1 });
+  if (existingCustomers.data.length > 0) {
+    customerId = existingCustomers.data[0].id;
+  } else {
+    const newCustomer = await stripe.customers.create({
+      email: emailLower,
+      metadata: { studentId, clubId: clubId || '', type: 'parent_premium' }
+    });
+    customerId = newCustomer.id;
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    payment_method_types: ['card'],
+    line_items: [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }],
+    mode: 'subscription',
+    success_url: `${baseUrl}/app/parent?premium=success&student_id=${studentId}`,
+    cancel_url: `${baseUrl}/app/parent?premium=cancelled`,
+    metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
+    subscription_data: {
+      metadata: { studentId, clubId: clubId || '', type: 'parent_premium' }
+    }
+  });
+
+  console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}`);
+  return res.json({ url: session.url });
+}
+
 async function handleCustomerPortal(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { customerId } = parseBody(req);
@@ -6677,6 +6722,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/reset-password' || path === '/reset-password/') return await handleResetPassword(req, res);
     if (path === '/verify-password' || path === '/verify-password/') return await handleVerifyPassword(req, res);
     if (path === '/checkout' || path === '/checkout/') return await handleCheckout(req, res);
+    if (path === '/parent-premium/checkout' || path === '/parent-premium/checkout/') return await handleParentPremiumCheckout(req, res);
     if (path === '/customer-portal' || path === '/customer-portal/') return await handleCustomerPortal(req, res);
     if (path === '/products-with-prices' || path === '/products-with-prices/') return await handleProductsWithPrices(req, res);
     if (path === '/stripe/publishable-key' || path === '/stripe/publishable-key/') return await handleStripePublishableKey(req, res);
