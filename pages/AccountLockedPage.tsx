@@ -1,24 +1,96 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { SUBSCRIPTION_PLANS, formatPrice, getRequiredPlan } from '../services/subscriptionService';
-import type { SubscriptionPlanId, Student } from '../types';
+import { stripeAPI } from '../services/apiClient';
+import type { SubscriptionPlan, Student } from '../types';
 
 interface AccountLockedPageProps {
   students: Student[];
   clubName: string;
-  onSelectPlan?: (planId: SubscriptionPlanId) => void;
+  clubId?: string;
+  email?: string;
   isOwner?: boolean;
   isTrialExpired?: boolean;
+}
+
+interface StripePriceMap {
+  [key: string]: string;
 }
 
 export const AccountLockedPage: React.FC<AccountLockedPageProps> = ({
   students,
   clubName,
-  onSelectPlan,
+  clubId,
+  email,
   isOwner = true,
   isTrialExpired = true
 }) => {
+  const [stripePrices, setStripePrices] = useState<StripePriceMap>({});
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
   const studentCount = students.length;
   const requiredPlan = getRequiredPlan(studentCount);
+
+  useEffect(() => {
+    const loadStripePrices = async () => {
+      try {
+        const products = await stripeAPI.getProductsWithPrices();
+        const priceMap: StripePriceMap = {};
+        
+        for (const product of products) {
+          const metadata = product.metadata || {};
+          const planId = (
+            metadata.planId || 
+            metadata.tier || 
+            product.name || 
+            ''
+          ).toLowerCase().trim();
+          
+          if (planId && product.prices && product.prices.length > 0) {
+            for (const price of product.prices) {
+              if (price.recurring?.interval === 'month') {
+                priceMap[planId] = price.id;
+              }
+            }
+          }
+        }
+        
+        setStripePrices(priceMap);
+      } catch (err) {
+        console.warn('Could not load Stripe prices:', err);
+      }
+    };
+
+    if (isOwner) {
+      loadStripePrices();
+    }
+  }, [isOwner]);
+
+  const handleSelectPlan = async (plan: SubscriptionPlan) => {
+    const priceId = stripePrices[plan.id] || stripePrices[plan.name.toLowerCase()];
+    
+    if (!priceId) {
+      setError('Unable to load pricing. Please refresh and try again.');
+      return;
+    }
+
+    setIsLoading(plan.id);
+    setError(null);
+
+    try {
+      const checkoutUrl = await stripeAPI.createCheckoutSession(priceId, { clubId, email });
+      
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (err: any) {
+      console.error('[AccountLocked] Checkout error:', err);
+      setError(`Checkout error: ${err.message || 'Please try again'}`);
+      setIsLoading(null);
+    }
+  };
 
   const title = isTrialExpired ? 'Trial Period Ended' : 'Plan Upgrade Required';
   const description = isTrialExpired 
@@ -52,7 +124,13 @@ export const AccountLockedPage: React.FC<AccountLockedPageProps> = ({
             </div>
           </div>
 
-          {isOwner && onSelectPlan ? (
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-center">
+              {error}
+            </div>
+          )}
+
+          {isOwner ? (
             <>
               <div className="space-y-4 mb-8">
                 <h3 className="text-lg font-semibold text-white">Select a plan to continue:</h3>
@@ -60,16 +138,17 @@ export const AccountLockedPage: React.FC<AccountLockedPageProps> = ({
                 {SUBSCRIPTION_PLANS.map((plan) => {
                   const canSelect = plan.studentLimit === null || studentCount <= plan.studentLimit;
                   const isRecommended = plan.id === requiredPlan.id;
+                  const isLoadingThis = isLoading === plan.id;
 
                   return (
                     <button
                       key={plan.id}
-                      onClick={() => canSelect && onSelectPlan(plan.id)}
-                      disabled={!canSelect}
+                      onClick={() => canSelect && !isLoading && handleSelectPlan(plan)}
+                      disabled={!canSelect || !!isLoading}
                       className={`w-full p-4 rounded-xl border transition-all flex items-center justify-between ${
                         isRecommended
                           ? 'border-sky-500 bg-sky-500/10 hover:bg-sky-500/20'
-                          : canSelect
+                          : canSelect && !isLoading
                             ? 'border-gray-700 hover:border-gray-600 bg-gray-800/50 hover:bg-gray-800'
                             : 'border-gray-800 bg-gray-900/50 opacity-50 cursor-not-allowed'
                       }`}
@@ -91,8 +170,14 @@ export const AccountLockedPage: React.FC<AccountLockedPageProps> = ({
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="text-xl font-bold text-white">{formatPrice(plan.price)}</span>
-                        <span className="text-gray-400 text-sm">/mo</span>
+                        {isLoadingThis ? (
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sky-500"></div>
+                        ) : (
+                          <>
+                            <span className="text-xl font-bold text-white">{formatPrice(plan.price)}</span>
+                            <span className="text-gray-400 text-sm">/mo</span>
+                          </>
+                        )}
                       </div>
                     </button>
                   );

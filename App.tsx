@@ -730,11 +730,14 @@ const AppContent: React.FC<AppContentProps> = ({
     if (accountStatus.isLocked && finalWizardData && loggedInUserType) {
         const isOwner = loggedInUserType === 'owner';
         const isTrialExpired = !subscription?.planId;
+        const clubId = signupData?.clubId || localStorage.getItem('taekup_club_id') || undefined;
+        const ownerEmail = finalWizardData.ownerEmail || signupData?.email || localStorage.getItem('taekup_user_email') || undefined;
         return (
             <AccountLockedPage
                 students={finalWizardData.students}
                 clubName={finalWizardData.clubName}
-                onSelectPlan={isOwner ? onSelectPlan : undefined}
+                clubId={clubId}
+                email={ownerEmail}
                 isOwner={isOwner}
                 isTrialExpired={isTrialExpired}
             />
