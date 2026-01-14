@@ -1473,10 +1473,11 @@ export function registerRoutes(app: Express) {
             type: 'parent_premium'
           },
           // Add transfer on each subscription payment
+          // Fixed amount = 70% of NET ($4.99 - $0.30 fee = $4.69 * 0.70 = $3.28)
           ...(stripeConnectAccountId && {
             transfer_data: {
               destination: stripeConnectAccountId,
-              amount_percent: 70, // 70% goes to club
+              amount: 328, // Fixed $3.28 (70% of net after fees)
             }
           })
         }
