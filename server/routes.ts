@@ -572,8 +572,8 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // DojoMint Universal Access - per-student billing toggle
-  // HYBRID BILLING: Creates a SEPARATE monthly subscription for UA, works with yearly base plans
+  // DojoMint Universal Access - metered per-student billing toggle
+  // METERED BILLING: Uses usage records instead of quantity-based billing
   app.post('/api/club/:clubId/universal-access', async (req: Request, res: Response) => {
     try {
       const { clubId } = req.params;
@@ -595,26 +595,8 @@ export function registerRoutes(app: Express) {
       }
       const customerId = customers.data[0].id;
       
-      // Find $1.99/month UA price - check metadata, nickname, or product name
-      const prices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
-      const uaPrice = prices.data.find(p => {
-        if (p.unit_amount !== 199 || p.recurring?.interval !== 'month') return false;
-        // Match by price metadata
-        if (p.metadata?.type === 'universal_access') return true;
-        // Match by price nickname
-        if (p.nickname === 'Universal Access') return true;
-        // Match by product name
-        const productName = typeof p.product === 'object' ? (p.product as any).name : '';
-        if (productName.toLowerCase().includes('universal access')) return true;
-        return false;
-      });
-      
-      if (!uaPrice) {
-        return res.status(500).json({ 
-          error: 'Universal Access price not configured',
-          instructions: 'Create a $1.99/month price in Stripe Dashboard with metadata.type=universal_access'
-        });
-      }
+      // Use the specific metered UA price ID
+      const UA_PRICE_ID = 'price_1Sp5trRhYhunDn2jrTOtUvyR';
       
       // Find existing UA subscription (separate from base plan) - only active ones
       const allSubs = await stripe.subscriptions.list({ customer: customerId, limit: 10 });
@@ -622,7 +604,7 @@ export function registerRoutes(app: Express) {
         sub.status !== 'canceled' &&
         sub.items.data.some(item => {
           const price = typeof item.price === 'object' ? item.price : null;
-          return price && price.id === uaPrice.id;
+          return price && price.id === UA_PRICE_ID;
         })
       );
       
@@ -630,27 +612,38 @@ export function registerRoutes(app: Express) {
         const quantity = Math.max(1, studentCount || 1);
         
         if (uaSubscription) {
-          // Update existing UA subscription quantity
+          // For metered billing, report usage instead of updating quantity
           const uaItem = uaSubscription.items.data.find(item => {
             const price = typeof item.price === 'object' ? item.price : null;
-            return price && price.id === uaPrice.id;
+            return price && price.id === UA_PRICE_ID;
           });
           if (uaItem) {
-            await stripe.subscriptionItems.update(uaItem.id, { quantity });
+            // Report current student count as usage (set action replaces previous usage)
+            await stripe.subscriptionItems.createUsageRecord(uaItem.id, {
+              quantity,
+              action: 'set',
+              timestamp: Math.floor(Date.now() / 1000)
+            });
           }
         } else {
-          // Create new monthly subscription for Universal Access
+          // Create new metered subscription for Universal Access
           uaSubscription = await stripe.subscriptions.create({
             customer: customerId,
-            items: [{ price: uaPrice.id, quantity }],
+            items: [{ price: UA_PRICE_ID }],
             metadata: { type: 'universal_access', clubId }
+          });
+          // Report initial usage
+          const uaItem = uaSubscription.items.data[0];
+          await stripe.subscriptionItems.createUsageRecord(uaItem.id, {
+            quantity,
+            action: 'set',
+            timestamp: Math.floor(Date.now() / 1000)
           });
         }
         return res.json({ success: true, enabled: true, quantity, subscriptionId: uaSubscription.id });
       } else {
         // Cancel UA subscription if it exists
         if (uaSubscription) {
-          // Use immediate cancellation without proration to avoid payment method requirement
           await stripe.subscriptions.cancel(uaSubscription.id);
         }
         return res.json({ success: true, enabled: false });
@@ -661,8 +654,8 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // DojoMint Universal Access - sync student count
-  // Finds UA subscription separately from base plan
+  // DojoMint Universal Access - sync student count (metered billing)
+  // Reports usage instead of updating subscription quantity
   app.post('/api/club/:clubId/universal-access/sync', async (req: Request, res: Response) => {
     try {
       const { clubId } = req.params;
@@ -682,17 +675,18 @@ export function registerRoutes(app: Express) {
         return res.json({ success: false, message: 'No Stripe customer' });
       }
       
-      // Find UA subscription (separate from base plan) by looking for $1.99/month price - only active subs
+      // Use specific UA price ID for metered billing
+      const UA_PRICE_ID = 'price_1Sp5trRhYhunDn2jrTOtUvyR';
+      
+      // Find UA subscription by price ID
       const allSubs = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 10 });
-      let uaSubscription = null;
       let uaItem = null;
       
       for (const sub of allSubs.data) {
         if (sub.status === 'canceled') continue;
         for (const item of sub.items.data) {
           const price = typeof item.price === 'object' ? item.price : null;
-          if (price && price.unit_amount === 199 && price.recurring?.interval === 'month') {
-            uaSubscription = sub;
+          if (price && price.id === UA_PRICE_ID) {
             uaItem = item;
             break;
           }
@@ -705,9 +699,12 @@ export function registerRoutes(app: Express) {
       }
       
       const quantity = Math.max(1, studentCount || 1);
-      if (uaItem.quantity !== quantity) {
-        await stripe.subscriptionItems.update(uaItem.id, { quantity });
-      }
+      // Report usage for metered billing
+      await stripe.subscriptionItems.createUsageRecord(uaItem.id, {
+        quantity,
+        action: 'set',
+        timestamp: Math.floor(Date.now() / 1000)
+      });
       
       return res.json({ success: true, quantity });
     } catch (error: any) {
