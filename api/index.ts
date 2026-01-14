@@ -550,7 +550,26 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
     customerId = newCustomer.id;
   }
 
-  const session = await stripe.checkout.sessions.create({
+  // Revenue Split: 70% of NET to Club, 30% + fees to Platform
+  // Gross: $4.99 (499 cents), Est. Fee: $0.30 (30 cents), Net: 469 cents
+  // Club share: 469 * 0.70 = 328 cents ($3.28)
+  let stripeConnectAccountId: string | null = null;
+  if (clubId) {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT stripe_connect_account_id FROM clubs WHERE id = $1::uuid`,
+        [clubId]
+      );
+      if (result.rows.length > 0 && result.rows[0].stripe_connect_account_id) {
+        stripeConnectAccountId = result.rows[0].stripe_connect_account_id;
+      }
+    } finally {
+      client.release();
+    }
+  }
+
+  const sessionConfig: any = {
     customer: customerId,
     payment_method_types: ['card'],
     line_items: [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }],
@@ -559,11 +578,20 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
     cancel_url: `${baseUrl}/app/parent?premium=cancelled`,
     metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
     subscription_data: {
-      metadata: { studentId, clubId: clubId || '', type: 'parent_premium' }
+      metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
+      // Add transfer on each subscription payment (70% to club)
+      ...(stripeConnectAccountId && {
+        transfer_data: {
+          destination: stripeConnectAccountId,
+          amount_percent: 70,
+        }
+      })
     }
-  });
+  };
 
-  console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}`);
+  const session = await stripe.checkout.sessions.create(sessionConfig);
+
+  console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}, club transfer: ${stripeConnectAccountId ? 'yes (70%)' : 'no connected account'}`);
   return res.json({ url: session.url });
 }
 

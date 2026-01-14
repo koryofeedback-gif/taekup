@@ -1398,7 +1398,7 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Parent Premium Checkout ($4.99/month)
+  // Parent Premium Checkout ($4.99/month) with 70/30 revenue split
   app.post('/api/parent-premium/checkout', async (req: Request, res: Response) => {
     try {
       const { studentId, parentEmail, clubId } = req.body;
@@ -1434,7 +1434,24 @@ export function registerRoutes(app: Express) {
         customerId = newCustomer.id;
       }
 
-      const session = await stripe.checkout.sessions.create({
+      // Revenue Split: 70% of NET to Club, 30% + fees to Platform
+      // Gross: $4.99 (499 cents), Est. Fee: $0.30 (30 cents), Net: 469 cents
+      // Club share: 469 * 0.70 = 328 cents ($3.28)
+      const CLUB_SHARE_CENTS = 328;
+
+      // Get club's Stripe Connect account
+      let stripeConnectAccountId: string | null = null;
+      if (clubId) {
+        const clubResult = await db.execute(
+          sql`SELECT stripe_connect_account_id FROM clubs WHERE id = ${clubId}::uuid`
+        );
+        const club = (clubResult as any[])[0];
+        if (club?.stripe_connect_account_id) {
+          stripeConnectAccountId = club.stripe_connect_account_id;
+        }
+      }
+
+      const sessionConfig: any = {
         customer: customerId,
         payment_method_types: ['card'],
         line_items: [{
@@ -1454,11 +1471,20 @@ export function registerRoutes(app: Express) {
             studentId,
             clubId: clubId || '',
             type: 'parent_premium'
-          }
+          },
+          // Add transfer on each subscription payment
+          ...(stripeConnectAccountId && {
+            transfer_data: {
+              destination: stripeConnectAccountId,
+              amount_percent: 70, // 70% goes to club
+            }
+          })
         }
-      });
+      };
 
-      console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}`);
+      const session = await stripe.checkout.sessions.create(sessionConfig);
+
+      console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}, club transfer: ${stripeConnectAccountId ? 'yes (70%)' : 'no connected account'}`);
       res.json({ url: session.url });
     } catch (error: any) {
       console.error('[Parent Premium] Checkout error:', error);
