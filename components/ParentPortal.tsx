@@ -590,6 +590,41 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const videoUploadRef = useRef(false); // Prevent double video upload
     const [soloResult, setSoloResult] = useState<{ success: boolean; message: string; xp: number } | null>(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [premiumCheckoutLoading, setPremiumCheckoutLoading] = useState(false);
+
+    const handlePremiumCheckout = async () => {
+        if (data.isDemo) {
+            setIsPremium(true);
+            setServerConfirmedPremium(true);
+            setShowUpgradeModal(false);
+            return;
+        }
+        
+        setPremiumCheckoutLoading(true);
+        try {
+            const parentEmail = data.students?.[0]?.parentEmail || data.ownerEmail || '';
+            const res = await fetch('/api/parent-premium/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    parentEmail,
+                    clubId: data.clubId || ''
+                })
+            });
+            const result = await res.json();
+            if (result.url) {
+                window.location.href = result.url;
+            } else {
+                throw new Error(result.error || 'Failed to create checkout');
+            }
+        } catch (err: any) {
+            console.error('[Premium Checkout]', err);
+            alert('Failed to start checkout. Please try again.');
+        } finally {
+            setPremiumCheckoutLoading(false);
+        }
+    };
     
     // Daily completed challenges tracking (localStorage-based, STRICT 1x per day limit)
     const getTodayKey = useCallback(() => `arena-${student.id}-${new Date().toISOString().split('T')[0]}`, [student.id]);
@@ -4855,17 +4890,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 
                                                 <div className="space-y-2">
                                                     <button
-                                                        onClick={() => {
-                                                            setShowUpgradeModal(false);
-                                                            setActiveTab('home');
-                                                        }}
-                                                        className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg"
+                                                        onClick={handlePremiumCheckout}
+                                                        disabled={premiumCheckoutLoading}
+                                                        className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg disabled:opacity-50"
                                                     >
-                                                        Unlock Premium
+                                                        {premiumCheckoutLoading ? '⏳ Loading...' : 'Unlock Premium - $4.99/mo'}
                                                     </button>
                                                     <button
                                                         onClick={() => setShowUpgradeModal(false)}
-                                                        className="w-full py-2 text-gray-500 text-sm hover:text-gray-400"
+                                                        disabled={premiumCheckoutLoading}
+                                                        className="w-full py-2 text-gray-500 text-sm hover:text-gray-400 disabled:opacity-50"
                                                     >
                                                         Maybe Later
                                                     </button>
@@ -5871,17 +5905,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 
                                                 <div className="space-y-2">
                                                     <button
-                                                        onClick={() => {
-                                                            setShowUpgradeModal(false);
-                                                            setActiveTab('home');
-                                                        }}
-                                                        className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg"
+                                                        onClick={handlePremiumCheckout}
+                                                        disabled={premiumCheckoutLoading}
+                                                        className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg disabled:opacity-50"
                                                     >
-                                                        Unlock Premium
+                                                        {premiumCheckoutLoading ? '⏳ Loading...' : 'Unlock Premium - $4.99/mo'}
                                                     </button>
                                                     <button
                                                         onClick={() => setShowUpgradeModal(false)}
-                                                        className="w-full py-2 text-gray-500 text-sm hover:text-gray-400"
+                                                        disabled={premiumCheckoutLoading}
+                                                        className="w-full py-2 text-gray-500 text-sm hover:text-gray-400 disabled:opacity-50"
                                                     >
                                                         Maybe Later
                                                     </button>
@@ -6935,17 +6968,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         
                         <div className="space-y-2">
                             <button
-                                onClick={() => {
-                                    setShowUpgradeModal(false);
-                                    setActiveTab('home');
-                                }}
-                                className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg"
+                                onClick={handlePremiumCheckout}
+                                disabled={premiumCheckoutLoading}
+                                className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg disabled:opacity-50"
                             >
-                                Unlock Premium
+                                {premiumCheckoutLoading ? '⏳ Loading...' : 'Unlock Premium - $4.99/mo'}
                             </button>
                             <button
                                 onClick={() => setShowUpgradeModal(false)}
-                                className="w-full py-2 text-gray-500 text-sm hover:text-gray-400"
+                                disabled={premiumCheckoutLoading}
+                                className="w-full py-2 text-gray-500 text-sm hover:text-gray-400 disabled:opacity-50"
                             >
                                 Maybe Later
                             </button>

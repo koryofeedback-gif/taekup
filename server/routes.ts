@@ -1398,6 +1398,74 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Parent Premium Checkout ($4.99/month)
+  app.post('/api/parent-premium/checkout', async (req: Request, res: Response) => {
+    try {
+      const { studentId, parentEmail, clubId } = req.body;
+
+      if (!studentId || !parentEmail) {
+        return res.status(400).json({ error: 'studentId and parentEmail are required' });
+      }
+
+      const { STRIPE_PRICE_IDS } = await import('./stripeConfig.js');
+      const priceId = STRIPE_PRICE_IDS.parentPremium.monthly;
+
+      const baseUrl = process.env.APP_URL || (() => {
+        const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0];
+        if (replitDomain) return `https://${replitDomain}`;
+        const host = req.headers.host || 'localhost:5000';
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        return `${protocol}://${host}`;
+      })();
+
+      const stripe = await getUncachableStripeClient();
+      
+      // Find or create customer
+      const emailLower = parentEmail.toLowerCase().trim();
+      let customerId: string | undefined;
+      const existingCustomers = await stripe.customers.list({ email: emailLower, limit: 1 });
+      if (existingCustomers.data.length > 0) {
+        customerId = existingCustomers.data[0].id;
+      } else {
+        const newCustomer = await stripe.customers.create({
+          email: emailLower,
+          metadata: { studentId, clubId: clubId || '', type: 'parent_premium' }
+        });
+        customerId = newCustomer.id;
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{
+          price: priceId,
+          quantity: 1,
+        }],
+        mode: 'subscription',
+        success_url: `${baseUrl}/app/parent?premium=success&student_id=${studentId}`,
+        cancel_url: `${baseUrl}/app/parent?premium=cancelled`,
+        metadata: {
+          studentId,
+          clubId: clubId || '',
+          type: 'parent_premium'
+        },
+        subscription_data: {
+          metadata: {
+            studentId,
+            clubId: clubId || '',
+            type: 'parent_premium'
+          }
+        }
+      });
+
+      console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}`);
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error('[Parent Premium] Checkout error:', error);
+      res.status(500).json({ error: error.message || 'Failed to create checkout session' });
+    }
+  });
+
   app.post('/api/test-email', async (req: Request, res: Response) => {
     try {
       const { emailType, to } = req.body;
