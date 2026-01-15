@@ -79,6 +79,12 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **Branded Terms**: All TM symbols included (HonorXP™, Legacy Cards™, Global Shogun Rank™, DojoMint™, ChronosBelt™)
     - **API Functions**: `sendNotification(emailType, user, data)` and `sendBulkNotification(emailType, users, dataFn)` in emailService.ts
     - **Language Detection**: Auto-detects from user.language field, falls back to English
+    - **Multi-Sender System**: Emails sent from appropriate sender based on type:
+        - `hello@mytaek.com`: Welcome, birthday, win-back, coach invites
+        - `billing@mytaek.com`: Payments, subscriptions, trial emails
+        - `support@mytaek.com`: Attendance alerts, feedback, churn risk
+        - `updates@mytaek.com`: Progress, promotions, video notifications
+        - `noreply@mytaek.com`: Password reset, password changed
 
 ### System Design Choices
 - **Development Environment**: Replit with a dual-server setup.

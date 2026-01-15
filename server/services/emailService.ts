@@ -108,11 +108,13 @@ export async function sendNotification(
   const isRtl = language === 'fa';
 
   try {
-    const { client, fromEmail } = await getUncachableSendGridClient();
+    const { client } = await getUncachableSendGridClient();
+    const senderType = getSenderForEmailType(emailType);
+    const sender = SENDER_EMAILS[senderType];
     
     const msg = {
       to: user.email,
-      from: { email: fromEmail, name: 'TaekUp' },
+      from: { email: sender.email, name: sender.name },
       subject,
       templateId: SENDGRID_MASTER_TEMPLATE_ID,
       dynamicTemplateData: {
@@ -128,7 +130,7 @@ export async function sendNotification(
 
     const response = await client.send(msg);
     const messageId = response[0]?.headers?.['x-message-id'];
-    console.log(`[EmailService] Sent ${emailType} to ${user.email} (${language}) - ID: ${messageId}`);
+    console.log(`[EmailService] Sent ${emailType} from ${sender.email} to ${user.email} (${language}) - ID: ${messageId}`);
     return { success: true, messageId };
   } catch (error: any) {
     const errorMessage = error?.response?.body?.errors?.[0]?.message || error.message || 'Unknown error';
@@ -242,18 +244,73 @@ export const EMAIL_TEMPLATES = {
   CHURN_RISK: 'd-f9a587c97a9d4ed18c87212a140f9c53',
 };
 
-type SenderType = 'engagement' | 'transactional';
+type SenderType = 'hello' | 'noreply' | 'billing' | 'support' | 'updates';
 
-const SENDER_EMAILS = {
-  engagement: {
+const SENDER_EMAILS: Record<SenderType, { email: string; name: string }> = {
+  hello: {
     email: 'hello@mytaek.com',
     name: 'TaekUp'
   },
-  transactional: {
+  noreply: {
     email: 'noreply@mytaek.com',
     name: 'TaekUp'
+  },
+  billing: {
+    email: 'billing@mytaek.com',
+    name: 'TaekUp Billing'
+  },
+  support: {
+    email: 'support@mytaek.com',
+    name: 'TaekUp Support'
+  },
+  updates: {
+    email: 'updates@mytaek.com',
+    name: 'TaekUp Updates'
   }
 };
+
+// Map email types to appropriate sender
+const EMAIL_TYPE_SENDER: Record<string, SenderType> = {
+  // Welcome & Engagement - hello@
+  welcome_parent: 'hello',
+  welcome_club: 'hello',
+  birthday_wish: 'hello',
+  win_back: 'hello',
+  coach_invite: 'hello',
+  
+  // Billing & Payments - billing@
+  payment_receipt: 'billing',
+  payment_failed: 'billing',
+  premium_unlocked: 'billing',
+  subscription_cancelled: 'billing',
+  payout_notification: 'billing',
+  trial_ending: 'billing',
+  trial_expired: 'billing',
+  day_3_checkin: 'billing',
+  day_7_mid_trial: 'billing',
+  
+  // Support & Alerts - support@
+  attendance_alert: 'support',
+  churn_risk: 'support',
+  class_feedback: 'support',
+  
+  // Progress Updates - updates@
+  weekly_progress: 'updates',
+  belt_promotion: 'updates',
+  new_student_added: 'updates',
+  monthly_revenue_report: 'updates',
+  video_approved: 'updates',
+  video_retry: 'updates',
+  video_submitted: 'updates',
+  
+  // Transactional (no reply expected) - noreply@
+  password_reset: 'noreply',
+  password_changed: 'noreply',
+};
+
+function getSenderForEmailType(emailType: string): SenderType {
+  return EMAIL_TYPE_SENDER[emailType] || 'hello';
+}
 
 const BASE_URL = process.env.APP_URL || 'https://app.mytaek.com';
 
@@ -277,7 +334,7 @@ async function sendEmail(
   templateId: string,
   dynamicData: Record<string, any>,
   subject?: string,
-  senderType: SenderType = 'engagement'
+  senderType: SenderType = 'hello'
 ): Promise<EmailResult> {
   try {
     const { client } = await getUncachableSendGridClient();
