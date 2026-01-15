@@ -2,6 +2,8 @@ import { db } from '../db';
 import { sql } from 'drizzle-orm';
 import emailService, { EMAIL_TEMPLATES } from './emailService';
 
+const MASTER_TEMPLATE = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'master_template';
+
 type AutomatedEmailTrigger = 
   | 'welcome'
   | 'day_3_checkin'
@@ -156,10 +158,10 @@ export async function sendWelcomeEmailAuto(
   const result = await emailService.sendWelcomeEmail(ownerEmail, { ownerName, clubName });
   
   await logEmail(
-    triggerType, ownerEmail, EMAIL_TEMPLATES.WELCOME,
+    triggerType, ownerEmail, MASTER_TEMPLATE,
     result.success ? 'sent' : 'failed',
     result.messageId, result.error,
-    { ownerName, clubName }, clubId
+    { ownerName, clubName, emailType: 'welcome_club' }, clubId
   );
   
   console.log(`[EmailAutomation] Welcome email ${result.success ? 'sent' : 'failed'} to ${ownerEmail}`);
@@ -189,10 +191,10 @@ export async function sendParentWelcomeEmailAuto(
   });
   
   await logEmail(
-    triggerType, parentEmail, EMAIL_TEMPLATES.PARENT_WELCOME,
+    triggerType, parentEmail, MASTER_TEMPLATE,
     result.success ? 'sent' : 'failed',
     result.messageId, result.error,
-    { parentName, studentName, clubName }, clubId, studentId
+    { parentName, studentName, clubName, emailType: 'welcome_parent' }, clubId, studentId
   );
   
   console.log(`[EmailAutomation] Parent welcome email ${result.success ? 'sent' : 'failed'} to ${parentEmail}`);
@@ -230,10 +232,10 @@ export async function sendBeltPromotionEmailAuto(
   });
   
   await logEmail(
-    triggerType, parentEmail, EMAIL_TEMPLATES.BELT_PROMOTION,
+    triggerType, parentEmail, MASTER_TEMPLATE,
     result.success ? 'sent' : 'failed',
     result.messageId, result.error,
-    { studentName, beltColor, promotionId }, clubId, studentId
+    { studentName, beltColor, promotionId, emailType: 'belt_promotion' }, clubId, studentId
   );
   
   console.log(`[EmailAutomation] Belt promotion email ${result.success ? 'sent' : 'failed'} to ${parentEmail}`);
@@ -261,10 +263,10 @@ export async function sendBirthdayWishEmailAuto(
   });
   
   await logEmail(
-    triggerType, parentEmail, EMAIL_TEMPLATES.BIRTHDAY_WISH,
+    triggerType, parentEmail, MASTER_TEMPLATE,
     result.success ? 'sent' : 'failed',
     result.messageId, result.error,
-    { studentName, clubName, year: currentYear }, clubId, studentId
+    { studentName, clubName, year: currentYear, emailType: 'birthday_wish' }, clubId, studentId
   );
   
   console.log(`[EmailAutomation] Birthday email ${result.success ? 'sent' : 'failed'} to ${parentEmail}`);
@@ -295,10 +297,10 @@ export async function sendAttendanceAlertEmailAuto(
   });
   
   await logEmail(
-    triggerType, parentEmail, EMAIL_TEMPLATES.ATTENDANCE_ALERT,
+    triggerType, parentEmail, MASTER_TEMPLATE,
     result.success ? 'sent' : 'failed',
     result.messageId, result.error,
-    { parentName, studentName, daysSinceLastClass }, clubId, studentId
+    { parentName, studentName, daysSinceLastClass, emailType: 'attendance_alert' }, clubId, studentId
   );
   
   console.log(`[EmailAutomation] Attendance alert ${result.success ? 'sent' : 'failed'} to ${parentEmail}`);
@@ -345,10 +347,10 @@ async function sendDay3CheckinEmails(): Promise<void> {
     });
     
     await logEmail(
-      triggerType, club.owner_email, EMAIL_TEMPLATES.DAY_3_CHECKIN,
+      triggerType, club.owner_email, MASTER_TEMPLATE,
       result.success ? 'sent' : 'failed',
       result.messageId, result.error,
-      { clubName: club.name }, club.id
+      { clubName: club.name, emailType: 'day_3_checkin' }, club.id
     );
     
     console.log(`[EmailAutomation] Day 3 check-in ${result.success ? 'sent' : 'failed'} to ${club.owner_email}`);
@@ -376,10 +378,10 @@ async function sendDay7MidTrialEmails(): Promise<void> {
     });
     
     await logEmail(
-      triggerType, club.owner_email, EMAIL_TEMPLATES.DAY_7_MID_TRIAL,
+      triggerType, club.owner_email, MASTER_TEMPLATE,
       result.success ? 'sent' : 'failed',
       result.messageId, result.error,
-      { clubName: club.name }, club.id
+      { clubName: club.name, emailType: 'day_7_mid_trial' }, club.id
     );
     
     console.log(`[EmailAutomation] Day 7 mid-trial ${result.success ? 'sent' : 'failed'} to ${club.owner_email}`);
@@ -412,10 +414,10 @@ async function sendTrialEndingSoonEmails(): Promise<void> {
     });
     
     await logEmail(
-      triggerType, club.owner_email, EMAIL_TEMPLATES.TRIAL_ENDING_SOON,
+      triggerType, club.owner_email, MASTER_TEMPLATE,
       result.success ? 'sent' : 'failed',
       result.messageId, result.error,
-      { clubName: club.name, daysLeft }, club.id
+      { clubName: club.name, daysLeft, emailType: 'trial_ending' }, club.id
     );
     
     console.log(`[EmailAutomation] Trial ending soon ${result.success ? 'sent' : 'failed'} to ${club.owner_email}`);
@@ -445,10 +447,10 @@ async function sendTrialExpiredEmails(): Promise<void> {
     });
     
     await logEmail(
-      triggerType, club.owner_email, EMAIL_TEMPLATES.TRIAL_EXPIRED,
+      triggerType, club.owner_email, MASTER_TEMPLATE,
       result.success ? 'sent' : 'failed',
       result.messageId, result.error,
-      { clubName: club.name }, club.id
+      { clubName: club.name, emailType: 'trial_expired' }, club.id
     );
     
     console.log(`[EmailAutomation] Trial expired ${result.success ? 'sent' : 'failed'} to ${club.owner_email}`);

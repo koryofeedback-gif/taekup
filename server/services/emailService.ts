@@ -441,7 +441,8 @@ export async function sendMonthlyRevenueReportEmail(
     newThisMonth: number;
   }
 ): Promise<EmailResult> {
-  return sendNotification('monthly_revenue_report', { email: to }, {
+  return sendNotification('monthly_revenue_report', { email: to, name: 'there' }, {
+    name: 'there',
     monthName: data.monthName,
     totalEarnings: data.totalEarnings,
     premiumParents: data.premiumParents,
