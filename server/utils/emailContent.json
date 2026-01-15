@@ -1,0 +1,324 @@
+{
+  "welcome_parent": {
+    "en": {
+      "subject": "Welcome to the Dojo! 🥋",
+      "title": "Welcome to {{clubName}}!",
+      "body": "Hi {{name}},<br><br>You're now connected to <strong>{{clubName}}</strong>. Your child's martial arts journey starts here!<br><br>Check out the Parent Portal to track progress, earn HonorXP™, and unlock Legacy Cards™.",
+      "btn_text": "Open Parent Portal",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fr": {
+      "subject": "Bienvenue au Dojo! 🥋",
+      "title": "Bienvenue à {{clubName}}!",
+      "body": "Bonjour {{name}},<br><br>Vous êtes maintenant connecté à <strong>{{clubName}}</strong>. Le parcours d'arts martiaux de votre enfant commence ici!<br><br>Consultez le Portail Parent pour suivre les progrès, gagner des HonorXP™ et débloquer des Legacy Cards™.",
+      "btn_text": "Ouvrir le Portail Parent",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fa": {
+      "subject": "به دوجو خوش آمدید! 🥋",
+      "title": "به {{clubName}} خوش آمدید!",
+      "body": "سلام {{name}},<br><br>شما اکنون به <strong>{{clubName}}</strong> متصل هستید. سفر هنرهای رزمی فرزند شما از اینجا شروع می‌شود!<br><br>پورتال والدین را بررسی کنید تا پیشرفت را پیگیری کنید، HonorXP™ کسب کنید و Legacy Cards™ را باز کنید.",
+      "btn_text": "باز کردن پورتال والدین",
+      "btn_url": "{{baseUrl}}/app/parent"
+    }
+  },
+  "welcome_club": {
+    "en": {
+      "subject": "Welcome to TaekUp! Let's set up your Dojo 🥋",
+      "title": "Your Dojo is Live!",
+      "body": "Hi {{name}},<br><br>Congratulations on joining TaekUp! Your club <strong>{{clubName}}</strong> is now active.<br><br>Here's what to do next:<br>• Add your first student<br>• Set up your Stripe wallet via DojoMint™ Protocol<br>• Customize your belt system<br><br>Your 14-day free trial has started!",
+      "btn_text": "Go to Dashboard",
+      "btn_url": "{{baseUrl}}/app/admin"
+    },
+    "fr": {
+      "subject": "Bienvenue sur TaekUp! Configurons votre Dojo 🥋",
+      "title": "Votre Dojo est en ligne!",
+      "body": "Bonjour {{name}},<br><br>Félicitations pour avoir rejoint TaekUp! Votre club <strong>{{clubName}}</strong> est maintenant actif.<br><br>Voici ce qu'il faut faire ensuite:<br>• Ajoutez votre premier élève<br>• Configurez votre portefeuille Stripe via DojoMint™ Protocol<br>• Personnalisez votre système de ceintures<br><br>Votre essai gratuit de 14 jours a commencé!",
+      "btn_text": "Aller au Tableau de Bord",
+      "btn_url": "{{baseUrl}}/app/admin"
+    },
+    "fa": {
+      "subject": "به TaekUp خوش آمدید! بیایید دوجو شما را راه‌اندازی کنیم 🥋",
+      "title": "دوجو شما فعال است!",
+      "body": "سلام {{name}},<br><br>تبریک برای پیوستن به TaekUp! باشگاه شما <strong>{{clubName}}</strong> اکنون فعال است.<br><br>مراحل بعدی:<br>• اولین شاگرد خود را اضافه کنید<br>• کیف پول Stripe خود را از طریق DojoMint™ Protocol تنظیم کنید<br>• سیستم کمربند خود را سفارشی کنید<br><br>دوره آزمایشی رایگان ۱۴ روزه شما شروع شده است!",
+      "btn_text": "رفتن به داشبورد",
+      "btn_url": "{{baseUrl}}/app/admin"
+    }
+  },
+  "payment_receipt": {
+    "en": {
+      "subject": "Receipt for your TaekUp subscription",
+      "title": "Payment Successful",
+      "body": "Hi {{name}},<br><br>Thanks for your payment of <strong>{{amount}}</strong>.<br><br>Your subscription is active until <strong>{{nextBillingDate}}</strong>.<br><br>Invoice #: {{invoiceNumber}}",
+      "btn_text": "View Invoice",
+      "btn_url": "{{invoiceUrl}}"
+    },
+    "fr": {
+      "subject": "Reçu de votre abonnement TaekUp",
+      "title": "Paiement Réussi",
+      "body": "Bonjour {{name}},<br><br>Merci pour votre paiement de <strong>{{amount}}</strong>.<br><br>Votre abonnement est actif jusqu'au <strong>{{nextBillingDate}}</strong>.<br><br>Facture #: {{invoiceNumber}}",
+      "btn_text": "Voir la Facture",
+      "btn_url": "{{invoiceUrl}}"
+    },
+    "fa": {
+      "subject": "رسید اشتراک TaekUp شما",
+      "title": "پرداخت موفق",
+      "body": "سلام {{name}},<br><br>با تشکر از پرداخت شما به مبلغ <strong>{{amount}}</strong>.<br><br>اشتراک شما تا <strong>{{nextBillingDate}}</strong> فعال است.<br><br>شماره فاکتور: {{invoiceNumber}}",
+      "btn_text": "مشاهده فاکتور",
+      "btn_url": "{{invoiceUrl}}"
+    }
+  },
+  "premium_unlocked": {
+    "en": {
+      "subject": "Legacy Mode Unlocked for {{childName}}! 🌟",
+      "title": "Welcome to Legacy Mode!",
+      "body": "Hi {{name}},<br><br>Congratulations! You've unlocked <strong>Legacy Mode</strong> for {{childName}}.<br><br>You now have access to:<br>• Global Shogun Rank™ worldwide leaderboards<br>• AI Coach insights with ChronosBelt™ Predictor<br>• Full Video Academy<br>• Legacy Cards™ collection<br>• Home Dojo habit tracking<br><br>Let's take {{childName}}'s training to the next level!",
+      "btn_text": "Explore Premium Features",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fr": {
+      "subject": "Mode Legacy Débloqué pour {{childName}}! 🌟",
+      "title": "Bienvenue en Mode Legacy!",
+      "body": "Bonjour {{name}},<br><br>Félicitations! Vous avez débloqué le <strong>Mode Legacy</strong> pour {{childName}}.<br><br>Vous avez maintenant accès à:<br>• Classements mondiaux Global Shogun Rank™<br>• Aperçus du Coach IA avec ChronosBelt™ Predictor<br>• Académie Vidéo complète<br>• Collection Legacy Cards™<br>• Suivi des habitudes Home Dojo<br><br>Passons l'entraînement de {{childName}} au niveau supérieur!",
+      "btn_text": "Explorer les Fonctionnalités Premium",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fa": {
+      "subject": "حالت Legacy برای {{childName}} باز شد! 🌟",
+      "title": "به حالت Legacy خوش آمدید!",
+      "body": "سلام {{name}},<br><br>تبریک! شما <strong>حالت Legacy</strong> را برای {{childName}} باز کردید.<br><br>شما اکنون به موارد زیر دسترسی دارید:<br>• رتبه‌بندی جهانی Global Shogun Rank™<br>• بینش‌های مربی هوش مصنوعی با ChronosBelt™ Predictor<br>• آکادمی ویدیویی کامل<br>• مجموعه Legacy Cards™<br>• پیگیری عادت‌های Home Dojo<br><br>بیایید تمرین {{childName}} را به سطح بعدی ببریم!",
+      "btn_text": "کاوش ویژگی‌های ممتاز",
+      "btn_url": "{{baseUrl}}/app/parent"
+    }
+  },
+  "video_approved": {
+    "en": {
+      "subject": "Great job! Sensei approved your video ✅",
+      "title": "Video Approved!",
+      "body": "Hi {{childName}},<br><br>Your form was excellent! Sensei <strong>{{coachName}}</strong> approved your video submission.<br><br>You earned <strong>+{{xpAmount}} HonorXP™</strong>!<br><br>Keep training hard and climb the Global Shogun Rank™!",
+      "btn_text": "View My Progress",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fr": {
+      "subject": "Bravo! Sensei a approuvé ta vidéo ✅",
+      "title": "Vidéo Approuvée!",
+      "body": "Salut {{childName}},<br><br>Ta forme était excellente! Sensei <strong>{{coachName}}</strong> a approuvé ta soumission vidéo.<br><br>Tu as gagné <strong>+{{xpAmount}} HonorXP™</strong>!<br><br>Continue à t'entraîner dur et grimpe dans le Global Shogun Rank™!",
+      "btn_text": "Voir Ma Progression",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fa": {
+      "subject": "آفرین! سنسی ویدیوی شما را تایید کرد ✅",
+      "title": "ویدیو تایید شد!",
+      "body": "سلام {{childName}},<br><br>فرم شما عالی بود! سنسی <strong>{{coachName}}</strong> ارسال ویدیوی شما را تایید کرد.<br><br>شما <strong>+{{xpAmount}} HonorXP™</strong> کسب کردید!<br><br>به تمرین سخت ادامه دهید و در Global Shogun Rank™ بالا بروید!",
+      "btn_text": "مشاهده پیشرفت من",
+      "btn_url": "{{baseUrl}}/app/parent"
+    }
+  },
+  "video_retry": {
+    "en": {
+      "subject": "Sensei left feedback on your video 📝",
+      "title": "Keep Practicing!",
+      "body": "Hi {{childName}},<br><br>Sensei <strong>{{coachName}}</strong> watched your video and has some advice:<br><br><em>\"{{feedback}}\"</em><br><br>Don't worry - every champion needs practice! Watch the tutorial again and submit a new video when you're ready.",
+      "btn_text": "Try Again",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fr": {
+      "subject": "Sensei a laissé un commentaire sur ta vidéo 📝",
+      "title": "Continue à Pratiquer!",
+      "body": "Salut {{childName}},<br><br>Sensei <strong>{{coachName}}</strong> a regardé ta vidéo et a quelques conseils:<br><br><em>\"{{feedback}}\"</em><br><br>Ne t'inquiète pas - chaque champion a besoin de pratique! Regarde le tutoriel à nouveau et soumets une nouvelle vidéo quand tu es prêt.",
+      "btn_text": "Réessayer",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fa": {
+      "subject": "سنسی نظری درباره ویدیوی شما گذاشت 📝",
+      "title": "به تمرین ادامه دهید!",
+      "body": "سلام {{childName}},<br><br>سنسی <strong>{{coachName}}</strong> ویدیوی شما را دید و توصیه‌هایی دارد:<br><br><em>\"{{feedback}}\"</em><br><br>نگران نباشید - هر قهرمانی نیاز به تمرین دارد! آموزش را دوباره ببینید و وقتی آماده شدید ویدیوی جدید ارسال کنید.",
+      "btn_text": "دوباره امتحان کنید",
+      "btn_url": "{{baseUrl}}/app/parent"
+    }
+  },
+  "trial_ending": {
+    "en": {
+      "subject": "Your free trial ends in 3 days ⏳",
+      "title": "Trial Ending Soon",
+      "body": "Hi {{name}},<br><br>We hope you're enjoying TaekUp! Your free trial ends on <strong>{{trialEndDate}}</strong>.<br><br>To keep access to all features, your subscription will automatically start. No action needed!<br><br>Current plan: <strong>{{planName}}</strong> - {{planPrice}}/month",
+      "btn_text": "Manage Subscription",
+      "btn_url": "{{baseUrl}}/app/admin/billing"
+    },
+    "fr": {
+      "subject": "Votre essai gratuit se termine dans 3 jours ⏳",
+      "title": "Essai Bientôt Terminé",
+      "body": "Bonjour {{name}},<br><br>Nous espérons que vous appréciez TaekUp! Votre essai gratuit se termine le <strong>{{trialEndDate}}</strong>.<br><br>Pour garder l'accès à toutes les fonctionnalités, votre abonnement commencera automatiquement. Aucune action requise!<br><br>Plan actuel: <strong>{{planName}}</strong> - {{planPrice}}/mois",
+      "btn_text": "Gérer l'Abonnement",
+      "btn_url": "{{baseUrl}}/app/admin/billing"
+    },
+    "fa": {
+      "subject": "دوره آزمایشی رایگان شما ۳ روز دیگر تمام می‌شود ⏳",
+      "title": "دوره آزمایشی به زودی تمام می‌شود",
+      "body": "سلام {{name}},<br><br>امیدواریم از TaekUp لذت می‌برید! دوره آزمایشی رایگان شما در <strong>{{trialEndDate}}</strong> به پایان می‌رسد.<br><br>برای حفظ دسترسی به همه ویژگی‌ها، اشتراک شما به طور خودکار شروع می‌شود. نیازی به اقدام نیست!<br><br>پلن فعلی: <strong>{{planName}}</strong> - {{planPrice}}/ماه",
+      "btn_text": "مدیریت اشتراک",
+      "btn_url": "{{baseUrl}}/app/admin/billing"
+    }
+  },
+  "password_reset": {
+    "en": {
+      "subject": "Reset your password",
+      "title": "Password Reset Request",
+      "body": "Hi {{name}},<br><br>We received a request to reset your password. Click the button below to set a new one.<br><br>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.",
+      "btn_text": "Reset Password",
+      "btn_url": "{{resetUrl}}"
+    },
+    "fr": {
+      "subject": "Réinitialisez votre mot de passe",
+      "title": "Demande de Réinitialisation",
+      "body": "Bonjour {{name}},<br><br>Nous avons reçu une demande de réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en définir un nouveau.<br><br>Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, vous pouvez ignorer cet email.",
+      "btn_text": "Réinitialiser le Mot de Passe",
+      "btn_url": "{{resetUrl}}"
+    },
+    "fa": {
+      "subject": "رمز عبور خود را بازنشانی کنید",
+      "title": "درخواست بازنشانی رمز عبور",
+      "body": "سلام {{name}},<br><br>ما درخواستی برای بازنشانی رمز عبور شما دریافت کردیم. روی دکمه زیر کلیک کنید تا رمز جدید تنظیم کنید.<br><br>این لینک ۱ ساعت اعتبار دارد. اگر این درخواست را نداده‌اید، می‌توانید این ایمیل را نادیده بگیرید.",
+      "btn_text": "بازنشانی رمز عبور",
+      "btn_url": "{{resetUrl}}"
+    }
+  },
+  "payment_failed": {
+    "en": {
+      "subject": "Action Required: Payment failed ⚠️",
+      "title": "Payment Failed",
+      "body": "Hi {{name}},<br><br>We couldn't process your payment of <strong>{{amount}}</strong> for your TaekUp subscription.<br><br>Please update your payment method to avoid service interruption.",
+      "btn_text": "Update Payment Method",
+      "btn_url": "{{baseUrl}}/app/admin/billing"
+    },
+    "fr": {
+      "subject": "Action Requise: Échec du paiement ⚠️",
+      "title": "Échec du Paiement",
+      "body": "Bonjour {{name}},<br><br>Nous n'avons pas pu traiter votre paiement de <strong>{{amount}}</strong> pour votre abonnement TaekUp.<br><br>Veuillez mettre à jour votre méthode de paiement pour éviter une interruption de service.",
+      "btn_text": "Mettre à Jour le Paiement",
+      "btn_url": "{{baseUrl}}/app/admin/billing"
+    },
+    "fa": {
+      "subject": "اقدام لازم: پرداخت ناموفق ⚠️",
+      "title": "پرداخت ناموفق",
+      "body": "سلام {{name}},<br><br>ما نتوانستیم پرداخت <strong>{{amount}}</strong> شما را برای اشتراک TaekUp پردازش کنیم.<br><br>لطفاً روش پرداخت خود را به‌روزرسانی کنید تا از قطع سرویس جلوگیری شود.",
+      "btn_text": "به‌روزرسانی روش پرداخت",
+      "btn_url": "{{baseUrl}}/app/admin/billing"
+    }
+  },
+  "belt_promotion": {
+    "en": {
+      "subject": "Congratulations! {{childName}} just Leveled Up! 🎉",
+      "title": "Belt Promotion!",
+      "body": "Amazing news!<br><br><strong>{{childName}}</strong> has been promoted to <strong>{{newBelt}}</strong>!<br><br>Hard work pays off. This achievement has been recorded in their Legacy Cards™ collection.<br><br>Keep up the great work, champion!",
+      "btn_text": "View Achievement",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fr": {
+      "subject": "Félicitations! {{childName}} vient de monter de niveau! 🎉",
+      "title": "Promotion de Ceinture!",
+      "body": "Nouvelles incroyables!<br><br><strong>{{childName}}</strong> a été promu à <strong>{{newBelt}}</strong>!<br><br>Le travail acharné paie. Cette réalisation a été enregistrée dans sa collection Legacy Cards™.<br><br>Continue comme ça, champion!",
+      "btn_text": "Voir la Réalisation",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fa": {
+      "subject": "تبریک! {{childName}} ارتقا یافت! 🎉",
+      "title": "ارتقای کمربند!",
+      "body": "خبر فوق‌العاده!<br><br><strong>{{childName}}</strong> به <strong>{{newBelt}}</strong> ارتقا یافت!<br><br>تلاش سخت نتیجه می‌دهد. این دستاورد در مجموعه Legacy Cards™ او ثبت شده است.<br><br>به کار عالی‌ات ادامه بده، قهرمان!",
+      "btn_text": "مشاهده دستاورد",
+      "btn_url": "{{baseUrl}}/app/parent"
+    }
+  },
+  "weekly_progress": {
+    "en": {
+      "subject": "Weekly Progress Report for {{childName}} 📊",
+      "title": "This Week's Highlights",
+      "body": "Hi {{parentName}},<br><br>Here's {{childName}}'s progress this week:<br><br>• Classes Attended: <strong>{{classesAttended}}</strong><br>• HonorXP™ Earned: <strong>+{{xpEarned}}</strong><br>• Videos Submitted: <strong>{{videosSubmitted}}</strong><br>• Global Shogun Rank™: <strong>#{{globalRank}}</strong><br><br>Keep up the amazing work!",
+      "btn_text": "View Full Report",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fr": {
+      "subject": "Rapport de Progression Hebdomadaire pour {{childName}} 📊",
+      "title": "Points Forts de la Semaine",
+      "body": "Bonjour {{parentName}},<br><br>Voici la progression de {{childName}} cette semaine:<br><br>• Cours Suivis: <strong>{{classesAttended}}</strong><br>• HonorXP™ Gagnés: <strong>+{{xpEarned}}</strong><br>• Vidéos Soumises: <strong>{{videosSubmitted}}</strong><br>• Global Shogun Rank™: <strong>#{{globalRank}}</strong><br><br>Continuez le travail incroyable!",
+      "btn_text": "Voir le Rapport Complet",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fa": {
+      "subject": "گزارش پیشرفت هفتگی برای {{childName}} 📊",
+      "title": "نکات برجسته این هفته",
+      "body": "سلام {{parentName}},<br><br>پیشرفت {{childName}} این هفته:<br><br>• کلاس‌های حاضر شده: <strong>{{classesAttended}}</strong><br>• HonorXP™ کسب شده: <strong>+{{xpEarned}}</strong><br>• ویدیوهای ارسال شده: <strong>{{videosSubmitted}}</strong><br>• Global Shogun Rank™: <strong>#{{globalRank}}</strong><br><br>به کار فوق‌العاده ادامه دهید!",
+      "btn_text": "مشاهده گزارش کامل",
+      "btn_url": "{{baseUrl}}/app/parent"
+    }
+  },
+  "coach_invite": {
+    "en": {
+      "subject": "You've been invited to join {{clubName}} as a Coach!",
+      "title": "Coach Invitation",
+      "body": "Hi {{name}},<br><br>You've been invited to join <strong>{{clubName}}</strong> as a coach on TaekUp.<br><br>Click the button below to accept the invitation and set up your account.",
+      "btn_text": "Accept Invitation",
+      "btn_url": "{{inviteUrl}}"
+    },
+    "fr": {
+      "subject": "Vous êtes invité à rejoindre {{clubName}} en tant que Coach!",
+      "title": "Invitation Coach",
+      "body": "Bonjour {{name}},<br><br>Vous avez été invité à rejoindre <strong>{{clubName}}</strong> en tant que coach sur TaekUp.<br><br>Cliquez sur le bouton ci-dessous pour accepter l'invitation et configurer votre compte.",
+      "btn_text": "Accepter l'Invitation",
+      "btn_url": "{{inviteUrl}}"
+    },
+    "fa": {
+      "subject": "شما به عنوان مربی به {{clubName}} دعوت شده‌اید!",
+      "title": "دعوت مربی",
+      "body": "سلام {{name}},<br><br>شما به عنوان مربی به <strong>{{clubName}}</strong> در TaekUp دعوت شده‌اید.<br><br>روی دکمه زیر کلیک کنید تا دعوت را بپذیرید و حساب خود را تنظیم کنید.",
+      "btn_text": "پذیرش دعوت",
+      "btn_url": "{{inviteUrl}}"
+    }
+  },
+  "payout_notification": {
+    "en": {
+      "subject": "Cha-ching! A payout is on its way 💸",
+      "title": "Payout Sent!",
+      "body": "Hi {{name}},<br><br>Great news! A payout of <strong>{{amount}}</strong> has been sent to your bank account.<br><br>This is your share from Parent Premium subscriptions via DojoMint™ Protocol.<br><br>Funds typically arrive within 2-3 business days.",
+      "btn_text": "View Earnings",
+      "btn_url": "{{baseUrl}}/app/admin/billing"
+    },
+    "fr": {
+      "subject": "Ka-ching! Un paiement est en route 💸",
+      "title": "Paiement Envoyé!",
+      "body": "Bonjour {{name}},<br><br>Bonne nouvelle! Un paiement de <strong>{{amount}}</strong> a été envoyé sur votre compte bancaire.<br><br>C'est votre part des abonnements Parent Premium via DojoMint™ Protocol.<br><br>Les fonds arrivent généralement sous 2-3 jours ouvrés.",
+      "btn_text": "Voir les Revenus",
+      "btn_url": "{{baseUrl}}/app/admin/billing"
+    },
+    "fa": {
+      "subject": "چینگ! یک پرداخت در راه است 💸",
+      "title": "پرداخت ارسال شد!",
+      "body": "سلام {{name}},<br><br>خبر خوب! یک پرداخت به مبلغ <strong>{{amount}}</strong> به حساب بانکی شما ارسال شده است.<br><br>این سهم شما از اشتراک‌های Parent Premium از طریق DojoMint™ Protocol است.<br><br>وجوه معمولاً ظرف ۲-۳ روز کاری می‌رسند.",
+      "btn_text": "مشاهده درآمدها",
+      "btn_url": "{{baseUrl}}/app/admin/billing"
+    }
+  },
+  "subscription_cancelled": {
+    "en": {
+      "subject": "Legacy Mode paused for {{childName}}",
+      "title": "Subscription Cancelled",
+      "body": "Hi {{name}},<br><br>We're sorry to see you go. Your Premium subscription for {{childName}} has been cancelled.<br><br>Their Global Shogun Rank™ has been frozen and premium features are now locked.<br><br>You can reactivate anytime to continue the journey!",
+      "btn_text": "Reactivate Premium",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fr": {
+      "subject": "Mode Legacy suspendu pour {{childName}}",
+      "title": "Abonnement Annulé",
+      "body": "Bonjour {{name}},<br><br>Nous sommes désolés de vous voir partir. Votre abonnement Premium pour {{childName}} a été annulé.<br><br>Son Global Shogun Rank™ a été gelé et les fonctionnalités premium sont maintenant verrouillées.<br><br>Vous pouvez réactiver à tout moment pour continuer le voyage!",
+      "btn_text": "Réactiver Premium",
+      "btn_url": "{{baseUrl}}/app/parent"
+    },
+    "fa": {
+      "subject": "حالت Legacy برای {{childName}} متوقف شد",
+      "title": "اشتراک لغو شد",
+      "body": "سلام {{name}},<br><br>متأسفیم که می‌روید. اشتراک Premium شما برای {{childName}} لغو شده است.<br><br>Global Shogun Rank™ آنها منجمد شده و ویژگی‌های premium اکنون قفل هستند.<br><br>می‌توانید هر زمان برای ادامه سفر دوباره فعال کنید!",
+      "btn_text": "فعال‌سازی مجدد Premium",
+      "btn_url": "{{baseUrl}}/app/parent"
+    }
+  }
+}

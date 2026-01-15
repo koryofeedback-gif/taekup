@@ -1,7 +1,168 @@
 import sgMail from '@sendgrid/mail';
+import * as fs from 'fs';
+import * as path from 'path';
 
 let connectionSettings: any;
 let cachedClient: { client: typeof sgMail; fromEmail: string } | null = null;
+
+const SENDGRID_MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID;
+
+type EmailContentType = {
+  [key: string]: {
+    [lang: string]: {
+      subject: string;
+      title: string;
+      body: string;
+      btn_text?: string;
+      btn_url?: string;
+    };
+  };
+};
+
+let emailContentCache: EmailContentType | null = null;
+
+function getEmailContent(): EmailContentType {
+  if (emailContentCache) return emailContentCache;
+  
+  try {
+    const contentPath = path.join(__dirname, '../utils/emailContent.json');
+    const content = fs.readFileSync(contentPath, 'utf-8');
+    emailContentCache = JSON.parse(content);
+    return emailContentCache!;
+  } catch (error) {
+    console.error('[EmailService] Failed to load emailContent.json:', error);
+    return {};
+  }
+}
+
+type SupportedLanguage = 'en' | 'fr' | 'fa';
+
+interface NotificationUser {
+  email: string;
+  name?: string;
+  language?: string;
+}
+
+interface NotificationData {
+  [key: string]: string | number | undefined;
+}
+
+function replacePlaceholders(template: string, data: NotificationData): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+    const value = data[key];
+    return value !== undefined ? String(value) : match;
+  });
+}
+
+function detectLanguage(user: NotificationUser): SupportedLanguage {
+  const lang = user.language?.toLowerCase().slice(0, 2) as SupportedLanguage;
+  if (['en', 'fr', 'fa'].includes(lang)) {
+    return lang;
+  }
+  return 'en';
+}
+
+export async function sendNotification(
+  emailType: string,
+  user: NotificationUser,
+  data: NotificationData = {}
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const emailContent = getEmailContent();
+  
+  if (!SENDGRID_MASTER_TEMPLATE_ID) {
+    console.warn('[EmailService] Master template ID not configured, falling back to legacy email');
+    return { success: false, error: 'Master template not configured' };
+  }
+
+  const content = emailContent[emailType];
+  if (!content) {
+    console.error(`[EmailService] Unknown email type: ${emailType}`);
+    return { success: false, error: `Unknown email type: ${emailType}` };
+  }
+
+  const language = detectLanguage(user);
+  const langContent = content[language] || content['en'];
+
+  if (!langContent) {
+    console.error(`[EmailService] No content found for ${emailType} in ${language}`);
+    return { success: false, error: `No content for language: ${language}` };
+  }
+
+  const baseUrl = process.env.APP_URL || 'https://mytaek.com';
+  const templateData: NotificationData = {
+    ...data,
+    name: data.name || user.name || 'there',
+    baseUrl,
+  };
+
+  const subject = replacePlaceholders(langContent.subject, templateData);
+  const title = replacePlaceholders(langContent.title, templateData);
+  const bodyContent = replacePlaceholders(langContent.body, templateData);
+  const btnText = langContent.btn_text ? replacePlaceholders(langContent.btn_text, templateData) : undefined;
+  const btnUrl = langContent.btn_url ? replacePlaceholders(langContent.btn_url, templateData) : undefined;
+
+  const isRtl = language === 'fa';
+
+  try {
+    const { client, fromEmail } = await getUncachableSendGridClient();
+    
+    const msg = {
+      to: user.email,
+      from: { email: fromEmail, name: 'TaekUp' },
+      subject,
+      templateId: SENDGRID_MASTER_TEMPLATE_ID,
+      dynamicTemplateData: {
+        title,
+        body_content: bodyContent,
+        btn_text: btnText,
+        btn_url: btnUrl,
+        is_rtl: isRtl,
+        image_url: data.image_url,
+        unsubscribe: `${baseUrl}/unsubscribe?email=${encodeURIComponent(user.email)}`,
+      },
+    };
+
+    const response = await client.send(msg);
+    const messageId = response[0]?.headers?.['x-message-id'];
+    console.log(`[EmailService] Sent ${emailType} to ${user.email} (${language}) - ID: ${messageId}`);
+    return { success: true, messageId };
+  } catch (error: any) {
+    const errorMessage = error?.response?.body?.errors?.[0]?.message || error.message || 'Unknown error';
+    console.error(`[EmailService] Failed to send ${emailType} to ${user.email}:`, errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function sendBulkNotification(
+  emailType: string,
+  users: NotificationUser[],
+  dataFn: (user: NotificationUser) => NotificationData = () => ({})
+): Promise<{ sent: number; failed: number; errors: string[] }> {
+  const results = { sent: 0, failed: 0, errors: [] as string[] };
+
+  for (const user of users) {
+    const data = dataFn(user);
+    const result = await sendNotification(emailType, user, data);
+    
+    if (result.success) {
+      results.sent++;
+    } else {
+      results.failed++;
+      results.errors.push(`${user.email}: ${result.error}`);
+    }
+  }
+
+  console.log(`[EmailService] Bulk ${emailType}: ${results.sent} sent, ${results.failed} failed`);
+  return results;
+}
+
+export function getAvailableEmailTypes(): string[] {
+  return Object.keys(getEmailContent());
+}
+
+export function getSupportedLanguages(): SupportedLanguage[] {
+  return ['en', 'fr', 'fa'];
+}
 
 async function getCredentials() {
   // First, check for direct environment variables (works on Vercel and other platforms)
@@ -466,5 +627,9 @@ export default {
   sendChurnRiskEmail,
   sendVideoSubmittedNotification,
   sendVideoVerifiedNotification,
+  sendNotification,
+  sendBulkNotification,
+  getAvailableEmailTypes,
+  getSupportedLanguages,
   EMAIL_TEMPLATES,
 };
