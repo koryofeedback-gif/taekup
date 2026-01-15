@@ -1,0 +1,161 @@
+Here is the comprehensive list of all email templates you need for TaekUp, organized by category. You can copy this list and give it to your developer or content writer to set up in SendGrid.
+
+1. Authentication & Security (All Users)
+These are the system essentials.
+
+1. Verify Email
+
+Subject: Verify your email for TaekUp
+
+Trigger: Immediately after signup.
+
+Content: "Welcome! Click the button below to verify your email address and start your journey."
+
+2. Reset Password
+
+Subject: Reset your password
+
+Trigger: User clicks "Forgot Password".
+
+Content: "We received a request to reset your password. Click here to set a new one."
+
+3. Password Changed
+
+Subject: Security Alert: Your password was changed
+
+Trigger: After a successful password change.
+
+Content: "Your password was successfully updated. If this wasn't you, contact support immediately."
+
+2. Club Owners (B2B / Instructors)
+Focus on business management and revenue.
+
+4. Club Welcome (Onboarding)
+
+Subject: Welcome to TaekUp! Let's set up your Dojo 🥋
+
+Trigger: After email verification.
+
+Content: "Your Dojo is live! Here is how to add your first student and set up your Stripe wallet."
+
+5. Trial Ending Warning
+
+Subject: Your free trial ends in 3 days ⏳
+
+Trigger: Day 11 of the 14-day trial.
+
+Content: "We hope you are enjoying the platform. Your subscription will start on [Date]. No action needed to keep access."
+
+6. Subscription Receipt (SaaS Fee)
+
+Subject: Receipt for your TaekUp subscription
+
+Trigger: Monthly/Yearly successful payment ($24.99).
+
+Content: "Thanks for your payment. Here is your invoice for [Month]."
+
+7. Payment Action Required (Failed)
+
+Subject: Action Required: Payment failed for your Dojo ⚠️
+
+Trigger: Stripe charge failed.
+
+Content: "We couldn't process your membership fee. Update your card to avoid service interruption."
+
+8. Video Queue Digest
+
+Subject: You have [Number] videos waiting for review 🎥
+
+Trigger: Daily summary (if there are pending videos).
+
+Content: "Your students are training hard! Log in to the Creator Hub to approve their videos."
+
+9. Payout Notification
+
+Subject: Cha-ching! A payout is on its way 💸
+
+Trigger: When the 70% share is transferred to their bank.
+
+Content: "A payout of [Amount] has been sent to your bank account."
+
+3. Parents (B2C / Customers)
+Focus on their child's success and value for money.
+
+10. Parent Welcome
+
+Subject: Welcome to the Dojo! 🥋
+
+Trigger: Signup or invitation by Coach.
+
+Content: "You are now connected to [Club Name]. Check your child's dashboard to see their progress."
+
+11. Premium Unlocked (The 'Moment of Delight')
+
+Subject: Legacy Mode Unlocked for [Child Name]! 🌟
+
+Trigger: Successful $4.99 payment.
+
+Content: "You now have access to Global Rankings, AI Coach, and the full Video Academy. Let's go!"
+
+12. Premium Receipt
+
+Subject: Your receipt from TaekUp
+
+Trigger: Monthly renewal ($4.99).
+
+Content: "Thank you. Your Premium access is active for another month."
+
+13. Subscription Cancelled
+
+Subject: Legacy Mode paused for [Child Name]
+
+Trigger: User cancels subscription.
+
+Content: "We are sorry to see you go. [Child Name]'s global rank has been frozen. You can reactivate anytime."
+
+4. Gamification & Academy (Engagement)
+These keep the users coming back.
+
+14. Video Approved
+
+Subject: Great job! Sensei approved your video ✅
+
+Trigger: Coach clicks "Pass" in Creator Hub.
+
+Content: "Your form was excellent! You earned +[XP] HonorXP. Keep it up!"
+
+15. Video Needs Work (Retry)
+
+Subject: Sensei left feedback on your video 📝
+
+Trigger: Coach clicks "Retry".
+
+Content: "Sensei [Name] watched your video and has some advice: '[Coach Feedback]'. Watch the tutorial and try again!"
+
+16. Level Up / Belt Promotion
+
+Subject: Congratulations! [Child Name] just Leveled Up! 🎉
+
+Trigger: Earning a new Belt or Stripe in the app.
+
+Content: "Hard work pays off! Check the app to see the new rank."
+
+17. Weekly Progress Report
+
+Subject: Weekly Progress Report for [Child Name] 📊
+
+Trigger: Automated weekly summary (e.g., Saturday morning).
+
+Content: "This week: 3 Classes Attended, 500 XP Earned, Rank increased by +5."
+
+5. Admin (Internal for You)
+18. New Club Notification
+
+Subject: [New User] New Dojo Signed Up: [Club Name] 🚀
+
+19. Critical Error Alert
+
+Subject: [ALERT] System Error / Stripe Disconnect 🚨
+
+💡 Developer Tip:
+In SendGrid, name your templates exactly like the titles above (e.g., parent_welcome, club_payout_notification). This makes it very easy to call them from your code.
