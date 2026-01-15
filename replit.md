@@ -71,6 +71,14 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
 - **Parent Portal**: Tracks student journey, provides AI insights, practice curriculum with XP completion tracking, booking, gamification (Rivals), daily habits (Home Dojo), and digital student cards.
 - **Super Admin Dashboard**: Platform-wide management, including KPIs, club/parent management, payment history, revenue analytics, activity feed, health scores, email tools, CSV exports, and impersonation. New advanced analytics dashboard with cohort analysis, onboarding funnel, churn analysis, payment recovery, MRR goals, and automations.
 - **Email System**: Integration with SendGrid for automated (welcome, trial reminders) and transactional emails (coach invites, password resets, promotions, attendance alerts, birthday wishes, revenue reports).
+- **Multilingual Email System** (Jan 2026): Centralized email content in `server/utils/emailContent.json` with:
+    - **5 Supported Languages**: English (en), French (fr), German (de), Spanish (es), Persian (fa)
+    - **24 Email Types**: welcome_parent, welcome_club, payment_receipt, premium_unlocked, video_approved, video_retry, trial_ending, password_reset, payment_failed, belt_promotion, weekly_progress, coach_invite, payout_notification, subscription_cancelled, day_3_checkin, day_7_mid_trial, trial_expired, new_student_added, monthly_revenue_report, class_feedback, attendance_alert, birthday_wish, win_back, churn_risk, video_submitted, password_changed
+    - **Master Template**: Uses SendGrid Dynamic Template with `SENDGRID_MASTER_TEMPLATE_ID` secret
+    - **RTL Support**: Automatic right-to-left layout for Persian (fa) emails
+    - **Branded Terms**: All TM symbols included (HonorXP™, Legacy Cards™, Global Shogun Rank™, DojoMint™, ChronosBelt™)
+    - **API Functions**: `sendNotification(emailType, user, data)` and `sendBulkNotification(emailType, users, dataFn)` in emailService.ts
+    - **Language Detection**: Auto-detects from user.language field, falls back to English
 
 ### System Design Choices
 - **Development Environment**: Replit with a dual-server setup.

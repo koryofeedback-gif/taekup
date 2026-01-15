@@ -35,7 +35,7 @@ function getEmailContent(): EmailContentType {
   }
 }
 
-type SupportedLanguage = 'en' | 'fr' | 'fa';
+type SupportedLanguage = 'en' | 'fr' | 'de' | 'es' | 'fa';
 
 interface NotificationUser {
   email: string;
@@ -56,7 +56,7 @@ function replacePlaceholders(template: string, data: NotificationData): string {
 
 function detectLanguage(user: NotificationUser): SupportedLanguage {
   const lang = user.language?.toLowerCase().slice(0, 2) as SupportedLanguage;
-  if (['en', 'fr', 'fa'].includes(lang)) {
+  if (['en', 'fr', 'de', 'es', 'fa'].includes(lang)) {
     return lang;
   }
   return 'en';
@@ -161,7 +161,7 @@ export function getAvailableEmailTypes(): string[] {
 }
 
 export function getSupportedLanguages(): SupportedLanguage[] {
-  return ['en', 'fr', 'fa'];
+  return ['en', 'fr', 'de', 'es', 'fa'];
 }
 
 async function getCredentials() {
@@ -315,10 +315,10 @@ export async function sendWelcomeEmail(
   to: string,
   data: { ownerName: string; clubName: string }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.WELCOME, {
-    ...data,
-    ctaUrl: `${BASE_URL}/setup`,
-  }, `Welcome to TaekUp - Your 14-Day Trial Has Started!`);
+  return sendNotification('welcome_club', { email: to, name: data.ownerName }, {
+    name: data.ownerName,
+    clubName: data.clubName,
+  });
 }
 
 export async function sendPaymentConfirmationEmail(
@@ -329,47 +329,59 @@ export async function sendPaymentConfirmationEmail(
     planName: string;
     amount: string;
     billingPeriod: string;
+    invoiceNumber?: string;
+    invoiceUrl?: string;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.PAYMENT_CONFIRMATION, {
-    ...data,
-    ctaUrl: `${BASE_URL}/wizard`,
-    manageSubscriptionUrl: `${BASE_URL}/app/admin?tab=billing`,
-  }, `Payment Confirmed - Let's Set Up Your Club!`, 'transactional');
+  return sendNotification('payment_receipt', { email: to, name: data.ownerName }, {
+    name: data.ownerName,
+    amount: data.amount,
+    nextBillingDate: data.billingPeriod,
+    invoiceNumber: data.invoiceNumber || 'N/A',
+    invoiceUrl: data.invoiceUrl || `${BASE_URL}/app/admin?tab=billing`,
+  });
 }
 
 export async function sendDay3CheckinEmail(
   to: string,
   data: { ownerName: string }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.DAY_3_CHECKIN, data, 
-    `How's it going? Upload your student list yet?`);
+  return sendNotification('day_3_checkin', { email: to, name: data.ownerName }, {
+    name: data.ownerName,
+  });
 }
 
 export async function sendDay7MidTrialEmail(
   to: string,
   data: { ownerName: string }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.DAY_7_MID_TRIAL, {
-    ...data,
-    aiFeedbackUrl: `${BASE_URL}/ai-feedback`,
-  }, `7 Days Left - Have You Tried AI Feedback?`);
+  return sendNotification('day_7_mid_trial', { email: to, name: data.ownerName }, {
+    name: data.ownerName,
+  });
 }
 
 export async function sendTrialEndingSoonEmail(
   to: string,
-  data: { ownerName: string; clubName: string; daysLeft: number }
+  data: { ownerName: string; clubName: string; daysLeft: number; planName?: string; planPrice?: string; trialEndDate?: string }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.TRIAL_ENDING_SOON, data, 
-    `⏰ Only ${data.daysLeft} Days Left on Your Trial`);
+  const endDate = data.trialEndDate || new Date(Date.now() + data.daysLeft * 24 * 60 * 60 * 1000).toLocaleDateString();
+  return sendNotification('trial_ending', { email: to, name: data.ownerName }, {
+    name: data.ownerName,
+    daysLeft: data.daysLeft,
+    trialEndDate: endDate,
+    planName: data.planName || 'Your Plan',
+    planPrice: data.planPrice || '',
+  });
 }
 
 export async function sendTrialExpiredEmail(
   to: string,
   data: { ownerName: string; clubName: string }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.TRIAL_EXPIRED, data, 
-    `Your Trial Has Ended - Upgrade to Keep Access`);
+  return sendNotification('trial_expired', { email: to, name: data.ownerName }, {
+    name: data.ownerName,
+    clubName: data.clubName,
+  });
 }
 
 export async function sendCoachInviteEmail(
@@ -382,20 +394,21 @@ export async function sendCoachInviteEmail(
     tempPassword: string 
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.COACH_INVITE, data, 
-    `${data.ownerName} invited you to join ${data.clubName} as a Coach`,
-    'transactional');
+  return sendNotification('coach_invite', { email: to, name: data.coachName }, {
+    name: data.coachName,
+    clubName: data.clubName,
+    tempPassword: data.tempPassword,
+  });
 }
 
 export async function sendResetPasswordEmail(
   to: string,
   data: { userName: string; resetToken: string }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.RESET_PASSWORD, {
-    ...data,
+  return sendNotification('password_reset', { email: to, name: data.userName }, {
+    name: data.userName,
     resetUrl: `${BASE_URL}/reset-password?token=${data.resetToken}`,
-  }, `Reset Your TaekUp Password`,
-    'transactional');
+  });
 }
 
 export async function sendNewStudentAddedEmail(
@@ -409,11 +422,14 @@ export async function sendNewStudentAddedEmail(
     studentId: string;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.NEW_STUDENT_ADDED, {
-    ...data,
-    studentProfileUrl: `${BASE_URL}/student/${data.studentId}`,
-  }, `New Student Added: ${data.studentName}`,
-    'transactional');
+  return sendNotification('new_student_added', { email: to }, {
+    name: 'there',
+    studentName: data.studentName,
+    clubName: data.clubName,
+    beltLevel: data.beltLevel,
+    studentAge: data.studentAge,
+    parentName: data.parentName,
+  });
 }
 
 export async function sendMonthlyRevenueReportEmail(
@@ -425,8 +441,12 @@ export async function sendMonthlyRevenueReportEmail(
     newThisMonth: number;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.MONTHLY_REVENUE_REPORT, data, 
-    `💰 Your ${data.monthName} Earnings Report - $${data.totalEarnings}`);
+  return sendNotification('monthly_revenue_report', { email: to }, {
+    monthName: data.monthName,
+    totalEarnings: data.totalEarnings,
+    premiumParents: data.premiumParents,
+    newThisMonth: data.newThisMonth,
+  });
 }
 
 export async function sendParentWelcomeEmail(
@@ -438,10 +458,11 @@ export async function sendParentWelcomeEmail(
     studentId: string;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.PARENT_WELCOME, {
-    ...data,
-    parentPortalUrl: `${BASE_URL}/parent/${data.studentId}`,
-  }, `Track ${data.studentName}'s Progress on TaekUp`);
+  return sendNotification('welcome_parent', { email: to, name: data.parentName }, {
+    name: data.parentName,
+    clubName: data.clubName,
+    studentName: data.studentName,
+  });
 }
 
 export async function sendClassFeedbackEmail(
@@ -459,11 +480,16 @@ export async function sendClassFeedbackEmail(
     feedbackId: string;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.CLASS_FEEDBACK, {
-    ...data,
-    studentProfileUrl: `${BASE_URL}/student/${data.studentId}`,
-    shareUrl: `${BASE_URL}/share/feedback/${data.feedbackId}`,
-  }, `⭐ ${data.studentName} Did Great Today!`);
+  return sendNotification('class_feedback', { email: to, name: data.parentName }, {
+    parentName: data.parentName,
+    studentName: data.studentName,
+    clubName: data.clubName,
+    className: data.className,
+    classDate: data.classDate,
+    feedbackText: data.feedbackText,
+    coachName: data.coachName,
+    highlights: data.highlights,
+  });
 }
 
 export async function sendBeltPromotionEmail(
@@ -479,11 +505,12 @@ export async function sendBeltPromotionEmail(
     promotionId: string;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.BELT_PROMOTION, {
-    ...data,
-    certificateUrl: `${BASE_URL}/certificate/${data.promotionId}`,
-    shareUrl: `${BASE_URL}/share/promotion/${data.promotionId}`,
-  }, `🎊 Congratulations! ${data.studentName} Earned a New Belt!`);
+  return sendNotification('belt_promotion', { email: to }, {
+    childName: data.studentName,
+    newBelt: data.beltColor,
+    clubName: data.clubName,
+    promotionDate: data.promotionDate,
+  });
 }
 
 export async function sendAttendanceAlertEmail(
@@ -495,10 +522,12 @@ export async function sendAttendanceAlertEmail(
     daysSinceLastClass: number;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.ATTENDANCE_ALERT, {
-    ...data,
-    scheduleUrl: `${BASE_URL}/schedule`,
-  }, `We Miss ${data.studentName}! Is Everything Okay?`);
+  return sendNotification('attendance_alert', { email: to, name: data.parentName }, {
+    parentName: data.parentName,
+    studentName: data.studentName,
+    clubName: data.clubName,
+    daysSinceLastClass: data.daysSinceLastClass,
+  });
 }
 
 export async function sendBirthdayWishEmail(
@@ -508,8 +537,10 @@ export async function sendBirthdayWishEmail(
     clubName: string;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.BIRTHDAY_WISH, data, 
-    `🎂 Happy Birthday, ${data.studentName}!`);
+  return sendNotification('birthday_wish', { email: to }, {
+    studentName: data.studentName,
+    clubName: data.clubName,
+  });
 }
 
 export async function sendWinBackEmail(
@@ -520,11 +551,11 @@ export async function sendWinBackEmail(
     discountCode?: string;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.WIN_BACK, {
-    ...data,
+  return sendNotification('win_back', { email: to, name: data.ownerName }, {
+    name: data.ownerName,
+    clubName: data.clubName,
     discountCode: data.discountCode || 'WINBACK25',
-    ctaUrl: `${BASE_URL}/pricing`,
-  }, `We Want You Back! 25% Off for 3 Months`);
+  });
 }
 
 export async function sendChurnRiskEmail(
@@ -534,11 +565,9 @@ export async function sendChurnRiskEmail(
     clubName: string;
   }
 ): Promise<EmailResult> {
-  return sendEmail(to, EMAIL_TEMPLATES.CHURN_RISK, {
-    ...data,
-    ctaUrl: `${BASE_URL}/wizard`,
-    helpUrl: `${BASE_URL}/help`,
-  }, `Need Help Getting Started? We're Here for You!`);
+  return sendNotification('churn_risk', { email: to, name: data.ownerName }, {
+    name: data.ownerName,
+  });
 }
 
 export async function sendVideoSubmittedNotification(
@@ -550,25 +579,12 @@ export async function sendVideoSubmittedNotification(
     clubName: string;
   }
 ): Promise<EmailResult> {
-  try {
-    const { client } = await getUncachableSendGridClient();
-    const sender = SENDER_EMAILS.transactional;
-    
-    const msg = {
-      to,
-      from: { email: sender.email, name: sender.name },
-      subject: `New Video Submission from ${data.studentName}`,
-      text: `Hi ${data.coachName},\n\n${data.studentName} has submitted a new video for the "${data.challengeName}" challenge.\n\nPlease log in to the Coach Dashboard to review and verify this submission.\n\n${BASE_URL}/app/coach\n\nBest,\nThe TaekUp Team`,
-      html: `<p>Hi ${data.coachName},</p><p><strong>${data.studentName}</strong> has submitted a new video for the "<strong>${data.challengeName}</strong>" challenge.</p><p>Please log in to the Coach Dashboard to review and verify this submission.</p><p><a href="${BASE_URL}/app/coach">Review Video</a></p><p>Best,<br>The TaekUp Team</p>`
-    };
-
-    const [response] = await client.send(msg);
-    console.log('[Email] Video submitted notification sent to:', to);
-    return { success: true, messageId: response.headers['x-message-id'] };
-  } catch (error: any) {
-    console.error('[Email] Failed to send video submitted notification:', error.message);
-    return { success: false, error: error.message };
-  }
+  return sendNotification('video_submitted', { email: to, name: data.coachName }, {
+    coachName: data.coachName,
+    studentName: data.studentName,
+    challengeName: data.challengeName,
+    clubName: data.clubName,
+  });
 }
 
 export async function sendVideoVerifiedNotification(
@@ -582,29 +598,13 @@ export async function sendVideoVerifiedNotification(
     xpAwarded?: number;
   }
 ): Promise<EmailResult> {
-  try {
-    const { client } = await getUncachableSendGridClient();
-    const sender = SENDER_EMAILS.transactional;
-    
-    const statusEmoji = data.status === 'approved' ? '✅' : '❌';
-    const statusText = data.status === 'approved' ? 'Approved' : 'Not Approved';
-    const xpText = data.status === 'approved' && data.xpAwarded ? ` and earned ${data.xpAwarded} XP!` : '';
-    
-    const msg = {
-      to,
-      from: { email: sender.email, name: sender.name },
-      subject: `${statusEmoji} Video Challenge ${statusText} - ${data.studentName}`,
-      text: `Hi ${data.parentName},\n\n${data.studentName}'s "${data.challengeName}" video has been ${statusText.toLowerCase()}${xpText}\n\n${data.coachNotes ? `Coach Notes: ${data.coachNotes}\n\n` : ''}View in the Parent Portal: ${BASE_URL}/app/parent\n\nKeep up the great work!\nThe TaekUp Team`,
-      html: `<p>Hi ${data.parentName},</p><p><strong>${data.studentName}</strong>'s "<strong>${data.challengeName}</strong>" video has been <strong>${statusText.toLowerCase()}</strong>${xpText}</p>${data.coachNotes ? `<p><em>Coach Notes: ${data.coachNotes}</em></p>` : ''}<p><a href="${BASE_URL}/app/parent">View in Parent Portal</a></p><p>Keep up the great work!<br>The TaekUp Team</p>`
-    };
-
-    const [response] = await client.send(msg);
-    console.log('[Email] Video verified notification sent to:', to);
-    return { success: true, messageId: response.headers['x-message-id'] };
-  } catch (error: any) {
-    console.error('[Email] Failed to send video verified notification:', error.message);
-    return { success: false, error: error.message };
-  }
+  const emailType = data.status === 'approved' ? 'video_approved' : 'video_retry';
+  return sendNotification(emailType, { email: to, name: data.parentName }, {
+    childName: data.studentName,
+    coachName: 'Sensei',
+    xpAmount: data.xpAwarded || 0,
+    feedback: data.coachNotes || '',
+  });
 }
 
 export default {
