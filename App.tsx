@@ -749,7 +749,7 @@ const AppContent: React.FC<AppContentProps> = ({
     return (
         <div className={`min-h-screen bg-gray-900 text-gray-100 font-sans ${showImpersonationPadding ? 'pt-12' : ''}`}>
             <ImpersonationBanner />
-            {subscription && loggedInUserType === 'owner' && !isDojangTV && !isMyTaekHome && (
+            {subscription && loggedInUserType === 'owner' && finalWizardData && !isDojangTV && !isMyTaekHome && (
                 <TrialBanner 
                     subscription={subscription} 
                     onUpgradeClick={onShowPricing}
