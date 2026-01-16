@@ -3,16 +3,29 @@ import Stripe from 'stripe';
 let connectionSettings: any;
 
 async function getCredentials() {
-  // Check for sandbox keys first (development/testing)
+  const isProduction = process.env.REPLIT_DEPLOYMENT === '1' || process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+  
+  // In production, prefer production Stripe keys
+  if (isProduction && process.env.STRIPE_SECRET_KEY) {
+    console.log('[Stripe] Using production keys');
+    return {
+      publishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY || '',
+      secretKey: process.env.STRIPE_SECRET_KEY,
+    };
+  }
+
+  // In development/testing, use sandbox keys if available
   if (process.env.SANDBOX_STRIPE_KEY) {
+    console.log('[Stripe] Using sandbox keys');
     return {
       publishableKey: process.env.SANDBOX_STRIPE_PUBLISHABLE_KEY || '',
       secretKey: process.env.SANDBOX_STRIPE_KEY,
     };
   }
 
-  // Check if running on Vercel or with direct env vars
+  // Fallback to production keys if no sandbox
   if (process.env.STRIPE_SECRET_KEY) {
+    console.log('[Stripe] Using production keys (fallback)');
     return {
       publishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY || '',
       secretKey: process.env.STRIPE_SECRET_KEY,
@@ -32,8 +45,8 @@ async function getCredentials() {
   }
 
   const connectorName = 'stripe';
-  const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-  const targetEnvironment = isProduction ? 'production' : 'development';
+  const isProductionDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+  const targetEnvironment = isProductionDeployment ? 'production' : 'development';
 
   const url = new URL(`https://${hostname}/api/v2/connection`);
   url.searchParams.set('include_secrets', 'true');
