@@ -825,6 +825,13 @@ export function registerRoutes(app: Express) {
       let wizardData = null;
       
       if (user.club_id) {
+        // First check if wizard was actually completed via onboarding_progress
+        const progressCheck = await db.execute(
+          sql`SELECT wizard_completed FROM onboarding_progress WHERE club_id = ${user.club_id}::uuid LIMIT 1`
+        );
+        const progressData = (progressCheck as any[])[0];
+        wizardCompleted = progressData?.wizard_completed === true;
+        
         // Fetch wizard_data from clubs table
         const clubDataResult = await db.execute(
           sql`SELECT wizard_data FROM clubs WHERE id = ${user.club_id}::uuid LIMIT 1`
@@ -832,7 +839,6 @@ export function registerRoutes(app: Express) {
         const clubData = (clubDataResult as any[])[0];
         if (clubData?.wizard_data && Object.keys(clubData.wizard_data).length > 0) {
           wizardData = { ...clubData.wizard_data };
-          wizardCompleted = true;
           
           // CRITICAL: Replace wizard_data students with fresh database students (proper UUIDs)
           const studentsResult = await db.execute(sql`
@@ -899,24 +905,12 @@ export function registerRoutes(app: Express) {
           console.log('[Login] Replaced wizard students/coaches with database records');
         }
         
-        // Also check onboarding_progress table
-        const progressResult = await db.execute(
-          sql`SELECT wizard_completed FROM onboarding_progress WHERE club_id = ${user.club_id}::uuid LIMIT 1`
-        );
-        const progress = (progressResult as any[])[0];
-        if (progress?.wizard_completed) {
-          wizardCompleted = true;
-        }
-        
-        // Auto-recover if wizard_data exists but onboarding_progress doesn't
-        if (wizardData && !progress?.wizard_completed) {
-          await db.execute(sql`
-            INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
-            VALUES (${user.club_id}::uuid, true, NOW())
-            ON CONFLICT (club_id) DO UPDATE SET wizard_completed = true
-          `);
-          console.log('[Login] Auto-recovered wizard_completed for club:', user.club_id);
-        }
+        // Log wizard completion status for debugging
+        console.log('[Login] Club wizard status:', { 
+          hasWizardData: !!wizardData, 
+          wizardCompleted, 
+          clubId: user.club_id 
+        });
       }
 
       // For parents, look up their linked student(s) to get the database UUID

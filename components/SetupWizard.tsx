@@ -135,6 +135,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+    } else if (currentStep === 1 && clubId) {
+      // Go back to demo choice screen from step 1
+      setShowDemoChoice(true);
     }
   };
 
@@ -262,11 +265,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
         <div className="relative z-20 bg-gray-800 p-6 md:p-8 rounded-b-lg border-t border-gray-700 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
             <button
                 onClick={handleBack}
-                disabled={currentStep === 1}
+                disabled={currentStep === 1 && !clubId}
                 className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Ctrl + Backspace"
             >
-                Back
+                {currentStep === 1 && clubId ? 'Change Choice' : 'Back'}
             </button>
             <div className="text-xs text-gray-500 hidden md:block">
                 Tip: Press <span className="font-mono bg-gray-700 px-1 rounded">Ctrl + Enter</span> to continue

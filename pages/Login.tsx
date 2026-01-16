@@ -74,26 +74,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                 localStorage.setItem('taekup_wizard_data', JSON.stringify(data.wizardData));
                 console.log('[Login] Saved fresh wizard data from login API (with database UUIDs)');
             }
-            // FALLBACK: For owners, try to fetch wizard data from database if not in login response
-            else if (userType === 'owner' && user.clubId && !user.wizardCompleted) {
+            // FALLBACK: For owners with completed wizard, try to fetch wizard data from database if not in login response
+            // NOTE: We only fetch if wizardCompleted is TRUE - this populates dashboard data, not wizard draft
+            else if (userType === 'owner' && user.clubId && user.wizardCompleted) {
                 try {
                     const wizardResponse = await fetch(`/api/club/${user.clubId}/data`);
                     const wizardResult = await wizardResponse.json();
                     if (wizardResult.success && wizardResult.wizardData) {
-                        // Check if wizard data has actual content (not just defaults)
-                        const wd = wizardResult.wizardData;
-                        const hasContent = wd.clubName || (wd.students && wd.students.length > 0) || (wd.belts && wd.belts.length > 0);
-                        if (hasContent) {
-                            // Merge club settings (like worldRankingsEnabled) into wizardData
-                            const mergedData = {
-                                ...wizardResult.wizardData,
-                                worldRankingsEnabled: wizardResult.club?.worldRankingsEnabled || false
-                            };
-                            localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
-                            // Mark wizard as completed if there's real content
-                            user.wizardCompleted = true;
-                            console.log('[Login] Saved wizard data from /api/club/:id/data, worldRankingsEnabled:', mergedData.worldRankingsEnabled);
-                        }
+                        // Merge club settings (like worldRankingsEnabled) into wizardData
+                        const mergedData = {
+                            ...wizardResult.wizardData,
+                            worldRankingsEnabled: wizardResult.club?.worldRankingsEnabled || false
+                        };
+                        localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
+                        console.log('[Login] Saved wizard data from /api/club/:id/data, worldRankingsEnabled:', mergedData.worldRankingsEnabled);
                     }
                 } catch (err) {
                     console.error('[Login] Failed to fetch wizard data:', err);
@@ -108,9 +102,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             const savedWizardData = localStorage.getItem('taekup_wizard_data');
             console.log('[Login] Pre-redirect check:', { savedUserType, hasWizardData: !!savedWizardData });
             
-            // Check if wizard is completed - either from API or from localStorage having wizard data
-            const hasLocalWizardData = !!savedWizardData;
-            const wizardIsCompleted = user.wizardCompleted || hasLocalWizardData;
+            // Check if wizard is completed - ONLY use backend flag, not localStorage
+            // This ensures users who started but didn't finish wizard are taken back to wizard
+            const wizardIsCompleted = user.wizardCompleted === true;
+            
+            // If wizard is not completed, clear any partial localStorage data so wizard starts fresh
+            if (!wizardIsCompleted && userType === 'owner') {
+                // Keep the draft if it exists (taekup_wizard_draft) but clear completed data
+                // This allows resuming from where they left off in the wizard
+                console.log('[Login] Wizard not completed, user will be redirected to wizard');
+            }
             
             // Determine target URL
             let targetUrl = '/app';
@@ -124,7 +125,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                 targetUrl = `/app/parent/${user.studentId}`;
             }
             
-            console.log('[Login] Redirecting to:', targetUrl, { wizardIsCompleted, hasLocalWizardData });
+            console.log('[Login] Redirecting to:', targetUrl, { wizardIsCompleted, backendFlag: user.wizardCompleted });
             
             // Use full page reload to ensure fresh state from localStorage
             window.location.href = targetUrl;
