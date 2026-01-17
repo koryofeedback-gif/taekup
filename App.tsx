@@ -193,18 +193,12 @@ const App: React.FC = () => {
         }
     }, [subscription]);
 
-    // Auto-verify subscription status on app load for owners
+    // Auto-verify subscription status on app load for owners - ALWAYS verify with server
     useEffect(() => {
         if (loggedInUserType === 'owner') {
             const clubId = localStorage.getItem('taekup_club_id');
             if (clubId) {
-                // Check if subscription already shows as active
-                const currentSub = loadSubscription();
-                if (currentSub?.planId && !currentSub?.isTrialActive) {
-                    return; // Already active, no need to verify
-                }
-                
-                console.log('[App] Verifying subscription status with Stripe...');
+                console.log('[App] Verifying subscription status with server (always)...');
                 fetch(`/api/club/${clubId}/verify-subscription`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
@@ -213,47 +207,40 @@ const App: React.FC = () => {
                 .then(result => {
                     console.log('[App] Subscription verification result:', result);
                     const existingSub = loadSubscription();
+                    
+                    // Use server's trial end date (source of truth)
+                    const serverTrialEnd = result.trialEnd ? new Date(result.trialEnd).toISOString() : null;
+                    const trialEndDate = serverTrialEnd || existingSub?.trialEndDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                    
+                    // Check if trial has actually ended based on server data
+                    const now = new Date();
+                    const trialEnd = new Date(trialEndDate);
+                    const isTrialExpired = now > trialEnd;
+                    
                     if (result.success && result.hasActiveSubscription) {
+                        // Has active paid subscription
                         const updatedSubscription = {
                             ...existingSub,
-                            planId: 'starter' as const,
+                            planId: (result.planId || 'starter') as any,
                             isTrialActive: false,
-                            isLocked: false,
-                            trialEndDate: existingSub?.trialEndDate || new Date().toISOString()
-                        };
-                        setSubscription(updatedSubscription);
-                        saveSubscription(updatedSubscription);
-                        console.log('[App] Subscription updated - trial banner should now be hidden');
-                    } else if (result.success && !result.hasActiveSubscription) {
-                        // No active subscription - ensure trial banner shows
-                        // Calculate proper trial end date from signup data
-                        let trialEndDate = existingSub?.trialEndDate;
-                        if (!trialEndDate || trialEndDate === new Date().toISOString().split('T')[0]) {
-                            const savedSignup = localStorage.getItem('taekup_signup_data');
-                            if (savedSignup) {
-                                try {
-                                    const parsed = JSON.parse(savedSignup);
-                                    if (parsed.trialStartDate) {
-                                        const start = new Date(parsed.trialStartDate);
-                                        trialEndDate = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
-                                    }
-                                } catch (e) {}
-                            }
-                        }
-                        if (!trialEndDate) {
-                            // Fallback: assume trial started now (14 days from now)
-                            trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-                        }
-                        const updatedSubscription = {
-                            ...existingSub,
-                            planId: undefined,
-                            isTrialActive: true,
                             isLocked: false,
                             trialEndDate
                         };
                         setSubscription(updatedSubscription);
                         saveSubscription(updatedSubscription);
-                        console.log('[App] No active subscription - trial banner should show, trialEndDate:', trialEndDate);
+                        console.log('[App] Active subscription found - dashboard unlocked');
+                    } else if (result.success && !result.hasActiveSubscription) {
+                        // No active subscription - check if trial expired
+                        const updatedSubscription = {
+                            ...existingSub,
+                            planId: undefined,
+                            isTrialActive: !isTrialExpired,
+                            isLocked: isTrialExpired,
+                            trialEndDate
+                        };
+                        setSubscription(updatedSubscription);
+                        saveSubscription(updatedSubscription);
+                        console.log('[App] No subscription - trial expired:', isTrialExpired, 'trialEndDate:', trialEndDate);
                     }
                 })
                 .catch(err => console.error('[App] Verification failed:', err));

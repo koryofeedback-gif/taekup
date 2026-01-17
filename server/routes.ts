@@ -473,9 +473,9 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Club ID is required' });
       }
 
-      // Get club's owner email to find Stripe customer
+      // Get club's owner email and trial info
       const clubResult = await db.execute(sql`
-        SELECT id, owner_email, trial_status FROM clubs WHERE id = ${clubId}::uuid
+        SELECT id, owner_email, trial_status, trial_start, trial_end FROM clubs WHERE id = ${clubId}::uuid
       `);
       const club = (clubResult as any[])[0];
 
@@ -496,6 +496,8 @@ export function registerRoutes(app: Express) {
           success: true, 
           hasActiveSubscription: false,
           trialStatus: club.trial_status,
+          trialEnd: club.trial_end,
+          trialStart: club.trial_start,
           searchedEmail: club.owner_email
         });
       }
@@ -561,6 +563,8 @@ export function registerRoutes(app: Express) {
         success: true,
         hasActiveSubscription,
         trialStatus: hasActiveSubscription ? 'converted' : club.trial_status,
+        trialEnd: club.trial_end,
+        trialStart: club.trial_start,
         planId: planId,
         customerId: customer.id,
         searchedEmail: club.owner_email
