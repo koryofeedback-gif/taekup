@@ -81,18 +81,18 @@ const BASE_URL = 'https://www.mytaek.com';
 const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: string; btn_text?: string; btn_url?: string; from: string }> = {
   // Club owner welcome
   WELCOME: {
-    subject: 'Welcome to TaekUp! Let\'s set up your Dojo',
+    subject: 'Welcome to TaekUp! Let\'s set up your Dojo 🥋',
     title: 'Your Dojo is Live!',
-    body: `Hi {{name}},<br><br>Congratulations on joining TaekUp! Your club <strong>{{clubName}}</strong> is now active.<br><br>Here's what to do next:<br>• Add your first student<br>• Set up your Stripe wallet via DojoMint™ Protocol<br>• Customize your belt system<br><br>Your 14-day free trial has started!`,
+    body: `Hi {{ownerName}},<br><br>Congratulations on joining TaekUp! Your club <strong>{{clubName}}</strong> is now active.<br><br>Here's what to do next:<br>• Add your first student<br>• Set up your Stripe wallet via DojoMint™ Protocol<br>• Customize your belt system<br><br>Your 14-day free trial has started!`,
     btn_text: 'Go to Dashboard',
     btn_url: `${BASE_URL}/app/admin`,
     from: 'hello@mytaek.com'
   },
   // Parent welcome
   PARENT_WELCOME: {
-    subject: 'Welcome to the Dojo!',
+    subject: 'Welcome to the Dojo! 🥋',
     title: 'Welcome to {{clubName}}!',
-    body: `Hi {{name}},<br><br>You're now connected to <strong>{{clubName}}</strong>. Your child's martial arts journey starts here!<br><br>Check out the Parent Portal to track progress, earn HonorXP™, and unlock Legacy Cards™.`,
+    body: `Hi {{parentName}},<br><br>You're now connected to <strong>{{clubName}}</strong>. Your child's martial arts journey starts here!<br><br>Check out the Parent Portal to track progress, earn HonorXP™, and unlock Legacy Cards™.`,
     btn_text: 'Open Parent Portal',
     btn_url: `${BASE_URL}/app/parent`,
     from: 'hello@mytaek.com'
@@ -348,10 +348,11 @@ async function sendTemplateEmail(to: string, emailType: keyof typeof EMAIL_CONTE
     
     await sgMail.send({
       to,
-      from: { email: content.from, name: 'TaekUp' },
+      from: { email: content.from, name: 'MyTaek' },
       subject,
       templateId: MASTER_TEMPLATE_ID,
       dynamicTemplateData: {
+        subject,
         title,
         body_content: body,
         btn_text: content.btn_text,
