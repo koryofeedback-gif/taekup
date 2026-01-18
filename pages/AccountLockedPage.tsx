@@ -10,6 +10,7 @@ interface AccountLockedPageProps {
   email?: string;
   isOwner?: boolean;
   isTrialExpired?: boolean;
+  onLogout?: () => void;
 }
 
 interface StripePriceMap {
@@ -35,7 +36,8 @@ export const AccountLockedPage: React.FC<AccountLockedPageProps> = ({
   clubId,
   email,
   isOwner = true,
-  isTrialExpired = true
+  isTrialExpired = true,
+  onLogout
 }) => {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [stripePrices, setStripePrices] = useState<StripePricesWithPeriod>({ monthly: {}, yearly: {} });
@@ -272,6 +274,20 @@ export const AccountLockedPage: React.FC<AccountLockedPageProps> = ({
               <p className="text-gray-500 text-sm">
                 Questions? Contact support@taekup.com
               </p>
+            </div>
+          )}
+
+          {onLogout && (
+            <div className="mt-6 pt-6 border-t border-gray-700 text-center">
+              <button
+                onClick={onLogout}
+                className="text-gray-400 hover:text-white text-sm flex items-center justify-center gap-2 mx-auto transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Log Out
+              </button>
             </div>
           )}
         </div>

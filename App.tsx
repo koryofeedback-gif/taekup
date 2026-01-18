@@ -727,6 +727,7 @@ const AppContent: React.FC<AppContentProps> = ({
                 email={ownerEmail}
                 isOwner={isOwner}
                 isTrialExpired={isTrialExpired}
+                onLogout={onLogout}
             />
         );
     }
