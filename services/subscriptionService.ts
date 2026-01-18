@@ -168,6 +168,7 @@ export const checkAccountStatus = (
 
   const daysRemaining = getDaysRemaining(subscription.trialEndDate);
 
+  // Has active paid subscription
   if (subscription.planId) {
     const currentPlan = SUBSCRIPTION_PLANS.find(p => p.id === subscription.planId);
     if (currentPlan && !canStudentCountFitPlan(students.length, subscription.planId)) {
@@ -180,7 +181,13 @@ export const checkAccountStatus = (
     return { isLocked: false, requiredPlan: null, daysRemaining: 0 };
   }
 
-  if (daysRemaining <= 0) {
+  // Trust the isTrialActive field (set by server response) over date calculation
+  if (subscription.isTrialActive) {
+    return { isLocked: false, requiredPlan: null, daysRemaining: Math.max(1, daysRemaining) };
+  }
+
+  // Trial is not active and no paid plan = locked
+  if (subscription.isLocked || daysRemaining <= 0) {
     return {
       isLocked: true,
       requiredPlan: getRequiredPlan(students.length),
