@@ -747,6 +747,7 @@ const AppContent: React.FC<AppContentProps> = ({
                 <Header
                     isLoggedIn={!!loggedInUserType}
                     hasSignedUp={!!signupData}
+                    hasCompletedWizard={!!finalWizardData}
                     userType={loggedInUserType}
                     onLogout={onLogout}
                 />
@@ -1469,15 +1470,17 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
 interface HeaderProps {
     isLoggedIn: boolean;
     hasSignedUp?: boolean;
+    hasCompletedWizard?: boolean;
     userType?: 'owner' | 'coach' | 'parent' | null;
     onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, userType, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWizard, userType, onLogout }) => {
     const isAuthenticated = isLoggedIn || hasSignedUp;
     
     const getLogoDestination = () => {
         if (!isAuthenticated) return '/landing';
+        if (!hasCompletedWizard) return '/app/setup';
         if (userType === 'owner') return '/app/admin';
         if (userType === 'coach') return '/app/coach';
         if (userType === 'parent') return '/app';
