@@ -746,6 +746,7 @@ const AppContent: React.FC<AppContentProps> = ({
             {!isDojangTV && !isMyTaekHome && (
                 <Header
                     isLoggedIn={!!loggedInUserType}
+                    hasSignedUp={!!signupData}
                     userType={loggedInUserType}
                     onLogout={onLogout}
                 />
@@ -1467,17 +1468,20 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
 // Header Component
 interface HeaderProps {
     isLoggedIn: boolean;
+    hasSignedUp?: boolean;
     userType?: 'owner' | 'coach' | 'parent' | null;
     onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isLoggedIn, userType, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, userType, onLogout }) => {
+    const isAuthenticated = isLoggedIn || hasSignedUp;
+    
     const getLogoDestination = () => {
-        if (!isLoggedIn) return '/login';
+        if (!isAuthenticated) return '/login';
         if (userType === 'owner') return '/app/admin';
         if (userType === 'coach') return '/app/coach';
         if (userType === 'parent') return '/app';
-        return '/app';
+        return '/app/setup';
     };
 
     return (
@@ -1492,7 +1496,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, userType, onLogout }) => {
                     </Link>
                 </div>
                 <nav className="flex items-center space-x-3 md:space-x-6">
-                    {!isLoggedIn && (
+                    {!isAuthenticated && (
                         <>
                             <Link
                                 to="/"
@@ -1520,7 +1524,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, userType, onLogout }) => {
                             </Link>
                         </>
                     )}
-                    {isLoggedIn && (
+                    {isAuthenticated && (
                         <button
                             onClick={onLogout}
                             className="text-red-400 hover:text-red-300 font-bold text-xs md:text-sm transition-colors"
