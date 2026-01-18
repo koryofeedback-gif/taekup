@@ -145,6 +145,7 @@ const App: React.FC = () => {
     });
     const [showPricing, setShowPricing] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(false);
+    const [isVerifyingSubscription, setIsVerifyingSubscription] = useState(true);
 
     const setSignupData = useCallback((data: SignupData | null) => {
         setSignupDataState(data);
@@ -198,6 +199,7 @@ const App: React.FC = () => {
         if (loggedInUserType === 'owner') {
             const clubId = localStorage.getItem('taekup_club_id');
             if (clubId) {
+                setIsVerifyingSubscription(true);
                 console.log('[App] Verifying subscription status with server (always)...');
                 fetch(`/api/club/${clubId}/verify-subscription`, {
                     method: 'POST',
@@ -241,8 +243,13 @@ const App: React.FC = () => {
                         console.log('[App] No subscription - trial expired:', isTrialExpired, 'trialEndDate:', trialEndDate);
                     }
                 })
-                .catch(err => console.error('[App] Verification failed:', err));
+                .catch(err => console.error('[App] Verification failed:', err))
+                .finally(() => setIsVerifyingSubscription(false));
+            } else {
+                setIsVerifyingSubscription(false);
             }
+        } else {
+            setIsVerifyingSubscription(false);
         }
         
         // Also check for Stripe checkout success URL params
@@ -633,6 +640,7 @@ const App: React.FC = () => {
                 onShowPricing={() => setShowPricing(true)}
                 onHidePricing={() => setShowPricing(false)}
                 isLoadingData={isLoadingData}
+                isVerifyingSubscription={isVerifyingSubscription}
             />
         </BrowserRouter>
     );
@@ -659,6 +667,7 @@ interface AppContentProps {
     onShowPricing: () => void;
     onHidePricing: () => void;
     isLoadingData: boolean;
+    isVerifyingSubscription: boolean;
 }
 
 const AppContent: React.FC<AppContentProps> = ({
@@ -682,6 +691,7 @@ const AppContent: React.FC<AppContentProps> = ({
     onShowPricing,
     onHidePricing,
     isLoadingData,
+    isVerifyingSubscription,
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -712,7 +722,8 @@ const AppContent: React.FC<AppContentProps> = ({
         );
     }
     
-    if (accountStatus.isLocked && finalWizardData && loggedInUserType) {
+    // Only show locked page AFTER subscription verification completes
+    if (!isVerifyingSubscription && accountStatus.isLocked && finalWizardData && loggedInUserType) {
         const isOwner = loggedInUserType === 'owner';
         const isTrialExpired = !subscription?.planId;
         const clubId = signupData?.clubId || localStorage.getItem('taekup_club_id') || undefined;
