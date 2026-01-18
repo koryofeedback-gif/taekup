@@ -1481,6 +1481,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWizard, userType, onLogout }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const isAuthenticated = isLoggedIn || hasSignedUp;
     const isInWizard = location.pathname.includes('/wizard') || location.pathname.includes('/app/setup');
     
@@ -1497,17 +1498,21 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWi
         <header className="bg-gray-900/80 backdrop-blur-sm sticky top-0 z-40 border-b border-gray-800">
             <div className="w-full px-6 py-3 flex justify-between items-center">
                 <div className="flex-shrink-0 relative z-50">
-                    <Link
-                        to={getLogoDestination()}
-                        className="inline-flex items-center hover:scale-105 transition-transform cursor-pointer"
+                    <button
+                        onClick={() => {
+                            const dest = getLogoDestination();
+                            console.log('[Header] Logo clicked, navigating to:', dest);
+                            navigate(dest);
+                        }}
+                        className="inline-flex items-center hover:scale-105 transition-transform cursor-pointer bg-transparent border-0 p-0"
                         style={{ pointerEvents: 'auto' }}
                     >
                         <img 
                             src="/taekup-logo.png" 
                             alt="TaekUp" 
-                            className="h-16 md:h-[70px] w-auto pointer-events-auto"
+                            className="h-16 md:h-[70px] w-auto"
                         />
-                    </Link>
+                    </button>
                 </div>
                 <nav className="flex items-center space-x-3 md:space-x-6">
                     {!isAuthenticated && (
