@@ -75,36 +75,108 @@ function generateChallengeUUID(challengeType: string): string {
   return `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-a${hash.slice(17,20)}-${hash.slice(20,32)}`;
 }
 
-const EMAIL_TEMPLATES = {
-  WELCOME: 'd-c75234cb326144f68395a66668081ee8',
-  PARENT_WELCOME: 'd-7747be090c32477e8589d8985608d055',
-  COACH_INVITE: 'd-60ecd12425c14aa3a7f5ef5fb2c374d5',
-  RESET_PASSWORD: 'd-ec4e0df3381549f6a3cfc6d202a62d8b',
+const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'd-4dcfd1bfcaca4eb2a8af8085810c1c2';
+
+const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: string; btn_text?: string; btn_url?: string; from: string }> = {
+  WELCOME: {
+    subject: 'Welcome to TaekUp!',
+    title: 'Welcome to TaekUp!',
+    body: `<p>Congratulations on taking the first step towards transforming your martial arts club!</p>
+<p>Your 14-day free trial has started. Here's what you can do:</p>
+<ul>
+<li>Add your students and coaches</li>
+<li>Set up your class schedule</li>
+<li>Enable gamification with HonorXP™</li>
+<li>Create Legacy Cards™ for your students</li>
+</ul>
+<p>Need help getting started? Our support team is here for you.</p>`,
+    btn_text: 'Go to Dashboard',
+    btn_url: 'https://www.mytaek.com/app/admin',
+    from: 'hello@mytaek.com'
+  },
+  PARENT_WELCOME: {
+    subject: 'Welcome to the TaekUp Parent Portal!',
+    title: 'Welcome to the Parent Portal!',
+    body: `<p>You've been invited to join TaekUp - the martial arts management platform used by your child's club.</p>
+<p>With the Parent Portal, you can:</p>
+<ul>
+<li>Track your child's progress and belt journey</li>
+<li>View class schedules and attendance</li>
+<li>See HonorXP™ achievements and Global Shogun Rank™</li>
+<li>Access practice curriculum at home</li>
+</ul>
+<p>Log in now to get started!</p>`,
+    btn_text: 'Access Parent Portal',
+    btn_url: 'https://www.mytaek.com/login',
+    from: 'hello@mytaek.com'
+  },
+  COACH_INVITE: {
+    subject: 'You\'ve been invited to join TaekUp!',
+    title: 'Join Your Club on TaekUp',
+    body: `<p>You've been invited to join as a coach on TaekUp - the ultimate martial arts club management platform.</p>
+<p>As a coach, you'll be able to:</p>
+<ul>
+<li>Take attendance and grade students</li>
+<li>Create and assign challenges</li>
+<li>Use AI-powered lesson planning</li>
+<li>Track sparring and progress</li>
+</ul>
+<p>Click below to set up your account and get started.</p>`,
+    btn_text: 'Accept Invitation',
+    btn_url: 'https://www.mytaek.com/login',
+    from: 'hello@mytaek.com'
+  },
+  RESET_PASSWORD: {
+    subject: 'Reset Your TaekUp Password',
+    title: 'Password Reset Request',
+    body: `<p>We received a request to reset your password for your TaekUp account.</p>
+<p>Click the button below to create a new password. This link will expire in 1 hour.</p>
+<p>If you didn't request this, you can safely ignore this email.</p>`,
+    btn_text: 'Reset Password',
+    btn_url: '{{resetUrl}}',
+    from: 'noreply@mytaek.com'
+  }
 };
 
-async function sendTemplateEmail(to: string, templateId: string, dynamicData: Record<string, any>): Promise<boolean> {
+async function sendTemplateEmail(to: string, emailType: keyof typeof EMAIL_CONTENT, dynamicData: Record<string, any>): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
     console.log('[SendGrid] No API key configured, skipping email');
     return false;
   }
   
+  const content = EMAIL_CONTENT[emailType];
+  if (!content) {
+    console.error(`[SendGrid] Unknown email type: ${emailType}`);
+    return false;
+  }
+  
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    
+    let body = content.body;
+    let btnUrl = content.btn_url || '';
+    Object.entries(dynamicData).forEach(([key, value]) => {
+      body = body.replace(new RegExp(`{{${key}}}`, 'g'), String(value || ''));
+      btnUrl = btnUrl.replace(new RegExp(`{{${key}}}`, 'g'), String(value || ''));
+    });
+    
     await sgMail.send({
       to,
-      from: { email: 'hello@mytaek.com', name: 'TaekUp' },
-      templateId,
+      from: { email: content.from, name: 'TaekUp' },
+      subject: content.subject,
+      templateId: MASTER_TEMPLATE_ID,
       dynamicTemplateData: {
-        ...dynamicData,
-        dashboardUrl: 'https://www.mytaek.com/app/admin',
-        loginUrl: 'https://www.mytaek.com/login',
-        upgradeUrl: 'https://www.mytaek.com/pricing',
+        title: content.title,
+        body_content: body,
+        btn_text: content.btn_text,
+        btn_url: btnUrl || content.btn_url,
+        is_rtl: false,
       },
     });
-    console.log(`[SendGrid] Email sent to ${to} with template ${templateId}`);
+    console.log(`[SendGrid] Email sent to ${to} with master template (${emailType})`);
     return true;
   } catch (error: any) {
-    console.error('[SendGrid] Failed to send email:', error.message);
+    console.error('[SendGrid] Failed to send email:', error?.response?.body?.errors || error.message);
     return false;
   }
 }
@@ -410,11 +482,11 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
       ['New club signup: ' + clubName, JSON.stringify({ clubId: club.id, email, country })]
     );
 
-    const emailSent = await sendTemplateEmail(email, EMAIL_TEMPLATES.WELCOME, {
+    const emailSent = await sendTemplateEmail(email, 'WELCOME', {
       ownerName: clubName,
       clubName: clubName,
     });
-    await logAutomatedEmail(client, 'welcome', email, EMAIL_TEMPLATES.WELCOME, emailSent ? 'sent' : 'failed', club.id);
+    await logAutomatedEmail(client, 'welcome', email, 'WELCOME', emailSent ? 'sent' : 'failed', club.id);
 
     return res.status(201).json({ success: true, club: { id: club.id, name: club.name, email: club.owner_email, trialStart: club.trial_start, trialEnd: club.trial_end } });
   } finally { client.release(); }
@@ -435,7 +507,7 @@ async function handleForgotPassword(req: VercelRequest, res: VercelResponse) {
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await client.query('UPDATE users SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3', [resetToken, expiresAt, user.id]);
 
-    await sendTemplateEmail(user.email, EMAIL_TEMPLATES.RESET_PASSWORD, {
+    await sendTemplateEmail(user.email, 'RESET_PASSWORD', {
       userName: user.name || 'User',
       resetToken: resetToken,
       resetUrl: `https://www.mytaek.com/reset-password?token=${resetToken}`,
@@ -1342,7 +1414,7 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
 
     const age = birthdate ? Math.floor((Date.now() - new Date(birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
 
-    const notifySent = await sendTemplateEmail(club.owner_email, EMAIL_TEMPLATES.WELCOME, {
+    const notifySent = await sendTemplateEmail(club.owner_email, 'WELCOME', {
       ownerName: club.name,
       clubName: club.name,
       studentName: name,
@@ -1353,12 +1425,12 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     console.log(`[AddStudent] Owner notification email ${notifySent ? 'sent' : 'failed'} to:`, club.owner_email);
 
     if (parentEmail) {
-      const parentSent = await sendTemplateEmail(parentEmail, EMAIL_TEMPLATES.PARENT_WELCOME, {
+      const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
         parentName: parentName || 'Parent',
         studentName: name,
         clubName: club.name,
       });
-      await logAutomatedEmail(client, 'parent_welcome', parentEmail, EMAIL_TEMPLATES.PARENT_WELCOME, parentSent ? 'sent' : 'failed', clubId);
+      await logAutomatedEmail(client, 'parent_welcome', parentEmail, 'PARENT_WELCOME', parentSent ? 'sent' : 'failed', clubId);
       console.log(`[AddStudent] Parent welcome email ${parentSent ? 'sent' : 'failed'} to:`, parentEmail);
     }
 
@@ -1691,14 +1763,14 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
       );
     }
 
-    const coachSent = await sendTemplateEmail(email, EMAIL_TEMPLATES.COACH_INVITE, {
+    const coachSent = await sendTemplateEmail(email, 'COACH_INVITE', {
       coachName: name,
       clubName: club.name,
       coachEmail: email,
       tempPassword: tempPassword,
       ownerName: club.name,
     });
-    await logAutomatedEmail(client, 'coach_invite', email, EMAIL_TEMPLATES.COACH_INVITE, coachSent ? 'sent' : 'failed', clubId);
+    await logAutomatedEmail(client, 'coach_invite', email, 'COACH_INVITE', coachSent ? 'sent' : 'failed', clubId);
     console.log(`[InviteCoach] Coach invite email ${coachSent ? 'sent' : 'failed'} to:`, email);
 
     await client.query(
@@ -1864,12 +1936,12 @@ async function handleLinkParent(req: VercelRequest, res: VercelResponse, student
     );
 
     if (!hadParentBefore) {
-      const parentSent = await sendTemplateEmail(parentEmail, EMAIL_TEMPLATES.PARENT_WELCOME, {
+      const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
         parentName: parentName || 'Parent',
         studentName: student.name,
         clubName: student.club_name,
       });
-      await logAutomatedEmail(client, 'parent_welcome', parentEmail, EMAIL_TEMPLATES.PARENT_WELCOME, parentSent ? 'sent' : 'failed', student.club_id);
+      await logAutomatedEmail(client, 'parent_welcome', parentEmail, 'PARENT_WELCOME', parentSent ? 'sent' : 'failed', student.club_id);
       console.log(`[LinkParent] Parent welcome email ${parentSent ? 'sent' : 'failed'} to:`, parentEmail);
     }
 
