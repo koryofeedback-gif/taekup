@@ -315,6 +315,16 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   }
 };
 
+const LOGO_URL = 'https://www.mytaek.com/taekup-logo.png';
+
+function replacePlaceholders(text: string, data: Record<string, any>): string {
+  let result = text;
+  Object.entries(data).forEach(([key, value]) => {
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), String(value || ''));
+  });
+  return result;
+}
+
 async function sendTemplateEmail(to: string, emailType: keyof typeof EMAIL_CONTENT, dynamicData: Record<string, any>): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
     console.log('[SendGrid] No API key configured, skipping email');
@@ -330,24 +340,24 @@ async function sendTemplateEmail(to: string, emailType: keyof typeof EMAIL_CONTE
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     
-    let body = content.body;
-    let btnUrl = content.btn_url || '';
-    Object.entries(dynamicData).forEach(([key, value]) => {
-      body = body.replace(new RegExp(`{{${key}}}`, 'g'), String(value || ''));
-      btnUrl = btnUrl.replace(new RegExp(`{{${key}}}`, 'g'), String(value || ''));
-    });
+    // Replace placeholders in all fields
+    const subject = replacePlaceholders(content.subject, dynamicData);
+    const title = replacePlaceholders(content.title, dynamicData);
+    const body = replacePlaceholders(content.body, dynamicData);
+    const btnUrl = replacePlaceholders(content.btn_url || '', dynamicData);
     
     await sgMail.send({
       to,
       from: { email: content.from, name: 'TaekUp' },
-      subject: content.subject,
+      subject,
       templateId: MASTER_TEMPLATE_ID,
       dynamicTemplateData: {
-        title: content.title,
+        title,
         body_content: body,
         btn_text: content.btn_text,
         btn_url: btnUrl || content.btn_url,
-        is_rtl: false,
+        is_rtl: dynamicData.is_rtl || false,
+        image_url: LOGO_URL,
       },
     });
     console.log(`[SendGrid] Email sent to ${to} with master template (${emailType})`);
