@@ -1480,11 +1480,11 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWi
     
     const getLogoDestination = () => {
         if (!isAuthenticated) return '/landing';
-        if (isInWizard || !hasCompletedWizard) return '/app/setup';
+        if (isInWizard || !hasCompletedWizard) return '/wizard';
         if (userType === 'owner') return '/app/admin';
         if (userType === 'coach') return '/app/coach';
         if (userType === 'parent') return '/app';
-        return '/app/setup';
+        return '/wizard';
     };
 
     return (
