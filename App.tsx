@@ -1477,7 +1477,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, userType, onLo
     const isAuthenticated = isLoggedIn || hasSignedUp;
     
     const getLogoDestination = () => {
-        if (!isAuthenticated) return '/login';
+        if (!isAuthenticated) return '/landing';
         if (userType === 'owner') return '/app/admin';
         if (userType === 'coach') return '/app/coach';
         if (userType === 'parent') return '/app';
