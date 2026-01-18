@@ -212,10 +212,8 @@ const App: React.FC = () => {
                     const serverTrialEnd = result.trialEnd ? new Date(result.trialEnd).toISOString() : null;
                     const trialEndDate = serverTrialEnd || existingSub?.trialEndDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
                     
-                    // Check if trial has actually ended based on server data
-                    const now = new Date();
-                    const trialEnd = new Date(trialEndDate);
-                    const isTrialExpired = now > trialEnd;
+                    // Trust the server's trial status - it handles timezone correctly
+                    const isTrialExpired = result.trialStatus === 'expired';
                     
                     if (result.success && result.hasActiveSubscription) {
                         // Has active paid subscription
