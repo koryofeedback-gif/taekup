@@ -1496,15 +1496,16 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWi
     return (
         <header className="bg-gray-900/80 backdrop-blur-sm sticky top-0 z-40 border-b border-gray-800">
             <div className="w-full px-6 py-3 flex justify-between items-center">
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 relative z-50">
                     <Link
                         to={getLogoDestination()}
-                        className="block hover:scale-105 transition-transform cursor-pointer"
+                        className="inline-flex items-center hover:scale-105 transition-transform cursor-pointer"
+                        style={{ pointerEvents: 'auto' }}
                     >
                         <img 
                             src="/taekup-logo.png" 
                             alt="TaekUp" 
-                            className="h-16 md:h-[70px] w-auto"
+                            className="h-16 md:h-[70px] w-auto pointer-events-auto"
                         />
                     </Link>
                 </div>
