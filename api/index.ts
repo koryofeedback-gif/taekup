@@ -76,65 +76,242 @@ function generateChallengeUUID(challengeType: string): string {
 }
 
 const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'd-4dcfd1bfcaca4eb2a8af8085810c1c2';
+const BASE_URL = 'https://www.mytaek.com';
 
 const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: string; btn_text?: string; btn_url?: string; from: string }> = {
+  // Club owner welcome
   WELCOME: {
-    subject: 'Welcome to TaekUp!',
-    title: 'Welcome to TaekUp!',
-    body: `<p>Congratulations on taking the first step towards transforming your martial arts club!</p>
-<p>Your 14-day free trial has started. Here's what you can do:</p>
-<ul>
-<li>Add your students and coaches</li>
-<li>Set up your class schedule</li>
-<li>Enable gamification with HonorXP™</li>
-<li>Create Legacy Cards™ for your students</li>
-</ul>
-<p>Need help getting started? Our support team is here for you.</p>`,
+    subject: 'Welcome to TaekUp! Let\'s set up your Dojo',
+    title: 'Your Dojo is Live!',
+    body: `Hi {{name}},<br><br>Congratulations on joining TaekUp! Your club <strong>{{clubName}}</strong> is now active.<br><br>Here's what to do next:<br>• Add your first student<br>• Set up your Stripe wallet via DojoMint™ Protocol<br>• Customize your belt system<br><br>Your 14-day free trial has started!`,
     btn_text: 'Go to Dashboard',
-    btn_url: 'https://www.mytaek.com/app/admin',
+    btn_url: `${BASE_URL}/app/admin`,
     from: 'hello@mytaek.com'
   },
+  // Parent welcome
   PARENT_WELCOME: {
-    subject: 'Welcome to the TaekUp Parent Portal!',
-    title: 'Welcome to the Parent Portal!',
-    body: `<p>You've been invited to join TaekUp - the martial arts management platform used by your child's club.</p>
-<p>With the Parent Portal, you can:</p>
-<ul>
-<li>Track your child's progress and belt journey</li>
-<li>View class schedules and attendance</li>
-<li>See HonorXP™ achievements and Global Shogun Rank™</li>
-<li>Access practice curriculum at home</li>
-</ul>
-<p>Log in now to get started!</p>`,
-    btn_text: 'Access Parent Portal',
-    btn_url: 'https://www.mytaek.com/login',
+    subject: 'Welcome to the Dojo!',
+    title: 'Welcome to {{clubName}}!',
+    body: `Hi {{name}},<br><br>You're now connected to <strong>{{clubName}}</strong>. Your child's martial arts journey starts here!<br><br>Check out the Parent Portal to track progress, earn HonorXP™, and unlock Legacy Cards™.`,
+    btn_text: 'Open Parent Portal',
+    btn_url: `${BASE_URL}/app/parent`,
     from: 'hello@mytaek.com'
   },
+  // Coach invite
   COACH_INVITE: {
-    subject: 'You\'ve been invited to join TaekUp!',
-    title: 'Join Your Club on TaekUp',
-    body: `<p>You've been invited to join as a coach on TaekUp - the ultimate martial arts club management platform.</p>
-<p>As a coach, you'll be able to:</p>
-<ul>
-<li>Take attendance and grade students</li>
-<li>Create and assign challenges</li>
-<li>Use AI-powered lesson planning</li>
-<li>Track sparring and progress</li>
-</ul>
-<p>Click below to set up your account and get started.</p>`,
+    subject: 'You\'ve been invited to join {{clubName}} as a Coach!',
+    title: 'Coach Invitation',
+    body: `Hi {{name}},<br><br>You've been invited to join <strong>{{clubName}}</strong> as a coach on TaekUp.<br><br>Your temporary password is: <strong>{{tempPassword}}</strong><br><br>Click the button below to accept the invitation and set up your account.`,
     btn_text: 'Accept Invitation',
-    btn_url: 'https://www.mytaek.com/login',
+    btn_url: `${BASE_URL}/login`,
     from: 'hello@mytaek.com'
   },
+  // Password reset
   RESET_PASSWORD: {
-    subject: 'Reset Your TaekUp Password',
+    subject: 'Reset your password',
     title: 'Password Reset Request',
-    body: `<p>We received a request to reset your password for your TaekUp account.</p>
-<p>Click the button below to create a new password. This link will expire in 1 hour.</p>
-<p>If you didn't request this, you can safely ignore this email.</p>`,
+    body: `Hi {{name}},<br><br>We received a request to reset your password. Click the button below to set a new one.<br><br>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.`,
     btn_text: 'Reset Password',
     btn_url: '{{resetUrl}}',
     from: 'noreply@mytaek.com'
+  },
+  // Password changed
+  PASSWORD_CHANGED: {
+    subject: 'Your password was changed',
+    title: 'Password Changed',
+    body: `Hi {{name}},<br><br>Your TaekUp password was successfully changed.<br><br>If you didn't make this change, please contact support immediately at support@mytaek.com.`,
+    btn_text: 'Go to Dashboard',
+    btn_url: `${BASE_URL}/login`,
+    from: 'noreply@mytaek.com'
+  },
+  // Payment receipt
+  PAYMENT_RECEIPT: {
+    subject: 'Receipt for your TaekUp subscription',
+    title: 'Payment Successful',
+    body: `Hi {{name}},<br><br>Thanks for your payment of <strong>{{amount}}</strong>.<br><br>Your subscription is active until <strong>{{nextBillingDate}}</strong>.<br><br>Invoice #: {{invoiceNumber}}`,
+    btn_text: 'View Invoice',
+    btn_url: '{{invoiceUrl}}',
+    from: 'billing@mytaek.com'
+  },
+  // Payment failed
+  PAYMENT_FAILED: {
+    subject: 'Action Required: Payment failed',
+    title: 'Payment Failed',
+    body: `Hi {{name}},<br><br>We couldn't process your payment of <strong>{{amount}}</strong> for your TaekUp subscription.<br><br>Please update your payment method to avoid service interruption.`,
+    btn_text: 'Update Payment Method',
+    btn_url: `${BASE_URL}/app/admin/billing`,
+    from: 'billing@mytaek.com'
+  },
+  // Premium unlocked
+  PREMIUM_UNLOCKED: {
+    subject: 'Legacy Mode Unlocked for {{childName}}!',
+    title: 'Welcome to Legacy Mode!',
+    body: `Hi {{name}},<br><br>Congratulations! You've unlocked <strong>Legacy Mode</strong> for {{childName}}.<br><br>You now have access to:<br>• Global Shogun Rank™ worldwide leaderboards<br>• AI Coach insights with ChronosBelt™ Predictor<br>• Full Video Academy<br>• Legacy Cards™ collection<br>• Home Dojo habit tracking<br><br>Let's take {{childName}}'s training to the next level!`,
+    btn_text: 'Explore Premium Features',
+    btn_url: `${BASE_URL}/app/parent`,
+    from: 'hello@mytaek.com'
+  },
+  // Video approved
+  VIDEO_APPROVED: {
+    subject: 'Great job! Sensei approved your video',
+    title: 'Video Approved!',
+    body: `Hi {{childName}},<br><br>Your form was excellent! Sensei <strong>{{coachName}}</strong> approved your video submission.<br><br>You earned <strong>+{{xpAmount}} HonorXP™</strong>!<br><br>Keep training hard and climb the Global Shogun Rank™!`,
+    btn_text: 'View My Progress',
+    btn_url: `${BASE_URL}/app/parent`,
+    from: 'updates@mytaek.com'
+  },
+  // Video retry
+  VIDEO_RETRY: {
+    subject: 'Sensei left feedback on your video',
+    title: 'Keep Practicing!',
+    body: `Hi {{childName}},<br><br>Sensei <strong>{{coachName}}</strong> watched your video and has some advice:<br><br><em>"{{feedback}}"</em><br><br>Don't worry - every champion needs practice! Watch the tutorial again and submit a new video when you're ready.`,
+    btn_text: 'Try Again',
+    btn_url: `${BASE_URL}/app/parent`,
+    from: 'updates@mytaek.com'
+  },
+  // Video submitted
+  VIDEO_SUBMITTED: {
+    subject: '{{childName}} submitted a new video!',
+    title: 'New Video Submission',
+    body: `Hi {{coachName}},<br><br><strong>{{childName}}</strong> from <strong>{{clubName}}</strong> has submitted a new video for review.<br><br>Challenge: <strong>{{challengeName}}</strong><br><br>Please review and approve or provide feedback.`,
+    btn_text: 'Review Video',
+    btn_url: `${BASE_URL}/app/coach`,
+    from: 'updates@mytaek.com'
+  },
+  // Trial ending
+  TRIAL_ENDING: {
+    subject: 'Your free trial ends in {{daysLeft}} days',
+    title: 'Trial Ending Soon',
+    body: `Hi {{name}},<br><br>We hope you're enjoying TaekUp! Your free trial ends on <strong>{{trialEndDate}}</strong>.<br><br>To keep access to all features, your subscription will automatically start. No action needed!<br><br>Current plan: <strong>{{planName}}</strong> - {{planPrice}}/month`,
+    btn_text: 'Manage Subscription',
+    btn_url: `${BASE_URL}/app/admin/billing`,
+    from: 'billing@mytaek.com'
+  },
+  // Trial expired
+  TRIAL_EXPIRED: {
+    subject: 'Your Trial Has Ended - Upgrade to Keep Access',
+    title: 'Trial Expired',
+    body: `Hi {{name}},<br><br>Your 14-day free trial for <strong>{{clubName}}</strong> has ended.<br><br>To continue using TaekUp and keep all your data, please upgrade to a paid plan.<br><br>All your students, classes, and progress are saved and waiting for you!`,
+    btn_text: 'Upgrade Now',
+    btn_url: `${BASE_URL}/pricing`,
+    from: 'billing@mytaek.com'
+  },
+  // Day 3 check-in
+  DAY_3_CHECKIN: {
+    subject: 'How\'s it going? Upload your student list yet?',
+    title: 'Quick Check-in',
+    body: `Hi {{name}},<br><br>You've been using TaekUp for 3 days now. How's it going?<br><br>If you haven't already, try uploading your student roster - it only takes a few minutes and unlocks all the powerful features!<br><br>Need help? Reply to this email or check our help center.`,
+    btn_text: 'Add Students Now',
+    btn_url: `${BASE_URL}/app/admin?tab=students`,
+    from: 'hello@mytaek.com'
+  },
+  // Day 7 mid-trial
+  DAY_7_MID_TRIAL: {
+    subject: '7 Days Left - Have You Tried AI Feedback?',
+    title: 'Halfway Through Your Trial!',
+    body: `Hi {{name}},<br><br>You're halfway through your free trial! Have you explored all TaekUp has to offer?<br><br>Try these powerful features:<br>• AI-powered class feedback for parents<br>• ChronosBelt™ Predictor for belt promotion timelines<br>• Video challenges in the Battle Arena<br><br>Make the most of your remaining trial days!`,
+    btn_text: 'Try AI Feedback',
+    btn_url: `${BASE_URL}/app/admin`,
+    from: 'hello@mytaek.com'
+  },
+  // Belt promotion
+  BELT_PROMOTION: {
+    subject: 'Congratulations! {{childName}} just Leveled Up!',
+    title: 'Belt Promotion!',
+    body: `Amazing news!<br><br><strong>{{childName}}</strong> has been promoted to <strong>{{newBelt}}</strong>!<br><br>Hard work pays off. This achievement has been recorded in their Legacy Cards™ collection.<br><br>Keep up the great work, champion!`,
+    btn_text: 'View Achievement',
+    btn_url: `${BASE_URL}/app/parent`,
+    from: 'updates@mytaek.com'
+  },
+  // Weekly progress
+  WEEKLY_PROGRESS: {
+    subject: 'Weekly Progress Report for {{childName}}',
+    title: 'This Week\'s Highlights',
+    body: `Hi {{parentName}},<br><br>Here's {{childName}}'s progress this week:<br><br>• Classes Attended: <strong>{{classesAttended}}</strong><br>• HonorXP™ Earned: <strong>+{{xpEarned}}</strong><br>• Videos Submitted: <strong>{{videosSubmitted}}</strong><br>• Global Shogun Rank™: <strong>#{{globalRank}}</strong><br><br>Keep up the amazing work!`,
+    btn_text: 'View Full Report',
+    btn_url: `${BASE_URL}/app/parent`,
+    from: 'updates@mytaek.com'
+  },
+  // New student added
+  NEW_STUDENT_ADDED: {
+    subject: 'New Student Added: {{studentName}}',
+    title: 'New Student Registered!',
+    body: `Hi {{name}},<br><br>A new student has been added to <strong>{{clubName}}</strong>:<br><br>• Name: <strong>{{studentName}}</strong><br>• Age: {{studentAge}}<br>• Belt: {{beltLevel}}<br>• Parent: {{parentName}}<br><br>Welcome them to the Dojo!`,
+    btn_text: 'View Student',
+    btn_url: `${BASE_URL}/app/admin?tab=students`,
+    from: 'updates@mytaek.com'
+  },
+  // Monthly revenue report
+  MONTHLY_REVENUE_REPORT: {
+    subject: 'Your Monthly Revenue Report - {{month}}',
+    title: 'Monthly Revenue Report',
+    body: `Hi {{name}},<br><br>Here's your revenue summary for <strong>{{month}}</strong>:<br><br>• Parent Premium Revenue: <strong>{{premiumRevenue}}</strong><br>• Your Share (70%): <strong>{{yourShare}}</strong><br>• Active Premium Students: <strong>{{premiumStudents}}</strong><br><br>Keep growing your Dojo!`,
+    btn_text: 'View Full Report',
+    btn_url: `${BASE_URL}/app/admin?tab=billing`,
+    from: 'billing@mytaek.com'
+  },
+  // Class feedback
+  CLASS_FEEDBACK: {
+    subject: 'Class Feedback for {{childName}}',
+    title: 'Today\'s Class Update',
+    body: `Hi {{parentName}},<br><br>Here's feedback from {{childName}}'s class today:<br><br><em>"{{feedback}}"</em><br><br>Coach: <strong>{{coachName}}</strong><br>Class: {{className}}<br><br>Keep up the great training!`,
+    btn_text: 'View Details',
+    btn_url: `${BASE_URL}/app/parent`,
+    from: 'support@mytaek.com'
+  },
+  // Attendance alert
+  ATTENDANCE_ALERT: {
+    subject: 'We miss {{childName}} at class!',
+    title: 'Attendance Alert',
+    body: `Hi {{parentName}},<br><br>We noticed {{childName}} has missed <strong>{{missedClasses}}</strong> classes recently.<br><br>Regular training is key to progress! Is everything okay?<br><br>If you need to adjust the schedule or have any concerns, please let us know.`,
+    btn_text: 'View Schedule',
+    btn_url: `${BASE_URL}/app/parent`,
+    from: 'support@mytaek.com'
+  },
+  // Birthday wish
+  BIRTHDAY_WISH: {
+    subject: 'Happy Birthday, {{childName}}!',
+    title: 'Happy Birthday, Champion!',
+    body: `Happy Birthday <strong>{{childName}}</strong>!<br><br>Everyone at <strong>{{clubName}}</strong> wishes you an amazing birthday!<br><br>Here's to another year of growth, achievements, and martial arts excellence!<br><br>Keep training and reaching for the stars!`,
+    btn_text: 'Celebrate with Us',
+    btn_url: `${BASE_URL}/app/parent`,
+    from: 'hello@mytaek.com'
+  },
+  // Payout notification
+  PAYOUT_NOTIFICATION: {
+    subject: 'Cha-ching! A payout is on its way',
+    title: 'Payout Sent!',
+    body: `Hi {{name}},<br><br>Great news! A payout of <strong>{{amount}}</strong> has been sent to your bank account.<br><br>This is your share from Parent Premium subscriptions via DojoMint™ Protocol.<br><br>Funds typically arrive within 2-3 business days.`,
+    btn_text: 'View Earnings',
+    btn_url: `${BASE_URL}/app/admin/billing`,
+    from: 'billing@mytaek.com'
+  },
+  // Subscription cancelled
+  SUBSCRIPTION_CANCELLED: {
+    subject: 'Legacy Mode paused for {{childName}}',
+    title: 'Subscription Cancelled',
+    body: `Hi {{name}},<br><br>We're sorry to see you go. Your Premium subscription for {{childName}} has been cancelled.<br><br>Their Global Shogun Rank™ has been frozen and premium features are now locked.<br><br>You can reactivate anytime to continue the journey!`,
+    btn_text: 'Reactivate Premium',
+    btn_url: `${BASE_URL}/app/parent`,
+    from: 'billing@mytaek.com'
+  },
+  // Win back
+  WIN_BACK: {
+    subject: 'We miss you at the Dojo!',
+    title: 'Come Back to Training!',
+    body: `Hi {{name}},<br><br>It's been a while since we've seen you at <strong>{{clubName}}</strong>. We miss having you as part of our community!<br><br>Your journey doesn't have to end. Come back and pick up where you left off!<br><br>All your progress and achievements are still saved.`,
+    btn_text: 'Return to Dojo',
+    btn_url: `${BASE_URL}/login`,
+    from: 'hello@mytaek.com'
+  },
+  // Churn risk
+  CHURN_RISK: {
+    subject: 'Is everything okay at the Dojo?',
+    title: 'We\'re Here to Help',
+    body: `Hi {{name}},<br><br>We noticed you haven't been as active lately on TaekUp. Is there anything we can help with?<br><br>Whether it's a technical issue, pricing concerns, or just feedback - we'd love to hear from you.<br><br>Your success is our priority!`,
+    btn_text: 'Contact Support',
+    btn_url: `${BASE_URL}/support`,
+    from: 'support@mytaek.com'
   }
 };
 
