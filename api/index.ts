@@ -315,7 +315,7 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   }
 };
 
-const LOGO_URL = 'https://www.mytaek.com/taekup-logo.png';
+const LOGO_URL = 'https://www.mytaek.com/mytaek-logo.png';
 
 function replacePlaceholders(text: string, data: Record<string, any>): string {
   let result = text;
