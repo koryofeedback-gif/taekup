@@ -577,19 +577,25 @@ const App: React.FC = () => {
     );
 
     const handleLogout = useCallback(() => {
-        // Save wizard data before clearing anything (backup)
-        const wizardDataBackup = localStorage.getItem('taekup_wizard_data');
-        const signupDataBackup = localStorage.getItem('taekup_signup_data');
-        const clubIdBackup = localStorage.getItem('taekup_club_id');
-        
+        // Clear React state
         setLoggedInUserType(null);
         setLoggedInUserName(null);
         setParentStudentId(null);
+        setSignupData(null);
+        setFinalWizardData(null);
+        setSubscription(null);
         
-        // Clear ONLY login session state - NOT app data
+        // Clear ALL login and session data from localStorage
         localStorage.removeItem('taekup_user_type');
         localStorage.removeItem('taekup_user_name');
         localStorage.removeItem('taekup_student_id');
+        localStorage.removeItem('taekup_signup_data');
+        localStorage.removeItem('taekup_wizard_data');
+        localStorage.removeItem('taekup_wizard_draft');
+        localStorage.removeItem('taekup_club_id');
+        localStorage.removeItem('taekup_wizard_complete');
+        localStorage.removeItem('taekup_subscription');
+        localStorage.removeItem('taekup_user_email');
         
         // Clear impersonation data (sessionStorage)
         sessionStorage.removeItem('impersonationToken');
@@ -600,22 +606,11 @@ const App: React.FC = () => {
         sessionStorage.removeItem('impersonation_user_name');
         sessionStorage.removeItem('impersonation_club_id');
         
-        // CRITICAL: Restore wizard data if it was accidentally cleared
-        if (wizardDataBackup) {
-            localStorage.setItem('taekup_wizard_data', wizardDataBackup);
-        }
-        if (signupDataBackup) {
-            localStorage.setItem('taekup_signup_data', signupDataBackup);
-        }
-        if (clubIdBackup) {
-            localStorage.setItem('taekup_club_id', clubIdBackup);
-        }
+        console.log('[Logout] Cleared all session data');
         
-        console.log('[Logout] Preserved wizard data:', !!wizardDataBackup);
-        
-        // Redirect to login page
-        window.location.href = '/login';
-    }, []);
+        // Redirect to home page
+        window.location.href = '/';
+    }, [setSignupData, setFinalWizardData]);
 
     return (
         <BrowserRouter>
@@ -1490,7 +1485,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWi
     const isInWizard = location.pathname.includes('/wizard') || location.pathname.includes('/app/setup');
     
     const getLogoDestination = () => {
-        if (!isAuthenticated) return '/landing';
+        if (!isAuthenticated) return '/';
         if (isInWizard || !hasCompletedWizard) return '/wizard';
         if (userType === 'owner') return '/app/admin';
         if (userType === 'coach') return '/app/coach';
