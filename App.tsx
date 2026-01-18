@@ -1476,11 +1476,13 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWizard, userType, onLogout }) => {
+    const location = useLocation();
     const isAuthenticated = isLoggedIn || hasSignedUp;
+    const isInWizard = location.pathname.includes('/wizard') || location.pathname.includes('/app/setup');
     
     const getLogoDestination = () => {
         if (!isAuthenticated) return '/landing';
-        if (!hasCompletedWizard) return '/app/setup';
+        if (isInWizard || !hasCompletedWizard) return '/app/setup';
         if (userType === 'owner') return '/app/admin';
         if (userType === 'coach') return '/app/coach';
         if (userType === 'parent') return '/app';
