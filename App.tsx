@@ -1496,12 +1496,16 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWi
     return (
         <header className="bg-gray-900/80 backdrop-blur-sm sticky top-0 z-40 border-b border-gray-800">
             <div className="w-full px-6 py-3 flex justify-between items-center">
-                <div>
+                <div className="flex-shrink-0">
                     <Link
                         to={getLogoDestination()}
-                        className="flex hover:scale-105 transition-transform cursor-pointer"
+                        className="block hover:scale-105 transition-transform cursor-pointer"
                     >
-                        <img src="/taekup-logo.png" alt="TaekUp" style={{ height: '70px' }} />
+                        <img 
+                            src="/taekup-logo.png" 
+                            alt="TaekUp" 
+                            className="h-16 md:h-[70px] w-auto"
+                        />
                     </Link>
                 </div>
                 <nav className="flex items-center space-x-3 md:space-x-6">
