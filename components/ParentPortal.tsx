@@ -1757,8 +1757,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Time Machine State
     const [simulatedAttendance, setSimulatedAttendance] = useState(2); // Default 2x week
 
-    // Check if premium is unlocked via Club Sponsorship, User Upgrade, or server confirmation
-    const hasPremiumAccess = isPremium || data.clubSponsoredPremium || serverConfirmedPremium;
+    // Check if premium is unlocked via Club Sponsorship, User Upgrade, server confirmation, or Demo mode
+    const hasPremiumAccess = isPremium || data.clubSponsoredPremium || serverConfirmedPremium || data.isDemo;
     
     // Set initial dailyXpCap based on premium status (before API call returns)
     useEffect(() => {
