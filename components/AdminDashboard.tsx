@@ -989,47 +989,46 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
     
     if (hasDemoData) {
         return (
-            <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <span className="text-2xl">⚠️</span>
-                        <div>
-                            <label className="block text-sm font-bold text-amber-300">Demo Mode Active</label>
-                            <p className="text-xs text-gray-400">Your dashboard is showing sample data. Clear it when ready to add real students.</p>
-                            {message && <p className="text-xs text-cyan-400 mt-1">{message}</p>}
-                        </div>
+            <div className="bg-gray-800/40 border border-gray-700/50 rounded-lg p-3">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+                        <span className="text-xs font-medium text-gray-400">Demo Mode</span>
+                        <span className="text-xs text-gray-500">•</span>
+                        <span className="text-xs text-gray-500">Sample data active</span>
+                        {message && <span className="text-xs text-cyan-400 ml-2">{message}</span>}
                     </div>
                     {showConfirm ? (
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-400">Delete all demo data?</span>
+                            <span className="text-xs text-gray-500">Clear demo data?</span>
                             <button 
                                 onClick={handleClearDemo}
                                 disabled={loading}
-                                className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-sm font-bold disabled:opacity-50"
+                                className="text-red-400 hover:text-red-300 text-xs font-medium disabled:opacity-50 transition-colors"
                             >
-                                {loading ? 'Clearing...' : 'Yes, Clear'}
+                                {loading ? 'Clearing...' : 'Confirm'}
                             </button>
                             <button 
                                 onClick={() => setShowConfirm(false)}
-                                className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm"
+                                className="text-gray-500 hover:text-gray-400 text-xs transition-colors"
                             >
                                 Cancel
                             </button>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <button 
                                 onClick={handleReloadDemo}
                                 disabled={loading}
-                                className="bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 px-4 py-2 rounded text-sm font-bold border border-cyan-600/50 disabled:opacity-50"
+                                className="text-gray-400 hover:text-cyan-400 text-xs font-medium disabled:opacity-50 transition-colors"
                             >
-                                {loading ? 'Loading...' : 'Reload Demo'}
+                                {loading ? 'Loading...' : 'Refresh'}
                             </button>
                             <button 
                                 onClick={() => setShowConfirm(true)}
-                                className="bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 px-4 py-2 rounded text-sm font-bold border border-amber-600/50"
+                                className="text-gray-400 hover:text-amber-400 text-xs font-medium transition-colors"
                             >
-                                Clear Demo
+                                Clear
                             </button>
                         </div>
                     )}
@@ -1039,22 +1038,21 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
     }
     
     return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <span className="text-2xl">🎭</span>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-300">Demo Mode</label>
-                        <p className="text-xs text-gray-400">Load sample data to explore all features with realistic examples.</p>
-                        {message && <p className="text-xs text-cyan-400 mt-1">{message}</p>}
-                    </div>
+        <div className="bg-gray-800/30 border border-gray-700/40 rounded-lg p-3">
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                    <span className="text-xs font-medium text-gray-500">Demo Mode</span>
+                    <span className="text-xs text-gray-600">•</span>
+                    <span className="text-xs text-gray-600">Try with sample data</span>
+                    {message && <span className="text-xs text-cyan-400 ml-2">{message}</span>}
                 </div>
                 <button 
                     onClick={handleLoadDemo}
                     disabled={loading}
-                    className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded text-sm font-bold disabled:opacity-50"
+                    className="text-gray-400 hover:text-cyan-400 text-xs font-medium disabled:opacity-50 transition-colors"
                 >
-                    {loading ? 'Loading...' : 'Load Demo Data'}
+                    {loading ? 'Loading...' : 'Load Demo'}
                 </button>
             </div>
         </div>
