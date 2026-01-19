@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { WizardData, Student, PerformanceRecord, FeedbackRecord, CalendarEvent, CustomChallenge } from '../types';
 import { generateParentFeedback, generatePromotionMessage, generateLessonPlan } from '../services/geminiService';
 import { generateLessonPlanGPT } from '../services/openaiService';
+import { isDemoModeEnabled } from './demoData';
 import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
 import { CoachLeaderboard } from './CoachLeaderboard';
@@ -709,6 +710,82 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
     const handleGenerate = async () => {
         if (!focus) return;
         setIsGenerating(true);
+        
+        // Demo mode - return static lesson plan without API cost
+        if (isDemoModeEnabled()) {
+            const demoLessonPlan = `📋 LESSON PLAN: ${focus.toUpperCase()}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👥 Class: ${ageGroup} | 🥋 Level: ${beltLevel} | ⏱️ Duration: ${duration} minutes
+
+═══════════════════════════════════════════
+🔥 WARM-UP (${Math.round(parseInt(duration) * 0.15)} minutes)
+═══════════════════════════════════════════
+
+• Dynamic stretching - arm circles, leg swings (2 min)
+• Light jogging with high knees and butt kicks (2 min)
+• Basic stance transitions - front stance to back stance (2 min)
+• Partner mirror drills - follow the leader (2 min)
+
+═══════════════════════════════════════════
+📚 TECHNIQUE INSTRUCTION (${Math.round(parseInt(duration) * 0.35)} minutes)
+═══════════════════════════════════════════
+
+1️⃣ FUNDAMENTALS (5 min)
+   • Review proper chamber position
+   • Demonstrate correct hip rotation
+   • Explain balance and weight distribution
+   • Show common mistakes to avoid
+
+2️⃣ PROGRESSIVE DRILLS (10 min)
+   • Slow-motion technique practice (stationary)
+   • Add stepping with technique
+   • Increase speed gradually
+   • Focus on proper form over power
+
+3️⃣ TARGET PRACTICE (5 min)
+   • Pad work with partners (switch every 2 min)
+   • Coach corrections and feedback
+   • Emphasis on accuracy and control
+
+═══════════════════════════════════════════
+🎮 SKILL APPLICATION (${Math.round(parseInt(duration) * 0.25)} minutes)
+═══════════════════════════════════════════
+
+• Combination drills incorporating ${focus}
+• Reaction training - signal-based execution
+• Light sparring application (controlled contact)
+• Game: "Technique Tag" - points for clean techniques
+
+═══════════════════════════════════════════
+🧘 COOL DOWN (${Math.round(parseInt(duration) * 0.15)} minutes)
+═══════════════════════════════════════════
+
+• Static stretching for major muscle groups
+• Deep breathing exercises
+• Mental review - visualize perfect technique
+• Q&A and positive feedback
+
+═══════════════════════════════════════════
+✅ KEY TEACHING POINTS
+═══════════════════════════════════════════
+
+• Emphasize proper breathing throughout
+• Correct stance and balance before power
+• Encourage questions and participation
+• End with positive reinforcement
+
+🎯 HOMEWORK: Practice ${focus} 10 times each side daily
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 Generated in Demo Mode - Full AI plans available with live data`;
+            
+            setTimeout(() => {
+                setPlan(demoLessonPlan);
+                setIsGenerating(false);
+            }, 1000); // Simulate brief loading for realistic feel
+            return;
+        }
         
         // Try GPT-4o first for higher accuracy, fallback to Gemini
         // Pass the martial art type for specialized lesson plans
