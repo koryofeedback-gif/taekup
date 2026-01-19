@@ -1795,6 +1795,20 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const handleGenerateAdvice = async () => {
         setIsGeneratingAdvice(true);
         
+        // Demo mode - show sample advice without API call
+        if (data.isDemo) {
+            setTimeout(() => {
+                const sampleAdvices = [
+                    `${student.name.split(' ')[0]} is showing great dedication! Their recent attendance is excellent. To support their journey at home, try practicing basic stances together for 5 minutes each evening. Ask them to teach you what they learned - it reinforces their memory!`,
+                    `I can see ${student.name.split(' ')[0]} is progressing well. Focus this week on encouraging them to practice their kicks with proper form rather than speed. Quality over quantity builds true skill. Consider setting up a small target at home for practice.`,
+                    `${student.name.split(' ')[0]}'s discipline is developing nicely. To boost their confidence before the next grading, practice the patterns together at home. Even 10 minutes of focused practice makes a difference. Remember to celebrate small wins!`
+                ];
+                setParentingAdvice(sampleAdvices[Math.floor(Math.random() * sampleAdvices.length)]);
+                setIsGeneratingAdvice(false);
+            }, 1500);
+            return;
+        }
+        
         // Build comprehensive context for AI
         const beltName = currentBelt?.name || 'beginner';
         const martialArt = (data as any).beltSystem || (data as any).martialArt || 'Taekwondo';
