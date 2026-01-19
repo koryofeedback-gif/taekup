@@ -1486,7 +1486,7 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWi
     const isInWizard = location.pathname.includes('/wizard') || location.pathname.includes('/app/setup');
     
     const getLogoDestination = () => {
-        if (!isAuthenticated) return '/';
+        if (!isAuthenticated) return '/landing';
         if (isInWizard || !hasCompletedWizard) return '/wizard';
         if (userType === 'owner') return '/app/admin';
         if (userType === 'coach') return '/app/coach';
