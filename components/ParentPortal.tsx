@@ -845,7 +845,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     
     // Fetch AI-powered Daily Mystery Challenge
     useEffect(() => {
-        // Demo mode - use demo mystery challenge
+        // Demo mode - use demo mystery challenge with universal martial arts question
         if (data.isDemo) {
             setMysteryChallenge({
                 id: 'demo-mystery-1',
@@ -854,10 +854,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 type: 'quiz',
                 xpReward: 50,
                 quizData: {
-                    question: "What is the traditional training hall called in Korean martial arts?",
-                    options: ["Dojo", "Dojang", "Gym", "Studio"],
-                    correctIndex: 1,
-                    explanation: "Dojang (도장) is the Korean word for a martial arts training hall."
+                    question: "What quality is considered the most important foundation in all martial arts?",
+                    options: ["Strength", "Speed", "Discipline", "Flexibility"],
+                    correctIndex: 2,
+                    explanation: "Discipline is the foundation of all martial arts. Without discipline, a martial artist cannot develop any other skill properly."
                 }
             });
             setMysteryCompleted(false);
@@ -5987,9 +5987,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <p className="text-purple-200 text-xs">{mysteryChallenge.description}</p>
                                             </div>
                                             <div className="p-4">
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <span className="text-gray-400 text-sm">Reward:</span>
-                                                    <span className="text-yellow-400 font-black text-sm">+15 HonorXP™ (correct) / +5 HonorXP™ (trying)</span>
+                                                <div className="flex items-center justify-center gap-4 mb-4 py-2 px-3 bg-gradient-to-r from-yellow-900/30 via-amber-900/40 to-yellow-900/30 rounded-lg border border-yellow-600/30">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-lg">✅</span>
+                                                        <span className="text-yellow-400 font-bold text-sm">+15 HonorXP™</span>
+                                                    </div>
+                                                    <div className="w-px h-5 bg-yellow-600/40"></div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-lg">💪</span>
+                                                        <span className="text-yellow-500/70 font-medium text-sm">+5 HonorXP™</span>
+                                                    </div>
                                                 </div>
                                                 
                                                 {mysteryChallenge.type === 'quiz' && mysteryChallenge.quizData ? (
