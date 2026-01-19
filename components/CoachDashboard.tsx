@@ -701,7 +701,7 @@ const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastComm
 
 const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
     const [ageGroup, setAgeGroup] = useState('Kids (7-9)');
-    const [focus, setFocus] = useState('');
+    const [focus, setFocus] = useState(() => isDemoModeEnabled() ? 'Roundhouse Kick' : '');
     const [duration, setDuration] = useState('45');
     const [beltLevel, setBeltLevel] = useState(data.belts[0]?.name || 'White Belt');
     const [plan, setPlan] = useState<string | null>(null);
