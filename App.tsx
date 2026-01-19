@@ -1497,18 +1497,27 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWi
     return (
         <header className="bg-gray-900/80 backdrop-blur-sm sticky top-0 z-40 border-b border-gray-800">
             <div className="w-full px-6 py-3 flex justify-between items-center">
-                <div 
-                    className="flex-shrink-0 relative z-50 cursor-pointer"
-                    onClick={() => window.location.href = getLogoDestination()}
-                    style={{ pointerEvents: 'auto', position: 'relative', zIndex: 9999 }}
-                >
+                <div className="flex items-center gap-3" style={{ position: 'relative', zIndex: 99999, pointerEvents: 'auto' }}>
                     <img 
                         src="/taekup-logo.png" 
                         alt="TaekUp" 
-                        className="h-16 md:h-[70px] w-auto"
-                        onClick={() => window.location.href = getLogoDestination()}
+                        className="h-16 md:h-[70px] w-auto cursor-pointer"
+                        onClick={() => {
+                            alert('Logo clicked! Navigating to: ' + getLogoDestination());
+                            window.location.href = getLogoDestination();
+                        }}
                         style={{ pointerEvents: 'auto', cursor: 'pointer' }}
                     />
+                    <button
+                        onClick={() => {
+                            alert('Home button clicked!');
+                            window.location.href = getLogoDestination();
+                        }}
+                        className="text-cyan-400 hover:text-cyan-300 font-bold text-sm underline"
+                        style={{ pointerEvents: 'auto', cursor: 'pointer', zIndex: 99999 }}
+                    >
+                        [Home]
+                    </button>
                 </div>
                 <nav className="flex items-center space-x-3 md:space-x-6">
                     {!isAuthenticated && (
