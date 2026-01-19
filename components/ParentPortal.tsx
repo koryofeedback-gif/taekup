@@ -2208,13 +2208,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Calculate confidence based on factors
         // Base: 70%, +10% for known holiday schedule, +5% for attendance history
         let confidenceScore = 70;
-        if (data.holidaySchedule) confidenceScore += 10;
-        if (student.attendanceCount && student.attendanceCount > 10) confidenceScore += 5;
-        // Deduct for longer timeframes (more uncertainty)
-        const yearsToGoal = (estimatedDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 365);
-        if (yearsToGoal > 3) confidenceScore -= 5;
-        if (yearsToGoal > 5) confidenceScore -= 5;
-        confidenceScore = Math.max(50, Math.min(90, confidenceScore));
+        
+        // Demo mode - show higher confidence for better demo experience
+        if (data.isDemo) {
+            confidenceScore = 85;
+        } else {
+            if (data.holidaySchedule) confidenceScore += 10;
+            if (student.attendanceCount && student.attendanceCount > 10) confidenceScore += 5;
+            // Deduct for longer timeframes (more uncertainty)
+            const yearsToGoal = (estimatedDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 365);
+            if (yearsToGoal > 3) confidenceScore -= 5;
+            if (yearsToGoal > 5) confidenceScore -= 5;
+            confidenceScore = Math.max(50, Math.min(90, confidenceScore));
+        }
 
         return {
             totalPointsNeeded: totalLifetimePointsNeeded,
