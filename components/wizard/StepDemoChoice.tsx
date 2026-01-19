@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sparkles, Users, Loader2 } from 'lucide-react';
+import { DEMO_MODE_KEY } from '../demoData';
 
 interface StepDemoChoiceProps {
   clubId: string;
@@ -36,6 +37,9 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
           localStorage.setItem('taekup_user_name', result.wizardData.ownerName || 'Demo Owner');
           localStorage.setItem('taekup_club_id', clubId);
           localStorage.setItem('taekup_wizard_complete', 'true');
+          
+          // Enable demo mode toggle automatically
+          localStorage.setItem(DEMO_MODE_KEY, 'true');
           
           // Force full page reload to ensure App state re-initializes with fresh data
           window.location.href = '/app/admin';
