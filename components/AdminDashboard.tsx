@@ -869,7 +869,7 @@ const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
             if (result.success) {
                 setHasDemoData(false);
                 setShowConfirm(false);
-                window.location.reload();
+                window.location.href = '/wizard';
             } else {
                 setMessage(result.message || 'Failed to clear');
             }
