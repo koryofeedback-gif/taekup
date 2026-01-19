@@ -1,0 +1,74 @@
+import type { Student, Coach, ScheduleItem } from '../types';
+
+export const DEMO_MODE_KEY = 'taekup_demo_mode';
+
+export const isDemoModeEnabled = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(DEMO_MODE_KEY) === 'true';
+};
+
+const createDemoStudent = (
+    id: string, name: string, birthday: string, beltId: string, stripes: number,
+    parentName: string, parentEmail: string, totalPoints: number, joinDate: string,
+    gender: 'Male' | 'Female' | 'Other' | 'Prefer not to say', attendanceCount: number
+): Student => ({
+    id, name, birthday, beltId, stripes, parentName, parentEmail, totalPoints, joinDate, gender,
+    attendanceCount, location: 'Main Dojang', assignedClass: 'Kids Class', medicalInfo: '',
+    lastPromotionDate: joinDate, isReadyForGrading: attendanceCount > 20,
+    performanceHistory: [], feedbackHistory: [], badges: [], lifeSkillsHistory: [], customHabits: [],
+});
+
+export const DEMO_STUDENTS: Student[] = [
+    createDemoStudent('demo-1', 'Alex Kim', '2015-03-15', 'yellow', 2, 'Sarah Kim', 'parent1@demo.com', 1250, '2024-06-01', 'Male', 45),
+    createDemoStudent('demo-2', 'Jordan Lee', '2014-07-22', 'green', 1, 'Mike Lee', 'parent2@demo.com', 2800, '2024-01-15', 'Female', 78),
+    createDemoStudent('demo-3', 'Taylor Park', '2013-11-08', 'blue', 3, 'Jenny Park', 'parent3@demo.com', 4200, '2023-09-01', 'Male', 112),
+    createDemoStudent('demo-4', 'Sam Chen', '2012-05-30', 'red', 0, 'David Chen', 'parent4@demo.com', 5600, '2023-03-01', 'Male', 145),
+    createDemoStudent('demo-5', 'Morgan Yoo', '2016-01-12', 'white', 1, 'Lisa Yoo', 'parent5@demo.com', 450, '2025-01-05', 'Female', 8),
+    createDemoStudent('demo-6', 'Casey Hwang', '2015-09-25', 'yellow', 0, 'Tom Hwang', 'parent6@demo.com', 980, '2024-08-15', 'Other', 32),
+    createDemoStudent('demo-7', 'Riley Cho', '2014-04-18', 'green', 2, 'Amy Cho', 'parent7@demo.com', 3100, '2024-02-01', 'Female', 67),
+    createDemoStudent('demo-8', 'Jamie Song', '2013-12-03', 'blue', 1, 'Kevin Song', 'parent8@demo.com', 3900, '2023-11-01', 'Male', 95),
+];
+
+export const DEMO_COACHES: Coach[] = [
+    { id: 'demo-coach-1', name: 'Master David Kim', email: 'david@demo.com', location: 'Main Dojang', assignedClasses: ['Kids Beginners', 'Kids Advanced', 'All Levels'] },
+    { id: 'demo-coach-2', name: 'Sarah Johnson', email: 'sarah@demo.com', location: 'Main Dojang', assignedClasses: ['Kids Advanced', 'Weekend Warriors'] },
+];
+
+export const DEMO_SCHEDULE: ScheduleItem[] = [
+    { id: 'demo-class-1', day: 'Monday', time: '16:00', className: 'Kids Beginners', instructor: 'Master David Kim', beltRequirement: 'All', location: 'Main Dojang' },
+    { id: 'demo-class-2', day: 'Monday', time: '17:30', className: 'Kids Advanced', instructor: 'Sarah Johnson', beltRequirement: 'Green Belt+', location: 'Main Dojang' },
+    { id: 'demo-class-3', day: 'Wednesday', time: '16:00', className: 'Kids Beginners', instructor: 'Master David Kim', beltRequirement: 'All', location: 'Main Dojang' },
+    { id: 'demo-class-4', day: 'Wednesday', time: '17:30', className: 'Kids Advanced', instructor: 'Sarah Johnson', beltRequirement: 'Green Belt+', location: 'Main Dojang' },
+    { id: 'demo-class-5', day: 'Friday', time: '16:00', className: 'All Levels', instructor: 'Master David Kim', beltRequirement: 'All', location: 'Main Dojang' },
+    { id: 'demo-class-6', day: 'Saturday', time: '10:00', className: 'Weekend Warriors', instructor: 'Master David Kim', beltRequirement: 'All', location: 'Main Dojang' },
+];
+
+export const DEMO_STATS = {
+    totalStudents: 8,
+    activeStudents: 7,
+    trialStudents: 1,
+    totalCoaches: 2,
+    classesThisWeek: 6,
+    avgAttendance: 85,
+    monthlyRevenue: 4200,
+    revenueGrowth: 12,
+    xpAwarded: 22380,
+    videosSubmitted: 47,
+    challengesCompleted: 156,
+};
+
+export const DEMO_LEADERBOARD = [
+    { rank: 1, name: 'Sam Chen', xp: 5600, belt: 'Red Belt', trend: 'up' },
+    { rank: 2, name: 'Taylor Park', xp: 4200, belt: 'Blue Belt', trend: 'same' },
+    { rank: 3, name: 'Jamie Song', xp: 3900, belt: 'Blue Belt', trend: 'up' },
+    { rank: 4, name: 'Riley Cho', xp: 3100, belt: 'Green Belt', trend: 'down' },
+    { rank: 5, name: 'Jordan Lee', xp: 2800, belt: 'Green Belt', trend: 'up' },
+];
+
+export const DEMO_RECENT_ACTIVITY = [
+    { type: 'xp', message: 'Sam Chen earned 50 HonorXP for video submission', time: '2 hours ago' },
+    { type: 'attendance', message: 'Riley Cho checked into Kids Advanced class', time: '3 hours ago' },
+    { type: 'belt', message: 'Jordan Lee promoted to Green Belt!', time: '1 day ago' },
+    { type: 'video', message: 'Taylor Park submitted a new challenge video', time: '1 day ago' },
+    { type: 'signup', message: 'New trial student: Morgan Yoo', time: '2 days ago' },
+];

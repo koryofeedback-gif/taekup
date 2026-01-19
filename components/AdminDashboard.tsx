@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
+import { DEMO_MODE_KEY, isDemoModeEnabled, DEMO_STUDENTS, DEMO_COACHES, DEMO_SCHEDULE, DEMO_STATS, DEMO_LEADERBOARD, DEMO_RECENT_ACTIVITY } from './demoData';
 
 interface AdminDashboardProps {
   data: WizardData;
@@ -465,6 +466,10 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     });
 
     const handleDelete = async (id: string) => {
+        if (isDemoModeEnabled()) {
+            alert('Demo mode is active. Turn off demo mode to make changes.');
+            return;
+        }
         if(confirm('Are you sure? This cannot be undone.')) {
             try {
                 const response = await fetch(`/api/students/${id}`, {
@@ -592,6 +597,10 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
     const [deleting, setDeleting] = useState<string | null>(null);
 
     const handleDelete = async (id: string) => {
+        if (isDemoModeEnabled()) {
+            alert('Demo mode is active. Turn off demo mode to make changes.');
+            return;
+        }
         if(!confirm('Remove this coach? They will lose access immediately.')) return;
         
         setDeleting(id);
@@ -834,225 +843,36 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ c
     </button>
 );
 
-const DemoDataSection: React.FC<{ clubId?: string }> = ({ clubId }) => {
-    const [hasDemoData, setHasDemoData] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
-    const [message, setMessage] = useState('');
+const DemoDataSection: React.FC<{ clubId?: string, onDemoModeChange?: (isDemo: boolean) => void }> = ({ clubId, onDemoModeChange }) => {
+    const [isDemoMode, setIsDemoMode] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return localStorage.getItem(DEMO_MODE_KEY) === 'true';
+    });
     
-    useEffect(() => {
-        if (clubId) {
-            fetch(`/api/club/${clubId}/data`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.club?.hasDemoData) {
-                        setHasDemoData(true);
-                    }
-                })
-                .catch(console.error);
-        }
-    }, [clubId]);
-    
-    const handleClearDemo = async () => {
-        if (!clubId) return;
-        setLoading(true);
-        setMessage('');
-        
-        try {
-            const response = await fetch('/api/demo/clear', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clubId }),
-            });
-            
-            const result = await response.json();
-            if (result.success) {
-                setHasDemoData(false);
-                setShowConfirm(false);
-                window.location.href = '/wizard';
-            } else {
-                setMessage(result.message || 'Failed to clear');
-            }
-        } catch (err) {
-            console.error('Failed to clear demo data:', err);
-            setMessage('Network error');
-        } finally {
-            setLoading(false);
-        }
+    const handleToggle = () => {
+        const newValue = !isDemoMode;
+        setIsDemoMode(newValue);
+        localStorage.setItem(DEMO_MODE_KEY, String(newValue));
+        onDemoModeChange?.(newValue);
+        window.location.reload();
     };
-    
-    const handleLoadDemo = async () => {
-        if (!clubId) return;
-        setLoading(true);
-        setMessage('');
-        
-        try {
-            const response = await fetch('/api/demo/load', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clubId }),
-            });
-            
-            const result = await response.json();
-            if (result.success) {
-                // CRITICAL: Update localStorage with fresh wizard_data so page reload uses it
-                if (result.wizardData) {
-                    const isImpersonating = !!sessionStorage.getItem('impersonationToken');
-                    if (isImpersonating) {
-                        sessionStorage.setItem('impersonation_wizard_data', JSON.stringify(result.wizardData));
-                    } else {
-                        localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
-                    }
-                }
-                setHasDemoData(true);
-                setMessage('Demo loaded! Refreshing...');
-                setTimeout(() => window.location.reload(), 500);
-            } else {
-                setMessage(result.message || 'Failed to load');
-            }
-        } catch (err) {
-            console.error('Failed to load demo data:', err);
-            setMessage('Network error');
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    const handleReloadDemo = async () => {
-        if (!clubId) {
-            alert('DEBUG: No clubId available!');
-            return;
-        }
-        alert(`DEBUG: Reloading demo for clubId: ${clubId}`);
-        setLoading(true);
-        setMessage('Clearing old data...');
-        
-        try {
-            const clearRes = await fetch('/api/demo/clear', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clubId }),
-            });
-            const clearResult = await clearRes.json();
-            console.log('[DemoReload] Clear result:', clearResult);
-            
-            setMessage('Loading fresh demo data...');
-            
-            const response = await fetch('/api/demo/load', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clubId }),
-            });
-            
-            const result = await response.json();
-            console.log('[DemoReload] Load result:', result);
-            console.log('[DemoReload] wizardData received:', !!result.wizardData);
-            
-            alert(`DEBUG: API response - success: ${result.success}, schedule: ${result.wizardData?.schedule?.length || 0}, privateSlots: ${result.wizardData?.privateSlots?.length || 0}`);
-            
-            if (result.success) {
-                // CRITICAL: Update localStorage with fresh wizard_data so page reload uses it
-                if (result.wizardData) {
-                    const isImpersonating = !!sessionStorage.getItem('impersonationToken');
-                    if (isImpersonating) {
-                        sessionStorage.setItem('impersonation_wizard_data', JSON.stringify(result.wizardData));
-                    } else {
-                        localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
-                    }
-                    
-                    // Debug: Check all demo data fields
-                    const studentsWithBirthday = result.wizardData.students?.filter((s: any) => s.birthday) || [];
-                    console.log('[DemoReload] Students with birthday:', studentsWithBirthday.length, studentsWithBirthday.map((s: any) => ({ name: s.name, birthday: s.birthday })));
-                    console.log('[DemoReload] Skills count:', result.wizardData.skills?.length);
-                    console.log('[DemoReload] World Rankings count:', result.wizardData.worldRankings?.length);
-                    console.log('[DemoReload] Schedule count:', result.wizardData.schedule?.length);
-                    console.log('[DemoReload] Private Slots count:', result.wizardData.privateSlots?.length);
-                    console.log('[DemoReload] Branches:', result.wizardData.branches, result.wizardData.branchNames);
-                    console.log('[DemoReload] Location Classes:', result.wizardData.locationClasses);
-                    
-                    setMessage(`Demo loaded! ${studentsWithBirthday.length} birthdays found. Refreshing...`);
-                } else {
-                    console.error('[DemoReload] No wizardData in response!');
-                    setMessage('Warning: No wizard data returned. Refreshing anyway...');
-                }
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                setMessage(result.message || 'Failed to reload');
-            }
-        } catch (err) {
-            console.error('Failed to reload demo data:', err);
-            setMessage('Network error');
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    if (hasDemoData) {
-        return (
-            <div className="bg-gray-800/40 border border-gray-700/50 rounded-lg p-3">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
-                        <span className="text-xs font-medium text-gray-400">Demo Mode</span>
-                        <span className="text-xs text-gray-500">•</span>
-                        <span className="text-xs text-gray-500">Sample data active</span>
-                        {message && <span className="text-xs text-cyan-400 ml-2">{message}</span>}
-                    </div>
-                    {showConfirm ? (
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">Clear demo data?</span>
-                            <button 
-                                onClick={handleClearDemo}
-                                disabled={loading}
-                                className="text-red-400 hover:text-red-300 text-xs font-medium disabled:opacity-50 transition-colors"
-                            >
-                                {loading ? 'Clearing...' : 'Confirm'}
-                            </button>
-                            <button 
-                                onClick={() => setShowConfirm(false)}
-                                className="text-gray-500 hover:text-gray-400 text-xs transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-3">
-                            <button 
-                                onClick={handleReloadDemo}
-                                disabled={loading}
-                                className="text-gray-400 hover:text-cyan-400 text-xs font-medium disabled:opacity-50 transition-colors"
-                            >
-                                {loading ? 'Loading...' : 'Refresh'}
-                            </button>
-                            <button 
-                                onClick={() => setShowConfirm(true)}
-                                className="text-gray-400 hover:text-amber-400 text-xs font-medium transition-colors"
-                            >
-                                Clear
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    }
     
     return (
         <div className="bg-gray-800/30 border border-gray-700/40 rounded-lg p-3">
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-gray-500"></div>
-                    <span className="text-xs font-medium text-gray-500">Demo Mode</span>
-                    <span className="text-xs text-gray-600">•</span>
-                    <span className="text-xs text-gray-600">Try with sample data</span>
-                    {message && <span className="text-xs text-cyan-400 ml-2">{message}</span>}
+                    <div className={`w-2 h-2 rounded-full transition-colors ${isDemoMode ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`}></div>
+                    <span className="text-xs font-medium text-gray-400">Demo Mode</span>
+                    <span className="text-xs text-gray-500">•</span>
+                    <span className="text-xs text-gray-500">{isDemoMode ? 'Viewing sample data' : 'Preview with sample data'}</span>
                 </div>
-                <button 
-                    onClick={handleLoadDemo}
-                    disabled={loading}
-                    className="text-gray-400 hover:text-cyan-400 text-xs font-medium disabled:opacity-50 transition-colors"
+                <button
+                    onClick={handleToggle}
+                    className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isDemoMode ? 'bg-emerald-500' : 'bg-gray-600'}`}
+                    role="switch"
+                    aria-checked={isDemoMode}
                 >
-                    {loading ? 'Loading...' : 'Load Demo'}
+                    <span className={`${isDemoMode ? 'translate-x-4' : 'translate-x-0'} pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}/>
                 </button>
             </div>
         </div>
@@ -2522,6 +2342,27 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, onBack, onUpdateData, onNavigate, onViewStudentPortal }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'staff' | 'schedule' | 'creator' | 'settings' | 'billing'>('overview');
     
+    // Demo Mode - use static demo data when enabled (no database operations)
+    const isDemo = isDemoModeEnabled();
+    const effectiveData: WizardData = useMemo(() => {
+        if (!isDemo) return data;
+        return {
+            ...data,
+            students: DEMO_STUDENTS,
+            coaches: DEMO_COACHES,
+            schedule: DEMO_SCHEDULE,
+        };
+    }, [isDemo, data]);
+    
+    // Demo-safe update handler - blocks mutations in demo mode
+    const handleDemoSafeUpdate = (updates: Partial<WizardData>) => {
+        if (isDemo) {
+            alert('Demo mode is active. Turn off demo mode to make changes.');
+            return;
+        }
+        onUpdateData(updates);
+    };
+    
     // Modal State
     const [modalType, setModalType] = useState<string | null>(null);
     
@@ -2698,6 +2539,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     };
 
     const confirmBulkImport = async () => {
+        if (isDemo) {
+            alert('Demo mode is active. Turn off demo mode to make changes.');
+            return;
+        }
         const validStudents = parsedBulkStudents.filter(s => s.beltId !== 'INVALID_BELT');
         
         // Save each student to database and get proper UUIDs
@@ -2748,6 +2593,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     };
 
     const handleAddStudent = async () => {
+        if (isDemo) {
+            alert('Demo mode is active. Turn off demo mode to make changes.');
+            return;
+        }
         const totalStudents = data.students.length;
         const currentTier = PRICING_TIERS.find(t => totalStudents < t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
         
@@ -2861,6 +2710,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     };
 
     const handleAddCoach = async () => {
+        if (isDemo) {
+            alert('Demo mode is active. Turn off demo mode to make changes.');
+            return;
+        }
         if(!tempCoach.name || !tempCoach.email) return;
         
         console.log('[AdminDashboard] handleAddCoach called with clubId:', clubId);
@@ -3032,11 +2885,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             <span className="text-lg">🎮</span> DEMO MODE - Sample data for demonstration purposes
                         </div>
                     )}
-                    {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} />}
-                    {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
-                    {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
-                    {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
-                    {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
+                    {activeTab === 'overview' && <OverviewTab data={effectiveData} onNavigate={onNavigate} onOpenModal={setModalType} />}
+                    {activeTab === 'students' && <StudentsTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { if (isDemo) { alert('Demo mode is active. Turn off demo mode to edit.'); return; } setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
+                    {activeTab === 'staff' && <StaffTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} onOpenModal={setModalType} onEditCoach={(c) => { if (isDemo) { alert('Demo mode is active. Turn off demo mode to edit.'); return; } setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
+                    {activeTab === 'schedule' && <ScheduleTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} onOpenModal={setModalType} />}
+                    {activeTab === 'creator' && <CreatorHubTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} clubId={clubId} />}
                     {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                 </div>
@@ -3287,6 +3140,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         </div>
                         <button 
                             onClick={async () => {
+                                if (isDemo) {
+                                    alert('Demo mode is active. Turn off demo mode to make changes.');
+                                    return;
+                                }
                                 if (!editingStudentId) return;
                                 try {
                                     // Get belt name from beltId for API
@@ -3407,6 +3264,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         </div>
                         <button 
                             onClick={async () => {
+                                if (isDemo) {
+                                    alert('Demo mode is active. Turn off demo mode to make changes.');
+                                    return;
+                                }
                                 if (!editingCoachId) return;
                                 try {
                                     const response = await fetch(`/api/coaches/${editingCoachId}`, {
