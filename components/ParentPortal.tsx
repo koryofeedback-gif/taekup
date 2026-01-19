@@ -6930,7 +6930,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         onClick={onBack}
                         className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs font-bold transition-colors flex items-center gap-1"
                     >
-                        ✕ Exit Demo
+                        ✕ Exit
                     </button>
                 </div>
             )}
