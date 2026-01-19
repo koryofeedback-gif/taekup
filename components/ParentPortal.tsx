@@ -24,6 +24,7 @@ import {
     DEMO_SCHEDULE,
     getDemoPrivateSlots
 } from '../shared/demoData';
+import { DEMO_VIDEO_SUBMISSIONS } from './demoData';
 
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -6699,7 +6700,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             video.challengeCategory === 'academy' || 
             video.challengeId?.startsWith('academy-');
         
-        const allSubmissions = myVideos.map(video => ({
+        // Use demo data when in demo mode
+        const sourceVideos = data.isDemo ? DEMO_VIDEO_SUBMISSIONS : myVideos;
+        
+        const allSubmissions = sourceVideos.map(video => ({
             ...video,
             type: isAcademyVideo(video) ? 'academy' : 'arena',
             typeLabel: isAcademyVideo(video) ? '📚 Academy' : '⚔️ Arena'

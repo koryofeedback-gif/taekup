@@ -72,3 +72,71 @@ export const DEMO_RECENT_ACTIVITY = [
     { type: 'video', message: 'Taylor Park submitted a new challenge video', time: '1 day ago' },
     { type: 'signup', message: 'New trial student: Morgan Yoo', time: '2 days ago' },
 ];
+
+export interface DemoVideoSubmission {
+    id: string;
+    challengeId: string;
+    challengeName: string;
+    videoUrl: string;
+    status: 'pending' | 'approved' | 'rejected';
+    score: number;
+    voteCount: number;
+    coachNotes?: string;
+    createdAt: string;
+    challengeCategory?: string;
+}
+
+const today = new Date();
+const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+const twoDaysAgo = new Date(today); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+const fiveDaysAgo = new Date(today); fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+
+export const DEMO_VIDEO_SUBMISSIONS: DemoVideoSubmission[] = [
+    {
+        id: 'demo-vid-1',
+        challengeId: 'arena-side-kick',
+        challengeName: 'Side Kick Power Challenge',
+        videoUrl: '',
+        status: 'approved',
+        score: 85,
+        voteCount: 12,
+        coachNotes: 'Excellent form! Great hip rotation and chamber. Keep your balance on the standing leg. Try to extend fully through the heel.',
+        createdAt: yesterday.toISOString(),
+        challengeCategory: 'arena',
+    },
+    {
+        id: 'demo-vid-2',
+        challengeId: 'academy-poomsae-1',
+        challengeName: 'Taegeuk Il Jang Practice',
+        videoUrl: '',
+        status: 'pending',
+        score: 0,
+        voteCount: 0,
+        createdAt: today.toISOString(),
+        challengeCategory: 'academy',
+    },
+    {
+        id: 'demo-vid-3',
+        challengeId: 'arena-flexibility',
+        challengeName: 'Splits Flexibility Check',
+        videoUrl: '',
+        status: 'rejected',
+        score: 45,
+        voteCount: 3,
+        coachNotes: 'Good effort! Please record again with better lighting so I can see your form clearly. Also try to hold the position for at least 5 seconds.',
+        createdAt: twoDaysAgo.toISOString(),
+        challengeCategory: 'arena',
+    },
+    {
+        id: 'demo-vid-4',
+        challengeId: 'academy-breaking',
+        challengeName: 'Board Breaking Technique',
+        videoUrl: '',
+        status: 'approved',
+        score: 92,
+        voteCount: 8,
+        coachNotes: 'Fantastic technique! Your focus and follow-through are spot on. This is exactly what we want to see. Ready for the next level!',
+        createdAt: fiveDaysAgo.toISOString(),
+        challengeCategory: 'academy',
+    },
+];
