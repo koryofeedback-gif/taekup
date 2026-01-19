@@ -854,7 +854,13 @@ const DemoDataSection: React.FC<{ clubId?: string, onDemoModeChange?: (isDemo: b
         setIsDemoMode(newValue);
         localStorage.setItem(DEMO_MODE_KEY, String(newValue));
         onDemoModeChange?.(newValue);
-        window.location.reload();
+        
+        if (!newValue) {
+            // When turning OFF demo mode, redirect to wizard
+            window.location.href = '/wizard';
+        } else {
+            window.location.reload();
+        }
     };
     
     return (
