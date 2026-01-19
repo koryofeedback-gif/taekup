@@ -1497,19 +1497,18 @@ const Header: React.FC<HeaderProps> = ({ isLoggedIn, hasSignedUp, hasCompletedWi
     return (
         <header className="bg-gray-900/80 backdrop-blur-sm sticky top-0 z-40 border-b border-gray-800">
             <div className="w-full px-6 py-3 flex justify-between items-center">
-                <div className="flex-shrink-0 relative z-50">
-                    <a
-                        href={getLogoDestination()}
-                        className="inline-flex items-center hover:scale-105 transition-transform cursor-pointer"
-                        style={{ pointerEvents: 'auto', position: 'relative', zIndex: 9999 }}
-                    >
-                        <img 
-                            src="/taekup-logo.png" 
-                            alt="TaekUp" 
-                            className="h-16 md:h-[70px] w-auto"
-                            style={{ pointerEvents: 'auto' }}
-                        />
-                    </a>
+                <div 
+                    className="flex-shrink-0 relative z-50 cursor-pointer"
+                    onClick={() => window.location.href = getLogoDestination()}
+                    style={{ pointerEvents: 'auto', position: 'relative', zIndex: 9999 }}
+                >
+                    <img 
+                        src="/taekup-logo.png" 
+                        alt="TaekUp" 
+                        className="h-16 md:h-[70px] w-auto"
+                        onClick={() => window.location.href = getLogoDestination()}
+                        style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                    />
                 </div>
                 <nav className="flex items-center space-x-3 md:space-x-6">
                     {!isAuthenticated && (
