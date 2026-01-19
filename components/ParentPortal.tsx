@@ -852,7 +852,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 title: "Martial Arts Wisdom",
                 description: "Test your knowledge of martial arts traditions!",
                 type: 'quiz',
-                xpReward: 50,
+                xpReward: 15,
                 quizData: {
                     question: "What quality is considered the most important foundation in all martial arts?",
                     options: ["Strength", "Speed", "Discipline", "Flexibility"],
@@ -1087,12 +1087,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         if (data.isDemo) {
             const quizData = mysteryChallenge.quizData;
             const isCorrect = selectedIndex === quizData?.correctIndex;
-            const xpAwarded = isCorrect ? 50 : 10;
+            const xpAwarded = isCorrect ? 15 : 5;
             
             setMysteryCompleted(true);
             setMysteryXpAwarded(xpAwarded);
             setMysteryWasCorrect(isCorrect);
-            setMysteryCompletionMessage(isCorrect ? `Correct! +${xpAwarded} HonorXP` : 'Not quite! Try again tomorrow.');
+            setMysteryCompletionMessage(isCorrect ? `Correct! +${xpAwarded} HonorXP™` : `Good try! +${xpAwarded} HonorXP™`);
             setQuizExplanation(quizData?.explanation || '');
             setRivalStats(prev => ({ ...prev, xp: prev.xp + xpAwarded }));
             return;
