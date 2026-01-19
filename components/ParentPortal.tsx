@@ -6921,8 +6921,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
             {/* Demo Mode Banner */}
             {data.isDemo && (
-                <div className="bg-gradient-to-r from-cyan-600 via-teal-600 to-cyan-600 text-white text-xs font-bold py-2 px-4 sticky top-0 z-50 shadow-lg flex items-center justify-center space-x-3 animate-pulse">
-                    <span className="text-lg">🎮</span> DEMO MODE - Sample data for demonstration purposes
+                <div className="bg-gradient-to-r from-cyan-600 via-teal-600 to-cyan-600 text-white text-xs font-bold py-2 px-4 sticky top-0 z-50 shadow-lg flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                        <span className="text-lg">🎮</span>
+                        <span>DEMO MODE - Sample data for demonstration</span>
+                    </div>
+                    <button 
+                        onClick={onBack}
+                        className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs font-bold transition-colors flex items-center gap-1"
+                    >
+                        ✕ Exit Demo
+                    </button>
                 </div>
             )}
 
