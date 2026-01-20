@@ -2434,76 +2434,86 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
-                                        <div className="text-4xl mb-2">📊</div>
-                                        <div className="text-3xl font-black text-cyan-400">{(data.customChallenges || []).filter(c => c.isActive).length}</div>
-                                        <div className="text-gray-400 text-sm">Active Challenges</div>
-                                    </div>
-                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
-                                        <div className="text-4xl mb-2">🎯</div>
-                                        <div className="text-3xl font-black text-yellow-400">{(data.customChallenges || []).filter(c => c.weeklyChallenge).length}</div>
-                                        <div className="text-gray-400 text-sm">Weekly Challenges</div>
-                                    </div>
-                                    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
-                                        <div className="text-4xl mb-2">👥</div>
-                                        <div className="text-3xl font-black text-green-400">{students.length}</div>
-                                        <div className="text-gray-400 text-sm">Students</div>
-                                    </div>
-                                </div>
-
-                                {(data.customChallenges || []).length === 0 ? (
-                                    <div className="text-center py-16 bg-gray-800/50 rounded-2xl border border-gray-700">
-                                        <div className="text-7xl mb-4">🏆</div>
-                                        <h3 className="text-2xl font-bold text-white mb-2">No Custom Challenges Yet</h3>
-                                        <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                                            Create your first custom challenge to give your students unique ways to compete and earn XP in Dojang Rivals!
-                                        </p>
-                                        <button
-                                            onClick={() => setShowChallengeBuilder(true)}
-                                            className="bg-cyan-500 hover:bg-cyan-400 text-white font-bold px-8 py-3 rounded-xl transition-all"
-                                        >
-                                            Create Your First Challenge
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                            <span className="text-green-400">●</span> Your Custom Challenges
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {(data.customChallenges || []).filter(c => c.isActive).map(challenge => (
-                                                <div key={challenge.id} className="bg-gray-800 rounded-xl border border-gray-700 p-4 hover:border-cyan-500/50 transition-all">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-12 h-12 bg-gray-700 rounded-xl flex items-center justify-center text-2xl">
-                                                            {challenge.icon}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-bold text-white">{challenge.name}</span>
-                                                                {challenge.weeklyChallenge && (
-                                                                    <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded-full">Weekly</span>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center gap-2 mt-1">
-                                                                <span className="text-xs text-gray-500">{challenge.category}</span>
-                                                                <span className="text-xs text-gray-500">•</span>
-                                                                <span className="text-xs text-gray-500">{challenge.difficulty}</span>
-                                                                <span className="text-green-400 text-sm font-bold ml-auto">+{challenge.xp} XP</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                {(() => {
+                                    const displayChallenges = isDemo ? DEMO_CUSTOM_CHALLENGES : (data.customChallenges || []);
+                                    const activeChallenges = displayChallenges.filter(c => c.isActive);
+                                    const weeklyChallenges = displayChallenges.filter(c => c.weeklyChallenge);
+                                    
+                                    return (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                                                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+                                                    <div className="text-4xl mb-2">📊</div>
+                                                    <div className="text-3xl font-black text-cyan-400">{activeChallenges.length}</div>
+                                                    <div className="text-gray-400 text-sm">Active Challenges</div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                        <button
-                                            onClick={() => setShowChallengeBuilder(true)}
-                                            className="w-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white font-bold py-4 rounded-xl transition-all border border-dashed border-gray-600 hover:border-cyan-500"
-                                        >
-                                            + Add More Challenges
-                                        </button>
-                                    </div>
-                                )}
+                                                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+                                                    <div className="text-4xl mb-2">🎯</div>
+                                                    <div className="text-3xl font-black text-yellow-400">{weeklyChallenges.length}</div>
+                                                    <div className="text-gray-400 text-sm">Weekly Challenges</div>
+                                                </div>
+                                                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+                                                    <div className="text-4xl mb-2">👥</div>
+                                                    <div className="text-3xl font-black text-green-400">{students.length}</div>
+                                                    <div className="text-gray-400 text-sm">Students</div>
+                                                </div>
+                                            </div>
+
+                                            {displayChallenges.length === 0 ? (
+                                                <div className="text-center py-16 bg-gray-800/50 rounded-2xl border border-gray-700">
+                                                    <div className="text-7xl mb-4">🏆</div>
+                                                    <h3 className="text-2xl font-bold text-white mb-2">No Custom Challenges Yet</h3>
+                                                    <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                                                        Create your first custom challenge to give your students unique ways to compete and earn XP in Dojang Rivals!
+                                                    </p>
+                                                    <button
+                                                        onClick={() => setShowChallengeBuilder(true)}
+                                                        className="bg-cyan-500 hover:bg-cyan-400 text-white font-bold px-8 py-3 rounded-xl transition-all"
+                                                    >
+                                                        Create Your First Challenge
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                                        <span className="text-green-400">●</span> Your Custom Challenges
+                                                    </h3>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {activeChallenges.map(challenge => (
+                                                            <div key={challenge.id} className="bg-gray-800 rounded-xl border border-gray-700 p-4 hover:border-cyan-500/50 transition-all">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-12 h-12 bg-gray-700 rounded-xl flex items-center justify-center text-2xl">
+                                                                        {challenge.icon}
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="font-bold text-white">{challenge.name}</span>
+                                                                            {challenge.weeklyChallenge && (
+                                                                                <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded-full">Weekly</span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <span className="text-xs text-gray-500">{challenge.category}</span>
+                                                                            <span className="text-xs text-gray-500">•</span>
+                                                                            <span className="text-xs text-gray-500">{challenge.difficulty}</span>
+                                                                            <span className="text-green-400 text-sm font-bold ml-auto">+{challenge.xp} XP</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setShowChallengeBuilder(true)}
+                                                        className="w-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white font-bold py-4 rounded-xl transition-all border border-dashed border-gray-600 hover:border-cyan-500"
+                                                    >
+                                                        + Add More Challenges
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
                     )}
