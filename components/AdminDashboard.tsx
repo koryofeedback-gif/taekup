@@ -703,7 +703,8 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                 }
             />
             
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
                 <table className="w-full text-left text-sm text-gray-300">
                     <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                         <tr>
@@ -745,6 +746,59 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                         {data.coaches.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No coaches added yet.</td></tr>}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {/* Owner Card */}
+                <div className="bg-blue-900/20 rounded-lg border border-blue-800/50 p-4">
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 className="font-bold text-white text-lg">{data.ownerName}</h3>
+                            <span className="inline-block bg-blue-900 text-blue-300 text-[10px] px-2 py-0.5 rounded mt-1">OWNER</span>
+                        </div>
+                    </div>
+                    <div className="text-sm text-gray-400">
+                        <div>All Locations · All Classes</div>
+                    </div>
+                </div>
+
+                {/* Coach Cards */}
+                {data.coaches.map(c => (
+                    <div key={c.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                        <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-bold text-white text-lg">{c.name}</h3>
+                        </div>
+                        <div className="text-sm text-gray-400 mb-3 space-y-1">
+                            <div className="truncate">{c.email}</div>
+                            <div>
+                                <span className="text-white">{c.location || 'No location'}</span>
+                                {c.assignedClasses?.length > 0 && (
+                                    <span className="text-gray-500"> · {c.assignedClasses.join(', ')}</span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex gap-3 pt-2 border-t border-gray-700">
+                            {onEditCoach && (
+                                <button onClick={() => onEditCoach(c)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs">
+                                    Edit
+                                </button>
+                            )}
+                            <button 
+                                onClick={() => handleDelete(c.id)} 
+                                disabled={deleting === c.id}
+                                className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto disabled:opacity-50"
+                            >
+                                {deleting === c.id ? 'Removing...' : 'Remove'}
+                            </button>
+                        </div>
+                    </div>
+                ))}
+                {data.coaches.length === 0 && (
+                    <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
+                        No coaches added yet.
+                    </div>
+                )}
             </div>
         </div>
     )
