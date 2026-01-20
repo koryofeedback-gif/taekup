@@ -166,7 +166,7 @@ export const DEMO_CUSTOM_CHALLENGES: CustomChallenge[] = [
         description: 'Execute 5 clean tornado kicks with proper rotation and chamber. Focus on balance and height.',
         category: 'Power',
         icon: '🌪️',
-        xp: 70,
+        xp: 50,
         demoVideoUrl: '',
         difficulty: 'Hard',
         measurementType: 'count',
