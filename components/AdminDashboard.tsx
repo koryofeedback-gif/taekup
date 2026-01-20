@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
-import { DEMO_MODE_KEY, isDemoModeEnabled, DEMO_STUDENTS, DEMO_COACHES, DEMO_SCHEDULE, DEMO_STATS, DEMO_LEADERBOARD, DEMO_RECENT_ACTIVITY } from './demoData';
+import { DEMO_MODE_KEY, isDemoModeEnabled, DEMO_STUDENTS, DEMO_COACHES, DEMO_SCHEDULE, DEMO_STATS, DEMO_LEADERBOARD, DEMO_RECENT_ACTIVITY, DEMO_CURRICULUM } from './demoData';
 
 interface AdminDashboardProps {
   data: WizardData;
@@ -2364,6 +2364,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             students: DEMO_STUDENTS,
             coaches: DEMO_COACHES,
             schedule: DEMO_SCHEDULE,
+            curriculum: DEMO_CURRICULUM,
         };
     }, [isDemo, data]);
     

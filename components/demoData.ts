@@ -105,6 +105,99 @@ export const DEMO_TV_BIRTHDAYS = [
     { id: 'demo-bday-2', name: 'Riley Cho', birthday: new Date(new Date().getFullYear(), new Date().getMonth(), 22).toISOString() },
 ];
 
+export const DEMO_CURRICULUM = [
+    {
+        id: 'demo-content-1',
+        title: 'Basic Stances & Footwork',
+        url: 'https://example.com/video1',
+        beltId: 'white',
+        category: 'fundamentals',
+        description: 'Master the essential stances that form the foundation of all techniques.',
+        authorName: 'Master David Kim',
+        contentType: 'video' as const,
+        status: 'live' as const,
+        pricingType: 'free' as const,
+        xpReward: 25,
+        viewCount: 156,
+        completionCount: 89
+    },
+    {
+        id: 'demo-content-2',
+        title: 'Front Kick Technique',
+        url: 'https://example.com/video2',
+        beltId: 'yellow',
+        category: 'kicks',
+        description: 'Step-by-step breakdown of the front kick with proper chamber and extension.',
+        authorName: 'Master David Kim',
+        contentType: 'video' as const,
+        status: 'live' as const,
+        pricingType: 'free' as const,
+        xpReward: 30,
+        viewCount: 234,
+        completionCount: 145
+    },
+    {
+        id: 'demo-content-3',
+        title: 'Roundhouse Kick Masterclass',
+        url: 'https://example.com/video3',
+        beltId: 'green',
+        category: 'kicks',
+        description: 'Advanced techniques for generating power and speed in your roundhouse.',
+        authorName: 'Master David Kim',
+        contentType: 'video' as const,
+        status: 'live' as const,
+        pricingType: 'premium' as const,
+        xpReward: 50,
+        viewCount: 312,
+        completionCount: 178
+    },
+    {
+        id: 'demo-content-4',
+        title: 'Poomsae Taegeuk Il Jang',
+        url: 'https://example.com/video4',
+        beltId: 'white',
+        category: 'forms',
+        description: 'Complete walkthrough of the first Taegeuk form with applications.',
+        authorName: 'Master David Kim',
+        contentType: 'video' as const,
+        status: 'live' as const,
+        pricingType: 'free' as const,
+        xpReward: 40,
+        viewCount: 421,
+        completionCount: 267
+    },
+    {
+        id: 'demo-content-5',
+        title: 'Sparring Strategy Guide',
+        url: 'https://example.com/doc1',
+        beltId: 'blue',
+        category: 'sparring',
+        description: 'PDF guide covering offensive and defensive sparring strategies.',
+        authorName: 'Sarah Johnson',
+        contentType: 'document' as const,
+        status: 'live' as const,
+        pricingType: 'premium' as const,
+        xpReward: 35,
+        viewCount: 89,
+        completionCount: 45
+    },
+    {
+        id: 'demo-content-6',
+        title: 'Spinning Hook Kick Tutorial',
+        url: 'https://example.com/video5',
+        beltId: 'red',
+        category: 'kicks',
+        description: 'Learn the spinning hook kick with drills for balance and timing.',
+        authorName: 'Master David Kim',
+        contentType: 'video' as const,
+        status: 'draft' as const,
+        pricingType: 'premium' as const,
+        xpReward: 75,
+        viewCount: 0,
+        completionCount: 0
+    },
+];
+
 export interface DemoVideoSubmission {
     id: string;
     challengeId: string;
