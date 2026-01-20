@@ -1328,9 +1328,32 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     };
 
     const handleGenerateAllFeedback = async () => {
-        setIsGenerating(true); // Changed from setIsGeneratingAdvice(true)
+        setIsGenerating(true);
         const messages: Record<string, string> = {};
         const presentStudents = filteredStudents.filter(s => attendance[s.id]);
+        
+        // Demo mode - use static templates (no API cost)
+        if (isDemo) {
+            const demoTemplates = [
+                (name: string, bonus: number) => `${name} showed excellent focus and determination in today's class! ${bonus > 0 ? `Earned ${bonus} bonus points for outstanding effort. ` : ''}Keep encouraging practice at home - consistency is key to martial arts success!`,
+                (name: string, bonus: number) => `Great session for ${name} today! ${bonus > 0 ? `Extra ${bonus} HonorXP™ earned for going above and beyond. ` : ''}The techniques are improving nicely. A few minutes of daily practice will make a big difference!`,
+                (name: string, bonus: number) => `${name} worked hard today and showed real dedication to improving. ${bonus > 0 ? `Bonus points: +${bonus} for exceptional effort! ` : ''}Encourage them to practice their forms at home - they're making great progress!`,
+                (name: string, bonus: number) => `Wonderful attitude from ${name} in class today! ${bonus > 0 ? `Awarded ${bonus} extra points for leadership. ` : ''}Their focus and respect for training is commendable. Keep up the great work!`
+            ];
+            
+            for (const student of presentStudents) {
+                const bonus = bonusPoints[student.id] || 0;
+                const templateIndex = Math.floor(Math.random() * demoTemplates.length);
+                messages[student.id] = demoTemplates[templateIndex](student.name, bonus);
+            }
+            
+            setTimeout(() => {
+                setParentMessages(messages);
+                setIsGenerating(false);
+                setFeedbackPreviewOpen(true);
+            }, 800);
+            return;
+        }
         
         for (const student of presentStudents) {
             const scoresForStudent = activeSkills.map(skill => ({
@@ -1348,7 +1371,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 homework,
                 student.isReadyForGrading,
                 data.gradingRequirementName,
-                data.language // Pass selected language
+                data.language
             );
             messages[student.id] = feedback;
         }
