@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import type { WizardData, Student } from '../types';
+import { isDemoModeEnabled, DEMO_STUDENTS, DEMO_EVENTS, DEMO_TV_BIRTHDAYS, DEMO_LEADERBOARD } from './demoData';
 
 interface LobbyDisplayProps {
     data: WizardData;
@@ -10,33 +11,48 @@ interface LobbyDisplayProps {
 export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [time, setTime] = useState(new Date());
+    const isDemo = isDemoModeEnabled();
 
     // --- DATA PREPARATION ---
     
-    // 1. Top Students
+    // 1. Top Students (use demo data in demo mode)
     const topStudents = useMemo(() => {
+        if (isDemo) {
+            return DEMO_LEADERBOARD.map((s, idx) => ({
+                id: `demo-${idx}`,
+                name: s.name,
+                totalPoints: s.xp,
+                beltId: s.belt.toLowerCase().replace(' belt', ''),
+            }));
+        }
         return [...data.students]
             .sort((a, b) => b.totalPoints - a.totalPoints)
             .slice(0, 5);
-    }, [data.students]);
+    }, [data.students, isDemo]);
 
-    // 2. Birthdays (Current Month)
+    // 2. Birthdays (use demo data in demo mode)
     const birthdayStudents = useMemo(() => {
+        if (isDemo) {
+            return DEMO_TV_BIRTHDAYS;
+        }
         const currentMonth = new Date().getMonth();
         return data.students.filter(s => {
             if (!s.birthday) return false;
             return new Date(s.birthday).getMonth() === currentMonth;
         });
-    }, [data.students]);
+    }, [data.students, isDemo]);
 
-    // 3. Upcoming Events (Next 3)
+    // 3. Upcoming Events (use demo data in demo mode)
     const upcomingEvents = useMemo(() => {
+        if (isDemo) {
+            return DEMO_EVENTS;
+        }
         const now = new Date();
         return (data.events || [])
             .filter(e => new Date(e.date) >= now)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
             .slice(0, 3);
-    }, [data.events]);
+    }, [data.events, isDemo]);
 
     // Define available slides based on data content
     const slides = useMemo(() => {
@@ -67,46 +83,77 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
 
     // --- RENDERERS ---
 
-    const renderWelcome = () => (
-        <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
-            <div className="w-48 h-48 bg-gray-800 rounded-full flex items-center justify-center border-4 border-sky-500 shadow-[0_0_50px_rgba(59,130,246,0.5)] mb-8 overflow-hidden">
-                {typeof data.logo === 'string' ? (
-                    <img src={data.logo} alt="Logo" className="w-full h-full object-cover" />
-                ) : (
-                    <span className="text-6xl">🥋</span>
-                )}
-            </div>
-            <h1 className="text-8xl font-black text-white mb-6 tracking-tight">{data.clubName}</h1>
-            <p className="text-4xl text-blue-300 font-light tracking-widest uppercase">{data.slogan || "Discipline. Focus. Success."}</p>
-        </div>
-    );
-
-    const renderLeaderboard = () => (
-        <div className="h-full flex flex-col justify-center px-20 animate-fade-in">
-            <h2 className="text-5xl font-bold text-yellow-400 mb-12 text-center uppercase tracking-widest flex items-center justify-center">
-                <span className="text-7xl mr-4">🏆</span> Students of the Month
-            </h2>
-            <div className="space-y-6">
-                {topStudents.map((student, idx) => (
-                    <div key={student.id} className={`flex items-center justify-between p-6 rounded-2xl border-2 ${idx === 0 ? 'bg-yellow-900/30 border-yellow-500/50 scale-105 shadow-2xl' : 'bg-gray-800/50 border-gray-700'}`}>
-                        <div className="flex items-center space-x-6">
-                            <div className={`text-5xl font-bold w-16 text-center ${idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-orange-400' : 'text-gray-500'}`}>
-                                #{idx + 1}
-                            </div>
-                            <div>
-                                <p className={`text-4xl font-bold ${idx === 0 ? 'text-white' : 'text-gray-200'}`}>{student.name}</p>
-                                <p className="text-xl text-gray-400 mt-1">{data.belts.find(b => b.id === student.beltId)?.name}</p>
-                            </div>
+    const renderWelcome = () => {
+        const clubName = isDemo ? 'Elite Taekwondo Academy' : (data.clubName || 'Welcome');
+        const slogan = isDemo ? 'Building Champions, One Kick at a Time' : (data.slogan || 'Discipline. Focus. Success.');
+        
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
+                <div className="w-56 h-56 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center border-4 border-cyan-500 shadow-[0_0_60px_rgba(6,182,212,0.4)] mb-10 overflow-hidden">
+                    {!isDemo && typeof data.logo === 'string' ? (
+                        <img src={data.logo} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                        <span className="text-8xl">🥋</span>
+                    )}
+                </div>
+                <h1 className="text-8xl font-black text-white mb-6 tracking-tight bg-gradient-to-r from-white via-cyan-100 to-white bg-clip-text">{clubName}</h1>
+                <p className="text-4xl text-cyan-300 font-light tracking-widest uppercase">{slogan}</p>
+                {isDemo && (
+                    <div className="mt-12 flex items-center gap-6">
+                        <div className="bg-cyan-900/30 border border-cyan-500/30 px-6 py-3 rounded-xl">
+                            <span className="text-2xl text-cyan-400 font-bold">8 Students</span>
                         </div>
-                        <div className="text-right">
-                            <p className="text-5xl font-black text-sky-300">{student.totalPoints}</p>
-                            <p className="text-sm text-gray-500 uppercase font-bold">Points</p>
+                        <div className="bg-yellow-900/30 border border-yellow-500/30 px-6 py-3 rounded-xl">
+                            <span className="text-2xl text-yellow-400 font-bold">22K+ HonorXP™</span>
+                        </div>
+                        <div className="bg-green-900/30 border border-green-500/30 px-6 py-3 rounded-xl">
+                            <span className="text-2xl text-green-400 font-bold">156 Challenges</span>
                         </div>
                     </div>
-                ))}
+                )}
             </div>
-        </div>
-    );
+        );
+    };
+
+    const renderLeaderboard = () => {
+        const getBeltName = (student: any) => {
+            if (isDemo) {
+                const beltMap: Record<string, string> = {
+                    'red': 'Red Belt', 'blue': 'Blue Belt', 'green': 'Green Belt', 
+                    'yellow': 'Yellow Belt', 'white': 'White Belt', 'black': 'Black Belt'
+                };
+                return beltMap[student.beltId] || student.beltId;
+            }
+            return data.belts.find(b => b.id === student.beltId)?.name || '';
+        };
+
+        return (
+            <div className="h-full flex flex-col justify-center px-20 animate-fade-in">
+                <h2 className="text-5xl font-bold text-yellow-400 mb-12 text-center uppercase tracking-widest flex items-center justify-center">
+                    <span className="text-7xl mr-4">🏆</span> Global Shogun Rank™
+                </h2>
+                <div className="space-y-6">
+                    {topStudents.map((student, idx) => (
+                        <div key={student.id} className={`flex items-center justify-between p-6 rounded-2xl border-2 ${idx === 0 ? 'bg-gradient-to-r from-yellow-900/40 to-orange-900/30 border-yellow-500/60 scale-105 shadow-2xl' : idx === 1 ? 'bg-gray-800/60 border-gray-500/50' : idx === 2 ? 'bg-gray-800/50 border-orange-700/40' : 'bg-gray-800/40 border-gray-700'}`}>
+                            <div className="flex items-center space-x-6">
+                                <div className={`text-5xl font-bold w-20 text-center ${idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-orange-400' : 'text-gray-500'}`}>
+                                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                                </div>
+                                <div>
+                                    <p className={`text-4xl font-bold ${idx === 0 ? 'text-white' : 'text-gray-200'}`}>{student.name}</p>
+                                    <p className="text-xl text-gray-400 mt-1">{getBeltName(student)}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className={`text-5xl font-black ${idx === 0 ? 'text-yellow-300' : 'text-sky-300'}`}>{student.totalPoints.toLocaleString()}</p>
+                                <p className="text-sm text-gray-500 uppercase font-bold tracking-wider">HonorXP™</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     const renderBirthdays = () => (
         <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in bg-gradient-to-b from-gray-900 to-purple-900/20">

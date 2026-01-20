@@ -73,6 +73,38 @@ export const DEMO_RECENT_ACTIVITY = [
     { type: 'signup', message: 'New trial student: Morgan Yoo', time: '2 days ago' },
 ];
 
+export const DEMO_EVENTS = [
+    { 
+        id: 'demo-event-1', 
+        title: 'Spring Belt Grading', 
+        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), 
+        time: '10:00 AM', 
+        type: 'Grading',
+        location: 'Main Dojang'
+    },
+    { 
+        id: 'demo-event-2', 
+        title: 'Parent Showcase Night', 
+        date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(), 
+        time: '6:00 PM', 
+        type: 'Event',
+        location: 'Main Dojang'
+    },
+    { 
+        id: 'demo-event-3', 
+        title: 'Regional Tournament', 
+        date: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(), 
+        time: '8:00 AM', 
+        type: 'Competition',
+        location: 'City Sports Center'
+    },
+];
+
+export const DEMO_TV_BIRTHDAYS = [
+    { id: 'demo-bday-1', name: 'Alex Kim', birthday: new Date(new Date().getFullYear(), new Date().getMonth(), 15).toISOString() },
+    { id: 'demo-bday-2', name: 'Riley Cho', birthday: new Date(new Date().getFullYear(), new Date().getMonth(), 22).toISOString() },
+];
+
 export interface DemoVideoSubmission {
     id: string;
     challengeId: string;
