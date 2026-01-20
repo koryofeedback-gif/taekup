@@ -1341,132 +1341,214 @@ interface DashboardViewProps {
 
 const DashboardView: React.FC<DashboardViewProps> = ({ data, onboardingMessage }) => {
     const navigate = useNavigate();
-    const themeStyles = {
-        modern: 'rounded-lg',
-        classic: 'rounded-none',
-        minimal: 'rounded-lg border-none shadow-none bg-gray-800/50',
-    };
-
-    const bgStyle =
-        data.clubPhoto && (data.clubPhoto instanceof Blob)
-            ? {
-                  backgroundImage: `url(${URL.createObjectURL(data.clubPhoto)})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-              }
-            : (typeof data.clubPhoto === 'string' && data.clubPhoto
-                ? {
-                      backgroundImage: `url(${data.clubPhoto})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                  }
-                : {});
 
     const hasStudents = data.students && data.students.length > 0;
     const firstStudentId = hasStudents ? data.students[0].id : null;
 
-    const handleParentPortalClick = (e: React.MouseEvent) => {
+    const handleParentPortalClick = () => {
         if (!hasStudents) {
-            e.preventDefault();
             alert('No students added yet. Add a student first to preview the Parent Portal.');
             return;
         }
         navigate(`/app/parent/${firstStudentId}`);
     };
 
+    const roleCards = [
+        {
+            id: 'coach',
+            title: 'Coach Dashboard',
+            subtitle: 'Train & Track',
+            description: 'Award HonorXP™, track attendance, manage classes, and watch your students grow.',
+            icon: (
+                <svg className="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3"/>
+                    <path d="M24 8L28 16H36L30 22L32 30L24 26L16 30L18 22L12 16H20L24 8Z" fill="currentColor"/>
+                    <circle cx="24" cy="38" r="4" fill="currentColor" opacity="0.6"/>
+                </svg>
+            ),
+            gradient: 'from-amber-500 via-orange-500 to-red-500',
+            glowColor: 'rgba(245, 158, 11, 0.4)',
+            borderColor: 'border-amber-500/30',
+            href: '/app/coach',
+            buttonText: 'Enter Dojo',
+        },
+        {
+            id: 'admin',
+            title: 'Admin Dashboard',
+            subtitle: 'Command Center',
+            description: 'Full control over students, staff, schedules, billing, and DojoMint™ Protocol.',
+            icon: (
+                <svg className="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="8" y="20" width="32" height="20" rx="2" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3"/>
+                    <path d="M12 8H36L40 20H8L12 8Z" fill="currentColor" opacity="0.6"/>
+                    <path d="M16 28H32M16 34H28" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <circle cx="24" cy="14" r="3" fill="currentColor"/>
+                </svg>
+            ),
+            gradient: 'from-cyan-400 via-blue-500 to-indigo-600',
+            glowColor: 'rgba(6, 182, 212, 0.5)',
+            borderColor: 'border-cyan-400/40',
+            href: '/app/admin',
+            buttonText: 'Command Center',
+            featured: true,
+        },
+        {
+            id: 'parent',
+            title: 'Parent Portal',
+            subtitle: 'Family View',
+            description: hasStudents 
+                ? "See your child's journey, achievements, and progress through their martial arts path."
+                : "Add a student first to preview the Parent Portal experience.",
+            icon: (
+                <svg className="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="14" r="8" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3"/>
+                    <circle cx="24" cy="14" r="4" fill="currentColor"/>
+                    <path d="M12 42C12 34 17 28 24 28C31 28 36 34 36 42" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.6"/>
+                    <path d="M18 36L24 42L30 36" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+            ),
+            gradient: 'from-emerald-400 via-teal-500 to-cyan-500',
+            glowColor: 'rgba(16, 185, 129, 0.4)',
+            borderColor: 'border-emerald-500/30',
+            href: hasStudents ? `/app/parent/${firstStudentId}` : '#',
+            buttonText: hasStudents ? 'Preview Portal' : 'Add Student First',
+            disabled: !hasStudents,
+            onClick: handleParentPortalClick,
+        },
+    ];
+
     return (
-        <div className="min-h-[80vh] relative" style={bgStyle}>
-            <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm"></div>
-            <div className="relative z-10 container mx-auto px-6 py-12">
-                <div className="max-w-3xl mx-auto text-center bg-gray-800/50 border border-gray-700 p-6 rounded-lg shadow-lg mb-12">
-                    <p className="text-xl italic text-gray-300">"{onboardingMessage}"</p>
+        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-cyan-500/5 rounded-full"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-cyan-500/5 rounded-full"></div>
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NDEgMC0xOCA4LjA1OS0xOCAxOHM4LjA1OSAxOCAxOCAxOCAxOC04LjA1OSAxOC0xOC04LjA1OS0xOC0xOC0xOHptMCAzMmMtNy43MzIgMC0xNC02LjI2OC0xNC0xNHM2LjI2OC0xNCAxNC0xNCAxNCA2LjI2OCAxNCAxNC02LjI2OCAxNC0xNCAxNHoiIHN0cm9rZT0icmdiYSg2LDE4MiwyMTIsMC4wMykiIHN0cm9rZS13aWR0aD0iMSIvPjwvZz48L3N2Zz4=')] opacity-30"></div>
+            </div>
+
+            <div className="relative z-10 container mx-auto px-6 py-16">
+                <div className="text-center mb-16">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-sm font-medium mb-6">
+                        <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
+                        Welcome to Your Dojo
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                        {data.clubName || 'Your Martial Arts Academy'}
+                    </h1>
+                    <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+                        "{onboardingMessage}"
+                    </p>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-8">
-                    <DashboardCard
-                        title="Coach Dashboard"
-                        description="Ready to add class points, track attendance, and manage your students."
-                        buttonText="Go to Coach View"
-                        themeStyle={themeStyles[data.themeStyle]}
-                        primaryColor={data.primaryColor}
-                        href="/app/coach"
-                    />
-
-                    <div 
-                        onClick={handleParentPortalClick}
-                        className={`bg-gray-800 border border-gray-700/50 shadow-lg flex flex-col p-8 transition-all duration-300 ${themeStyles[data.themeStyle]} text-left w-full
-                               hover:border-white/20 hover:-translate-y-1 cursor-pointer ${!hasStudents ? 'opacity-60' : ''}`}
-                    >
-                        <h2 className="text-2xl font-bold mb-4" style={{ color: data.primaryColor }}>
-                            Parent Portal
-                        </h2>
-                        <p className="text-gray-400 flex-grow mb-6">
-                            {hasStudents 
-                                ? "Automatically linked to each student. See what parents see with this preview."
-                                : "Add a student first to preview the Parent Portal."}
-                        </p>
+                <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+                    {roleCards.map((card, index) => (
                         <div
-                            className="mt-auto text-center font-bold py-2 px-6 rounded-md text-white"
-                            style={{
-                                backgroundColor: data.primaryColor,
-                                boxShadow: `0 4px 14px 0 ${data.primaryColor}40`,
-                            }}
+                            key={card.id}
+                            onClick={card.onClick || undefined}
+                            className={`group relative ${card.featured ? 'md:-mt-4 md:mb-4' : ''}`}
                         >
-                            {hasStudents ? 'Preview Portal' : 'No Students Yet'}
+                            {card.featured && (
+                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
+                                    <span className="px-4 py-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs font-bold rounded-full shadow-lg shadow-cyan-500/30">
+                                        RECOMMENDED
+                                    </span>
+                                </div>
+                            )}
+                            
+                            <Link
+                                to={card.disabled ? '#' : card.href}
+                                onClick={(e) => {
+                                    if (card.disabled) {
+                                        e.preventDefault();
+                                        card.onClick?.();
+                                    }
+                                }}
+                                className={`block h-full relative overflow-hidden rounded-2xl transition-all duration-500 
+                                    ${card.featured 
+                                        ? 'bg-gradient-to-br from-slate-800/90 via-slate-800/80 to-slate-900/90 border-2 border-cyan-500/40 shadow-2xl shadow-cyan-500/20' 
+                                        : 'bg-slate-800/60 border border-slate-700/50 hover:border-slate-600/80'}
+                                    ${card.disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+                                    group-hover:shadow-2xl group-hover:-translate-y-2`}
+                                style={{
+                                    boxShadow: card.featured ? `0 25px 50px -12px ${card.glowColor}` : undefined,
+                                }}
+                            >
+                                <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>
+                                
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full"></div>
+                                
+                                <div className="relative p-8">
+                                    <div className={`inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br ${card.gradient} text-white mb-6 shadow-lg transform group-hover:scale-110 transition-transform duration-300`}
+                                        style={{ boxShadow: `0 10px 30px -5px ${card.glowColor}` }}>
+                                        {card.icon}
+                                    </div>
+                                    
+                                    <div className="mb-2">
+                                        <span className={`text-xs font-semibold uppercase tracking-wider bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
+                                            {card.subtitle}
+                                        </span>
+                                    </div>
+                                    
+                                    <h2 className="text-2xl font-bold text-white mb-3 group-hover:text-cyan-100 transition-colors">
+                                        {card.title}
+                                    </h2>
+                                    
+                                    <p className="text-gray-400 text-sm leading-relaxed mb-8 min-h-[60px]">
+                                        {card.description}
+                                    </p>
+                                    
+                                    <div className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300
+                                        ${card.featured 
+                                            ? `bg-gradient-to-r ${card.gradient} text-white shadow-lg group-hover:shadow-xl` 
+                                            : `bg-slate-700/50 text-gray-300 group-hover:bg-gradient-to-r group-hover:${card.gradient} group-hover:text-white`}
+                                        ${card.disabled ? '' : 'group-hover:gap-3'}`}
+                                        style={card.featured ? { boxShadow: `0 10px 30px -5px ${card.glowColor}` } : undefined}>
+                                        {card.buttonText}
+                                        {!card.disabled && (
+                                            <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${card.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}></div>
+                            </Link>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="mt-16 text-center">
+                    <div className="inline-flex items-center gap-8 text-sm text-gray-500">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                            </div>
+                            <span>{data.students?.length || 0} Students</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+                                </svg>
+                            </div>
+                            <span>{data.coaches?.length || 0} Coaches</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
+                                </svg>
+                            </div>
+                            <span>{data.schedule?.length || 0} Classes</span>
                         </div>
                     </div>
-
-                    <DashboardCard
-                        title="Admin Dashboard"
-                        description="Summary metrics, financial overviews, and full system controls are ready."
-                        buttonText="Go to Admin Panel"
-                        themeStyle={themeStyles[data.themeStyle]}
-                        primaryColor={data.primaryColor}
-                        href="/app/admin"
-                    />
                 </div>
             </div>
         </div>
-    );
-};
-
-interface DashboardCardProps {
-    title: string;
-    description: string;
-    buttonText: string;
-    themeStyle: string;
-    primaryColor: string;
-    href: string;
-}
-
-const DashboardCard: React.FC<DashboardCardProps> = ({
-    title,
-    description,
-    buttonText,
-    themeStyle,
-    primaryColor,
-    href,
-}) => {
-    return (
-        <Link
-            to={href}
-            className={`bg-gray-800 border border-gray-700/50 shadow-lg flex flex-col p-8 transition-all duration-300 ${themeStyle} text-left w-full
-                   hover:border-white/20 hover:-translate-y-1 block`}
-        >
-            <h2 className="text-2xl font-bold mb-4" style={{ color: primaryColor }}>
-                {title}
-            </h2>
-            <p className="text-gray-400 flex-grow mb-6">{description}</p>
-            <div
-                className="mt-auto text-center font-bold py-2 px-6 rounded-md text-white"
-                style={{
-                    backgroundColor: primaryColor,
-                    boxShadow: `0 4px 14px 0 ${primaryColor}40`,
-                }}
-            >
-                {buttonText}
-            </div>
-        </Link>
     );
 };
 
