@@ -2640,13 +2640,21 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                             : 'opacity-60 hover:opacity-100'
                                                     } ${video.ai_flag === 'red' ? 'ring-2 ring-red-500' : video.ai_flag === 'yellow' ? 'ring-2 ring-yellow-500' : ''}`}
                                                 >
-                                                    <video 
-                                                        src={video.video_url}
-                                                        className="w-full h-full object-cover"
-                                                        muted
-                                                        preload="auto"
-                                                        playsInline
-                                                    />
+                                                    {isDemo && !video.video_url ? (
+                                                        <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                                                            <div className="text-center">
+                                                                <span className="text-3xl">🎬</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <video 
+                                                            src={video.video_url}
+                                                            className="w-full h-full object-cover"
+                                                            muted
+                                                            preload="auto"
+                                                            playsInline
+                                                        />
+                                                    )}
                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-1 flex items-center justify-between">
                                                         <span className="text-white text-xs truncate">{video.student_name?.split(' ')[0]}</span>
                                                         {video.video_duration && (
@@ -2680,14 +2688,24 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                                                     {/* Video Player */}
                                                     <div className="relative bg-black aspect-video">
-                                                        <video 
-                                                            key={filteredVideos[focusedVideoIndex].id}
-                                                            src={filteredVideos[focusedVideoIndex].video_url}
-                                                            className="w-full h-full object-contain"
-                                                            controls
-                                                            autoPlay
-                                                            playsInline
-                                                        />
+                                                        {isDemo && !filteredVideos[focusedVideoIndex].video_url ? (
+                                                            <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                                                                <div className="text-center">
+                                                                    <span className="text-6xl mb-4 block">🎬</span>
+                                                                    <p className="text-gray-400 text-sm">Demo Video Preview</p>
+                                                                    <p className="text-gray-500 text-xs mt-1">Videos are simulated in demo mode</p>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <video 
+                                                                key={filteredVideos[focusedVideoIndex].id}
+                                                                src={filteredVideos[focusedVideoIndex].video_url}
+                                                                className="w-full h-full object-contain"
+                                                                controls
+                                                                autoPlay
+                                                                playsInline
+                                                            />
+                                                        )}
                                                     </div>
                                                     
                                                     {/* Quick Info + Actions */}
@@ -2793,13 +2811,22 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     )}
                                                     {/* Video Preview */}
                                                     <div className="relative bg-black aspect-video">
-                                                        <video 
-                                                            src={video.video_url}
-                                                            className="w-full h-full object-contain"
-                                                            controls
-                                                            playsInline
-                                                            preload="auto"
-                                                        />
+                                                        {isDemo && !video.video_url ? (
+                                                            <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                                                                <div className="text-center">
+                                                                    <span className="text-5xl mb-3 block">🎬</span>
+                                                                    <p className="text-gray-400 text-sm">Demo Preview</p>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <video 
+                                                                src={video.video_url}
+                                                                className="w-full h-full object-contain"
+                                                                controls
+                                                                playsInline
+                                                                preload="auto"
+                                                            />
+                                                        )}
                                                     </div>
 
                                                     {/* Video Info */}
