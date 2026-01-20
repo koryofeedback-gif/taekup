@@ -2011,8 +2011,15 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     };
     const totalBill = currentTier.price + bulkCost;
 
-    // Verify subscription status with Stripe on mount
+    // Verify subscription status with Stripe on mount (skip in demo mode)
     useEffect(() => {
+        // Skip subscription verification in demo mode
+        if (data.isDemo) {
+            setVerifiedStatus({ status: 'active', label: 'Demo (Pro Plan)', color: 'bg-cyan-600 text-cyan-100', daysLeft: -1 });
+            setSubscribedPlanId('pro');
+            return;
+        }
+        
         const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
         if (effectiveClubId) {
             fetch(`/api/club/${effectiveClubId}/verify-subscription`, {
