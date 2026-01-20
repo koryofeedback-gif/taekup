@@ -283,7 +283,7 @@ const MarginCalculatorCard: React.FC<{
 
 // --- SUB-SECTIONS ---
 
-const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void, onOpenModal: (type: string) => void }> = ({ data, onNavigate, onOpenModal }) => {
+const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void, onOpenModal: (type: string) => void, onNavigateTab?: (tab: 'overview' | 'students' | 'staff' | 'schedule' | 'creator' | 'settings' | 'billing') => void }> = ({ data, onNavigate, onOpenModal, onNavigateTab }) => {
     const totalStudents = data.students.length;
     
     // Revenue Simulator State - Premium is $4.99, club owner gets 70%, TaekUp gets 30%
@@ -333,7 +333,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <button onClick={() => onOpenModal('student')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all hover:-translate-y-1">
                     <span className="text-2xl mb-2">👤</span>
                     <span className="font-bold text-white text-sm">+ Add Student</span>
@@ -353,20 +353,48 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                 </button>
             </div>
 
+            {/* Mobile Navigation - Sections */}
+            <div className="md:hidden grid grid-cols-2 gap-3">
+                <button onClick={() => onNavigateTab('students')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
+                    <span className="text-2xl mb-2">👥</span>
+                    <span className="font-bold text-white text-sm">Students</span>
+                </button>
+                <button onClick={() => onNavigateTab('staff')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
+                    <span className="text-2xl mb-2">🥋</span>
+                    <span className="font-bold text-white text-sm">Staff</span>
+                </button>
+                <button onClick={() => onNavigateTab('schedule')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
+                    <span className="text-2xl mb-2">📅</span>
+                    <span className="font-bold text-white text-sm">Schedule</span>
+                </button>
+                <button onClick={() => onNavigateTab('creator')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
+                    <span className="text-2xl mb-2">🎥</span>
+                    <span className="font-bold text-white text-sm">Creator Hub</span>
+                </button>
+                <button onClick={() => onNavigateTab('settings')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
+                    <span className="text-2xl mb-2">⚙️</span>
+                    <span className="font-bold text-white text-sm">Settings</span>
+                </button>
+                <button onClick={() => onNavigateTab('billing')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
+                    <span className="text-2xl mb-2">💳</span>
+                    <span className="font-bold text-white text-sm">Billing</span>
+                </button>
+            </div>
+
             {/* Revenue Simulator */}
             {!data.clubSponsoredPremium && (
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-2xl">
-                    <div className="flex justify-between items-center mb-6">
+                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-4 md:p-6 shadow-2xl">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <div>
-                            <h3 className="text-xl font-bold text-white flex items-center"><span className="mr-2">🏦</span> {data.isDemo ? 'SenseiVault™ Estimator' : 'SenseiVault™ Live Projection'}</h3>
-                            <p className="text-gray-400 text-sm">{data.isDemo ? 'See how DojoMint™ protocol turns student engagement into net profit.' : 'Monitor your active DojoMint™ revenue against your platform fees.'}</p>
+                            <h3 className="text-lg md:text-xl font-bold text-white flex items-center"><span className="mr-2">🏦</span> {data.isDemo ? 'SenseiVault™ Estimator' : 'SenseiVault™ Live Projection'}</h3>
+                            <p className="text-gray-400 text-xs md:text-sm">{data.isDemo ? 'See how DojoMint™ protocol turns student engagement into net profit.' : 'Monitor your active DojoMint™ revenue against your platform fees.'}</p>
                         </div>
-                        <div className="bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
+                        <div className="bg-gray-900 px-4 py-2 rounded-lg border border-gray-700 self-start">
                             <span className="text-xs text-gray-500 uppercase block">Your Plan</span>
                             <select 
                                 value={selectedPlanIndex} 
                                 onChange={(e) => setSelectedPlanIndex(parseInt(e.target.value))}
-                                className="bg-transparent text-white font-bold cursor-pointer focus:outline-none"
+                                className="bg-transparent text-white font-bold cursor-pointer focus:outline-none text-sm md:text-base"
                             >
                                 {PRICING_TIERS.map((tier, idx) => (
                                     <option key={tier.name} value={idx} className="bg-gray-800">
@@ -377,9 +405,9 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                         </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                         <div>
-                            <label className="block text-sm text-gray-300 mb-4">
+                            <label className="block text-xs md:text-sm text-gray-300 mb-4">
                                 If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> {data.isDemo ? 'Active Warriors unlock their SenseiVault™ Access...' : 'students become Active Legacy Activations...'}
                             </label>
                             <input 
@@ -2893,50 +2921,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     <button onClick={onBack} className="text-gray-400">Exit</button>
                 </div>
                 
-                {/* Mobile Navigation Grid */}
-                <div className="md:hidden p-4 bg-gray-900/50">
-                    <div className="grid grid-cols-4 gap-2 mb-3">
-                        {[
-                            { id: 'overview', icon: '📊', label: 'Overview' },
-                            { id: 'students', icon: '👥', label: 'Students' },
-                            { id: 'staff', icon: '🥋', label: 'Staff' },
-                            { id: 'schedule', icon: '📅', label: 'Schedule' },
-                        ].map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${
-                                    activeTab === tab.id
-                                        ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400'
-                                        : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700'
-                                }`}
-                            >
-                                <span className="text-xl mb-1">{tab.icon}</span>
-                                <span className="text-[10px] font-medium">{tab.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                        {[
-                            { id: 'creator', icon: '🎥', label: 'Creator Hub' },
-                            { id: 'settings', icon: '⚙️', label: 'Settings' },
-                            { id: 'billing', icon: '💳', label: 'Billing' },
-                        ].map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${
-                                    activeTab === tab.id
-                                        ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400'
-                                        : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700'
-                                }`}
-                            >
-                                <span className="text-xl mb-1">{tab.icon}</span>
-                                <span className="text-[10px] font-medium">{tab.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
 
                 <div className="p-4 md:p-12 max-w-7xl mx-auto">
                     {data.isDemo && (
@@ -2944,7 +2928,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             <span className="text-lg">🎮</span> DEMO MODE - Sample data for demonstration purposes
                         </div>
                     )}
-                    {activeTab === 'overview' && <OverviewTab data={effectiveData} onNavigate={onNavigate} onOpenModal={setModalType} />}
+                    {activeTab === 'overview' && <OverviewTab data={effectiveData} onNavigate={onNavigate} onOpenModal={setModalType} onNavigateTab={setActiveTab} />}
                     {activeTab === 'students' && <StudentsTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { if (isDemo) { alert('Demo mode is active. Turn off demo mode to edit.'); return; } setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
                     {activeTab === 'staff' && <StaffTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} onOpenModal={setModalType} onEditCoach={(c) => { if (isDemo) { alert('Demo mode is active. Turn off demo mode to edit.'); return; } setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
                     {activeTab === 'schedule' && <ScheduleTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} onOpenModal={setModalType} />}
