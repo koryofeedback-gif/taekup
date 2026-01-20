@@ -108,10 +108,11 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string }> = ({ students, belts, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
     const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
+    const isDemo = isDemoModeEnabled();
     
-    // Fetch monthly PTS from API (persisted in database)
+    // Fetch monthly PTS from API (persisted in database) - skip in demo mode
     useEffect(() => {
-        if (!clubId) return;
+        if (!clubId || isDemo) return;
         const fetchMonthlyPTS = async () => {
             try {
                 const response = await fetch(`/api/leaderboard?clubId=${clubId}`);
@@ -130,10 +131,21 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         fetchMonthlyPTS();
         const interval = setInterval(fetchMonthlyPTS, 30000);
         return () => clearInterval(interval);
-    }, [clubId]);
+    }, [clubId, isDemo]);
     
-    // Mode 1: Monthly Effort - Use API data for persisted PTS (survives logout)
+    // Mode 1: Monthly Effort - Use demo data or API data
     const monthlyEffortStudents = useMemo(() => {
+        // Demo mode - use pre-set monthly PTS values
+        if (isDemo && students.length > 0) {
+            const demoPTS = [285, 210, 175, 140, 95, 60, 45, 30];
+            return students
+                .slice(0, 3)
+                .map((student, i) => ({
+                    ...student,
+                    displayPTS: demoPTS[i] || 50
+                }));
+        }
+        
         return [...students]
             .map(student => {
                 const monthlyPTS = apiMonthlyPTS.get(student.id) || 0;
@@ -142,10 +154,21 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
             .sort((a, b) => b.displayPTS - a.displayPTS)
             .filter(s => s.displayPTS > 0)
             .slice(0, 3);
-    }, [students, apiMonthlyPTS]);
+    }, [students, apiMonthlyPTS, isDemo]);
     
     // Mode 2: Belt Progress - Live current_stripe_points (totalPoints)
     const beltProgressStudents = useMemo(() => {
+        // Demo mode - use pre-set stripe progress values
+        if (isDemo && students.length > 0) {
+            const demoProgress = [450, 320, 280, 190, 150, 100, 75, 40];
+            return students
+                .slice(0, 3)
+                .map((student, i) => ({
+                    ...student,
+                    displayPTS: demoProgress[i] || 50
+                }));
+        }
+        
         return [...students]
             .map(student => ({
                 ...student,
@@ -154,7 +177,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
             .sort((a, b) => b.displayPTS - a.displayPTS)
             .filter(s => s.displayPTS > 0)
             .slice(0, 3);
-    }, [students]);
+    }, [students, isDemo]);
     
     // Select which list to display based on mode
     const topStudents = leaderboardMode === 'effort' ? monthlyEffortStudents : beltProgressStudents;
