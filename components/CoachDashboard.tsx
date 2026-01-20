@@ -1938,6 +1938,24 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
     const handleGenerateVideoFeedback = async (video: any) => {
         setIsGeneratingVideoFeedback(true);
+        
+        // Demo mode - use static template (no API cost)
+        if (isDemo) {
+            const firstName = video.student_name?.split(' ')[0] || 'Student';
+            const templates = [
+                `Outstanding work, ${firstName}! Your "${video.challenge_name}" submission shows real dedication at the ${video.student_belt} level. Keep pushing your limits!`,
+                `Great job, ${firstName}! Your effort on the "${video.challenge_name}" challenge demonstrates the discipline of a true martial artist. Stay focused!`,
+                `Impressive submission, ${firstName}! Your ${video.student_belt} skills are shining through in this "${video.challenge_name}" attempt. Keep training hard!`,
+                `Well done, ${firstName}! The "${video.challenge_name}" challenge is no easy feat, and your performance shows your commitment to excellence.`
+            ];
+            const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+            setTimeout(() => {
+                setCoachVideoNotes(randomTemplate);
+                setIsGeneratingVideoFeedback(false);
+            }, 500);
+            return;
+        }
+        
         try {
             const response = await fetch('/api/ai/video-feedback', {
                 method: 'POST',
