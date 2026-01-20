@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { WizardData, Student, PerformanceRecord, FeedbackRecord, CalendarEvent, CustomChallenge } from '../types';
 import { generateParentFeedback, generatePromotionMessage, generateLessonPlan } from '../services/geminiService';
 import { generateLessonPlanGPT } from '../services/openaiService';
-import { isDemoModeEnabled, DEMO_CUSTOM_CHALLENGES } from './demoData';
+import { isDemoModeEnabled, DEMO_CUSTOM_CHALLENGES, DEMO_PENDING_VIDEOS } from './demoData';
 import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
 import { CoachLeaderboard } from './CoachLeaderboard';
@@ -1675,6 +1675,12 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
     // --- VIDEO REVIEW FUNCTIONS ---
     const fetchPendingVideos = async () => {
+        // Demo mode - use static demo videos
+        if (isDemo) {
+            setPendingVideos(DEMO_PENDING_VIDEOS);
+            return;
+        }
+        
         if (!clubId) {
             console.log('[Videos] No clubId available, skipping video fetch');
             return;
