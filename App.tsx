@@ -18,6 +18,7 @@ import { SuperAdminLogin } from './pages/SuperAdminLogin';
 import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute, SuperAdminPaymentsRoute, SuperAdminAnalyticsRoute, SuperAdminTrainingRoute } from './components/SuperAdminRoutes';
 import { TrialBanner } from './components/TrialBanner';
 import { ImpersonationBanner, isImpersonating } from './components/ImpersonationBanner';
+import { DEMO_MODE_KEY, isDemoModeEnabled } from './components/demoData';
 import {
     getOnboardingMessage,
 } from './services/geminiService';
@@ -92,6 +93,77 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
     }
     
     return <Navigate to="/landing" replace />;
+};
+
+// Demo Mode Banner - shows prominently when demo mode is active
+const DemoModeBanner: React.FC = () => {
+    const [isDemo, setIsDemo] = useState(() => isDemoModeEnabled());
+    const [isMinimized, setIsMinimized] = useState(false);
+    
+    if (!isDemo) return null;
+    
+    const handleExitDemo = () => {
+        localStorage.setItem(DEMO_MODE_KEY, 'false');
+        window.location.href = '/wizard';
+    };
+    
+    if (isMinimized) {
+        return (
+            <button
+                onClick={() => setIsMinimized(false)}
+                className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+                <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                Demo Mode
+            </button>
+        );
+    }
+    
+    return (
+        <div className="fixed top-4 right-4 z-50 max-w-sm">
+            <div className="bg-gradient-to-br from-purple-900/95 via-indigo-900/95 to-purple-900/95 backdrop-blur-sm rounded-2xl border border-purple-500/30 shadow-2xl shadow-purple-500/20 overflow-hidden">
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L2c+PC9zdmc+')] opacity-50"></div>
+                
+                <div className="relative p-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg">
+                                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-white font-bold text-sm">Demo Mode Active</h3>
+                                <p className="text-purple-300 text-xs">Exploring with sample data</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setIsMinimized(true)}
+                            className="text-purple-400 hover:text-white transition-colors p-1"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <p className="text-purple-200/80 text-xs mb-4 leading-relaxed">
+                        You're viewing demo content. No changes will be saved. Ready to start your own dojo?
+                    </p>
+                    
+                    <button
+                        onClick={handleExitDemo}
+                        className="w-full py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Start My Own Dojo
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 // Main App Component with Router
@@ -741,6 +813,7 @@ const AppContent: React.FC<AppContentProps> = ({
     return (
         <div className={`min-h-screen bg-gray-900 text-gray-100 font-sans ${showImpersonationPadding ? 'pt-12' : ''}`}>
             <ImpersonationBanner />
+            <DemoModeBanner />
             {subscription && loggedInUserType === 'owner' && finalWizardData && !isDojangTV && !isMyTaekHome && (
                 <TrialBanner 
                     subscription={subscription} 
