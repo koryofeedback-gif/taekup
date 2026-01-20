@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { WizardData, Student, PerformanceRecord, FeedbackRecord, CalendarEvent, CustomChallenge } from '../types';
 import { generateParentFeedback, generatePromotionMessage, generateLessonPlan } from '../services/geminiService';
 import { generateLessonPlanGPT } from '../services/openaiService';
-import { isDemoModeEnabled } from './demoData';
+import { isDemoModeEnabled, DEMO_CUSTOM_CHALLENGES } from './demoData';
 import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
 import { CoachLeaderboard } from './CoachLeaderboard';
@@ -2962,7 +2962,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 <ChallengeBuilder
                     coachId={coachName}
                     coachName={coachName}
-                    existingChallenges={data.customChallenges || []}
+                    existingChallenges={isDemo ? DEMO_CUSTOM_CHALLENGES : (data.customChallenges || [])}
                     belts={data.belts || []}
                     onSaveChallenge={handleSaveChallenge}
                     onDeleteChallenge={handleDeleteChallenge}
