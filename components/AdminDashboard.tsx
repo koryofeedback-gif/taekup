@@ -577,7 +577,8 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
             </div>
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
                 <table className="w-full text-left text-sm text-gray-300">
                     <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                         <tr>
@@ -616,6 +617,49 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         {filtered.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No students found.</td></tr>}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {filtered.map(s => (
+                    <div key={s.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 className="font-bold text-white text-lg">{s.name}</h3>
+                                <span className="inline-block bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded mt-1">
+                                    {data.belts.find(b => b.id === s.beltId)?.name || 'No Belt'}
+                                </span>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                                {s.joinDate ? new Date(s.joinDate).toLocaleDateString() : 'N/A'}
+                            </span>
+                        </div>
+                        <div className="text-sm text-gray-400 mb-3">
+                            <span className="text-white">{s.location}</span>
+                            {s.assignedClass && <span className="text-gray-500"> · {s.assignedClass}</span>}
+                        </div>
+                        <div className="flex gap-3 pt-2 border-t border-gray-700">
+                            {onEditStudent && (
+                                <button onClick={() => onEditStudent(s)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs">
+                                    Edit
+                                </button>
+                            )}
+                            {onViewPortal && (
+                                <button onClick={() => onViewPortal(s.id)} className="text-sky-300 hover:text-blue-300 font-bold text-xs">
+                                    👁️ Portal
+                                </button>
+                            )}
+                            <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                ))}
+                {filtered.length === 0 && (
+                    <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
+                        No students found.
+                    </div>
+                )}
             </div>
         </div>
     )
