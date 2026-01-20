@@ -108,7 +108,7 @@ const DemoModeBanner: React.FC = () => {
     };
     
     return (
-        <div className="fixed bottom-4 right-4 z-50">
+        <div className="fixed top-20 right-4 z-50">
             {isExpanded ? (
                 <div className="bg-slate-900/95 backdrop-blur-sm rounded-xl border border-purple-500/30 shadow-xl p-3 w-56">
                     <div className="flex items-center justify-between mb-2">
