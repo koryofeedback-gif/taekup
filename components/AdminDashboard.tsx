@@ -2892,8 +2892,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     <h1 className="font-bold text-white">Admin Panel</h1>
                     <button onClick={onBack} className="text-gray-400">Exit</button>
                 </div>
+                
+                {/* Mobile Navigation Tabs */}
+                <div className="md:hidden overflow-x-auto bg-gray-800/50 border-b border-gray-700">
+                    <div className="flex min-w-max px-2 py-2 gap-1">
+                        {[
+                            { id: 'overview', icon: '📊', label: 'Overview' },
+                            { id: 'students', icon: '👥', label: 'Students' },
+                            { id: 'staff', icon: '🥋', label: 'Staff' },
+                            { id: 'schedule', icon: '📅', label: 'Schedule' },
+                            { id: 'creator', icon: '🎥', label: 'Creator' },
+                            { id: 'settings', icon: '⚙️', label: 'Settings' },
+                            { id: 'billing', icon: '💳', label: 'Billing' },
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-cyan-600 text-white'
+                                        : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white'
+                                }`}
+                            >
+                                <span>{tab.icon}</span>
+                                <span>{tab.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
-                <div className="p-6 md:p-12 max-w-7xl mx-auto">
+                <div className="p-4 md:p-12 max-w-7xl mx-auto">
                     {data.isDemo && (
                         <div className="mb-4 bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white py-2 px-4 rounded-lg shadow-lg text-center font-bold text-sm flex items-center justify-center gap-2">
                             <span className="text-lg">🎮</span> DEMO MODE - Sample data for demonstration purposes
