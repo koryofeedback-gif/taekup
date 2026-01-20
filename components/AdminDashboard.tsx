@@ -877,7 +877,8 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         </button>
                     }
                 />
-                <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
                     <table className="w-full text-left text-sm text-gray-300">
                         <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                             <tr>
@@ -912,6 +913,39 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3">
+                    {(data.privateSlots || []).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(slot => (
+                        <div key={slot.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 className="font-bold text-white">{new Date(slot.date).toLocaleDateString()}</h3>
+                                    <span className="text-gray-400 text-sm">{slot.time}</span>
+                                </div>
+                                {slot.isBooked ? (
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">Booked</span>
+                                ) : (
+                                    <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">Available</span>
+                                )}
+                            </div>
+                            <div className="text-sm text-gray-400 mb-3">
+                                <span className="text-white">{slot.coachName}</span>
+                                <span className="text-green-400 font-bold ml-2">${slot.price}</span>
+                            </div>
+                            <div className="flex pt-2 border-t border-gray-700">
+                                <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {(data.privateSlots || []).length === 0 && (
+                        <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
+                            No private lesson slots. Add slots for parents to book.
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Events */}
@@ -925,7 +959,8 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         </button>
                     }
                 />
-                <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
                     <table className="w-full text-left text-sm text-gray-300">
                         <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                             <tr>
@@ -951,6 +986,32 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             {(data.events || []).length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No upcoming events.</td></tr>}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3">
+                    {(data.events || []).map(evt => (
+                        <div key={evt.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                            <div className="flex justify-between items-start mb-2">
+                                <h3 className="font-bold text-white text-lg">{evt.title}</h3>
+                                <span className="bg-gray-700 px-2 py-1 rounded text-xs uppercase font-bold text-indigo-300">{evt.type}</span>
+                            </div>
+                            <div className="text-sm text-gray-400 mb-3 space-y-1">
+                                <div>{new Date(evt.date).toLocaleDateString()} · {evt.time}</div>
+                                <div className="text-white">{evt.location}</div>
+                            </div>
+                            <div className="flex pt-2 border-t border-gray-700">
+                                <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {(data.events || []).length === 0 && (
+                        <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
+                            No upcoming events.
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
