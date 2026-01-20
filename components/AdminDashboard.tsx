@@ -2893,29 +2893,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     <button onClick={onBack} className="text-gray-400">Exit</button>
                 </div>
                 
-                {/* Mobile Navigation Tabs */}
-                <div className="md:hidden overflow-x-auto bg-gray-800/50 border-b border-gray-700">
-                    <div className="flex min-w-max px-2 py-2 gap-1">
+                {/* Mobile Navigation Grid */}
+                <div className="md:hidden p-4 bg-gray-900/50">
+                    <div className="grid grid-cols-4 gap-2 mb-3">
                         {[
                             { id: 'overview', icon: '📊', label: 'Overview' },
                             { id: 'students', icon: '👥', label: 'Students' },
                             { id: 'staff', icon: '🥋', label: 'Staff' },
                             { id: 'schedule', icon: '📅', label: 'Schedule' },
-                            { id: 'creator', icon: '🎥', label: 'Creator' },
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400'
+                                        : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700'
+                                }`}
+                            >
+                                <span className="text-xl mb-1">{tab.icon}</span>
+                                <span className="text-[10px] font-medium">{tab.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                        {[
+                            { id: 'creator', icon: '🎥', label: 'Creator Hub' },
                             { id: 'settings', icon: '⚙️', label: 'Settings' },
                             { id: 'billing', icon: '💳', label: 'Billing' },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                                className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${
                                     activeTab === tab.id
-                                        ? 'bg-cyan-600 text-white'
-                                        : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-white'
+                                        ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400'
+                                        : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700'
                                 }`}
                             >
-                                <span>{tab.icon}</span>
-                                <span>{tab.label}</span>
+                                <span className="text-xl mb-1">{tab.icon}</span>
+                                <span className="text-[10px] font-medium">{tab.label}</span>
                             </button>
                         ))}
                     </div>
