@@ -424,8 +424,8 @@ router.get('/payments', verifySuperAdmin, async (req: Request, res: Response) =>
     // Fetch Stripe charges directly from Stripe API
     let stripeCharges: any[] = [];
     try {
-      const { getStripe } = await import('./stripeClient');
-      const stripe = await getStripe();
+      const { getUncachableStripeClient } = await import('./stripeClient');
+      const stripe = await getUncachableStripeClient();
       
       const charges = await stripe.charges.list({
         limit: Number(limit),
@@ -918,8 +918,8 @@ router.post('/apply-discount', verifySuperAdmin, async (req: Request, res: Respo
     let stripeApplied = false;
     
     try {
-      const { getStripe } = await import('./stripeClient');
-      const stripe = await getStripe();
+      const { getUncachableStripeClient } = await import('./stripeClient');
+      const stripe = await getUncachableStripeClient();
       
       // Create a coupon in Stripe
       const coupon = await stripe.coupons.create({
