@@ -56,6 +56,8 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
   const [editingFamily, setEditingFamily] = useState<string | null>(null);
   const [familyForm, setFamilyForm] = useState<Partial<FamilyChallenge>>({});
   const [showAddFamily, setShowAddFamily] = useState(false);
+  const [showAddGauntlet, setShowAddGauntlet] = useState(false);
+  const [gauntletForm, setGauntletForm] = useState<Partial<GauntletChallenge>>({});
   const [successMessage, setSuccessMessage] = useState('');
 
   const fetchFamilyChallenges = async () => {
@@ -131,6 +133,44 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
       setTimeout(() => setSuccessMessage(''), 3000);
       setEditingFamily(null);
       fetchFamilyChallenges();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleGauntletAdd = async () => {
+    if (!gauntletForm.name || !gauntletForm.day_of_week || !gauntletForm.score_type) {
+      setError('Name, day, and score type are required');
+      return;
+    }
+    
+    setSaving('new-gauntlet');
+    try {
+      const response = await fetch('/api/super-admin/gauntlet-challenges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          name: gauntletForm.name,
+          description: gauntletForm.description || '',
+          icon: gauntletForm.icon || '💪',
+          day_of_week: gauntletForm.day_of_week,
+          day_theme: gauntletForm.day_theme || DAY_THEMES[gauntletForm.day_of_week] || 'Challenge',
+          score_type: gauntletForm.score_type,
+          sort_order: gauntletForm.sort_order || 'DESC',
+          target_value: gauntletForm.target_value || null,
+          demo_video_url: gauntletForm.demo_video_url || null,
+          display_order: gauntletForm.display_order || 1
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to create');
+      setSuccessMessage('Gauntlet challenge created!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setShowAddGauntlet(false);
+      setGauntletForm({});
+      fetchChallenges();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -611,6 +651,113 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
         )}
 
         {activeTab === 'gauntlet' && <div className="space-y-6">
+          <div className="flex justify-end">
+            <button
+              onClick={() => { setShowAddGauntlet(true); setGauntletForm({ day_of_week: 'MONDAY', score_type: 'REPS', sort_order: 'DESC', display_order: 1 }); }}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Challenge
+            </button>
+          </div>
+
+          {showAddGauntlet && (
+            <div className="bg-gray-800 rounded-xl border border-orange-500/50 p-6">
+              <h3 className="text-lg font-bold text-white mb-4">Add New Gauntlet Challenge</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Name *</label>
+                  <input
+                    type="text"
+                    value={gauntletForm.name || ''}
+                    onChange={e => setGauntletForm({ ...gauntletForm, name: e.target.value })}
+                    placeholder="e.g., Burpee Challenge"
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Icon (emoji)</label>
+                  <input
+                    type="text"
+                    value={gauntletForm.icon || ''}
+                    onChange={e => setGauntletForm({ ...gauntletForm, icon: e.target.value })}
+                    placeholder="💪"
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Day of Week *</label>
+                  <select
+                    value={gauntletForm.day_of_week || 'MONDAY'}
+                    onChange={e => setGauntletForm({ ...gauntletForm, day_of_week: e.target.value })}
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
+                  >
+                    {DAY_ORDER.map(day => (
+                      <option key={day} value={day}>{day.charAt(0) + day.slice(1).toLowerCase()} - {DAY_THEMES[day]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Score Type *</label>
+                  <select
+                    value={gauntletForm.score_type || 'REPS'}
+                    onChange={e => setGauntletForm({ ...gauntletForm, score_type: e.target.value })}
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
+                  >
+                    <option value="REPS">REPS (Higher is better)</option>
+                    <option value="TIME">TIME (Lower is better)</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-gray-400 text-xs block mb-1">Description</label>
+                  <textarea
+                    value={gauntletForm.description || ''}
+                    onChange={e => setGauntletForm({ ...gauntletForm, description: e.target.value })}
+                    placeholder="Describe the challenge..."
+                    rows={2}
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Demo Video URL</label>
+                  <input
+                    type="url"
+                    value={gauntletForm.demo_video_url || ''}
+                    onChange={e => setGauntletForm({ ...gauntletForm, demo_video_url: e.target.value })}
+                    placeholder="https://youtube.com/..."
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Display Order</label>
+                  <input
+                    type="number"
+                    value={gauntletForm.display_order || 1}
+                    onChange={e => setGauntletForm({ ...gauntletForm, display_order: parseInt(e.target.value) || 1 })}
+                    min={1}
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => { setShowAddGauntlet(false); setGauntletForm({}); }}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleGauntletAdd}
+                  disabled={saving === 'new-gauntlet'}
+                  className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg disabled:opacity-50"
+                >
+                  {saving === 'new-gauntlet' ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Create Challenge
+                </button>
+              </div>
+            </div>
+          )}
+
           {DAY_ORDER.map(day => (
             <div key={day} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
               <div className="bg-gradient-to-r from-orange-900/50 to-red-900/50 px-6 py-4 border-b border-gray-700">

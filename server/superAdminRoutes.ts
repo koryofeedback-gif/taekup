@@ -1731,6 +1731,46 @@ router.get('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: R
   }
 });
 
+// Create a new gauntlet challenge
+router.post('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { name, description, icon, day_of_week, day_theme, score_type, sort_order, target_value, demo_video_url, display_order } = req.body;
+    
+    if (!name || !day_of_week || !score_type) {
+      return res.status(400).json({ error: 'Name, day_of_week, and score_type are required' });
+    }
+    
+    const result = await db.execute(sql`
+      INSERT INTO gauntlet_challenges (
+        name, description, icon, day_of_week, day_theme, score_type, sort_order, 
+        target_value, demo_video_url, display_order, is_active
+      ) VALUES (
+        ${name}, ${description || ''}, ${icon || '💪'}, ${day_of_week.toUpperCase()}, 
+        ${day_theme || DAY_THEMES[day_of_week.toUpperCase()] || 'Challenge'}, 
+        ${score_type}, ${sort_order || 'DESC'}, ${target_value || null}, 
+        ${demo_video_url || null}, ${display_order || 1}, true
+      )
+      RETURNING *
+    `);
+    
+    console.log('[SuperAdmin] Created gauntlet challenge:', name);
+    res.json({ success: true, challenge: (result as any[])[0] });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Create gauntlet challenge error:', error);
+    res.status(500).json({ error: 'Failed to create challenge' });
+  }
+});
+
+const DAY_THEMES: Record<string, string> = {
+  MONDAY: 'Engine',
+  TUESDAY: 'Foundation',
+  WEDNESDAY: 'Evasion',
+  THURSDAY: 'Explosion',
+  FRIDAY: 'Animal',
+  SATURDAY: 'Defense',
+  SUNDAY: 'Flow'
+};
+
 // Update a gauntlet challenge
 router.patch('/gauntlet-challenges/:id', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
