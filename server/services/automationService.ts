@@ -215,11 +215,14 @@ export class AutomationService {
 
     sgMail.default.setApiKey(apiKey);
 
+    // Master SendGrid template ID for all automation emails
+    const MASTER_TEMPLATE_ID = 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
+    
     const templateMap: Record<string, string> = {
-      'trial_ending_soon': 'd-trial-ending',
-      'win_back': 'd-189dede22ae74ea697199ccbd9629bdb',
-      'churn_risk': 'd-f9a587c97a9d4ed18c87212a140f9c53',
-      'payment_failed': 'd-payment-failed'
+      'trial_ending_soon': MASTER_TEMPLATE_ID,
+      'win_back': MASTER_TEMPLATE_ID,
+      'churn_risk': MASTER_TEMPLATE_ID,
+      'payment_failed': MASTER_TEMPLATE_ID
     };
 
     const templateId = templateMap[templateKey];
