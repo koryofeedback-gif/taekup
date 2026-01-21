@@ -2314,11 +2314,15 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 </div>
                                             </div>
                                             
-                                            {/* Skills Grid */}
-                                            <div className="grid grid-cols-4 gap-2">
+                                            {/* Skills Grid - Dynamic columns based on skill count */}
+                                            <div className={`grid gap-2 ${
+                                                activeSkills.length <= 3 ? 'grid-cols-3' : 
+                                                activeSkills.length <= 4 ? 'grid-cols-4' : 
+                                                activeSkills.length <= 6 ? 'grid-cols-3' : 'grid-cols-4'
+                                            }`}>
                                                 {activeSkills.map(skill => (
                                                     <div key={skill.id} className="text-center">
-                                                        <div className="text-[10px] text-gray-500 uppercase truncate mb-1">{skill.name}</div>
+                                                        <div className="text-[10px] text-gray-500 uppercase truncate mb-1" title={skill.name}>{skill.name}</div>
                                                         <ScoreDropdown 
                                                             score={sessionScores[student.id]?.[skill.id]} 
                                                             onChange={score => handleScoreChange(student.id, skill.id, score)} 
@@ -2329,9 +2333,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                             
                                             {/* Bonus Row (if enabled) */}
                                             {(data.homeworkBonus || data.coachBonus) && (
-                                                <div className="flex gap-3">
+                                                <div className="grid grid-cols-2 gap-3">
                                                     {data.homeworkBonus && (
-                                                        <div className="flex-1">
+                                                        <div>
                                                             <label className="text-[10px] text-sky-300 uppercase">Homework</label>
                                                             <input 
                                                                 type="number" 
@@ -2344,7 +2348,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                         </div>
                                                     )}
                                                     {data.coachBonus && (
-                                                        <div className="flex-1">
+                                                        <div>
                                                             <label className="text-[10px] text-purple-300 uppercase">Bonus</label>
                                                             <input 
                                                                 type="number" 
@@ -2356,6 +2360,24 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                             />
                                                         </div>
                                                     )}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Grading Requirement (if enabled) */}
+                                            {data.gradingRequirementEnabled && (
+                                                <div className="flex items-center justify-between bg-yellow-900/20 p-2 rounded-lg border border-yellow-600/30">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-yellow-400 text-sm">🏅</span>
+                                                        <span className="text-xs text-yellow-300 font-medium">{data.gradingRequirementName || 'Ready for Grading'}</span>
+                                                    </div>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={!!student.isReadyForGrading} 
+                                                        disabled={!hasMaxStripes}
+                                                        onChange={() => handleToggleReady(student)} 
+                                                        className={`w-5 h-5 rounded focus:ring-yellow-500 ${hasMaxStripes ? 'text-yellow-500 bg-gray-700 border-gray-500 cursor-pointer' : 'text-gray-600 bg-gray-800 border-gray-700 cursor-not-allowed opacity-50'}`}
+                                                        title={hasMaxStripes ? "Toggle Readiness" : "Earn max stripes to unlock"}
+                                                    />
                                                 </div>
                                             )}
                                             
