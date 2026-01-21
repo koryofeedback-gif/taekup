@@ -747,6 +747,7 @@ const AppContent: React.FC<AppContentProps> = ({
     const isDojangTV = location.pathname === '/app/tv';
     const isMyTaekHome = location.pathname === '/';
     const isMyTaekPage = location.pathname === '/';
+    const isSuperAdmin = location.pathname.startsWith('/super-admin');
     const taekBotColorScheme: TaekBotColorScheme = isMyTaekPage ? 'red' : 'cyan';
     
     const accountStatus = finalWizardData && subscription 
@@ -795,7 +796,7 @@ const AppContent: React.FC<AppContentProps> = ({
         <div className={`min-h-screen bg-gray-900 text-gray-100 font-sans ${showImpersonationPadding ? 'pt-12' : ''}`}>
             <ImpersonationBanner />
             <DemoModeBanner />
-            {subscription && loggedInUserType === 'owner' && finalWizardData && !isDojangTV && !isMyTaekHome && (
+            {subscription && loggedInUserType === 'owner' && finalWizardData && !isDojangTV && !isMyTaekHome && !isSuperAdmin && (
                 <TrialBanner 
                     subscription={subscription} 
                     onUpgradeClick={onShowPricing}
