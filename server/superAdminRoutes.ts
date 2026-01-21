@@ -900,195 +900,64 @@ interface SuperAdminEmailTemplate {
   getDynamicData?: (club: any) => Record<string, any>;
 }
 
+// Master SendGrid template ID for all Super Admin emails
+const MASTER_TEMPLATE_ID = 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
+
 // Super Admin email templates for manual club outreach (updated Jan 2026)
 const EMAIL_TEMPLATES: Record<string, SuperAdminEmailTemplate> = {
   // Trial & Onboarding
-  welcome_club: {
-    subject: 'Welcome to TaekUp! Your 14-Day Free Trial Has Started',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.WELCOME,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-      ctaUrl: 'https://mytaek.com/setup',
-    }),
-  },
-  day_3_checkin: {
-    subject: 'How\'s Your Setup Going? Day 3 Check-in',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.DAY_3_CHECKIN,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-    }),
-  },
-  day_7_mid_trial: {
-    subject: 'Your TaekUp Trial: 7 Days Remaining',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.DAY_7_MID_TRIAL,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-      aiFeedbackUrl: 'https://mytaek.com/ai-feedback',
-    }),
-  },
-  trial_ending: {
+  'trial-ending': {
     subject: 'Your TaekUp Trial is Ending Soon!',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.TRIAL_ENDING_SOON,
+    dynamicTemplateId: MASTER_TEMPLATE_ID,
     getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
+      subject: 'Your TaekUp Trial is Ending Soon!',
+      title: 'Trial Ending Soon',
+      name: club.owner_name || 'there',
       clubName: club.name,
-      daysLeft: 3,
-      ctaUrl: 'https://mytaek.com/pricing',
-    }),
-  },
-  trial_expired: {
-    subject: 'Your TaekUp Trial Has Expired - We Miss You!',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.TRIAL_EXPIRED,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-      ctaUrl: 'https://mytaek.com/pricing',
+      body: `Your 14-day free trial for <strong>${club.name}</strong> is ending soon! Don't lose access to all the amazing features that help you run your martial arts club.<br><br>Upgrade now to keep your students engaged with HonorXP™, Legacy Cards™, and the Global Shogun Rank™.`,
+      btn_text: 'Upgrade Now',
+      btn_url: 'https://mytaek.com/pricing',
     }),
   },
   // Retention & Win-back
   win_back: {
     subject: 'We Want You Back! 25% Off for 3 Months',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.WIN_BACK,
+    dynamicTemplateId: MASTER_TEMPLATE_ID,
     getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
+      subject: 'We Want You Back! 25% Off for 3 Months',
+      title: 'We Miss You!',
+      name: club.owner_name || 'there',
       clubName: club.name,
-      discountCode: 'WINBACK25',
-      ctaUrl: 'https://mytaek.com/pricing',
-      unsubscribeUrl: 'https://mytaek.com/email-preferences',
-      privacyUrl: 'https://mytaek.com/privacy',
-    }),
-  },
-  churn_risk: {
-    subject: 'Need Help Getting Started? We\'re Here for You!',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.CHURN_RISK,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-      ctaUrl: 'https://mytaek.com/wizard',
-      helpUrl: 'https://mytaek.com/help',
-      unsubscribeUrl: 'https://mytaek.com/email-preferences',
-      privacyUrl: 'https://mytaek.com/privacy',
-    }),
-  },
-  // Billing & Payments
-  payment_failed: {
-    subject: 'Action Required: Payment Failed for TaekUp',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.PAYMENT_CONFIRMATION,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-      ctaUrl: 'https://mytaek.com/billing',
-      message: 'Your recent payment could not be processed. Please update your payment method to continue using TaekUp.',
-    }),
-  },
-  payment_receipt: {
-    subject: 'Receipt for Your TaekUp Subscription',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.PAYMENT_CONFIRMATION,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-      amount: club.subscription_price || '$29',
-      date: new Date().toLocaleDateString(),
-    }),
-  },
-  subscription_cancelled: {
-    subject: 'Your TaekUp Subscription Has Been Cancelled',
-    getHtml: (club) => `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>Subscription Cancelled</h2>
-        <p>Hi ${club.owner_name || 'there'},</p>
-        <p>We've cancelled your TaekUp subscription for <strong>${club.name}</strong> as requested.</p>
-        <p>Your access will remain active until the end of your current billing period.</p>
-        <p>If you change your mind, you can reactivate anytime from your dashboard.</p>
-        <p>We hope to see you again!</p>
-        <p>Best regards,<br>The TaekUp Team</p>
-      </div>
-    `,
-  },
-  payout_notification: {
-    subject: 'DojoMint™ Payout Sent to Your Account',
-    getHtml: (club) => `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>Payout Notification</h2>
-        <p>Hi ${club.owner_name || 'there'},</p>
-        <p>Great news! A payout has been initiated to your connected bank account via DojoMint™ Protocol.</p>
-        <p>Club: <strong>${club.name}</strong></p>
-        <p>The funds should arrive within 2-3 business days.</p>
-        <p>View details in your <a href="https://mytaek.com/billing">Billing Dashboard</a>.</p>
-        <p>Best regards,<br>The TaekUp Team</p>
-      </div>
-    `,
-  },
-  monthly_revenue_report: {
-    subject: 'Your Monthly Revenue Report - TaekUp',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.MONTHLY_REVENUE_REPORT,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-      month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
-    }),
-  },
-  // Engagement
-  weekly_progress: {
-    subject: 'Weekly Progress Summary - TaekUp',
-    getHtml: (club) => `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>Weekly Progress Summary</h2>
-        <p>Hi ${club.owner_name || 'there'},</p>
-        <p>Here's what happened at <strong>${club.name}</strong> this week:</p>
-        <ul>
-          <li>Student engagement summary</li>
-          <li>Upcoming belt promotions</li>
-          <li>Challenge completion rates</li>
-        </ul>
-        <p>View full analytics in your <a href="https://mytaek.com/dashboard">Dashboard</a>.</p>
-        <p>Best regards,<br>The TaekUp Team</p>
-      </div>
-    `,
-  },
-  birthday_wish: {
-    subject: 'Happy Birthday from TaekUp! 🎂',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.BIRTHDAY_WISH,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-    }),
-  },
-  // Legacy aliases (keep for backwards compatibility)
-  'trial-ending': {
-    subject: 'Your TaekUp Trial is Ending Soon!',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.TRIAL_ENDING_SOON,
-    getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
-      clubName: club.name,
-      daysLeft: 3,
-      ctaUrl: 'https://mytaek.com/pricing',
+      body: `It's been a while since we've seen you at <strong>${club.name}</strong>. We'd love to have you back!<br><br>As a special offer, use code <strong>WINBACK25</strong> to get 25% off for your first 3 months. Your students are waiting to continue their martial arts journey!`,
+      btn_text: 'Come Back & Save 25%',
+      btn_url: 'https://mytaek.com/pricing?code=WINBACK25',
     }),
   },
   'churn-risk': {
     subject: 'Need Help Getting Started? We\'re Here for You!',
-    dynamicTemplateId: DYNAMIC_TEMPLATES.CHURN_RISK,
+    dynamicTemplateId: MASTER_TEMPLATE_ID,
     getDynamicData: (club) => ({
-      ownerName: club.owner_name || 'there',
+      subject: 'Need Help Getting Started?',
+      title: 'We\'re Here to Help',
+      name: club.owner_name || 'there',
       clubName: club.name,
-      ctaUrl: 'https://mytaek.com/wizard',
-      helpUrl: 'https://mytaek.com/help',
-      unsubscribeUrl: 'https://mytaek.com/email-preferences',
-      privacyUrl: 'https://mytaek.com/privacy',
+      body: `We noticed you might need some help getting started with TaekUp for <strong>${club.name}</strong>.<br><br>Our team is here to assist you every step of the way. Whether you need help adding students, setting up your schedule, or configuring your belt system - we've got you covered!`,
+      btn_text: 'Get Help Now',
+      btn_url: 'https://mytaek.com/help',
     }),
   },
   custom: {
     subject: 'Message from TaekUp',
-    getHtml: (club) => `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <p>Hi ${club.owner_name || 'there'},</p>
-        <p>{{CUSTOM_BODY}}</p>
-        <p>Best regards,<br>The TaekUp Team</p>
-      </div>
-    `,
+    dynamicTemplateId: MASTER_TEMPLATE_ID,
+    getDynamicData: (club) => ({
+      subject: 'Message from TaekUp',
+      title: 'A Message for You',
+      name: club.owner_name || 'there',
+      clubName: club.name,
+      body: '{{CUSTOM_BODY}}',
+      btn_text: 'Visit Dashboard',
+      btn_url: 'https://mytaek.com/dashboard',
+    }),
   },
 };
 
