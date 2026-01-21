@@ -176,39 +176,39 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
     const inactiveChallenges = existingChallenges.filter(c => !c.isActive);
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-cyan-500/30 shadow-2xl">
-                <div className="bg-gradient-to-r from-cyan-900/50 to-blue-900/50 p-6 border-b border-cyan-500/30">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <span className="text-3xl mr-3">🏆</span>
-                            <div>
-                                <h2 className="text-2xl font-black text-white">Challenge Builder</h2>
-                                <p className="text-cyan-300 text-sm">Create custom challenges for your students</p>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4">
+            <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[95vh] md:max-h-[90vh] overflow-hidden border border-cyan-500/30 shadow-2xl">
+                <div className="bg-gradient-to-r from-cyan-900/50 to-blue-900/50 p-4 md:p-6 border-b border-cyan-500/30">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center min-w-0">
+                            <span className="text-2xl md:text-3xl mr-2 md:mr-3 flex-shrink-0">🏆</span>
+                            <div className="min-w-0">
+                                <h2 className="text-lg md:text-2xl font-black text-white truncate">Challenge Builder</h2>
+                                <p className="text-cyan-300 text-xs md:text-sm hidden sm:block">Create custom challenges for your students</p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-white text-2xl transition-colors"
+                            className="text-gray-400 hover:text-white text-xl md:text-2xl transition-colors p-1 flex-shrink-0"
                         >
                             ✕
                         </button>
                     </div>
                     
-                    <div className="flex gap-2 mt-4">
+                    <div className="grid grid-cols-2 gap-2 mt-3 md:mt-4">
                         <button
                             onClick={() => setActiveTab('create')}
-                            className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                            className={`px-3 md:px-4 py-2.5 rounded-lg font-bold transition-all text-sm md:text-base ${
                                 activeTab === 'create'
                                     ? 'bg-cyan-500 text-white'
                                     : 'bg-gray-800 text-gray-400 hover:text-white'
                             }`}
                         >
-                            {editingChallenge ? '✏️ Edit Challenge' : '➕ Create New'}
+                            {editingChallenge ? '✏️ Edit' : '➕ Create New'}
                         </button>
                         <button
                             onClick={() => { setActiveTab('manage'); resetForm(); }}
-                            className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                            className={`px-3 md:px-4 py-2.5 rounded-lg font-bold transition-all text-sm md:text-base ${
                                 activeTab === 'manage'
                                     ? 'bg-cyan-500 text-white'
                                     : 'bg-gray-800 text-gray-400 hover:text-white'
@@ -219,7 +219,7 @@ export const ChallengeBuilder: React.FC<ChallengeBuilderProps> = ({
                     </div>
                 </div>
 
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+                <div className="p-4 md:p-6 overflow-y-auto max-h-[calc(95vh-160px)] md:max-h-[calc(90vh-180px)]">
                     {activeTab === 'create' ? (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -591,78 +591,157 @@ const ChallengeCard: React.FC<{
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
     return (
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 hover:border-cyan-500/50 transition-all">
-            <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gray-700 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                    {challenge.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-white truncate">{challenge.name}</span>
-                        {challenge.weeklyChallenge && (
-                            <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded-full flex-shrink-0">
-                                Weekly
-                            </span>
-                        )}
-                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                            challenge.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
-                            challenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                            challenge.difficulty === 'Hard' ? 'bg-orange-500/20 text-orange-400' :
-                            'bg-red-500/20 text-red-400'
-                        }`}>
-                            {challenge.difficulty}
-                        </span>
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-3 md:p-4 hover:border-cyan-500/50 transition-all">
+            {/* Mobile Layout - Stacked */}
+            <div className="md:hidden space-y-3">
+                <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 bg-gray-700 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                        {challenge.icon}
                     </div>
-                    <p className="text-gray-400 text-sm truncate">{challenge.description || 'No description'}</p>
-                    <div className="flex items-center gap-3 mt-1">
-                        <span className="text-xs text-gray-500">{challenge.category}</span>
-                        <span className="text-green-400 text-sm font-bold">+{challenge.xp} XP</span>
-                        <span className="text-xs text-gray-500">by {challenge.createdByName}</span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                        onClick={onToggle}
-                        className={`p-2 rounded-lg transition-all ${
-                            challenge.isActive
-                                ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                        }`}
-                        title={challenge.isActive ? 'Deactivate' : 'Activate'}
-                    >
-                        {challenge.isActive ? '✓' : '○'}
-                    </button>
-                    <button
-                        onClick={onEdit}
-                        className="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all"
-                        title="Edit"
-                    >
-                        ✏️
-                    </button>
-                    {showConfirmDelete ? (
-                        <div className="flex gap-1">
-                            <button
-                                onClick={() => { onDelete(); setShowConfirmDelete(false); }}
-                                className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-400 transition-all text-xs font-bold"
-                            >
-                                Yes
-                            </button>
-                            <button
-                                onClick={() => setShowConfirmDelete(false)}
-                                className="p-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all text-xs"
-                            >
-                                No
-                            </button>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-white text-sm">{challenge.name}</span>
+                            {challenge.weeklyChallenge && (
+                                <span className="bg-yellow-500/20 text-yellow-400 text-[10px] px-1.5 py-0.5 rounded-full">
+                                    Weekly
+                                </span>
+                            )}
                         </div>
-                    ) : (
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                                challenge.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                                challenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                challenge.difficulty === 'Hard' ? 'bg-orange-500/20 text-orange-400' :
+                                'bg-red-500/20 text-red-400'
+                            }`}>
+                                {challenge.difficulty}
+                            </span>
+                            <span className="text-[10px] text-gray-500">{challenge.category}</span>
+                            <span className="text-green-400 text-xs font-bold">+{challenge.xp} XP</span>
+                        </div>
+                    </div>
+                </div>
+                <p className="text-gray-400 text-xs line-clamp-2">{challenge.description || 'No description'}</p>
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-gray-500">by {challenge.createdByName}</span>
+                    <div className="flex items-center gap-1.5">
                         <button
-                            onClick={() => setShowConfirmDelete(true)}
-                            className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all"
-                            title="Delete"
+                            onClick={onToggle}
+                            className={`p-2 rounded-lg transition-all ${
+                                challenge.isActive
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-gray-700 text-gray-400'
+                            }`}
                         >
-                            🗑️
+                            {challenge.isActive ? '✓' : '○'}
                         </button>
-                    )}
+                        <button
+                            onClick={onEdit}
+                            className="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg"
+                        >
+                            ✏️
+                        </button>
+                        {showConfirmDelete ? (
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => { onDelete(); setShowConfirmDelete(false); }}
+                                    className="px-2 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold"
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    onClick={() => setShowConfirmDelete(false)}
+                                    className="px-2 py-1.5 bg-gray-600 text-white rounded-lg text-xs"
+                                >
+                                    No
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowConfirmDelete(true)}
+                                className="p-2 bg-red-500/20 text-red-400 rounded-lg"
+                            >
+                                🗑️
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+            
+            {/* Desktop Layout - Horizontal */}
+            <div className="hidden md:block">
+                <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gray-700 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+                        {challenge.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-white truncate">{challenge.name}</span>
+                            {challenge.weeklyChallenge && (
+                                <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                                    Weekly
+                                </span>
+                            )}
+                            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                                challenge.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                                challenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                challenge.difficulty === 'Hard' ? 'bg-orange-500/20 text-orange-400' :
+                                'bg-red-500/20 text-red-400'
+                            }`}>
+                                {challenge.difficulty}
+                            </span>
+                        </div>
+                        <p className="text-gray-400 text-sm truncate">{challenge.description || 'No description'}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                            <span className="text-xs text-gray-500">{challenge.category}</span>
+                            <span className="text-green-400 text-sm font-bold">+{challenge.xp} XP</span>
+                            <span className="text-xs text-gray-500">by {challenge.createdByName}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                            onClick={onToggle}
+                            className={`p-2 rounded-lg transition-all ${
+                                challenge.isActive
+                                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                    : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                            }`}
+                            title={challenge.isActive ? 'Deactivate' : 'Activate'}
+                        >
+                            {challenge.isActive ? '✓' : '○'}
+                        </button>
+                        <button
+                            onClick={onEdit}
+                            className="p-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all"
+                            title="Edit"
+                        >
+                            ✏️
+                        </button>
+                        {showConfirmDelete ? (
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => { onDelete(); setShowConfirmDelete(false); }}
+                                    className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-400 transition-all text-xs font-bold"
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    onClick={() => setShowConfirmDelete(false)}
+                                    className="p-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all text-xs"
+                                >
+                                    No
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowConfirmDelete(true)}
+                                className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all"
+                                title="Delete"
+                            >
+                                🗑️
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
             {challenge.videoUrl && (
@@ -671,7 +750,7 @@ const ChallengeCard: React.FC<{
                         href={challenge.videoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-cyan-400 text-sm hover:underline flex items-center gap-1"
+                        className="text-cyan-400 text-xs md:text-sm hover:underline flex items-center gap-1"
                     >
                         ▶️ Watch Demo Video
                     </a>

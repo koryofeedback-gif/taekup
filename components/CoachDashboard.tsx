@@ -2759,15 +2759,15 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     {activeView === 'challenges' && (
                         <div className="p-6 min-h-[500px] bg-gray-900">
                             <div className="max-w-4xl mx-auto">
-                                <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-2xl p-8 border border-cyan-500/30 mb-6">
-                                    <div className="flex items-center justify-between">
+                                <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-2xl p-4 md:p-8 border border-cyan-500/30 mb-6">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                         <div>
-                                            <h2 className="text-2xl font-black text-white mb-2">Custom Challenge Builder</h2>
-                                            <p className="text-gray-400">Create unique challenges for your students to compete in Dojang Rivals</p>
+                                            <h2 className="text-xl md:text-2xl font-black text-white mb-1 md:mb-2">Custom Challenge Builder</h2>
+                                            <p className="text-sm md:text-base text-gray-400">Create unique challenges for your students to compete in Dojang Rivals</p>
                                         </div>
                                         <button
                                             onClick={() => setShowChallengeBuilder(true)}
-                                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold px-6 py-3 rounded-xl transition-all flex items-center gap-2"
+                                            className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold px-4 md:px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2"
                                         >
                                             <span className="text-xl">🏆</span>
                                             Create Challenge
