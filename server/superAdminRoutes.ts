@@ -913,6 +913,58 @@ router.post('/apply-discount', verifySuperAdmin, async (req: Request, res: Respo
     const club = (clubResult as any[])[0];
     const code = `SA_${Date.now().toString(36).toUpperCase()}`;
 
+    // Create Stripe coupon and apply to customer subscription
+    let stripeCouponId = null;
+    let stripeApplied = false;
+    
+    try {
+      const { getStripe } = await import('./stripeClient');
+      const stripe = await getStripe();
+      
+      // Create a coupon in Stripe
+      const coupon = await stripe.coupons.create({
+        percent_off: percentOff,
+        duration: duration === 'once' ? 'once' : duration === 'forever' ? 'forever' : 'repeating',
+        duration_in_months: duration === 'repeating' ? 3 : undefined,
+        name: `Super Admin Discount - ${percentOff}% off`,
+        metadata: {
+          club_id: clubId,
+          reason: reason || 'Super Admin applied',
+          code: code
+        }
+      });
+      stripeCouponId = coupon.id;
+      
+      // Find customer by email and apply coupon to active subscription
+      if (club.owner_email) {
+        const customers = await stripe.customers.list({
+          email: club.owner_email,
+          limit: 1
+        });
+        
+        if (customers.data.length > 0) {
+          const customer = customers.data[0];
+          
+          // Get active subscription
+          const subscriptions = await stripe.subscriptions.list({
+            customer: customer.id,
+            status: 'active',
+            limit: 1
+          });
+          
+          if (subscriptions.data.length > 0) {
+            // Apply coupon to subscription
+            await stripe.subscriptions.update(subscriptions.data[0].id, {
+              coupon: coupon.id
+            });
+            stripeApplied = true;
+          }
+        }
+      }
+    } catch (stripeError: any) {
+      console.error('Stripe discount error:', stripeError.message);
+    }
+
     await db.execute(sql`
       INSERT INTO discounts (club_id, code, percent_off, duration, applied_by)
       VALUES (${clubId}::uuid, ${code}, ${percentOff}, ${duration}, 'super_admin')
@@ -920,13 +972,17 @@ router.post('/apply-discount', verifySuperAdmin, async (req: Request, res: Respo
 
     await db.execute(sql`
       INSERT INTO activity_log (event_type, description, details, club_id, actor_email, actor_type)
-      VALUES ('discount_applied', ${`${percentOff}% discount applied`}, ${JSON.stringify({ percentOff, duration, code, reason })}, ${clubId}::uuid, 'super_admin', 'super_admin')
+      VALUES ('discount_applied', ${`${percentOff}% discount applied`}, ${JSON.stringify({ percentOff, duration, code, reason, stripeCouponId, stripeApplied })}, ${clubId}::uuid, 'super_admin', 'super_admin')
     `);
 
     res.json({ 
       success: true, 
       discount: { code, percentOff, duration },
-      club: club.name
+      club: club.name,
+      stripeApplied,
+      message: stripeApplied 
+        ? 'Discount applied to active Stripe subscription' 
+        : 'Discount saved (no active subscription found to apply)'
     });
   } catch (error: any) {
     console.error('Apply discount error:', error);
