@@ -2183,32 +2183,53 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         {/* Filters (Only for Grading View) */}
                         {activeView === 'grading' && (
                             <>
-                                <div className="flex space-x-2">
+                                {/* Mobile Filters - Stacked */}
+                                <div className="flex flex-col md:flex-row gap-2">
+                                    <div className="flex gap-2">
+                                        <select 
+                                            value={activeLocationFilter} 
+                                            onChange={e => {
+                                                setActiveLocationFilter(e.target.value);
+                                                setActiveClassFilter('all');
+                                            }} 
+                                            className="flex-1 md:flex-none bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
+                                        >
+                                            <option value="all">📍 All Locations</option>
+                                            {locations.map(loc => <option key={loc} value={loc}>📍 {loc}</option>)}
+                                        </select>
+                                        <select 
+                                            value={activeClassFilter} 
+                                            onChange={e => setActiveClassFilter(e.target.value)} 
+                                            className="flex-1 md:flex-none bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
+                                            disabled={activeLocationFilter === 'all' && availableClasses.length === 0}
+                                        >
+                                            <option value="all">⏰ All Classes</option>
+                                            {availableClasses.map(cls => <option key={cls} value={cls}>⏰ {cls}</option>)}
+                                        </select>
+                                    </div>
                                     <select 
-                                        value={activeLocationFilter} 
-                                        onChange={e => {
-                                            setActiveLocationFilter(e.target.value);
-                                            setActiveClassFilter('all'); // Reset class filter on location change
-                                        }} 
-                                        className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
+                                        id="belt-filter" 
+                                        value={activeBeltFilter} 
+                                        onChange={e => setActiveBeltFilter(e.target.value)} 
+                                        className="md:hidden bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 focus:ring-sky-500 focus:border-sky-500"
                                     >
-                                        <option value="all">📍 All Locations</option>
-                                        {locations.map(loc => <option key={loc} value={loc}>📍 {loc}</option>)}
-                                    </select>
-                                    <select 
-                                        value={activeClassFilter} 
-                                        onChange={e => setActiveClassFilter(e.target.value)} 
-                                        className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
-                                        disabled={activeLocationFilter === 'all' && availableClasses.length === 0}
-                                    >
-                                        <option value="all">⏰ All Classes</option>
-                                        {availableClasses.map(cls => <option key={cls} value={cls}>⏰ {cls}</option>)}
+                                        <option value="all">All Belts</option>
+                                        {(data.belts || []).map(belt => <option key={belt.id} value={belt.id}>{belt.name}</option>)}
                                     </select>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-4">
+                                
+                                {/* Mobile Quick Actions */}
+                                <div className="md:hidden flex flex-wrap gap-2">
+                                    <button onClick={() => handleBulkScore(2)} className="flex-1 bg-green-600/80 hover:bg-green-600 text-white font-bold py-2 px-3 text-sm rounded-md">💚 All Green</button>
+                                    <button onClick={() => handleBulkScore(1)} className="flex-1 bg-yellow-500/80 hover:bg-yellow-500 text-white font-bold py-2 px-3 text-sm rounded-md">💛 All Yellow</button>
+                                    <button onClick={() => handleBulkScore(0)} className="flex-1 bg-red-500/80 hover:bg-red-500 text-white font-bold py-2 px-3 text-sm rounded-md">❤️ All Red</button>
+                                </div>
+                                
+                                {/* Desktop Filters */}
+                                <div className="hidden md:flex flex-wrap items-center gap-4">
                                      <div>
-                                        <label htmlFor="belt-filter" className="text-xs font-medium text-gray-400 mr-2">Filter by Belt:</label>
-                                        <select id="belt-filter" value={activeBeltFilter} onChange={e => setActiveBeltFilter(e.target.value)} className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-1 px-2 focus:ring-sky-500 focus:border-sky-500">
+                                        <label htmlFor="belt-filter-desktop" className="text-xs font-medium text-gray-400 mr-2">Filter by Belt:</label>
+                                        <select id="belt-filter-desktop" value={activeBeltFilter} onChange={e => setActiveBeltFilter(e.target.value)} className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-1 px-2 focus:ring-sky-500 focus:border-sky-500">
                                             <option value="all">All Belts</option>
                                             {(data.belts || []).map(belt => <option key={belt.id} value={belt.id}>{belt.name}</option>)}
                                         </select>
@@ -2233,7 +2254,170 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                     {/* Content Area */}
                     {activeView === 'grading' ? (
-                        <div className="overflow-x-auto">
+                        <>
+                        {/* MOBILE CARD VIEW */}
+                        <div className="md:hidden p-2 space-y-3">
+                            {/* Mobile Check All Button */}
+                            <div className="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg">
+                                <span className="text-sm text-gray-300 font-medium">Mark All Present</span>
+                                <input 
+                                    type="checkbox" 
+                                    checked={filteredStudents.length > 0 && filteredStudents.every(s => attendance[s.id])}
+                                    onChange={(e) => {
+                                        const newValue = e.target.checked;
+                                        setAttendance(prev => {
+                                            const updated = { ...prev };
+                                            filteredStudents.forEach(s => {
+                                                updated[s.id] = newValue;
+                                            });
+                                            return updated;
+                                        });
+                                    }}
+                                    className="w-6 h-6 text-sky-500 bg-gray-700 border-gray-600 rounded focus:ring-sky-500 cursor-pointer"
+                                />
+                            </div>
+                            
+                            {filteredStudents.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500 italic">
+                                    No students found for this filter.
+                                </div>
+                            ) : (
+                                filteredStudents.map((student) => {
+                                    const { sessionTotal, newStripes, pointsRequired, hasMaxStripes } = calculateRowData(student);
+                                    const isReady = student.isReadyForGrading;
+                                    const cardClass = isReady 
+                                        ? 'bg-yellow-900/30 border-yellow-600/50' 
+                                        : (!attendance[student.id] ? 'bg-gray-800/50 opacity-50' : 'bg-gray-800');
+                                    
+                                    return (
+                                        <div key={student.id} className={`${cardClass} rounded-lg border border-gray-700 p-3 space-y-3`}>
+                                            {/* Header: Name + Attendance */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center">
+                                                        <span className="font-bold text-white">{student.name}</span>
+                                                        {newStripes > 0 && <span className="ml-2 animate-bounce">🎉</span>}
+                                                        {isReady && <span className="ml-2" title="Ready for Promotion">🌟</span>}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {[student.location, student.assignedClass].filter(Boolean).join(' • ')}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <button onClick={() => handleOpenNoteModal(student)} className="text-xl" title="Add Note">
+                                                        {notes[student.id] ? '✍️' : '🎤'}
+                                                    </button>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={!!attendance[student.id]} 
+                                                        onChange={() => setAttendance(p => ({...p, [student.id]: !p[student.id]}))} 
+                                                        className="w-6 h-6 text-sky-500 bg-gray-700 border-gray-600 rounded focus:ring-sky-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Skills Grid */}
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {activeSkills.map(skill => (
+                                                    <div key={skill.id} className="text-center">
+                                                        <div className="text-[10px] text-gray-500 uppercase truncate mb-1">{skill.name}</div>
+                                                        <ScoreDropdown 
+                                                            score={sessionScores[student.id]?.[skill.id]} 
+                                                            onChange={score => handleScoreChange(student.id, skill.id, score)} 
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            
+                                            {/* Bonus Row (if enabled) */}
+                                            {(data.homeworkBonus || data.coachBonus) && (
+                                                <div className="flex gap-3">
+                                                    {data.homeworkBonus && (
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] text-sky-300 uppercase">Homework</label>
+                                                            <input 
+                                                                type="number" 
+                                                                min="0" 
+                                                                placeholder="0" 
+                                                                value={homeworkPoints[student.id] || ''} 
+                                                                onChange={e => handleHomeworkChange(student.id, parseInt(e.target.value) || 0)} 
+                                                                className="w-full bg-gray-700 text-blue-300 font-bold p-2 rounded-md border border-gray-600 text-center focus:ring-sky-500"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    {data.coachBonus && (
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] text-purple-300 uppercase">Bonus</label>
+                                                            <input 
+                                                                type="number" 
+                                                                min="0" 
+                                                                placeholder="0" 
+                                                                value={bonusPoints[student.id] || ''} 
+                                                                onChange={e => handleBonusChange(student.id, parseInt(e.target.value) || 0)} 
+                                                                className="w-full bg-gray-700 text-purple-300 font-bold p-2 rounded-md border border-gray-600 text-center focus:ring-purple-500"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Total + Progress */}
+                                            <div className="flex items-center gap-3">
+                                                <div className="bg-gray-700 px-3 py-1 rounded-lg text-center">
+                                                    <div className="text-[10px] text-gray-500 uppercase">Total</div>
+                                                    <div className="text-xl font-bold text-white">{sessionTotal}</div>
+                                                </div>
+                                                <div className="flex-1">
+                                                    {isReady ? (
+                                                        <button 
+                                                            onClick={() => handlePromote(student)}
+                                                            disabled={processingPromotion === student.id}
+                                                            className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-white font-bold py-2 px-3 rounded shadow-lg disabled:opacity-70 disabled:cursor-wait flex justify-center items-center"
+                                                        >
+                                                            {processingPromotion === student.id ? (
+                                                                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                            ) : 'Promote ⬆️'}
+                                                        </button>
+                                                    ) : hasMaxStripes && !data.gradingRequirementEnabled ? (
+                                                        (() => {
+                                                            const beltsArr = data.belts || [];
+                                                            const currentBeltIndex = beltsArr.findIndex(b => b.id === student.beltId);
+                                                            const nextBelt = beltsArr[currentBeltIndex + 1];
+                                                            return nextBelt ? (
+                                                                <button 
+                                                                    onClick={() => handlePromote(student)}
+                                                                    disabled={processingPromotion === student.id}
+                                                                    className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold py-2 px-3 rounded shadow-lg disabled:opacity-70 disabled:cursor-wait flex justify-center items-center"
+                                                                >
+                                                                    {processingPromotion === student.id ? (
+                                                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                                    ) : `Promote ⬆️`}
+                                                                </button>
+                                                            ) : (
+                                                                <div className="w-full bg-yellow-400 text-black font-bold py-2 px-3 rounded text-center text-xs uppercase">
+                                                                    Max Belt
+                                                                </div>
+                                                            );
+                                                        })()
+                                                    ) : (
+                                                        <ProgressBar 
+                                                            student={student} 
+                                                            sessionTotal={sessionTotal} 
+                                                            pointsPerStripe={pointsRequired} 
+                                                            newStripes={newStripes} 
+                                                            hasMaxStripes={hasMaxStripes}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                        
+                        {/* DESKTOP TABLE VIEW */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-sm text-left text-gray-300">
                                 <thead className="text-xs text-gray-400 uppercase bg-gray-700/50">
                                     <tr>
@@ -2382,6 +2566,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 </tbody>
                             </table>
                         </div>
+                        </>
                     ) : activeView === 'planner' ? (
                         <LessonPlanner data={data} />
                     ) : activeView === 'schedule' ? (
