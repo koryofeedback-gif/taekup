@@ -532,13 +532,6 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                       <td className="px-4 py-4">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => openModal('extend', club)}
-                            className="p-2 hover:bg-blue-600/20 rounded-lg text-blue-400 hover:text-blue-300 transition-colors"
-                            title="Extend Trial"
-                          >
-                            <Clock className="w-4 h-4" />
-                          </button>
-                          <button
                             onClick={() => openModal('discount', club)}
                             className="p-2 hover:bg-green-600/20 rounded-lg text-green-400 hover:text-green-300 transition-colors"
                             title="Apply Discount"
