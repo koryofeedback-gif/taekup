@@ -906,7 +906,33 @@ const MASTER_TEMPLATE_ID = 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
 // Super Admin email templates for manual club outreach (updated Jan 2026)
 const EMAIL_TEMPLATES: Record<string, SuperAdminEmailTemplate> = {
   // Trial & Onboarding
-  'trial-ending': {
+  welcome_club: {
+    subject: 'Welcome to TaekUp! Your 14-Day Free Trial Has Started',
+    dynamicTemplateId: MASTER_TEMPLATE_ID,
+    getDynamicData: (club) => ({
+      subject: 'Welcome to TaekUp! Your 14-Day Free Trial Has Started',
+      title: 'Your Dojo is Live!',
+      name: club.owner_name || 'there',
+      clubName: club.name,
+      body: `Congratulations on joining TaekUp! Your club <strong>${club.name}</strong> is now active.<br><br>Here's what to do next:<br>• Add your first student<br>• Set up your Stripe wallet via DojoMint™ Protocol<br>• Customize your belt system<br><br>Your 14-day free trial has started!`,
+      btn_text: 'Go to Dashboard',
+      btn_url: 'https://mytaek.com/dashboard',
+    }),
+  },
+  day_3_checkin: {
+    subject: 'How\'s Your Setup Going? Day 3 Check-in',
+    dynamicTemplateId: MASTER_TEMPLATE_ID,
+    getDynamicData: (club) => ({
+      subject: 'How\'s Your Setup Going? Day 3 Check-in',
+      title: 'Day 3 Check-in',
+      name: club.owner_name || 'there',
+      clubName: club.name,
+      body: `Just checking in to see how things are going with <strong>${club.name}</strong>!<br><br>Have you had a chance to:<br>• Add your students?<br>• Set up your class schedule?<br>• Explore the gamification features?<br><br>We're here if you need any help getting started!`,
+      btn_text: 'Continue Setup',
+      btn_url: 'https://mytaek.com/dashboard',
+    }),
+  },
+  trial_ending: {
     subject: 'Your TaekUp Trial is Ending Soon!',
     dynamicTemplateId: MASTER_TEMPLATE_ID,
     getDynamicData: (club) => ({
@@ -916,6 +942,19 @@ const EMAIL_TEMPLATES: Record<string, SuperAdminEmailTemplate> = {
       clubName: club.name,
       body: `Your 14-day free trial for <strong>${club.name}</strong> is ending soon! Don't lose access to all the amazing features that help you run your martial arts club.<br><br>Upgrade now to keep your students engaged with HonorXP™, Legacy Cards™, and the Global Shogun Rank™.`,
       btn_text: 'Upgrade Now',
+      btn_url: 'https://mytaek.com/pricing',
+    }),
+  },
+  trial_expired: {
+    subject: 'Your TaekUp Trial Has Expired - We Miss You!',
+    dynamicTemplateId: MASTER_TEMPLATE_ID,
+    getDynamicData: (club) => ({
+      subject: 'Your TaekUp Trial Has Expired',
+      title: 'Trial Expired',
+      name: club.owner_name || 'there',
+      clubName: club.name,
+      body: `Your free trial for <strong>${club.name}</strong> has expired. But don't worry - all your data is still safe!<br><br>Reactivate now to continue using TaekUp's powerful features for your martial arts club. Your students are waiting!`,
+      btn_text: 'Reactivate Now',
       btn_url: 'https://mytaek.com/pricing',
     }),
   },
@@ -933,7 +972,7 @@ const EMAIL_TEMPLATES: Record<string, SuperAdminEmailTemplate> = {
       btn_url: 'https://mytaek.com/pricing?code=WINBACK25',
     }),
   },
-  'churn-risk': {
+  churn_risk: {
     subject: 'Need Help Getting Started? We\'re Here for You!',
     dynamicTemplateId: MASTER_TEMPLATE_ID,
     getDynamicData: (club) => ({
@@ -946,17 +985,18 @@ const EMAIL_TEMPLATES: Record<string, SuperAdminEmailTemplate> = {
       btn_url: 'https://mytaek.com/help',
     }),
   },
-  custom: {
-    subject: 'Message from TaekUp',
+  // Billing
+  payment_failed: {
+    subject: 'Action Required: Payment Failed for TaekUp',
     dynamicTemplateId: MASTER_TEMPLATE_ID,
     getDynamicData: (club) => ({
-      subject: 'Message from TaekUp',
-      title: 'A Message for You',
+      subject: 'Action Required: Payment Failed',
+      title: 'Payment Issue',
       name: club.owner_name || 'there',
       clubName: club.name,
-      body: '{{CUSTOM_BODY}}',
-      btn_text: 'Visit Dashboard',
-      btn_url: 'https://mytaek.com/dashboard',
+      body: `We couldn't process your recent payment for <strong>${club.name}</strong>.<br><br>Please update your payment method to avoid any interruption to your service. Your students are counting on you!`,
+      btn_text: 'Update Payment',
+      btn_url: 'https://mytaek.com/billing',
     }),
   },
 };
