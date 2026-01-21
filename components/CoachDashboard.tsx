@@ -2183,38 +2183,36 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         {/* Filters (Only for Grading View) */}
                         {activeView === 'grading' && (
                             <>
-                                {/* Mobile Filters - Stacked */}
-                                <div className="flex flex-col md:flex-row gap-2">
-                                    <div className="flex gap-2">
-                                        <select 
-                                            value={activeLocationFilter} 
-                                            onChange={e => {
-                                                setActiveLocationFilter(e.target.value);
-                                                setActiveClassFilter('all');
-                                            }} 
-                                            className="flex-1 md:flex-none bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
-                                        >
-                                            <option value="all">📍 All Locations</option>
-                                            {locations.map(loc => <option key={loc} value={loc}>📍 {loc}</option>)}
-                                        </select>
-                                        <select 
-                                            value={activeClassFilter} 
-                                            onChange={e => setActiveClassFilter(e.target.value)} 
-                                            className="flex-1 md:flex-none bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
-                                            disabled={activeLocationFilter === 'all' && availableClasses.length === 0}
-                                        >
-                                            <option value="all">⏰ All Classes</option>
-                                            {availableClasses.map(cls => <option key={cls} value={cls}>⏰ {cls}</option>)}
-                                        </select>
-                                    </div>
+                                {/* Mobile Filters - Full width stacked on mobile */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-row gap-2">
+                                    <select 
+                                        value={activeLocationFilter} 
+                                        onChange={e => {
+                                            setActiveLocationFilter(e.target.value);
+                                            setActiveClassFilter('all');
+                                        }} 
+                                        className="w-full md:w-auto bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-3 md:py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
+                                    >
+                                        <option value="all">📍 All Locations</option>
+                                        {locations.map(loc => <option key={loc} value={loc}>📍 {loc}</option>)}
+                                    </select>
+                                    <select 
+                                        value={activeClassFilter} 
+                                        onChange={e => setActiveClassFilter(e.target.value)} 
+                                        className="w-full md:w-auto bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-3 md:py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
+                                        disabled={activeLocationFilter === 'all' && availableClasses.length === 0}
+                                    >
+                                        <option value="all">⏰ All Classes</option>
+                                        {availableClasses.map(cls => <option key={cls} value={cls}>⏰ {cls}</option>)}
+                                    </select>
                                     <select 
                                         id="belt-filter" 
                                         value={activeBeltFilter} 
                                         onChange={e => setActiveBeltFilter(e.target.value)} 
-                                        className="md:hidden bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-2 px-3 focus:ring-sky-500 focus:border-sky-500"
+                                        className="md:hidden w-full bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-3 px-3 focus:ring-sky-500 focus:border-sky-500 col-span-1 sm:col-span-2"
                                     >
-                                        <option value="all">All Belts</option>
-                                        {(data.belts || []).map(belt => <option key={belt.id} value={belt.id}>{belt.name}</option>)}
+                                        <option value="all">🥋 All Belts</option>
+                                        {(data.belts || []).map(belt => <option key={belt.id} value={belt.id}>🥋 {belt.name}</option>)}
                                     </select>
                                 </div>
                                 
@@ -3198,12 +3196,12 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                     {/* Footer Actions (Only for Grading View) */}
                     {activeView === 'grading' && (
-                        <div className="p-4 bg-gray-800 rounded-b-lg border-t border-gray-700 flex flex-wrap gap-4 justify-end">
-                            <button onClick={handleGenerateAllFeedback} disabled={isGenerating} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 text-sm rounded-md flex items-center disabled:opacity-50">
+                        <div className="p-3 md:p-4 bg-gray-800 rounded-b-lg border-t border-gray-700 flex flex-col md:flex-row gap-2 md:gap-4 md:justify-end">
+                            <button onClick={handleGenerateAllFeedback} disabled={isGenerating} className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 md:py-2 px-4 text-sm rounded-md flex items-center justify-center disabled:opacity-50">
                                 {isGenerating ? <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : '✨ Generate Feedback'}
                             </button>
-                            {Object.keys(parentMessages).length > 0 && <button onClick={() => setFeedbackPreviewOpen(true)} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 text-sm rounded-md">🧾 Preview Messages</button>}
-                            <button onClick={handleSaveAndNotify} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-6 text-sm rounded-md">Save & Notify Parents</button>
+                            {Object.keys(parentMessages).length > 0 && <button onClick={() => setFeedbackPreviewOpen(true)} className="w-full md:w-auto bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 md:py-2 px-4 text-sm rounded-md">🧾 Preview Messages</button>}
+                            <button onClick={handleSaveAndNotify} className="w-full md:w-auto bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 md:py-2 px-6 text-sm rounded-md">Save & Notify Parents</button>
                         </div>
                     )}
                 </div>
