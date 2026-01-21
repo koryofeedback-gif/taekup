@@ -1065,12 +1065,8 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
     const club = clubResult[0];
     const toEmail = club.owner_email;
     
-    // SendGrid Dynamic Template IDs
-    const DYNAMIC_TEMPLATE_IDS = {
-      TRIAL_ENDING_SOON: 'd-ee5cb8ea6f114804a356adda535f05ec',
-      WIN_BACK: 'd-189dede22ae74ea697199ccbd9629bdb',
-      CHURN_RISK: 'd-f9a587c97a9d4ed18c87212a140f9c53',
-    };
+    // Master SendGrid Dynamic Template ID (all emails use the same template)
+    const MASTER_TEMPLATE_ID = 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
     
     // Define email templates with dynamic template support
     interface EmailTemplateConfig {
@@ -1083,36 +1079,41 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
     const templates: Record<string, EmailTemplateConfig> = {
       'trial-ending': {
         subject: `Your TaekUp trial ends soon!`,
-        dynamicTemplateId: DYNAMIC_TEMPLATE_IDS.TRIAL_ENDING_SOON,
+        dynamicTemplateId: MASTER_TEMPLATE_ID,
         getDynamicData: () => ({
-          ownerName: club.owner_name || 'there',
+          subject: 'Your TaekUp trial ends soon!',
+          title: 'Trial Ending Soon',
+          name: club.owner_name || 'there',
           clubName: club.name,
-          daysLeft: 3,
-          ctaUrl: 'https://mytaek.com/pricing',
+          body: `Your 14-day free trial for <strong>${club.name}</strong> is ending soon! Don't lose access to all the amazing features that help you run your martial arts club.<br><br>Upgrade now to keep your students engaged with HonorXP™, Legacy Cards™, and the Global Shogun Rank™.`,
+          btn_text: 'Upgrade Now',
+          btn_url: 'https://mytaek.com/pricing',
         }),
       },
       'win_back': {
         subject: 'We Want You Back! 25% Off for 3 Months',
-        dynamicTemplateId: DYNAMIC_TEMPLATE_IDS.WIN_BACK,
+        dynamicTemplateId: MASTER_TEMPLATE_ID,
         getDynamicData: () => ({
-          ownerName: club.owner_name || 'there',
+          subject: 'We Want You Back! 25% Off for 3 Months',
+          title: 'We Miss You!',
+          name: club.owner_name || 'there',
           clubName: club.name,
-          discountCode: 'WINBACK25',
-          ctaUrl: 'https://mytaek.com/pricing',
-          unsubscribeUrl: 'https://mytaek.com/email-preferences',
-          privacyUrl: 'https://mytaek.com/privacy',
+          body: `We noticed you haven't been around lately at <strong>${club.name}</strong>. We'd love to have you back!<br><br>As a special offer, use code <strong>WINBACK25</strong> to get 25% off for 3 months. Your students are waiting to level up their HonorXP™!`,
+          btn_text: 'Come Back',
+          btn_url: 'https://mytaek.com/pricing',
         }),
       },
       'churn-risk': {
         subject: 'Need Help Getting Started? We\'re Here for You!',
-        dynamicTemplateId: DYNAMIC_TEMPLATE_IDS.CHURN_RISK,
+        dynamicTemplateId: MASTER_TEMPLATE_ID,
         getDynamicData: () => ({
-          ownerName: club.owner_name || 'there',
+          subject: 'Need Help Getting Started? We\'re Here for You!',
+          title: 'We\'re Here to Help',
+          name: club.owner_name || 'there',
           clubName: club.name,
-          ctaUrl: 'https://mytaek.com/wizard',
-          helpUrl: 'https://mytaek.com/help',
-          unsubscribeUrl: 'https://mytaek.com/email-preferences',
-          privacyUrl: 'https://mytaek.com/privacy',
+          body: `We noticed you might need some help getting <strong>${club.name}</strong> set up. Our team is here to support you!<br><br>Whether you need help with the setup wizard, adding students, or configuring your club settings, we're just a click away.`,
+          btn_text: 'Get Help',
+          btn_url: 'https://mytaek.com/wizard',
         }),
       },
       'custom': {
