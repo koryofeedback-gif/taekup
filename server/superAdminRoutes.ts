@@ -900,6 +900,7 @@ interface SuperAdminEmailTemplate {
   getDynamicData?: (club: any) => Record<string, any>;
 }
 
+// Super Admin email templates for manual club outreach (updated Jan 2026)
 const EMAIL_TEMPLATES: Record<string, SuperAdminEmailTemplate> = {
   // Trial & Onboarding
   welcome_club: {
