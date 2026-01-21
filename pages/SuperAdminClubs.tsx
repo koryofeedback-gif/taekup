@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Building2, Search, Filter, ChevronRight, Crown, LogOut,
   RefreshCw, Eye, Users, Calendar, DollarSign, Clock, 
-  Mail, Percent, X, Heart, AlertTriangle, Download
+  Mail, Percent, X, Heart, AlertTriangle, Download, Trash2
 } from 'lucide-react';
 
 interface Club {
@@ -31,7 +31,7 @@ interface SuperAdminClubsProps {
   onImpersonate: (clubId: string) => void;
 }
 
-type ModalType = 'extend' | 'discount' | 'email' | null;
+type ModalType = 'extend' | 'discount' | 'email' | 'delete' | null;
 
 export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogout, onImpersonate }) => {
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -251,6 +251,32 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
         setTimeout(closeModal, 2000);
       } else {
         setActionMessage({ type: 'error', text: data.error || 'Failed to send email' });
+      }
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteClub = async () => {
+    if (!selectedClub) return;
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/super-admin/clubs/${selectedClub.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setActionMessage({ type: 'success', text: data.message || 'Club deleted successfully!' });
+        fetchClubs();
+        setTimeout(closeModal, 2000);
+      } else {
+        setActionMessage({ type: 'error', text: data.error || 'Failed to delete club' });
       }
     } catch (err) {
       setActionMessage({ type: 'error', text: 'Network error. Please try again.' });
@@ -533,6 +559,13 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                             <Eye className="w-4 h-4" />
                             View As
                           </button>
+                          <button
+                            onClick={() => openModal('delete', club)}
+                            className="p-2 hover:bg-red-600/20 rounded-lg text-red-400 hover:text-red-300 transition-colors"
+                            title="Delete Club"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -744,6 +777,69 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                 className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
               >
                 {actionLoading ? 'Sending...' : 'Send Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Club Modal */}
+      {modalType === 'delete' && selectedClub && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl border border-red-600/30 w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-red-400" />
+                Delete Club
+              </h3>
+              <button onClick={closeModal} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-red-400 font-medium">This action cannot be undone!</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    You are about to permanently delete <span className="text-white font-medium">{selectedClub.name}</span> and all associated data including:
+                  </p>
+                  <ul className="text-gray-400 text-sm mt-2 list-disc list-inside space-y-1">
+                    <li>{selectedClub.student_count || 0} students</li>
+                    <li>{selectedClub.coach_count || 0} coaches</li>
+                    <li>All schedules, challenges, and progress</li>
+                    <li>Payment history and subscription</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            {actionMessage && (
+              <div className={`p-3 rounded-lg mb-4 ${
+                actionMessage.type === 'success' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
+              }`}>
+                {actionMessage.text}
+              </div>
+            )}
+            
+            <p className="text-gray-400 text-sm mb-4">
+              Are you sure you want to delete this club?
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={closeModal}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              >
+                No, Keep It
+              </button>
+              <button
+                onClick={handleDeleteClub}
+                disabled={actionLoading}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                {actionLoading ? 'Deleting...' : 'Yes, Delete'}
               </button>
             </div>
           </div>

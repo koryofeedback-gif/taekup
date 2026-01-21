@@ -312,6 +312,45 @@ router.get('/clubs/:id', verifySuperAdmin, async (req: Request, res: Response) =
   }
 });
 
+// Delete a club and all associated data
+router.delete('/clubs/:id', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    // First check if club exists
+    const clubResult = await db.execute(sql`SELECT id, name FROM clubs WHERE id = ${id}`);
+    if (!(clubResult as any[]).length) {
+      return res.status(404).json({ error: 'Club not found' });
+    }
+    
+    const clubName = (clubResult as any[])[0].name;
+    
+    // Delete all related data in order (respecting foreign key constraints)
+    // Order matters: delete child records first, then parents
+    await db.execute(sql`DELETE FROM video_submissions WHERE student_id IN (SELECT id FROM students WHERE club_id = ${id})`);
+    await db.execute(sql`DELETE FROM challenge_progress WHERE student_id IN (SELECT id FROM students WHERE club_id = ${id})`);
+    await db.execute(sql`DELETE FROM xp_transactions WHERE student_id IN (SELECT id FROM students WHERE club_id = ${id})`);
+    await db.execute(sql`DELETE FROM attendance WHERE student_id IN (SELECT id FROM students WHERE club_id = ${id})`);
+    await db.execute(sql`DELETE FROM students WHERE club_id = ${id}`);
+    await db.execute(sql`DELETE FROM coaches WHERE club_id = ${id}`);
+    await db.execute(sql`DELETE FROM club_challenges WHERE club_id = ${id}`);
+    await db.execute(sql`DELETE FROM class_schedule WHERE club_id = ${id}`);
+    await db.execute(sql`DELETE FROM payments WHERE club_id = ${id}`);
+    await db.execute(sql`DELETE FROM subscriptions WHERE club_id = ${id}`);
+    await db.execute(sql`DELETE FROM clubs WHERE id = ${id}`);
+    
+    console.log(`[SuperAdmin] Deleted club: ${clubName} (${id})`);
+    
+    res.json({ 
+      success: true, 
+      message: `Club "${clubName}" and all associated data have been permanently deleted.`
+    });
+  } catch (error: any) {
+    console.error('Delete club error:', error);
+    res.status(500).json({ error: 'Failed to delete club: ' + error.message });
+  }
+});
+
 router.get('/parents', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
     const { premium_only, at_risk, search, limit = 50, offset = 0 } = req.query;
