@@ -52,7 +52,7 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
   const [extendReason, setExtendReason] = useState('');
   const [discountPercent, setDiscountPercent] = useState(20);
   const [discountDuration, setDiscountDuration] = useState('once');
-  const [emailTemplate, setEmailTemplate] = useState('trial-ending');
+  const [emailTemplate, setEmailTemplate] = useState('welcome_club');
 
   const fetchClubs = async () => {
     setIsLoading(true);
@@ -753,18 +753,32 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <optgroup label="Trial & Onboarding">
+                  <option value="welcome_club">Welcome Email</option>
+                  <option value="day_3_checkin">Day 3 Check-in</option>
+                  <option value="day_7_mid_trial">Day 7 Mid-Trial</option>
                   <option value="trial-ending">Trial Ending Soon</option>
+                  <option value="trial_expired">Trial Expired</option>
                 </optgroup>
-                <optgroup label="Retention & Billing">
+                <optgroup label="Retention & Win-back">
                   <option value="win_back">We Miss You (Win-back)</option>
                   <option value="churn-risk">Need Help? (Churn Risk)</option>
+                </optgroup>
+                <optgroup label="Billing & Updates">
+                  <option value="payment_failed">Payment Failed</option>
+                  <option value="feature_announcement">Feature Announcement</option>
                 </optgroup>
               </select>
               
               <p className="text-sm text-gray-500 mt-3">
+                {emailTemplate === 'welcome_club' && 'Welcome email for new club signups with getting started tips.'}
+                {emailTemplate === 'day_3_checkin' && 'Day 3 check-in to help with setup progress.'}
+                {emailTemplate === 'day_7_mid_trial' && 'Mid-trial check-in highlighting key features.'}
                 {emailTemplate === 'trial-ending' && 'Reminds the user their trial is ending and encourages upgrade.'}
+                {emailTemplate === 'trial_expired' && 'Notification that trial has expired with reactivation CTA.'}
                 {emailTemplate === 'win_back' && 'Offers 25% discount for 3 months to churned or inactive users.'}
                 {emailTemplate === 'churn-risk' && 'Offers help and support to at-risk users.'}
+                {emailTemplate === 'payment_failed' && 'Alerts user about failed payment and prompts update.'}
+                {emailTemplate === 'feature_announcement' && 'Announces new features and updates.'}
               </p>
             </div>
             
