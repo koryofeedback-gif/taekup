@@ -421,8 +421,52 @@ router.get('/payments', verifySuperAdmin, async (req: Request, res: Response) =>
     
     const payments = await db.execute(query);
     
+    // Fetch Stripe charges directly from Stripe API
+    let stripeCharges: any[] = [];
+    try {
+      const { getStripe } = await import('./stripeClient');
+      const stripe = await getStripe();
+      
+      const charges = await stripe.charges.list({
+        limit: Number(limit),
+      });
+      
+      // Map charges to include club info
+      stripeCharges = await Promise.all(charges.data.map(async (charge) => {
+        let clubName = 'Unknown';
+        let clubId = null;
+        
+        // Try to find club by customer email or metadata
+        if (charge.billing_details?.email) {
+          const clubResult = await db.execute(
+            sql`SELECT id, name FROM clubs WHERE owner_email = ${charge.billing_details.email} LIMIT 1`
+          );
+          if ((clubResult as any[]).length > 0) {
+            clubName = (clubResult as any[])[0].name;
+            clubId = (clubResult as any[])[0].id;
+          }
+        }
+        
+        return {
+          id: charge.id,
+          amount: charge.amount,
+          currency: charge.currency,
+          status: charge.status,
+          created: charge.created,
+          description: charge.description,
+          receipt_url: charge.receipt_url,
+          club_name: clubName,
+          club_id: clubId,
+          billing_email: charge.billing_details?.email,
+        };
+      }));
+    } catch (stripeError: any) {
+      console.error('Failed to fetch Stripe charges:', stripeError.message);
+    }
+    
     res.json({
       payments,
+      stripeCharges,
       limit: Number(limit),
       offset: Number(offset)
     });
