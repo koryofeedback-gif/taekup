@@ -755,42 +755,24 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                 <optgroup label="Trial & Onboarding">
                   <option value="welcome_club">Welcome to TaekUp</option>
                   <option value="day_3_checkin">Day 3 Check-in</option>
-                  <option value="day_7_mid_trial">Day 7 Mid-Trial</option>
                   <option value="trial_ending">Trial Ending Soon</option>
                   <option value="trial_expired">Trial Expired</option>
                 </optgroup>
-                <optgroup label="Retention & Win-back">
+                <optgroup label="Retention & Billing">
                   <option value="win_back">We Miss You (Win-back)</option>
                   <option value="churn_risk">Need Help? (Churn Risk)</option>
-                </optgroup>
-                <optgroup label="Billing & Payments">
                   <option value="payment_failed">Payment Failed</option>
-                  <option value="payment_receipt">Payment Receipt</option>
-                  <option value="subscription_cancelled">Subscription Cancelled</option>
-                  <option value="payout_notification">Payout Notification</option>
-                  <option value="monthly_revenue_report">Monthly Revenue Report</option>
-                </optgroup>
-                <optgroup label="Engagement">
-                  <option value="weekly_progress">Weekly Progress Summary</option>
-                  <option value="birthday_wish">Birthday Wish</option>
                 </optgroup>
               </select>
               
               <p className="text-sm text-gray-500 mt-3">
                 {emailTemplate === 'welcome_club' && 'Re-sends the welcome email with setup instructions.'}
                 {emailTemplate === 'day_3_checkin' && 'Friendly check-in to see how setup is going.'}
-                {emailTemplate === 'day_7_mid_trial' && 'Mid-trial engagement with tips and encouragement.'}
                 {emailTemplate === 'trial_ending' && 'Reminds the user their trial is ending and encourages upgrade.'}
                 {emailTemplate === 'trial_expired' && 'Notifies user their trial has expired with reactivation offer.'}
                 {emailTemplate === 'win_back' && 'Offers 25% discount for 3 months to churned or inactive users.'}
                 {emailTemplate === 'churn_risk' && 'Offers help and support to at-risk users.'}
                 {emailTemplate === 'payment_failed' && 'Alerts user about failed payment and asks to update card.'}
-                {emailTemplate === 'payment_receipt' && 'Sends payment confirmation receipt.'}
-                {emailTemplate === 'subscription_cancelled' && 'Confirmation of subscription cancellation.'}
-                {emailTemplate === 'payout_notification' && 'Notifies about DojoMint™ payout to their bank.'}
-                {emailTemplate === 'monthly_revenue_report' && 'Monthly summary of club revenue and metrics.'}
-                {emailTemplate === 'weekly_progress' && 'Weekly summary of student progress and engagement.'}
-                {emailTemplate === 'birthday_wish' && 'Birthday greeting message to the club owner.'}
               </p>
             </div>
             
