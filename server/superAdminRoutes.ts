@@ -953,27 +953,33 @@ router.post('/apply-discount', verifySuperAdmin, async (req: Request, res: Respo
           });
           
           if (subscriptions.data.length > 0) {
-            // Apply coupon to subscription
+            // Apply coupon to subscription using discounts array
             await stripe.subscriptions.update(subscriptions.data[0].id, {
-              coupon: coupon.id
+              discounts: [{ coupon: coupon.id }]
             });
             stripeApplied = true;
+            console.log('[Apply Discount] Applied coupon to subscription:', subscriptions.data[0].id);
+          } else {
+            console.log('[Apply Discount] No active subscription found for customer:', customer.id);
           }
         }
       }
+      console.log('[Apply Discount] Created Stripe coupon:', coupon.id);
     } catch (stripeError: any) {
-      console.error('Stripe discount error:', stripeError.message);
+      console.error('[Apply Discount] Stripe error:', stripeError.message);
     }
 
+    console.log('[Apply Discount] Saving to database...');
     await db.execute(sql`
-      INSERT INTO discounts (club_id, code, percent_off, duration, applied_by)
-      VALUES (${clubId}::uuid, ${code}, ${percentOff}, ${duration}, 'super_admin')
+      INSERT INTO discounts (club_id, code, percent_off, duration, stripe_coupon_id, applied_by)
+      VALUES (${clubId}::uuid, ${code}, ${percentOff}, ${duration}, ${stripeCouponId}, 'super_admin')
     `);
 
     await db.execute(sql`
-      INSERT INTO activity_log (event_type, description, details, club_id, actor_email, actor_type)
-      VALUES ('discount_applied', ${`${percentOff}% discount applied`}, ${JSON.stringify({ percentOff, duration, code, reason, stripeCouponId, stripeApplied })}, ${clubId}::uuid, 'super_admin', 'super_admin')
+      INSERT INTO activity_log (event_type, event_title, event_description, metadata, club_id, actor_email, actor_type)
+      VALUES ('discount_applied', 'Discount Applied', ${`${percentOff}% discount applied`}, ${JSON.stringify({ percentOff, duration, code, reason, stripeCouponId, stripeApplied })}::jsonb, ${clubId}::uuid, 'super_admin', 'super_admin')
     `);
+    console.log('[Apply Discount] Saved successfully');
 
     res.json({ 
       success: true, 
