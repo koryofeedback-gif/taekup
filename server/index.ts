@@ -285,7 +285,7 @@ if (isProduction) {
 
 async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server v2.1.0 running on port ${PORT}`);
   });
   
   initStripe().catch(err => {
