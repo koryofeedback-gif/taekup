@@ -147,19 +147,19 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
     };
 
     return (
-        <div className="p-6">
-            <div className="bg-gradient-to-br from-purple-900/40 to-indigo-900/40 p-6 rounded-xl border border-purple-500/30 mb-6">
-                <div className="flex items-center justify-between mb-4">
+        <div className="p-3 md:p-6">
+            <div className="bg-gradient-to-br from-purple-900/40 to-indigo-900/40 p-4 md:p-6 rounded-xl border border-purple-500/30 mb-4 md:mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                            <span className="text-3xl">🏆</span> Global Shogun Rank™
+                        <h2 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2 md:gap-3">
+                            <span className="text-2xl md:text-3xl">🏆</span> Global Shogun Rank™
                         </h2>
-                        <p className="text-gray-400 text-sm mt-1">Click on any student to view their challenge history</p>
+                        <p className="text-gray-400 text-xs md:text-sm mt-1 hidden sm:block">Click on any student to view their challenge history</p>
                     </div>
-                    <div className="flex">
+                    <div className="flex w-full sm:w-auto">
                         <button 
                             onClick={() => setLeaderboardMode('monthly')}
-                            className={`px-4 py-2 rounded-l-lg font-bold transition-all ${
+                            className={`flex-1 sm:flex-none px-3 md:px-4 py-2.5 md:py-2 rounded-l-lg font-bold text-sm transition-all ${
                                 leaderboardMode === 'monthly' 
                                     ? 'bg-purple-600 text-white' 
                                     : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
@@ -167,7 +167,7 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                         >This Month</button>
                         <button 
                             onClick={() => setLeaderboardMode('alltime')}
-                            className={`px-4 py-2 rounded-r-lg font-bold transition-all ${
+                            className={`flex-1 sm:flex-none px-3 md:px-4 py-2.5 md:py-2 rounded-r-lg font-bold text-sm transition-all ${
                                 leaderboardMode === 'alltime' 
                                     ? 'bg-purple-600 text-white' 
                                     : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
@@ -176,28 +176,28 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                     </div>
                 </div>
                 
-                {/* Location and Class Filters */}
-                <div className="flex flex-wrap gap-3 mt-4">
+                {/* Location and Class Filters - Stack on mobile */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:flex gap-2 md:gap-3 mt-3 md:mt-4">
                     <div className="flex items-center">
-                        <label className="text-xs font-medium text-gray-400 mr-2">Location:</label>
+                        <label className="text-xs font-medium text-gray-400 mr-2 w-16 sm:w-auto">Location:</label>
                         <select 
                             value={activeLocationFilter} 
                             onChange={(e) => {
                                 setActiveLocationFilter(e.target.value);
                                 setActiveClassFilter('all');
                             }}
-                            className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-purple-500 focus:border-purple-500"
+                            className="flex-1 px-3 py-2 md:py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-purple-500 focus:border-purple-500"
                         >
                             <option value="all">All Locations</option>
                             {locations.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                     </div>
                     <div className="flex items-center">
-                        <label className="text-xs font-medium text-gray-400 mr-2">Class:</label>
+                        <label className="text-xs font-medium text-gray-400 mr-2 w-16 sm:w-auto">Class:</label>
                         <select 
                             value={activeClassFilter} 
                             onChange={e => setActiveClassFilter(e.target.value)} 
-                            className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-purple-500 focus:border-purple-500"
+                            className="flex-1 px-3 py-2 md:py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:ring-purple-500 focus:border-purple-500"
                             disabled={availableClasses.length === 0}
                         >
                             <option value="all">All Classes</option>
@@ -206,7 +206,7 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                     </div>
                 </div>
                 
-                <p className="text-xs text-gray-400 mt-3">
+                <p className="text-[10px] md:text-xs text-gray-400 mt-2 md:mt-3">
                     {leaderboardMode === 'monthly' 
                         ? 'XP earned this month - fresh competition!' 
                         : 'Lifetime XP - legends of the dojo'}
@@ -216,31 +216,31 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
             </div>
 
             {/* Leaderboard with loading state */}
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
                 {isLoading && apiLeaderboard.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700">
-                        <div className="text-5xl mb-3 animate-bounce">⏳</div>
-                        <p className="text-gray-400">Loading leaderboard...</p>
+                    <div className="text-center py-8 md:py-12 bg-gray-800/50 rounded-xl border border-gray-700">
+                        <div className="text-4xl md:text-5xl mb-3 animate-bounce">⏳</div>
+                        <p className="text-gray-400 text-sm md:text-base">Loading leaderboard...</p>
                     </div>
                 ) : leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
-                    <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700">
-                        <div className="text-5xl mb-3">🥋</div>
-                        <p className="text-gray-400">
+                    <div className="text-center py-8 md:py-12 bg-gray-800/50 rounded-xl border border-gray-700">
+                        <div className="text-4xl md:text-5xl mb-3">🥋</div>
+                        <p className="text-gray-400 text-sm md:text-base">
                             {leaderboardMode === 'monthly' 
                                 ? 'No XP earned this month yet.' 
                                 : 'No XP recorded yet.'}
                         </p>
-                        <p className="text-gray-500 text-sm mt-1">Students will appear here once they earn XP!</p>
+                        <p className="text-gray-500 text-xs md:text-sm mt-1">Students will appear here once they earn XP!</p>
                     </div>
                 ) : (
                     leaderboard.filter(p => p.displayXP > 0).map((player) => (
                         <div 
                             key={player.id} 
-                            className="flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] bg-gray-800 border-gray-700 hover:border-purple-500/50 hover:bg-gray-800/80"
+                            className="flex items-center justify-between p-3 md:p-4 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] bg-gray-800 border-gray-700 hover:border-purple-500/50 hover:bg-gray-800/80"
                             onClick={() => fetchStudentHistory(player)}
                         >
-                            <div className="flex items-center">
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg mr-4 ${
+                            <div className="flex items-center min-w-0 flex-1">
+                                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black text-sm md:text-lg mr-2.5 md:mr-4 flex-shrink-0 ${
                                     player.rank === 1 ? 'bg-yellow-500 text-black' :
                                     player.rank === 2 ? 'bg-gray-400 text-black' :
                                     player.rank === 3 ? 'bg-orange-600 text-white' :
@@ -248,19 +248,19 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
                                 }`}>
                                     {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : player.rank}
                                 </div>
-                                <div>
-                                    <p className="font-bold text-white text-lg">{player.name}</p>
-                                    <p className="text-sm text-gray-500">
-                                        {player.belt || 'Student'} • Click to view history
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-bold text-white text-sm md:text-lg truncate">{player.name}</p>
+                                    <p className="text-xs md:text-sm text-gray-500 truncate">
+                                        {player.belt || 'Student'} <span className="hidden sm:inline">• Tap to view</span>
                                     </p>
                                 </div>
                             </div>
-                            <div className="text-right flex items-center gap-3">
+                            <div className="text-right flex items-center gap-1.5 md:gap-3 flex-shrink-0 ml-2">
                                 <div>
-                                    <p className="font-bold text-purple-400 text-xl">{player.displayXP.toLocaleString()} XP</p>
-                                    <p className="text-xs text-gray-500">{leaderboardMode === 'monthly' ? 'This Month' : 'All Time'}</p>
+                                    <p className="font-bold text-purple-400 text-sm md:text-xl">{player.displayXP.toLocaleString()} XP</p>
+                                    <p className="text-[10px] md:text-xs text-gray-500">{leaderboardMode === 'monthly' ? 'This Month' : 'All Time'}</p>
                                 </div>
-                                <span className="text-gray-500 text-xl">→</span>
+                                <span className="text-gray-500 text-base md:text-xl hidden sm:block">→</span>
                             </div>
                         </div>
                     ))
@@ -268,71 +268,70 @@ export const CoachLeaderboard: React.FC<CoachLeaderboardProps> = ({ students, da
             </div>
 
             {viewingStudentHistory.student && (
-                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingStudentHistory({ student: null, history: [], loading: false })}>
-                    <div className="bg-gray-900 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden border border-gray-700 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 p-5 border-b border-gray-700">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                        <span>📜</span> {viewingStudentHistory.student.name}'s History
+                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-2 md:p-4" onClick={() => setViewingStudentHistory({ student: null, history: [], loading: false })}>
+                    <div className="bg-gray-900 rounded-2xl w-full max-w-lg max-h-[90vh] md:max-h-[80vh] overflow-hidden border border-gray-700 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 p-4 md:p-5 border-b border-gray-700">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="text-base md:text-xl font-bold text-white flex items-center gap-2 truncate">
+                                        <span>📜</span> <span className="truncate">{viewingStudentHistory.student.name}'s History</span>
                                     </h3>
-                                    <p className="text-sm text-gray-400">Challenge submissions and achievements</p>
+                                    <p className="text-xs md:text-sm text-gray-400 hidden sm:block">Challenge submissions and achievements</p>
                                 </div>
                                 <button 
                                     onClick={() => setViewingStudentHistory({ student: null, history: [], loading: false })}
-                                    className="w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors text-lg"
+                                    className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors text-base md:text-lg flex-shrink-0"
                                 >
                                     ✕
                                 </button>
                             </div>
                         </div>
                         
-                        <div className="p-5 overflow-y-auto max-h-[60vh] space-y-3">
+                        <div className="p-3 md:p-5 overflow-y-auto max-h-[calc(90vh-80px)] md:max-h-[60vh] space-y-2 md:space-y-3">
                             {viewingStudentHistory.loading ? (
-                                <div className="text-center py-16">
-                                    <div className="text-4xl animate-bounce mb-4">⏳</div>
-                                    <p className="text-gray-400">Loading challenge history...</p>
+                                <div className="text-center py-12 md:py-16">
+                                    <div className="text-3xl md:text-4xl animate-bounce mb-4">⏳</div>
+                                    <p className="text-gray-400 text-sm md:text-base">Loading challenge history...</p>
                                 </div>
                             ) : viewingStudentHistory.history.length === 0 ? (
-                                <div className="text-center py-16">
-                                    <div className="text-5xl mb-4">🥋</div>
-                                    <p className="text-gray-400 font-medium">No challenges completed yet</p>
-                                    <p className="text-gray-500 text-sm mt-2">This student hasn't submitted any challenges</p>
+                                <div className="text-center py-12 md:py-16">
+                                    <div className="text-4xl md:text-5xl mb-4">🥋</div>
+                                    <p className="text-gray-400 font-medium text-sm md:text-base">No challenges completed yet</p>
+                                    <p className="text-gray-500 text-xs md:text-sm mt-2">This student hasn't submitted any challenges</p>
                                 </div>
                             ) : (
                                 viewingStudentHistory.history.map((entry, idx) => (
-                                    <div key={entry.id || idx} className="bg-gray-800/70 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="text-2xl">{entry.icon || '🏆'}</div>
-                                                <div>
-                                                    <p className="font-bold text-white">{entry.challengeName}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                                            entry.category === 'Power' ? 'bg-red-900/50 text-red-300' :
-                                                            entry.category === 'Technique' ? 'bg-blue-900/50 text-blue-300' :
-                                                            entry.category === 'Flexibility' ? 'bg-purple-900/50 text-purple-300' :
-                                                            'bg-gray-700 text-gray-300'
-                                                        }`}>
-                                                            {entry.category}
-                                                        </span>
-                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                                            entry.status === 'VERIFIED' ? 'bg-green-900/50 text-green-300' :
-                                                            entry.status === 'PENDING' ? 'bg-yellow-900/50 text-yellow-300' :
-                                                            entry.status === 'REJECTED' ? 'bg-red-900/50 text-red-300' :
-                                                            'bg-cyan-900/50 text-cyan-300'
-                                                        }`}>
-                                                            {entry.status}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">{entry.proofType}</span>
+                                    <div key={entry.id || idx} className="bg-gray-800/70 rounded-xl p-3 md:p-4 border border-gray-700 hover:border-gray-600 transition-colors">
+                                        <div className="flex items-start gap-2.5 md:gap-3">
+                                            <div className="text-xl md:text-2xl flex-shrink-0">{entry.icon || '🏆'}</div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <p className="font-bold text-white text-sm md:text-base truncate">{entry.challengeName}</p>
+                                                    <div className="text-right flex-shrink-0">
+                                                        <p className="font-bold text-green-400 text-sm md:text-base">+{entry.xpAwarded} XP</p>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="font-bold text-green-400">+{entry.xpAwarded} XP</p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {new Date(entry.completedAt).toLocaleDateString()}
-                                                </p>
+                                                <div className="flex items-center gap-1.5 md:gap-2 mt-1.5 flex-wrap">
+                                                    <span className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full ${
+                                                        entry.category === 'Power' ? 'bg-red-900/50 text-red-300' :
+                                                        entry.category === 'Technique' ? 'bg-blue-900/50 text-blue-300' :
+                                                        entry.category === 'Flexibility' ? 'bg-purple-900/50 text-purple-300' :
+                                                        'bg-gray-700 text-gray-300'
+                                                    }`}>
+                                                        {entry.category}
+                                                    </span>
+                                                    <span className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full ${
+                                                        entry.status === 'VERIFIED' ? 'bg-green-900/50 text-green-300' :
+                                                        entry.status === 'PENDING' ? 'bg-yellow-900/50 text-yellow-300' :
+                                                        entry.status === 'REJECTED' ? 'bg-red-900/50 text-red-300' :
+                                                        'bg-cyan-900/50 text-cyan-300'
+                                                    }`}>
+                                                        {entry.status}
+                                                    </span>
+                                                    <span className="text-[10px] md:text-xs text-gray-500">
+                                                        {new Date(entry.completedAt).toLocaleDateString()}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
