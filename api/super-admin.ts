@@ -947,32 +947,55 @@ async function handleApplyDiscount(req: VercelRequest, res: VercelResponse) {
     
     const club = clubResult[0];
     let stripeCouponId = null;
+    let stripeApplied = false;
     
-    // Create Stripe coupon if customer exists and Stripe is configured
-    if (club.stripe_customer_id && stripe) {
+    // Create Stripe coupon
+    if (stripe) {
       try {
+        // Create the coupon in Stripe
         const coupon = await stripe.coupons.create({
           percent_off: percentOff,
           duration: duration as 'once' | 'repeating' | 'forever',
           duration_in_months: duration === 'repeating' ? 3 : undefined,
+          name: `Super Admin Discount - ${percentOff}% off`,
           metadata: { clubId, appliedBy: auth.email || 'super_admin' }
         });
         stripeCouponId = coupon.id;
+        console.log('[Apply Discount] Created Stripe coupon:', coupon.id);
         
-        // Apply to customer's subscription
-        const subscriptions = await stripe.subscriptions.list({
-          customer: club.stripe_customer_id,
-          status: 'active',
-          limit: 1
-        });
-        
-        if (subscriptions.data.length > 0) {
-          await stripe.subscriptions.update(subscriptions.data[0].id, {
-            discounts: [{ coupon: coupon.id }]
+        // Find customer by email (works even without stripe_customer_id stored)
+        const customerEmail = club.owner_email;
+        if (customerEmail) {
+          const customers = await stripe.customers.list({
+            email: customerEmail,
+            limit: 1
           });
+          
+          if (customers.data.length > 0) {
+            const customer = customers.data[0];
+            
+            // Apply to customer's active subscription
+            const subscriptions = await stripe.subscriptions.list({
+              customer: customer.id,
+              status: 'active',
+              limit: 1
+            });
+            
+            if (subscriptions.data.length > 0) {
+              await stripe.subscriptions.update(subscriptions.data[0].id, {
+                discounts: [{ coupon: coupon.id }]
+              });
+              stripeApplied = true;
+              console.log('[Apply Discount] Applied to subscription:', subscriptions.data[0].id);
+            } else {
+              console.log('[Apply Discount] No active subscription for customer:', customer.id);
+            }
+          } else {
+            console.log('[Apply Discount] No Stripe customer found for email:', customerEmail);
+          }
         }
       } catch (stripeErr: any) {
-        console.log('Stripe coupon creation skipped:', stripeErr.message);
+        console.log('[Apply Discount] Stripe error:', stripeErr.message);
       }
     }
     
@@ -999,7 +1022,13 @@ async function handleApplyDiscount(req: VercelRequest, res: VercelResponse) {
     return res.json({
       success: true,
       discount: { code, percentOff, duration, stripeCouponId },
-      club: club.name
+      club: club.name,
+      stripeApplied,
+      message: stripeApplied 
+        ? 'Discount applied to active Stripe subscription' 
+        : stripeCouponId 
+          ? 'Coupon created (no active subscription to apply)' 
+          : 'Discount saved (Stripe not configured)'
     });
   } catch (error: any) {
     console.error('Apply discount error:', error);
