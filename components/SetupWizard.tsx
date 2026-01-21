@@ -118,7 +118,21 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
     setWizardData(prev => ({ ...prev, ...data }));
   };
 
+  const trackOnboardingProgress = async (step: number, completed: boolean = true) => {
+    if (!clubId) return;
+    try {
+      await fetch('/api/super-admin/onboarding/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clubId, step, completed })
+      });
+    } catch (error) {
+      console.error('Failed to track onboarding progress:', error);
+    }
+  };
+
   const handleNext = () => {
+    trackOnboardingProgress(currentStep, true);
     if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -128,7 +142,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   
   const handleFinish = () => {
     console.log('Wizard Finished! Final Data:', wizardData);
-    localStorage.removeItem(STORAGE_KEY); // Clear draft on successful completion
+    trackOnboardingProgress(6, true);
+    localStorage.removeItem(STORAGE_KEY);
     setIsComplete(true);
   }
 
