@@ -100,7 +100,11 @@ const DemoModeBanner: React.FC = () => {
     const [isDemo, setIsDemo] = useState(() => isDemoModeEnabled());
     const [isExpanded, setIsExpanded] = useState(false);
     
-    if (!isDemo) return null;
+    // Check if user is logged in - demo badge should only show when logged in
+    const isLoggedIn = localStorage.getItem('taekup_user_type') !== null;
+    
+    // Don't show if demo mode is off OR if user is not logged in
+    if (!isDemo || !isLoggedIn) return null;
     
     const handleExitDemo = () => {
         localStorage.setItem(DEMO_MODE_KEY, 'false');
@@ -652,7 +656,10 @@ const App: React.FC = () => {
         sessionStorage.removeItem('impersonation_user_name');
         sessionStorage.removeItem('impersonation_club_id');
         
-        console.log('[Logout] Cleared all session data');
+        // Clear demo mode flag on logout
+        localStorage.removeItem(DEMO_MODE_KEY);
+        
+        console.log('[Logout] Cleared all session data including demo mode');
         
         // Redirect to home page
         window.location.href = '/';
