@@ -368,57 +368,60 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
           gradient: 'from-yellow-500/20 via-amber-500/10 to-transparent',
           border: 'border-yellow-500/50',
           glow: 'shadow-yellow-500/20',
-          icon: <Crown className="w-8 h-8 text-yellow-400" />,
-          size: 'h-44',
-          avatarSize: 'w-20 h-20',
-          ring: 'ring-4 ring-yellow-500/50',
+          icon: <Crown className="w-5 h-5 md:w-8 md:h-8 text-yellow-400" />,
+          size: 'h-32 md:h-44',
+          avatarSize: 'w-12 h-12 md:w-20 md:h-20',
+          ring: 'ring-2 md:ring-4 ring-yellow-500/50',
+          textSize: 'text-lg md:text-2xl',
         },
         2: {
           gradient: 'from-slate-400/20 via-gray-400/10 to-transparent',
           border: 'border-slate-400/50',
           glow: 'shadow-slate-400/20',
-          icon: <Medal className="w-7 h-7 text-slate-300" />,
-          size: 'h-40',
-          avatarSize: 'w-16 h-16',
-          ring: 'ring-4 ring-slate-400/50',
+          icon: <Medal className="w-4 h-4 md:w-7 md:h-7 text-slate-300" />,
+          size: 'h-28 md:h-40',
+          avatarSize: 'w-10 h-10 md:w-16 md:h-16',
+          ring: 'ring-2 md:ring-4 ring-slate-400/50',
+          textSize: 'text-base md:text-xl',
         },
         3: {
           gradient: 'from-amber-700/20 via-orange-600/10 to-transparent',
           border: 'border-amber-600/50',
           glow: 'shadow-amber-600/20',
-          icon: <Award className="w-6 h-6 text-amber-500" />,
-          size: 'h-36',
-          avatarSize: 'w-14 h-14',
-          ring: 'ring-4 ring-amber-600/50',
+          icon: <Award className="w-4 h-4 md:w-6 md:h-6 text-amber-500" />,
+          size: 'h-24 md:h-36',
+          avatarSize: 'w-9 h-9 md:w-14 md:h-14',
+          ring: 'ring-2 md:ring-4 ring-amber-600/50',
+          textSize: 'text-sm md:text-lg',
         },
       };
       
       const config = configs[position];
       
       return (
-        <div className={`relative flex flex-col items-center p-4 rounded-2xl bg-gradient-to-b ${config.gradient} border ${config.border} ${config.size} shadow-2xl ${config.glow} backdrop-blur-sm transition-all hover:scale-105 hover:shadow-3xl`}>
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-slate-800 rounded-full p-2 border-2 border-slate-600">
+        <div className={`relative flex flex-col items-center p-2 md:p-4 rounded-xl md:rounded-2xl bg-gradient-to-b ${config.gradient} border ${config.border} ${config.size} shadow-2xl ${config.glow} backdrop-blur-sm transition-all hover:scale-105 hover:shadow-3xl`}>
+          <div className="absolute -top-3 md:-top-4 left-1/2 -translate-x-1/2 bg-slate-800 rounded-full p-1 md:p-2 border-2 border-slate-600">
             {config.icon}
           </div>
           
-          <div className={`mt-6 ${config.avatarSize} rounded-full bg-gradient-to-br ${getAvatarColor(athlete.name)} flex items-center justify-center text-white font-bold text-xl ${config.ring} shadow-lg`}>
+          <div className={`mt-4 md:mt-6 ${config.avatarSize} rounded-full bg-gradient-to-br ${getAvatarColor(athlete.name)} flex items-center justify-center text-white font-bold text-xs md:text-xl ${config.ring} shadow-lg`}>
             {getInitials(athlete.name)}
           </div>
           
-          <div className="mt-3 text-center">
-            <div className="font-bold text-white text-lg leading-tight">{athlete.name}</div>
-            <div className="flex items-center justify-center gap-1 mt-1">
+          <div className="mt-1.5 md:mt-3 text-center">
+            <div className="font-bold text-white text-xs md:text-lg leading-tight truncate max-w-[80px] md:max-w-full">{athlete.name}</div>
+            <div className="hidden md:flex items-center justify-center gap-1 mt-1">
               <CountryFlag country={athlete.country} size={20} />
-              <span className="text-slate-400 text-xs">{athlete.clubName}</span>
+              <span className="text-slate-400 text-xs truncate">{athlete.clubName}</span>
             </div>
           </div>
           
-          <div className="mt-auto flex items-center gap-1.5">
-            <Flame className="w-4 h-4 text-cyan-400" />
-            <span className="text-2xl font-black text-white">{athlete.globalXp.toLocaleString()}</span>
+          <div className="mt-auto flex items-center gap-1">
+            <Flame className="w-3 h-3 md:w-4 md:h-4 text-cyan-400" />
+            <span className={`${config.textSize} font-black text-white`}>{athlete.globalXp.toLocaleString()}</span>
           </div>
           
-          <div className="mt-2">
+          <div className="mt-1 md:mt-2 hidden sm:block">
             <BeltBadge belt={athlete.belt} />
           </div>
         </div>
@@ -426,21 +429,21 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
     };
     
     return (
-      <div className="mb-8">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <Star className="w-5 h-5 text-yellow-400 animate-pulse" />
-          <h2 className="text-xl font-bold text-white uppercase tracking-wider">Top Champions</h2>
-          <Star className="w-5 h-5 text-yellow-400 animate-pulse" />
+      <div className="mb-4 md:mb-8">
+        <div className="flex items-center justify-center gap-2 mb-3 md:mb-6">
+          <Star className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 animate-pulse" />
+          <h2 className="text-sm md:text-xl font-bold text-white uppercase tracking-wider">Top Champions</h2>
+          <Star className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 animate-pulse" />
         </div>
         
-        <div className="flex items-end justify-center gap-4 px-4">
-          <div className="flex-1 max-w-[200px]">
+        <div className="flex items-end justify-center gap-2 md:gap-4 px-2 md:px-4">
+          <div className="flex-1 max-w-[100px] md:max-w-[200px]">
             <PodiumCard athlete={second} position={2} />
           </div>
-          <div className="flex-1 max-w-[220px] -mt-4">
+          <div className="flex-1 max-w-[110px] md:max-w-[220px] -mt-2 md:-mt-4">
             <PodiumCard athlete={first} position={1} />
           </div>
-          <div className="flex-1 max-w-[180px]">
+          <div className="flex-1 max-w-[90px] md:max-w-[180px]">
             <PodiumCard athlete={third} position={3} />
           </div>
         </div>
@@ -478,49 +481,49 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
   };
 
   return (
-    <div className="relative bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-2xl overflow-hidden">
+    <div className="relative bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-xl md:rounded-2xl overflow-hidden">
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NDEgMC0xOCA4LjA1OS0xOCAxOHM4LjA1OSAxOCAxOCAxOCAxOC04LjA1OSAxOC0xOC04LjA1OS0xOC0xOC0xOHptMCAzMmMtNy43MzIgMC0xNC02LjI2OC0xNC0xNHM2LjI2OC0xNCAxNC0xNCAxNCA2LjI2OCAxNCAxNC02LjI2OCAxNC0xNCAxNHoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9nPjwvc3ZnPg==')] opacity-30 pointer-events-none" />
       
-      <div className="relative max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-3 mb-4 px-6 py-2 rounded-full bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10 border border-cyan-500/20">
-            <Globe2 className="w-8 h-8 text-cyan-400 animate-pulse" />
-            <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
+      <div className="relative max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-8">
+        <div className="text-center mb-6 md:mb-10">
+          <div className="inline-flex items-center gap-2 md:gap-3 mb-3 md:mb-4 px-4 md:px-6 py-2 rounded-full bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10 border border-cyan-500/20">
+            <Globe2 className="w-6 h-6 md:w-8 md:h-8 text-cyan-400 animate-pulse" />
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-black bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
               World Rankings
             </h1>
           </div>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+          <p className="text-slate-400 text-sm md:text-lg max-w-2xl mx-auto px-2">
             Global martial arts leaderboard across all participating clubs worldwide
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3 mb-8 justify-center">
+        <div className="flex gap-2 md:gap-3 mb-4 md:mb-8 justify-center">
           <button
             onClick={() => setCategory('students')}
-            className={`group flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-all duration-300 ${
+            className={`group flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-2.5 md:py-3 rounded-lg md:rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider transition-all duration-300 ${
               category === 'students'
                 ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30 scale-105'
                 : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
             }`}
           >
-            <Users className={`w-5 h-5 transition-transform ${category === 'students' ? 'animate-bounce' : 'group-hover:scale-110'}`} />
-            Top Athletes
+            <Users className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${category === 'students' ? 'animate-bounce' : 'group-hover:scale-110'}`} />
+            <span className="hidden sm:inline">Top </span>Athletes
           </button>
           <button
             onClick={() => setCategory('clubs')}
-            className={`group flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-all duration-300 ${
+            className={`group flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-2.5 md:py-3 rounded-lg md:rounded-xl font-bold text-xs md:text-sm uppercase tracking-wider transition-all duration-300 ${
               category === 'clubs'
                 ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/30 scale-105'
                 : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
             }`}
           >
-            <Building2 className={`w-5 h-5 transition-transform ${category === 'clubs' ? 'animate-bounce' : 'group-hover:scale-110'}`} />
-            Top Clubs
+            <Building2 className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${category === 'clubs' ? 'animate-bounce' : 'group-hover:scale-110'}`} />
+            <span className="hidden sm:inline">Top </span>Clubs
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-4 mb-8 justify-center items-center">
-          <div className="flex items-center gap-2 text-slate-400">
+        <div className="grid grid-cols-2 md:flex gap-2 md:gap-4 mb-4 md:mb-8 md:justify-center md:items-center">
+          <div className="hidden md:flex items-center gap-2 text-slate-400">
             <Filter className="w-4 h-4" />
             <span className="text-sm font-medium">Filter:</span>
           </div>
@@ -528,7 +531,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
           <select
             value={sport}
             onChange={(e) => setSport(e.target.value)}
-            className="bg-slate-800/80 border border-slate-600 text-white rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-cyan-500 focus:border-transparent cursor-pointer hover:bg-slate-700 transition-colors"
+            className="bg-slate-800/80 border border-slate-600 text-white rounded-lg md:rounded-xl px-3 md:px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-cyan-500 focus:border-transparent cursor-pointer hover:bg-slate-700 transition-colors"
           >
             <option value="all">All Sports</option>
             {sports.map(s => (
@@ -539,7 +542,7 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
           <select
             value={country}
             onChange={(e) => setCountry(e.target.value)}
-            className="bg-slate-800/80 border border-slate-600 text-white rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-cyan-500 focus:border-transparent cursor-pointer hover:bg-slate-700 transition-colors"
+            className="bg-slate-800/80 border border-slate-600 text-white rounded-lg md:rounded-xl px-3 md:px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-cyan-500 focus:border-transparent cursor-pointer hover:bg-slate-700 transition-colors"
           >
             <option value="all">All Countries</option>
             {countries.map(c => (
@@ -548,30 +551,31 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
           </select>
         </div>
 
-        <div className="bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-xl md:rounded-3xl overflow-hidden shadow-2xl">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-24">
-              <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
-              <p className="mt-4 text-slate-400 animate-pulse">Loading rankings...</p>
+            <div className="flex flex-col items-center justify-center py-16 md:py-24">
+              <Loader2 className="w-10 h-10 md:w-12 md:h-12 text-cyan-400 animate-spin" />
+              <p className="mt-4 text-slate-400 animate-pulse text-sm md:text-base">Loading rankings...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-24 text-red-400">{error}</div>
+            <div className="text-center py-16 md:py-24 text-red-400 text-sm md:text-base">{error}</div>
           ) : category === 'students' ? (
             studentRankings.length === 0 ? (
-              <div className="text-center py-24">
-                <Trophy className="w-20 h-20 text-slate-600 mx-auto mb-6" />
-                <p className="text-slate-300 text-xl font-medium">No rankings available yet</p>
-                <p className="text-slate-500 mt-2">Clubs need to opt-in and athletes need to earn Global XP</p>
+              <div className="text-center py-16 md:py-24 px-4">
+                <Trophy className="w-16 h-16 md:w-20 md:h-20 text-slate-600 mx-auto mb-4 md:mb-6" />
+                <p className="text-slate-300 text-base md:text-xl font-medium">No rankings available yet</p>
+                <p className="text-slate-500 text-sm mt-2">Clubs need to opt-in and athletes need to earn Global XP</p>
               </div>
             ) : (
               <div>
                 {studentRankings.length >= 3 && (
-                  <div className="p-6 border-b border-slate-700/50 bg-gradient-to-b from-slate-800/50 to-transparent">
+                  <div className="p-3 md:p-6 border-b border-slate-700/50 bg-gradient-to-b from-slate-800/50 to-transparent">
                     <TopThreePodium athletes={studentRankings.slice(0, 3)} />
                   </div>
                 )}
                 
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-700/50 bg-slate-800/50">
@@ -634,85 +638,186 @@ export const WorldRankings: React.FC<WorldRankingsProps> = ({ clubId, isAdmin = 
                     </tbody>
                   </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-2 p-3">
+                  {studentRankings.map((student, index) => (
+                    <div 
+                      key={student.id}
+                      className={`p-3 rounded-xl border border-slate-700/50 ${
+                        index < 3 ? 'bg-gradient-to-r from-cyan-500/10 to-transparent' : 'bg-slate-800/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm ${
+                            student.rank === 1 ? 'bg-gradient-to-br from-yellow-300 to-amber-500 text-yellow-900' :
+                            student.rank === 2 ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-700' :
+                            student.rank === 3 ? 'bg-gradient-to-br from-amber-500 to-amber-700 text-amber-100' :
+                            'bg-slate-700 text-slate-300'
+                          }`}>
+                            {student.rank <= 3 ? ['🥇', '🥈', '🥉'][student.rank - 1] : student.rank}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(student.name)} flex items-center justify-center text-white text-xs font-bold`}>
+                              {getInitials(student.name)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-white text-sm truncate">{student.name}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <CountryFlag country={student.country} size={14} />
+                                <span className="text-[10px] text-slate-500 truncate">{student.clubName}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="flex items-center gap-1">
+                            <Flame className="w-3 h-3 text-cyan-400" />
+                            <span className="text-base font-black text-white">{student.globalXp.toLocaleString()}</span>
+                          </div>
+                          <div className="mt-1">
+                            <RankChangeIndicator change={student.rankChange} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )
           ) : (
             clubRankings.length === 0 ? (
-              <div className="text-center py-24">
-                <Building2 className="w-20 h-20 text-slate-600 mx-auto mb-6" />
-                <p className="text-slate-300 text-xl font-medium">No club rankings available yet</p>
-                <p className="text-slate-500 mt-2">Clubs need to opt-in to world rankings</p>
+              <div className="text-center py-16 md:py-24">
+                <Building2 className="w-16 h-16 md:w-20 md:h-20 text-slate-600 mx-auto mb-4 md:mb-6" />
+                <p className="text-slate-300 text-base md:text-xl font-medium">No club rankings available yet</p>
+                <p className="text-slate-500 text-sm mt-2">Clubs need to opt-in to world rankings</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-700/50 bg-slate-800/50">
-                      <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Rank</th>
-                      <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Club</th>
-                      <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest hidden md:table-cell">Sport</th>
-                      <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest hidden lg:table-cell">Location</th>
-                      <th className="text-center py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Athletes</th>
-                      <th className="text-right py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Avg XP</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clubRankings.map((club, index) => (
-                      <tr 
-                        key={club.id}
-                        className={`border-b border-slate-700/30 transition-all duration-200 hover:bg-slate-700/40 hover:scale-[1.01] ${
-                          index < 3 ? 'bg-gradient-to-r from-purple-500/5 via-transparent to-transparent' : ''
-                        }`}
-                        style={{ height: '72px' }}
-                      >
-                        <td className="py-4 px-6">
-                          <RankBadge rank={club.rank} />
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarColor(club.name)} flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/10`}>
+              <div>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-700/50 bg-slate-800/50">
+                        <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Rank</th>
+                        <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Club</th>
+                        <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest hidden md:table-cell">Sport</th>
+                        <th className="text-left py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest hidden lg:table-cell">Location</th>
+                        <th className="text-center py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Athletes</th>
+                        <th className="text-right py-5 px-6 text-xs font-bold text-slate-400 uppercase tracking-widest">Avg XP</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clubRankings.map((club, index) => (
+                        <tr 
+                          key={club.id}
+                          className={`border-b border-slate-700/30 transition-all duration-200 hover:bg-slate-700/40 hover:scale-[1.01] ${
+                            index < 3 ? 'bg-gradient-to-r from-purple-500/5 via-transparent to-transparent' : ''
+                          }`}
+                          style={{ height: '72px' }}
+                        >
+                          <td className="py-4 px-6">
+                            <RankBadge rank={club.rank} />
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarColor(club.name)} flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/10`}>
+                                {getInitials(club.name)}
+                              </div>
+                              <div className="font-bold text-white text-lg">{club.name}</div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 hidden md:table-cell">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">{SPORT_ICONS[club.sport] || '🥋'}</span>
+                              <span className="text-slate-300 font-medium">{club.sport}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 hidden lg:table-cell">
+                            <div className="flex items-center gap-2 text-slate-400">
+                              <CountryFlag country={club.country} size={28} />
+                              <span className="text-sm">{club.city}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            <div className="inline-flex items-center gap-2 bg-slate-700/50 px-4 py-2 rounded-xl border border-slate-600/50">
+                              <Users className="w-4 h-4 text-purple-400" />
+                              <span className="text-white font-bold">{club.studentCount}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <TrendingUp className="w-5 h-5 text-purple-400" />
+                              <span className="text-2xl font-black text-white tabular-nums">{club.avgGlobalXp.toLocaleString()}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-2 p-3">
+                  {clubRankings.map((club, index) => (
+                    <div 
+                      key={club.id}
+                      className={`p-3 rounded-xl border border-slate-700/50 ${
+                        index < 3 ? 'bg-gradient-to-r from-purple-500/10 to-transparent' : 'bg-slate-800/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-sm ${
+                            club.rank === 1 ? 'bg-gradient-to-br from-yellow-300 to-amber-500 text-yellow-900' :
+                            club.rank === 2 ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-700' :
+                            club.rank === 3 ? 'bg-gradient-to-br from-amber-500 to-amber-700 text-amber-100' :
+                            'bg-slate-700 text-slate-300'
+                          }`}>
+                            {club.rank <= 3 ? ['🥇', '🥈', '🥉'][club.rank - 1] : club.rank}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getAvatarColor(club.name)} flex items-center justify-center text-white text-xs font-bold`}>
                               {getInitials(club.name)}
                             </div>
-                            <div className="font-bold text-white text-lg">{club.name}</div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-white text-sm truncate">{club.name}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <CountryFlag country={club.country} size={14} />
+                                <span className="text-[10px] text-slate-500">{club.city}</span>
+                                <span className="text-lg">{SPORT_ICONS[club.sport] || '🥋'}</span>
+                              </div>
+                            </div>
                           </div>
-                        </td>
-                        <td className="py-4 px-6 hidden md:table-cell">
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl">{SPORT_ICONS[club.sport] || '🥋'}</span>
-                            <span className="text-slate-300 font-medium">{club.sport}</span>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="flex items-center gap-1 justify-end">
+                            <TrendingUp className="w-3 h-3 text-purple-400" />
+                            <span className="text-base font-black text-white">{club.avgGlobalXp.toLocaleString()}</span>
                           </div>
-                        </td>
-                        <td className="py-4 px-6 hidden lg:table-cell">
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <CountryFlag country={club.country} size={28} />
-                            <span className="text-sm">{club.city}</span>
+                          <div className="flex items-center gap-1 justify-end mt-1 text-[10px] text-slate-400">
+                            <Users className="w-3 h-3" />
+                            <span>{club.studentCount} athletes</span>
                           </div>
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          <div className="inline-flex items-center gap-2 bg-slate-700/50 px-4 py-2 rounded-xl border border-slate-600/50">
-                            <Users className="w-4 h-4 text-purple-400" />
-                            <span className="text-white font-bold">{club.studentCount}</span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <TrendingUp className="w-5 h-5 text-purple-400" />
-                            <span className="text-2xl font-black text-white tabular-nums">{club.avgGlobalXp.toLocaleString()}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )
           )}
         </div>
 
-        <div className="mt-8 text-center">
-          <p className="text-sm text-slate-500 flex items-center justify-center gap-2">
-            <Globe2 className="w-4 h-4" />
-            Rankings calculated using standardized global scoring for fair competition
+        <div className="mt-4 md:mt-8 text-center px-2">
+          <p className="text-xs md:text-sm text-slate-500 flex items-center justify-center gap-2">
+            <Globe2 className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+            <span>Rankings calculated using standardized global scoring</span>
           </p>
         </div>
       </div>
