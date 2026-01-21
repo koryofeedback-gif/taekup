@@ -2085,93 +2085,182 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                             </div>
                         </div>
                         
-                        {/* Navigation Tabs - Glossy Capsule Buttons (Mobile Optimized) */}
-                        <div className="px-2 md:px-4 py-2 md:py-3 overflow-x-auto scrollbar-hide bg-gray-900/50">
-                            <div className="flex items-center gap-1.5 md:gap-3 min-w-max">
+                        {/* Navigation Tabs - Mobile: 2-row grid, Desktop: horizontal row */}
+                        <div className="px-2 md:px-4 py-2 md:py-3 bg-gray-900/50">
+                            {/* Mobile Grid Layout - 2 rows, no scrolling */}
+                            <div className="grid grid-cols-4 gap-1.5 sm:hidden">
+                                {/* Row 1: Grading, Plan, Schedule, Challenges */}
                                 <button 
                                     onClick={() => setActiveView('grading')}
-                                    className={`group relative px-3 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 md:gap-2 overflow-hidden flex-shrink-0
+                                    className={`group relative px-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center justify-center gap-1 overflow-hidden
+                                        ${activeView === 'grading' 
+                                            ? 'bg-gradient-to-b from-sky-400 via-sky-500 to-sky-700 text-white shadow-lg shadow-sky-500/40 border-t border-sky-300/50' 
+                                            : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 border-t border-gray-500/30 shadow-md'}`}
+                                >
+                                    <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
+                                    <span className="relative text-lg">📋</span>
+                                    <span className="relative text-[10px]">Grade</span>
+                                </button>
+                                <button 
+                                    onClick={() => setActiveView('planner')}
+                                    className={`group relative px-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center justify-center gap-1 overflow-hidden
+                                        ${activeView === 'planner' 
+                                            ? 'bg-gradient-to-b from-purple-400 via-purple-500 to-purple-700 text-white shadow-lg shadow-purple-500/40 border-t border-purple-300/50' 
+                                            : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 border-t border-gray-500/30 shadow-md'}`}
+                                >
+                                    <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
+                                    <span className="relative text-lg">🧠</span>
+                                    <span className="relative text-[10px]">Plan</span>
+                                </button>
+                                <button 
+                                    onClick={() => setActiveView('schedule')}
+                                    className={`group relative px-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center justify-center gap-1 overflow-hidden
+                                        ${activeView === 'schedule' 
+                                            ? 'bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/40 border-t border-emerald-300/50' 
+                                            : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 border-t border-gray-500/30 shadow-md'}`}
+                                >
+                                    <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
+                                    <span className="relative text-lg">📅</span>
+                                    <span className="relative text-[10px]">Schedule</span>
+                                </button>
+                                <button 
+                                    onClick={() => setActiveView('challenges')}
+                                    className={`group relative px-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center justify-center gap-1 overflow-hidden
+                                        ${activeView === 'challenges' 
+                                            ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-700 text-white shadow-lg shadow-amber-500/40 border-t border-amber-300/50' 
+                                            : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 border-t border-gray-500/30 shadow-md'}`}
+                                >
+                                    <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
+                                    <span className="relative text-lg">🏆</span>
+                                    <span className="relative text-[10px]">Challenges</span>
+                                </button>
+                                {/* Row 2: Videos, Shogun, World + empty cell for balance */}
+                                <button 
+                                    onClick={() => setActiveView('videos')}
+                                    className={`group relative px-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center justify-center gap-1 overflow-hidden
+                                        ${activeView === 'videos' 
+                                            ? 'bg-gradient-to-b from-rose-400 via-rose-500 to-rose-700 text-white shadow-lg shadow-rose-500/40 border-t border-rose-300/50' 
+                                            : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 border-t border-gray-500/30 shadow-md'}`}
+                                >
+                                    <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
+                                    <span className="relative text-lg">🎬</span>
+                                    <span className="relative text-[10px]">Videos</span>
+                                    {pendingVideos.length > 0 && (
+                                        <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg shadow-red-500/50 z-10">
+                                            {pendingVideos.length}
+                                        </span>
+                                    )}
+                                </button>
+                                <button 
+                                    onClick={() => setActiveView('leaderboard')}
+                                    className={`group relative px-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center justify-center gap-1 overflow-hidden
+                                        ${activeView === 'leaderboard' 
+                                            ? 'bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 text-gray-900 shadow-lg shadow-yellow-500/40 border-t border-yellow-200/50' 
+                                            : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 border-t border-gray-500/30 shadow-md'}`}
+                                >
+                                    <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
+                                    <span className="relative text-lg">🥇</span>
+                                    <span className="relative text-[10px]">Shogun</span>
+                                </button>
+                                <button 
+                                    onClick={() => setActiveView('world-rankings')}
+                                    className={`group relative px-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center justify-center gap-1 overflow-hidden col-span-2
+                                        ${activeView === 'world-rankings' 
+                                            ? 'bg-gradient-to-b from-cyan-400 via-blue-500 to-purple-600 text-white shadow-lg shadow-cyan-500/40 border-t border-cyan-300/50' 
+                                            : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 border-t border-gray-500/30 shadow-md'}`}
+                                >
+                                    <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
+                                    <span className="relative text-lg">🌍</span>
+                                    <span className="relative text-[10px]">World Rankings</span>
+                                </button>
+                            </div>
+                            
+                            {/* Desktop Horizontal Layout */}
+                            <div className="hidden sm:flex items-center gap-3">
+                                <button 
+                                    onClick={() => setActiveView('grading')}
+                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
                                         ${activeView === 'grading' 
                                             ? 'bg-gradient-to-b from-sky-400 via-sky-500 to-sky-700 text-white shadow-lg shadow-sky-500/40 border-t border-sky-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-base md:text-lg">📋</span>
-                                    <span className="relative hidden sm:inline">Grading</span>
+                                    <span className="relative text-lg">📋</span>
+                                    <span className="relative">Grading</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('planner')}
-                                    className={`group relative px-3 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 md:gap-2 overflow-hidden flex-shrink-0
+                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
                                         ${activeView === 'planner' 
                                             ? 'bg-gradient-to-b from-purple-400 via-purple-500 to-purple-700 text-white shadow-lg shadow-purple-500/40 border-t border-purple-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-base md:text-lg">🧠</span>
-                                    <span className="relative hidden sm:inline">Plan</span>
+                                    <span className="relative text-lg">🧠</span>
+                                    <span className="relative">Plan</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('schedule')}
-                                    className={`group relative px-3 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 md:gap-2 overflow-hidden flex-shrink-0
+                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
                                         ${activeView === 'schedule' 
                                             ? 'bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/40 border-t border-emerald-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-base md:text-lg">📅</span>
-                                    <span className="relative hidden sm:inline">Schedule</span>
+                                    <span className="relative text-lg">📅</span>
+                                    <span className="relative">Schedule</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('challenges')}
-                                    className={`group relative px-3 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 md:gap-2 overflow-hidden flex-shrink-0
+                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
                                         ${activeView === 'challenges' 
                                             ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-700 text-white shadow-lg shadow-amber-500/40 border-t border-amber-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-base md:text-lg">🏆</span>
-                                    <span className="relative hidden sm:inline">Challenges</span>
+                                    <span className="relative text-lg">🏆</span>
+                                    <span className="relative">Challenges</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('videos')}
-                                    className={`group relative px-3 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 md:gap-2 overflow-hidden flex-shrink-0
+                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
                                         ${activeView === 'videos' 
                                             ? 'bg-gradient-to-b from-rose-400 via-rose-500 to-rose-700 text-white shadow-lg shadow-rose-500/40 border-t border-rose-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-base md:text-lg">🎬</span>
-                                    <span className="relative hidden sm:inline">Videos</span>
+                                    <span className="relative text-lg">🎬</span>
+                                    <span className="relative">Videos</span>
                                     {pendingVideos.length > 0 && (
-                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg shadow-red-500/50 z-10">
+                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg shadow-red-500/50 z-10">
                                             {pendingVideos.length}
                                         </span>
                                     )}
                                 </button>
                                 
-                                <div className="w-px h-6 md:h-8 bg-gradient-to-b from-transparent via-gray-600 to-transparent mx-0.5 md:mx-1 flex-shrink-0"></div>
+                                <div className="w-px h-8 bg-gradient-to-b from-transparent via-gray-600 to-transparent mx-1"></div>
                                 
                                 <button 
                                     onClick={() => setActiveView('leaderboard')}
-                                    className={`group relative px-3 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 md:gap-2 overflow-hidden flex-shrink-0
+                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
                                         ${activeView === 'leaderboard' 
                                             ? 'bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 text-gray-900 shadow-lg shadow-yellow-500/40 border-t border-yellow-200/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-base md:text-lg">🥇</span>
-                                    <span className="relative hidden sm:inline">Shogun Rank</span>
+                                    <span className="relative text-lg">🥇</span>
+                                    <span className="relative">Shogun Rank</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('world-rankings')}
-                                    className={`group relative px-3 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 md:gap-2 overflow-hidden flex-shrink-0
+                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
                                         ${activeView === 'world-rankings' 
                                             ? 'bg-gradient-to-b from-cyan-400 via-blue-500 to-purple-600 text-white shadow-lg shadow-cyan-500/40 border-t border-cyan-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-base md:text-lg">🌍</span>
-                                    <span className="relative hidden sm:inline">World</span>
+                                    <span className="relative text-lg">🌍</span>
+                                    <span className="relative">World</span>
                                 </button>
                             </div>
                         </div>
