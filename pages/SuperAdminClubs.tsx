@@ -139,6 +139,10 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
         // Find the club to get its details
         const club = clubs.find(c => c.id === clubId);
         
+        // CRITICAL: Clear any old impersonation data first to ensure fresh state
+        sessionStorage.removeItem('impersonation_wizard_data');
+        sessionStorage.removeItem('impersonation_signup_data');
+        
         sessionStorage.setItem('impersonationToken', data.token);
         sessionStorage.setItem('impersonationClubId', clubId);
         sessionStorage.setItem('impersonation_user_type', 'owner');
