@@ -1026,47 +1026,6 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ c
     </button>
 );
 
-const DemoDataSection: React.FC<{ clubId?: string, onDemoModeChange?: (isDemo: boolean) => void }> = ({ clubId, onDemoModeChange }) => {
-    const [isDemoMode, setIsDemoMode] = useState(() => {
-        if (typeof window === 'undefined') return false;
-        return localStorage.getItem(DEMO_MODE_KEY) === 'true';
-    });
-    
-    const handleToggle = () => {
-        const newValue = !isDemoMode;
-        setIsDemoMode(newValue);
-        localStorage.setItem(DEMO_MODE_KEY, String(newValue));
-        onDemoModeChange?.(newValue);
-        
-        if (!newValue) {
-            // When turning OFF demo mode, redirect to wizard
-            window.location.href = '/wizard';
-        } else {
-            window.location.reload();
-        }
-    };
-    
-    return (
-        <div className="bg-gray-800/30 border border-gray-700/40 rounded-lg p-3">
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full transition-colors ${isDemoMode ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`}></div>
-                    <span className="text-xs font-medium text-gray-400">Demo Mode</span>
-                    <span className="text-xs text-gray-500">•</span>
-                    <span className="text-xs text-gray-500">{isDemoMode ? 'Viewing sample data' : 'Preview with sample data'}</span>
-                </div>
-                <button
-                    onClick={handleToggle}
-                    className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isDemoMode ? 'bg-emerald-500' : 'bg-gray-600'}`}
-                    role="switch"
-                    aria-checked={isDemoMode}
-                >
-                    <span className={`${isDemoMode ? 'translate-x-4' : 'translate-x-0'} pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}/>
-                </button>
-            </div>
-        </div>
-    );
-};
 
 const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
     const [activeSubTab, setActiveSubTab] = useState<'general' | 'belts' | 'locations' | 'rules'>('general');
@@ -1242,9 +1201,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         )}
                     </div>
                     
-                    {/* Demo Data Management */}
-                    <DemoDataSection clubId={clubId} />
-                </div>
+                                    </div>
             )}
 
             {activeSubTab === 'belts' && (
