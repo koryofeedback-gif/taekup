@@ -293,9 +293,47 @@ const App: React.FC = () => {
         if (loggedInUserType === 'owner') {
             // Check for impersonation mode first (Super Admin "View As")
             const isImpersonatingNow = !!sessionStorage.getItem('impersonationToken');
-            const clubId = isImpersonatingNow 
-                ? sessionStorage.getItem('impersonationClubId')
-                : localStorage.getItem('taekup_club_id');
+            
+            // During impersonation, use the trial data from sessionStorage (set by ImpersonationBanner)
+            // Don't call verify-subscription API since the club may not exist in dev database
+            if (isImpersonatingNow) {
+                console.log('[App] Impersonation mode - using sessionStorage trial data');
+                const impersonationTrialEnd = sessionStorage.getItem('impersonation_trial_end');
+                const impersonationTrialStatus = sessionStorage.getItem('impersonation_trial_status');
+                const impersonationClubStatus = sessionStorage.getItem('impersonation_club_status');
+                
+                let trialEndDate: string;
+                if (impersonationTrialEnd) {
+                    trialEndDate = new Date(impersonationTrialEnd).toISOString();
+                } else {
+                    // No trial end - assume expired
+                    trialEndDate = new Date(Date.now() - 1000).toISOString();
+                }
+                
+                const isExpired = new Date(trialEndDate) < new Date();
+                const hasActivePlan = impersonationClubStatus === 'active';
+                
+                console.log('[App] Impersonation trial data - trialEnd:', impersonationTrialEnd, 'expired:', isExpired, 'clubStatus:', impersonationClubStatus);
+                
+                // Calculate trial start from trial end (14 days before)
+                const impersonationTrialStart = sessionStorage.getItem('impersonation_trial_start');
+                const trialStartDate = impersonationTrialStart 
+                    ? new Date(impersonationTrialStart).toISOString()
+                    : new Date(new Date(trialEndDate).getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+                
+                const impersonationSubscription = {
+                    planId: hasActivePlan ? 'starter' as const : undefined,
+                    isTrialActive: !isExpired && !hasActivePlan,
+                    isLocked: isExpired && !hasActivePlan,
+                    trialStartDate,
+                    trialEndDate
+                };
+                setSubscription(impersonationSubscription);
+                setIsVerifyingSubscription(false);
+                return;
+            }
+            
+            const clubId = localStorage.getItem('taekup_club_id');
             if (clubId) {
                 setIsVerifyingSubscription(true);
                 console.log('[App] Verifying subscription status with server (always)...');
