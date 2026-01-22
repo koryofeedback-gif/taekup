@@ -261,8 +261,21 @@ const App: React.FC = () => {
                     const existingSub = loadSubscription();
                     
                     // Use server's trial end date (source of truth)
-                    const serverTrialEnd = result.trialEnd ? new Date(result.trialEnd).toISOString() : null;
-                    const trialEndDate = serverTrialEnd || existingSub?.trialEndDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                    // If server has trial_end, use it; if not but has trial_start, calculate from start
+                    // Only use 14-day-from-now fallback for brand new clubs with no trial data
+                    let trialEndDate: string;
+                    if (result.trialEnd) {
+                        trialEndDate = new Date(result.trialEnd).toISOString();
+                    } else if (result.trialStart) {
+                        // Calculate trial end from trial start (14 days)
+                        const trialStart = new Date(result.trialStart);
+                        trialEndDate = new Date(trialStart.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                    } else if (existingSub?.trialEndDate) {
+                        trialEndDate = existingSub.trialEndDate;
+                    } else {
+                        // Last resort: new trial
+                        trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                    }
                     
                     // Trust the server's trial status - it handles timezone correctly
                     const isTrialExpired = result.trialStatus === 'expired';
