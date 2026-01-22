@@ -45,6 +45,20 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
     
     React.useEffect(() => {
         if (!initialData && loggedInUserType === 'owner') {
+            // Check sessionStorage first for impersonation mode
+            const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+            if (isImpersonating) {
+                const impersonationData = sessionStorage.getItem('impersonation_signup_data');
+                if (impersonationData) {
+                    try {
+                        setInitialData(JSON.parse(impersonationData));
+                        return;
+                    } catch (e) {
+                        console.error('Failed to parse impersonation signup data', e);
+                    }
+                }
+            }
+            // Fall back to localStorage for regular mode
             const saved = localStorage.getItem('taekup_signup_data');
             if (saved) {
                 try {

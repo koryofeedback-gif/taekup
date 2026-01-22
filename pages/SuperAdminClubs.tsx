@@ -136,8 +136,25 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
       const data = await response.json();
 
       if (data.success && data.token) {
+        // Find the club to get its details
+        const club = clubs.find(c => c.id === clubId);
+        
         sessionStorage.setItem('impersonationToken', data.token);
         sessionStorage.setItem('impersonationClubId', clubId);
+        sessionStorage.setItem('impersonation_user_type', 'owner');
+        sessionStorage.setItem('impersonation_user_name', club?.name || 'Club Owner');
+        
+        // Create signup data for the wizard to use during impersonation
+        const impersonationSignupData = {
+          clubId: clubId,
+          clubName: club?.name || 'Unknown Club',
+          ownerName: club?.owner_name || 'Owner',
+          email: club?.owner_email || '',
+          password: '',
+          beltSystem: 'wt'
+        };
+        sessionStorage.setItem('impersonation_signup_data', JSON.stringify(impersonationSignupData));
+        
         onImpersonate(clubId);
       } else {
         alert(data.error || 'Failed to start impersonation session');
