@@ -44,20 +44,27 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
     // Check impersonation mode FIRST during initialization - sessionStorage takes priority over props/localStorage
     const [initialData, setInitialData] = useState<SignupData | null>(() => {
         const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+        console.log('[WizardRoute] Initializing, isImpersonating:', isImpersonating);
         if (isImpersonating) {
             const impersonationData = sessionStorage.getItem('impersonation_signup_data');
             if (impersonationData) {
                 try {
-                    console.log('[WizardRoute] Using impersonation signup data');
-                    return JSON.parse(impersonationData);
+                    const parsed = JSON.parse(impersonationData);
+                    console.log('[WizardRoute] Using impersonation signup data:', parsed.clubName);
+                    return parsed;
                 } catch (e) {
                     console.error('Failed to parse impersonation signup data', e);
                 }
             }
+            console.log('[WizardRoute] Impersonating but no signup data found');
         }
         // Fall back to prop or localStorage
-        if (signupData) return signupData;
+        if (signupData) {
+            console.log('[WizardRoute] Using signupData prop');
+            return signupData;
+        }
         const saved = localStorage.getItem('taekup_signup_data');
+        console.log('[WizardRoute] Using localStorage signup data:', !!saved);
         return saved ? JSON.parse(saved) : null;
     });
     
@@ -80,6 +87,10 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
     
     const navigate = useNavigate();
     
+    // Check if impersonating - during impersonation we stay on wizard, don't allow skip to demo
+    const isImpersonatingCheck = !!sessionStorage.getItem('impersonationToken');
+    console.log('[WizardRoute] Render - hasInitialData:', !!initialData, 'isImpersonating:', isImpersonatingCheck);
+    
     if (initialData) {
         return (
             <>
@@ -88,7 +99,7 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
                     initialData={initialData} 
                     clubId={initialData.clubId}
                     onComplete={onSetupComplete}
-                    onSkipToDemo={() => {
+                    onSkipToDemo={isImpersonatingCheck ? undefined : () => {
                         // Ensure session is persisted before navigating
                         localStorage.setItem('taekup_user_type', 'owner');
                         localStorage.setItem('taekup_user_name', initialData.clubName || 'Owner');
