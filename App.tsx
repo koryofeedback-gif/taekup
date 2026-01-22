@@ -128,55 +128,6 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
     return <Navigate to="/landing" replace />;
 };
 
-// Demo Mode Banner - compact indicator when demo mode is active
-const DemoModeBanner: React.FC = () => {
-    const [isDemo, setIsDemo] = useState(() => isDemoModeEnabled());
-    const [isExpanded, setIsExpanded] = useState(false);
-    
-    // Check if user is logged in - demo badge should only show when logged in
-    const isLoggedIn = localStorage.getItem('taekup_user_type') !== null;
-    
-    // Don't show if demo mode is off OR if user is not logged in
-    if (!isDemo || !isLoggedIn) return null;
-    
-    const handleExitDemo = () => {
-        localStorage.setItem(DEMO_MODE_KEY, 'false');
-        window.location.href = '/wizard';
-    };
-    
-    return (
-        <div className="fixed top-20 right-4 z-50">
-            {isExpanded ? (
-                <div className="bg-slate-900/95 backdrop-blur-sm rounded-xl border border-purple-500/30 shadow-xl p-3 w-56">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-white text-xs font-semibold">Demo Mode</span>
-                        <button onClick={() => setIsExpanded(false)} className="text-gray-400 hover:text-white">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                    <p className="text-gray-400 text-xs mb-3">Sample data only. No saves.</p>
-                    <button
-                        onClick={handleExitDemo}
-                        className="w-full py-2 px-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium text-xs rounded-lg transition-all hover:opacity-90"
-                    >
-                        Start My Own Dojo
-                    </button>
-                </div>
-            ) : (
-                <button
-                    onClick={() => setIsExpanded(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/90 backdrop-blur-sm text-white text-xs font-medium rounded-full shadow-lg hover:bg-purple-500 transition-all"
-                >
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                    Demo
-                </button>
-            )}
-        </div>
-    );
-};
-
 // Main App Component with Router
 const App: React.FC = () => {
     const [signupData, setSignupDataState] = useState<SignupData | null>(() => {
@@ -931,7 +882,6 @@ const AppContent: React.FC<AppContentProps> = ({
     return (
         <div className={`min-h-screen bg-gray-900 text-gray-100 font-sans ${showImpersonationPadding ? 'pt-12' : ''}`}>
             <ImpersonationBanner />
-            <DemoModeBanner />
             {subscription && loggedInUserType === 'owner' && finalWizardData && !isDojangTV && !isMyTaekHome && !isSuperAdmin && (
                 <TrialBanner 
                     subscription={subscription} 
