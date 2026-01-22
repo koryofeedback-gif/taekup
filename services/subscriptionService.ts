@@ -123,6 +123,45 @@ export const initSubscription = (trialStartDate?: string): SubscriptionStatus =>
 };
 
 export const loadSubscription = (): SubscriptionStatus | null => {
+  // Check if in impersonation mode - use trial data from sessionStorage
+  const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+  
+  if (isImpersonating) {
+    const impersonationTrialEnd = sessionStorage.getItem('impersonation_trial_end');
+    const impersonationTrialStatus = sessionStorage.getItem('impersonation_trial_status');
+    const impersonationClubStatus = sessionStorage.getItem('impersonation_club_status');
+    
+    if (impersonationTrialEnd || impersonationTrialStatus) {
+      // Calculate trial end date - use stored value or default to past date if expired
+      let trialEndDate: string;
+      if (impersonationTrialEnd) {
+        trialEndDate = new Date(impersonationTrialEnd).toISOString();
+      } else {
+        // No trial end date - assume expired
+        trialEndDate = new Date(Date.now() - 1000).toISOString();
+      }
+      
+      const isExpired = isTrialExpired(trialEndDate);
+      const hasActivePlan = impersonationClubStatus === 'active';
+      
+      console.log('[loadSubscription] Impersonation mode - trialEnd:', impersonationTrialEnd, 'expired:', isExpired, 'status:', impersonationClubStatus);
+      
+      // Calculate trial start date from trial end (14 days before)
+      const impersonationTrialStart = sessionStorage.getItem('impersonation_trial_start');
+      const trialStartDate = impersonationTrialStart 
+        ? new Date(impersonationTrialStart).toISOString()
+        : new Date(new Date(trialEndDate).getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      
+      return {
+        planId: hasActivePlan ? 'starter' : null,
+        isTrialActive: !isExpired && !hasActivePlan,
+        isLocked: isExpired && !hasActivePlan,
+        trialStartDate,
+        trialEndDate
+      };
+    }
+  }
+  
   const saved = localStorage.getItem(SUBSCRIPTION_STORAGE_KEY);
   if (!saved) return null;
   

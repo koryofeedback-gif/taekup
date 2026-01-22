@@ -557,6 +557,7 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
     
     const sessionResult = await db.execute(sql`
       SELECT ss.*, c.wizard_data, c.name as club_name, c.owner_email, c.owner_name, c.art_type, c.city, c.country,
+             c.trial_start, c.trial_end, c.trial_status, c.status as club_status,
              COALESCE(op.wizard_completed, false) as wizard_completed
       FROM support_sessions ss
       LEFT JOIN clubs c ON ss.target_club_id = c.id
@@ -694,6 +695,10 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
       ownerName: session.owner_name,
       wizardData: wizardData,
       wizardCompleted: session.wizard_completed === true,
+      trialStart: session.trial_start,
+      trialEnd: session.trial_end,
+      trialStatus: session.trial_status,
+      clubStatus: session.club_status,
       expiresAt: session.expires_at
     });
   } catch (error: any) {

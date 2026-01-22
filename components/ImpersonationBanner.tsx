@@ -70,6 +70,20 @@ export const ImpersonationBanner: React.FC = () => {
           sessionStorage.setItem('impersonation_user_type', 'owner');
           sessionStorage.setItem('impersonation_user_name', data.ownerName || data.clubName || 'Club Owner');
           
+          // Store trial data for correct trial banner display
+          if (data.trialStart) {
+            sessionStorage.setItem('impersonation_trial_start', data.trialStart);
+          }
+          if (data.trialEnd) {
+            sessionStorage.setItem('impersonation_trial_end', data.trialEnd);
+          }
+          if (data.trialStatus) {
+            sessionStorage.setItem('impersonation_trial_status', data.trialStatus);
+          }
+          if (data.clubStatus) {
+            sessionStorage.setItem('impersonation_club_status', data.clubStatus);
+          }
+          
           // Always redirect to admin dashboard for impersonation
           console.log('[ImpersonationBanner] Redirecting to admin dashboard for impersonation');
           window.location.replace('/app/admin');
