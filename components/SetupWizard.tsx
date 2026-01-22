@@ -26,6 +26,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   const navigate = useNavigate();
   // Skip demo choice during impersonation mode (Super Admin "View As")
   const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+  console.log('[SetupWizard] isImpersonating:', isImpersonating, 'token:', sessionStorage.getItem('impersonationToken'));
   const [showDemoChoice, setShowDemoChoice] = useState(!isImpersonating);
   const [formKey, setFormKey] = useState(0);
 
@@ -222,7 +223,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
     return <SetupComplete onGoToDashboard={() => onComplete(wizardData)} />;
   }
 
-  if (showDemoChoice && clubId) {
+  // Check impersonation again in render (in case state wasn't updated)
+  const isImpersonatingNow = !!sessionStorage.getItem('impersonationToken');
+  
+  if (showDemoChoice && clubId && !isImpersonatingNow) {
     return (
       <div className="container mx-auto px-6 py-12 md:py-20">
         <div className="max-w-4xl mx-auto bg-gray-800/50 rounded-lg border border-gray-700 shadow-2xl">
