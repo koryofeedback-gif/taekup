@@ -123,6 +123,17 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
   };
 
   const handleViewAs = async (clubId: string) => {
+    // CRITICAL: Clear ALL old impersonation data FIRST, before any async operations
+    // This ensures stale data doesn't persist from previous sessions
+    console.log('[handleViewAs] Starting impersonation for club:', clubId);
+    sessionStorage.removeItem('impersonation_wizard_data');
+    sessionStorage.removeItem('impersonation_signup_data');
+    sessionStorage.removeItem('impersonationToken');
+    sessionStorage.removeItem('impersonationClubId');
+    sessionStorage.removeItem('impersonation_user_type');
+    sessionStorage.removeItem('impersonation_user_name');
+    console.log('[handleViewAs] Cleared all impersonation data');
+    
     try {
       const response = await fetch('/api/super-admin/impersonate', {
         method: 'POST',
@@ -138,13 +149,6 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
       if (data.success && data.token) {
         // Find the club to get its details
         const club = clubs.find(c => c.id === clubId);
-        
-        // CRITICAL: Clear any old impersonation data first to ensure fresh state
-        console.log('[handleViewAs] Clearing old impersonation data...');
-        console.log('[handleViewAs] Before clear - impersonation_wizard_data:', sessionStorage.getItem('impersonation_wizard_data') ? 'EXISTS' : 'null');
-        sessionStorage.removeItem('impersonation_wizard_data');
-        sessionStorage.removeItem('impersonation_signup_data');
-        console.log('[handleViewAs] After clear - impersonation_wizard_data:', sessionStorage.getItem('impersonation_wizard_data') ? 'EXISTS' : 'null');
         
         sessionStorage.setItem('impersonationToken', data.token);
         sessionStorage.setItem('impersonationClubId', clubId);
