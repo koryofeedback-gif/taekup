@@ -309,11 +309,18 @@ export async function clearDemoData(clubId: string): Promise<{ success: boolean;
       .where(and(eq(students.clubId, clubId), eq(students.isDemo, true)))
       .returning();
 
-    // CRITICAL: Also clear wizard_data so fresh demo data can be loaded
+    // CRITICAL: Also clear wizard_data and reset wizard_completed so user sees demo choice on next login
     await db.execute(sql`
       UPDATE clubs 
       SET has_demo_data = false, wizard_data = NULL
       WHERE id = ${clubId}::uuid
+    `);
+    
+    // Reset wizard completion status so user sees the demo/real choice page again
+    await db.execute(sql`
+      UPDATE onboarding_progress 
+      SET wizard_completed = false
+      WHERE club_id = ${clubId}::uuid
     `);
 
     return { 

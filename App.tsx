@@ -713,7 +713,26 @@ const App: React.FC = () => {
         [setFinalWizardData, setSubscription]
     );
 
-    const handleLogout = useCallback(() => {
+    const handleLogout = useCallback(async () => {
+        // Check if we were in demo mode before clearing
+        const wasInDemoMode = localStorage.getItem(DEMO_MODE_KEY) === 'true';
+        const clubId = localStorage.getItem('taekup_club_id');
+        
+        // If logging out from demo mode, clear demo data on backend
+        // This resets wizard_completed so user sees the demo/real choice on next login
+        if (wasInDemoMode && clubId) {
+            try {
+                await fetch('/api/demo/clear', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clubId })
+                });
+                console.log('[Logout] Cleared demo data from backend');
+            } catch (err) {
+                console.error('[Logout] Failed to clear demo data:', err);
+            }
+        }
+        
         // Clear React state
         setLoggedInUserType(null);
         setLoggedInUserName(null);
