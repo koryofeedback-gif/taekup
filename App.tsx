@@ -41,24 +41,32 @@ interface WizardRouteProps {
 }
 
 const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType, onSetupComplete }) => {
-    const [initialData, setInitialData] = useState<SignupData | null>(signupData);
-    
-    React.useEffect(() => {
-        if (!initialData && loggedInUserType === 'owner') {
-            // Check sessionStorage first for impersonation mode
-            const isImpersonating = !!sessionStorage.getItem('impersonationToken');
-            if (isImpersonating) {
-                const impersonationData = sessionStorage.getItem('impersonation_signup_data');
-                if (impersonationData) {
-                    try {
-                        setInitialData(JSON.parse(impersonationData));
-                        return;
-                    } catch (e) {
-                        console.error('Failed to parse impersonation signup data', e);
-                    }
+    // Check impersonation mode FIRST during initialization - sessionStorage takes priority over props/localStorage
+    const [initialData, setInitialData] = useState<SignupData | null>(() => {
+        const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+        if (isImpersonating) {
+            const impersonationData = sessionStorage.getItem('impersonation_signup_data');
+            if (impersonationData) {
+                try {
+                    console.log('[WizardRoute] Using impersonation signup data');
+                    return JSON.parse(impersonationData);
+                } catch (e) {
+                    console.error('Failed to parse impersonation signup data', e);
                 }
             }
-            // Fall back to localStorage for regular mode
+        }
+        // Fall back to prop or localStorage
+        if (signupData) return signupData;
+        const saved = localStorage.getItem('taekup_signup_data');
+        return saved ? JSON.parse(saved) : null;
+    });
+    
+    React.useEffect(() => {
+        // Only run this effect for non-impersonation mode when data is missing
+        const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+        if (isImpersonating) return; // Already handled in useState initializer
+        
+        if (!initialData && loggedInUserType === 'owner') {
             const saved = localStorage.getItem('taekup_signup_data');
             if (saved) {
                 try {
