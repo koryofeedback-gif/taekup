@@ -602,6 +602,9 @@ const App: React.FC = () => {
                 
                 // For owners, verify subscription status with Stripe directly
                 if (userType === 'owner') {
+                    // Clear old subscription data to ensure fresh data from server
+                    localStorage.removeItem('taekup_subscription');
+                    
                     try {
                         const verifyResponse = await fetch(`/api/club/${userData.clubId}/verify-subscription`, {
                             method: 'POST',
