@@ -70,8 +70,9 @@ export const ImpersonationBanner: React.FC = () => {
           sessionStorage.setItem('impersonation_user_type', 'owner');
           sessionStorage.setItem('impersonation_user_name', data.ownerName || data.clubName || 'Club Owner');
           
-          window.location.replace('/app/admin');
-          return;
+          // Don't redirect - let the current page (wizard) handle the flow
+          // The user should see the wizard to review club setup status
+          console.log('[ImpersonationBanner] Loaded wizard data for impersonation, NOT redirecting');
         }
         
         setImpersonation({
