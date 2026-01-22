@@ -321,10 +321,12 @@ const App: React.FC = () => {
                     ? new Date(impersonationTrialStart).toISOString()
                     : new Date(new Date(trialEndDate).getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
                 
+                // During impersonation, NEVER lock the account - Super Admin needs full access
+                // Show trial status for awareness but don't block
                 const impersonationSubscription = {
-                    planId: hasActivePlan ? 'starter' as const : undefined,
+                    planId: hasActivePlan ? 'starter' as const : 'starter' as const, // Always give access
                     isTrialActive: !isExpired && !hasActivePlan,
-                    isLocked: isExpired && !hasActivePlan,
+                    isLocked: false, // Never lock during impersonation
                     trialStartDate,
                     trialEndDate
                 };
