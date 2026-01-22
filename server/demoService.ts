@@ -277,6 +277,14 @@ export async function loadDemoData(clubId: string): Promise<{ success: boolean; 
       WHERE id = ${clubId}::uuid
     `);
     
+    // CRITICAL: Set wizard_completed = true so user can access admin dashboard
+    // This will be reset to false by clearDemoData when user logs out
+    await db.execute(sql`
+      INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
+      VALUES (${clubId}::uuid, true, NOW())
+      ON CONFLICT (club_id) DO UPDATE SET wizard_completed = true
+    `);
+    
     console.log('[DemoService] Demo data loaded and saved to database:', insertedStudents.length, 'students, returning wizardData with', allStudents.length, 'total students');
     return { 
       success: true, 
