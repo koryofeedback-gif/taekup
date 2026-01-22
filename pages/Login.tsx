@@ -106,11 +106,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             // This ensures users who started but didn't finish wizard are taken back to wizard
             const wizardIsCompleted = user.wizardCompleted === true;
             
-            // If wizard is not completed, clear any partial localStorage data so wizard starts fresh
+            // If wizard is not completed, CLEAR localStorage so wizard/demo choice shows fresh
             if (!wizardIsCompleted && userType === 'owner') {
-                // Keep the draft if it exists (taekup_wizard_draft) but clear completed data
-                // This allows resuming from where they left off in the wizard
-                console.log('[Login] Wizard not completed, user will be redirected to wizard');
+                console.log('[Login] Wizard not completed, clearing localStorage and redirecting to wizard');
+                localStorage.removeItem('taekup_wizard_data');
+                localStorage.removeItem('taekup_wizard_complete');
+                localStorage.removeItem('taekup_demo_mode');
             }
             
             // Determine target URL
