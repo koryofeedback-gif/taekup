@@ -24,7 +24,9 @@ const STORAGE_KEY = 'taekup_wizard_draft';
 
 export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, onComplete, onSkipToDemo }) => {
   const navigate = useNavigate();
-  const [showDemoChoice, setShowDemoChoice] = useState(true);
+  // Skip demo choice during impersonation mode (Super Admin "View As")
+  const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+  const [showDemoChoice, setShowDemoChoice] = useState(!isImpersonating);
   const [formKey, setFormKey] = useState(0);
 
   // Initialize state from LocalStorage if available, otherwise use defaults
