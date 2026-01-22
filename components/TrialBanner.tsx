@@ -1,5 +1,4 @@
 import React from 'react';
-import { getDaysRemaining } from '../services/subscriptionService';
 import type { SubscriptionStatus } from '../types';
 
 interface TrialBannerProps {
@@ -13,33 +12,17 @@ export const TrialBanner: React.FC<TrialBannerProps> = ({ subscription, onUpgrad
     return null;
   }
 
-  const daysRemaining = getDaysRemaining(subscription.trialEndDate);
-  
-  if (daysRemaining <= 0) {
-    return null;
-  }
-
-  const isUrgent = daysRemaining <= 3;
-  const bgColor = isUrgent ? 'bg-red-600' : 'bg-sky-600';
-  const message = isUrgent 
-    ? `Trial expires in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}! Upgrade now to keep your data.`
-    : `${daysRemaining} days left in your free trial. Enjoying TaekUp?`;
-
   return (
-    <div className={`${bgColor} text-white px-4 py-2 flex items-center justify-between`}>
+    <div className="bg-sky-600 text-white px-4 py-2 flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <span className="text-lg">{isUrgent ? '⚠️' : '🎉'}</span>
-        <span className="text-sm font-medium">{message}</span>
+        <span className="text-lg">🎉</span>
+        <span className="text-sm font-medium">Enjoy your free trial! Explore all TaekUp features.</span>
       </div>
       <button
         onClick={onUpgradeClick}
-        className={`px-4 py-1 rounded-lg text-sm font-semibold transition-colors ${
-          isUrgent 
-            ? 'bg-white text-red-600 hover:bg-gray-100' 
-            : 'bg-white/20 hover:bg-white/30'
-        }`}
+        className="px-4 py-1 rounded-lg text-sm font-semibold transition-colors bg-white/20 hover:bg-white/30"
       >
-        {isUrgent ? 'Upgrade Now' : 'View Plans'}
+        View Plans
       </button>
     </div>
   );

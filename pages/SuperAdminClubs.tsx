@@ -31,7 +31,7 @@ interface SuperAdminClubsProps {
   onImpersonate: (clubId: string) => void;
 }
 
-type ModalType = 'extend' | 'discount' | 'email' | 'delete' | 'fix-trial' | null;
+type ModalType = 'extend' | 'discount' | 'email' | 'delete' | null;
 
 export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogout, onImpersonate }) => {
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -53,7 +53,6 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
   const [discountPercent, setDiscountPercent] = useState(20);
   const [discountDuration, setDiscountDuration] = useState('once');
   const [emailTemplate, setEmailTemplate] = useState('welcome_club');
-  const [fixTrialDate, setFixTrialDate] = useState('');
 
   const fetchClubs = async () => {
     setIsLoading(true);
@@ -218,36 +217,6 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
         setTimeout(closeModal, 2000);
       } else {
         setActionMessage({ type: 'error', text: data.error || 'Failed to extend trial' });
-      }
-    } catch (err) {
-      setActionMessage({ type: 'error', text: 'Network error. Please try again.' });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleFixTrial = async () => {
-    if (!selectedClub || !fixTrialDate) return;
-    setActionLoading(true);
-    try {
-      const response = await fetch(`/api/super-admin/clubs/${selectedClub.id}/fix-trial`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          trialEnd: fixTrialDate
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setActionMessage({ type: 'success', text: `Trial end date fixed to ${new Date(fixTrialDate).toLocaleDateString()}!` });
-        fetchClubs();
-        setTimeout(closeModal, 2000);
-      } else {
-        setActionMessage({ type: 'error', text: data.error || 'Failed to fix trial date' });
       }
     } catch (err) {
       setActionMessage({ type: 'error', text: 'Network error. Please try again.' });
@@ -605,13 +574,6 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                       <td className="px-4 py-4">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => openModal('fix-trial', club)}
-                            className="p-2 hover:bg-orange-600/20 rounded-lg text-orange-400 hover:text-orange-300 transition-colors"
-                            title="Fix Trial Date"
-                          >
-                            <Calendar className="w-4 h-4" />
-                          </button>
-                          <button
                             onClick={() => openModal('discount', club)}
                             className="p-2 hover:bg-green-600/20 rounded-lg text-green-400 hover:text-green-300 transition-colors"
                             title="Apply Discount"
@@ -714,68 +676,6 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
               >
                 {actionLoading ? 'Extending...' : `Extend by ${extendDays} Days`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Fix Trial Date Modal */}
-      {modalType === 'fix-trial' && selectedClub && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-orange-400" />
-                Fix Trial End Date
-              </h3>
-              <button onClick={closeModal} className="text-gray-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <p className="text-gray-400 mb-2">Fixing trial date for <span className="text-white font-medium">{selectedClub.name}</span></p>
-            <p className="text-xs text-gray-500 mb-4">
-              Current trial end: {selectedClub.trial_end ? new Date(selectedClub.trial_end).toLocaleDateString() : 'Not set'}
-            </p>
-            
-            {actionMessage && (
-              <div className={`p-3 rounded-lg mb-4 ${
-                actionMessage.type === 'success' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
-              }`}>
-                {actionMessage.text}
-              </div>
-            )}
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">New Trial End Date</label>
-                <input
-                  type="date"
-                  value={fixTrialDate}
-                  onChange={(e) => setFixTrialDate(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-              
-              <div className="text-xs text-gray-500">
-                <p>This will set the exact trial end date. Use this to fix incorrect dates in the database.</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={closeModal}
-                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleFixTrial}
-                disabled={actionLoading || !fixTrialDate}
-                className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors disabled:opacity-50"
-              >
-                {actionLoading ? 'Fixing...' : 'Fix Trial Date'}
               </button>
             </div>
           </div>

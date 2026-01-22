@@ -351,63 +351,6 @@ router.delete('/clubs/:id', verifySuperAdmin, async (req: Request, res: Response
   }
 });
 
-// Fix club trial dates
-router.patch('/clubs/:id/fix-trial', verifySuperAdmin, async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { trialEnd, trialStart } = req.body;
-    
-    // Check if club exists
-    const clubResult = await db.execute(sql`SELECT id, name, trial_start, trial_end FROM clubs WHERE id = ${id}`);
-    if (!(clubResult as any[]).length) {
-      return res.status(404).json({ error: 'Club not found' });
-    }
-    
-    const club = (clubResult as any[])[0];
-    const updates: string[] = [];
-    
-    if (trialEnd) {
-      await db.execute(sql`UPDATE clubs SET trial_end = ${trialEnd}::timestamp WHERE id = ${id}`);
-      updates.push(`trial_end: ${trialEnd}`);
-    }
-    
-    if (trialStart) {
-      await db.execute(sql`UPDATE clubs SET trial_start = ${trialStart}::timestamp WHERE id = ${id}`);
-      updates.push(`trial_start: ${trialStart}`);
-    }
-    
-    // If only trialStart provided, calculate trialEnd as trialStart + 14 days
-    if (trialStart && !trialEnd) {
-      const newTrialEnd = new Date(trialStart);
-      newTrialEnd.setDate(newTrialEnd.getDate() + 14);
-      await db.execute(sql`UPDATE clubs SET trial_end = ${newTrialEnd.toISOString()}::timestamp WHERE id = ${id}`);
-      updates.push(`trial_end (auto-calculated): ${newTrialEnd.toISOString()}`);
-    }
-    
-    console.log(`[SuperAdmin] Fixed trial dates for club: ${club.name} (${id}) - ${updates.join(', ')}`);
-    
-    // Fetch updated club
-    const updatedResult = await db.execute(sql`SELECT trial_start, trial_end FROM clubs WHERE id = ${id}`);
-    const updated = (updatedResult as any[])[0];
-    
-    res.json({ 
-      success: true, 
-      message: `Trial dates updated for "${club.name}"`,
-      previous: {
-        trialStart: club.trial_start,
-        trialEnd: club.trial_end
-      },
-      current: {
-        trialStart: updated.trial_start,
-        trialEnd: updated.trial_end
-      }
-    });
-  } catch (error: any) {
-    console.error('Fix trial dates error:', error);
-    res.status(500).json({ error: 'Failed to fix trial dates: ' + error.message });
-  }
-});
-
 router.get('/parents', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
     const { premium_only, at_risk, search, limit = 50, offset = 0 } = req.query;
