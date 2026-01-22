@@ -186,12 +186,23 @@ const App: React.FC = () => {
     const [finalWizardData, setFinalWizardDataState] = useState<WizardData | null>(() => {
         // Check sessionStorage first for impersonation mode (Super Admin "View As")
         const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+        console.log('[App] Initializing finalWizardData, isImpersonating:', isImpersonating);
         if (isImpersonating) {
             const impersonationData = sessionStorage.getItem('impersonation_wizard_data');
-            return impersonationData ? JSON.parse(impersonationData) : null;
+            console.log('[App] Impersonation wizard data:', impersonationData ? 'found' : 'NOT FOUND');
+            if (impersonationData) {
+                const parsed = JSON.parse(impersonationData);
+                console.log('[App] Using impersonation wizard data, clubName:', parsed.clubName);
+                return parsed;
+            }
+            // During impersonation, return null if no impersonation_wizard_data
+            // We should NOT fall back to localStorage
+            console.log('[App] Impersonating but no wizard data - returning null');
+            return null;
         }
         // Regular mode: use localStorage
         const saved = localStorage.getItem('taekup_wizard_data');
+        console.log('[App] Regular mode, localStorage wizard data:', saved ? 'found' : 'NOT FOUND');
         return saved ? JSON.parse(saved) : null;
     });
     const [subscription, setSubscription] = useState<SubscriptionStatus | null>(() => {
@@ -1275,6 +1286,8 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
     
     // Get wizard data: check sessionStorage first for impersonation, then props/localStorage
     let dataToUse = finalWizardData;
+    let dataSource = finalWizardData ? 'props' : 'none';
+    
     if (!dataToUse) {
         try {
             const saved = isImpersonatingSession 
@@ -1282,11 +1295,14 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
                 : localStorage.getItem('taekup_wizard_data');
             if (saved) {
                 dataToUse = JSON.parse(saved);
+                dataSource = isImpersonatingSession ? 'sessionStorage' : 'localStorage';
             }
         } catch (e) {
             console.error('[AdminRouteGuard] Parse error:', e);
         }
     }
+    
+    console.log('[AdminRouteGuard] Data source:', dataSource, 'isImpersonating:', isImpersonatingSession, 'clubName:', dataToUse?.clubName);
     
     // Ensure required arrays exist to prevent crashes
     if (dataToUse) {

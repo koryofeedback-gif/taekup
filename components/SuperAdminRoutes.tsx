@@ -86,8 +86,14 @@ export const SuperAdminClubsRoute: React.FC = () => {
     
     const handleImpersonate = (clubId: string) => {
         const impersonationToken = sessionStorage.getItem('impersonationToken');
+        console.log('[SuperAdminRoutes] handleImpersonate called, token:', impersonationToken);
         if (impersonationToken) {
-            window.location.href = `/wizard?impersonate=${impersonationToken}`;
+            const targetUrl = `/wizard?impersonate=${impersonationToken}`;
+            console.log('[SuperAdminRoutes] Navigating to:', targetUrl);
+            // Use replace to prevent back-button issues
+            window.location.replace(targetUrl);
+        } else {
+            console.error('[SuperAdminRoutes] No impersonation token found in sessionStorage');
         }
     };
     
