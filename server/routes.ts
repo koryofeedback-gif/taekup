@@ -971,7 +971,8 @@ export function registerRoutes(app: Express) {
           wizardCompleted,
           studentId
         },
-        wizardData
+        // Only return wizardData if wizard is completed - prevents frontend from caching demo data after logout
+        wizardData: wizardCompleted ? wizardData : null
       });
 
     } catch (error: any) {
