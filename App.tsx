@@ -365,8 +365,10 @@ const App: React.FC = () => {
                         trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
                     }
                     
-                    // Trust the server's trial status - it handles timezone correctly
-                    const isTrialExpired = result.trialStatus === 'expired';
+                    // Check if trial is expired by comparing dates (more reliable than trial_status field)
+                    // trial_status field in DB might not be auto-updated when trial ends
+                    const isTrialExpired = result.trialStatus === 'expired' || 
+                        (trialEndDate && new Date(trialEndDate) < new Date());
                     
                     if (result.success && result.hasActiveSubscription) {
                         // Has active paid subscription
