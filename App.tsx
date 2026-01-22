@@ -370,8 +370,11 @@ const App: React.FC = () => {
                     const isTrialExpired = result.trialStatus === 'expired' || 
                         (trialEndDate && new Date(trialEndDate) < new Date());
                     
-                    if (result.success && result.hasActiveSubscription) {
-                        // Has active paid subscription
+                    // Check if club is paid: either Stripe found subscription OR trial_status = 'converted'
+                    const isPaidClub = result.hasActiveSubscription || result.trialStatus === 'converted';
+                    
+                    if (result.success && isPaidClub) {
+                        // Has active paid subscription (detected from Stripe or trial_status = 'converted')
                         const updatedSubscription = {
                             ...existingSub,
                             planId: (result.planId || 'starter') as any,
@@ -381,9 +384,9 @@ const App: React.FC = () => {
                         };
                         setSubscription(updatedSubscription);
                         saveSubscription(updatedSubscription);
-                        console.log('[App] Active subscription found - dashboard unlocked');
-                    } else if (result.success && !result.hasActiveSubscription) {
-                        // No active subscription - check if trial expired
+                        console.log('[App] Paid club detected - dashboard unlocked, trialStatus:', result.trialStatus);
+                    } else if (result.success && !isPaidClub) {
+                        // Not paid - check if trial expired
                         const updatedSubscription = {
                             ...existingSub,
                             planId: undefined,
