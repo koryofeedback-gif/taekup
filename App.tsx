@@ -247,7 +247,11 @@ const App: React.FC = () => {
     // Auto-verify subscription status on app load for owners - ALWAYS verify with server
     useEffect(() => {
         if (loggedInUserType === 'owner') {
-            const clubId = localStorage.getItem('taekup_club_id');
+            // Check for impersonation mode first (Super Admin "View As")
+            const isImpersonatingNow = !!sessionStorage.getItem('impersonationToken');
+            const clubId = isImpersonatingNow 
+                ? sessionStorage.getItem('impersonationClubId')
+                : localStorage.getItem('taekup_club_id');
             if (clubId) {
                 setIsVerifyingSubscription(true);
                 console.log('[App] Verifying subscription status with server (always)...');
