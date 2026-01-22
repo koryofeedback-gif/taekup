@@ -611,29 +611,46 @@ const App: React.FC = () => {
                         console.log('[Login] Subscription verification:', verifyResult);
                         
                         const existingSubscription = loadSubscription();
-                        if (verifyResult.success && verifyResult.hasActiveSubscription) {
+                        
+                        // Use server's trial dates (source of truth)
+                        let trialEndDate = existingSubscription?.trialEndDate;
+                        if (verifyResult.trialEnd) {
+                            trialEndDate = new Date(verifyResult.trialEnd).toISOString();
+                        } else if (verifyResult.trialStart) {
+                            // Calculate 14 days from trial start
+                            trialEndDate = new Date(new Date(verifyResult.trialStart).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                        } else if (!trialEndDate) {
+                            // Fallback for new clubs
+                            trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                        }
+                        
+                        // Check if paid (Stripe subscription OR converted status)
+                        const isPaid = verifyResult.hasActiveSubscription || verifyResult.trialStatus === 'converted';
+                        const isTrialExpired = !isPaid && trialEndDate && new Date(trialEndDate) < new Date();
+                        
+                        if (verifyResult.success && isPaid) {
                             const updatedSubscription = {
                                 ...existingSubscription,
                                 planId: 'starter' as const,
                                 isTrialActive: false,
                                 isLocked: false,
-                                trialEndDate: existingSubscription?.trialEndDate || new Date().toISOString()
+                                trialEndDate
                             };
                             setSubscription(updatedSubscription);
                             saveSubscription(updatedSubscription);
-                            console.log('[Login] Updated subscription: active Stripe subscription found');
-                        } else if (verifyResult.success && !verifyResult.hasActiveSubscription) {
-                            // No active subscription - ensure trial banner shows
+                            console.log('[Login] Updated subscription: paid club detected');
+                        } else if (verifyResult.success && !isPaid) {
+                            // Not paid - check if trial expired
                             const updatedSubscription = {
                                 ...existingSubscription,
                                 planId: undefined,
-                                isTrialActive: true,
-                                isLocked: false,
-                                trialEndDate: existingSubscription?.trialEndDate || new Date().toISOString()
+                                isTrialActive: !isTrialExpired,
+                                isLocked: isTrialExpired,
+                                trialEndDate
                             };
                             setSubscription(updatedSubscription);
                             saveSubscription(updatedSubscription);
-                            console.log('[Login] No active subscription - trial banner should show');
+                            console.log('[Login] Trial status - expired:', isTrialExpired, 'trialEndDate:', trialEndDate);
                         }
                     } catch (verifyErr) {
                         console.error('[Login] Subscription verification failed:', verifyErr);
