@@ -616,16 +616,24 @@ const App: React.FC = () => {
                         const existingSubscription = loadSubscription();
                         
                         // Use server's trial dates (source of truth)
-                        let trialEndDate = existingSubscription?.trialEndDate;
+                        // Priority: verifyResult > userData (from login) > existing > default
+                        let trialEndDate: string;
                         if (verifyResult.trialEnd) {
                             trialEndDate = new Date(verifyResult.trialEnd).toISOString();
+                        } else if (userData.trialEnd) {
+                            // Use trial end from login response
+                            trialEndDate = new Date(userData.trialEnd).toISOString();
                         } else if (verifyResult.trialStart) {
                             // Calculate 14 days from trial start
                             trialEndDate = new Date(new Date(verifyResult.trialStart).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
-                        } else if (!trialEndDate) {
+                        } else if (existingSubscription?.trialEndDate) {
+                            trialEndDate = existingSubscription.trialEndDate;
+                        } else {
                             // Fallback for new clubs
                             trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
                         }
+                        
+                        console.log('[Login] Trial end date resolved:', trialEndDate, 'from:', verifyResult.trialEnd ? 'verify' : userData.trialEnd ? 'userData' : 'fallback');
                         
                         // Check if paid (Stripe subscription OR converted status)
                         const isPaid = verifyResult.hasActiveSubscription || verifyResult.trialStatus === 'converted';
@@ -657,21 +665,23 @@ const App: React.FC = () => {
                         }
                     } catch (verifyErr) {
                         console.error('[Login] Subscription verification failed:', verifyErr);
-                        // Fall back to checking trialStatus from login response
-                        if (userData.trialStatus === 'converted') {
-                            const existingSubscription = loadSubscription();
-                            if (existingSubscription && !existingSubscription.planId) {
-                                const updatedSubscription = {
-                                    ...existingSubscription,
-                                    planId: 'starter' as const,
-                                    isTrialActive: false,
-                                    isLocked: false
-                                };
-                                setSubscription(updatedSubscription);
-                                saveSubscription(updatedSubscription);
-                                console.log('[Login] Updated subscription from trialStatus fallback');
-                            }
-                        }
+                        // Fall back to using login response data
+                        const trialEndDate = userData.trialEnd 
+                            ? new Date(userData.trialEnd).toISOString()
+                            : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                        const isTrialExpired = new Date(trialEndDate) < new Date();
+                        const isPaid = userData.trialStatus === 'converted';
+                        
+                        const updatedSubscription = {
+                            planId: isPaid ? 'starter' as const : undefined,
+                            isTrialActive: !isPaid && !isTrialExpired,
+                            isLocked: !isPaid && isTrialExpired,
+                            trialEndDate,
+                            trialStartDate: new Date(new Date(trialEndDate).getTime() - 14 * 24 * 60 * 60 * 1000).toISOString()
+                        };
+                        setSubscription(updatedSubscription);
+                        saveSubscription(updatedSubscription);
+                        console.log('[Login] Used login data fallback - trialEnd:', trialEndDate, 'isPaid:', isPaid);
                     }
                 } else if (userData.trialStatus === 'converted') {
                     // For non-owners, still check trialStatus from login response
