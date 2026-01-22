@@ -556,9 +556,11 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
     const { token } = req.params;
     
     const sessionResult = await db.execute(sql`
-      SELECT ss.*, c.wizard_data, c.name as club_name, c.owner_email, c.owner_name, c.art_type, c.city, c.country
+      SELECT ss.*, c.wizard_data, c.name as club_name, c.owner_email, c.owner_name, c.art_type, c.city, c.country,
+             COALESCE(op.wizard_completed, false) as wizard_completed
       FROM support_sessions ss
       LEFT JOIN clubs c ON ss.target_club_id = c.id
+      LEFT JOIN onboarding_progress op ON c.id = op.club_id
       WHERE ss.token = ${token}
         AND ss.expires_at > NOW()
         AND ss.ended_at IS NULL
@@ -691,6 +693,7 @@ router.get('/impersonate/verify/:token', async (req: Request, res: Response) => 
       ownerEmail: session.owner_email,
       ownerName: session.owner_name,
       wizardData: wizardData,
+      wizardCompleted: session.wizard_completed === true,
       expiresAt: session.expires_at
     });
   } catch (error: any) {

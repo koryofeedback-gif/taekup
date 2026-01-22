@@ -63,6 +63,7 @@ export const ImpersonationBanner: React.FC = () => {
         sessionStorage.setItem('impersonationClubName', data.clubName || 'Club');
         
         const wizardData = data.wizardData;
+        const wizardCompleted = data.wizardCompleted === true;
         
         if (wizardData) {
           sessionStorage.setItem('impersonation_wizard_data', JSON.stringify(wizardData));
@@ -70,9 +71,15 @@ export const ImpersonationBanner: React.FC = () => {
           sessionStorage.setItem('impersonation_user_type', 'owner');
           sessionStorage.setItem('impersonation_user_name', data.ownerName || data.clubName || 'Club Owner');
           
-          // Don't redirect - let the current page (wizard) handle the flow
-          // The user should see the wizard to review club setup status
-          console.log('[ImpersonationBanner] Loaded wizard data for impersonation, NOT redirecting');
+          // If club has completed the wizard, redirect to admin dashboard
+          // Otherwise stay on wizard to see their progress
+          if (wizardCompleted) {
+            console.log('[ImpersonationBanner] Club completed wizard, redirecting to admin dashboard');
+            window.location.replace('/app/admin');
+            return;
+          } else {
+            console.log('[ImpersonationBanner] Club has NOT completed wizard, staying on wizard page');
+          }
         }
         
         setImpersonation({
