@@ -116,35 +116,35 @@
       "title": "Welcome to Legacy Mode!",
       "body": "Hi {{name}},<br><br>Congratulations! You've unlocked <strong>Legacy Mode</strong> for {{childName}}.<br><br>You now have access to:<br>• Global Shogun Rank™ worldwide leaderboards<br>• AI Coach insights with ChronosBelt™ Predictor<br>• Full Video Academy<br>• Legacy Cards™ collection<br>• Home Dojo habit tracking<br><br>Let's take {{childName}}'s training to the next level!",
       "btn_text": "Explore Premium Features",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "Mode Legacy Débloqué pour {{childName}}! 🌟",
       "title": "Bienvenue en Mode Legacy!",
       "body": "Bonjour {{name}},<br><br>Félicitations! Vous avez débloqué le <strong>Mode Legacy</strong> pour {{childName}}.<br><br>Vous avez maintenant accès à:<br>• Classements mondiaux Global Shogun Rank™<br>• Aperçus du Coach IA avec ChronosBelt™ Predictor<br>• Académie Vidéo complète<br>• Collection Legacy Cards™<br>• Suivi des habitudes Home Dojo<br><br>Passons l'entraînement de {{childName}} au niveau supérieur!",
       "btn_text": "Explorer les Fonctionnalités Premium",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "Legacy-Modus für {{childName}} freigeschaltet! 🌟",
       "title": "Willkommen im Legacy-Modus!",
       "body": "Hallo {{name}},<br><br>Herzlichen Glückwunsch! Sie haben den <strong>Legacy-Modus</strong> für {{childName}} freigeschaltet.<br><br>Sie haben jetzt Zugang zu:<br>• Global Shogun Rank™ weltweite Ranglisten<br>• KI-Coach-Einblicke mit ChronosBelt™ Predictor<br>• Vollständige Video-Akademie<br>• Legacy Cards™ Sammlung<br>• Home Dojo Gewohnheitsverfolgung<br><br>Bringen wir {{childName}}s Training auf die nächste Stufe!",
       "btn_text": "Premium-Funktionen entdecken",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "¡Modo Legacy desbloqueado para {{childName}}! 🌟",
       "title": "¡Bienvenido al Modo Legacy!",
       "body": "Hola {{name}},<br><br>¡Felicidades! Has desbloqueado el <strong>Modo Legacy</strong> para {{childName}}.<br><br>Ahora tienes acceso a:<br>• Clasificaciones mundiales Global Shogun Rank™<br>• Información del Coach IA con ChronosBelt™ Predictor<br>• Academia de Video completa<br>• Colección Legacy Cards™<br>• Seguimiento de hábitos Home Dojo<br><br>¡Llevemos el entrenamiento de {{childName}} al siguiente nivel!",
       "btn_text": "Explorar Funciones Premium",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "حالت Legacy برای {{childName}} باز شد! 🌟",
       "title": "به حالت Legacy خوش آمدید!",
       "body": "سلام {{name}},<br><br>تبریک! شما <strong>حالت Legacy</strong> را برای {{childName}} باز کردید.<br><br>شما اکنون به موارد زیر دسترسی دارید:<br>• رتبه‌بندی جهانی Global Shogun Rank™<br>• بینش‌های مربی هوش مصنوعی با ChronosBelt™ Predictor<br>• آکادمی ویدیویی کامل<br>• مجموعه Legacy Cards™<br>• پیگیری عادت‌های Home Dojo<br><br>بیایید تمرین {{childName}} را به سطح بعدی ببریم!",
       "btn_text": "کاوش ویژگی‌های ممتاز",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "video_approved": {
@@ -153,35 +153,35 @@
       "title": "Video Approved!",
       "body": "Hi {{childName}},<br><br>Your form was excellent! Sensei <strong>{{coachName}}</strong> approved your video submission.<br><br>You earned <strong>+{{xpAmount}} HonorXP™</strong>!<br><br>Keep training hard and climb the Global Shogun Rank™!",
       "btn_text": "View My Progress",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "Bravo! Sensei a approuvé ta vidéo ✅",
       "title": "Vidéo Approuvée!",
       "body": "Salut {{childName}},<br><br>Ta forme était excellente! Sensei <strong>{{coachName}}</strong> a approuvé ta soumission vidéo.<br><br>Tu as gagné <strong>+{{xpAmount}} HonorXP™</strong>!<br><br>Continue à t'entraîner dur et grimpe dans le Global Shogun Rank™!",
       "btn_text": "Voir Ma Progression",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "Toll gemacht! Sensei hat dein Video genehmigt ✅",
       "title": "Video genehmigt!",
       "body": "Hallo {{childName}},<br><br>Deine Form war ausgezeichnet! Sensei <strong>{{coachName}}</strong> hat deine Videoeinreichung genehmigt.<br><br>Du hast <strong>+{{xpAmount}} HonorXP™</strong> verdient!<br><br>Trainiere weiter hart und klettere im Global Shogun Rank™!",
       "btn_text": "Meinen Fortschritt ansehen",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "¡Buen trabajo! Sensei aprobó tu video ✅",
       "title": "¡Video Aprobado!",
       "body": "Hola {{childName}},<br><br>¡Tu forma fue excelente! Sensei <strong>{{coachName}}</strong> aprobó tu envío de video.<br><br>¡Ganaste <strong>+{{xpAmount}} HonorXP™</strong>!<br><br>¡Sigue entrenando duro y sube en el Global Shogun Rank™!",
       "btn_text": "Ver Mi Progreso",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "آفرین! سنسی ویدیوی شما را تایید کرد ✅",
       "title": "ویدیو تایید شد!",
       "body": "سلام {{childName}},<br><br>فرم شما عالی بود! سنسی <strong>{{coachName}}</strong> ارسال ویدیوی شما را تایید کرد.<br><br>شما <strong>+{{xpAmount}} HonorXP™</strong> کسب کردید!<br><br>به تمرین سخت ادامه دهید و در Global Shogun Rank™ بالا بروید!",
       "btn_text": "مشاهده پیشرفت من",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "video_retry": {
@@ -190,35 +190,35 @@
       "title": "Keep Practicing!",
       "body": "Hi {{childName}},<br><br>Sensei <strong>{{coachName}}</strong> watched your video and has some advice:<br><br><em>\"{{feedback}}\"</em><br><br>Don't worry - every champion needs practice! Watch the tutorial again and submit a new video when you're ready.",
       "btn_text": "Try Again",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "Sensei a laissé un commentaire sur ta vidéo 📝",
       "title": "Continue à Pratiquer!",
       "body": "Salut {{childName}},<br><br>Sensei <strong>{{coachName}}</strong> a regardé ta vidéo et a quelques conseils:<br><br><em>\"{{feedback}}\"</em><br><br>Ne t'inquiète pas - chaque champion a besoin de pratique! Regarde le tutoriel à nouveau et soumets une nouvelle vidéo quand tu es prêt.",
       "btn_text": "Réessayer",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "Sensei hat Feedback zu deinem Video hinterlassen 📝",
       "title": "Weiter üben!",
       "body": "Hallo {{childName}},<br><br>Sensei <strong>{{coachName}}</strong> hat dein Video angesehen und hat einige Ratschläge:<br><br><em>\"{{feedback}}\"</em><br><br>Keine Sorge - jeder Champion braucht Übung! Schau dir das Tutorial noch einmal an und reiche ein neues Video ein, wenn du bereit bist.",
       "btn_text": "Erneut versuchen",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "Sensei dejó comentarios sobre tu video 📝",
       "title": "¡Sigue Practicando!",
       "body": "Hola {{childName}},<br><br>Sensei <strong>{{coachName}}</strong> vio tu video y tiene algunos consejos:<br><br><em>\"{{feedback}}\"</em><br><br>No te preocupes - ¡todo campeón necesita práctica! Mira el tutorial de nuevo y envía un nuevo video cuando estés listo.",
       "btn_text": "Intentar de nuevo",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "سنسی نظری درباره ویدیوی شما گذاشت 📝",
       "title": "به تمرین ادامه دهید!",
       "body": "سلام {{childName}},<br><br>سنسی <strong>{{coachName}}</strong> ویدیوی شما را دید و توصیه‌هایی دارد:<br><br><em>\"{{feedback}}\"</em><br><br>نگران نباشید - هر قهرمانی نیاز به تمرین دارد! آموزش را دوباره ببینید و وقتی آماده شدید ویدیوی جدید ارسال کنید.",
       "btn_text": "دوباره امتحان کنید",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "trial_ending": {
@@ -338,35 +338,35 @@
       "title": "Belt Promotion!",
       "body": "Amazing news!<br><br><strong>{{childName}}</strong> has been promoted to <strong>{{newBelt}}</strong>!<br><br>Hard work pays off. This achievement has been recorded in their Legacy Cards™ collection.<br><br>Keep up the great work, champion!",
       "btn_text": "View Achievement",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "Félicitations! {{childName}} vient de monter de niveau! 🎉",
       "title": "Promotion de Ceinture!",
       "body": "Nouvelles incroyables!<br><br><strong>{{childName}}</strong> a été promu à <strong>{{newBelt}}</strong>!<br><br>Le travail acharné paie. Cette réalisation a été enregistrée dans sa collection Legacy Cards™.<br><br>Continue comme ça, champion!",
       "btn_text": "Voir la Réalisation",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "Herzlichen Glückwunsch! {{childName}} ist aufgestiegen! 🎉",
       "title": "Gürtel-Beförderung!",
       "body": "Tolle Neuigkeiten!<br><br><strong>{{childName}}</strong> wurde zum <strong>{{newBelt}}</strong> befördert!<br><br>Harte Arbeit zahlt sich aus. Diese Leistung wurde in der Legacy Cards™ Sammlung aufgezeichnet.<br><br>Weiter so, Champion!",
       "btn_text": "Erfolg ansehen",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "¡Felicidades! ¡{{childName}} subió de nivel! 🎉",
       "title": "¡Promoción de Cinturón!",
       "body": "¡Noticias increíbles!<br><br><strong>{{childName}}</strong> ha sido promovido a <strong>{{newBelt}}</strong>!<br><br>El trabajo duro vale la pena. Este logro ha sido registrado en su colección Legacy Cards™.<br><br>¡Sigue así, campeón!",
       "btn_text": "Ver Logro",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "تبریک! {{childName}} ارتقا یافت! 🎉",
       "title": "ارتقای کمربند!",
       "body": "خبر فوق‌العاده!<br><br><strong>{{childName}}</strong> به <strong>{{newBelt}}</strong> ارتقا یافت!<br><br>تلاش سخت نتیجه می‌دهد. این دستاورد در مجموعه Legacy Cards™ او ثبت شده است.<br><br>به کار عالی‌ات ادامه بده، قهرمان!",
       "btn_text": "مشاهده دستاورد",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "weekly_progress": {
@@ -375,35 +375,35 @@
       "title": "This Week's Highlights",
       "body": "Hi {{parentName}},<br><br>Here's {{childName}}'s progress this week:<br><br>• Classes Attended: <strong>{{classesAttended}}</strong><br>• HonorXP™ Earned: <strong>+{{xpEarned}}</strong><br>• Videos Submitted: <strong>{{videosSubmitted}}</strong><br>• Global Shogun Rank™: <strong>#{{globalRank}}</strong><br><br>Keep up the amazing work!",
       "btn_text": "View Full Report",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "Rapport de Progression Hebdomadaire pour {{childName}} 📊",
       "title": "Points Forts de la Semaine",
       "body": "Bonjour {{parentName}},<br><br>Voici la progression de {{childName}} cette semaine:<br><br>• Cours Suivis: <strong>{{classesAttended}}</strong><br>• HonorXP™ Gagnés: <strong>+{{xpEarned}}</strong><br>• Vidéos Soumises: <strong>{{videosSubmitted}}</strong><br>• Global Shogun Rank™: <strong>#{{globalRank}}</strong><br><br>Continuez le travail incroyable!",
       "btn_text": "Voir le Rapport Complet",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "Wöchentlicher Fortschrittsbericht für {{childName}} 📊",
       "title": "Highlights dieser Woche",
       "body": "Hallo {{parentName}},<br><br>Hier ist {{childName}}s Fortschritt diese Woche:<br><br>• Besuchte Kurse: <strong>{{classesAttended}}</strong><br>• HonorXP™ verdient: <strong>+{{xpEarned}}</strong><br>• Eingereichte Videos: <strong>{{videosSubmitted}}</strong><br>• Global Shogun Rank™: <strong>#{{globalRank}}</strong><br><br>Weiter so!",
       "btn_text": "Vollständigen Bericht ansehen",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "Informe de Progreso Semanal para {{childName}} 📊",
       "title": "Destacados de la Semana",
       "body": "Hola {{parentName}},<br><br>Aquí está el progreso de {{childName}} esta semana:<br><br>• Clases Asistidas: <strong>{{classesAttended}}</strong><br>• HonorXP™ Ganados: <strong>+{{xpEarned}}</strong><br>• Videos Enviados: <strong>{{videosSubmitted}}</strong><br>• Global Shogun Rank™: <strong>#{{globalRank}}</strong><br><br>¡Sigue con el increíble trabajo!",
       "btn_text": "Ver Informe Completo",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "گزارش پیشرفت هفتگی برای {{childName}} 📊",
       "title": "نکات برجسته این هفته",
       "body": "سلام {{parentName}},<br><br>پیشرفت {{childName}} این هفته:<br><br>• کلاس‌های حاضر شده: <strong>{{classesAttended}}</strong><br>• HonorXP™ کسب شده: <strong>+{{xpEarned}}</strong><br>• ویدیوهای ارسال شده: <strong>{{videosSubmitted}}</strong><br>• Global Shogun Rank™: <strong>#{{globalRank}}</strong><br><br>به کار فوق‌العاده ادامه دهید!",
       "btn_text": "مشاهده گزارش کامل",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "coach_invite": {
@@ -486,35 +486,35 @@
       "title": "Subscription Cancelled",
       "body": "Hi {{name}},<br><br>We're sorry to see you go. Your Premium subscription for {{childName}} has been cancelled.<br><br>Their Global Shogun Rank™ has been frozen and premium features are now locked.<br><br>You can reactivate anytime to continue the journey!",
       "btn_text": "Reactivate Premium",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "Mode Legacy suspendu pour {{childName}}",
       "title": "Abonnement Annulé",
       "body": "Bonjour {{name}},<br><br>Nous sommes désolés de vous voir partir. Votre abonnement Premium pour {{childName}} a été annulé.<br><br>Son Global Shogun Rank™ a été gelé et les fonctionnalités premium sont maintenant verrouillées.<br><br>Vous pouvez réactiver à tout moment pour continuer le voyage!",
       "btn_text": "Réactiver Premium",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "Legacy-Modus für {{childName}} pausiert",
       "title": "Abonnement gekündigt",
       "body": "Hallo {{name}},<br><br>Es tut uns leid, Sie gehen zu sehen. Ihr Premium-Abonnement für {{childName}} wurde gekündigt.<br><br>Der Global Shogun Rank™ wurde eingefroren und Premium-Funktionen sind jetzt gesperrt.<br><br>Sie können jederzeit reaktivieren, um die Reise fortzusetzen!",
       "btn_text": "Premium reaktivieren",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "Modo Legacy pausado para {{childName}}",
       "title": "Suscripción Cancelada",
       "body": "Hola {{name}},<br><br>Lamentamos verte partir. Tu suscripción Premium para {{childName}} ha sido cancelada.<br><br>Su Global Shogun Rank™ ha sido congelado y las funciones premium ahora están bloqueadas.<br><br>¡Puedes reactivar en cualquier momento para continuar el viaje!",
       "btn_text": "Reactivar Premium",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "حالت Legacy برای {{childName}} متوقف شد",
       "title": "اشتراک لغو شد",
       "body": "سلام {{name}},<br><br>متأسفیم که می‌روید. اشتراک Premium شما برای {{childName}} لغو شده است.<br><br>Global Shogun Rank™ آنها منجمد شده و ویژگی‌های premium اکنون قفل هستند.<br><br>می‌توانید هر زمان برای ادامه سفر دوباره فعال کنید!",
       "btn_text": "فعال‌سازی مجدد Premium",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "day_3_checkin": {
@@ -708,35 +708,35 @@
       "title": "Class Feedback",
       "body": "Hi {{parentName}},<br><br><strong>{{studentName}}</strong> had a great class at <strong>{{clubName}}</strong> today!<br><br><strong>Class:</strong> {{className}}<br><strong>Date:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>Highlights:</strong> {{highlights}}",
       "btn_text": "View Full Report",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "⭐ {{studentName}} a Très Bien Fait Aujourd'hui!",
       "title": "Feedback de Cours",
       "body": "Bonjour {{parentName}},<br><br><strong>{{studentName}}</strong> a eu un super cours à <strong>{{clubName}}</strong> aujourd'hui!<br><br><strong>Cours:</strong> {{className}}<br><strong>Date:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>Points Forts:</strong> {{highlights}}",
       "btn_text": "Voir le Rapport Complet",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "⭐ {{studentName}} hat heute toll gemacht!",
       "title": "Kursfeedback",
       "body": "Hallo {{parentName}},<br><br><strong>{{studentName}}</strong> hatte heute einen tollen Kurs bei <strong>{{clubName}}</strong>!<br><br><strong>Kurs:</strong> {{className}}<br><strong>Datum:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>Highlights:</strong> {{highlights}}",
       "btn_text": "Vollständigen Bericht ansehen",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "⭐ ¡{{studentName}} lo Hizo Genial Hoy!",
       "title": "Feedback de Clase",
       "body": "Hola {{parentName}},<br><br>¡<strong>{{studentName}}</strong> tuvo una gran clase en <strong>{{clubName}}</strong> hoy!<br><br><strong>Clase:</strong> {{className}}<br><strong>Fecha:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>Destacados:</strong> {{highlights}}",
       "btn_text": "Ver Informe Completo",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "⭐ {{studentName}} امروز عالی بود!",
       "title": "بازخورد کلاس",
       "body": "سلام {{parentName}},<br><br><strong>{{studentName}}</strong> امروز کلاس عالی در <strong>{{clubName}}</strong> داشت!<br><br><strong>کلاس:</strong> {{className}}<br><strong>تاریخ:</strong> {{classDate}}<br><strong>مربی:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>نکات برجسته:</strong> {{highlights}}",
       "btn_text": "مشاهده گزارش کامل",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "attendance_alert": {
@@ -745,35 +745,35 @@
       "title": "We Haven't Seen You Lately",
       "body": "Hi {{parentName}},<br><br>We noticed <strong>{{studentName}}</strong> hasn't been to class at <strong>{{clubName}}</strong> in {{daysSinceLastClass}} days.<br><br>We miss having them on the mat! Is everything okay?<br><br>If you need to adjust your schedule or have any questions, we're here to help.",
       "btn_text": "View Class Schedule",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "{{studentName}} Nous Manque! Tout Va Bien?",
       "title": "On Ne Vous a Pas Vu Dernièrement",
       "body": "Bonjour {{parentName}},<br><br>Nous avons remarqué que <strong>{{studentName}}</strong> n'est pas venu en cours à <strong>{{clubName}}</strong> depuis {{daysSinceLastClass}} jours.<br><br>Il/elle nous manque sur le tatami! Tout va bien?<br><br>Si vous devez ajuster votre emploi du temps ou avez des questions, nous sommes là pour aider.",
       "btn_text": "Voir l'Emploi du Temps",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "Wir vermissen {{studentName}}! Ist alles in Ordnung?",
       "title": "Wir haben Sie eine Weile nicht gesehen",
       "body": "Hallo {{parentName}},<br><br>Uns ist aufgefallen, dass <strong>{{studentName}}</strong> seit {{daysSinceLastClass}} Tagen nicht mehr beim Unterricht bei <strong>{{clubName}}</strong> war.<br><br>Wir vermissen sie auf der Matte! Ist alles in Ordnung?<br><br>Wenn Sie Ihren Zeitplan anpassen müssen oder Fragen haben, sind wir hier, um zu helfen.",
       "btn_text": "Stundenplan ansehen",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "¡Extrañamos a {{studentName}}! ¿Todo Bien?",
       "title": "No Te Hemos Visto Últimamente",
       "body": "Hola {{parentName}},<br><br>Notamos que <strong>{{studentName}}</strong> no ha venido a clase en <strong>{{clubName}}</strong> en {{daysSinceLastClass}} días.<br><br>¡Los extrañamos en el tatami! ¿Todo está bien?<br><br>Si necesitas ajustar tu horario o tienes preguntas, estamos aquí para ayudar.",
       "btn_text": "Ver Horario de Clases",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "دلمان برای {{studentName}} تنگ شده! همه چیز خوب است؟",
       "title": "مدتی است ندیدیمتان",
       "body": "سلام {{parentName}},<br><br>متوجه شدیم که <strong>{{studentName}}</strong> {{daysSinceLastClass}} روز است که به کلاس در <strong>{{clubName}}</strong> نیامده است.<br><br>دلمان برایشان در تاتامی تنگ شده! همه چیز خوب است؟<br><br>اگر نیاز به تنظیم برنامه دارید یا سوالی دارید، ما اینجا هستیم تا کمک کنیم.",
       "btn_text": "مشاهده برنامه کلاس‌ها",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "birthday_wish": {
@@ -782,35 +782,35 @@
       "title": "Happy Birthday!",
       "body": "Dear {{studentName}},<br><br>Everyone at <strong>{{clubName}}</strong> wishes you a very Happy Birthday! 🎉<br><br>May this year bring you closer to your martial arts goals. Keep training hard, and never stop believing in yourself!<br><br>See you on the mat, champion!",
       "btn_text": "Celebrate at the Dojo",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "🎂 Joyeux Anniversaire, {{studentName}}!",
       "title": "Joyeux Anniversaire!",
       "body": "Cher(e) {{studentName}},<br><br>Toute l'équipe de <strong>{{clubName}}</strong> te souhaite un très Joyeux Anniversaire! 🎉<br><br>Que cette année te rapproche de tes objectifs en arts martiaux. Continue à t'entraîner dur et ne cesse jamais de croire en toi!<br><br>À bientôt sur le tatami, champion!",
       "btn_text": "Célébrer au Dojo",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "🎂 Alles Gute zum Geburtstag, {{studentName}}!",
       "title": "Alles Gute zum Geburtstag!",
       "body": "Liebe(r) {{studentName}},<br><br>Alle bei <strong>{{clubName}}</strong> wünschen dir einen wunderschönen Geburtstag! 🎉<br><br>Möge dieses Jahr dich deinen Kampfkunstzielen näherbringen. Trainiere weiter hart und glaube immer an dich selbst!<br><br>Wir sehen uns auf der Matte, Champion!",
       "btn_text": "Im Dojo feiern",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "🎂 ¡Feliz Cumpleaños, {{studentName}}!",
       "title": "¡Feliz Cumpleaños!",
       "body": "Querido(a) {{studentName}},<br><br>¡Todos en <strong>{{clubName}}</strong> te desean un muy Feliz Cumpleaños! 🎉<br><br>Que este año te acerque más a tus metas en artes marciales. ¡Sigue entrenando duro y nunca dejes de creer en ti mismo!<br><br>¡Nos vemos en el tatami, campeón!",
       "btn_text": "Celebrar en el Dojo",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "🎂 تولدت مبارک، {{studentName}}!",
       "title": "تولدت مبارک!",
       "body": "{{studentName}} عزیز،<br><br>همه در <strong>{{clubName}}</strong> تولدت را تبریک می‌گویند! 🎉<br><br>امیدواریم این سال تو را به اهداف هنرهای رزمی‌ات نزدیک‌تر کند. به تمرین سخت ادامه بده و هرگز ایمانت به خودت را از دست نده!<br><br>در تاتامی می‌بینیمت، قهرمان!",
       "btn_text": "جشن در دوجو",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "win_back": {
