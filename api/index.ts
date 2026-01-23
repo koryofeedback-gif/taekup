@@ -9,6 +9,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import sgMail from '@sendgrid/mail';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { sendClassFeedbackEmail } from '../server/services/emailService';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -1888,8 +1889,7 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
 
       // Send email
       try {
-        const emailService = await import('../server/services/emailService');
-        await emailService.sendClassFeedbackEmail(parentEmail, {
+        await sendClassFeedbackEmail(parentEmail, {
           parentName: escapeHtml(name.split(' ')[0]) + "'s Parent",
           studentName: escapeHtml(name),
           clubName: escapeHtml(clubName || 'Your Dojo'),
