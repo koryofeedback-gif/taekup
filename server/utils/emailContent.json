@@ -704,37 +704,37 @@
   },
   "class_feedback": {
     "en": {
-      "subject": "⭐ {{studentName}} Did Great Today!",
+      "subject": "⭐ {{studentName}}'s Class Report - {{classDate}}",
       "title": "Class Feedback",
-      "body": "Hi {{parentName}},<br><br><strong>{{studentName}}</strong> had a great class at <strong>{{clubName}}</strong> today!<br><br><strong>Class:</strong> {{className}}<br><strong>Date:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>Highlights:</strong> {{highlights}}",
+      "body": "Hi {{parentName}},<br><br><strong>{{studentName}}</strong> attended class at <strong>{{clubName}}</strong> today!<br><br><strong>Class:</strong> {{className}}<br><strong>Date:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><strong>Performance Scores:</strong><br>{{scoresTable}}<br><br><strong>Total Points Earned:</strong> {{totalPoints}} pts<br><strong>Stripe Progress:</strong> {{stripeProgress}}{{coachNoteSection}}",
       "btn_text": "View Full Report",
       "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
-      "subject": "⭐ {{studentName}} a Très Bien Fait Aujourd'hui!",
+      "subject": "⭐ Rapport de Cours de {{studentName}} - {{classDate}}",
       "title": "Feedback de Cours",
-      "body": "Bonjour {{parentName}},<br><br><strong>{{studentName}}</strong> a eu un super cours à <strong>{{clubName}}</strong> aujourd'hui!<br><br><strong>Cours:</strong> {{className}}<br><strong>Date:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>Points Forts:</strong> {{highlights}}",
+      "body": "Bonjour {{parentName}},<br><br><strong>{{studentName}}</strong> a assisté au cours à <strong>{{clubName}}</strong> aujourd'hui!<br><br><strong>Cours:</strong> {{className}}<br><strong>Date:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><strong>Scores de Performance:</strong><br>{{scoresTable}}<br><br><strong>Points Gagnés:</strong> {{totalPoints}} pts<br><strong>Progression Stripe:</strong> {{stripeProgress}}{{coachNoteSection}}",
       "btn_text": "Voir le Rapport Complet",
       "btn_url": "{{baseUrl}}/login"
     },
     "de": {
-      "subject": "⭐ {{studentName}} hat heute toll gemacht!",
+      "subject": "⭐ {{studentName}}s Kursbericht - {{classDate}}",
       "title": "Kursfeedback",
-      "body": "Hallo {{parentName}},<br><br><strong>{{studentName}}</strong> hatte heute einen tollen Kurs bei <strong>{{clubName}}</strong>!<br><br><strong>Kurs:</strong> {{className}}<br><strong>Datum:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>Highlights:</strong> {{highlights}}",
+      "body": "Hallo {{parentName}},<br><br><strong>{{studentName}}</strong> hat heute am Kurs bei <strong>{{clubName}}</strong> teilgenommen!<br><br><strong>Kurs:</strong> {{className}}<br><strong>Datum:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><strong>Leistungsbewertungen:</strong><br>{{scoresTable}}<br><br><strong>Gesammelte Punkte:</strong> {{totalPoints}} Pkt<br><strong>Stripe-Fortschritt:</strong> {{stripeProgress}}{{coachNoteSection}}",
       "btn_text": "Vollständigen Bericht ansehen",
       "btn_url": "{{baseUrl}}/login"
     },
     "es": {
-      "subject": "⭐ ¡{{studentName}} lo Hizo Genial Hoy!",
+      "subject": "⭐ Reporte de Clase de {{studentName}} - {{classDate}}",
       "title": "Feedback de Clase",
-      "body": "Hola {{parentName}},<br><br>¡<strong>{{studentName}}</strong> tuvo una gran clase en <strong>{{clubName}}</strong> hoy!<br><br><strong>Clase:</strong> {{className}}<br><strong>Fecha:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>Destacados:</strong> {{highlights}}",
+      "body": "Hola {{parentName}},<br><br>¡<strong>{{studentName}}</strong> asistió a clase en <strong>{{clubName}}</strong> hoy!<br><br><strong>Clase:</strong> {{className}}<br><strong>Fecha:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><strong>Puntuaciones de Rendimiento:</strong><br>{{scoresTable}}<br><br><strong>Puntos Ganados:</strong> {{totalPoints}} pts<br><strong>Progreso de Stripe:</strong> {{stripeProgress}}{{coachNoteSection}}",
       "btn_text": "Ver Informe Completo",
       "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
-      "subject": "⭐ {{studentName}} امروز عالی بود!",
+      "subject": "⭐ گزارش کلاس {{studentName}} - {{classDate}}",
       "title": "بازخورد کلاس",
-      "body": "سلام {{parentName}},<br><br><strong>{{studentName}}</strong> امروز کلاس عالی در <strong>{{clubName}}</strong> داشت!<br><br><strong>کلاس:</strong> {{className}}<br><strong>تاریخ:</strong> {{classDate}}<br><strong>مربی:</strong> {{coachName}}<br><br><em>\"{{feedbackText}}\"</em><br><br><strong>نکات برجسته:</strong> {{highlights}}",
+      "body": "سلام {{parentName}},<br><br><strong>{{studentName}}</strong> امروز در کلاس <strong>{{clubName}}</strong> شرکت کرد!<br><br><strong>کلاس:</strong> {{className}}<br><strong>تاریخ:</strong> {{classDate}}<br><strong>مربی:</strong> {{coachName}}<br><br><strong>امتیازات عملکرد:</strong><br>{{scoresTable}}<br><br><strong>امتیاز کسب شده:</strong> {{totalPoints}} امتیاز<br><strong>پیشرفت نوار:</strong> {{stripeProgress}}{{coachNoteSection}}",
       "btn_text": "مشاهده گزارش کامل",
       "btn_url": "{{baseUrl}}/login"
     }

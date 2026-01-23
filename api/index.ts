@@ -1806,6 +1806,122 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
   }
 }
 
+function escapeHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { 
+    clubId,
+    clubName,
+    className,
+    classDate,
+    coachName,
+    students,
+    skills,
+    homeworkEnabled,
+    bonusEnabled
+  } = parseBody(req);
+
+  if (!clubId || !students || !Array.isArray(students) || students.length === 0) {
+    return res.status(400).json({ error: 'clubId and students array are required' });
+  }
+
+  let sentCount = 0;
+  let failedCount = 0;
+
+  try {
+    for (const student of students) {
+      const { id, name, parentEmail, scores, homework, bonus, totalPoints, stripeProgress, coachNote } = student;
+      
+      if (!parentEmail) {
+        console.log('[ClassFeedback] Skipping student without parent email:', name);
+        continue;
+      }
+
+      // Build the scores table HTML dynamically based on club's skills
+      let scoresTableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+      scoresTableHtml += '<tr style="background-color: #f3f4f6;">';
+      
+      // Add skill headers (escaped for security)
+      const skillsArray = skills || [];
+      for (const skill of skillsArray) {
+        scoresTableHtml += `<th style="border: 1px solid #ddd; padding: 8px; text-align: center;">${escapeHtml(skill.name)}</th>`;
+      }
+      if (homeworkEnabled) {
+        scoresTableHtml += '<th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Homework</th>';
+      }
+      if (bonusEnabled) {
+        scoresTableHtml += '<th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Bonus</th>';
+      }
+      scoresTableHtml += '<th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #0ea5e9; color: white;">Total</th>';
+      scoresTableHtml += '</tr>';
+      
+      // Add score values row
+      scoresTableHtml += '<tr>';
+      for (const skill of skillsArray) {
+        const score = scores?.[skill.id];
+        const scoreLabel = score === 2 ? '🟢' : score === 1 ? '🟡' : score === 0 ? '🔴' : '—';
+        scoresTableHtml += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 18px;">${scoreLabel}</td>`;
+      }
+      if (homeworkEnabled) {
+        const safeHomework = parseInt(homework) || 0;
+        scoresTableHtml += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">+${safeHomework}</td>`;
+      }
+      if (bonusEnabled) {
+        const safeBonus = parseInt(bonus) || 0;
+        scoresTableHtml += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">+${safeBonus}</td>`;
+      }
+      const safeTotalPoints = parseInt(totalPoints) || 0;
+      scoresTableHtml += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold; background-color: #0ea5e9; color: white;">${safeTotalPoints}</td>`;
+      scoresTableHtml += '</tr></table>';
+
+      // Send email
+      try {
+        const emailService = await import('../server/services/emailService');
+        await emailService.sendClassFeedbackEmail(parentEmail, {
+          parentName: escapeHtml(name.split(' ')[0]) + "'s Parent",
+          studentName: escapeHtml(name),
+          clubName: escapeHtml(clubName || 'Your Dojo'),
+          className: escapeHtml(className || 'Training Session'),
+          classDate: escapeHtml(classDate || new Date().toLocaleDateString()),
+          coachName: escapeHtml(coachName || 'Coach'),
+          coachNote: escapeHtml(coachNote || ''),
+          scoresTable: scoresTableHtml,
+          totalPoints: safeTotalPoints,
+          stripeProgress: escapeHtml(stripeProgress || '0/64 pts'),
+          studentId: id,
+        });
+        sentCount++;
+        console.log('[ClassFeedback] Email sent to:', parentEmail, 'for student:', name);
+      } catch (emailError: any) {
+        failedCount++;
+        console.error('[ClassFeedback] Failed to send email to:', parentEmail, emailError.message);
+      }
+    }
+
+    return res.json({ 
+      success: true, 
+      sent: sentCount, 
+      failed: failedCount,
+      message: `Sent ${sentCount} emails, ${failedCount} failed`
+    });
+  } catch (error: any) {
+    console.error('[ClassFeedback] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to send class feedback emails' });
+  }
+}
+
 async function handleGetStudentByEmail(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -7101,6 +7217,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/students/by-name' || path === '/students/by-name/') return await handleGetStudentByName(req, res);
     if (path === '/students/first' || path === '/students/first/') return await handleGetFirstStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
+    if (path === '/send-class-feedback' || path === '/send-class-feedback/') return await handleSendClassFeedback(req, res);
     
     // Coach update/delete by ID
     const coachIdMatch = path.match(/^\/coaches\/([^/]+)\/?$/);

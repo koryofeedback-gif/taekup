@@ -1380,7 +1380,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         setFeedbackPreviewOpen(true);
     };
 
-    const handleSaveAndNotify = () => {
+    const handleSaveAndNotify = async () => {
         let updatedCount = 0;
         let earnedStripes = 0;
 
@@ -1515,7 +1515,62 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             }
         });
 
-        setConfirmation({ show: true, message: `${updatedCount} students updated. Parents notified. ${earnedStripes} new stripes earned!` });
+        // Send class feedback emails to parents
+        const studentsToNotify = updatedStudents.filter(student => 
+            attendance[student.id] && student.parentEmail
+        ).map(student => {
+            const studentScores = sessionScores[student.id] || {};
+            const studentBonus = bonusPoints[student.id] || 0;
+            const studentHomework = homeworkPoints[student.id] || 0;
+            const scoresArray = Object.values(studentScores);
+            const classPTS = calculateClassPTS(scoresArray);
+            const sessionTotal = classPTS + studentBonus + studentHomework;
+            const pointsRequired = getPointsRequired(student.beltId);
+            // Use post-session totalPoints (already updated in student object)
+            const postSessionTotal = student.totalPoints || 0;
+            const currentStripes = Math.floor(postSessionTotal / pointsRequired);
+            const progressInStripe = postSessionTotal % pointsRequired;
+            
+            return {
+                id: student.id,
+                name: student.name,
+                parentEmail: student.parentEmail,
+                scores: studentScores,
+                homework: studentHomework,
+                bonus: studentBonus,
+                totalPoints: sessionTotal,
+                stripeProgress: `${progressInStripe}/${pointsRequired} pts (Stripe ${currentStripes + 1})`,
+                coachNote: notes[student.id] || ''
+            };
+        });
+
+        if (studentsToNotify.length > 0 && !data.isDemo) {
+            try {
+                const response = await fetch('/api/send-class-feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clubId,
+                        clubName: data.clubName,
+                        className: data.events?.[0]?.title || 'Training Session',
+                        classDate: new Date().toLocaleDateString(),
+                        coachName: coachName,
+                        students: studentsToNotify,
+                        skills: activeSkills,
+                        homeworkEnabled: data.homeworkBonus,
+                        bonusEnabled: data.coachBonus
+                    })
+                });
+                const result = await response.json();
+                console.log('[ClassFeedback] Email result:', result);
+                setConfirmation({ show: true, message: `${updatedCount} students updated. ${result.sent} parents notified. ${earnedStripes} new stripes earned!` });
+            } catch (err) {
+                console.error('[ClassFeedback] Failed to send emails:', err);
+                setConfirmation({ show: true, message: `${updatedCount} students updated. Email notification failed. ${earnedStripes} new stripes earned!` });
+            }
+        } else {
+            setConfirmation({ show: true, message: `${updatedCount} students updated. ${data.isDemo ? '(Demo mode - no emails sent)' : 'Parents notified.'} ${earnedStripes} new stripes earned!` });
+        }
         setTimeout(() => setConfirmation({ show: false, message: '' }), 5000);
     };
 

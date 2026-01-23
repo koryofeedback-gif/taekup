@@ -538,22 +538,30 @@ export async function sendClassFeedbackEmail(
     clubName: string;
     className: string;
     classDate: string;
-    feedbackText: string;
     coachName: string;
-    highlights: string;
-    studentId: string;
-    feedbackId: string;
+    coachNote?: string;
+    scoresTable: string;
+    totalPoints: number;
+    stripeProgress: string;
+    studentId?: string;
+    feedbackId?: string;
   }
 ): Promise<EmailResult> {
+  const coachNoteSection = data.coachNote 
+    ? `<br><br><strong>Coach's Note:</strong><br><em>"${data.coachNote}"</em>` 
+    : '';
+  
   return sendNotification('class_feedback', { email: to, name: data.parentName }, {
     parentName: data.parentName,
     studentName: data.studentName,
     clubName: data.clubName,
     className: data.className,
     classDate: data.classDate,
-    feedbackText: data.feedbackText,
     coachName: data.coachName,
-    highlights: data.highlights,
+    coachNoteSection: coachNoteSection,
+    scoresTable: data.scoresTable,
+    totalPoints: data.totalPoints,
+    stripeProgress: data.stripeProgress,
   });
 }
 
