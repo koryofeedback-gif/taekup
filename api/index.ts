@@ -1938,28 +1938,78 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
           ${premiumTeaserSection}
         `;
 
-        const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID;
-        
-        if (process.env.SENDGRID_API_KEY && MASTER_TEMPLATE_ID) {
+        if (process.env.SENDGRID_API_KEY) {
           sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+          
+          // Use branded HTML matching MyTaek master template style
+          const brandedHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <!-- Header with Logo -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
+                <span style="color: #ef4444;">MY</span>TAEK
+              </h1>
+            </td>
+          </tr>
+          <!-- Title -->
+          <tr>
+            <td style="padding: 30px 30px 20px 30px;">
+              <h2 style="margin: 0; color: #1f2937; font-size: 24px;">${safeStudentName}'s Class Feedback 🥋</h2>
+            </td>
+          </tr>
+          <!-- Body Content -->
+          <tr>
+            <td style="padding: 0 30px 20px 30px; color: #374151; font-size: 15px; line-height: 1.6;">
+              ${emailBody}
+            </td>
+          </tr>
+          <!-- Button -->
+          <tr>
+            <td style="padding: 10px 30px 30px 30px;">
+              <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">View Full Report</a>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;"><strong>TaekUp™</strong> is a product of <strong>MyTaek™</strong> Inc.</p>
+              <p style="margin: 0 0 10px 0; color: #9ca3af; font-size: 12px;">HonorXP™ | Legacy Cards™ | Global Shogun Rank™ | DojoMint™ Protocol | ChronosBelt™ Predictor</p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">&copy; ${new Date().getFullYear()} MyTaek™ Inc. All rights reserved.</p>
+              <p style="margin: 10px 0 0 0;">
+                <a href="https://www.mytaek.com/unsubscribe" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Unsubscribe</a> | 
+                <a href="https://www.mytaek.com/privacy" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Privacy Policy</a> | 
+                <a href="https://www.mytaek.com" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Visit MyTaek</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
           await sgMail.send({
             to: parentEmail,
             from: { email: 'updates@mytaek.com', name: 'TaekUp' },
-            templateId: MASTER_TEMPLATE_ID,
-            dynamicTemplateData: {
-              subject: `⭐ ${safeStudentName}'s Class Report - ${safeClassDate}`,
-              title: `${safeStudentName}'s Class Feedback 🥋`,
-              body: emailBody,
-              btn_text: 'View Full Report',
-              btn_url: 'https://www.mytaek.com/login',
-              isRtl: false,
-              year: new Date().getFullYear()
-            }
+            subject: `⭐ ${safeStudentName}'s Class Report - ${safeClassDate}`,
+            html: brandedHtml
           });
           sentCount++;
           console.log('[ClassFeedback] Email sent to:', parentEmail, 'for student:', name);
         } else {
-          console.error('[ClassFeedback] SendGrid API key or Master Template ID not configured');
+          console.error('[ClassFeedback] SendGrid API key not configured');
           failedCount++;
         }
       } catch (emailError: any) {
