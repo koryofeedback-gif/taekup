@@ -4,36 +4,36 @@
       "subject": "Welcome to the Dojo! 🥋",
       "title": "Welcome to {{clubName}}!",
       "body": "Hi {{name}},<br><br>You're now connected to <strong>{{clubName}}</strong>. Your child's martial arts journey starts here!<br><br>Check out the Parent Portal to track progress, earn HonorXP™, and unlock Legacy Cards™.",
-      "btn_text": "Open Parent Portal",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_text": "Login to Parent Portal",
+      "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
       "subject": "Bienvenue au Dojo! 🥋",
       "title": "Bienvenue à {{clubName}}!",
       "body": "Bonjour {{name}},<br><br>Vous êtes maintenant connecté à <strong>{{clubName}}</strong>. Le parcours d'arts martiaux de votre enfant commence ici!<br><br>Consultez le Portail Parent pour suivre les progrès, gagner des HonorXP™ et débloquer des Legacy Cards™.",
-      "btn_text": "Ouvrir le Portail Parent",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_text": "Connexion au Portail Parent",
+      "btn_url": "{{baseUrl}}/login"
     },
     "de": {
       "subject": "Willkommen im Dojo! 🥋",
       "title": "Willkommen bei {{clubName}}!",
       "body": "Hallo {{name}},<br><br>Sie sind jetzt mit <strong>{{clubName}}</strong> verbunden. Die Kampfkunstreise Ihres Kindes beginnt hier!<br><br>Besuchen Sie das Elternportal, um Fortschritte zu verfolgen, HonorXP™ zu verdienen und Legacy Cards™ freizuschalten.",
-      "btn_text": "Elternportal öffnen",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_text": "Anmelden im Elternportal",
+      "btn_url": "{{baseUrl}}/login"
     },
     "es": {
       "subject": "¡Bienvenido al Dojo! 🥋",
       "title": "¡Bienvenido a {{clubName}}!",
       "body": "Hola {{name}},<br><br>Ahora estás conectado a <strong>{{clubName}}</strong>. ¡El viaje de artes marciales de tu hijo comienza aquí!<br><br>Visita el Portal de Padres para seguir el progreso, ganar HonorXP™ y desbloquear Legacy Cards™.",
-      "btn_text": "Abrir Portal de Padres",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_text": "Iniciar Sesión en Portal de Padres",
+      "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
       "subject": "به دوجو خوش آمدید! 🥋",
       "title": "به {{clubName}} خوش آمدید!",
       "body": "سلام {{name}},<br><br>شما اکنون به <strong>{{clubName}}</strong> متصل هستید. سفر هنرهای رزمی فرزند شما از اینجا شروع می‌شود!<br><br>پورتال والدین را بررسی کنید تا پیشرفت را پیگیری کنید، HonorXP™ کسب کنید و Legacy Cards™ را باز کنید.",
-      "btn_text": "باز کردن پورتال والدین",
-      "btn_url": "{{baseUrl}}/app/parent"
+      "btn_text": "ورود به پورتال والدین",
+      "btn_url": "{{baseUrl}}/login"
     }
   },
   "welcome_club": {
