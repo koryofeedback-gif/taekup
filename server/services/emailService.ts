@@ -525,6 +525,7 @@ export async function sendParentWelcomeEmail(
 ): Promise<EmailResult> {
   return sendNotification('welcome_parent', { email: to, name: data.parentName }, {
     name: data.parentName,
+    parentEmail: to,
     clubName: data.clubName,
     studentName: data.studentName,
   });

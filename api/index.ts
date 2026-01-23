@@ -90,11 +90,11 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   },
   // Parent welcome
   PARENT_WELCOME: {
-    subject: 'Welcome to the Dojo! 🥋',
-    title: 'Welcome to {{clubName}}!',
-    body: `Hi {{parentName}},<br><br>You're now connected to <strong>{{clubName}}</strong>. Your child's martial arts journey starts here!<br><br>Check out the Parent Portal to track progress, earn HonorXP™, and unlock Legacy Cards™.`,
-    btn_text: 'Open Parent Portal',
-    btn_url: `${BASE_URL}/app/parent`,
+    subject: '🎉 {{studentName}} is ready to train at {{clubName}}!',
+    title: 'Welcome to {{clubName}}! 🥋',
+    body: `Hi {{parentName}},<br><br>Great news! <strong>{{studentName}}</strong> has been enrolled at <strong>{{clubName}}</strong> and their martial arts journey is about to begin!<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 15px 0;'>🔐 Your Login Credentials:</h3><div style='background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;'><strong>Email:</strong> {{parentEmail}}<br><strong>Password:</strong> 1234</div><p style='margin: 15px 0 0 0; font-size: 13px; color: #fbbf24;'>⚠️ Please change your password after first login for security!</p></div><div style='background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 10px 0;'>🌟 What's waiting for {{studentName}}:</h3><ul style='margin: 0; padding-left: 20px;'><li>Track progress & earn <strong>HonorXP™</strong></li><li>Unlock awesome <strong>Legacy Cards™</strong></li><li>Climb the <strong>Global Shogun Rank™</strong></li><li>Complete fun challenges in the Arena</li></ul></div><div style='background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 12px; margin: 20px 0; border: 2px dashed #f59e0b;'><h3 style='margin: 0 0 12px 0; color: #92400e;'>✨ Unlock Premium for $4.99/month:</h3><div style='color: #78350f; font-size: 14px;'><div style='margin-bottom: 8px;'>🔒 <strong>ChronosBelt™ Predictor</strong> - AI predicts your child's black belt date</div><div style='margin-bottom: 8px;'>🔒 <strong>Legacy Cards™</strong> - Digital collectible cards for achievements</div><div style='margin-bottom: 8px;'>🔒 <strong>2x HonorXP™</strong> - Double points with video proof submissions</div><div style='margin-bottom: 8px;'>🔒 <strong>AI Training Insights</strong> - Personalized feedback from TaekBot</div><div style='margin-bottom: 8px;'>🔒 <strong>Priority Class Booking</strong> - Book classes before others</div><div style='margin-bottom: 8px;'>🔒 <strong>Home Dojo™ Habits</strong> - Daily practice tracking for discipline</div><div>🔒 <strong>Extended Curriculum</strong> - Access exclusive training content</div></div><p style='margin: 12px 0 0 0; font-size: 12px; color: #92400e;'>One subscription covers your entire family!</p></div>`,
+    btn_text: 'Login to Parent Portal',
+    btn_url: `${BASE_URL}/login`,
     from: 'hello@mytaek.com'
   },
   // Coach invite
@@ -1615,6 +1615,7 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     if (parentEmail) {
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
         parentName: parentName || 'Parent',
+        parentEmail: parentEmail,
         studentName: name,
         clubName: club.name,
       });
@@ -2299,6 +2300,7 @@ async function handleLinkParent(req: VercelRequest, res: VercelResponse, student
     if (!hadParentBefore) {
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
         parentName: parentName || 'Parent',
+        parentEmail: parentEmail,
         studentName: student.name,
         clubName: student.club_name,
       });
