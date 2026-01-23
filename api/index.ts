@@ -1,4 +1,4 @@
-// TaekUp API v2.1 - XP persistence fix (Dec 2024)
+// TaekUp API v2.1.1 - Class feedback email fix (Jan 2026)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
