@@ -1898,8 +1898,30 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
         const safeStripeProgress = escapeHtml(stripeProgress || '0/64 pts');
         
         const coachNoteSection = safeCoachNote 
-          ? `<br><br><strong>Coach's Note:</strong><br><em>"${safeCoachNote}"</em>` 
+          ? `<div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0;"><strong>💬 Coach's Note:</strong><br><em>"${safeCoachNote}"</em></div>` 
           : '';
+
+        // Premium feature teasers with lock icons
+        const premiumTeaserSection = `
+          <div style="margin-top: 24px; padding: 16px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; border: 2px dashed #f59e0b;">
+            <div style="font-weight: bold; color: #92400e; margin-bottom: 12px; font-size: 14px;">✨ Unlock More with Premium:</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; color: #6b7280; display: inline-flex; align-items: center;">
+                🔒 <span style="margin-left: 4px;">AI Training Insights</span>
+              </div>
+              <div style="background: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; color: #6b7280; display: inline-flex; align-items: center;">
+                🔒 <span style="margin-left: 4px;">ChronosBelt™ Predictor</span>
+              </div>
+              <div style="background: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; color: #6b7280; display: inline-flex; align-items: center;">
+                🔒 <span style="margin-left: 4px;">Legacy Cards™</span>
+              </div>
+              <div style="background: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; color: #6b7280; display: inline-flex; align-items: center;">
+                🔒 <span style="margin-left: 4px;">Video Proof 2x HonorXP™</span>
+              </div>
+            </div>
+            <div style="margin-top: 10px; font-size: 11px; color: #92400e;">Only $4.99/month for the whole family!</div>
+          </div>
+        `;
 
         const emailBody = `
           Hi ${safeParentName},<br><br>
@@ -1908,38 +1930,35 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
           <strong>Date:</strong> ${safeClassDate}<br>
           <strong>Coach:</strong> ${safeCoachName}<br><br>
           <strong>Performance Scores:</strong><br>
-          ${scoresTableHtml}<br><br>
+          ${scoresTableHtml}<br>
           <strong>Total Points Earned:</strong> ${safeTotalPoints} pts<br>
           <strong>Stripe Progress:</strong> ${safeStripeProgress}
           ${coachNoteSection}
+          ${premiumTeaserSection}
         `;
 
-        if (process.env.SENDGRID_API_KEY) {
+        const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID;
+        
+        if (process.env.SENDGRID_API_KEY && MASTER_TEMPLATE_ID) {
           sgMail.setApiKey(process.env.SENDGRID_API_KEY);
           await sgMail.send({
             to: parentEmail,
             from: { email: 'updates@mytaek.com', name: 'TaekUp' },
-            subject: `⭐ ${safeStudentName}'s Class Report - ${safeClassDate}`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; text-align: center;">
-                  <h1 style="color: white; margin: 0;">Class Feedback</h1>
-                </div>
-                <div style="padding: 20px; background: #fff;">
-                  ${emailBody}
-                  <br><br>
-                  <a href="https://www.mytaek.com/login" style="display: inline-block; background: #0ea5e9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Full Report</a>
-                </div>
-                <div style="padding: 15px; background: #f3f4f6; text-align: center; font-size: 12px; color: #666;">
-                  TaekUp™ is a product of MyTaek™ Inc.
-                </div>
-              </div>
-            `,
+            templateId: MASTER_TEMPLATE_ID,
+            dynamicTemplateData: {
+              subject: `⭐ ${safeStudentName}'s Class Report - ${safeClassDate}`,
+              title: `${safeStudentName}'s Class Feedback 🥋`,
+              body: emailBody,
+              btn_text: 'View Full Report',
+              btn_url: 'https://www.mytaek.com/login',
+              isRtl: false,
+              year: new Date().getFullYear()
+            }
           });
           sentCount++;
           console.log('[ClassFeedback] Email sent to:', parentEmail, 'for student:', name);
         } else {
-          console.error('[ClassFeedback] SendGrid API key not configured');
+          console.error('[ClassFeedback] SendGrid API key or Master Template ID not configured');
           failedCount++;
         }
       } catch (emailError: any) {
