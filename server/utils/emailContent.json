@@ -1,39 +1,39 @@
 {
   "welcome_parent": {
     "en": {
-      "subject": "Welcome to the Dojo! 🥋",
-      "title": "Welcome to {{clubName}}!",
-      "body": "Hi {{name}},<br><br>You're now connected to <strong>{{clubName}}</strong>. Your child's martial arts journey starts here!<br><br>Check out the Parent Portal to track progress, earn HonorXP™, and unlock Legacy Cards™.",
-      "btn_text": "Login to Parent Portal",
-      "btn_url": "{{baseUrl}}/login"
+      "subject": "🎉 {{studentName}} is ready to train at {{clubName}}!",
+      "title": "Welcome to {{clubName}}! 🥋",
+      "body": "Hi {{name}},<br><br>Great news! <strong>{{studentName}}</strong> has been enrolled at <strong>{{clubName}}</strong> and their martial arts journey is about to begin!<br><br><div style='background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 10px 0;'>🌟 What's waiting for {{studentName}}:</h3><ul style='margin: 0; padding-left: 20px;'><li>Track progress & earn <strong>HonorXP™</strong></li><li>Unlock awesome <strong>Legacy Cards™</strong></li><li>Climb the <strong>Global Shogun Rank™</strong></li><li>Complete fun challenges in the Arena</li></ul></div><br>Login to the Parent Portal to follow {{studentName}}'s exciting journey!",
+      "btn_text": "Open Parent Portal",
+      "btn_url": "https://www.mytaek.com/login"
     },
     "fr": {
-      "subject": "Bienvenue au Dojo! 🥋",
-      "title": "Bienvenue à {{clubName}}!",
-      "body": "Bonjour {{name}},<br><br>Vous êtes maintenant connecté à <strong>{{clubName}}</strong>. Le parcours d'arts martiaux de votre enfant commence ici!<br><br>Consultez le Portail Parent pour suivre les progrès, gagner des HonorXP™ et débloquer des Legacy Cards™.",
-      "btn_text": "Connexion au Portail Parent",
-      "btn_url": "{{baseUrl}}/login"
+      "subject": "🎉 {{studentName}} est prêt à s'entraîner à {{clubName}}!",
+      "title": "Bienvenue à {{clubName}}! 🥋",
+      "body": "Bonjour {{name}},<br><br>Excellente nouvelle! <strong>{{studentName}}</strong> a été inscrit à <strong>{{clubName}}</strong> et son parcours en arts martiaux est sur le point de commencer!<br><br><div style='background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 10px 0;'>🌟 Ce qui attend {{studentName}}:</h3><ul style='margin: 0; padding-left: 20px;'><li>Suivez les progrès et gagnez des <strong>HonorXP™</strong></li><li>Débloquez des <strong>Legacy Cards™</strong></li><li>Grimpez le <strong>Global Shogun Rank™</strong></li><li>Complétez des défis amusants dans l'Arène</li></ul></div><br>Connectez-vous au Portail Parent pour suivre le parcours passionnant de {{studentName}}!",
+      "btn_text": "Ouvrir le Portail Parent",
+      "btn_url": "https://www.mytaek.com/login"
     },
     "de": {
-      "subject": "Willkommen im Dojo! 🥋",
-      "title": "Willkommen bei {{clubName}}!",
-      "body": "Hallo {{name}},<br><br>Sie sind jetzt mit <strong>{{clubName}}</strong> verbunden. Die Kampfkunstreise Ihres Kindes beginnt hier!<br><br>Besuchen Sie das Elternportal, um Fortschritte zu verfolgen, HonorXP™ zu verdienen und Legacy Cards™ freizuschalten.",
-      "btn_text": "Anmelden im Elternportal",
-      "btn_url": "{{baseUrl}}/login"
+      "subject": "🎉 {{studentName}} ist bereit zum Training bei {{clubName}}!",
+      "title": "Willkommen bei {{clubName}}! 🥋",
+      "body": "Hallo {{name}},<br><br>Tolle Neuigkeiten! <strong>{{studentName}}</strong> wurde bei <strong>{{clubName}}</strong> angemeldet und die Kampfkunstreise beginnt bald!<br><br><div style='background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 10px 0;'>🌟 Was auf {{studentName}} wartet:</h3><ul style='margin: 0; padding-left: 20px;'><li>Fortschritt verfolgen & <strong>HonorXP™</strong> verdienen</li><li>Tolle <strong>Legacy Cards™</strong> freischalten</li><li>Im <strong>Global Shogun Rank™</strong> aufsteigen</li><li>Spaßige Herausforderungen in der Arena meistern</li></ul></div><br>Melden Sie sich im Elternportal an, um die spannende Reise von {{studentName}} zu verfolgen!",
+      "btn_text": "Elternportal öffnen",
+      "btn_url": "https://www.mytaek.com/login"
     },
     "es": {
-      "subject": "¡Bienvenido al Dojo! 🥋",
-      "title": "¡Bienvenido a {{clubName}}!",
-      "body": "Hola {{name}},<br><br>Ahora estás conectado a <strong>{{clubName}}</strong>. ¡El viaje de artes marciales de tu hijo comienza aquí!<br><br>Visita el Portal de Padres para seguir el progreso, ganar HonorXP™ y desbloquear Legacy Cards™.",
-      "btn_text": "Iniciar Sesión en Portal de Padres",
-      "btn_url": "{{baseUrl}}/login"
+      "subject": "🎉 ¡{{studentName}} está listo para entrenar en {{clubName}}!",
+      "title": "¡Bienvenido a {{clubName}}! 🥋",
+      "body": "Hola {{name}},<br><br>¡Excelentes noticias! <strong>{{studentName}}</strong> ha sido inscrito en <strong>{{clubName}}</strong> y su viaje en artes marciales está por comenzar!<br><br><div style='background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 10px 0;'>🌟 Lo que espera a {{studentName}}:</h3><ul style='margin: 0; padding-left: 20px;'><li>Seguir el progreso y ganar <strong>HonorXP™</strong></li><li>Desbloquear increíbles <strong>Legacy Cards™</strong></li><li>Subir en el <strong>Global Shogun Rank™</strong></li><li>Completar desafíos divertidos en la Arena</li></ul></div><br>¡Inicia sesión en el Portal de Padres para seguir el emocionante viaje de {{studentName}}!",
+      "btn_text": "Abrir Portal de Padres",
+      "btn_url": "https://www.mytaek.com/login"
     },
     "fa": {
-      "subject": "به دوجو خوش آمدید! 🥋",
-      "title": "به {{clubName}} خوش آمدید!",
-      "body": "سلام {{name}},<br><br>شما اکنون به <strong>{{clubName}}</strong> متصل هستید. سفر هنرهای رزمی فرزند شما از اینجا شروع می‌شود!<br><br>پورتال والدین را بررسی کنید تا پیشرفت را پیگیری کنید، HonorXP™ کسب کنید و Legacy Cards™ را باز کنید.",
-      "btn_text": "ورود به پورتال والدین",
-      "btn_url": "{{baseUrl}}/login"
+      "subject": "🎉 {{studentName}} آماده تمرین در {{clubName}} است!",
+      "title": "به {{clubName}} خوش آمدید! 🥋",
+      "body": "سلام {{name}},<br><br>خبر عالی! <strong>{{studentName}}</strong> در <strong>{{clubName}}</strong> ثبت‌نام شده و سفر هنرهای رزمی‌اش به زودی آغاز می‌شود!<br><br><div style='background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 10px 0;'>🌟 آنچه در انتظار {{studentName}} است:</h3><ul style='margin: 0; padding-left: 20px;'><li>پیگیری پیشرفت و کسب <strong>HonorXP™</strong></li><li>باز کردن <strong>Legacy Cards™</strong> فوق‌العاده</li><li>صعود در <strong>Global Shogun Rank™</strong></li><li>تکمیل چالش‌های سرگرم‌کننده در آرنا</li></ul></div><br>برای دنبال کردن سفر هیجان‌انگیز {{studentName}} به پورتال والدین وارد شوید!",
+      "btn_text": "باز کردن پورتال والدین",
+      "btn_url": "https://www.mytaek.com/login"
     }
   },
   "welcome_club": {
