@@ -1,0 +1,596 @@
+[Grading] Persisting for abdanan - XP: 75 PTS: 9
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/ae252cbe-6349-4c76-ba78-7457ced59b89/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/e71c0727-be78-4053-8c72-780860208c87/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Rasht  : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::n8w8r-1769191960168-de773117b744
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Gorgan : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::jt7hs-1769191960168-1633b0d392a8
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/5ba386b1-89ed-4676-8688-97f429da2afa/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for yazd : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::w7mn4-1769191960168-976b1f8b6dca
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/9d7f12f0-f190-423f-a8cf-b3384742cd0e/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for abdanan : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::qsbn5-1769191960178-f870c0f44b05
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/ba16113e-fbce-44b5-a465-1db7c2e09765/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/019a563c-6bf7-40bc-ab42-21359622a84b/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Sari : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::gx5kd-1769191960168-3b65383fbe27
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for shiraz : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::qxpn4-1769191960168-5b4937284f5c
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/5bfab1c6-8837-4838-8949-e30333704544/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  POST https://www.mytaek.com/api/send-class-feedback 500 (Internal Server Error)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [ClassFeedback] Failed to send emails: SyntaxError: Unexpected token 'A', "A server e"... is not valid JSON
+er @ index-bRE_PdUw.js:469
+await in er
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Tabriz : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::x92jf-1769191960168-b4544b348182
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/69e82e9c-22e1-4eb4-9acd-063761a33a77/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Mashhad  : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::cqtcl-1769191960168-d22070fffa67
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/03cde70a-a532-449d-8b16-b6c9e2d9f931/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/9cef573c-1ef4-441a-a7a1-4a5f2073a322/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/c330d413-5e5f-4bbf-8ca1-6ce858ef5a65/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Hamedan : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::jt7hs-1769191960178-cb835f1028b3
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Eilam : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::8rq4n-1769191960178-a608b53812f4
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Ahvaz : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::kw4dx-1769191960168-f96c31700b06
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/581f7fb0-2074-47e2-9a7f-d399d978b06e/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Sistan : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::p9d7k-1769191960178-6cd09f9faf9b
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/3282731e-f59d-44d9-b476-c55fb323dc47/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for ghom : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::rbnqr-1769191960168-d8e618697258
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/d41f1deb-9332-419f-8686-590c729303ff/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for tehran : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::5nk5k-1769191960177-ba7c5d29b794
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469  PATCH https://www.mytaek.com/api/students/f8f47d8b-eebf-4ae5-b367-d64a45a7b90a/grading 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Grading] API error for Kerman : A server error has occurred
+
+FUNCTION_INVOCATION_FAILED
+
+cdg1::k7vs4-1769191960178-914ae705d6eb
+
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:404  GET https://www.mytaek.com/api/leaderboard?clubId=2fc1c89f-e6b7-4565-af5d-da5d5c458c19 500 (Internal Server Error)
+f @ index-bRE_PdUw.js:404
+setInterval
+(anonymous) @ index-bRE_PdUw.js:404
+E0 @ index-bRE_PdUw.js:40
+di @ index-bRE_PdUw.js:40
+(anonymous) @ index-bRE_PdUw.js:40
+N @ index-bRE_PdUw.js:25
+W @ index-bRE_PdUw.js:25Understand this error
+index-bRE_PdUw.js:404 [InsightSidebar] Failed to fetch monthly PTS: SyntaxError: Unexpected token 'A', "A server e"... is not valid JSON
+f @ index-bRE_PdUw.js:404
+setInterval
+(anonymous) @ index-bRE_PdUw.js:404
+E0 @ index-bRE_PdUw.js:40
+di @ index-bRE_PdUw.js:40
+(anonymous) @ index-bRE_PdUw.js:40
+N @ index-bRE_PdUw.js:25
+W @ index-bRE_PdUw.js:25Understand this error
+index-bRE_PdUw.js:469  POST https://www.mytaek.com/api/students/9d7f12f0-f190-423f-a8cf-b3384742cd0e/global-xp 500 (Internal Server Error)
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:469 [Global XP] Error for abdanan SyntaxError: Unexpected token 'A', "A server e"... is not valid JSON
+(anonymous) @ index-bRE_PdUw.js:469
+await in (anonymous)
+er @ index-bRE_PdUw.js:469
+Gj @ index-bRE_PdUw.js:37
+Kj @ index-bRE_PdUw.js:37
+Yj @ index-bRE_PdUw.js:37
+Tp @ index-bRE_PdUw.js:37
+qb @ index-bRE_PdUw.js:37
+(anonymous) @ index-bRE_PdUw.js:37
+hm @ index-bRE_PdUw.js:40
+wb @ index-bRE_PdUw.js:37
+Tu @ index-bRE_PdUw.js:37
+Uh @ index-bRE_PdUw.js:37
+uN @ index-bRE_PdUw.js:37Understand this error
+index-bRE_PdUw.js:404  GET https://www.mytaek.com/api/leaderboard?clubId=2fc1c89f-e6b7-4565-af5d-da5d5c458c19 500 (Internal Server Error)
+f @ index-bRE_PdUw.js:404
+setInterval
+(anonymous) @ index-bRE_PdUw.js:404
+E0 @ index-bRE_PdUw.js:40
+di @ index-bRE_PdUw.js:40
+(anonymous) @ index-bRE_PdUw.js:40
+N @ index-bRE_PdUw.js:25
+W @ index-bRE_PdUw.js:25Understand this error
+index-bRE_PdUw.js:404 [InsightSidebar] Failed to fetch monthly PTS: SyntaxError: Unexpected token 'A', "A server e"... is not valid JSON

@@ -9,7 +9,6 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import sgMail from '@sendgrid/mail';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { sendClassFeedbackEmail } from '../server/services/emailService';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -1887,23 +1886,62 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
       scoresTableHtml += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold; background-color: #0ea5e9; color: white;">${safeTotalPoints}</td>`;
       scoresTableHtml += '</tr></table>';
 
-      // Send email
+      // Send email directly using SendGrid
       try {
-        await sendClassFeedbackEmail(parentEmail, {
-          parentName: escapeHtml(name.split(' ')[0]) + "'s Parent",
-          studentName: escapeHtml(name),
-          clubName: escapeHtml(clubName || 'Your Dojo'),
-          className: escapeHtml(className || 'Training Session'),
-          classDate: escapeHtml(classDate || new Date().toLocaleDateString()),
-          coachName: escapeHtml(coachName || 'Coach'),
-          coachNote: escapeHtml(coachNote || ''),
-          scoresTable: scoresTableHtml,
-          totalPoints: safeTotalPoints,
-          stripeProgress: escapeHtml(stripeProgress || '0/64 pts'),
-          studentId: id,
-        });
-        sentCount++;
-        console.log('[ClassFeedback] Email sent to:', parentEmail, 'for student:', name);
+        const safeParentName = escapeHtml(name.split(' ')[0]) + "'s Parent";
+        const safeStudentName = escapeHtml(name);
+        const safeClubName = escapeHtml(clubName || 'Your Dojo');
+        const safeClassName = escapeHtml(className || 'Training Session');
+        const safeClassDate = escapeHtml(classDate || new Date().toLocaleDateString());
+        const safeCoachName = escapeHtml(coachName || 'Coach');
+        const safeCoachNote = escapeHtml(coachNote || '');
+        const safeStripeProgress = escapeHtml(stripeProgress || '0/64 pts');
+        
+        const coachNoteSection = safeCoachNote 
+          ? `<br><br><strong>Coach's Note:</strong><br><em>"${safeCoachNote}"</em>` 
+          : '';
+
+        const emailBody = `
+          Hi ${safeParentName},<br><br>
+          Great news! <strong>${safeStudentName}</strong> attended class at <strong>${safeClubName}</strong> today!<br><br>
+          <strong>Class:</strong> ${safeClassName}<br>
+          <strong>Date:</strong> ${safeClassDate}<br>
+          <strong>Coach:</strong> ${safeCoachName}<br><br>
+          <strong>Performance Scores:</strong><br>
+          ${scoresTableHtml}<br><br>
+          <strong>Total Points Earned:</strong> ${safeTotalPoints} pts<br>
+          <strong>Stripe Progress:</strong> ${safeStripeProgress}
+          ${coachNoteSection}
+        `;
+
+        if (process.env.SENDGRID_API_KEY) {
+          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+          await sgMail.send({
+            to: parentEmail,
+            from: { email: 'updates@mytaek.com', name: 'TaekUp' },
+            subject: `⭐ ${safeStudentName}'s Class Report - ${safeClassDate}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; text-align: center;">
+                  <h1 style="color: white; margin: 0;">Class Feedback</h1>
+                </div>
+                <div style="padding: 20px; background: #fff;">
+                  ${emailBody}
+                  <br><br>
+                  <a href="https://www.mytaek.com/login" style="display: inline-block; background: #0ea5e9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Full Report</a>
+                </div>
+                <div style="padding: 15px; background: #f3f4f6; text-align: center; font-size: 12px; color: #666;">
+                  TaekUp™ is a product of MyTaek™ Inc.
+                </div>
+              </div>
+            `,
+          });
+          sentCount++;
+          console.log('[ClassFeedback] Email sent to:', parentEmail, 'for student:', name);
+        } else {
+          console.error('[ClassFeedback] SendGrid API key not configured');
+          failedCount++;
+        }
       } catch (emailError: any) {
         failedCount++;
         console.error('[ClassFeedback] Failed to send email to:', parentEmail, emailError.message);
