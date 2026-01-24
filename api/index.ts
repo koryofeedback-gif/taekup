@@ -1941,7 +1941,7 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
         if (process.env.SENDGRID_API_KEY) {
           sgMail.setApiKey(process.env.SENDGRID_API_KEY);
           
-          // Use branded HTML matching MyTaek master template style
+          // Use branded HTML matching MyTaek master template style exactly
           const brandedHtml = `
 <!DOCTYPE html>
 <html>
@@ -1949,46 +1949,46 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <!-- Header with Logo -->
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+          <!-- Header with Logo Image -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
-                <span style="color: #ef4444;">MY</span>TAEK
-              </h1>
+            <td style="background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%); padding: 40px 30px; text-align: center;">
+              <img src="https://www.mytaek.com/mytaek-logo.png" alt="MyTaek" width="120" style="display: inline-block; max-width: 120px;" />
             </td>
           </tr>
           <!-- Title -->
           <tr>
-            <td style="padding: 30px 30px 20px 30px;">
-              <h2 style="margin: 0; color: #1f2937; font-size: 24px;">${safeStudentName}'s Class Feedback 🥋</h2>
+            <td style="padding: 32px 32px 16px 32px;">
+              <h1 style="margin: 0; color: #111827; font-size: 26px; font-weight: 600;">${safeStudentName}'s Class Feedback 🥋</h1>
             </td>
           </tr>
           <!-- Body Content -->
           <tr>
-            <td style="padding: 0 30px 20px 30px; color: #374151; font-size: 15px; line-height: 1.6;">
+            <td style="padding: 0 32px 24px 32px; color: #374151; font-size: 15px; line-height: 1.7;">
               ${emailBody}
             </td>
           </tr>
           <!-- Button -->
           <tr>
-            <td style="padding: 10px 30px 30px 30px;">
-              <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">View Full Report</a>
+            <td style="padding: 8px 32px 40px 32px;">
+              <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);">View Full Report</a>
             </td>
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;"><strong>TaekUp™</strong> is a product of <strong>MyTaek™</strong> Inc.</p>
-              <p style="margin: 0 0 10px 0; color: #9ca3af; font-size: 12px;">HonorXP™ | Legacy Cards™ | Global Shogun Rank™ | DojoMint™ Protocol | ChronosBelt™ Predictor</p>
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">&copy; ${new Date().getFullYear()} MyTaek™ Inc. All rights reserved.</p>
-              <p style="margin: 10px 0 0 0;">
-                <a href="https://www.mytaek.com/unsubscribe" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Unsubscribe</a> | 
-                <a href="https://www.mytaek.com/privacy" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Privacy Policy</a> | 
+            <td style="background-color: #f9fafb; padding: 28px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 12px 0; color: #4b5563; font-size: 14px;"><strong>TaekUp™</strong> is a product of <strong>MyTaek™</strong> Inc.</p>
+              <p style="margin: 0 0 12px 0; color: #9ca3af; font-size: 11px; line-height: 1.5;">HonorXP™ | Legacy Cards™ | Global Shogun Rank™ | DojoMint™ Protocol | ChronosBelt™ Predictor</p>
+              <p style="margin: 0 0 16px 0; color: #9ca3af; font-size: 11px;">&copy; ${new Date().getFullYear()} MyTaek™ Inc. All rights reserved.</p>
+              <p style="margin: 0;">
+                <a href="https://www.mytaek.com/unsubscribe" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Unsubscribe</a>
+                <span style="color: #d1d5db;"> | </span>
+                <a href="https://www.mytaek.com/privacy" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Privacy Policy</a>
+                <span style="color: #d1d5db;"> | </span>
                 <a href="https://www.mytaek.com" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Visit MyTaek</a>
               </p>
             </td>
