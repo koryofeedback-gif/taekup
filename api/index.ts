@@ -1902,26 +1902,43 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
           ? `<div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0;"><strong>💬 Coach's Note:</strong><br><em>"${safeCoachNote}"</em></div>` 
           : '';
 
-        // Premium feature teasers with lock icons
+        // Premium feature teasers matching welcome email style
         const premiumTeaserSection = `
-          <div style="margin-top: 24px; padding: 16px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; border: 2px dashed #f59e0b;">
-            <div style="font-weight: bold; color: #92400e; margin-bottom: 12px; font-size: 14px;">✨ Unlock More with Premium:</div>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              <div style="background: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; color: #6b7280; display: inline-flex; align-items: center;">
-                🔒 <span style="margin-left: 4px;">AI Training Insights</span>
-              </div>
-              <div style="background: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; color: #6b7280; display: inline-flex; align-items: center;">
-                🔒 <span style="margin-left: 4px;">ChronosBelt™ Predictor</span>
-              </div>
-              <div style="background: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; color: #6b7280; display: inline-flex; align-items: center;">
-                🔒 <span style="margin-left: 4px;">Legacy Cards™</span>
-              </div>
-              <div style="background: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; color: #6b7280; display: inline-flex; align-items: center;">
-                🔒 <span style="margin-left: 4px;">Video Proof 2x HonorXP™</span>
-              </div>
-            </div>
-            <div style="margin-top: 10px; font-size: 11px; color: #92400e;">Only $4.99/month for the whole family!</div>
-          </div>
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 24px;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 20px;">
+                <p style="margin: 0 0 16px 0; font-weight: 600; color: #92400e; font-size: 15px;">✨ Unlock Premium for $4.99/month:</p>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
+                      🔒 <strong>ChronosBelt™ Predictor</strong> - <span style="color: #92400e;">AI predicts your child's black belt date</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
+                      🔒 <strong>Legacy Cards™</strong> - <span style="color: #92400e;">Digital collectible cards for achievements</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
+                      🔒 <strong>2x HonorXP™</strong> - <span style="color: #92400e;">Double points with video proof submissions</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
+                      🔒 <strong>AI Training Insights</strong> - <span style="color: #92400e;">Personalized feedback from TaekBot</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
+                      🔒 <strong>Home Dojo™ Habits</strong> - <span style="color: #92400e;">Daily practice tracking for discipline</span>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin: 12px 0 0 0; font-size: 13px; color: #92400e; font-weight: 500;">One subscription covers your entire family!</p>
+              </td>
+            </tr>
+          </table>
         `;
 
         const emailBody = `
