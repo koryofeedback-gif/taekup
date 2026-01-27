@@ -21,7 +21,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({ totalSteps
               {/* Tooltip for step number (Optional visual enhancement) */}
               <button
                 onClick={() => onStepClick(step)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900
+                className={`w-8 h-8 md:w-10 md:h-10 text-sm md:text-base rounded-full flex items-center justify-center font-bold transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900
                   ${isActive 
                     ? 'bg-sky-500 border-blue-600 text-white scale-110 shadow-[0_0_15px_rgba(37,99,235,0.5)]' 
                     : isCompleted 
@@ -32,7 +32,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({ totalSteps
                 title={`Go to Step ${step}`}
               >
                 {isCompleted ? (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                    <svg className="w-4 h-4 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                 ) : (
                     step
                 )}

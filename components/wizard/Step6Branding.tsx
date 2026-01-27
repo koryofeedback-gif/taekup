@@ -80,7 +80,7 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
            </h3>
            
            {/* Mock Parent Portal Container - mirrors ParentPortal.tsx structure */}
-           <div className="bg-gray-900 rounded-3xl border-4 border-gray-800 overflow-hidden relative mx-auto max-w-sm shadow-2xl" style={{ height: '600px' }}>
+           <div className="bg-gray-900 rounded-3xl border-4 border-gray-800 overflow-hidden relative mx-auto max-w-sm shadow-2xl h-[400px] md:h-[500px] lg:h-[600px]">
                 
                 {/* App Header */}
                 <div className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center">
