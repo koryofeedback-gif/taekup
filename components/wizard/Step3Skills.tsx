@@ -44,13 +44,24 @@ export const Step3Skills: React.FC<Step3Props> = ({ data, onUpdate }) => {
     return (
         <div className="space-y-8">
             <div className="text-center">
-                <h1 className="text-2xl md:text-3xl font-bold text-white">Skills and Points System</h1>
-                <p className="text-gray-400 mt-2">What do you want to track and reward?</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">Skills & Performance Metrics</h1>
+                <p className="text-gray-400 mt-2">Define the core competencies you'll evaluate during each class</p>
+            </div>
+
+            {/* Research Note */}
+            <div className="bg-cyan-900/30 border border-cyan-700/50 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                    <span className="text-cyan-400 text-xl">💡</span>
+                    <div>
+                        <p className="text-cyan-300 font-medium text-sm">Research-Backed Defaults</p>
+                        <p className="text-cyan-400/80 text-xs mt-1">These four skills are derived from sports psychology research on martial arts development. They represent the key pillars of student growth: physical execution, mental commitment, attentional control, and behavioral consistency. Customize as needed for your teaching philosophy.</p>
+                    </div>
+                </div>
             </div>
 
             {/* Skills List */}
             <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-300">Trackable Skills</label>
+                <label className="block text-sm font-medium text-gray-300">Performance Categories</label>
                 <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 space-y-3">
                     {data.skills.map(skill => (
                         <div key={skill.id} className="flex items-center space-x-3">
