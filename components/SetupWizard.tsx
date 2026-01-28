@@ -254,7 +254,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
       case 2: return <Step2BeltSystem data={wizardData} onUpdate={handleUpdate} />;
       case 3: return <Step3Skills data={wizardData} onUpdate={handleUpdate} />;
       case 4: return <Step4Rules data={wizardData} onUpdate={handleUpdate} />;
-      case 5: return <Step5AddPeople data={wizardData} onUpdate={handleUpdate} />;
+      case 5: return <Step5AddPeople data={wizardData} onUpdate={handleUpdate} clubId={clubId} />;
       case 6: return <Step6Branding data={wizardData} onUpdate={handleUpdate} />;
       default: return <Step1ClubInfo data={wizardData} onUpdate={handleUpdate} />;
     }
