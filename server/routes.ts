@@ -156,6 +156,46 @@ export function registerRoutes(app: Express) {
     return res.status(401).json({ valid: false, error: 'Incorrect password' });
   });
 
+  app.post('/api/change-password', async (req: Request, res: Response) => {
+    const { userId, currentPassword, newPassword } = req.body || {};
+    
+    if (!userId || !currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'User ID, current password, and new password are required' });
+    }
+    
+    if (newPassword.length < 4) {
+      return res.status(400).json({ error: 'New password must be at least 4 characters' });
+    }
+    
+    try {
+      const userResult = await db.execute(sql`
+        SELECT id, password_hash FROM users WHERE id = ${userId}::uuid
+      `);
+      
+      if ((userResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      const user = (userResult as any[])[0];
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+      
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+      await db.execute(sql`
+        UPDATE users SET password_hash = ${newPasswordHash}, updated_at = NOW() WHERE id = ${userId}::uuid
+      `);
+      
+      console.log('[ChangePassword] Password changed for user:', userId);
+      return res.json({ success: true, message: 'Password changed successfully' });
+    } catch (error: any) {
+      console.error('[ChangePassword] Error:', error.message);
+      return res.status(500).json({ error: 'Failed to change password' });
+    }
+  });
+
   app.post('/api/club/save-wizard-data', async (req: Request, res: Response) => {
     try {
       const { clubId, wizardData } = req.body;
@@ -188,7 +228,7 @@ export function registerRoutes(app: Express) {
         if (coach.email) {
           try {
             const coachEmail = coach.email.toLowerCase().trim();
-            const tempPassword = coach.password || crypto.randomBytes(8).toString('hex');
+            const tempPassword = coach.password || '1234';
             const passwordHash = await bcrypt.hash(tempPassword, 10);
             
             // Check if user already exists
@@ -2141,7 +2181,7 @@ export function registerRoutes(app: Express) {
         return res.status(404).json({ error: 'Club not found' });
       }
 
-      const tempPassword = crypto.randomBytes(8).toString('hex');
+      const tempPassword = '1234';
       const passwordHash = await bcrypt.hash(tempPassword, 10);
 
       // Insert into users table for authentication

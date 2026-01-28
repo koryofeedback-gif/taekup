@@ -101,7 +101,7 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   COACH_INVITE: {
     subject: 'You\'ve been invited to join {{clubName}} as a Coach!',
     title: 'Coach Invitation',
-    body: `Hi {{name}},<br><br>You've been invited to join <strong>{{clubName}}</strong> as a coach on TaekUp.<br><br>Your temporary password is: <strong>{{tempPassword}}</strong><br><br>Click the button below to accept the invitation and set up your account.`,
+    body: `Hi {{name}},<br><br>You've been invited to join <strong>{{clubName}}</strong> as a coach on TaekUp.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 15px 0;'>🔐 Your Login Credentials:</h3><div style='background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;'><strong>Email:</strong> {{coachEmail}}<br><strong>Password:</strong> {{tempPassword}}</div><p style='margin: 15px 0 0 0; font-size: 13px; color: #fbbf24;'>⚠️ Please change your password after first login for security!</p></div><br>Click the button below to accept the invitation and set up your account.`,
     btn_text: 'Accept Invitation',
     btn_url: `${BASE_URL}/login`,
     from: 'hello@mytaek.com'
@@ -733,6 +733,52 @@ async function handleVerifyPassword(req: VercelRequest, res: VercelResponse) {
   return res.status(401).json({ valid: false, error: 'Incorrect password' });
 }
 
+async function handleChangePassword(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { userId, currentPassword, newPassword } = parseBody(req);
+  
+  if (!userId || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'User ID, current password, and new password are required' });
+  }
+  
+  if (newPassword.length < 4) {
+    return res.status(400).json({ error: 'New password must be at least 4 characters' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    const userResult = await client.query(
+      'SELECT id, password_hash FROM users WHERE id = $1::uuid',
+      [userId]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    await client.query(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid',
+      [newPasswordHash, userId]
+    );
+    
+    console.log('[ChangePassword] Password changed for user:', userId);
+    return res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error: any) {
+    console.error('[ChangePassword] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to change password' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleCheckout(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { priceId, clubId, email } = parseBody(req);
@@ -1336,7 +1382,7 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
       if (coach.email) {
         try {
           const coachEmail = coach.email.toLowerCase().trim();
-          const tempPassword = coach.password || crypto.randomBytes(8).toString('hex');
+          const tempPassword = coach.password || '1234';
           const passwordHash = await bcrypt.hash(tempPassword, 10);
           
           // Check if user already exists
@@ -2175,7 +2221,7 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
     const club = clubResult.rows[0];
     if (!club) return res.status(404).json({ error: 'Club not found' });
 
-    const tempPassword = password || crypto.randomBytes(8).toString('hex');
+    const tempPassword = password || '1234';
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
     // Insert into users table for authentication
@@ -7269,6 +7315,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/forgot-password' || path === '/forgot-password/') return await handleForgotPassword(req, res);
     if (path === '/reset-password' || path === '/reset-password/') return await handleResetPassword(req, res);
     if (path === '/verify-password' || path === '/verify-password/') return await handleVerifyPassword(req, res);
+    if (path === '/change-password' || path === '/change-password/') return await handleChangePassword(req, res);
     if (path === '/checkout' || path === '/checkout/') return await handleCheckout(req, res);
     if (path === '/parent-premium/checkout' || path === '/parent-premium/checkout/') return await handleParentPremiumCheckout(req, res);
     if (path === '/customer-portal' || path === '/customer-portal/') return await handleCustomerPortal(req, res);
