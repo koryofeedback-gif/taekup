@@ -2539,10 +2539,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const excelFileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [uploadedFileName, setUploadedFileName] = useState('');
+    const [importStatus, setImportStatus] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
+    const [isImporting, setIsImporting] = useState(false);
 
     const handleExcelUpload = (file: File) => {
+        console.log('[AdminDashboard] File upload started:', file.name, file.type, file.size);
         setUploadedFileName(file.name);
         setBulkError('');
+        setParsedBulkStudents([]);
         
         const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
         
@@ -2550,28 +2554,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const data = e.target?.result;
-                    const workbook = XLSX.read(data, { type: 'binary' });
+                    console.log('[AdminDashboard] Excel file loaded, parsing...');
+                    const arrayBuffer = e.target?.result;
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
                     
-                    // Convert to CSV format for parsing
+                    console.log('[AdminDashboard] Excel parsed, rows:', jsonData.length);
                     const csvText = jsonData.map(row => row.join(',')).join('\n');
                     setBulkStudentData(csvText);
                     parseExcelStudents(jsonData);
-                } catch (err) {
-                    setBulkError('Failed to parse Excel file. Please check the format.');
+                } catch (err: any) {
+                    console.error('[AdminDashboard] Excel parse error:', err);
+                    setBulkError(`Failed to parse Excel file: ${err.message || 'Unknown error'}`);
                 }
             };
-            reader.readAsBinaryString(file);
+            reader.onerror = (e) => {
+                console.error('[AdminDashboard] File read error:', e);
+                setBulkError('Failed to read file. Please try again.');
+            };
+            reader.readAsArrayBuffer(file);
         } else {
-            // CSV file
             const reader = new FileReader();
             reader.onload = (e) => {
+                console.log('[AdminDashboard] CSV file loaded');
                 const text = e.target?.result as string;
                 setBulkStudentData(text);
                 parseBulkStudents(text);
+            };
+            reader.onerror = (e) => {
+                console.error('[AdminDashboard] File read error:', e);
+                setBulkError('Failed to read file. Please try again.');
             };
             reader.readAsText(file);
         }
@@ -2699,20 +2713,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
         }
         const validStudents = parsedBulkStudents.filter(s => s.beltId !== 'INVALID_BELT');
         
-        // Save each student to database and get proper UUIDs
+        setIsImporting(true);
+        setImportStatus(null);
+        
         const studentsWithDbIds: Student[] = [];
+        
+        let emailSentCount = 0;
+        let emailSkippedCount = 0;
+        let noEmailCount = 0;
+        let emailFailedCount = 0;
+        let saveFailedCount = 0;
         
         for (const student of validStudents) {
             if (clubId) {
                 try {
                     const belt = data.belts.find(b => b.id === student.beltId);
+                    const hasEmail = student.parentEmail && student.parentEmail.trim() !== '';
+                    
                     const response = await fetch('/api/students', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             clubId,
                             name: student.name,
-                            parentEmail: student.parentEmail || null,
+                            parentEmail: hasEmail ? student.parentEmail.trim() : null,
                             parentName: student.parentName,
                             parentPhone: student.parentPhone,
                             belt: belt?.name || 'White',
@@ -2721,29 +2745,63 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     });
                     const result = await response.json();
                     if (response.ok && result.student?.id) {
-                        // Use database-generated UUID
                         studentsWithDbIds.push({ ...student, id: result.student.id });
-                        console.log('[AdminDashboard] Bulk import: Student saved with database ID:', result.student.id);
+                        
+                        if (result.welcomeEmail?.success) {
+                            if (result.welcomeEmail.skipped) {
+                                emailSkippedCount++;
+                                console.log(`[Bulk Import] Email skipped for ${student.parentEmail}: ${result.welcomeEmail.reason || 'already sent'}`);
+                            } else {
+                                emailSentCount++;
+                            }
+                        } else if (hasEmail) {
+                            emailFailedCount++;
+                            console.error(`[Bulk Import] Email failed for ${student.parentEmail}:`, result.welcomeEmail?.error || 'unknown error');
+                        } else {
+                            noEmailCount++;
+                        }
                     } else {
-                        // Fallback to local ID if API fails
                         studentsWithDbIds.push(student);
-                        console.error('[AdminDashboard] Bulk import: Failed to save student:', student.name);
+                        saveFailedCount++;
+                        console.error('[Bulk Import] Failed to save:', student.name, result.error);
                     }
                 } catch (error) {
-                    // Fallback to local ID on error
                     studentsWithDbIds.push(student);
-                    console.error('[AdminDashboard] Bulk import: API error for student:', student.name, error);
+                    saveFailedCount++;
+                    console.error('[Bulk Import] API error:', student.name, error);
                 }
             } else {
-                // No clubId, use local ID
                 studentsWithDbIds.push(student);
             }
         }
         
+        setIsImporting(false);
+        
+        const statusParts = [];
+        statusParts.push(`${validStudents.length - saveFailedCount} students added`);
+        if (emailSentCount > 0) statusParts.push(`${emailSentCount} welcome emails sent`);
+        if (emailSkippedCount > 0) statusParts.push(`${emailSkippedCount} emails skipped (already sent)`);
+        if (noEmailCount > 0) statusParts.push(`${noEmailCount} without email`);
+        if (emailFailedCount > 0) statusParts.push(`${emailFailedCount} email failures`);
+        if (saveFailedCount > 0) statusParts.push(`${saveFailedCount} save failures`);
+        
+        const hasIssues = emailFailedCount > 0 || saveFailedCount > 0;
+        const hasWarnings = noEmailCount > 0 || emailSkippedCount > 0;
+        
+        setImportStatus({
+            type: hasIssues ? 'error' : hasWarnings ? 'warning' : 'success',
+            message: statusParts.join(', ')
+        });
+        
         onUpdateData({ students: [...data.students, ...studentsWithDbIds] });
         setParsedBulkStudents([]);
         setBulkStudentData('');
-        setModalType(null);
+        setUploadedFileName('');
+        
+        setTimeout(() => {
+            setImportStatus(null);
+            setModalType(null);
+        }, 4000);
     };
 
     const handleAddStudent = async () => {
@@ -3130,13 +3188,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
                                     <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedBulkStudents.length}):</p>
                                     {parsedBulkStudents.map((s, i) => (
-                                        <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800">
-                                            {s.name} - {data.belts.find(b => b.id === s.beltId)?.name || '?'}
+                                        <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 grid grid-cols-3 gap-1">
+                                            <span className="truncate">{s.name}</span>
+                                            <span className="text-gray-500 truncate">{data.belts.find(b => b.id === s.beltId)?.name || '?'}</span>
+                                            <span className={`truncate text-right ${s.parentEmail ? 'text-green-400' : 'text-yellow-500'}`}>
+                                                {s.parentEmail || 'No email'}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
                             )}
-                            <button onClick={confirmBulkImport} disabled={parsedBulkStudents.length === 0} className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded">Import {parsedBulkStudents.length} Students</button>
+                            {importStatus && (
+                                <div className={`p-3 rounded text-sm ${
+                                    importStatus.type === 'success' ? 'bg-green-900/50 border border-green-600 text-green-300' :
+                                    importStatus.type === 'warning' ? 'bg-yellow-900/50 border border-yellow-600 text-yellow-300' :
+                                    'bg-red-900/50 border border-red-600 text-red-300'
+                                }`}>
+                                    {importStatus.type === 'success' ? '✓ ' : importStatus.type === 'warning' ? '⚠ ' : '✗ '}
+                                    {importStatus.message}
+                                </div>
+                            )}
+                            <button 
+                                onClick={confirmBulkImport} 
+                                disabled={parsedBulkStudents.length === 0 || isImporting} 
+                                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded flex items-center justify-center gap-2"
+                            >
+                                {isImporting ? (
+                                    <>
+                                        <span className="animate-spin">⏳</span>
+                                        Importing...
+                                    </>
+                                ) : (
+                                    `Import ${parsedBulkStudents.length} Students`
+                                )}
+                            </button>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -3194,20 +3279,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
                                     <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedBulkStudents.length} students):</p>
                                     {parsedBulkStudents.map((s, i) => (
-                                        <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 flex justify-between">
-                                            <span>{s.name}</span>
-                                            <span className="text-gray-500">{data.belts.find(b => b.id === s.beltId)?.name || 'White Belt'}</span>
+                                        <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 grid grid-cols-3 gap-1">
+                                            <span className="truncate">{s.name}</span>
+                                            <span className="text-gray-500 truncate">{data.belts.find(b => b.id === s.beltId)?.name || 'White Belt'}</span>
+                                            <span className={`truncate text-right ${s.parentEmail ? 'text-green-400' : 'text-yellow-500'}`}>
+                                                {s.parentEmail || 'No email'}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
                             )}
                             
+                            {importStatus && (
+                                <div className={`p-3 rounded text-sm ${
+                                    importStatus.type === 'success' ? 'bg-green-900/50 border border-green-600 text-green-300' :
+                                    importStatus.type === 'warning' ? 'bg-yellow-900/50 border border-yellow-600 text-yellow-300' :
+                                    'bg-red-900/50 border border-red-600 text-red-300'
+                                }`}>
+                                    {importStatus.type === 'success' ? '✓ ' : importStatus.type === 'warning' ? '⚠ ' : '✗ '}
+                                    {importStatus.message}
+                                </div>
+                            )}
+                            
                             <button 
                                 onClick={confirmBulkImport} 
-                                disabled={parsedBulkStudents.length === 0} 
-                                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded"
+                                disabled={parsedBulkStudents.length === 0 || isImporting} 
+                                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded flex items-center justify-center gap-2"
                             >
-                                Import {parsedBulkStudents.length} Students
+                                {isImporting ? (
+                                    <>
+                                        <span className="animate-spin">⏳</span>
+                                        Importing...
+                                    </>
+                                ) : (
+                                    `Import ${parsedBulkStudents.length} Students`
+                                )}
                             </button>
                         </div>
                     )}

@@ -2005,8 +2005,9 @@ export function registerRoutes(app: Express) {
         console.log('[New Student] Notification email sent to club owner:', club.owner_email);
       }
 
+      let welcomeEmailResult = { success: false, skipped: false, reason: 'No parent email' };
       if (parentEmail) {
-        await emailAutomation.sendParentWelcomeEmailAuto(
+        welcomeEmailResult = await emailAutomation.sendParentWelcomeEmailAuto(
           clubId,
           student.id,
           parentEmail,
@@ -2014,6 +2015,7 @@ export function registerRoutes(app: Express) {
           name,
           club.name
         );
+        console.log('[Add Student] Welcome email result:', welcomeEmailResult);
       }
 
       await db.execute(sql`
@@ -2029,7 +2031,8 @@ export function registerRoutes(app: Express) {
           parentEmail: student.parent_email,
           parentName: student.parent_name,
           belt: student.belt
-        }
+        },
+        welcomeEmail: welcomeEmailResult
       });
     } catch (error: any) {
       console.error('[Add Student] Error:', error.message);
