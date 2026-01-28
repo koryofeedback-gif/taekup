@@ -383,13 +383,6 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                         placeholder="Email Address"
                         className="wizard-input"
                     />
-                     <input 
-                        type="password" 
-                        value={newCoach.password} 
-                        onChange={e => setNewCoach({...newCoach, password: e.target.value})}
-                        placeholder="Temporary Password"
-                        className="wizard-input"
-                    />
                     <select 
                         value={newCoach.location} 
                         onChange={e => setNewCoach({...newCoach, location: e.target.value})}
@@ -502,7 +495,6 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                         </div>
                         
                         <input type="text" value={newStudent.parentEmail} onChange={e => setNewStudent({...newStudent, parentEmail: e.target.value})} placeholder="Parent Email (Optional)" className="wizard-input" />
-                        <input type="password" value={newStudent.parentPassword || ''} onChange={e => setNewStudent({...newStudent, parentPassword: e.target.value})} placeholder="Parent Password (Optional)" className="wizard-input" />
 
                         <button 
                             onClick={handleAddStudent}

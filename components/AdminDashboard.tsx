@@ -3152,7 +3152,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent Info</p>
                                 <input type="text" placeholder="Parent Name" className="w-full bg-gray-700 rounded p-2 text-white mb-2" onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} />
                                 <input type="email" placeholder="Parent Email" className="w-full bg-gray-700 rounded p-2 text-white mb-2" onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} />
-                                <input type="password" placeholder="Parent Password (for login)" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, parentPassword: e.target.value})} />
+                                <p className="text-xs text-gray-400">Default password: 1234 (user will be prompted to change)</p>
                             </div>
                             {data.clubSponsoredPremium && (
                                 <p className="text-xs text-indigo-300 bg-indigo-900/20 p-2 rounded">
@@ -3455,7 +3455,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     <div className="space-y-4">
                         <input type="text" placeholder="Coach Name" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, name: e.target.value})} />
                         <input type="email" placeholder="Email Address" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, email: e.target.value})} />
-                        <input type="password" placeholder="Temp Password" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, password: e.target.value})} />
+                        <p className="text-xs text-gray-400">Default password: 1234 (coach will be prompted to change)</p>
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-bold">Main Location</label>
                             <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, location: e.target.value})}>
