@@ -116,14 +116,6 @@ export const Step3Skills: React.FC<Step3Props> = ({ data, onUpdate }) => {
                 </div>
             </div>
 
-            {/* Bonus Section */}
-            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-3">Bonus System (Optional)</h3>
-                <div className="space-y-3">
-                    <BonusToggle label="Homework Bonus" description="Manually add variable points for completed homework." enabled={data.homeworkBonus} onToggle={() => onUpdate({ homeworkBonus: !data.homeworkBonus })} />
-                    <BonusToggle label="Coach Bonus" description="Manually add +1 to ∞ bonus points during class." enabled={data.coachBonus} onToggle={() => onUpdate({ coachBonus: !data.coachBonus })} />
-                </div>
-            </div>
 
             <style>{`
             .wizard-input {
@@ -161,12 +153,3 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ c
     </button>
 );
 
-const BonusToggle: React.FC<{ label: string; description: string; enabled: boolean; onToggle: () => void; }> = ({ label, description, enabled, onToggle }) => (
-    <div className="flex items-center justify-between">
-        <div>
-            <p className="font-medium text-white">{label}</p>
-            <p className="text-sm text-gray-400">{description}</p>
-        </div>
-        <ToggleSwitch checked={enabled} onChange={onToggle} />
-    </div>
-);
