@@ -125,6 +125,7 @@ export async function sendNotification(
         is_rtl: isRtl,
         image_url: data.image_url,
         unsubscribe: `${baseUrl}/unsubscribe?email=${encodeURIComponent(user.email)}`,
+        name: templateData.name,
       },
     };
 
