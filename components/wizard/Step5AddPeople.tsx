@@ -5,7 +5,6 @@ import type { WizardData, Coach, Student } from '../../types';
 interface Step5Props {
   data: WizardData;
   onUpdate: (data: Partial<WizardData>) => void;
-  clubId?: string;
 }
 
 const getInitialCoachState = (locations: string[]) => ({ 
@@ -48,7 +47,7 @@ const initialStudentState: Omit<Student, 'id'> = {
 };
 
 
-export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate, clubId }) => {
+export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
     const locations = data.branchNames && data.branchNames.length > 0 ? data.branchNames : ['Main Location'];
     
     const [newCoach, setNewCoach] = useState(() => getInitialCoachState(locations));
@@ -76,45 +75,10 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate, clubId })
         ? (data.locationClasses[newCoach.location] || [])
         : [];
 
-    const [isAddingCoach, setIsAddingCoach] = useState(false);
-    
-    const handleAddCoach = async () => {
+    const handleAddCoach = () => {
         if (!newCoach.name || !newCoach.email) return;
-        
-        // If clubId exists, save to database immediately and send invite email
-        let databaseCoachId: string | null = null;
-        if (clubId) {
-            setIsAddingCoach(true);
-            try {
-                const response = await fetch('/api/invite-coach', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        clubId,
-                        name: newCoach.name,
-                        email: newCoach.email,
-                        location: newCoach.location || locations[0],
-                        assignedClasses: newCoach.assignedClasses
-                    })
-                });
-                const result = await response.json();
-                if (response.ok && result.success) {
-                    databaseCoachId = result.coach?.id || `coach-${Date.now()}`;
-                    console.log('[Step5] Coach invited successfully:', newCoach.email);
-                    alert(`Invite email sent to ${newCoach.email}!`);
-                } else {
-                    console.error('[Step5] Coach invite error:', result);
-                    alert(`Failed to send invite: ${result.error || 'Unknown error'}`);
-                }
-            } catch (error) {
-                console.error('[Step5] Failed to invite coach:', error);
-            } finally {
-                setIsAddingCoach(false);
-            }
-        }
-        
         const coachToAdd: Coach = {
-            id: databaseCoachId || `coach-${Date.now()}`,
+            id: `coach-${Date.now()}`,
             name: newCoach.name,
             email: newCoach.email,
             password: newCoach.password,
@@ -145,9 +109,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate, clubId })
         return data.pointsPerStripe;
     };
 
-    const [isAddingStudent, setIsAddingStudent] = useState(false);
-    
-    const handleAddStudent = async () => {
+    const handleAddStudent = () => {
         if (!newStudent.name || !newStudent.beltId) return;
         
         // Calculate initial points based on stripes
@@ -162,52 +124,10 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate, clubId })
             ? newStudent.assignedClass 
             : (validClasses[0] || 'General Class');
 
-        const belt = data.belts.find(b => b.id === newStudent.beltId);
-        
-        // If clubId exists, save to database immediately and send welcome email
-        let databaseStudentId: string | null = null;
-        if (clubId) {
-            setIsAddingStudent(true);
-            try {
-                const response = await fetch('/api/students', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        clubId,
-                        name: newStudent.name,
-                        parentEmail: newStudent.parentEmail || null,
-                        parentName: newStudent.parentName || null,
-                        parentPhone: newStudent.parentPhone || null,
-                        parentPassword: newStudent.parentPassword || '1234',
-                        belt: belt?.name || 'White',
-                        birthdate: newStudent.birthday || null,
-                        location: finalLocation,
-                        assignedClass: finalClass
-                    })
-                });
-                const result = await response.json();
-                if (response.ok && result.student?.id) {
-                    databaseStudentId = result.student.id;
-                    console.log('[Step5] Student added to database with ID:', databaseStudentId);
-                    if (newStudent.parentEmail && result.welcomeEmail?.success) {
-                        alert(`Welcome email sent to ${newStudent.parentEmail}!`);
-                    } else if (newStudent.parentEmail && result.welcomeEmail?.skipped) {
-                        alert(`Welcome email already sent to ${newStudent.parentEmail} previously.`);
-                    }
-                } else {
-                    console.error('[Step5] Student API error:', result);
-                }
-            } catch (error) {
-                console.error('[Step5] Failed to save student to database:', error);
-            } finally {
-                setIsAddingStudent(false);
-            }
-        }
-
         const studentToAdd: Student = {
-            id: databaseStudentId || `student-${Date.now()}`,
+            id: `student-${Date.now()}`,
             ...newStudent,
-            totalPoints: initialPoints,
+            totalPoints: initialPoints, // Initialize correctly based on stripes
             location: finalLocation,
             assignedClass: finalClass,
             sparringStats: { matches: 0, wins: 0, draws: 0, headKicks: 0, bodyKicks: 0, punches: 0, takedowns: 0, defense: 0 },
@@ -499,10 +419,10 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate, clubId })
 
                 <button 
                     onClick={handleAddCoach}
-                    disabled={!newCoach.name || !newCoach.email || isAddingCoach}
+                    disabled={!newCoach.name || !newCoach.email}
                     className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors mb-6"
                 >
-                    {isAddingCoach ? 'Sending Invite...' : 'Add Coach'}
+                    Add Coach
                 </button>
 
                 <div className="space-y-2">
@@ -586,10 +506,10 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate, clubId })
 
                         <button 
                             onClick={handleAddStudent}
-                            disabled={!newStudent.name || !newStudent.beltId || isAddingStudent}
+                            disabled={!newStudent.name || !newStudent.beltId}
                             className="md:col-span-2 w-full bg-sky-500 hover:bg-sky-600 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors"
                         >
-                            {isAddingStudent ? 'Adding Student...' : 'Add Student'}
+                            Add Student
                         </button>
                     </div>
                 ) : (
