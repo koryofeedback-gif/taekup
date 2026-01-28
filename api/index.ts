@@ -75,7 +75,7 @@ function generateChallengeUUID(challengeType: string): string {
   return `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-a${hash.slice(17,20)}-${hash.slice(20,32)}`;
 }
 
-const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'd-4dcfd1bfcaca4eb2a8af8085810c1c2';
+const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
 const BASE_URL = 'https://www.mytaek.com';
 
 const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: string; btn_text?: string; btn_url?: string; from: string }> = {
@@ -2210,7 +2210,7 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
     }
 
     const coachSent = await sendTemplateEmail(email, 'COACH_INVITE', {
-      coachName: name,
+      name: name,
       clubName: club.name,
       coachEmail: email,
       tempPassword: tempPassword,
