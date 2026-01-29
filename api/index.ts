@@ -696,7 +696,7 @@ async function handleForgotPassword(req: VercelRequest, res: VercelResponse) {
     await client.query('UPDATE users SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3', [resetToken, expiresAt, user.id]);
 
     await sendTemplateEmail(user.email, 'RESET_PASSWORD', {
-      userName: user.name || 'User',
+      name: user.name || 'User',
       resetToken: resetToken,
       resetUrl: `https://www.mytaek.com/reset-password?token=${resetToken}`,
     });
