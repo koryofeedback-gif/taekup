@@ -767,8 +767,8 @@ const App: React.FC = () => {
         
         console.log('[Logout] Cleared all session data including demo mode');
         
-        // Redirect to home page
-        window.location.href = '/';
+        // Redirect to login page
+        window.location.href = '/login';
     }, [setSignupData, setFinalWizardData]);
 
     return (
