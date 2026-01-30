@@ -1,0 +1,30 @@
+Terms of Service
+Last Updated: January 2026
+
+Welcome to TaekUp, a platform operated by MyTaek Inc. ("Company", "we", "us"). By accessing our website or mobile application, you agree to these Terms.
+
+1. Intellectual Property & Brand Protection
+The TaekUp platform, including its source code, database structures, algorithms, and User Interface design (UI/UX), is the exclusive property of MyTaek Inc.
+
+Strictly Prohibited:
+
+You may not reverse engineer, decompile, or disassemble any aspect of the platform.
+Trade Dress: The specific combination of features known as HonorXP™, Legacy Cards™, Global Shogun Rank™, and the DojoMint™ Protocol are protected trade dress of MyTaek Inc. Copying these gamification mechanics or terminologies is a violation of our intellectual property rights.
+2. Accounts & Usage
+Club Owners: You are responsible for maintaining the confidentiality of your Stripe Connect account credentials.
+Parents/Guardians: You must be at least 18 years old to create an account. You grant consent for your child's participation and video uploads.
+3. Payments & Revenue Split (The DojoMint™ Model)
+SaaS Fees: Club Owners agree to the applicable software licensing fees as presented at the time of subscription.
+Marketplace Revenue: For student subscriptions, the Platform automatically deducts a Platform Fee and applicable payment processing costs (e.g., Stripe fees) before transferring the remaining Net Revenue to the Club Owner's connected account.
+Fee Visibility: The specific revenue share rates and fee structures are confidential and detailed within the Club Owner Dashboard. By connecting your Stripe account, you agree to these rates.
+Refunds: SaaS fees are non-refundable. Student subscription refunds are handled at the discretion of the Club Owner.
+4. User-Generated Content (Videos)
+Ownership: Parents/Students retain ownership of their training videos.
+License: By uploading, you grant MyTaek Inc. a worldwide, royalty-free license to host, encode, and process these videos for the purpose of providing the Service (e.g., for Coach review).
+5. Physical Safety Disclaimer
+Martial arts involve physical exertion. MyTaek Inc. is a technology provider, not a fitness instructor. We are not liable for any physical injuries that occur while practicing moves seen on or uploaded to the App. Practice safely and under supervision.
+
+6. Termination
+We reserve the right to terminate accounts that violate these terms or attempt to clone/scrape our data.
+
+Contact: hello@mytaek.com
