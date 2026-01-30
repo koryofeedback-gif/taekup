@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { WizardData, Student, PerformanceRecord, FeedbackRecord, CalendarEvent, CustomChallenge } from '../types';
 import { generateParentFeedback, generatePromotionMessage, generateLessonPlan } from '../services/geminiService';
 import { generateLessonPlanGPT } from '../services/openaiService';
-import { isDemoModeEnabled, DEMO_CUSTOM_CHALLENGES, DEMO_PENDING_VIDEOS } from './demoData';
+import { DEMO_CUSTOM_CHALLENGES, DEMO_PENDING_VIDEOS } from './demoData';
 import { StudentProfile } from './StudentProfile';
 import { ChallengeBuilder } from './ChallengeBuilder';
 import { CoachLeaderboard } from './CoachLeaderboard';
@@ -108,11 +108,10 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string }> = ({ students, belts, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
     const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
-    const isDemo = isDemoModeEnabled();
     
-    // Fetch monthly PTS from API (persisted in database) - skip in demo mode
+    // Fetch monthly PTS from API (persisted in database)
     useEffect(() => {
-        if (!clubId || isDemo) return;
+        if (!clubId) return;
         const fetchMonthlyPTS = async () => {
             try {
                 const response = await fetch(`/api/leaderboard?clubId=${clubId}`);
@@ -131,21 +130,10 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         fetchMonthlyPTS();
         const interval = setInterval(fetchMonthlyPTS, 30000);
         return () => clearInterval(interval);
-    }, [clubId, isDemo]);
+    }, [clubId]);
     
-    // Mode 1: Monthly Effort - Use demo data or API data
+    // Mode 1: Monthly Effort - Use API data
     const monthlyEffortStudents = useMemo(() => {
-        // Demo mode - use pre-set monthly PTS values
-        if (isDemo && students.length > 0) {
-            const demoPTS = [285, 210, 175, 140, 95, 60, 45, 30];
-            return students
-                .slice(0, 3)
-                .map((student, i) => ({
-                    ...student,
-                    displayPTS: demoPTS[i] || 50
-                }));
-        }
-        
         return [...students]
             .map(student => {
                 const monthlyPTS = apiMonthlyPTS.get(student.id) || 0;
@@ -154,21 +142,10 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
             .sort((a, b) => b.displayPTS - a.displayPTS)
             .filter(s => s.displayPTS > 0)
             .slice(0, 3);
-    }, [students, apiMonthlyPTS, isDemo]);
+    }, [students, apiMonthlyPTS]);
     
     // Mode 2: Belt Progress - Live current_stripe_points (totalPoints)
     const beltProgressStudents = useMemo(() => {
-        // Demo mode - use pre-set stripe progress values
-        if (isDemo && students.length > 0) {
-            const demoProgress = [450, 320, 280, 190, 150, 100, 75, 40];
-            return students
-                .slice(0, 3)
-                .map((student, i) => ({
-                    ...student,
-                    displayPTS: demoProgress[i] || 50
-                }));
-        }
-        
         return [...students]
             .map(student => ({
                 ...student,
@@ -177,7 +154,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
             .sort((a, b) => b.displayPTS - a.displayPTS)
             .filter(s => s.displayPTS > 0)
             .slice(0, 3);
-    }, [students, isDemo]);
+    }, [students]);
     
     // Select which list to display based on mode
     const topStudents = leaderboardMode === 'effort' ? monthlyEffortStudents : beltProgressStudents;
@@ -724,7 +701,7 @@ const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastComm
 
 const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
     const [ageGroup, setAgeGroup] = useState('Kids (7-9)');
-    const [focus, setFocus] = useState(() => isDemoModeEnabled() ? 'Roundhouse Kick' : '');
+    const [focus, setFocus] = useState('');
     const [duration, setDuration] = useState('45');
     const [beltLevel, setBeltLevel] = useState(data.belts[0]?.name || 'White Belt');
     const [plan, setPlan] = useState<string | null>(null);
@@ -733,82 +710,6 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
     const handleGenerate = async () => {
         if (!focus) return;
         setIsGenerating(true);
-        
-        // Demo mode - return static lesson plan without API cost
-        if (isDemoModeEnabled()) {
-            const demoLessonPlan = `📋 LESSON PLAN: ${focus.toUpperCase()}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-👥 Class: ${ageGroup} | 🥋 Level: ${beltLevel} | ⏱️ Duration: ${duration} minutes
-
-═══════════════════════════════════════════
-🔥 WARM-UP (${Math.round(parseInt(duration) * 0.15)} minutes)
-═══════════════════════════════════════════
-
-• Dynamic stretching - arm circles, leg swings (2 min)
-• Light jogging with high knees and butt kicks (2 min)
-• Basic stance transitions - front stance to back stance (2 min)
-• Partner mirror drills - follow the leader (2 min)
-
-═══════════════════════════════════════════
-📚 TECHNIQUE INSTRUCTION (${Math.round(parseInt(duration) * 0.35)} minutes)
-═══════════════════════════════════════════
-
-1️⃣ FUNDAMENTALS (5 min)
-   • Review proper chamber position
-   • Demonstrate correct hip rotation
-   • Explain balance and weight distribution
-   • Show common mistakes to avoid
-
-2️⃣ PROGRESSIVE DRILLS (10 min)
-   • Slow-motion technique practice (stationary)
-   • Add stepping with technique
-   • Increase speed gradually
-   • Focus on proper form over power
-
-3️⃣ TARGET PRACTICE (5 min)
-   • Pad work with partners (switch every 2 min)
-   • Coach corrections and feedback
-   • Emphasis on accuracy and control
-
-═══════════════════════════════════════════
-🎮 SKILL APPLICATION (${Math.round(parseInt(duration) * 0.25)} minutes)
-═══════════════════════════════════════════
-
-• Combination drills incorporating ${focus}
-• Reaction training - signal-based execution
-• Light sparring application (controlled contact)
-• Game: "Technique Tag" - points for clean techniques
-
-═══════════════════════════════════════════
-🧘 COOL DOWN (${Math.round(parseInt(duration) * 0.15)} minutes)
-═══════════════════════════════════════════
-
-• Static stretching for major muscle groups
-• Deep breathing exercises
-• Mental review - visualize perfect technique
-• Q&A and positive feedback
-
-═══════════════════════════════════════════
-✅ KEY TEACHING POINTS
-═══════════════════════════════════════════
-
-• Emphasize proper breathing throughout
-• Correct stance and balance before power
-• Encourage questions and participation
-• End with positive reinforcement
-
-🎯 HOMEWORK: Practice ${focus} 10 times each side daily
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📝 Generated in Demo Mode - Full AI plans available with live data`;
-            
-            setTimeout(() => {
-                setPlan(demoLessonPlan);
-                setIsGenerating(false);
-            }, 1000); // Simulate brief loading for realistic feel
-            return;
-        }
         
         // Try GPT-4o first for higher accuracy, fallback to Gemini
         // Pass the martial art type for specialized lesson plans
