@@ -5937,11 +5937,11 @@ export function registerRoutes(app: Express) {
       const localXp = Math.max(0, Math.min(110, rawScore)); // Allow up to 110 (Legendary)
 
       // Calculate Global XP using the MyTaek 110 Protocol formula
-      // Formula: min(20 + (localXp × 0.272), 50)
+      // Formula: min(round(20 + (localXp × 0.272)), 50)
       // This rewards Legendary students (110) with full 50 Global XP
       const attendanceXp = 20; // Fixed XP for showing up
-      const performanceXp = Math.round(localXp * 0.272); // 110 × 0.272 = 30, 100 × 0.272 = 27
-      const sessionGlobalXp = Math.min(50, attendanceXp + performanceXp); // Enforce 50 XP cap
+      const performanceXp = localXp * 0.272; // 110 × 0.272 = 29.92, 100 × 0.272 = 27.2
+      const sessionGlobalXp = Math.min(50, Math.round(attendanceXp + performanceXp)); // Round then cap at 50
 
       // Check if already graded today (daily cap)
       const todayStart = new Date();
