@@ -71,44 +71,74 @@ export const TermsPage: React.FC = () => (
 export const PrivacyPage: React.FC = () => (
     <PageWrapper>
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-8">Privacy Policy</h1>
-        <p className="text-gray-400 mb-8"><strong>Effective Date:</strong> January 2026</p>
+        <p className="text-gray-400 mb-4"><strong>Effective Date:</strong> January 2026</p>
+        <p className="text-gray-400 mb-8"><strong>Data Controller:</strong> MyTaek Inc. (France)</p>
         
         <p className="text-gray-300 mb-8">
-            MyTaek Inc. ("we") values the privacy of our Dojo owners, parents, and young athletes.
+            MyTaek Inc. ("Company", "we") is committed to protecting your privacy in compliance with the <strong>General Data Protection Regulation (GDPR)</strong> and the <strong>Children's Online Privacy Protection Act (COPPA)</strong>.
         </p>
 
         <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">1. Information We Collect</h2>
+        <p className="text-gray-300 mb-4">We collect only the data necessary to provide the TaekUp service:</p>
         <ul className="list-disc list-inside text-gray-300 mb-4 space-y-2 ml-4">
-            <li><strong>Account Data:</strong> Name, email, and billing information via our payment processor (Stripe).</li>
-            <li><strong>Student Data:</strong> First name, belt rank, and training videos uploaded by the parent.</li>
-            <li><strong>Usage Data:</strong> Progress stats, HonorXP™ earned, and login activity.</li>
+            <li><strong>Account Data:</strong> Name, email, and encrypted billing information.</li>
+            <li><strong>Student Data:</strong> First name, age, belt rank, and training videos.</li>
+            <li><strong>Technical Data:</strong> IP address, browser type, and usage statistics (HonorXP™ logs).</li>
         </ul>
 
-        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">2. Children's Privacy (COPPA Compliance)</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">2. Legal Basis for Processing (GDPR)</h2>
+        <p className="text-gray-300 mb-4">We process your data based on the following legal grounds:</p>
+        <ul className="list-disc list-inside text-gray-300 mb-4 space-y-2 ml-4">
+            <li><strong>Performance of Contract:</strong> To provide the gamified dashboard, process payments, and calculate revenue splits for Club Owners.</li>
+            <li><strong>Consent:</strong> For the processing of children's data and video uploads (provided by the Parent/Guardian).</li>
+            <li><strong>Legal Obligation:</strong> Maintaining financial records for tax purposes.</li>
+        </ul>
+
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">3. Children's Privacy & Safety</h2>
+        <ul className="list-disc list-inside text-gray-300 mb-4 space-y-2 ml-4">
+            <li><strong>Strict Consent:</strong> We do not knowingly collect data from children under 13 without verifiable parental consent. Accounts must be created by a Legal Guardian.</li>
+            <li><strong>Private Visibility:</strong> Student videos are <strong>strictly private</strong>. They are accessible only by the Parent, the Student, and the authorized Instructors of their specific Dojo. They are never public.</li>
+        </ul>
+
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">4. Third-Party Processors</h2>
+        <p className="text-gray-300 mb-4">We share data only with trusted partners essential to our service:</p>
+        <ul className="list-disc list-inside text-gray-300 mb-4 space-y-2 ml-4">
+            <li><strong>Stripe:</strong> For secure payment processing and marketplace payouts.</li>
+            <li><strong>SendGrid:</strong> For delivering transactional emails (receipts, progress reports).</li>
+            <li><strong>Cloud Hosting (Vercel/AWS):</strong> For secure data and video storage.</li>
+            <li><strong>Database Providers:</strong> For storing user profiles and game progress.</li>
+        </ul>
+
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">5. International Data Transfers</h2>
         <p className="text-gray-300 mb-4">
-            We do not knowingly collect personal information directly from children under 13 without verifiable parental consent.
+            Some of our service providers (like Stripe or SendGrid) may be located outside the European Economic Area (EEA). We ensure your data is protected through standard contractual clauses (SCCs) or equivalent data privacy frameworks approved by the EU Commission.
         </p>
+
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">6. Data Retention</h2>
         <ul className="list-disc list-inside text-gray-300 mb-4 space-y-2 ml-4">
-            <li><strong>Parental Control:</strong> All student accounts must be created and managed by a Parent or Legal Guardian.</li>
-            <li><strong>Video Privacy:</strong> Videos uploaded are visible only to the Parent, the Student, and the authorized Club Instructors. They are <strong>not</strong> public.</li>
+            <li><strong>Active Accounts:</strong> We keep your data as long as your account is active to provide the Service.</li>
+            <li><strong>Inactive Accounts:</strong> If you cancel, we may retain "frozen" game data (Rank/XP) for up to 24 months in case of reactivation, unless you request immediate deletion.</li>
+            <li><strong>Financial Records:</strong> Invoices and transaction data are kept for 10 years as required by French/EU tax laws.</li>
         </ul>
 
-        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">3. How We Use Your Data</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">7. Your Rights (GDPR)</h2>
+        <p className="text-gray-300 mb-4">Under GDPR, you have the right to:</p>
         <ul className="list-disc list-inside text-gray-300 mb-4 space-y-2 ml-4">
-            <li>To provide the gamified training experience (TaekUp).</li>
-            <li>To process payments and calculate revenue splits for Clubs.</li>
-            <li>To send transactional emails (Welcome, Payment Receipts, Progress Reports).</li>
+            <li><strong>Access:</strong> Request a copy of all data we hold about you or your child.</li>
+            <li><strong>Rectification:</strong> Correct inaccurate information.</li>
+            <li><strong>Erasure (Right to be Forgotten):</strong> Request permanent deletion of your account and videos.</li>
+            <li><strong>Portability:</strong> Request your data in a structured, commonly used format.</li>
+            <li><strong>Withdraw Consent:</strong> You may withdraw consent for video processing at any time (this will disable the feedback feature).</li>
         </ul>
 
-        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">4. Data Protection & Storage</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">8. Cookies</h2>
         <p className="text-gray-300 mb-4">
-            We use enterprise-grade encryption for all data in transit and at rest. We do <strong>not</strong> sell user data to third-party advertisers.
+            We use essential cookies to keep you logged in and functional cookies to remember your language preferences. We do <strong>not</strong> use third-party advertising cookies.
         </p>
 
-        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">5. Deletion Rights</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">9. Contact Us</h2>
         <p className="text-gray-300 mb-4">
-            You have the right to request the deletion of your account and all associated data. 
-            Contact <a href="mailto:support@mytaek.com" className="text-cyan-400 hover:text-cyan-300">support@mytaek.com</a> to initiate this process.
+            To exercise your rights or for any privacy questions, contact our Data Protection Officer at <a href="mailto:support@mytaek.com" className="text-cyan-400 hover:text-cyan-300">support@mytaek.com</a>.
         </p>
     </PageWrapper>
 );
