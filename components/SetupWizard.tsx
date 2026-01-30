@@ -29,6 +29,30 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   console.log('[SetupWizard] isImpersonating:', isImpersonating, 'token:', sessionStorage.getItem('impersonationToken'));
   const [showDemoChoice, setShowDemoChoice] = useState(!isImpersonating);
   const [formKey, setFormKey] = useState(0);
+  const [clubError, setClubError] = useState('');
+
+  // CRITICAL: Show error if clubId is missing (signup failed)
+  if (!clubId && !isImpersonating) {
+    return (
+      <div className="container mx-auto px-6 py-12 md:py-20">
+        <div className="max-w-lg mx-auto bg-red-900/30 rounded-lg border border-red-700 shadow-2xl p-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Account Setup Error</h2>
+          <p className="text-gray-300 mb-6">
+            Your account was not created properly. This usually happens due to a network issue during signup.
+          </p>
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.href = '/signup';
+            }}
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+          >
+            Sign Up Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Initialize state from LocalStorage if available, otherwise use defaults
   const [wizardData, setWizardData] = useState<WizardData>(() => {

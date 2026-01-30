@@ -13,6 +13,12 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
   const [error, setError] = useState('');
 
   const handleLoadDemo = async () => {
+    // Validate clubId before proceeding
+    if (!clubId) {
+      setError('Your account was not created properly. Please sign up again.');
+      return;
+    }
+    
     setLoading(true);
     setError('');
     
