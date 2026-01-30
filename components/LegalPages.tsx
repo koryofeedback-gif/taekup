@@ -63,7 +63,7 @@ export const TermsPage: React.FC = () => (
         </p>
 
         <div className="mt-10 pt-6 border-t border-gray-700">
-            <p className="text-gray-400"><strong>Contact:</strong> <a href="mailto:legal@mytaek.com" className="text-cyan-400 hover:text-cyan-300">legal@mytaek.com</a></p>
+            <p className="text-gray-400"><strong>Contact:</strong> <a href="mailto:hello@mytaek.com" className="text-cyan-400 hover:text-cyan-300">hello@mytaek.com</a></p>
         </div>
     </PageWrapper>
 );
@@ -127,7 +127,7 @@ export const ContactPage: React.FC = () => (
             </h2>
             <p className="text-gray-300 ml-9">
                 <strong>MyTaek Inc.</strong><br />
-                United States
+                France
             </p>
         </div>
 
