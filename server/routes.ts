@@ -5929,16 +5929,18 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Student ID is required' });
       }
 
-      // Validate and clamp scorePercentage to 0-100
+      // Validate Local XP (0-110 with MyTaek 110 Protocol)
       const rawScore = Number(scorePercentage);
       if (isNaN(rawScore)) {
         return res.status(400).json({ error: 'scorePercentage must be a valid number' });
       }
-      const clampedScore = Math.max(0, Math.min(100, rawScore));
+      const localXp = Math.max(0, Math.min(110, rawScore)); // Allow up to 110 (Legendary)
 
-      // Calculate Global XP using the anti-cheat formula
+      // Calculate Global XP using the MyTaek 110 Protocol formula
+      // Formula: min(20 + (localXp × 0.272), 50)
+      // This rewards Legendary students (110) with full 50 Global XP
       const attendanceXp = 20; // Fixed XP for showing up
-      const performanceXp = Math.round((clampedScore / 100) * 30); // Max 30 based on performance
+      const performanceXp = Math.round(localXp * 0.272); // 110 × 0.272 = 30, 100 × 0.272 = 27
       const sessionGlobalXp = Math.min(50, attendanceXp + performanceXp); // Enforce 50 XP cap
 
       // Check if already graded today (daily cap)
