@@ -1,0 +1,52 @@
+# Privacy Policy
+**Effective Date:** January 2026
+**Data Controller:** MyTaek Inc. (France)
+
+MyTaek Inc. ("Company", "we") is committed to protecting your privacy in compliance with the **General Data Protection Regulation (GDPR)** and the **Children's Online Privacy Protection Act (COPPA)**.
+
+## 1. Information We Collect
+We collect only the data necessary to provide the TaekUp service:
+* **Account Data:** Name, email, and encrypted billing information.
+* **Student Data:** First name, age, belt rank, and training videos.
+* **Technical Data:** IP address, browser type, and usage statistics (HonorXP™ logs).
+
+## 2. Legal Basis for Processing (GDPR)
+We process your data based on the following legal grounds:
+* **Performance of Contract:** To provide the gamified dashboard, process payments, and calculate revenue splits for Club Owners.
+* **Consent:** For the processing of children's data and video uploads (provided by the Parent/Guardian).
+* **Legal Obligation:** Maintaining financial records for tax purposes.
+
+## 3. Children's Privacy & Safety
+* **Strict Consent:** We do not knowingly collect data from children under 13 without verifiable parental consent. Accounts must be created by a Legal Guardian.
+* **Private Visibility:** Student videos are **strictly private**. They are accessible only by the Parent, the Student, and the authorized Instructors of their specific Dojo. They are never public.
+
+## 4. Third-Party Processors
+We share data only with trusted partners essential to our service:
+* **Stripe:** For secure payment processing and marketplace payouts.
+* **SendGrid:** For delivering transactional emails (receipts, progress reports).
+* **Cloud Hosting (e.g., Vercel/AWS):** For secure data and video storage.
+* **Database Providers:** For storing user profiles and game progress.
+
+## 5. International Data Transfers
+Some of our service providers (like Stripe or SendGrid) may be located outside the European Economic Area (EEA). We ensure your data is protected through standard contractual clauses (SCCs) or equivalent data privacy frameworks approved by the EU Commission.
+
+## 6. Data Retention
+* **Active Accounts:** We keep your data as long as your account is active to provide the Service.
+* **Inactive Accounts:** If you cancel, we may retain "frozen" game data (Rank/XP) for up to 24 months in case of reactivation, unless you request immediate deletion.
+* **Financial Records:** Invoices and transaction data are kept for 10 years as required by French/EU tax laws.
+
+## 7. Your Rights (GDPR)
+Under GDPR, you have the right to:
+* **Access:** Request a copy of all data we hold about you or your child.
+* **Rectification:** Correct inaccurate information.
+* **Erasure (Right to be Forgotten):** Request permanent deletion of your account and videos.
+* **Portability:** Request your data in a structured, commonly used format.
+* **Withdraw Consent:** You may withdraw consent for video processing at any time (this will disable the feedback feature).
+
+## 8. Cookies
+We use essential cookies to keep you logged in and functional cookies to remember your language preferences. We do not use third-party advertising cookies.
+
+## 9. Contact Us
+To exercise your rights or for any privacy questions:
+* **Data Protection Officer:** `support@mytaek.com`
+* **Mailing Address:** [Your Business Address in France]
