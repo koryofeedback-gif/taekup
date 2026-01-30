@@ -12,7 +12,8 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 export const TermsPage: React.FC = () => (
     <PageWrapper>
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-8">Terms of Service</h1>
-        <p className="text-gray-400 mb-8"><strong>Last Updated:</strong> January 2026</p>
+        <p className="text-gray-400 mb-4"><strong>Last Updated:</strong> January 2026</p>
+        <p className="text-gray-400 mb-8"><strong>Operator:</strong> MyTaek Inc. (France)</p>
         
         <p className="text-gray-300 mb-8">
             Welcome to TaekUp, a platform operated by <strong>MyTaek Inc.</strong> ("Company", "we", "us"). 
@@ -57,7 +58,22 @@ export const TermsPage: React.FC = () => (
             Practice safely and under supervision.
         </p>
 
-        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">6. Termination</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">6. Limitation of Liability</h2>
+        <p className="text-gray-300 mb-4">
+            To the maximum extent permitted by law, MyTaek Inc. shall not be liable for any indirect, incidental, or consequential damages (including loss of data or revenue). Our total liability for any claim arising out of these Terms is limited to the <strong>amount you paid us in the 12 months preceding the claim</strong>.
+        </p>
+
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">7. Modifications to Terms</h2>
+        <p className="text-gray-300 mb-4">
+            We reserve the right to modify these Terms at any time. We will notify you of significant changes via email or dashboard alert. Your continued use of the Service after such changes constitutes your acceptance of the new Terms.
+        </p>
+
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">8. Governing Law & Jurisdiction</h2>
+        <p className="text-gray-300 mb-4">
+            These Terms are governed by the <strong>laws of France</strong>. Any dispute arising from these Terms shall be subject to the exclusive jurisdiction of the competent courts of <strong>France</strong>.
+        </p>
+
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">9. Termination</h2>
         <p className="text-gray-300 mb-4">
             We reserve the right to terminate accounts that violate these terms or attempt to clone/scrape our data.
         </p>
