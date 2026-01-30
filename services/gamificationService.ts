@@ -252,32 +252,29 @@ export function calculateClassXP(scores: (number | null | undefined)[]): number 
   return Math.round((studentRawScore / maxPossibleScore) * MAX_SESSION_XP);
 }
 
-export const MAX_CLASS_XP = 100;
+export const MAX_CLASS_XP = 110; // MyTaek 110 Protocol - Legendary cap
 
 /**
- * Calculate Grading XP for LOCAL use - No caps on bonus/homework
+ * Calculate Grading XP using the "MyTaek 110 Protocol"
  * 
- * Coaches can award unlimited bonus/homework points within their own club.
- * This allows generous rewards for student effort without affecting world rankings.
+ * Formula: min((Skills/MaxSkills × 100) + BonusPoints + HomeworkPoints, 110)
  * 
- * Formula: (earned / possible) × 100
- * 
- * Where:
- * - earned = sum of scores + coachBonus + homework (NO CAPS)
- * - possible = (items × 2) + coachBonus + homework (uses actual values given)
+ * Binary Logic:
+ * - If coach enters ANY bonus > 0, student gets flat 5 points
+ * - If coach enters ANY homework > 0, student gets flat 5 points
+ * - Max cap: 110 (allows "Legendary" status for extraordinary students)
  * 
  * @param scores - Array of score values (Green=2, Yellow=1, Red=0)
- * @param coachBonus - Coach bonus points awarded (NO LIMIT for local)
- * @param homework - Homework points awarded (NO LIMIT for local)
+ * @param coachBonus - Coach bonus (if > 0, gives flat 5 points)
+ * @param homework - Homework (if > 0, gives flat 5 points)
  * @param coachBonusEnabled - Whether coach bonus feature is enabled for this club
  * @param homeworkEnabled - Whether homework feature is enabled for this club
- * @returns Normalized XP value (0-100)
+ * @returns Local XP value (0-110)
  * 
  * @example
- * // Coach gives 15 bonus, 10 homework - ALL count for local XP
- * // 4 items all green (8) + 15 bonus + 10 homework = 33 earned
- * // possible = 8 + 15 + 10 = 33
- * // XP = 100 (perfect score with generous bonuses)
+ * // 4 items all green (8/8 = 100%) + bonus + homework
+ * // skillScore = 100, bonusPoints = 5, homeworkPoints = 5
+ * // Total = min(100 + 5 + 5, 110) = 110 (Legendary!)
  */
 export function calculateGradingXP(
   scores: (number | null | undefined)[],
@@ -288,27 +285,24 @@ export function calculateGradingXP(
 ): number {
   const validScores = scores.filter((s): s is number => s !== null && s !== undefined);
   
+  // Guard clause: No scores entered
   if (validScores.length === 0) {
     return 0;
   }
   
-  // LOCAL XP: Use raw values - no caps!
-  const actualBonus = coachBonusEnabled ? coachBonus : 0;
-  const actualHomework = homeworkEnabled ? homework : 0;
+  // Binary Logic: If coach gives ANY value > 0, student gets flat 5 points
+  const bonusPoints = (coachBonusEnabled && coachBonus > 0) ? 5 : 0;
+  const homeworkPoints = (homeworkEnabled && homework > 0) ? 5 : 0;
   
-  // Calculate earned points (raw values)
+  // Calculate skill score as percentage (0-100)
   const earnedScores = validScores.reduce((sum, score) => sum + score, 0);
-  const earnedTotal = earnedScores + actualBonus + actualHomework;
-  
-  // Calculate possible points (use actual bonus/homework given as the max)
   const maxScores = validScores.length * SCORE_VALUES.GREEN;
-  const possibleTotal = maxScores + actualBonus + actualHomework;
+  const skillScore = (earnedScores / maxScores) * 100;
   
-  // Avoid division by zero
-  if (possibleTotal === 0) return 0;
+  // Final sum with hard cap at 110
+  const totalScore = skillScore + bonusPoints + homeworkPoints;
   
-  // Normalize to 0-100 scale
-  return Math.round((earnedTotal / possibleTotal) * 100);
+  return Math.min(Math.round(totalScore), 110);
 }
 
 /**
