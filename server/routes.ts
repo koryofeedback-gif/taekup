@@ -204,9 +204,27 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Club ID and wizard data are required' });
       }
 
+      // Map beltSystemType to display name for art_type column
+      const beltSystemToArtType: Record<string, string> = {
+        'wt': 'Taekwondo',
+        'itf': 'Taekwondo (ITF)',
+        'karate': 'Karate',
+        'bjj': 'Brazilian Jiu-Jitsu',
+        'judo': 'Judo',
+        'hapkido': 'Hapkido',
+        'tangsoodo': 'Tang Soo Do',
+        'aikido': 'Aikido',
+        'kravmaga': 'Krav Maga',
+        'kungfu': 'Kung Fu',
+        'custom': 'Custom'
+      };
+      
+      const artType = beltSystemToArtType[wizardData.beltSystemType] || 'Taekwondo';
+
       await db.execute(sql`
         UPDATE clubs 
         SET wizard_data = ${JSON.stringify(wizardData)}::jsonb,
+            art_type = ${artType},
             updated_at = NOW()
         WHERE id = ${clubId}::uuid
       `);

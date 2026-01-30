@@ -1355,13 +1355,30 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Club ID and wizard data are required' });
   }
 
+  // Map beltSystemType to display name for art_type column
+  const beltSystemToArtType: Record<string, string> = {
+    'wt': 'Taekwondo',
+    'itf': 'Taekwondo (ITF)',
+    'karate': 'Karate',
+    'bjj': 'Brazilian Jiu-Jitsu',
+    'judo': 'Judo',
+    'hapkido': 'Hapkido',
+    'tangsoodo': 'Tang Soo Do',
+    'aikido': 'Aikido',
+    'kravmaga': 'Krav Maga',
+    'kungfu': 'Kung Fu',
+    'custom': 'Custom'
+  };
+  
+  const artType = beltSystemToArtType[wizardData.beltSystemType] || 'Taekwondo';
+
   const client = await pool.connect();
   try {
     await client.query(
       `UPDATE clubs 
-       SET wizard_data = $1::jsonb, updated_at = NOW()
+       SET wizard_data = $1::jsonb, art_type = $3, updated_at = NOW()
        WHERE id = $2::uuid`,
-      [JSON.stringify(wizardData), clubId]
+      [JSON.stringify(wizardData), clubId, artType]
     );
 
     // Try to update onboarding_progress (may not exist on all databases)
