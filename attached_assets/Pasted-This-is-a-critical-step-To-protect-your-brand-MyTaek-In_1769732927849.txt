@@ -1,0 +1,168 @@
+This is a critical step. To protect your brand (MyTaek Inc.) and your product (TaekUp), your legal pages need to be aggressive about Intellectual Property (IP) while remaining fair to users.
+
+Since we are dealing with children's data (videos of kids) and financial splits (70/30), these documents must be precise.
+
+Here is the content drafted specifically for Replit. You can copy-paste these blocks directly to your developer agent.
+
+1. Terms of Service (The "Anti-Copy" Shield) 🛡️
+Key Strategy: This document explicitly forbids reverse-engineering your unique gamification logic (HonorXP, DojoMint) and establishes MyTaek Inc. as the sole owner of the platform design.
+
+Content for Replit (terms.js or terms.html):
+
+Markdown
+
+# Terms of Service
+**Last Updated:** January 2026
+
+Welcome to TaekUp, a platform operated by **MyTaek Inc.** ("Company", "we", "us"). By accessing our website or mobile application, you agree to these Terms.
+
+## 1. Intellectual Property & Brand Protection
+The TaekUp platform, including its source code, database structures, algorithms, and User Interface design (UI/UX), is the exclusive property of MyTaek Inc.
+
+**Strictly Prohibited:**
+* You may not reverse engineer, decompile, or disassemble any aspect of the platform.
+* **Trade Dress:** The specific combination of features known as **HonorXP™**, **Legacy Cards™**, **Global Shogun Rank™**, and the **DojoMint™ Protocol** are protected trade dress of MyTaek Inc. Copying these gamification mechanics or terminologies is a violation of our intellectual property rights.
+
+## 2. Accounts & Usage
+* **Club Owners:** You are responsible for maintaining the confidentiality of your Stripe Connect account credentials.
+* **Parents/Guardians:** You must be at least 18 years old to create an account. You grant consent for your child’s participation and video uploads.
+
+## 3. Payments & Revenue Split (The DojoMint™ Model)
+* **SaaS Fees:** Club Owners agree to a monthly or yearly software licensing fee (e.g., $24.99/mo) for access to the dashboard.
+* **Marketplace Fees:** For student subscriptions (e.g., $4.99/mo), the Platform automatically deducts a service fee (approximately 30%) and Stripe processing fees before transferring the remaining balance (approximately 70%) to the Club Owner's connected Stripe account.
+* **Refunds:** SaaS fees are non-refundable. Student subscription refunds are handled at the discretion of the Club Owner.
+
+## 4. User-Generated Content (Videos)
+* **Ownership:** Parents/Students retain ownership of their training videos.
+* **License:** By uploading, you grant MyTaek Inc. a worldwide, royalty-free license to host, encode, and process these videos for the purpose of providing the Service (e.g., for Coach review).
+
+## 5. Physical Safety Disclaimer
+Martial arts involve physical exertion. MyTaek Inc. is a technology provider, not a fitness instructor. We are not liable for any physical injuries that occur while practicing moves seen on or uploaded to the App. Practice safely and under supervision.
+
+## 6. Termination
+We reserve the right to terminate accounts that violate these terms or attempt to clone/scrape our data.
+
+**Contact:** legal@mytaek.com
+2. Privacy Policy (COPPA & Trust) 🔒
+Key Strategy: Because you have users under 13, this policy focuses on parental consent. It also builds trust by stating you don't sell data.
+
+Content for Replit (privacy.js or privacy.html):
+
+Markdown
+
+# Privacy Policy
+**Effective Date:** January 2026
+
+MyTaek Inc. ("we") values the privacy of our Dojo owners, parents, and young athletes.
+
+## 1. Information We Collect
+* **Account Data:** Name, email, and billing information via our payment processor (Stripe).
+* **Student Data:** First name, belt rank, and training videos uploaded by the parent.
+* **Usage Data:** Progress stats, HonorXP™ earned, and login activity.
+
+## 2. Children's Privacy (COPPA Compliance)
+We do not knowingly collect personal information directly from children under 13 without verifiable parental consent.
+* **Parental Control:** All student accounts must be created and managed by a Parent or Legal Guardian.
+* **Video Privacy:** Videos uploaded are visible only to the Parent, the Student, and the authorized Club Instructors. They are **not** public.
+
+## 3. How We Use Your Data
+* To provide the gamified training experience (TaekUp).
+* To process payments and calculate revenue splits for Clubs.
+* To send transactional emails (Welcome, Payment Receipts, Progress Reports).
+
+## 4. Data Protection & Storage
+We use enterprise-grade encryption for all data in transit and at rest. We do **not** sell user data to third-party advertisers.
+
+## 5. Deletion Rights
+You have the right to request the deletion of your account and all associated data. Contact `support@mytaek.com` to initiate this process.
+3. Contact Us (The Traffic Controller) 🚦
+Key Strategy: Use the new Zoho emails we set up to route people correctly so you don't get overwhelmed.
+
+Content for Replit (contact.js or contact.html):
+
+Markdown
+
+# Contact MyTaek
+
+We are here to help your Dojo grow and your students thrive. Please choose the right channel so we can assist you faster.
+
+### 🏢 Headquarters
+**MyTaek Inc.**
+[Insert Your City/Country Here]
+
+---
+
+### 📧 Email Us
+
+* **General Inquiries & Partnerships:**
+    [hello@mytaek.com](mailto:hello@mytaek.com)
+    *For questions about features, branding, or becoming a partner.*
+
+* **Billing & Payments:**
+    [billing@mytaek.com](mailto:billing@mytaek.com)
+    *For questions about subscriptions, invoices, or payouts.*
+
+* **Technical Support:**
+    [support@mytaek.com](mailto:support@mytaek.com)
+    *For app bugs, login issues, or video upload problems.*
+
+---
+
+### 💼 For Club Owners
+Looking to digitize your Dojo?
+<a href="/register" class="btn">Start Your 14-Day Free Trial</a>
+4. Support / Help Center (The Time Saver) 🆘
+Key Strategy: Answer the "Money" and "Tech" questions upfront to reduce emails.
+
+Content for Replit (support.js or support.html):
+
+Markdown
+
+# Support Center
+
+### Frequently Asked Questions (FAQ)
+
+#### 🥋 For Club Owners
+**Q: How do I get paid?**
+A: We use Stripe Connect. You receive roughly 70% of all net revenue from your students' subscriptions. Payouts are transferred automatically to your bank account on a rolling basis (usually every 2 days).
+
+**Q: Why do I need to connect a Stripe account?**
+A: This is required to legally split the revenue. Without a connected account, we cannot send your share of the earnings.
+
+#### 👨‍👩‍👧‍👦 For Parents
+**Q: How do I upload a video?**
+A: Go to the "Training" tab, select the technique, and tap "Upload". Your Sensei will review it within 24-48 hours.
+
+**Q: Can I cancel anytime?**
+A: Yes. You can cancel your $4.99/mo subscription from your Profile settings. Your child's rank will be frozen but not deleted.
+
+---
+
+### Still need help?
+If you couldn't find your answer, our support team is ready.
+**Email:** [support@mytaek.com](mailto:support@mytaek.com)
+*Average response time: 24 hours.*
+📝 Prompt for Replit (To Build These Pages)
+Copy and paste this instruction to your Replit Agent:
+
+"I need to add 4 static legal/support pages to the website footer. Please create:
+
+/privacy
+
+/terms
+
+/contact
+
+/support
+
+Design Requirements:
+
+Use the existing website layout (Navbar and Footer included).
+
+The text should be clean, readable, and left-aligned.
+
+Use H1 for the main titles and H2 for sections.
+
+For the 'Contact' page, use cards or icons for the different email addresses to make them look professional.
+
+Content: I will provide the text for each page below. Please use the text exactly as written, as it contains important legal protections for our brand 'MyTaek' and trademarks like 'HonorXP'."

@@ -19,6 +19,7 @@ import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute,
 import { TrialBanner } from './components/TrialBanner';
 import { ImpersonationBanner, isImpersonating } from './components/ImpersonationBanner';
 import { DEMO_MODE_KEY, isDemoModeEnabled } from './components/demoData';
+import { TermsPage, PrivacyPage, ContactPage, SupportPage } from './components/LegalPages';
 import {
     getOnboardingMessage,
 } from './services/geminiService';
@@ -1134,6 +1135,12 @@ const AppContent: React.FC<AppContentProps> = ({
                     {/* Awakening Ritual redirect to main page */}
                     <Route path="/awakening" element={<Navigate to="/" replace />} />
 
+                    {/* Legal Pages */}
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/privacy" element={<PrivacyPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/support" element={<SupportPage />} />
+
                     {/* Catch-all redirect */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
@@ -1835,15 +1842,18 @@ const Footer: React.FC = () => (
                         </a>
                     </div>
                     <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-xs md:text-sm text-gray-500">
-                        <a href="#" className="hover:text-white transition-colors">
+                        <Link to="/privacy" className="hover:text-white transition-colors">
                             Privacy
-                        </a>
-                        <a href="#" className="hover:text-white transition-colors">
+                        </Link>
+                        <Link to="/terms" className="hover:text-white transition-colors">
                             Terms
-                        </a>
-                        <a href="#" className="hover:text-white transition-colors whitespace-nowrap">
-                            Contact Support
-                        </a>
+                        </Link>
+                        <Link to="/support" className="hover:text-white transition-colors whitespace-nowrap">
+                            Support
+                        </Link>
+                        <Link to="/contact" className="hover:text-white transition-colors whitespace-nowrap">
+                            Contact
+                        </Link>
                     </div>
                 </div>
             </div>
