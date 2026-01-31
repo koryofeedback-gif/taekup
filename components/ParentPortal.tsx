@@ -265,6 +265,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }, [student.id, activeTab, data.isDemo]);
     
     // Fetch total XP directly from server as single source of truth
+    // Demo mode - auto-show AI Parenting Coach advice
+    useEffect(() => {
+        if (data.isDemo && activeTab === 'insights' && !parentingAdvice) {
+            const demoAdvice = `${student.name.split(' ')[0]} is showing great dedication! Their Focus and Technique scores are improving. To support their journey at home, try practicing basic stances together for 5 minutes each evening. Ask them to teach you what they learned - it reinforces their memory and builds confidence!`;
+            setParentingAdvice(demoAdvice);
+        }
+    }, [data.isDemo, activeTab, student.name, parentingAdvice]);
+    
     useEffect(() => {
         // Demo mode - use demo XP
         if (data.isDemo) {
