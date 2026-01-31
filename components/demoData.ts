@@ -118,8 +118,8 @@ export const DEMO_EVENTS = [
     { 
         id: 'demo-event-1', 
         title: 'Spring Belt Grading', 
-        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), 
-        time: '10:00 AM', 
+        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], 
+        time: '10:00', 
         type: 'Grading',
         location: 'Main Dojang',
         description: 'Belt promotion testing for eligible students'
@@ -127,8 +127,8 @@ export const DEMO_EVENTS = [
     { 
         id: 'demo-event-2', 
         title: 'Parent Showcase Night', 
-        date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(), 
-        time: '6:00 PM', 
+        date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], 
+        time: '18:00', 
         type: 'Event',
         location: 'Main Dojang',
         description: 'Students demonstrate skills for family and friends'
@@ -136,8 +136,8 @@ export const DEMO_EVENTS = [
     { 
         id: 'demo-event-3', 
         title: 'Regional Tournament', 
-        date: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(), 
-        time: '8:00 AM', 
+        date: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], 
+        time: '08:00', 
         type: 'Competition',
         location: 'City Sports Center',
         description: 'Annual regional martial arts competition'

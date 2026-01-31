@@ -1,0 +1,75 @@
+[HomeDojo] Using student ID: demo-1 valid UUID: false
+index-CInctzE1.js:480 [ParentPortal] Using student ID: demo-1
+index-CInctzE1.js:462 [HomeDojo] Using student ID: demo-1 valid UUID: false
+/api/challenges/received/demo-1:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+index-CInctzE1.js:457 Error fetching received challenges: Error: Failed to fetch challenges
+    at $F.getReceivedChallenges (index-CInctzE1.js:457:37761)
+    at async index-CInctzE1.js:457:35148
+getReceivedChallenges @ index-CInctzE1.js:457Understand this error
+index-CInctzE1.js:462 [HomeDojo] Using student ID: demo-1 valid UUID: false
+index-CInctzE1.js:462 [HomeDojo] Using student ID: demo-1 valid UUID: false
+index-CInctzE1.js:40 RangeError: Invalid time value
+    at Date.toISOString (<anonymous>)
+    at q2 (index-CInctzE1.js:462:51389)
+    at index-CInctzE1.js:469:2225
+    at Array.map (<anonymous>)
+    at nj (index-CInctzE1.js:469:1426)
+    at JF (index-CInctzE1.js:471:31336)
+    at im (index-CInctzE1.js:38:17018)
+    at Wx (index-CInctzE1.js:40:3139)
+    at J1 (index-CInctzE1.js:40:44833)
+    at K1 (index-CInctzE1.js:40:39790)
+Vx @ index-CInctzE1.js:40
+E1.s.callback @ index-CInctzE1.js:40
+Bp @ index-CInctzE1.js:38
+tg @ index-CInctzE1.js:40
+V1 @ index-CInctzE1.js:40
+j4 @ index-CInctzE1.js:40
+T4 @ index-CInctzE1.js:40
+sl @ index-CInctzE1.js:40
+ag @ index-CInctzE1.js:40
+Vn @ index-CInctzE1.js:38
+(anonymous) @ index-CInctzE1.js:40Understand this error
+index-CInctzE1.js:462 Uncaught RangeError: Invalid time value
+    at Date.toISOString (<anonymous>)
+    at q2 (index-CInctzE1.js:462:51389)
+    at index-CInctzE1.js:469:2225
+    at Array.map (<anonymous>)
+    at nj (index-CInctzE1.js:469:1426)
+    at JF (index-CInctzE1.js:471:31336)
+    at im (index-CInctzE1.js:38:17018)
+    at Wx (index-CInctzE1.js:40:3139)
+    at J1 (index-CInctzE1.js:40:44833)
+    at K1 (index-CInctzE1.js:40:39790)
+q2 @ index-CInctzE1.js:462
+(anonymous) @ index-CInctzE1.js:469
+nj @ index-CInctzE1.js:469
+JF @ index-CInctzE1.js:471
+im @ index-CInctzE1.js:38
+Wx @ index-CInctzE1.js:40
+J1 @ index-CInctzE1.js:40
+K1 @ index-CInctzE1.js:40
+S4 @ index-CInctzE1.js:40
+e0 @ index-CInctzE1.js:40
+rh @ index-CInctzE1.js:40
+ag @ index-CInctzE1.js:40
+Vn @ index-CInctzE1.js:38
+(anonymous) @ index-CInctzE1.js:40Understand this error
+index-CInctzE1.js:457  GET https://www.mytaek.com/api/challenges/received/demo-1 400 (Bad Request)
+getReceivedChallenges @ index-CInctzE1.js:457
+(anonymous) @ index-CInctzE1.js:457Understand this error
+index-CInctzE1.js:457 Error fetching received challenges: Error: Failed to fetch challenges
+    at $F.getReceivedChallenges (index-CInctzE1.js:457:37761)
+    at async index-CInctzE1.js:457:35148
+getReceivedChallenges @ index-CInctzE1.js:457
+await in getReceivedChallenges
+(anonymous) @ index-CInctzE1.js:457Understand this error
+demo-1:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
+demo-1:1 Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
+demo-1:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
+index-CInctzE1.js:457  GET https://www.mytaek.com/api/challenges/received/demo-1 400 (Bad Request)
+getReceivedChallenges @ index-CInctzE1.js:457
+(anonymous) @ index-CInctzE1.js:457Understand this error
+index-CInctzE1.js:457 Error fetching received challenges: Error: Failed to fetch challenges
+    at $F.getReceivedChallenges (index-CInctzE1.js:457:37761)
+    at async index-CInctzE1.js:457:35148
