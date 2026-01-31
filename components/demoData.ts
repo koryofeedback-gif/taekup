@@ -7,6 +7,21 @@ export const isDemoModeEnabled = (): boolean => {
     return localStorage.getItem(DEMO_MODE_KEY) === 'true';
 };
 
+const generateDemoPerformanceHistory = (attendanceCount: number): { date: string; scores: Record<string, number>; bonusPoints: number }[] => {
+    const now = new Date();
+    const history = [];
+    const sessionsThisMonth = Math.min(Math.floor(attendanceCount / 10) + 2, 6);
+    for (let i = 0; i < sessionsThisMonth; i++) {
+        const date = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - (i * 3)));
+        history.push({
+            date: date.toISOString(),
+            scores: { 'skill1': 18 + Math.floor(Math.random() * 7), 'skill2': 16 + Math.floor(Math.random() * 9), 'skill3': 15 + Math.floor(Math.random() * 10) },
+            bonusPoints: Math.random() > 0.5 ? 5 : 0
+        });
+    }
+    return history;
+};
+
 const createDemoStudent = (
     id: string, name: string, birthday: string, beltId: string, stripes: number,
     parentName: string, parentEmail: string, totalPoints: number, joinDate: string,
@@ -15,7 +30,7 @@ const createDemoStudent = (
     id, name, birthday, beltId, stripes, parentName, parentEmail, totalPoints, joinDate, gender,
     attendanceCount, location: 'Main Dojang', assignedClass: 'Kids Class', medicalInfo: '',
     lastPromotionDate: joinDate, isReadyForGrading: attendanceCount > 20,
-    performanceHistory: [], feedbackHistory: [], badges: [], lifeSkillsHistory: [], customHabits: [],
+    performanceHistory: generateDemoPerformanceHistory(attendanceCount), feedbackHistory: [], badges: [], lifeSkillsHistory: [], customHabits: [],
 });
 
 export const DEMO_STUDENTS: Student[] = [

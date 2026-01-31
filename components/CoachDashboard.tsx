@@ -132,11 +132,29 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         return () => clearInterval(interval);
     }, [clubId]);
     
-    // Mode 1: Monthly Effort - Use API data
+    // Mode 1: Monthly Effort - Use API data OR local performance history (for Demo Mode)
     const monthlyEffortStudents = useMemo(() => {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        
         return [...students]
             .map(student => {
-                const monthlyPTS = apiMonthlyPTS.get(student.id) || 0;
+                // Try API data first (production)
+                let monthlyPTS = apiMonthlyPTS.get(student.id) || 0;
+                
+                // Fallback: Calculate from performance history (Demo Mode or no API data)
+                if (monthlyPTS === 0 && student.performanceHistory && student.performanceHistory.length > 0) {
+                    monthlyPTS = student.performanceHistory
+                        .filter(p => new Date(p.date) >= monthStart)
+                        .reduce((sum, p) => {
+                            // Calculate session PTS from scores + bonus
+                            const scoresSum = Object.values(p.scores || {})
+                                .filter(s => s !== null)
+                                .reduce((total: number, score) => total + (score as number || 0), 0);
+                            return sum + scoresSum + (p.bonusPoints || 0);
+                        }, 0);
+                }
+                
                 return { ...student, displayPTS: monthlyPTS };
             })
             .sort((a, b) => b.displayPTS - a.displayPTS)
