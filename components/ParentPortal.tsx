@@ -24,7 +24,7 @@ import {
     DEMO_SCHEDULE,
     getDemoPrivateSlots
 } from '../shared/demoData';
-import { DEMO_VIDEO_SUBMISSIONS, DEMO_PORTAL_SKILLS, DEMO_SCHEDULE as DEMO_PORTAL_SCHEDULE, DEMO_EVENTS as DEMO_PORTAL_EVENTS, DEMO_PRIVATE_SLOTS } from './demoData';
+import { DEMO_VIDEO_SUBMISSIONS, DEMO_PORTAL_SKILLS, DEMO_SCHEDULE as DEMO_PORTAL_SCHEDULE, DEMO_EVENTS as DEMO_PORTAL_EVENTS, DEMO_PRIVATE_SLOTS, DEMO_CURRICULUM } from './demoData';
 
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -1789,8 +1789,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const currentBeltStripes = Math.min(totalStripes, data.stripesPerBelt);
     const progressPercent = (currentBeltStripes / data.stripesPerBelt) * 100;
 
-    // Filter Curriculum for this student
-    const studentVideos = (data.curriculum || []).filter(v => v.beltId === student.beltId || v.beltId === 'all' || !v.beltId);
+    // Filter Curriculum for this student (use demo curriculum in preview mode)
+    const curriculumSource = data.isDemo ? DEMO_CURRICULUM : (data.curriculum || []);
+    const studentVideos = curriculumSource.filter(v => v.beltId === student.beltId || v.beltId === 'all' || !v.beltId);
 
     const toggleMission = (id: string) => {
         setMissionChecks(prev => ({ ...prev, [id]: !prev[id] }));

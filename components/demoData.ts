@@ -160,7 +160,7 @@ export const DEMO_CURRICULUM = [
         id: 'demo-content-1',
         title: 'Basic Stances & Footwork',
         url: 'https://example.com/video1',
-        beltId: 'white',
+        beltId: 'all',
         category: 'fundamentals',
         description: 'Master the essential stances that form the foundation of all techniques.',
         authorName: 'Master David Kim',
@@ -169,13 +169,15 @@ export const DEMO_CURRICULUM = [
         pricingType: 'free' as const,
         xpReward: 25,
         viewCount: 156,
-        completionCount: 89
+        completionCount: 89,
+        requiresVideo: false,
+        maxPerWeek: 3
     },
     {
         id: 'demo-content-2',
         title: 'Front Kick Technique',
         url: 'https://example.com/video2',
-        beltId: 'yellow',
+        beltId: 'all',
         category: 'kicks',
         description: 'Step-by-step breakdown of the front kick with proper chamber and extension.',
         authorName: 'Master David Kim',
@@ -184,13 +186,15 @@ export const DEMO_CURRICULUM = [
         pricingType: 'free' as const,
         xpReward: 30,
         viewCount: 234,
-        completionCount: 145
+        completionCount: 145,
+        requiresVideo: false,
+        maxPerWeek: 3
     },
     {
         id: 'demo-content-3',
         title: 'Roundhouse Kick Masterclass',
         url: 'https://example.com/video3',
-        beltId: 'green',
+        beltId: 'all',
         category: 'kicks',
         description: 'Advanced techniques for generating power and speed in your roundhouse.',
         authorName: 'Master David Kim',
@@ -199,13 +203,16 @@ export const DEMO_CURRICULUM = [
         pricingType: 'premium' as const,
         xpReward: 50,
         viewCount: 312,
-        completionCount: 178
+        completionCount: 178,
+        requiresVideo: true,
+        videoAccess: 'premium' as const,
+        maxPerWeek: 2
     },
     {
         id: 'demo-content-4',
         title: 'Poomsae Taegeuk Il Jang',
         url: 'https://example.com/video4',
-        beltId: 'white',
+        beltId: 'all',
         category: 'forms',
         description: 'Complete walkthrough of the first Taegeuk form with applications.',
         authorName: 'Master David Kim',
@@ -214,13 +221,16 @@ export const DEMO_CURRICULUM = [
         pricingType: 'free' as const,
         xpReward: 40,
         viewCount: 421,
-        completionCount: 267
+        completionCount: 267,
+        requiresVideo: true,
+        videoAccess: 'free' as const,
+        maxPerWeek: 2
     },
     {
         id: 'demo-content-5',
         title: 'Sparring Strategy Guide',
         url: 'https://example.com/doc1',
-        beltId: 'blue',
+        beltId: 'all',
         category: 'sparring',
         description: 'PDF guide covering offensive and defensive sparring strategies.',
         authorName: 'Sarah Johnson',
@@ -229,22 +239,27 @@ export const DEMO_CURRICULUM = [
         pricingType: 'premium' as const,
         xpReward: 35,
         viewCount: 89,
-        completionCount: 45
+        completionCount: 45,
+        requiresVideo: false,
+        maxPerWeek: 1
     },
     {
         id: 'demo-content-6',
         title: 'Spinning Hook Kick Tutorial',
         url: 'https://example.com/video5',
-        beltId: 'red',
+        beltId: 'all',
         category: 'kicks',
         description: 'Learn the spinning hook kick with drills for balance and timing.',
         authorName: 'Master David Kim',
         contentType: 'video' as const,
-        status: 'draft' as const,
+        status: 'live' as const,
         pricingType: 'premium' as const,
         xpReward: 75,
         viewCount: 0,
-        completionCount: 0
+        completionCount: 0,
+        requiresVideo: true,
+        videoAccess: 'premium' as const,
+        maxPerWeek: 2
     },
 ];
 
@@ -459,3 +474,4 @@ export const DEMO_PENDING_VIDEOS = [
         source: 'academy'
     },
 ];
+
