@@ -323,7 +323,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
         <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <StatCard label="Total Students" value={totalStudents} subtext={selectedTier ? `${selectedTier.limit === Infinity ? 'Unlimited' : selectedTier.limit - totalStudents + ' spots left'} in ${selectedTier.name}` : `Recommended: ${recommendedTier.name}`} icon="🥋" color="blue" />
-                <StatCard label="Monthly Revenue" value={`$${(totalStudents * 120).toLocaleString()}`} subtext="Est. based on tuition" icon="💰" color="green" />
+                <StatCard label="Premium Families" value={data.students.filter((s: any) => s.premiumStatus === 'parent_paid' || s.premiumStatus === 'club_sponsored').length} subtext={`$${(data.students.filter((s: any) => s.premiumStatus === 'parent_paid').length * 4.99).toFixed(2)}/mo revenue`} icon="⭐" color="green" />
                 <StatCard label="Active Staff" value={data.coaches.length + 1} subtext="1 Owner" icon="👥" color="purple" />
                 <StatCard label="Locations" value={data.branches} subtext="Unlimited Plan" icon="🌍" color="orange" />
             </div>
