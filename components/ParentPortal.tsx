@@ -3811,6 +3811,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             <div>
                                                 <span className={`text-5xl font-black ${cardStyle.textColor} italic drop-shadow-lg`}>{ovr}</span>
                                                 <span className="block text-[10px] text-gray-300 font-bold uppercase">OVR</span>
+                                                <span className={`block text-[9px] font-bold uppercase mt-0.5 ${rarity.textColor}`}>{rarity.icon} {rarity.name}</span>
                                             </div>
                                             <div className="text-right">
                                                 <span className="block text-xs text-gray-400 max-w-[100px] truncate">{data.clubName}</span>
