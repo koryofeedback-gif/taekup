@@ -271,7 +271,7 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
                     <span className="text-7xl font-black text-white">$4.99</span>
                     <span className="text-3xl text-gray-400 font-light">/month</span>
                 </div>
-                <p className="text-2xl text-gray-500 mt-2">per family • cancel anytime</p>
+                <p className="text-2xl text-gray-500 mt-2">cancel anytime</p>
             </div>
 
             {/* Right Side - Benefits */}
