@@ -98,6 +98,17 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
         return () => clearInterval(rotation);
     }, [slides.length]);
 
+    // Secret Exit: Press Escape key to exit (admin only knows this)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
     const activeSlide = slides[currentSlide];
 
     // --- RENDERERS ---
@@ -358,13 +369,7 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
                 ></div>
             </div>
 
-            {/* Secret Close Button (Visible on Hover only) */}
-            <button 
-                onClick={onClose}
-                className="absolute bottom-4 right-4 p-4 text-gray-600 hover:text-white hover:bg-red-600 rounded-full transition-all opacity-0 hover:opacity-100 z-50 cursor-pointer"
-            >
-                Exit TV Mode
-            </button>
+            {/* Exit: Press Escape key (no visible button for viewers) */}
 
             <style>{`
                 @keyframes progress {
