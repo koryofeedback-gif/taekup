@@ -7,16 +7,22 @@ export const isDemoModeEnabled = (): boolean => {
     return localStorage.getItem(DEMO_MODE_KEY) === 'true';
 };
 
-const generateDemoPerformanceHistory = (attendanceCount: number): { date: string; scores: Record<string, number>; bonusPoints: number }[] => {
+const generateDemoPerformanceHistory = (attendanceCount: number): { date: string; scores: Record<string, number>; bonusPoints: number; homeworkPoints?: number }[] => {
     const now = new Date();
     const history = [];
-    const sessionsThisMonth = Math.min(Math.floor(attendanceCount / 10) + 2, 6);
+    const sessionsThisMonth = Math.min(Math.floor(attendanceCount / 10) + 2, 10);
+    const skillIds = ['discipline', 'technique', 'focus', 'power', 'kicks', 'effort'];
     for (let i = 0; i < sessionsThisMonth; i++) {
         const date = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - (i * 3)));
+        const scores: Record<string, number> = {};
+        skillIds.forEach(skill => {
+            scores[skill] = Math.round(1.2 + Math.random() * 0.8);
+        });
         history.push({
             date: date.toISOString(),
-            scores: { 'skill1': 18 + Math.floor(Math.random() * 7), 'skill2': 16 + Math.floor(Math.random() * 9), 'skill3': 15 + Math.floor(Math.random() * 10) },
-            bonusPoints: Math.random() > 0.5 ? 5 : 0
+            scores,
+            bonusPoints: Math.random() > 0.5 ? 5 : 0,
+            homeworkPoints: Math.random() > 0.6 ? 5 : 0
         });
     }
     return history;
@@ -31,6 +37,17 @@ const createDemoStudent = (
     attendanceCount, location: 'Main Dojang', assignedClass: 'Kids Class', medicalInfo: '',
     lastPromotionDate: joinDate, isReadyForGrading: attendanceCount > 20,
     performanceHistory: generateDemoPerformanceHistory(attendanceCount), feedbackHistory: [], badges: [], lifeSkillsHistory: [], customHabits: [],
+    lifetimeXp: totalPoints,
+    sparringStats: {
+        matches: Math.floor(attendanceCount / 5),
+        wins: Math.floor(attendanceCount / 8),
+        draws: Math.floor(attendanceCount / 15),
+        headKicks: Math.floor(attendanceCount / 3),
+        bodyKicks: Math.floor(attendanceCount / 2),
+        punches: Math.floor(attendanceCount / 4),
+        takedowns: Math.floor(attendanceCount / 10),
+        defense: Math.floor(60 + Math.random() * 30)
+    }
 });
 
 export const DEMO_STUDENTS: Student[] = [
@@ -47,6 +64,15 @@ export const DEMO_STUDENTS: Student[] = [
 export const DEMO_COACHES: Coach[] = [
     { id: 'demo-coach-1', name: 'Master David Kim', email: 'david@demo.com', location: 'Main Dojang', assignedClasses: ['Kids Beginners', 'Kids Advanced', 'All Levels'] },
     { id: 'demo-coach-2', name: 'Sarah Johnson', email: 'sarah@demo.com', location: 'Main Dojang', assignedClasses: ['Kids Advanced', 'Weekend Warriors'] },
+];
+
+export const DEMO_PORTAL_SKILLS = [
+    { id: 'discipline', name: 'Discipline', isActive: true },
+    { id: 'technique', name: 'Technique', isActive: true },
+    { id: 'focus', name: 'Focus', isActive: true },
+    { id: 'power', name: 'Power', isActive: true },
+    { id: 'kicks', name: 'Kicks', isActive: true },
+    { id: 'effort', name: 'Effort', isActive: true },
 ];
 
 export const DEMO_SCHEDULE: ScheduleItem[] = [

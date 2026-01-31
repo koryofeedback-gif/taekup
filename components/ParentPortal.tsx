@@ -24,7 +24,7 @@ import {
     DEMO_SCHEDULE,
     getDemoPrivateSlots
 } from '../shared/demoData';
-import { DEMO_VIDEO_SUBMISSIONS } from './demoData';
+import { DEMO_VIDEO_SUBMISSIONS, DEMO_PORTAL_SKILLS } from './demoData';
 
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -3645,7 +3645,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // DYNAMICALLY CALCULATE STATS BASED ON CLUB'S SKILLS
         const history = student.performanceHistory || [];
         const recentHistory = history.slice(-10); // Last 10 classes
-        const activeSkills = (data.skills || []).filter(s => s.isActive);
+        const activeSkills = data.isDemo 
+            ? DEMO_PORTAL_SKILLS.filter(s => s.isActive)
+            : (data.skills || []).filter(s => s.isActive);
 
         const calcAvg = (skillId: string) => {
             if (recentHistory.length === 0) return 75; // Default start
