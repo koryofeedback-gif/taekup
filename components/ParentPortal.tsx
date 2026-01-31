@@ -24,7 +24,7 @@ import {
     DEMO_SCHEDULE,
     getDemoPrivateSlots
 } from '../shared/demoData';
-import { DEMO_VIDEO_SUBMISSIONS, DEMO_PORTAL_SKILLS } from './demoData';
+import { DEMO_VIDEO_SUBMISSIONS, DEMO_PORTAL_SKILLS, DEMO_SCHEDULE as DEMO_PORTAL_SCHEDULE, DEMO_EVENTS as DEMO_PORTAL_EVENTS, DEMO_PRIVATE_SLOTS } from './demoData';
 
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -3977,7 +3977,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Smart Filter: Only show classes that match student's belt
         // For simplicity: if beltReq is "All" or matches ID
         // In real app, would need rank comparison (is belt > required belt)
-        const relevantClasses = (data.schedule || []).filter(c => 
+        const scheduleData = data.isDemo ? DEMO_PORTAL_SCHEDULE : (data.schedule || []);
+        const eventsData = data.isDemo ? DEMO_PORTAL_EVENTS : (data.events || []);
+        const privateSlotsData = data.isDemo ? DEMO_PRIVATE_SLOTS : (data.privateSlots || []);
+        
+        const relevantClasses = scheduleData.filter(c => 
             c.beltRequirement === 'All' || c.beltRequirement === student.beltId
         );
 
@@ -4009,8 +4013,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                  {/* Section 2: Upcoming Events */}
                  <div className="space-y-4">
                      <h3 className="font-bold text-white text-lg px-2">Upcoming Events</h3>
-                     {(data.events || []).length > 0 ? (
-                         data.events?.map(evt => (
+                     {eventsData.length > 0 ? (
+                         eventsData.map(evt => (
                              <div key={evt.id} className="bg-gray-800 p-4 rounded-xl border border-gray-700">
                                  <div className="flex justify-between items-start mb-2">
                                      <div>
@@ -4044,10 +4048,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                      <p className="text-sm text-gray-300 mb-4">Book a 1-on-1 private lesson with a Master Instructor.</p>
                      
                      <div className="space-y-3">
-                         {(data.privateSlots || []).filter(s => !s.isBooked).length === 0 && (
+                         {privateSlotsData.filter(s => !s.isBooked).length === 0 && (
                              <p className="text-gray-400 text-sm italic">No slots available right now.</p>
                          )}
-                         {(data.privateSlots || []).filter(s => !s.isBooked).map(slot => (
+                         {privateSlotsData.filter(s => !s.isBooked).map(slot => (
                              <div key={slot.id} className="bg-gray-800 p-3 rounded-lg border border-gray-600 flex justify-between items-center">
                                  <div>
                                      <p className="font-bold text-white">{new Date(slot.date).toLocaleDateString()}</p>

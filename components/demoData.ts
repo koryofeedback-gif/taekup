@@ -121,7 +121,8 @@ export const DEMO_EVENTS = [
         date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), 
         time: '10:00 AM', 
         type: 'Grading',
-        location: 'Main Dojang'
+        location: 'Main Dojang',
+        description: 'Belt promotion testing for eligible students'
     },
     { 
         id: 'demo-event-2', 
@@ -129,7 +130,8 @@ export const DEMO_EVENTS = [
         date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(), 
         time: '6:00 PM', 
         type: 'Event',
-        location: 'Main Dojang'
+        location: 'Main Dojang',
+        description: 'Students demonstrate skills for family and friends'
     },
     { 
         id: 'demo-event-3', 
@@ -137,13 +139,20 @@ export const DEMO_EVENTS = [
         date: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(), 
         time: '8:00 AM', 
         type: 'Competition',
-        location: 'City Sports Center'
+        location: 'City Sports Center',
+        description: 'Annual regional martial arts competition'
     },
 ];
 
 export const DEMO_TV_BIRTHDAYS = [
     { id: 'demo-bday-1', name: 'Alex Kim', birthday: new Date(new Date().getFullYear(), new Date().getMonth(), 15).toISOString() },
     { id: 'demo-bday-2', name: 'Riley Cho', birthday: new Date(new Date().getFullYear(), new Date().getMonth(), 22).toISOString() },
+];
+
+export const DEMO_PRIVATE_SLOTS = [
+    { id: 'demo-slot-1', date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), time: '10:00 AM', coachName: 'Master David Kim', price: 50, isBooked: false },
+    { id: 'demo-slot-2', date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), time: '2:00 PM', coachName: 'Sarah Johnson', price: 45, isBooked: false },
+    { id: 'demo-slot-3', date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), time: '11:00 AM', coachName: 'Master David Kim', price: 50, isBooked: true },
 ];
 
 export const DEMO_CURRICULUM = [
