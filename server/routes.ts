@@ -498,6 +498,7 @@ export function registerRoutes(app: Express) {
         clubName: savedWizardData.clubName || club.name,
         ownerName: savedWizardData.ownerName || club.owner_name || '',
         country: savedWizardData.country || club.country || 'US',
+        logo: savedWizardData.logo || null,
       };
 
       return res.json({
