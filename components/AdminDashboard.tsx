@@ -5,6 +5,7 @@ import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, Cur
 import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
 import { DEMO_MODE_KEY, isDemoModeEnabled, DEMO_STUDENTS, DEMO_COACHES, DEMO_SCHEDULE, DEMO_STATS, DEMO_LEADERBOARD, DEMO_RECENT_ACTIVITY, DEMO_CURRICULUM } from './demoData';
+import { CSVImport, ImportedStudent } from './CSVImport';
 
 interface AdminDashboardProps {
   data: WizardData;
@@ -2530,7 +2531,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [tempPrivate, setTempPrivate] = useState<{coachName: string, date: string, time: string, price: number}>({coachName: '', date: '', time: '', price: 50});
     
     // Bulk Import State
-    const [studentImportMethod, setStudentImportMethod] = useState<'single' | 'bulk' | 'excel'>('single');
+    const [studentImportMethod, setStudentImportMethod] = useState<'single' | 'bulk' | 'excel' | 'google'>('single');
+    const [showCSVImport, setShowCSVImport] = useState(false);
     const [bulkStudentData, setBulkStudentData] = useState('');
     const [parsedBulkStudents, setParsedBulkStudents] = useState<Student[]>([]);
     const [bulkError, setBulkError] = useState('');
@@ -2704,6 +2706,79 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
         setParsedBulkStudents(newStudents);
         setBulkError(newStudents.length === 0 ? 'No valid data found' : '');
+    };
+
+    const handleCSVImport = async (importedStudents: ImportedStudent[]) => {
+        if (isDemo) {
+            alert('Demo mode is active. Turn off demo mode to make changes.');
+            setShowCSVImport(false);
+            return;
+        }
+
+        setIsImporting(true);
+        const studentsWithDbIds: Student[] = [];
+
+        for (const imported of importedStudents) {
+            const newStudent: Student = {
+                id: crypto.randomUUID(),
+                name: imported.name,
+                beltId: imported.beltId,
+                stripes: 0,
+                parentEmail: imported.parentEmail,
+                parentName: imported.parentName,
+                parentPhone: imported.parentPhone,
+                birthday: imported.birthday || '',
+                joinDate: new Date().toISOString(),
+                location: bulkLocation,
+                assignedClass: bulkClass || data.classes?.[0] || 'General Class',
+                totalPoints: imported.totalPoints,
+                totalXP: imported.totalXP,
+                lifetimeXp: imported.totalXP + imported.globalXP,
+                attendanceCount: 0,
+                performanceHistory: [],
+                gender: 'Prefer not to say',
+                lastPromotionDate: new Date().toISOString(),
+                isReadyForGrading: false,
+                feedbackHistory: [],
+                badges: [],
+                lifeSkillsHistory: [],
+                customHabits: []
+            };
+            studentsWithDbIds.push(newStudent);
+
+            // Save to database
+            if (clubId) {
+                try {
+                    const beltName = data.belts.find(b => b.id === newStudent.beltId)?.name || 'White';
+                    await fetch('/api/students', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            clubId: clubId,
+                            name: newStudent.name,
+                            belt: beltName,
+                            parentEmail: newStudent.parentEmail,
+                            parentName: newStudent.parentName,
+                            parentPhone: newStudent.parentPhone,
+                            birthdate: newStudent.birthday || null,
+                            location: newStudent.location,
+                            assignedClass: newStudent.assignedClass,
+                            totalPoints: newStudent.totalPoints,
+                            totalXP: newStudent.totalXP,
+                            lifetimeXp: newStudent.lifetimeXp
+                        })
+                    });
+                } catch (err) {
+                    console.error('Failed to save student to database:', newStudent.name, err);
+                }
+            }
+        }
+
+        onUpdateData({ students: [...data.students, ...studentsWithDbIds] });
+        setIsImporting(false);
+        setShowCSVImport(false);
+        setModalType(null);
+        alert(`Successfully imported ${studentsWithDbIds.length} students with their points and XP!`);
     };
 
     const confirmBulkImport = async () => {
@@ -3113,11 +3188,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 <Modal title="Add Students" onClose={() => setModalType(null)}>
                     <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4">
                         <button onClick={() => setStudentImportMethod('single')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'single' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Single</button>
+                        <button onClick={() => setStudentImportMethod('google')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'google' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Google Sheets</button>
                         <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Paste CSV</button>
                         <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Excel Upload</button>
                     </div>
 
-                    {studentImportMethod === 'single' ? (
+                    {studentImportMethod === 'google' ? (
+                        <div className="space-y-4">
+                            <div className="bg-green-900/30 border border-green-500/30 p-4 rounded-lg">
+                                <h3 className="font-bold text-green-300 mb-2">Import from Google Sheets</h3>
+                                <p className="text-sm text-gray-300 mb-4">
+                                    Import students with their <strong>Points</strong> and <strong>XP</strong> from your Google Sheet. 
+                                    Supports flexible column mapping - just export your sheet as CSV.
+                                </p>
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
+                                        <select value={bulkLocation} onChange={e => setBulkLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                            {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
+                                        <select value={bulkClass} onChange={e => setBulkClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                            <option value="">Auto-assign</option>
+                                            {(data.locationClasses?.[bulkLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setShowCSVImport(true)}
+                                    className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2"
+                                >
+                                    <span>📊</span> Open CSV Import Tool
+                                </button>
+                            </div>
+                            <div className="bg-gray-800 p-3 rounded text-xs text-gray-400">
+                                <strong className="text-white">Tip:</strong> In Google Sheets, go to File → Download → Comma Separated Values (.csv)
+                            </div>
+                        </div>
+                    ) : studentImportMethod === 'single' ? (
                         <div className="space-y-4">
                             <input type="text" placeholder="Full Name" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, name: e.target.value})} />
                             <div className="grid grid-cols-2 gap-4">
@@ -3634,6 +3744,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         <button onClick={handleAddPrivate} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2 rounded">Add Private Slot</button>
                     </div>
                 </Modal>
+            )}
+
+            {/* CSV Import Modal for Google Sheets */}
+            {showCSVImport && (
+                <CSVImport
+                    onImport={handleCSVImport}
+                    onClose={() => setShowCSVImport(false)}
+                    existingBelts={data.belts}
+                />
             )}
         </div>
     );
