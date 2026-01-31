@@ -54,14 +54,33 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
             .slice(0, 3);
     }, [data.events, isDemo]);
 
+    // 4. Today's Schedule (filter events for today or use demo)
+    const todaySchedule = useMemo(() => {
+        if (isDemo) {
+            return [
+                { id: 'd1', title: 'Little Dragons', time: '09:00', type: 'class', location: 'Main Hall' },
+                { id: 'd2', title: 'Kids Beginner', time: '10:30', type: 'class', location: 'Main Hall' },
+                { id: 'd3', title: 'Adult Kickboxing', time: '12:00', type: 'class', location: 'Studio B' },
+                { id: 'd4', title: 'Competition Team', time: '16:00', type: 'training', location: 'Main Hall' },
+                { id: 'd5', title: 'Family Open Mat', time: '18:00', type: 'open', location: 'Main Hall' },
+            ];
+        }
+        const today = new Date().toDateString();
+        return (data.events || [])
+            .filter(e => new Date(e.date).toDateString() === today)
+            .sort((a, b) => a.time?.localeCompare(b.time || '') || 0)
+            .slice(0, 6);
+    }, [data.events, isDemo]);
+
     // Define available slides based on data content
     const slides = useMemo(() => {
         const list = ['welcome', 'leaderboard'];
+        if (todaySchedule.length > 0) list.push('schedule');
         if (birthdayStudents.length > 0) list.push('birthdays');
         if (upcomingEvents.length > 0) list.push('events');
-        list.push('cta'); // Call to Action (QR)
+        list.push('cta'); // Premium Benefits
         return list;
-    }, [birthdayStudents.length, upcomingEvents.length]);
+    }, [birthdayStudents.length, upcomingEvents.length, todaySchedule.length]);
 
     // --- EFFECT LOOPS ---
 
@@ -172,6 +191,39 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
         </div>
     );
 
+    const renderSchedule = () => {
+        const getTypeColor = (type: string) => {
+            switch (type) {
+                case 'class': return 'bg-cyan-900/50 text-cyan-300 border-cyan-500/30';
+                case 'training': return 'bg-purple-900/50 text-purple-300 border-purple-500/30';
+                case 'open': return 'bg-green-900/50 text-green-300 border-green-500/30';
+                default: return 'bg-gray-800/50 text-gray-300 border-gray-500/30';
+            }
+        };
+
+        return (
+            <div className="h-full flex flex-col justify-center px-20 animate-fade-in">
+                <h2 className="text-5xl font-bold text-cyan-300 mb-12 text-center uppercase tracking-widest flex items-center justify-center">
+                    <span className="text-7xl mr-4">🥋</span> Today's Schedule
+                </h2>
+                <div className="grid gap-4 max-w-4xl mx-auto w-full">
+                    {todaySchedule.map((item: any) => (
+                        <div key={item.id} className={`flex items-center p-6 rounded-2xl border-2 ${getTypeColor(item.type)}`}>
+                            <div className="text-5xl font-bold text-white w-36 text-center font-mono">
+                                {item.time}
+                            </div>
+                            <div className="flex-1 ml-8">
+                                <p className="text-4xl font-bold text-white">{item.title}</p>
+                                <p className="text-xl text-gray-400 mt-1">{item.location}</p>
+                            </div>
+                            <div className="text-3xl uppercase font-bold opacity-60">{item.type}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     const renderEvents = () => (
         <div className="h-full flex flex-col justify-center px-20 animate-fade-in">
             <h2 className="text-5xl font-bold text-sky-300 mb-16 text-center uppercase tracking-widest flex items-center justify-center">
@@ -198,33 +250,50 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
     );
 
     const renderCTA = () => (
-        <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
-            <div className="bg-white p-4 rounded-2xl shadow-2xl mb-10">
-                {/* Simulated QR Code */}
-                <div className="w-64 h-64 bg-gray-900 flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 gap-1 p-2">
-                        {Array.from({length: 36}).map((_, i) => (
-                            <div key={i} className={`bg-black ${Math.random() > 0.5 ? 'opacity-100' : 'opacity-0'}`}></div>
-                        ))}
+        <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in px-20">
+            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/10 border-2 border-yellow-500/50 rounded-3xl p-16 shadow-2xl max-w-5xl">
+                <div className="flex items-center justify-center mb-8">
+                    <span className="text-8xl">⭐</span>
+                </div>
+                <h2 className="text-6xl font-bold text-white mb-6">Unlock Premium Benefits</h2>
+                <p className="text-3xl text-gray-300 mb-12">
+                    Give your child the ultimate martial arts experience
+                </p>
+                <div className="grid grid-cols-2 gap-6 text-left">
+                    <div className="flex items-start space-x-4 bg-gray-800/50 p-6 rounded-xl">
+                        <span className="text-4xl">📹</span>
+                        <div>
+                            <p className="text-2xl font-bold text-white">Video Training Library</p>
+                            <p className="text-xl text-gray-400">Access exclusive technique videos</p>
+                        </div>
                     </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="bg-white p-2 rounded">
-                            <div className="w-12 h-12 bg-black rounded-sm"></div>
+                    <div className="flex items-start space-x-4 bg-gray-800/50 p-6 rounded-xl">
+                        <span className="text-4xl">🏆</span>
+                        <div>
+                            <p className="text-2xl font-bold text-white">2x HonorXP™ Rewards</p>
+                            <p className="text-xl text-gray-400">Double points on all challenges</p>
+                        </div>
+                    </div>
+                    <div className="flex items-start space-x-4 bg-gray-800/50 p-6 rounded-xl">
+                        <span className="text-4xl">🎯</span>
+                        <div>
+                            <p className="text-2xl font-bold text-white">Priority Class Booking</p>
+                            <p className="text-xl text-gray-400">Book popular classes first</p>
+                        </div>
+                    </div>
+                    <div className="flex items-start space-x-4 bg-gray-800/50 p-6 rounded-xl">
+                        <span className="text-4xl">🤖</span>
+                        <div>
+                            <p className="text-2xl font-bold text-white">AI Training Coach</p>
+                            <p className="text-xl text-gray-400">Personalized feedback & tips</p>
                         </div>
                     </div>
                 </div>
-            </div>
-            <h2 className="text-6xl font-bold text-white mb-6">Parents, Get the App!</h2>
-            <p className="text-3xl text-gray-400 max-w-3xl">
-                Track progress, watch training videos, and manage classes from your phone.
-            </p>
-            <div className="mt-12 flex space-x-8">
-                <div className="bg-gray-800 px-8 py-4 rounded-xl border border-gray-600 text-2xl text-white flex items-center">
-                    🍎 App Store
+                <div className="mt-12 flex items-center justify-center space-x-4">
+                    <span className="text-5xl font-bold text-yellow-400">$4.99</span>
+                    <span className="text-2xl text-gray-400">/month per family</span>
                 </div>
-                <div className="bg-gray-800 px-8 py-4 rounded-xl border border-gray-600 text-2xl text-white flex items-center">
-                    🤖 Google Play
-                </div>
+                <p className="text-xl text-cyan-400 mt-4">Ask a coach or visit the Parent Portal to upgrade</p>
             </div>
         </div>
     );
@@ -254,6 +323,7 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
             <div className="relative z-10 h-full pt-32 pb-20">
                 {activeSlide === 'welcome' && renderWelcome()}
                 {activeSlide === 'leaderboard' && renderLeaderboard()}
+                {activeSlide === 'schedule' && renderSchedule()}
                 {activeSlide === 'birthdays' && renderBirthdays()}
                 {activeSlide === 'events' && renderEvents()}
                 {activeSlide === 'cta' && renderCTA()}
