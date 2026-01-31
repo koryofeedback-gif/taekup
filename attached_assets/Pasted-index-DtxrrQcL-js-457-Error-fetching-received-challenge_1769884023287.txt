@@ -1,0 +1,53 @@
+index-DtxrrQcL.js:457 Error fetching received challenges: Error: Failed to fetch challenges
+    at BF.getReceivedChallenges (index-DtxrrQcL.js:457:37758)
+    at async index-DtxrrQcL.js:457:35145
+index-DtxrrQcL.js:462 [HomeDojo] Using student ID: demo-1 valid UUID: false
+index-DtxrrQcL.js:462 [HomeDojo] Using student ID: demo-1 valid UUID: false
+index-DtxrrQcL.js:40 TypeError: Cannot read properties of undefined (reading 'discipline')
+    at index-DtxrrQcL.js:464:8970
+    at Array.map (<anonymous>)
+    at le (index-DtxrrQcL.js:464:8953)
+    at index-DtxrrQcL.js:464:9189
+    at Array.map (<anonymous>)
+    at rj (index-DtxrrQcL.js:464:9130)
+    at qF (index-DtxrrQcL.js:471:31276)
+    at im (index-DtxrrQcL.js:38:17018)
+    at Wx (index-DtxrrQcL.js:40:3139)
+    at J1 (index-DtxrrQcL.js:40:44833)
+index-DtxrrQcL.js:464 Uncaught TypeError: Cannot read properties of undefined (reading 'discipline')
+    at index-DtxrrQcL.js:464:8970
+    at Array.map (<anonymous>)
+    at le (index-DtxrrQcL.js:464:8953)
+    at index-DtxrrQcL.js:464:9189
+    at Array.map (<anonymous>)
+    at rj (index-DtxrrQcL.js:464:9130)
+    at qF (index-DtxrrQcL.js:471:31276)
+    at im (index-DtxrrQcL.js:38:17018)
+    at Wx (index-DtxrrQcL.js:40:3139)
+    at J1 (index-DtxrrQcL.js:40:44833)
+index-DtxrrQcL.js:457 
+ GET https://www.mytaek.com/api/challenges/received/demo-1 400 (Bad Request)
+index-DtxrrQcL.js:457 Error fetching received challenges: Error: Failed to fetch challenges
+    at BF.getReceivedChallenges (index-DtxrrQcL.js:457:37758)
+    at async index-DtxrrQcL.js:457:35145
+
+index-DtxrrQcL.js:457 
+ GET https://www.mytaek.com/api/challenges/received/demo-1 400 (Bad Request)
+index-DtxrrQcL.js:457 Error fetching received challenges: Error: Failed to fetch challenges
+    at BF.getReceivedChallenges (index-DtxrrQcL.js:457:37758)
+    at async index-DtxrrQcL.js:457:35145
+getReceivedChallenges	@	index-DtxrrQcL.js:457
+await in getReceivedChallenges		
+(anonymous)	@	index-DtxrrQcL.js:457
+index-DtxrrQcL.js:457 
+ GET https://www.mytaek.com/api/challenges/received/demo-1 400 (Bad Request)
+index-DtxrrQcL.js:457 Error fetching received challenges: Error: Failed to fetch challenges
+    at BF.getReceivedChallenges (index-DtxrrQcL.js:457:37758)
+    at async index-DtxrrQcL.js:457:35145
+index-DtxrrQcL.js:457 
+ GET https://www.mytaek.com/api/challenges/received/demo-1 400 (Bad Request)
+index-DtxrrQcL.js:457 Error fetching received challenges: Error: Failed to fetch challenges
+    at BF.getReceivedChallenges (index-DtxrrQcL.js:457:37758)
+    at async index-DtxrrQcL.js:457:35145
+﻿
+

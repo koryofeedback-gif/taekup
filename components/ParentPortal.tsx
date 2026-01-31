@@ -3653,8 +3653,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             if (recentHistory.length === 0) return 75; // Default start
             
             const scores = recentHistory
-                .map(h => h.scores[skillId])
-                .filter(s => typeof s === 'number') as number[];
+                .filter(h => h.scores && typeof h.scores[skillId] === 'number')
+                .map(h => h.scores[skillId]) as number[];
             
             if (scores.length === 0) return 75;
             const avg = scores.reduce((a,b) => a+b, 0) / scores.length;
