@@ -24,7 +24,7 @@ import {
     DEMO_SCHEDULE,
     getDemoPrivateSlots
 } from '../shared/demoData';
-import { DEMO_VIDEO_SUBMISSIONS, DEMO_PORTAL_SKILLS, DEMO_SCHEDULE as DEMO_PORTAL_SCHEDULE, DEMO_EVENTS as DEMO_PORTAL_EVENTS, DEMO_PRIVATE_SLOTS, DEMO_CURRICULUM } from './demoData';
+import { DEMO_VIDEO_SUBMISSIONS, DEMO_PORTAL_SKILLS, DEMO_SCHEDULE as DEMO_PORTAL_SCHEDULE, DEMO_EVENTS as DEMO_PORTAL_EVENTS, DEMO_PRIVATE_SLOTS, DEMO_CURRICULUM, DEMO_CUSTOM_CHALLENGES } from './demoData';
 
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -1394,8 +1394,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Use passed XP or default to 15
         const xpValue = challengeXp || 15;
         
-        // Get challenge metadata from data.customChallenges (available in scope)
-        const customChallenge = (data.customChallenges || []).find(c => c.id === selectedChallenge);
+        // Get challenge metadata (use demo data in preview mode)
+        const challengeSource = data.isDemo ? DEMO_CUSTOM_CHALLENGES : (data.customChallenges || []);
+        const customChallenge = challengeSource.find(c => c.id === selectedChallenge);
         // Detect challenge type: coach_pick if explicitly set, or if it's a custom challenge that's not General category
         const challengeCategoryType = customChallenge?.challengeType === 'coach_pick' || 
             (customChallenge && customChallenge.category !== 'Custom') 
@@ -2338,7 +2339,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             'stretch': { name: 'Full Stretch Hold', category: 'Flexibility' },
             'yoga': { name: 'Yoga Flow', category: 'Flexibility' },
         };
-        const customChallenge = data.customChallenges?.find(c => c.id === challengeId);
+        const challengeSource = data.isDemo ? DEMO_CUSTOM_CHALLENGES : (data.customChallenges || []);
+        const customChallenge = challengeSource.find(c => c.id === challengeId);
         if (customChallenge) {
             return { name: customChallenge.name, category: 'Coach Picks' };
         }
@@ -2464,7 +2466,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
                 // Calculate XP based on challenge difficulty (Coach Pick video = 2x base XP)
                 // Difficulty values: 'Easy', 'Medium', 'Hard', 'Expert' (Expert = Epic tier)
-                const customChallenge = (data.customChallenges || []).find(c => c.id === selectedChallenge);
+                const challengeSource = data.isDemo ? DEMO_CUSTOM_CHALLENGES : (data.customChallenges || []);
+                const customChallenge = challengeSource.find(c => c.id === selectedChallenge);
                 const difficultyXpMap: Record<string, number> = {
                     'Easy': 20, 'Medium': 40, 'Hard': 70, 'Expert': 100
                 };
@@ -4153,7 +4156,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Select which leaderboard to display
         const leaderboard = leaderboardMode === 'monthly' ? monthlyLeaderboard : allTimeLeaderboard;
         
-        const activeCustomChallenges = (data.customChallenges || []).filter(c => c.isActive);
+        const customChallengesSource = data.isDemo ? DEMO_CUSTOM_CHALLENGES : (data.customChallenges || []);
+        const activeCustomChallenges = customChallengesSource.filter(c => c.isActive);
         
         // Get streak XP multiplier
         const getStreakMultiplier = () => {
