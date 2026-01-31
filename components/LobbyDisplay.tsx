@@ -250,50 +250,70 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
     );
 
     const renderCTA = () => (
-        <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in px-20">
-            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/10 border-2 border-yellow-500/50 rounded-3xl p-16 shadow-2xl max-w-5xl">
-                <div className="flex items-center justify-center mb-8">
-                    <span className="text-8xl">⭐</span>
+        <div className="h-full flex animate-fade-in">
+            {/* Left Side - Hero Message */}
+            <div className="w-1/2 flex flex-col justify-center pl-20 pr-12">
+                <div className="mb-8">
+                    <span className="inline-block px-6 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-black text-2xl uppercase tracking-wider rounded-full">
+                        Premium Family
+                    </span>
                 </div>
-                <h2 className="text-6xl font-bold text-white mb-6">Unlock Premium Benefits</h2>
-                <p className="text-3xl text-gray-300 mb-12">
-                    Give your child the ultimate martial arts experience
+                <h2 className="text-7xl font-black text-white leading-tight mb-6">
+                    Elevate Your<br/>
+                    <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent">
+                        Training Journey
+                    </span>
+                </h2>
+                <p className="text-3xl text-gray-300 leading-relaxed mb-10">
+                    Give your child every advantage with exclusive training content and accelerated progress tracking.
                 </p>
-                <div className="grid grid-cols-2 gap-6 text-left">
-                    <div className="flex items-start space-x-4 bg-gray-800/50 p-6 rounded-xl">
-                        <span className="text-4xl">📹</span>
+                <div className="flex items-baseline space-x-3">
+                    <span className="text-7xl font-black text-white">$4.99</span>
+                    <span className="text-3xl text-gray-400 font-light">/month</span>
+                </div>
+                <p className="text-2xl text-gray-500 mt-2">per family • cancel anytime</p>
+            </div>
+
+            {/* Right Side - Benefits */}
+            <div className="w-1/2 flex items-center pr-16">
+                <div className="space-y-5 w-full">
+                    <div className="flex items-center bg-gradient-to-r from-gray-800/80 to-gray-800/40 p-7 rounded-2xl border border-gray-700/50 backdrop-blur">
+                        <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mr-6 shadow-lg shadow-cyan-500/30">
+                            <span className="text-4xl">📹</span>
+                        </div>
                         <div>
-                            <p className="text-2xl font-bold text-white">Video Training Library</p>
-                            <p className="text-xl text-gray-400">Access exclusive technique videos</p>
+                            <p className="text-3xl font-bold text-white">Exclusive Video Library</p>
+                            <p className="text-xl text-gray-400">Pro techniques from world champions</p>
                         </div>
                     </div>
-                    <div className="flex items-start space-x-4 bg-gray-800/50 p-6 rounded-xl">
-                        <span className="text-4xl">🏆</span>
+                    <div className="flex items-center bg-gradient-to-r from-gray-800/80 to-gray-800/40 p-7 rounded-2xl border border-gray-700/50 backdrop-blur">
+                        <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center mr-6 shadow-lg shadow-yellow-500/30">
+                            <span className="text-4xl">⚡</span>
+                        </div>
                         <div>
-                            <p className="text-2xl font-bold text-white">2x HonorXP™ Rewards</p>
-                            <p className="text-xl text-gray-400">Double points on all challenges</p>
+                            <p className="text-3xl font-bold text-white">2x HonorXP™ Rewards</p>
+                            <p className="text-xl text-gray-400">Climb the ranks twice as fast</p>
                         </div>
                     </div>
-                    <div className="flex items-start space-x-4 bg-gray-800/50 p-6 rounded-xl">
-                        <span className="text-4xl">🎯</span>
+                    <div className="flex items-center bg-gradient-to-r from-gray-800/80 to-gray-800/40 p-7 rounded-2xl border border-gray-700/50 backdrop-blur">
+                        <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mr-6 shadow-lg shadow-purple-500/30">
+                            <span className="text-4xl">🤖</span>
+                        </div>
                         <div>
-                            <p className="text-2xl font-bold text-white">Priority Class Booking</p>
-                            <p className="text-xl text-gray-400">Book popular classes first</p>
+                            <p className="text-3xl font-bold text-white">AI Training Coach</p>
+                            <p className="text-xl text-gray-400">Personalized insights for your child</p>
                         </div>
                     </div>
-                    <div className="flex items-start space-x-4 bg-gray-800/50 p-6 rounded-xl">
-                        <span className="text-4xl">🤖</span>
+                    <div className="flex items-center bg-gradient-to-r from-gray-800/80 to-gray-800/40 p-7 rounded-2xl border border-gray-700/50 backdrop-blur">
+                        <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mr-6 shadow-lg shadow-green-500/30">
+                            <span className="text-4xl">🎯</span>
+                        </div>
                         <div>
-                            <p className="text-2xl font-bold text-white">AI Training Coach</p>
-                            <p className="text-xl text-gray-400">Personalized feedback & tips</p>
+                            <p className="text-3xl font-bold text-white">Priority Booking</p>
+                            <p className="text-xl text-gray-400">Reserve popular classes first</p>
                         </div>
                     </div>
                 </div>
-                <div className="mt-12 flex items-center justify-center space-x-4">
-                    <span className="text-5xl font-bold text-yellow-400">$4.99</span>
-                    <span className="text-2xl text-gray-400">/month per family</span>
-                </div>
-                <p className="text-xl text-cyan-400 mt-4">Ask a coach or visit the Parent Portal to upgrade</p>
             </div>
         </div>
     );
