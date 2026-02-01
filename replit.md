@@ -48,12 +48,23 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **Welcome Email Generator**: Automated, personalized welcome emails for new users.
 - **Subscription & Pricing**: "Ladder of Success" pricing model with 5 tiers based on student limits, a 14-day free trial, and a lock strategy for tier management.
 - **Parent Premium Subscription**: An optional $4.99/month family subscription offering enhanced features (priority booking, extended curriculum, advanced analytics, AI insights, habit tracking, digital cards) with revenue sharing.
-- **MyTaek ID System** (Feb 2026): Global unique student identifier for cross-club transfers:
+- **MyTaek ID Federation System** (Feb 2026): Global unique student identifier for cross-club transfers:
     - **Format**: MTK-YYYY-XXXXXX (e.g., MTK-2026-A7X9K2)
     - **Purpose**: Students own their martial arts journey data globally
     - **Benefits**: Seamless club transfers, verified belt history, global rankings participation
     - **Display**: Shown in Parent Portal header (clickable to copy) and Admin Dashboard edit modal
     - **Auto-generation**: Created automatically for all new students
+    - **Transfer Workflow**:
+        1. Receiving club searches student by MyTaek ID (Add Student → Transfer tab)
+        2. Views verified profile with belt, XP, and promotion history
+        3. Submits transfer request to source club
+        4. Source club reviews in "Transfers" modal and approves/rejects
+        5. On approval: student.club_id updated, student appears in new club roster
+    - **API Endpoints**:
+        - `GET /api/students/lookup/:mytaekId` - Lookup student by global ID
+        - `POST /api/transfers` - Create transfer request (prevents duplicates)
+        - `GET /api/clubs/:clubId/transfers` - List incoming/outgoing requests
+        - `PATCH /api/transfers/:id` - Approve/reject (source club only)
 
 ### Feature Specifications
 - **Club Owner (Admin Dashboard)**: Manages students, staff, schedule, content (Creator Hub), club settings, and billing.

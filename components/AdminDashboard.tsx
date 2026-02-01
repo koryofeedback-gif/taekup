@@ -473,6 +473,59 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     const [locationFilter, setLocationFilter] = useState('All Locations');
     const [classFilter, setClassFilter] = useState('All Classes');
     const [beltFilter, setBeltFilter] = useState('All Belts');
+    const [showTransfers, setShowTransfers] = useState(false);
+    const [transfers, setTransfers] = useState<any[]>([]);
+    const [transfersLoading, setTransfersLoading] = useState(false);
+    
+    const [transfersError, setTransfersError] = useState('');
+    
+    const loadTransfers = async () => {
+        if (!clubId) return;
+        setTransfersLoading(true);
+        setTransfersError('');
+        try {
+            const response = await fetch(`/api/clubs/${clubId}/transfers`);
+            if (response.ok) {
+                const result = await response.json();
+                setTransfers(result.transfers || []);
+            } else {
+                const err = await response.json();
+                setTransfersError(err.error || 'Failed to load transfers');
+            }
+        } catch (e: any) {
+            console.error('Failed to load transfers:', e);
+            setTransfersError(e.message || 'Failed to load transfers');
+        } finally {
+            setTransfersLoading(false);
+        }
+    };
+    
+    const handleTransferAction = async (transferId: string, action: 'approve' | 'reject') => {
+        try {
+            const response = await fetch(`/api/transfers/${transferId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, clubId })
+            });
+            if (response.ok) {
+                loadTransfers();
+                if (action === 'approve') {
+                    window.location.reload();
+                }
+            } else {
+                const err = await response.json();
+                alert(err.error || 'Failed to process transfer');
+            }
+        } catch (e: any) {
+            alert(e.message || 'Failed to process transfer');
+        }
+    };
+
+    useEffect(() => {
+        if (showTransfers && clubId) {
+            loadTransfers();
+        }
+    }, [showTransfers, clubId]);
     
     // Derived available classes based on selected location
     const availableClasses = useMemo(() => {
@@ -532,11 +585,91 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 title="Student Roster" 
                 description="Manage your students, belts, and assignments." 
                 action={
-                    <button onClick={() => onOpenModal('student')} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded shadow-lg">
-                        + Add Student
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={() => setShowTransfers(true)} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded shadow-lg">
+                            Transfers
+                        </button>
+                        <button onClick={() => onOpenModal('student')} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded shadow-lg">
+                            + Add Student
+                        </button>
+                    </div>
                 }
             />
+            
+            {showTransfers && (
+                <Modal title="Transfer Requests" onClose={() => setShowTransfers(false)}>
+                    {transfersError && (
+                        <div className="bg-red-900/30 border border-red-500/30 p-3 rounded text-red-300 text-sm mb-4">
+                            {transfersError}
+                        </div>
+                    )}
+                    {transfersLoading ? (
+                        <div className="text-center py-8 text-gray-400">Loading transfers...</div>
+                    ) : transfers.length === 0 ? (
+                        <div className="text-center py-8">
+                            <p className="text-gray-400 mb-4">No transfer requests</p>
+                            <p className="text-sm text-gray-500">Request transfers from "Add Student" → Transfer tab</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                            {transfers.map(t => (
+                                <div key={t.id} className={`p-4 rounded-lg border ${
+                                    t.status === 'pending' ? 'bg-yellow-900/20 border-yellow-500/30' :
+                                    t.status === 'approved' ? 'bg-green-900/20 border-green-500/30' :
+                                    'bg-red-900/20 border-red-500/30'
+                                }`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div>
+                                            <p className="font-bold text-white">{t.student.name}</p>
+                                            <p className="text-xs text-cyan-400 font-mono">{t.student.mytaekId}</p>
+                                        </div>
+                                        <div className={`px-2 py-1 rounded text-xs font-bold ${
+                                            t.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
+                                            t.status === 'approved' ? 'bg-green-500/20 text-green-300' :
+                                            'bg-red-500/20 text-red-300'
+                                        }`}>
+                                            {t.status.toUpperCase()}
+                                        </div>
+                                    </div>
+                                    <div className="text-sm text-gray-400 mb-2">
+                                        {t.direction === 'outgoing' ? (
+                                            <><span className="text-orange-400">OUTGOING:</span> {t.toClub.name} wants this student</>
+                                        ) : (
+                                            <><span className="text-cyan-400">INCOMING:</span> Student from {t.fromClub?.name || 'Unknown'}</>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2 text-xs text-gray-500 mb-2">
+                                        <span>Belt: {t.beltAtTransfer}</span>
+                                        <span>|</span>
+                                        <span>XP: {(t.xpAtTransfer || 0).toLocaleString()}</span>
+                                    </div>
+                                    {t.status === 'pending' && t.fromClub?.id === clubId && (
+                                        <div className="flex gap-2 mt-3">
+                                            <button 
+                                                onClick={() => handleTransferAction(t.id, 'approve')}
+                                                className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded font-bold text-sm"
+                                            >
+                                                Approve Transfer
+                                            </button>
+                                            <button 
+                                                onClick={() => handleTransferAction(t.id, 'reject')}
+                                                className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded font-bold text-sm"
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
+                                    )}
+                                    {t.status === 'pending' && t.toClub?.id === clubId && (
+                                        <div className="text-xs text-yellow-300 mt-2">
+                                            Waiting for {t.fromClub?.name || 'current club'} to approve
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Modal>
+            )}
             <div className="flex flex-wrap gap-4 mb-4">
                 <input 
                     type="text" 
