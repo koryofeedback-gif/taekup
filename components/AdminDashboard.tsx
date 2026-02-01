@@ -58,13 +58,13 @@ const SectionHeader: React.FC<{ title: string; description: string; action?: Rea
 );
 
 const Modal: React.FC<{ children: React.ReactNode; onClose: () => void; title: string }> = ({ children, onClose, title }) => (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
-        <div className="bg-gray-800 rounded-lg border border-gray-700 max-w-md w-full shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-4 border-b border-gray-700">
-                <h3 className="text-white font-bold text-lg">{title}</h3>
-                <button onClick={onClose} className="text-gray-400 hover:text-white">&times;</button>
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
+        <div className="bg-gray-800 rounded-lg border border-gray-700 max-w-md w-full shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-700 flex-shrink-0">
+                <h3 className="text-white font-bold text-base sm:text-lg">{title}</h3>
+                <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1">
                 {children}
             </div>
         </div>
