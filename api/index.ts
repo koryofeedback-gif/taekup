@@ -1637,7 +1637,7 @@ async function handleWelcomeEmail(req: VercelRequest, res: VercelResponse) {
 
 async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, gender, joinDate, medicalInfo, stripes, location, assignedClass } = parseBody(req);
+  const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, gender, joinDate, medicalInfo, stripes, totalPoints, totalXP, location, assignedClass } = parseBody(req);
 
   if (!clubId || !name) {
     return res.status(400).json({ error: 'Club ID and student name are required' });
@@ -1667,10 +1667,10 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     const joinDateValue = joinDate ? new Date(joinDate).toISOString() : new Date().toISOString();
 
     const studentResult = await client.query(
-      `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, gender, medical_info, stripes, location, assigned_class, join_date, mytaek_id, created_at)
-       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9, $10, $11, $12, $13::timestamptz, $14, NOW())
-       RETURNING id, name, parent_email, parent_name, belt, location, assigned_class, join_date, mytaek_id`,
-      [clubId, name, parentEmail || null, parentName || null, parentPhone || null, belt || 'White', birthdate ? birthdate + 'T00:00:00Z' : null, gender || null, medicalInfo || null, stripes || 0, location || null, assignedClass || null, joinDateValue, mytaekId]
+      `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, gender, medical_info, stripes, total_points, total_xp, location, assigned_class, join_date, mytaek_id, created_at)
+       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9, $10, $11, $12, $13, $14, $15::timestamptz, $16, NOW())
+       RETURNING id, name, parent_email, parent_name, belt, location, assigned_class, join_date, mytaek_id, total_xp`,
+      [clubId, name, parentEmail || null, parentName || null, parentPhone || null, belt || 'White', birthdate ? birthdate + 'T00:00:00Z' : null, gender || null, medicalInfo || null, stripes || 0, totalPoints || 0, totalXP || 0, location || null, assignedClass || null, joinDateValue, mytaekId]
     );
     const student = studentResult.rows[0];
 

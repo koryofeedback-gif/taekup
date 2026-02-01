@@ -3060,6 +3060,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         joinDate: tempStudent.joinDate || new Date().toISOString().split('T')[0],
                         medicalInfo: tempStudent.medicalInfo,
                         stripes: tempStudent.stripes || 0,
+                        totalPoints: tempStudent.totalPoints || 0,
+                        totalXP: tempStudent.totalXP || 0,
                         location: tempStudent.location || data.branchNames?.[0] || 'Main Location',
                         assignedClass: tempStudent.assignedClass || 'General'
                     })
@@ -3511,6 +3513,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 <label className="block text-xs text-gray-400 mb-1">Join Date</label>
                                 <input type="date" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.joinDate || new Date().toISOString().split('T')[0]} onChange={e => setTempStudent({...tempStudent, joinDate: e.target.value})} />
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1">Points</label>
+                                    <input type="number" min="0" placeholder="0" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.totalPoints ?? ''} onChange={e => setTempStudent({...tempStudent, totalPoints: parseInt(e.target.value) || 0})} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1">Local HonorXP™</label>
+                                    <input type="number" min="0" placeholder="0" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.totalXP ?? ''} onChange={e => setTempStudent({...tempStudent, totalXP: parseInt(e.target.value) || 0})} />
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500">Global Rank points cannot be set manually to prevent cheating.</p>
                             <div className="grid grid-cols-2 gap-4">
                                 <select 
                                     className="bg-gray-700 rounded p-2 text-white" 
