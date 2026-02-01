@@ -1256,9 +1256,27 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       return res.status(404).json({ error: 'Club not found' });
     }
 
+    // Ensure mytaek_id column exists
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS mytaek_id VARCHAR(20)`);
+    
+    // Generate MyTaek IDs for students that don't have one
+    const studentsWithoutId = await client.query(
+      `SELECT id FROM students WHERE club_id = $1::uuid AND (mytaek_id IS NULL OR mytaek_id = '')`,
+      [clubId]
+    );
+    
+    for (const s of studentsWithoutId.rows) {
+      const year = new Date().getFullYear();
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      const newMytaekId = `MTK-${year}-${code}`;
+      await client.query(`UPDATE students SET mytaek_id = $1 WHERE id = $2::uuid`, [newMytaekId, s.id]);
+    }
+    
     const studentsResult = await client.query(
       `SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-              total_points, total_xp, stripes, location, assigned_class, join_date, created_at
+              total_points, total_xp, stripes, location, assigned_class, join_date, created_at, mytaek_id
        FROM students WHERE club_id = $1::uuid`,
       [clubId]
     );
@@ -1296,6 +1314,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       stripeCount: s.stripes || 0,
       location: s.location || '',
       assignedClass: s.assigned_class || '',
+      mytaekId: s.mytaek_id || '',
       performanceHistory: [],
       homeDojo: { character: [], chores: [], school: [], health: [] }
     }));
