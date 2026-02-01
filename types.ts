@@ -203,6 +203,7 @@ export interface RivalsStats {
 
 export interface Student {
   id: string;
+  mytaekId?: string; // Global MyTaek ID for student transfers (format: MTK-YYYY-XXXXXX)
   clubId?: string; // Club UUID for challenge submissions
   name: string;
   photo?: string | null; // New field for student profile photo

@@ -48,6 +48,12 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **Welcome Email Generator**: Automated, personalized welcome emails for new users.
 - **Subscription & Pricing**: "Ladder of Success" pricing model with 5 tiers based on student limits, a 14-day free trial, and a lock strategy for tier management.
 - **Parent Premium Subscription**: An optional $4.99/month family subscription offering enhanced features (priority booking, extended curriculum, advanced analytics, AI insights, habit tracking, digital cards) with revenue sharing.
+- **MyTaek ID System** (Feb 2026): Global unique student identifier for cross-club transfers:
+    - **Format**: MTK-YYYY-XXXXXX (e.g., MTK-2026-A7X9K2)
+    - **Purpose**: Students own their martial arts journey data globally
+    - **Benefits**: Seamless club transfers, verified belt history, global rankings participation
+    - **Display**: Shown in Parent Portal header (clickable to copy) and Admin Dashboard edit modal
+    - **Auto-generation**: Created automatically for all new students
 
 ### Feature Specifications
 - **Club Owner (Admin Dashboard)**: Manages students, staff, schedule, content (Creator Hub), club settings, and billing.

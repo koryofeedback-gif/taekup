@@ -3433,6 +3433,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             {modalType === 'editStudent' && editingStudentId && (
                 <Modal title="Edit Student" onClose={() => { setModalType(null); setEditingStudentId(null); setTempStudent({}); }}>
                     <div className="space-y-4">
+                        {tempStudent.mytaekId && (
+                            <div className="bg-cyan-900/30 border border-cyan-500/30 rounded-lg p-3 flex items-center justify-between">
+                                <div>
+                                    <span className="text-xs text-cyan-400 uppercase tracking-wider font-bold">MyTaek ID</span>
+                                    <p className="text-lg font-mono text-white">{tempStudent.mytaekId}</p>
+                                </div>
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(tempStudent.mytaekId || '');
+                                        alert('MyTaek ID copied!');
+                                    }}
+                                    className="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1 rounded text-sm"
+                                >
+                                    Copy
+                                </button>
+                            </div>
+                        )}
                         <div>
                             <label className="block text-xs font-bold text-gray-400 mb-1">Name</label>
                             <input 

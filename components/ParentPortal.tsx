@@ -2729,6 +2729,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <div className="w-3 h-3 rounded-full mr-2 shadow-sm" style={{ background: currentBelt?.color1 || '#fff' }}></div>
                             {currentBelt?.name}
                         </div>
+                        {student.mytaekId && (
+                            <div 
+                                className="text-xs text-cyan-400/70 mt-1 font-mono cursor-pointer hover:text-cyan-300 transition-colors"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(student.mytaekId || '');
+                                    alert('MyTaek ID copied!');
+                                }}
+                                title="Click to copy your MyTaek ID"
+                            >
+                                🆔 {student.mytaekId}
+                            </div>
+                        )}
                     </div>
                 </div>
 
