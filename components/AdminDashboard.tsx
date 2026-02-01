@@ -2531,7 +2531,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [tempPrivate, setTempPrivate] = useState<{coachName: string, date: string, time: string, price: number}>({coachName: '', date: '', time: '', price: 50});
     
     // Bulk Import State
-    const [studentImportMethod, setStudentImportMethod] = useState<'single' | 'bulk' | 'excel' | 'google'>('single');
+    const [studentImportMethod, setStudentImportMethod] = useState<'single' | 'bulk' | 'excel' | 'google' | 'transfer'>('single');
+    const [transferSearchId, setTransferSearchId] = useState('');
+    const [transferStudent, setTransferStudent] = useState<any>(null);
+    const [transferLoading, setTransferLoading] = useState(false);
+    const [transferError, setTransferError] = useState('');
     const [showCSVImport, setShowCSVImport] = useState(false);
     const [bulkStudentData, setBulkStudentData] = useState('');
     const [parsedBulkStudents, setParsedBulkStudents] = useState<Student[]>([]);
@@ -3186,14 +3190,147 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             {/* MODALS */}
             {modalType === 'student' && (
                 <Modal title="Add Students" onClose={() => setModalType(null)}>
-                    <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4">
+                    <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4 flex-wrap gap-1">
                         <button onClick={() => setStudentImportMethod('single')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'single' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Single</button>
+                        <button onClick={() => setStudentImportMethod('transfer')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'transfer' ? 'bg-cyan-500 text-white' : 'text-gray-400'}`}>Transfer</button>
                         <button onClick={() => setStudentImportMethod('google')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'google' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Google Sheets</button>
                         <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Paste CSV</button>
                         <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Excel Upload</button>
                     </div>
 
-                    {studentImportMethod === 'google' ? (
+                    {studentImportMethod === 'transfer' ? (
+                        <div className="space-y-4">
+                            <div className="bg-cyan-900/30 border border-cyan-500/30 p-4 rounded-lg">
+                                <h3 className="font-bold text-cyan-300 mb-2">Transfer Student by MyTaek ID</h3>
+                                <p className="text-sm text-gray-300 mb-4">
+                                    Enter a student's MyTaek ID to view their profile and request a transfer to your club.
+                                </p>
+                                <div className="flex gap-2 mb-4">
+                                    <input 
+                                        type="text" 
+                                        placeholder="MTK-2026-XXXXXX"
+                                        value={transferSearchId}
+                                        onChange={e => setTransferSearchId(e.target.value.toUpperCase())}
+                                        className="flex-1 bg-gray-700 rounded p-2 text-white font-mono"
+                                    />
+                                    <button 
+                                        onClick={async () => {
+                                            if (!transferSearchId || !transferSearchId.startsWith('MTK-')) {
+                                                setTransferError('Please enter a valid MyTaek ID (format: MTK-YYYY-XXXXXX)');
+                                                return;
+                                            }
+                                            setTransferLoading(true);
+                                            setTransferError('');
+                                            setTransferStudent(null);
+                                            try {
+                                                const response = await fetch(`/api/students/lookup/${transferSearchId}`);
+                                                if (!response.ok) {
+                                                    const err = await response.json();
+                                                    throw new Error(err.error || 'Student not found');
+                                                }
+                                                const data = await response.json();
+                                                setTransferStudent(data);
+                                            } catch (err: any) {
+                                                setTransferError(err.message);
+                                            } finally {
+                                                setTransferLoading(false);
+                                            }
+                                        }}
+                                        disabled={transferLoading}
+                                        className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-2 rounded disabled:opacity-50"
+                                    >
+                                        {transferLoading ? '...' : 'Search'}
+                                    </button>
+                                </div>
+                                {transferError && (
+                                    <div className="bg-red-900/30 border border-red-500/30 p-3 rounded text-red-300 text-sm mb-4">
+                                        {transferError}
+                                    </div>
+                                )}
+                                {transferStudent && (
+                                    <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div>
+                                                <h4 className="text-lg font-bold text-white">{transferStudent.name}</h4>
+                                                <p className="text-sm text-cyan-400 font-mono">{transferStudent.mytaekId}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm text-gray-400">Current Belt</p>
+                                                <p className="text-lg font-bold text-white">{transferStudent.currentBelt}</p>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                            <div className="bg-gray-700/50 p-2 rounded">
+                                                <p className="text-xs text-gray-400">Total HonorXP™</p>
+                                                <p className="text-lg font-bold text-cyan-400">{(transferStudent.totalXp || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div className="bg-gray-700/50 p-2 rounded">
+                                                <p className="text-xs text-gray-400">Global Rank Points</p>
+                                                <p className="text-lg font-bold text-purple-400">{(transferStudent.globalXp || 0).toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-gray-700/50 p-2 rounded mb-4">
+                                            <p className="text-xs text-gray-400">Current Club</p>
+                                            <p className="font-bold text-white">{transferStudent.currentClub?.name}</p>
+                                            <p className="text-sm text-gray-400">{transferStudent.currentClub?.city}, {transferStudent.currentClub?.country}</p>
+                                        </div>
+                                        {transferStudent.promotionHistory?.length > 0 && (
+                                            <div className="mb-4">
+                                                <p className="text-xs text-gray-400 mb-2">Promotion History</p>
+                                                <div className="space-y-1 max-h-24 overflow-y-auto">
+                                                    {transferStudent.promotionHistory.slice(0, 5).map((p: any, i: number) => (
+                                                        <div key={i} className="flex justify-between text-sm bg-gray-700/30 p-1 rounded">
+                                                            <span className="text-gray-300">{p.fromBelt} → {p.toBelt}</span>
+                                                            <span className="text-gray-500">{new Date(p.date).toLocaleDateString()}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button 
+                                            onClick={async () => {
+                                                if (!clubId) {
+                                                    setTransferError('Club ID not available');
+                                                    return;
+                                                }
+                                                setTransferLoading(true);
+                                                try {
+                                                    const response = await fetch('/api/transfers', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            mytaekId: transferStudent.mytaekId,
+                                                            toClubId: clubId,
+                                                            notes: `Transfer request from ${data.clubName || 'Club'}`
+                                                        })
+                                                    });
+                                                    if (!response.ok) {
+                                                        const err = await response.json();
+                                                        throw new Error(err.error || 'Failed to request transfer');
+                                                    }
+                                                    alert(`Transfer request sent! The student's current club will review and approve the transfer.`);
+                                                    setTransferStudent(null);
+                                                    setTransferSearchId('');
+                                                } catch (err: any) {
+                                                    setTransferError(err.message);
+                                                } finally {
+                                                    setTransferLoading(false);
+                                                }
+                                            }}
+                                            disabled={transferLoading || transferStudent.currentClub?.id === clubId}
+                                            className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg disabled:opacity-50"
+                                        >
+                                            {transferStudent.currentClub?.id === clubId 
+                                                ? 'Already at your club' 
+                                                : transferLoading 
+                                                    ? 'Sending Request...' 
+                                                    : `Request Transfer to ${data.clubName || 'Your Club'}`}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : studentImportMethod === 'google' ? (
                         <div className="space-y-4">
                             <div className="bg-green-900/30 border border-green-500/30 p-4 rounded-lg">
                                 <h3 className="font-bold text-green-300 mb-2">Import from Google Sheets</h3>
