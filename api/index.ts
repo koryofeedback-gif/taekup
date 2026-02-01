@@ -6511,7 +6511,10 @@ async function handleCreateTransfer(req: VercelRequest, res: VercelResponse) {
     `);
     
     const studentResult = await client.query(
-      `SELECT id, club_id, name, belt, total_xp FROM students WHERE mytaek_id = $1`,
+      `SELECT s.id, s.club_id, s.name, s.belt, s.total_xp, c.art_type as from_art_type
+       FROM students s
+       JOIN clubs c ON s.club_id = c.id
+       WHERE s.mytaek_id = $1`,
       [mytaekId]
     );
 
@@ -6523,6 +6526,25 @@ async function handleCreateTransfer(req: VercelRequest, res: VercelResponse) {
 
     if (student.club_id === toClubId) {
       return res.status(400).json({ error: 'Student is already at this club' });
+    }
+
+    // Check if both clubs have the same sport/art_type
+    const toClubResult = await client.query(
+      `SELECT art_type FROM clubs WHERE id = $1::uuid`,
+      [toClubId]
+    );
+
+    if (toClubResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Destination club not found' });
+    }
+
+    const toArtType = toClubResult.rows[0].art_type;
+    const fromArtType = student.from_art_type;
+
+    if (fromArtType && toArtType && fromArtType !== toArtType) {
+      return res.status(400).json({ 
+        error: `Cannot transfer between different sports. Student is from ${fromArtType} club, but destination is ${toArtType}.`
+      });
     }
 
     const existingTransfer = await client.query(
