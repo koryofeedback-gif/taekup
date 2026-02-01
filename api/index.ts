@@ -6546,6 +6546,9 @@ async function handleGetClubTransfers(req: VercelRequest, res: VercelResponse, c
 
   const client = await pool.connect();
   try {
+    // Ensure mytaek_id column exists on students table
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS mytaek_id VARCHAR(20)`);
+    
     // Ensure transfer table exists
     await client.query(`
       CREATE TABLE IF NOT EXISTS student_transfers (
@@ -6567,7 +6570,7 @@ async function handleGetClubTransfers(req: VercelRequest, res: VercelResponse, c
       SELECT 
         t.id, t.status, t.requested_at, t.responded_at, t.transferred_at, t.notes,
         t.belt_at_transfer, t.xp_at_transfer,
-        s.id as student_id, s.mytaek_id, s.name as student_name, s.belt as current_belt,
+        s.id as student_id, COALESCE(s.mytaek_id, '') as mytaek_id, s.name as student_name, s.belt as current_belt,
         fc.id as from_club_id, fc.name as from_club_name,
         tc.id as to_club_id, tc.name as to_club_name
       FROM student_transfers t
