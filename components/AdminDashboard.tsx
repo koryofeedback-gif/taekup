@@ -2761,13 +2761,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 gender: (['Male', 'Female', 'Other', 'Prefer not to say'].includes(String(cols[3])) ? String(cols[3]) : 'Male') as 'Male' | 'Female' | 'Other' | 'Prefer not to say',
                 beltId: belt?.id || data.belts[0]?.id || 'white',
                 stripes: parseInt(String(cols[5])) || 0,
-                parentName: String(cols[6] || ''),
-                parentEmail: String(cols[7] || ''),
-                parentPhone: String(cols[8] || ''),
+                parentName: String(cols[8] || ''),
+                parentEmail: String(cols[9] || ''),
+                parentPhone: String(cols[10] || ''),
                 location: bulkLocation,
                 assignedClass: bulkClass || 'General Class',
                 joinDate: new Date().toISOString().split('T')[0],
-                totalPoints: 0,
+                totalPoints: parseInt(String(cols[6])) || 0,
+                totalXP: parseInt(String(cols[7])) || 0,
                 attendanceCount: 0,
                 lastPromotionDate: new Date().toISOString(),
                 isReadyForGrading: false,
@@ -2816,13 +2817,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 gender: (['Male', 'Female', 'Other', 'Prefer not to say'].includes(cols[3]) ? cols[3] : 'Male') as 'Male' | 'Female' | 'Other' | 'Prefer not to say',
                 beltId: belt?.id || 'INVALID_BELT',
                 stripes: parseInt(cols[5]) || 0,
-                parentName: cols[6] || '',
-                parentEmail: cols[7] || '',
-                parentPhone: cols[8] || '',
+                parentName: cols[8] || '',
+                parentEmail: cols[9] || '',
+                parentPhone: cols[10] || '',
                 location: bulkLocation,
                 assignedClass: bulkClass || 'General Class',
                 joinDate: new Date().toISOString().split('T')[0],
-                totalPoints: (parseInt(cols[5]) || 0) * (belt ? 64 : 0),
+                totalPoints: parseInt(cols[6]) || 0,
+                totalXP: parseInt(cols[7]) || 0,
                 attendanceCount: 0,
                 lastPromotionDate: new Date().toISOString(),
                 isReadyForGrading: false,
@@ -3454,7 +3456,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             <div className="bg-green-900/30 border border-green-500/30 p-4 rounded-lg">
                                 <h3 className="font-bold text-green-300 mb-2">Import from Google Sheets</h3>
                                 <p className="text-sm text-gray-300 mb-4">
-                                    Import students with their <strong>Points</strong> and <strong>XP</strong> from your Google Sheet. 
+                                    Import students with their <strong>Points</strong> and <strong>HonorXP™</strong> from your Google Sheet. 
                                     Supports flexible column mapping - just export your sheet as CSV.
                                 </p>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -3472,12 +3474,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                         </select>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => setShowCSVImport(true)}
-                                    className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2"
-                                >
-                                    <span>📊</span> Open CSV Import Tool
-                                </button>
+                                <div className="flex gap-2 mb-4">
+                                    <button 
+                                        onClick={() => {
+                                            const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Points,LocalXP,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,0,0,Jane Smith,jane@email.com,555-1234";
+                                            const blob = new Blob([csvContent], { type: 'text/csv' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = 'student_import_template.csv';
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                        }}
+                                        className="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <span>📥</span> Download Template
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowCSVImport(true)}
+                                        className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <span>📊</span> Open CSV Import
+                                    </button>
+                                </div>
                             </div>
                             <div className="bg-gray-800 p-3 rounded text-xs text-gray-400">
                                 <strong className="text-white">Tip:</strong> In Google Sheets, go to File → Download → Comma Separated Values (.csv)
@@ -3581,7 +3600,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 </div>
                             </div>
                             <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
-                                <p className="text-xs text-gray-400"><span className="font-bold">Format:</span> Name, Age, Birthday, Gender, Belt, Stripes, Parent, Email, Phone</p>
+                                <p className="text-xs text-gray-400"><span className="font-bold">Format:</span> Name, Age, Birthday, Gender, Belt, Stripes, Points, LocalXP, Parent, Email, Phone</p>
+                                <button 
+                                    onClick={() => {
+                                        const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Points,LocalXP,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,0,0,Jane Smith,jane@email.com,555-1234";
+                                        const blob = new Blob([csvContent], { type: 'text/csv' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = 'student_import_template.csv';
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                    }}
+                                    className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
+                                >
+                                    Download template CSV
+                                </button>
                             </div>
                             <textarea value={bulkStudentData} onChange={e => { setBulkStudentData(e.target.value); setParsedBulkStudents([]); }} placeholder="Paste CSV data here..." className="w-full h-24 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
                             <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">Parse Data</button>
@@ -3672,7 +3706,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
                             <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
                                 <p className="text-xs text-gray-400 font-bold mb-1">Required Column Order:</p>
-                                <p className="text-xs text-gray-500">Name | Age | Birthday | Gender | Belt | Stripes | Parent Name | Email | Phone</p>
+                                <p className="text-xs text-gray-500">Name | Age | Birthday | Gender | Belt | Stripes | Points | LocalXP | Parent Name | Email | Phone</p>
+                                <button 
+                                    onClick={() => {
+                                        const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Points,LocalXP,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,0,0,Jane Smith,jane@email.com,555-1234";
+                                        const blob = new Blob([csvContent], { type: 'text/csv' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = 'student_import_template.csv';
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                    }}
+                                    className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
+                                >
+                                    Download template
+                                </button>
                             </div>
 
                             {bulkError && <p className="text-red-400 text-sm">{bulkError}</p>}
