@@ -1637,7 +1637,7 @@ async function handleWelcomeEmail(req: VercelRequest, res: VercelResponse) {
 
 async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, location, assignedClass } = parseBody(req);
+  const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, gender, joinDate, medicalInfo, stripes, location, assignedClass } = parseBody(req);
 
   if (!clubId || !name) {
     return res.status(400).json({ error: 'Club ID and student name are required' });
@@ -1652,11 +1652,25 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     const club = clubResult.rows[0];
     if (!club) return res.status(404).json({ error: 'Club not found' });
 
+    // Generate MyTaek ID for the new student
+    const year = new Date().getFullYear();
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let mytaekCode = '';
+    for (let i = 0; i < 6; i++) mytaekCode += chars[Math.floor(Math.random() * chars.length)];
+    const mytaekId = `MTK-${year}-${mytaekCode}`;
+
+    // Ensure new columns exist
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS gender VARCHAR(30)`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS medical_info TEXT`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS mytaek_id VARCHAR(20)`);
+
+    const joinDateValue = joinDate ? new Date(joinDate).toISOString() : new Date().toISOString();
+
     const studentResult = await client.query(
-      `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, location, assigned_class, join_date, created_at)
-       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9, NOW(), NOW())
-       RETURNING id, name, parent_email, parent_name, belt, location, assigned_class, join_date`,
-      [clubId, name, parentEmail || null, parentName || null, parentPhone || null, belt || 'White', birthdate ? birthdate + 'T00:00:00Z' : null, location || null, assignedClass || null]
+      `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, gender, medical_info, stripes, location, assigned_class, join_date, mytaek_id, created_at)
+       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9, $10, $11, $12, $13::timestamptz, $14, NOW())
+       RETURNING id, name, parent_email, parent_name, belt, location, assigned_class, join_date, mytaek_id`,
+      [clubId, name, parentEmail || null, parentName || null, parentPhone || null, belt || 'White', birthdate ? birthdate + 'T00:00:00Z' : null, gender || null, medicalInfo || null, stripes || 0, location || null, assignedClass || null, joinDateValue, mytaekId]
     );
     const student = studentResult.rows[0];
 
@@ -1718,7 +1732,8 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
         name: student.name,
         parentEmail: student.parent_email,
         parentName: student.parent_name,
-        belt: student.belt
+        belt: student.belt,
+        mytaekId: student.mytaek_id
       }
     });
   } catch (error: any) {

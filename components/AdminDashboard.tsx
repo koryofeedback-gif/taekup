@@ -3056,6 +3056,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         parentPassword: tempStudent.parentPassword,
                         belt: belt?.name || 'White',
                         birthdate: tempStudent.birthday,
+                        gender: tempStudent.gender,
+                        joinDate: tempStudent.joinDate || new Date().toISOString().split('T')[0],
+                        medicalInfo: tempStudent.medicalInfo,
+                        stripes: tempStudent.stripes || 0,
                         location: tempStudent.location || data.branchNames?.[0] || 'Main Location',
                         assignedClass: tempStudent.assignedClass || 'General'
                     })
@@ -3479,13 +3483,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         </div>
                     ) : studentImportMethod === 'single' ? (
                         <div className="space-y-4">
-                            <input type="text" placeholder="Full Name" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, name: e.target.value})} />
+                            <input type="text" placeholder="Full Name *" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.name || ''} onChange={e => setTempStudent({...tempStudent, name: e.target.value})} />
                             <div className="grid grid-cols-2 gap-4">
-                                <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, beltId: e.target.value})}>
-                                    <option value="">Select Belt</option>
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1">Birthday</label>
+                                    <input type="date" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.birthday || ''} onChange={e => setTempStudent({...tempStudent, birthday: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1">Gender</label>
+                                    <select className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.gender || ''} onChange={e => setTempStudent({...tempStudent, gender: e.target.value as any})}>
+                                        <option value="">Select Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                        <option value="Prefer not to say">Prefer not to say</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <select className="bg-gray-700 rounded p-2 text-white" value={tempStudent.beltId || ''} onChange={e => setTempStudent({...tempStudent, beltId: e.target.value})}>
+                                    <option value="">Select Belt *</option>
                                     {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                 </select>
-                                <input type="number" placeholder="Stripes" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempStudent({...tempStudent, stripes: parseInt(e.target.value)})} />
+                                <input type="number" placeholder="Stripes" className="bg-gray-700 rounded p-2 text-white" value={tempStudent.stripes ?? ''} onChange={e => setTempStudent({...tempStudent, stripes: parseInt(e.target.value) || 0})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Join Date</label>
+                                <input type="date" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.joinDate || new Date().toISOString().split('T')[0]} onChange={e => setTempStudent({...tempStudent, joinDate: e.target.value})} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <select 
@@ -3509,10 +3533,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 </select>
                             </div>
                             <div className="border-t border-gray-600 pt-4">
-                                <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent Info</p>
-                                <input type="text" placeholder="Parent Name" className="w-full bg-gray-700 rounded p-2 text-white mb-2" onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} />
-                                <input type="email" placeholder="Parent Email" className="w-full bg-gray-700 rounded p-2 text-white mb-2" onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} />
+                                <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent/Guardian Info</p>
+                                <input type="text" placeholder="Parent Name *" className="w-full bg-gray-700 rounded p-2 text-white mb-2" value={tempStudent.parentName || ''} onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} />
+                                <input type="email" placeholder="Parent Email *" className="w-full bg-gray-700 rounded p-2 text-white mb-2" value={tempStudent.parentEmail || ''} onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} />
+                                <input type="tel" placeholder="Parent Phone" className="w-full bg-gray-700 rounded p-2 text-white mb-2" value={tempStudent.parentPhone || ''} onChange={e => setTempStudent({...tempStudent, parentPhone: e.target.value})} />
                                 <p className="text-xs text-gray-400">Default password: 1234 (user will be prompted to change)</p>
+                            </div>
+                            <div className="border-t border-gray-600 pt-4">
+                                <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Medical Information (Optional)</p>
+                                <textarea placeholder="Any allergies, conditions, or notes..." className="w-full bg-gray-700 rounded p-2 text-white text-sm h-20" value={tempStudent.medicalInfo || ''} onChange={e => setTempStudent({...tempStudent, medicalInfo: e.target.value})} />
                             </div>
                             {data.clubSponsoredPremium && (
                                 <p className="text-xs text-indigo-300 bg-indigo-900/20 p-2 rounded">
