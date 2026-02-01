@@ -1,0 +1,162 @@
+
+Feb 01 02:22:28.33
+GET
+---
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+Feb 01 02:22:22.55
+POST
+200
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/verify-subscription
+3
+[VerifySubscription] No customer found for email: adminmytaek27@bltiwd.com
+Feb 01 02:22:11.36
+GET
+401
+taekup-platform-lp718rj2j-hhs-projects-c716e9ba.vercel.app
+/vite.svg
+Feb 01 02:22:11.34
+GET
+401
+taekup-platform-lp718rj2j-hhs-projects-c716e9ba.vercel.app
+/vite.svg
+Feb 01 02:17:34.27
+GET
+401
+taekup-platform-29q6d0sc9-hhs-projects-c716e9ba.vercel.app
+/vite.svg
+Feb 01 02:17:16.07
+GET
+500
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+[Get Transfers] Error: column s.mytaek_id does not exist
+Feb 01 02:17:09.87
+POST
+200
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/verify-subscription
+3
+[VerifySubscription] No customer found for email: adminmytaek27@bltiwd.com
+Feb 01 02:15:46.45
+GET
+307
+mytaek.com
+/
+Feb 01 02:15:42.88
+GET
+307
+mytaek.com
+/robots.txt
+Feb 01 02:14:26.94
+GET
+401
+taekup-platform-ipt3o8jok-hhs-projects-c716e9ba.vercel.app
+/vite.svg
+Feb 01 02:14:06.40
+GET
+500
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+[Get Transfers] Error: relation "student_transfers" does not exist
+Feb 01 02:13:58.69
+POST
+200
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/verify-subscription
+3
+[VerifySubscription] No customer found for email: adminmytaek27@bltiwd.com
+Feb 01 02:09:28.63
+GET
+404
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+Feb 01 02:09:22.63
+GET
+404
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+Feb 01 02:09:12.84
+POST
+200
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/verify-subscription
+3
+[VerifySubscription] No customer found for email: adminmytaek27@bltiwd.com
+Feb 01 02:08:58.88
+GET
+401
+taekup-platform-5a0oe8u7b-hhs-projects-c716e9ba.vercel.app
+/vite.svg
+Feb 01 02:08:58.86
+GET
+401
+taekup-platform-5a0oe8u7b-hhs-projects-c716e9ba.vercel.app
+/vite.svg
+Feb 01 02:07:02.72
+GET
+401
+taekup-platform-1z6nuwd8i-hhs-projects-c716e9ba.vercel.app
+/vite.svg
+Feb 01 02:07:02.70
+GET
+401
+taekup-platform-1z6nuwd8i-hhs-projects-c716e9ba.vercel.app
+/vite.svg
+Feb 01 02:04:42.26
+GET
+404
+www.mytaek.com
+/api/clubs/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+Feb 01 02:04:21.06
+GET
+404
+www.mytaek.com
+/api/clubs/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+Feb 01 02:03:56.10
+GET
+404
+www.mytaek.com
+/api/clubs/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+Feb 01 02:03:45.39
+POST
+200
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/verify-subscription
+3
+[VerifySubscription] No customer found for email: adminmytaek27@bltiwd.com
+Feb 01 02:02:04.28
+GET
+404
+www.mytaek.com
+/api/clubs/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+Feb 01 02:01:51.60
+POST
+200
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/verify-subscription
+3
+[VerifySubscription] No customer found for email: adminmytaek27@bltiwd.com
+Feb 01 01:59:53.28
+GET
+404
+www.mytaek.com
+/api/clubs/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+Feb 01 01:59:27.78
+GET
+404
+www.mytaek.com
+/api/clubs/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/transfers
+Feb 01 01:58:59.30
+POST
+200
+www.mytaek.com
+/api/club/8ac2182a-aa50-4896-8a1d-41cab6e29f9f/verify-subscription
+3
+[VerifySubscription] No customer found for email: adminmytaek27@bltiwd.com
+Feb 01 01:58:51.62
+GET
+304
+www.mytaek.com
+/api/challenges/received/7d2f0851-efe6-4a55-99ed-e5f5a4c642
