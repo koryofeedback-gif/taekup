@@ -6394,6 +6394,270 @@ function randomDate(daysAgo: number): Date {
   return date;
 }
 
+// =====================================================
+// MYTAEK ID FEDERATION - STUDENT TRANSFERS
+// =====================================================
+
+async function handleStudentLookup(req: VercelRequest, res: VercelResponse, mytaekId: string) {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  
+  if (!mytaekId || !mytaekId.startsWith('MTK-')) {
+    return res.status(400).json({ error: 'Invalid MyTaek ID format' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT 
+        s.id, s.mytaek_id, s.name, s.belt, s.total_xp, s.global_xp, s.join_date, s.birthdate,
+        c.id as club_id, c.name as club_name, c.country, c.city, c.art_type
+      FROM students s
+      JOIN clubs c ON s.club_id = c.id
+      WHERE s.mytaek_id = $1
+      LIMIT 1
+    `, [mytaekId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const student = result.rows[0];
+    
+    const promotionsResult = await client.query(`
+      SELECT from_belt, to_belt, promotion_date, total_xp, classes_attended
+      FROM promotions
+      WHERE student_id = $1::uuid
+      ORDER BY promotion_date DESC
+    `, [student.id]);
+
+    res.json({
+      mytaekId: student.mytaek_id,
+      name: student.name,
+      currentBelt: student.belt,
+      totalXp: student.total_xp || 0,
+      globalXp: student.global_xp || 0,
+      joinDate: student.join_date,
+      currentClub: {
+        id: student.club_id,
+        name: student.club_name,
+        country: student.country,
+        city: student.city,
+        artType: student.art_type
+      },
+      promotionHistory: promotionsResult.rows.map(p => ({
+        fromBelt: p.from_belt,
+        toBelt: p.to_belt,
+        date: p.promotion_date,
+        xpAtPromotion: p.total_xp,
+        classesAttended: p.classes_attended
+      }))
+    });
+  } catch (error: any) {
+    console.error('[Student Lookup] Error:', error.message);
+    res.status(500).json({ error: 'Failed to lookup student' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleCreateTransfer(req: VercelRequest, res: VercelResponse) {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { mytaekId, toClubId, notes } = parseBody(req);
+  
+  if (!mytaekId || !toClubId) {
+    return res.status(400).json({ error: 'MyTaek ID and destination club are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    // Ensure transfer table exists
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS student_transfers (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        student_id UUID NOT NULL REFERENCES students(id),
+        from_club_id UUID NOT NULL REFERENCES clubs(id),
+        to_club_id UUID NOT NULL REFERENCES clubs(id),
+        status VARCHAR(20) DEFAULT 'pending',
+        notes TEXT,
+        belt_at_transfer VARCHAR(50),
+        xp_at_transfer INTEGER DEFAULT 0,
+        requested_at TIMESTAMP DEFAULT NOW(),
+        responded_at TIMESTAMP,
+        transferred_at TIMESTAMP
+      )
+    `);
+    
+    const studentResult = await client.query(
+      `SELECT id, club_id, name, belt, total_xp FROM students WHERE mytaek_id = $1`,
+      [mytaekId]
+    );
+
+    if (studentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const student = studentResult.rows[0];
+
+    if (student.club_id === toClubId) {
+      return res.status(400).json({ error: 'Student is already at this club' });
+    }
+
+    const existingTransfer = await client.query(
+      `SELECT id FROM student_transfers WHERE student_id = $1::uuid AND status = 'pending'`,
+      [student.id]
+    );
+
+    if (existingTransfer.rows.length > 0) {
+      return res.status(400).json({ error: 'A transfer request is already pending for this student' });
+    }
+
+    const transferResult = await client.query(`
+      INSERT INTO student_transfers (student_id, from_club_id, to_club_id, notes, belt_at_transfer, xp_at_transfer)
+      VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6)
+      RETURNING id, status, requested_at
+    `, [student.id, student.club_id, toClubId, notes || null, student.belt, student.total_xp || 0]);
+
+    const transfer = transferResult.rows[0];
+
+    res.status(201).json({
+      success: true,
+      transfer: {
+        id: transfer.id,
+        studentName: student.name,
+        status: transfer.status,
+        requestedAt: transfer.requested_at
+      }
+    });
+  } catch (error: any) {
+    console.error('[Create Transfer] Error:', error.message);
+    res.status(500).json({ error: 'Failed to create transfer request' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleGetClubTransfers(req: VercelRequest, res: VercelResponse, clubId: string) {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT 
+        t.id, t.status, t.requested_at, t.responded_at, t.transferred_at, t.notes,
+        t.belt_at_transfer, t.xp_at_transfer,
+        s.id as student_id, s.mytaek_id, s.name as student_name, s.belt as current_belt,
+        fc.id as from_club_id, fc.name as from_club_name,
+        tc.id as to_club_id, tc.name as to_club_name
+      FROM student_transfers t
+      JOIN students s ON t.student_id = s.id
+      LEFT JOIN clubs fc ON t.from_club_id = fc.id
+      JOIN clubs tc ON t.to_club_id = tc.id
+      WHERE (t.to_club_id = $1::uuid OR t.from_club_id = $1::uuid)
+      ORDER BY t.requested_at DESC
+    `, [clubId]);
+
+    res.json({
+      transfers: result.rows.map(t => ({
+        id: t.id,
+        status: t.status,
+        requestedAt: t.requested_at,
+        respondedAt: t.responded_at,
+        transferredAt: t.transferred_at,
+        notes: t.notes,
+        beltAtTransfer: t.belt_at_transfer,
+        xpAtTransfer: t.xp_at_transfer,
+        student: {
+          id: t.student_id,
+          mytaekId: t.mytaek_id,
+          name: t.student_name,
+          currentBelt: t.current_belt
+        },
+        fromClub: t.from_club_id ? { id: t.from_club_id, name: t.from_club_name } : null,
+        toClub: { id: t.to_club_id, name: t.to_club_name },
+        direction: t.to_club_id === clubId ? 'incoming' : 'outgoing'
+      }))
+    });
+  } catch (error: any) {
+    console.error('[Get Transfers] Error:', error.message);
+    res.status(500).json({ error: 'Failed to get transfers' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleTransferAction(req: VercelRequest, res: VercelResponse, transferId: string) {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  
+  const { action, clubId } = parseBody(req);
+
+  if (!action || !['approve', 'reject'].includes(action)) {
+    return res.status(400).json({ error: 'Invalid action. Must be approve or reject' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const transferResult = await client.query(`
+      SELECT t.*, s.name as student_name, s.belt, s.total_xp
+      FROM student_transfers t
+      JOIN students s ON t.student_id = s.id
+      WHERE t.id = $1::uuid AND t.status = 'pending'
+    `, [transferId]);
+
+    if (transferResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Transfer request not found or already processed' });
+    }
+
+    const transfer = transferResult.rows[0];
+
+    if (transfer.from_club_id !== clubId) {
+      return res.status(403).json({ error: 'Only the current club can approve or reject transfers' });
+    }
+
+    if (action === 'approve') {
+      await client.query(`
+        UPDATE student_transfers 
+        SET status = 'approved', responded_at = NOW(), transferred_at = NOW()
+        WHERE id = $1::uuid
+      `, [transferId]);
+
+      await client.query(`
+        UPDATE students 
+        SET club_id = $1::uuid, updated_at = NOW()
+        WHERE id = $2::uuid
+      `, [transfer.to_club_id, transfer.student_id]);
+
+      res.json({
+        success: true,
+        message: `${transfer.student_name} has been transferred successfully`,
+        status: 'approved'
+      });
+    } else {
+      await client.query(`
+        UPDATE student_transfers 
+        SET status = 'rejected', responded_at = NOW()
+        WHERE id = $1::uuid
+      `, [transferId]);
+
+      res.json({
+        success: true,
+        message: 'Transfer request rejected',
+        status: 'rejected'
+      });
+    }
+  } catch (error: any) {
+    console.error('[Update Transfer] Error:', error.message);
+    res.status(500).json({ error: 'Failed to update transfer' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -7522,6 +7786,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Demo Mode
     if (path === '/demo/load' || path === '/demo/load/') return await handleDemoLoad(req, res);
     if (path === '/demo/clear' || path === '/demo/clear/') return await handleDemoClear(req, res);
+
+    // MyTaek ID Federation - Student Transfers
+    const studentLookupMatch = path.match(/^\/students\/lookup\/([^/]+)\/?$/);
+    if (studentLookupMatch) return await handleStudentLookup(req, res, studentLookupMatch[1]);
+    
+    if (path === '/transfers' || path === '/transfers/') return await handleCreateTransfer(req, res);
+    
+    const clubTransfersMatch = path.match(/^\/club\/([^/]+)\/transfers\/?$/);
+    if (clubTransfersMatch) return await handleGetClubTransfers(req, res, clubTransfersMatch[1]);
+    
+    const transferActionMatch = path.match(/^\/transfers\/([^/]+)\/?$/);
+    if (transferActionMatch && req.method === 'PATCH') return await handleTransferAction(req, res, transferActionMatch[1]);
 
     return res.status(404).json({ error: 'Not found', path });
   } catch (error: any) {
