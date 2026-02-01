@@ -6429,8 +6429,8 @@ async function handleStudentLookup(req: VercelRequest, res: VercelResponse, myta
   try {
     const result = await client.query(`
       SELECT 
-        s.id, s.mytaek_id, s.name, s.belt, s.total_xp, s.global_xp, s.join_date, s.birthdate,
-        c.id as club_id, c.name as club_name, c.country, c.city, c.art_type
+        s.id, s.mytaek_id, s.name, s.belt,
+        c.id as club_id, c.name as club_name, c.art_type
       FROM students s
       JOIN clubs c ON s.club_id = c.id
       WHERE s.mytaek_id = $1
@@ -6443,34 +6443,22 @@ async function handleStudentLookup(req: VercelRequest, res: VercelResponse, myta
 
     const student = result.rows[0];
     
-    const promotionsResult = await client.query(`
-      SELECT from_belt, to_belt, promotion_date, total_xp, classes_attended
-      FROM promotions
-      WHERE student_id = $1::uuid
-      ORDER BY promotion_date DESC
-    `, [student.id]);
+    // Privacy: Only show first name and first letter of last name
+    const nameParts = student.name.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1][0] + '.' : '';
+    const displayName = lastInitial ? `${firstName} ${lastInitial}` : firstName;
 
+    // Privacy: Return limited info only
     res.json({
       mytaekId: student.mytaek_id,
-      name: student.name,
+      name: displayName,
       currentBelt: student.belt,
-      totalXp: student.total_xp || 0,
-      globalXp: student.global_xp || 0,
-      joinDate: student.join_date,
       currentClub: {
         id: student.club_id,
         name: student.club_name,
-        country: student.country,
-        city: student.city,
         artType: student.art_type
-      },
-      promotionHistory: promotionsResult.rows.map(p => ({
-        fromBelt: p.from_belt,
-        toBelt: p.to_belt,
-        date: p.promotion_date,
-        xpAtPromotion: p.total_xp,
-        classesAttended: p.classes_attended
-      }))
+      }
     });
   } catch (error: any) {
     console.error('[Student Lookup] Error:', error.message);

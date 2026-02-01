@@ -3392,34 +3392,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                                 <p className="text-lg font-bold text-white">{transferStudent.currentBelt}</p>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3 mb-4">
-                                            <div className="bg-gray-700/50 p-2 rounded">
-                                                <p className="text-xs text-gray-400">Total HonorXP™</p>
-                                                <p className="text-lg font-bold text-cyan-400">{(transferStudent.totalXp || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div className="bg-gray-700/50 p-2 rounded">
-                                                <p className="text-xs text-gray-400">Global Rank Points</p>
-                                                <p className="text-lg font-bold text-purple-400">{(transferStudent.globalXp || 0).toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                        <div className="bg-gray-700/50 p-2 rounded mb-4">
+                                        <div className="bg-gray-700/50 p-3 rounded mb-4">
                                             <p className="text-xs text-gray-400">Current Club</p>
                                             <p className="font-bold text-white">{transferStudent.currentClub?.name}</p>
-                                            <p className="text-sm text-gray-400">{transferStudent.currentClub?.city}, {transferStudent.currentClub?.country}</p>
+                                            <p className="text-sm text-gray-400">{transferStudent.currentClub?.artType}</p>
                                         </div>
-                                        {transferStudent.promotionHistory?.length > 0 && (
-                                            <div className="mb-4">
-                                                <p className="text-xs text-gray-400 mb-2">Promotion History</p>
-                                                <div className="space-y-1 max-h-24 overflow-y-auto">
-                                                    {transferStudent.promotionHistory.slice(0, 5).map((p: any, i: number) => (
-                                                        <div key={i} className="flex justify-between text-sm bg-gray-700/30 p-1 rounded">
-                                                            <span className="text-gray-300">{p.fromBelt} → {p.toBelt}</span>
-                                                            <span className="text-gray-500">{new Date(p.date).toLocaleDateString()}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
+                                        <p className="text-xs text-gray-500 mb-3 text-center">
+                                            🔒 Full details available after transfer approval
+                                        </p>
                                         <button 
                                             onClick={async () => {
                                                 if (!clubId) {
