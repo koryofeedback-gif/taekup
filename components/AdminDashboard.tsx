@@ -484,7 +484,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
         setTransfersLoading(true);
         setTransfersError('');
         try {
-            const response = await fetch(`/api/clubs/${clubId}/transfers`);
+            const response = await fetch(`/api/club/${clubId}/transfers`);
             if (response.ok) {
                 const result = await response.json();
                 setTransfers(result.transfers || []);

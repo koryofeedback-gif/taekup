@@ -2312,7 +2312,7 @@ export function registerRoutes(app: Express) {
   });
 
   // Get transfer requests for a club (both incoming and outgoing)
-  app.get('/api/clubs/:clubId/transfers', async (req: Request, res: Response) => {
+  app.get('/api/club/:clubId/transfers', async (req: Request, res: Response) => {
     try {
       const { clubId } = req.params;
       const { type } = req.query; // 'incoming', 'outgoing', or 'all'
