@@ -6546,6 +6546,23 @@ async function handleGetClubTransfers(req: VercelRequest, res: VercelResponse, c
 
   const client = await pool.connect();
   try {
+    // Ensure transfer table exists
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS student_transfers (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        student_id UUID NOT NULL REFERENCES students(id),
+        from_club_id UUID NOT NULL REFERENCES clubs(id),
+        to_club_id UUID NOT NULL REFERENCES clubs(id),
+        status VARCHAR(20) DEFAULT 'pending',
+        notes TEXT,
+        belt_at_transfer VARCHAR(50),
+        xp_at_transfer INTEGER DEFAULT 0,
+        requested_at TIMESTAMP DEFAULT NOW(),
+        responded_at TIMESTAMP,
+        transferred_at TIMESTAMP
+      )
+    `);
+    
     const result = await client.query(`
       SELECT 
         t.id, t.status, t.requested_at, t.responded_at, t.transferred_at, t.notes,
