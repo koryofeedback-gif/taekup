@@ -3334,9 +3334,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4 flex-wrap gap-1">
                         <button onClick={() => setStudentImportMethod('single')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'single' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Single</button>
                         <button onClick={() => setStudentImportMethod('transfer')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'transfer' ? 'bg-cyan-500 text-white' : 'text-gray-400'}`}>Transfer</button>
-                        <button onClick={() => setStudentImportMethod('google')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'google' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Google Sheets</button>
-                        <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Paste CSV</button>
-                        <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Excel Upload</button>
+                        <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Paste Data</button>
+                        <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Upload File</button>
                     </div>
 
                     {studentImportMethod === 'transfer' ? (
@@ -3449,57 +3448,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                         </button>
                                     </div>
                                 )}
-                            </div>
-                        </div>
-                    ) : studentImportMethod === 'google' ? (
-                        <div className="space-y-4">
-                            <div className="bg-green-900/30 border border-green-500/30 p-4 rounded-lg">
-                                <h3 className="font-bold text-green-300 mb-2">Import from Google Sheets</h3>
-                                <p className="text-sm text-gray-300 mb-4">
-                                    Import students with their <strong>Points</strong> and <strong>HonorXP™</strong> from your Google Sheet. 
-                                    Supports flexible column mapping - just export your sheet as CSV.
-                                </p>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
-                                        <select value={bulkLocation} onChange={e => setBulkLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                                            {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
-                                        <select value={bulkClass} onChange={e => setBulkClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                                            <option value="">Auto-assign</option>
-                                            {(data.locationClasses?.[bulkLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 mb-4">
-                                    <button 
-                                        onClick={() => {
-                                            const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Points,LocalXP,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,0,0,Jane Smith,jane@email.com,555-1234";
-                                            const blob = new Blob([csvContent], { type: 'text/csv' });
-                                            const url = URL.createObjectURL(blob);
-                                            const a = document.createElement('a');
-                                            a.href = url;
-                                            a.download = 'student_import_template.csv';
-                                            a.click();
-                                            URL.revokeObjectURL(url);
-                                        }}
-                                        className="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 text-sm"
-                                    >
-                                        <span>📥</span> Download Template
-                                    </button>
-                                    <button 
-                                        onClick={() => setShowCSVImport(true)}
-                                        className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 text-sm"
-                                    >
-                                        <span>📊</span> Open CSV Import
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="bg-gray-800 p-3 rounded text-xs text-gray-400">
-                                <strong className="text-white">Tip:</strong> In Google Sheets, go to File → Download → Comma Separated Values (.csv)
                             </div>
                         </div>
                     ) : studentImportMethod === 'single' ? (
