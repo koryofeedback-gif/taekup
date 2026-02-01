@@ -2041,10 +2041,14 @@ export function registerRoutes(app: Express) {
         return res.status(404).json({ error: 'Club not found' });
       }
 
+      const currentYear = new Date().getFullYear();
+      const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const mytaekId = `MTK-${currentYear}-${randomCode}`;
+      
       const studentResult = await db.execute(sql`
-        INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, total_xp, location, assigned_class, created_at)
-        VALUES (${clubId}::uuid, ${name}, ${parentEmail || null}, ${parentName || null}, ${parentPhone || null}, ${belt || 'White'}, ${birthdate ? birthdate + 'T00:00:00Z' : null}::timestamptz, ${totalPoints || 0}, ${totalXP || lifetimeXp || 0}, ${location || null}, ${assignedClass || null}, NOW())
-        RETURNING id, name, parent_email, parent_name, belt, total_points, total_xp
+        INSERT INTO students (club_id, mytaek_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, total_xp, location, assigned_class, created_at)
+        VALUES (${clubId}::uuid, ${mytaekId}, ${name}, ${parentEmail || null}, ${parentName || null}, ${parentPhone || null}, ${belt || 'White'}, ${birthdate ? birthdate + 'T00:00:00Z' : null}::timestamptz, ${totalPoints || 0}, ${totalXP || lifetimeXp || 0}, ${location || null}, ${assignedClass || null}, NOW())
+        RETURNING id, mytaek_id, name, parent_email, parent_name, belt, total_points, total_xp
       `);
       
       const student = (studentResult as any[])[0];
@@ -2086,6 +2090,7 @@ export function registerRoutes(app: Express) {
         success: true,
         student: {
           id: student.id,
+          mytaekId: student.mytaek_id,
           name: student.name,
           parentEmail: student.parent_email,
           parentName: student.parent_name,

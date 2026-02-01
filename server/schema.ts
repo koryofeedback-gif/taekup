@@ -82,6 +82,7 @@ export const payments = pgTable('payments', {
 
 export const students = pgTable('students', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  mytaekId: varchar('mytaek_id', { length: 20 }).unique(), // Global MyTaek ID for student transfers (format: MTK-YYYY-XXXXXX)
   clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
   name: varchar('name', { length: 255 }).notNull(),
   parentEmail: varchar('parent_email', { length: 255 }),
