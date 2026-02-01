@@ -157,6 +157,23 @@ export const promotions = pgTable('promotions', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+export const transferStatusEnum = pgEnum('transfer_status', ['pending', 'approved', 'rejected', 'cancelled']);
+
+export const studentTransfers = pgTable('student_transfers', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  fromClubId: uuid('from_club_id').references(() => clubs.id, { onDelete: 'set null' }),
+  toClubId: uuid('to_club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  status: transferStatusEnum('status').default('pending'),
+  requestedAt: timestamp('requested_at', { withTimezone: true }).defaultNow(),
+  respondedAt: timestamp('responded_at', { withTimezone: true }),
+  transferredAt: timestamp('transferred_at', { withTimezone: true }),
+  notes: text('notes'),
+  beltAtTransfer: varchar('belt_at_transfer', { length: 50 }),
+  xpAtTransfer: integer('xp_at_transfer').default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 export const attendanceEvents = pgTable('attendance_events', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),

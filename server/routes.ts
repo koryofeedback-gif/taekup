@@ -2187,6 +2187,256 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // =============================================
+  // STUDENT TRANSFER SYSTEM (MyTaek Federation)
+  // =============================================
+
+  // Global student lookup by MyTaek ID - returns public profile for transfer
+  app.get('/api/students/lookup/:mytaekId', async (req: Request, res: Response) => {
+    try {
+      const { mytaekId } = req.params;
+      
+      if (!mytaekId || !mytaekId.startsWith('MTK-')) {
+        return res.status(400).json({ error: 'Invalid MyTaek ID format' });
+      }
+
+      const result = await db.execute(sql`
+        SELECT 
+          s.id, s.mytaek_id, s.name, s.belt, s.total_xp, s.global_xp, s.join_date, s.birthdate,
+          c.id as club_id, c.name as club_name, c.country, c.city, c.art_type
+        FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE s.mytaek_id = ${mytaekId}
+        LIMIT 1
+      `);
+
+      if ((result as any[]).length === 0) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+
+      const student = (result as any[])[0];
+      
+      // Get promotion history for verified belt progression
+      const promotionsResult = await db.execute(sql`
+        SELECT from_belt, to_belt, promotion_date, total_xp, classes_attended
+        FROM promotions
+        WHERE student_id = ${student.id}::uuid
+        ORDER BY promotion_date DESC
+      `);
+
+      res.json({
+        mytaekId: student.mytaek_id,
+        name: student.name,
+        currentBelt: student.belt,
+        totalXp: student.total_xp || 0,
+        globalXp: student.global_xp || 0,
+        joinDate: student.join_date,
+        currentClub: {
+          id: student.club_id,
+          name: student.club_name,
+          country: student.country,
+          city: student.city,
+          artType: student.art_type
+        },
+        promotionHistory: (promotionsResult as any[]).map(p => ({
+          fromBelt: p.from_belt,
+          toBelt: p.to_belt,
+          date: p.promotion_date,
+          xpAtPromotion: p.total_xp,
+          classesAttended: p.classes_attended
+        }))
+      });
+    } catch (error: any) {
+      console.error('[Student Lookup] Error:', error.message);
+      res.status(500).json({ error: 'Failed to lookup student' });
+    }
+  });
+
+  // Request a student transfer to your club
+  app.post('/api/transfers', async (req: Request, res: Response) => {
+    try {
+      const { mytaekId, toClubId, notes } = req.body;
+      
+      if (!mytaekId || !toClubId) {
+        return res.status(400).json({ error: 'MyTaek ID and destination club are required' });
+      }
+
+      // Find the student
+      const studentResult = await db.execute(sql`
+        SELECT id, club_id, name, belt, total_xp FROM students WHERE mytaek_id = ${mytaekId}
+      `);
+
+      if ((studentResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
+
+      const student = (studentResult as any[])[0];
+
+      // Cannot transfer to the same club
+      if (student.club_id === toClubId) {
+        return res.status(400).json({ error: 'Student is already at this club' });
+      }
+
+      // Check for existing pending transfer
+      const existingTransfer = await db.execute(sql`
+        SELECT id FROM student_transfers 
+        WHERE student_id = ${student.id}::uuid AND status = 'pending'
+      `);
+
+      if ((existingTransfer as any[]).length > 0) {
+        return res.status(400).json({ error: 'A transfer request is already pending for this student' });
+      }
+
+      // Create transfer request
+      const transferResult = await db.execute(sql`
+        INSERT INTO student_transfers (student_id, from_club_id, to_club_id, notes, belt_at_transfer, xp_at_transfer)
+        VALUES (${student.id}::uuid, ${student.club_id}::uuid, ${toClubId}::uuid, ${notes || null}, ${student.belt}, ${student.total_xp || 0})
+        RETURNING id, status, requested_at
+      `);
+
+      const transfer = (transferResult as any[])[0];
+
+      res.status(201).json({
+        success: true,
+        transfer: {
+          id: transfer.id,
+          studentName: student.name,
+          status: transfer.status,
+          requestedAt: transfer.requested_at
+        }
+      });
+    } catch (error: any) {
+      console.error('[Create Transfer] Error:', error.message);
+      res.status(500).json({ error: 'Failed to create transfer request' });
+    }
+  });
+
+  // Get transfer requests for a club (both incoming and outgoing)
+  app.get('/api/clubs/:clubId/transfers', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      const { type } = req.query; // 'incoming', 'outgoing', or 'all'
+
+      let whereClause = '';
+      if (type === 'incoming') {
+        whereClause = `t.to_club_id = '${clubId}'::uuid`;
+      } else if (type === 'outgoing') {
+        whereClause = `t.from_club_id = '${clubId}'::uuid`;
+      } else {
+        whereClause = `(t.to_club_id = '${clubId}'::uuid OR t.from_club_id = '${clubId}'::uuid)`;
+      }
+
+      const result = await db.execute(sql`
+        SELECT 
+          t.id, t.status, t.requested_at, t.responded_at, t.transferred_at, t.notes,
+          t.belt_at_transfer, t.xp_at_transfer,
+          s.id as student_id, s.mytaek_id, s.name as student_name, s.belt as current_belt,
+          fc.id as from_club_id, fc.name as from_club_name,
+          tc.id as to_club_id, tc.name as to_club_name
+        FROM student_transfers t
+        JOIN students s ON t.student_id = s.id
+        LEFT JOIN clubs fc ON t.from_club_id = fc.id
+        JOIN clubs tc ON t.to_club_id = tc.id
+        WHERE (t.to_club_id = ${clubId}::uuid OR t.from_club_id = ${clubId}::uuid)
+        ORDER BY t.requested_at DESC
+      `);
+
+      res.json({
+        transfers: (result as any[]).map(t => ({
+          id: t.id,
+          status: t.status,
+          requestedAt: t.requested_at,
+          respondedAt: t.responded_at,
+          transferredAt: t.transferred_at,
+          notes: t.notes,
+          beltAtTransfer: t.belt_at_transfer,
+          xpAtTransfer: t.xp_at_transfer,
+          student: {
+            id: t.student_id,
+            mytaekId: t.mytaek_id,
+            name: t.student_name,
+            currentBelt: t.current_belt
+          },
+          fromClub: t.from_club_id ? { id: t.from_club_id, name: t.from_club_name } : null,
+          toClub: { id: t.to_club_id, name: t.to_club_name },
+          direction: t.to_club_id === clubId ? 'incoming' : 'outgoing'
+        }))
+      });
+    } catch (error: any) {
+      console.error('[Get Transfers] Error:', error.message);
+      res.status(500).json({ error: 'Failed to get transfers' });
+    }
+  });
+
+  // Approve or reject a transfer request
+  app.patch('/api/transfers/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { action, clubId } = req.body; // action: 'approve' or 'reject'
+
+      if (!action || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ error: 'Invalid action. Must be approve or reject' });
+      }
+
+      // Get the transfer request
+      const transferResult = await db.execute(sql`
+        SELECT t.*, s.name as student_name, s.belt, s.total_xp
+        FROM student_transfers t
+        JOIN students s ON t.student_id = s.id
+        WHERE t.id = ${id}::uuid AND t.status = 'pending'
+      `);
+
+      if ((transferResult as any[]).length === 0) {
+        return res.status(404).json({ error: 'Transfer request not found or already processed' });
+      }
+
+      const transfer = (transferResult as any[])[0];
+
+      // Verify the club making the action is the source club (they must approve the release)
+      if (transfer.from_club_id !== clubId) {
+        return res.status(403).json({ error: 'Only the current club can approve or reject transfers' });
+      }
+
+      if (action === 'approve') {
+        // Update transfer status and move the student
+        await db.execute(sql`
+          UPDATE student_transfers 
+          SET status = 'approved', responded_at = NOW(), transferred_at = NOW()
+          WHERE id = ${id}::uuid
+        `);
+
+        // Move student to new club
+        await db.execute(sql`
+          UPDATE students 
+          SET club_id = ${transfer.to_club_id}::uuid, updated_at = NOW()
+          WHERE id = ${transfer.student_id}::uuid
+        `);
+
+        res.json({
+          success: true,
+          message: `${transfer.student_name} has been transferred successfully`,
+          status: 'approved'
+        });
+      } else {
+        // Reject the transfer
+        await db.execute(sql`
+          UPDATE student_transfers 
+          SET status = 'rejected', responded_at = NOW()
+          WHERE id = ${id}::uuid
+        `);
+
+        res.json({
+          success: true,
+          message: 'Transfer request rejected',
+          status: 'rejected'
+        });
+      }
+    } catch (error: any) {
+      console.error('[Update Transfer] Error:', error.message);
+      res.status(500).json({ error: 'Failed to update transfer' });
+    }
+  });
+
   app.post('/api/invite-coach', async (req: Request, res: Response) => {
     try {
       const { clubId, name, email, location, assignedClasses } = req.body;
