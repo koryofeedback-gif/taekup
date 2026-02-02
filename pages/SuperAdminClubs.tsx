@@ -23,6 +23,7 @@ interface Club {
   healthScore?: number;
   riskLevel?: string;
   issues?: string[];
+  is_platform_owner?: boolean;
 }
 
 interface SuperAdminClubsProps {
@@ -173,6 +174,38 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
     } catch (err) {
       console.error('Failed to impersonate:', err);
       alert('Failed to start impersonation session. Network error.');
+    }
+  };
+
+  const handleTogglePlatformOwner = async (club: Club) => {
+    const newStatus = !club.is_platform_owner;
+    const confirmed = window.confirm(
+      newStatus 
+        ? `Mark "${club.name}" as Platform Owner? They will be exempt from club subscription fees.`
+        : `Remove Platform Owner status from "${club.name}"? They will need to pay subscription fees.`
+    );
+    if (!confirmed) return;
+    
+    try {
+      const response = await fetch('/api/super-admin/toggle-platform-owner', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ clubId: club.id, isPlatformOwner: newStatus })
+      });
+      
+      if (response.ok) {
+        setClubs(prev => prev.map(c => 
+          c.id === club.id ? { ...c, is_platform_owner: newStatus } : c
+        ));
+      } else {
+        alert('Failed to update platform owner status');
+      }
+    } catch (err) {
+      console.error('Error toggling platform owner:', err);
+      alert('Network error');
     }
   };
 
@@ -586,6 +619,17 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
                             title="Send Email"
                           >
                             <Mail className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleTogglePlatformOwner(club)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              club.is_platform_owner 
+                                ? 'bg-amber-600/30 text-amber-400 hover:bg-amber-600/50' 
+                                : 'hover:bg-amber-600/20 text-gray-400 hover:text-amber-300'
+                            }`}
+                            title={club.is_platform_owner ? 'Platform Owner (No Club Fees)' : 'Mark as Platform Owner'}
+                          >
+                            <Crown className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleViewAs(club.id)}

@@ -6734,6 +6734,7 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
   try {
     // Ensure required columns exist (for production migration)
     await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS has_demo_data BOOLEAN DEFAULT false`);
+    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
     await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS lifetime_xp INTEGER DEFAULT 0`);
     await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS global_xp INTEGER DEFAULT 0`);
     await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false`);
@@ -7110,6 +7111,120 @@ async function handleSuperAdminVerify(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   return res.json({ valid: true, email: auth.email });
+}
+
+async function handleTogglePlatformOwner(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: 'Super Admin access required' });
+  }
+  
+  const { clubId, isPlatformOwner } = parseBody(req);
+  if (!clubId) {
+    return res.status(400).json({ error: 'Club ID is required' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
+    await client.query(
+      'UPDATE clubs SET is_platform_owner = $1 WHERE id = $2::uuid',
+      [isPlatformOwner === true, clubId]
+    );
+    return res.json({ success: true, isPlatformOwner: isPlatformOwner === true });
+  } catch (error: any) {
+    console.error('Error toggling platform owner:', error);
+    return res.status(500).json({ error: 'Failed to update platform owner status' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleSuperAdminClubs(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: 'Super Admin access required' });
+  }
+  
+  const search = (req.query.search as string) || '';
+  const status = (req.query.status as string) || '';
+  const trialStatus = (req.query.trial_status as string) || '';
+  
+  const client = await pool.connect();
+  try {
+    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
+    
+    let query = `
+      SELECT 
+        c.id, c.name, c.owner_email, c.owner_name, c.trial_status, c.status,
+        c.created_at, c.trial_end, c.is_platform_owner,
+        COALESCE(s.subscription_status, 'none') as subscription_status,
+        COALESCE(s.plan_name, 'Free') as plan_name,
+        COALESCE(s.monthly_amount, 0) as monthly_amount,
+        (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+        (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count
+      FROM clubs c
+      LEFT JOIN subscriptions s ON s.club_id = c.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    
+    if (search) {
+      params.push(`%${search.toLowerCase()}%`);
+      query += ` AND (LOWER(c.name) LIKE $${params.length} OR LOWER(c.owner_email) LIKE $${params.length})`;
+    }
+    if (status) {
+      params.push(status);
+      query += ` AND c.status = $${params.length}`;
+    }
+    if (trialStatus) {
+      params.push(trialStatus);
+      query += ` AND c.trial_status = $${params.length}`;
+    }
+    
+    query += ` ORDER BY c.created_at DESC LIMIT 100`;
+    
+    const result = await client.query(query, params);
+    return res.json({ clubs: result.rows, total: result.rows.length });
+  } catch (error: any) {
+    console.error('Error fetching clubs:', error);
+    return res.status(500).json({ error: 'Failed to fetch clubs' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleSuperAdminDeleteClub(req: VercelRequest, res: VercelResponse, clubId: string) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: 'Super Admin access required' });
+  }
+  
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Delete in proper order (foreign key dependencies)
+    await client.query('DELETE FROM student_transfers WHERE from_club_id = $1::uuid OR to_club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM coaches WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM students WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM subscriptions WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM users WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM clubs WHERE id = $1::uuid', [clubId]);
+    
+    await client.query('COMMIT');
+    return res.json({ success: true });
+  } catch (error: any) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting club:', error);
+    return res.status(500).json({ error: 'Failed to delete club' });
+  } finally {
+    client.release();
+  }
 }
 
 // =====================================================
@@ -7679,6 +7794,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Super Admin routes
     if (path === '/super-admin/verify' || path === '/super-admin/verify/') return await handleSuperAdminVerify(req, res);
     if (path === '/super-admin/gauntlet-challenges' || path === '/super-admin/gauntlet-challenges/') return await handleSuperAdminGauntletChallenges(req, res);
+    if (path === '/super-admin/toggle-platform-owner' || path === '/super-admin/toggle-platform-owner/') return await handleTogglePlatformOwner(req, res);
+    if (path === '/super-admin/clubs' || path === '/super-admin/clubs/') return await handleSuperAdminClubs(req, res);
+    
+    const superAdminClubDeleteMatch = path.match(/^\/super-admin\/clubs\/([^/]+)\/?$/);
+    if (superAdminClubDeleteMatch && req.method === 'DELETE') return await handleSuperAdminDeleteClub(req, res, superAdminClubDeleteMatch[1]);
     
     const superAdminGauntletMatch = path.match(/^\/super-admin\/gauntlet-challenges\/([^/]+)\/?$/);
     if (superAdminGauntletMatch) return await handleSuperAdminGauntletChallengeUpdate(req, res, superAdminGauntletMatch[1]);

@@ -27,6 +27,7 @@ export const clubs = pgTable('clubs', {
   worldRankingsEnabled: boolean('world_rankings_enabled').default(false),
   globalScore: integer('global_score').default(0),
   hasDemoData: boolean('has_demo_data').default(false),
+  isPlatformOwner: boolean('is_platform_owner').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
