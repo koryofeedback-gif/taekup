@@ -322,8 +322,9 @@ const App: React.FC = () => {
                     const isTrialExpired = result.trialStatus === 'expired' || 
                         (trialEndDate && new Date(trialEndDate) < new Date());
                     
-                    // Check if club is paid: either Stripe found subscription OR trial_status = 'converted'
-                    const isPaidClub = result.hasActiveSubscription || result.trialStatus === 'converted';
+                    // Check if club is paid: Stripe subscription, trial_status = 'converted', OR platform owner
+                    const isPlatformOwner = result.isPlatformOwner === true;
+                    const isPaidClub = result.hasActiveSubscription || result.trialStatus === 'converted' || isPlatformOwner;
                     
                     if (result.success && isPaidClub) {
                         // Has active paid subscription (detected from Stripe or trial_status = 'converted')
@@ -587,8 +588,9 @@ const App: React.FC = () => {
                         
                         console.log('[Login] Trial end date resolved:', trialEndDate, 'from:', verifyResult.trialEnd ? 'verify' : userData.trialEnd ? 'userData' : 'fallback');
                         
-                        // Check if paid (Stripe subscription OR converted status)
-                        const isPaid = verifyResult.hasActiveSubscription || verifyResult.trialStatus === 'converted';
+                        // Check if paid (Stripe subscription, converted status, OR platform owner)
+                        const isPlatformOwner = verifyResult.isPlatformOwner === true;
+                        const isPaid = verifyResult.hasActiveSubscription || verifyResult.trialStatus === 'converted' || isPlatformOwner;
                         const isTrialExpired = !isPaid && trialEndDate && new Date(trialEndDate) < new Date();
                         
                         if (verifyResult.success && isPaid) {
@@ -622,7 +624,9 @@ const App: React.FC = () => {
                             ? new Date(userData.trialEnd).toISOString()
                             : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
                         const isTrialExpired = new Date(trialEndDate) < new Date();
-                        const isPaid = userData.trialStatus === 'converted';
+                        // Platform owners are treated as paid clubs
+                        const isPlatformOwnerFallback = userData.isPlatformOwner === true;
+                        const isPaid = userData.trialStatus === 'converted' || isPlatformOwnerFallback;
                         
                         const updatedSubscription = {
                             planId: isPaid ? 'starter' as const : undefined,

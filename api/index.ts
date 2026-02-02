@@ -478,9 +478,13 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
+    // Ensure is_platform_owner column exists
+    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
+    
     const userResult = await client.query(
       `SELECT u.id, u.email, u.password_hash, u.role, u.name, u.club_id, u.is_active,
-              c.name as club_name, c.status as club_status, c.trial_status, c.trial_end, c.wizard_data
+              c.name as club_name, c.status as club_status, c.trial_status, c.trial_end, c.wizard_data,
+              COALESCE(c.is_platform_owner, false) as is_platform_owner
        FROM users u LEFT JOIN clubs c ON u.club_id = c.id
        WHERE LOWER(u.email) = $1 AND u.is_active = true LIMIT 1`,
       [email.toLowerCase().trim()]
@@ -553,7 +557,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
       user: { id: user.id, email: user.email, name: user.name || user.club_name, role: user.role,
               clubId: user.club_id, clubName: user.club_name, clubStatus: user.club_status,
               trialStatus: user.trial_status, trialEnd: user.trial_end, wizardCompleted,
-              studentId: studentId },
+              studentId: studentId, isPlatformOwner: user.is_platform_owner === true },
       wizardData: user.wizard_data || null
     });
   } finally { client.release(); }
@@ -954,8 +958,11 @@ async function handleStripePublishableKey(req: VercelRequest, res: VercelRespons
 async function handleVerifySubscription(req: VercelRequest, res: VercelResponse, clubId: string) {
   const client = await pool.connect();
   try {
+    // Ensure is_platform_owner column exists
+    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
+    
     const clubResult = await client.query(
-      `SELECT id, owner_email, trial_status FROM clubs WHERE id = $1::uuid`,
+      `SELECT id, owner_email, trial_status, COALESCE(is_platform_owner, false) as is_platform_owner FROM clubs WHERE id = $1::uuid`,
       [clubId]
     );
     const club = clubResult.rows[0];
@@ -976,13 +983,16 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
     console.log(`[VerifySubscription] Found ${customers.data.length} customers`);
     
     if (customers.data.length === 0) {
-      console.log(`[VerifySubscription] No customer found for email: ${emailToSearch}`);
+      console.log(`[VerifySubscription] No customer found for email: ${emailToSearch}, isPlatformOwner: ${club.is_platform_owner}`);
+      // Platform owners are treated as having active subscription
+      const isPlatformOwner = club.is_platform_owner === true;
       return res.json({ 
         success: true, 
-        hasActiveSubscription: false, 
-        trialStatus: club.trial_status, 
+        hasActiveSubscription: isPlatformOwner, // Platform owners always active
+        isPlatformOwner,
+        trialStatus: isPlatformOwner ? 'converted' : club.trial_status, 
         searchedEmail: emailToSearch,
-        debug: { customerCount: 0, reason: 'no_customer_found' }
+        debug: { customerCount: 0, reason: isPlatformOwner ? 'platform_owner' : 'no_customer_found' }
       });
     }
 
@@ -1046,17 +1056,23 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
       );
     }
 
+    // Platform owners are treated as having active subscription
+    const isPlatformOwner = club.is_platform_owner === true;
+    const effectiveHasSubscription = hasActiveSubscription || isPlatformOwner;
+    
     return res.json({
       success: true,
-      hasActiveSubscription,
-      trialStatus: hasActiveSubscription ? 'converted' : club.trial_status,
-      planId: planId,
-      customerId: foundCustomerId || customers.data[0].id,
+      hasActiveSubscription: effectiveHasSubscription,
+      isPlatformOwner,
+      trialStatus: effectiveHasSubscription ? 'converted' : club.trial_status,
+      planId: isPlatformOwner && !planId ? 'empire' : planId, // Platform owners get Empire plan by default
+      customerId: foundCustomerId || customers.data[0]?.id,
       searchedEmail: emailToSearch,
       debug: { 
         customerCount: customers.data.length, 
         subscriptionStatuses,
-        customerEmails: customers.data.map(c => c.email)
+        customerEmails: customers.data.map(c => c.email),
+        isPlatformOwner
       }
     });
   } catch (error: any) {
