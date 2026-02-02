@@ -2175,6 +2175,118 @@ async function handleGauntletChallengeUpdate(req: VercelRequest, res: VercelResp
   }
 }
 
+async function handleTogglePlatformOwner(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: auth.error });
+  }
+  
+  try {
+    const db = getDb();
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const { clubId, isPlatformOwner } = body;
+    
+    if (!clubId) {
+      return res.status(400).json({ error: 'Club ID is required' });
+    }
+    
+    // Ensure column exists
+    await db`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`;
+    
+    await db`UPDATE clubs SET is_platform_owner = ${isPlatformOwner === true} WHERE id = ${clubId}::uuid`;
+    
+    return res.json({ success: true, isPlatformOwner: isPlatformOwner === true });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Toggle platform owner error:', error);
+    return res.status(500).json({ error: 'Failed to update platform owner status' });
+  }
+}
+
+async function handleGetClubs(req: VercelRequest, res: VercelResponse) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: auth.error });
+  }
+  
+  try {
+    const db = getDb();
+    const search = (req.query.search as string) || '';
+    const status = (req.query.status as string) || '';
+    const trialStatus = (req.query.trial_status as string) || '';
+    
+    // Ensure column exists
+    await db`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`;
+    
+    let result;
+    if (search) {
+      const searchPattern = `%${search.toLowerCase()}%`;
+      result = await db`
+        SELECT 
+          c.id, c.name, c.owner_email, c.owner_name, c.trial_status, c.status,
+          c.created_at, c.trial_end, c.is_platform_owner,
+          COALESCE(s.subscription_status, 'none') as subscription_status,
+          COALESCE(s.plan_name, 'Free') as plan_name,
+          COALESCE(s.monthly_amount, 0) as monthly_amount,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        WHERE LOWER(c.name) LIKE ${searchPattern} OR LOWER(c.owner_email) LIKE ${searchPattern}
+        ORDER BY c.created_at DESC
+        LIMIT 100
+      `;
+    } else {
+      result = await db`
+        SELECT 
+          c.id, c.name, c.owner_email, c.owner_name, c.trial_status, c.status,
+          c.created_at, c.trial_end, c.is_platform_owner,
+          COALESCE(s.subscription_status, 'none') as subscription_status,
+          COALESCE(s.plan_name, 'Free') as plan_name,
+          COALESCE(s.monthly_amount, 0) as monthly_amount,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count
+        FROM clubs c
+        LEFT JOIN subscriptions s ON s.club_id = c.id
+        ORDER BY c.created_at DESC
+        LIMIT 100
+      `;
+    }
+    
+    return res.json({ clubs: result, total: result.length });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Get clubs error:', error);
+    return res.status(500).json({ error: 'Failed to fetch clubs' });
+  }
+}
+
+async function handleDeleteClub(req: VercelRequest, res: VercelResponse, clubId: string) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: auth.error });
+  }
+  
+  try {
+    const db = getDb();
+    
+    // Delete in proper order (foreign key dependencies)
+    await db`DELETE FROM student_transfers WHERE from_club_id = ${clubId}::uuid OR to_club_id = ${clubId}::uuid`;
+    await db`DELETE FROM coaches WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM students WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM subscriptions WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM users WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM clubs WHERE id = ${clubId}::uuid`;
+    
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Delete club error:', error);
+    return res.status(500).json({ error: 'Failed to delete club' });
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   
@@ -2331,6 +2443,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path.startsWith('/family-challenges/') || path.startsWith('family-challenges/')) {
       const challengeId = path.replace('/family-challenges/', '').replace('family-challenges/', '').replace('/', '');
       return handleFamilyChallengeUpdate(req, res, challengeId);
+    }
+    
+    // Platform Owner toggle
+    if (path === '/toggle-platform-owner' || path === '/toggle-platform-owner/' || path === 'toggle-platform-owner') {
+      return handleTogglePlatformOwner(req, res);
+    }
+    
+    // Clubs list
+    if (path === '/clubs' || path === '/clubs/' || path === 'clubs') {
+      if (req.method === 'GET') {
+        return handleGetClubs(req, res);
+      }
+    }
+    
+    // Club delete
+    if (path.startsWith('/clubs/') || path.startsWith('clubs/')) {
+      const clubId = path.replace('/clubs/', '').replace('clubs/', '').replace('/', '');
+      if (req.method === 'DELETE') {
+        return handleDeleteClub(req, res, clubId);
+      }
     }
     
     return res.status(404).json({ error: 'Route not found', path, url, queryPath });
