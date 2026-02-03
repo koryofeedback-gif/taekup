@@ -3,6 +3,15 @@ import type { SubscriptionPlan, SubscriptionPlanId, SubscriptionStatus, Student 
 // PRICING STRATEGY: 5-Tier "Ladder of Success"
 // Undercut Kicksite ($49/$99/$149/$199) at every level.
 // ALL plans get full features (App, Portal, AI). We only limit by student count.
+// All plans include the same features - only student count differs
+const SHARED_FEATURES = [
+  'Full AI Features',
+  'Parent Portal App',
+  'Coach Dashboard',
+  'Dojang TV Display',
+  'Email Support'
+];
+
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'starter',
@@ -10,12 +19,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 24.99,
     studentLimit: 25,
     icon: '🥋',
-    features: [
-      'Up to 25 Students',
-      'Full AI Features',
-      'Parent Portal App',
-      'Revenue Share (70%)'
-    ]
+    features: ['Up to 25 Students', ...SHARED_FEATURES]
   },
   {
     id: 'pro',
@@ -24,12 +28,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     studentLimit: 50,
     icon: '⚡',
     popular: true,
-    features: [
-      'Up to 50 Students',
-      'Everything in Starter',
-      'The Sweet Spot for Small Clubs',
-      'Email + Chat Support'
-    ]
+    features: ['Up to 50 Students', ...SHARED_FEATURES]
   },
   {
     id: 'standard',
@@ -37,12 +36,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 69.00,
     studentLimit: 80,
     icon: '👊',
-    features: [
-      'Up to 80 Students',
-      'Everything in Pro',
-      'Multi-Location Support',
-      'Priority Support'
-    ]
+    features: ['Up to 80 Students', ...SHARED_FEATURES]
   },
   {
     id: 'growth',
@@ -50,12 +44,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 129.00,
     studentLimit: 150,
     icon: '🚀',
-    features: [
-      'Up to 150 Students',
-      'Everything in Standard',
-      'Advanced Analytics',
-      'Dedicated Success Mgr'
-    ]
+    features: ['Up to 150 Students', ...SHARED_FEATURES]
   },
   {
     id: 'empire',
@@ -63,12 +52,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 199.00,
     studentLimit: null,
     icon: '👑',
-    features: [
-      'UNLIMITED Students',
-      'Everything in Growth',
-      'White-Label Domain',
-      'API Access'
-    ]
+    features: ['UNLIMITED Students', ...SHARED_FEATURES]
   }
 ];
 
