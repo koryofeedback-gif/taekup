@@ -49,6 +49,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             // CRITICAL: Save all login data to localStorage FIRST before any redirect
             localStorage.setItem('taekup_user_type', userType);
             localStorage.setItem('taekup_user_name', user.name || user.clubName || 'User');
+            localStorage.setItem('taekup_user_email', user.email || email);
             if (user.clubId) {
                 localStorage.setItem('taekup_club_id', user.clubId);
             }
