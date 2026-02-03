@@ -48,6 +48,13 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **Welcome Email Generator**: Automated, personalized welcome emails for new users.
 - **Subscription & Pricing**: "Ladder of Success" pricing model with 5 tiers based on student limits, a 14-day free trial, and a lock strategy for tier management.
 - **Parent Premium Subscription**: An optional $4.99/month family subscription offering enhanced features (priority booking, extended curriculum, advanced analytics, AI insights, habit tracking, digital cards) with revenue sharing.
+- **Stripe Connect Revenue Share** (Feb 2026): Clubs earn 70% from parent premium subscriptions:
+    - **Revenue Split**: Platform 30% + fees, Club 70% ($3.28 per $4.99 subscription)
+    - **Onboarding**: Club owners connect Stripe in Billing tab → "Connect Stripe Account" button
+    - **API Endpoints**:
+        - `POST /api/stripe/connect/onboard` - Creates Express account and onboarding link (auth: club owner only)
+        - `GET /api/stripe/connect/status` - Check account connection status
+    - **Auto-Transfer**: When parent subscribes to premium, 70% automatically transfers to club's connected account
 - **MyTaek ID Federation System** (Feb 2026): Global unique student identifier for cross-club transfers:
     - **Format**: MTK-YYYY-XXXXXX (e.g., MTK-2026-A7X9K2)
     - **Purpose**: Students own their martial arts journey data globally

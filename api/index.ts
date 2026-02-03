@@ -922,6 +922,115 @@ async function handleCustomerPortal(req: VercelRequest, res: VercelResponse) {
   return res.json({ url: session.url });
 }
 
+async function handleStripeConnectOnboard(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { clubId, email, clubName } = parseBody(req);
+  if (!clubId || !email) return res.status(400).json({ error: 'clubId and email are required' });
+
+  const stripe = getStripeClient();
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+
+  const host = req.headers.host || 'mytaek.com';
+  const protocol = req.headers['x-forwarded-proto'] || 'https';
+  const baseUrl = `${protocol}://${host}`;
+
+  const client = await pool.connect();
+  try {
+    // Security: Verify the requesting user is the club owner
+    const ownerCheck = await client.query(
+      `SELECT u.id, u.email FROM users u 
+       JOIN clubs c ON u.club_id = c.id 
+       WHERE c.id = $1::uuid AND u.role = 'owner' AND LOWER(u.email) = LOWER($2)`,
+      [clubId, email]
+    );
+    if (ownerCheck.rows.length === 0) {
+      console.log(`[Stripe Connect] Auth failed: email ${email} is not owner of club ${clubId}`);
+      return res.status(403).json({ error: 'Only the club owner can connect a Stripe account' });
+    }
+    
+    const existing = await client.query(
+      `SELECT stripe_connect_account_id FROM clubs WHERE id = $1::uuid`,
+      [clubId]
+    );
+    
+    let accountId = existing.rows[0]?.stripe_connect_account_id;
+    
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: 'express',
+        email: email,
+        business_type: 'individual',
+        metadata: { club_id: clubId, club_name: clubName || '' },
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+      });
+      accountId = account.id;
+      
+      await client.query(
+        `UPDATE clubs SET stripe_connect_account_id = $1 WHERE id = $2::uuid`,
+        [accountId, clubId]
+      );
+      console.log(`[Stripe Connect] Created account ${accountId} for club ${clubId}`);
+    }
+
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${baseUrl}/app/admin?stripe_connect=refresh`,
+      return_url: `${baseUrl}/app/admin?stripe_connect=success`,
+      type: 'account_onboarding',
+    });
+
+    console.log(`[Stripe Connect] Created onboarding link for club ${clubId}`);
+    return res.json({ url: accountLink.url, accountId });
+  } catch (error: any) {
+    console.error('[Stripe Connect] Onboard error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to create Stripe Connect account' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleStripeConnectStatus(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const clubId = req.query.clubId as string;
+  if (!clubId) return res.status(400).json({ error: 'clubId is required' });
+
+  const stripe = getStripeClient();
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT stripe_connect_account_id FROM clubs WHERE id = $1::uuid`,
+      [clubId]
+    );
+    
+    const accountId = result.rows[0]?.stripe_connect_account_id;
+    if (!accountId) {
+      return res.json({ connected: false, accountId: null });
+    }
+
+    const account = await stripe.accounts.retrieve(accountId);
+    const isComplete = account.details_submitted && account.payouts_enabled;
+    
+    return res.json({
+      connected: true,
+      accountId,
+      detailsSubmitted: account.details_submitted,
+      payoutsEnabled: account.payouts_enabled,
+      chargesEnabled: account.charges_enabled,
+      isComplete,
+    });
+  } catch (error: any) {
+    console.error('[Stripe Connect] Status error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to check Stripe Connect status' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleProductsWithPrices(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -7799,6 +7908,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/customer-portal' || path === '/customer-portal/') return await handleCustomerPortal(req, res);
     if (path === '/products-with-prices' || path === '/products-with-prices/') return await handleProductsWithPrices(req, res);
     if (path === '/stripe/publishable-key' || path === '/stripe/publishable-key/') return await handleStripePublishableKey(req, res);
+    if (path === '/stripe/connect/onboard' || path === '/stripe/connect/onboard/') return await handleStripeConnectOnboard(req, res);
+    if (path === '/stripe/connect/status' || path === '/stripe/connect/status/') return await handleStripeConnectStatus(req, res);
     if (path === '/ai/taekbot' || path === '/ai/taekbot/') return await handleTaekBot(req, res);
     if (path === '/ai/class-plan' || path === '/ai/class-plan/') return await handleClassPlan(req, res);
     if (path === '/ai/welcome-email' || path === '/ai/welcome-email/') return await handleWelcomeEmail(req, res);

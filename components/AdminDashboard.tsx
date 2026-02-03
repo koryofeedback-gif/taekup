@@ -2397,10 +2397,15 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                 setConnectingBank(false);
                 return;
             }
-            const response = await fetch('/api/stripe-connect/onboard', {
+            const ownerEmail = localStorage.getItem('taekup_user_email') || data.ownerEmail || '';
+            const response = await fetch('/api/stripe/connect/onboard', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clubId: effectiveClubId })
+                body: JSON.stringify({ 
+                    clubId: effectiveClubId,
+                    email: ownerEmail,
+                    clubName: data.clubName || ''
+                })
             });
             const result = await response.json();
             if (result.url) {
@@ -2529,6 +2534,65 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     />
                 )}
             </div>
+
+            {/* Stripe Connect - Revenue Share Section */}
+            {!data.isDemo && (
+                <div className="mt-8 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 p-6 rounded-xl border border-purple-500/30">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center">
+                            <span className="text-3xl mr-3">💰</span>
+                            <div>
+                                <h3 className="font-bold text-white text-lg">Parent Premium Revenue Share</h3>
+                                <p className="text-sm text-gray-400">Earn 70% ($3.28) from each parent premium subscription</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                            <p className="text-xs text-gray-500 uppercase mb-2">How It Works</p>
+                            <ul className="text-sm text-gray-300 space-y-2">
+                                <li className="flex items-start"><span className="text-green-400 mr-2">1.</span> Parents subscribe to Premium ($4.99/mo)</li>
+                                <li className="flex items-start"><span className="text-green-400 mr-2">2.</span> You receive 70% ($3.28) automatically</li>
+                                <li className="flex items-start"><span className="text-green-400 mr-2">3.</span> Payments go directly to your bank</li>
+                            </ul>
+                        </div>
+                        
+                        <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 flex flex-col justify-between">
+                            <div>
+                                <p className="text-xs text-gray-500 uppercase mb-2">Connect Your Bank</p>
+                                <p className="text-sm text-gray-300 mb-4">Link your Stripe account to receive automatic payouts from parent premium subscriptions.</p>
+                            </div>
+                            <button
+                                onClick={handleConnectBank}
+                                disabled={connectingBank}
+                                className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+                            >
+                                {connectingBank ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                        </svg>
+                                        Connecting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="mr-2">🔗</span>
+                                        Connect Stripe Account
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-indigo-900/30 p-3 rounded-lg border border-indigo-500/20">
+                        <p className="text-xs text-indigo-300">
+                            <span className="font-bold">Example:</span> With 20 premium parents, you earn <span className="text-green-400 font-bold">$65.60/month</span> automatically deposited to your bank!
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Club Wallet / External Profit Tracker - Conditional based on mode */}
             <div className="mt-8">
