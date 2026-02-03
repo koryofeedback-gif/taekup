@@ -1,0 +1,77 @@
+Hi there,
+
+Thank you for chatting with me earlier and for your patience as we work towards resolving this for you. I'm connecting you with another member of our team who is looking into this further, and we'll be in touch as soon as we have an update to share.
+
+If you'd like to check on the status at any point, please feel free to reply to this email directly and we’ll be in touch.
+
+Below you'll also find the transcript of our chat.
+
+Best,
+Albert
+
+
+Chat started: 2026-01-13 23:23:05 UTC
+(11:23:05 PM) Hamed Konarivand: Selected: other User message: Micropayment Pricing Tier
+(11:23:17 PM) Hamed Konarivand: hello
+(11:25:36 PM) Albert: Hi Hamed, my name is Albert and I'll be assisting you today. I hope you're doing well.
+(11:26:25 PM) Hamed Konarivand: "Hello, My business (mytaek) processes a high volume of small digital subscriptions ($4.99/mo). To make the business model viable, I request to be moved to the Micropayment Pricing Tier (5% + $0.05) for these transactions instead of the standard rate. Please let me know if you need any documentation
+(11:28:07 PM) Albert: Thanks for sharing the details of your concern. I understand that your processing a high volume transactions and your requesting for a pricing discount. No worries, let me check here the options that we can work for.
+(11:28:35 PM) Hamed Konarivand: thanks
+(11:28:56 PM) Albert: You're welcome. Let me check your account information here.
+(11:28:58 PM) Albert: Can you stay online for a moment for me to check this for you? I'll be right back with an update.
+(11:29:12 PM) Hamed Konarivand: yes sure
+(11:33:07 PM) Albert: I apologize for the delay here. I'm still checking into this further. Thank you for your patience.
+(11:33:21 PM) Hamed Konarivand: no problem
+(11:37:15 PM) Albert: I truly appreciate your patience with me. I'm reaching out now with another member of our team to check your request further, KIndly bear with me please.
+(11:39:58 PM) Albert: Thanks for patiently waiting, Hamed.
+(11:41:36 PM) Albert: I have check with another member of our team for your microtransaction/micropayment pricing request, I would need to move this case via email for review and proper handling. Our team will send you an update regarding the outcome of the investgaton or if additional information is needed from you via email, is that okay?
+(11:42:50 PM) Hamed Konarivand: yes thanks, do i have chance to get micropayment pricing?
+(11:44:21 PM) Albert: I apologize but I cannot guarantee that for now since we do have a seperate team who handles the review process.
+(11:44:22 PM) Albert: But rest assured I will be routing you to the right team for this to be answered accurately. I suggest to wait for the review outcome.
+(11:44:58 PM) Hamed Konarivand: ok thanks, and have a great time
+(11:45:14 PM) Albert: You're welcome. It has been a pleasure assisting you.
+(11:45:16 PM) Albert: I will be sending you an email including the chat transcript after we end this chat.
+(11:45:20 PM) Albert: If you have any other concerns or questions, please feel free to reach out. I will be happy to help.
+(11:45:23 PM) Albert: I wish you continued success with your business and thank you for reaching out to Stripe Support.
+
+Hamed Konarivand <konarivand.hamed@gmail.com>
+Thu, Jan 15, 10:48 AM
+to Stripe
+
+Here’s a short, clear follow-up you can reply with:
+
+Hello stripe customer service team
+
+Thank you for your message.
+
+I just wanted to follow up as I haven’t received any updates yet regarding my request for the Micropayment Pricing Tier.
+Could you please let me know if there is any progress or if you need additional information from my side?
+
+Thank you in advance for your help.
+
+Best regards,
+Hamed
+
+
+
+
+
+
+Stripe Support
+Mon, Jan 26, 5:06 PM (8 days ago)
+to me
+
+Hi there, 
+
+ 
+
+I appreciate your patience.As discussed, your new rates have been applied and are effective immediately.
+Thank you for choosing Stripe!
+
+ 
+
+Best,
+
+Diana
+ 
+
