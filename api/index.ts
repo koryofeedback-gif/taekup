@@ -955,26 +955,31 @@ async function handleStripeConnectOnboard(req: VercelRequest, res: VercelRespons
     
     let accountId = existing.rows[0]?.stripe_connect_account_id;
     
+    // For French platforms, we use OAuth flow instead of accounts.create()
+    // This is required due to France PSD2 regulations
     if (!accountId) {
-      const account = await stripe.accounts.create({
-        type: 'express',
-        email: email,
-        business_type: 'individual',
-        metadata: { club_id: clubId, club_name: clubName || '' },
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-      });
-      accountId = account.id;
+      // Use Stripe OAuth flow - redirect to Stripe's hosted onboarding
+      const clientId = process.env.STRIPE_CLIENT_ID;
+      if (!clientId) {
+        console.error('[Stripe Connect] STRIPE_CLIENT_ID not configured');
+        return res.status(500).json({ error: 'Stripe Connect not fully configured. Please add STRIPE_CLIENT_ID.' });
+      }
       
-      await client.query(
-        `UPDATE clubs SET stripe_connect_account_id = $1 WHERE id = $2::uuid`,
-        [accountId, clubId]
-      );
-      console.log(`[Stripe Connect] Created account ${accountId} for club ${clubId}`);
+      const state = Buffer.from(JSON.stringify({ clubId, email, clubName })).toString('base64');
+      const redirectUri = `${baseUrl}/api/stripe/connect/callback`;
+      
+      const oauthUrl = `https://connect.stripe.com/express/oauth/authorize?` +
+        `client_id=${clientId}` +
+        `&state=${encodeURIComponent(state)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&stripe_user[email]=${encodeURIComponent(email)}` +
+        `&stripe_user[business_type]=individual`;
+      
+      console.log(`[Stripe Connect] Redirecting to OAuth for club ${clubId}`);
+      return res.json({ url: oauthUrl, accountId: null, oauth: true });
     }
 
+    // If account already exists, create account link for them to complete/update
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${baseUrl}/app/admin?stripe_connect=refresh`,
@@ -1026,6 +1031,66 @@ async function handleStripeConnectStatus(req: VercelRequest, res: VercelResponse
   } catch (error: any) {
     console.error('[Stripe Connect] Status error:', error);
     return res.status(500).json({ error: error.message || 'Failed to check Stripe Connect status' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleStripeConnectCallback(req: VercelRequest, res: VercelResponse) {
+  // OAuth callback handler for Stripe Connect (required for French platforms)
+  const { code, state, error, error_description } = req.query;
+  
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://www.mytaek.com' 
+    : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+  
+  if (error) {
+    console.error('[Stripe Connect] OAuth error:', error, error_description);
+    return res.redirect(`${baseUrl}/app/admin?stripe_connect=error&message=${encodeURIComponent(String(error_description || error))}`);
+  }
+  
+  if (!code || !state) {
+    console.error('[Stripe Connect] Missing code or state in OAuth callback');
+    return res.redirect(`${baseUrl}/app/admin?stripe_connect=error&message=Missing+authorization+code`);
+  }
+  
+  const stripe = getStripeClient();
+  if (!stripe) {
+    return res.redirect(`${baseUrl}/app/admin?stripe_connect=error&message=Stripe+not+configured`);
+  }
+  
+  const client = await pool.connect();
+  try {
+    // Decode state to get club info
+    const stateData = JSON.parse(Buffer.from(String(state), 'base64').toString('utf-8'));
+    const { clubId, email, clubName } = stateData;
+    
+    console.log(`[Stripe Connect] OAuth callback for club ${clubId}`);
+    
+    // Exchange authorization code for connected account
+    const response = await stripe.oauth.token({
+      grant_type: 'authorization_code',
+      code: String(code),
+    });
+    
+    const accountId = response.stripe_user_id;
+    
+    if (!accountId) {
+      throw new Error('No account ID returned from Stripe');
+    }
+    
+    // Save the connected account ID to the club
+    await client.query(
+      `UPDATE clubs SET stripe_connect_account_id = $1 WHERE id = $2::uuid`,
+      [accountId, clubId]
+    );
+    
+    console.log(`[Stripe Connect] Successfully connected account ${accountId} for club ${clubId}`);
+    
+    return res.redirect(`${baseUrl}/app/admin?stripe_connect=success`);
+  } catch (error: any) {
+    console.error('[Stripe Connect] OAuth callback error:', error);
+    return res.redirect(`${baseUrl}/app/admin?stripe_connect=error&message=${encodeURIComponent(error.message || 'Failed to connect account')}`);
   } finally {
     client.release();
   }
@@ -7910,6 +7975,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/stripe/publishable-key' || path === '/stripe/publishable-key/') return await handleStripePublishableKey(req, res);
     if (path === '/stripe/connect/onboard' || path === '/stripe/connect/onboard/') return await handleStripeConnectOnboard(req, res);
     if (path === '/stripe/connect/status' || path === '/stripe/connect/status/') return await handleStripeConnectStatus(req, res);
+    if (path === '/stripe/connect/callback' || path === '/stripe/connect/callback/') return await handleStripeConnectCallback(req, res);
     if (path === '/ai/taekbot' || path === '/ai/taekbot/') return await handleTaekBot(req, res);
     if (path === '/ai/class-plan' || path === '/ai/class-plan/') return await handleClassPlan(req, res);
     if (path === '/ai/welcome-email' || path === '/ai/welcome-email/') return await handleWelcomeEmail(req, res);
