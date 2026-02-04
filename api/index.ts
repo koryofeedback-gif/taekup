@@ -955,28 +955,25 @@ async function handleStripeConnectOnboard(req: VercelRequest, res: VercelRespons
     
     let accountId = existing.rows[0]?.stripe_connect_account_id;
     
-    // For French platforms, we use OAuth flow instead of accounts.create()
-    // This is required due to France PSD2 regulations
+    // For French platforms, use Stripe-hosted onboarding with controller properties
     if (!accountId) {
-      // Use Stripe OAuth flow - redirect to Stripe's hosted onboarding
-      const clientId = process.env.STRIPE_CLIENT_ID;
-      if (!clientId) {
-        console.error('[Stripe Connect] STRIPE_CLIENT_ID not configured');
-        return res.status(500).json({ error: 'Stripe Connect not fully configured. Please add STRIPE_CLIENT_ID.' });
-      }
+      // Create account with controller properties (recommended for French platforms)
+      const account = await stripe.accounts.create({
+        email: email,
+        controller: {
+          fees: { payer: 'application' },
+          losses: { payments: 'application' },
+          stripe_dashboard: { type: 'express' },
+        },
+        metadata: { club_id: clubId, club_name: clubName || '' },
+      });
+      accountId = account.id;
       
-      const state = Buffer.from(JSON.stringify({ clubId, email, clubName })).toString('base64');
-      const redirectUri = `${baseUrl}/api/stripe/connect/callback`;
-      
-      const oauthUrl = `https://connect.stripe.com/express/oauth/authorize?` +
-        `client_id=${clientId}` +
-        `&state=${encodeURIComponent(state)}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&stripe_user[email]=${encodeURIComponent(email)}` +
-        `&stripe_user[business_type]=individual`;
-      
-      console.log(`[Stripe Connect] Redirecting to OAuth for club ${clubId}`);
-      return res.json({ url: oauthUrl, accountId: null, oauth: true });
+      await client.query(
+        `UPDATE clubs SET stripe_connect_account_id = $1 WHERE id = $2::uuid`,
+        [accountId, clubId]
+      );
+      console.log(`[Stripe Connect] Created account ${accountId} for club ${clubId}`);
     }
 
     // If account already exists, create account link for them to complete/update
