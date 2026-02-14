@@ -34,6 +34,12 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
     - **General/Fitness**: Lower point values - EASY 1/3, MEDIUM 2/5, HARD 3/10, EPIC 5/15 (noVideo/withVideo)
     - **Video Proof Multiplier**: 3x-7x more Global Rank points for video submissions vs trust-based
     - **Featured Coach Picks**: Premium gold/amber styling in Arena UI with demo video links
+- **Video Upload Optimization** (Feb 2026): Combination approach to save storage:
+    - **File Size Limit**: 50MB max (down from 100MB)
+    - **Duration Limits**: 15s for short challenges, 30s for long activities (400m, AMRAP, etc.)
+    - **Timelapse Guidance**: UI prompts users to use phone timelapse mode for long challenges
+    - **Auto-Delete**: Approved videos are automatically deleted from S3 after 30 days (daily cleanup job)
+    - **Duration Detection**: Frontend checks video duration before upload using HTML5 video metadata
 - **Warrior's Gauntlet**: Fixed 7-day rotation fitness challenge system:
     - **14 Challenges**: 2 per day (Monday=Engine, Tuesday=Foundation, Wednesday=Evasion, Thursday=Explosion, Friday=Animal, Saturday=Defense, Sunday=Flow)
     - **Scoring Matrix**: Trust = 20 XP / 5 Global, Video = 40 XP / 15 Global

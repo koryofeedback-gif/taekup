@@ -3031,12 +3031,17 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/videos/presigned-upload', async (req: Request, res: Response) => {
     try {
-      const { studentId, challengeId, filename, contentType, isGauntlet } = req.body;
+      const { studentId, challengeId, filename, contentType, isGauntlet, fileSize } = req.body;
       
-      console.log('[Videos] Presigned upload request:', { studentId, challengeId, filename, contentType, isGauntlet });
+      console.log('[Videos] Presigned upload request:', { studentId, challengeId, filename, contentType, isGauntlet, fileSize });
       
       if (!studentId || !challengeId || !filename) {
         return res.status(400).json({ error: 'studentId, challengeId, and filename are required' });
+      }
+
+      const MAX_FILE_SIZE = 50 * 1024 * 1024;
+      if (fileSize && fileSize > MAX_FILE_SIZE) {
+        return res.status(400).json({ error: 'Video file too large. Maximum size is 50MB. Use timelapse mode for long challenges!' });
       }
 
       // CHECK LIMITS BEFORE generating upload URL (prevents orphaned uploads)

@@ -2718,10 +2718,15 @@ function getS3Client(): S3Client | null {
 async function handlePresignedUpload(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
-  const { studentId, challengeId, filename, contentType, isGauntlet } = parseBody(req);
+  const { studentId, challengeId, filename, contentType, isGauntlet, fileSize } = parseBody(req);
   
   if (!studentId || !challengeId || !filename) {
     return res.status(400).json({ error: 'studentId, challengeId, and filename are required' });
+  }
+
+  const MAX_FILE_SIZE = 50 * 1024 * 1024;
+  if (fileSize && fileSize > MAX_FILE_SIZE) {
+    return res.status(400).json({ error: 'Video file too large. Maximum size is 50MB. Use timelapse mode for long challenges!' });
   }
 
   const client = await pool.connect();

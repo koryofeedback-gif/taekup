@@ -7,6 +7,9 @@ import { registerRoutes } from './routes';
 import { WebhookHandlers } from './webhookHandlers';
 import { superAdminRouter, addSuperAdminSession } from './superAdminRoutes';
 import * as emailAutomation from './services/emailAutomationService';
+import { deleteVideo } from './services/s3StorageService';
+import { db } from './db';
+import { sql } from 'drizzle-orm';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -307,6 +310,48 @@ async function startServer() {
       console.error('[EmailAutomation] Scheduler error:', err.message);
     });
   }, 60 * 60 * 1000);
+
+  async function cleanupOldApprovedVideos() {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const oldVideos = await db.execute(sql`
+        SELECT id, video_key, video_url FROM challenge_videos 
+        WHERE status = 'approved' AND created_at < ${thirtyDaysAgo.toISOString()}
+        AND (video_key IS NOT NULL AND video_key != '' OR video_url IS NOT NULL AND video_url != '')
+        LIMIT 50
+      `);
+      
+      const rows = oldVideos as any[];
+      if (rows.length === 0) return;
+      
+      console.log(`[VideoCleanup] Found ${rows.length} approved videos older than 30 days`);
+      let deleted = 0;
+      
+      for (const video of rows) {
+        try {
+          if (video.video_key) {
+            await deleteVideo(video.video_key);
+          }
+          await db.execute(sql`
+            UPDATE challenge_videos 
+            SET video_url = NULL, video_key = NULL
+            WHERE id = ${video.id}
+          `);
+          deleted++;
+        } catch (err: any) {
+          console.error(`[VideoCleanup] Failed to delete video ${video.id}:`, err.message);
+        }
+      }
+      console.log(`[VideoCleanup] Cleaned ${deleted}/${rows.length} old videos`);
+    } catch (err: any) {
+      console.error('[VideoCleanup] Error:', err.message);
+    }
+  }
+
+  setTimeout(() => cleanupOldApprovedVideos(), 30000);
+  setInterval(() => cleanupOldApprovedVideos(), 24 * 60 * 60 * 1000);
 }
 
 startServer();

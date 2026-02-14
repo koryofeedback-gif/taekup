@@ -26,6 +26,29 @@ import {
 } from '../shared/demoData';
 import { DEMO_VIDEO_SUBMISSIONS, DEMO_PORTAL_SKILLS, DEMO_SCHEDULE as DEMO_PORTAL_SCHEDULE, DEMO_EVENTS as DEMO_PORTAL_EVENTS, DEMO_PRIVATE_SLOTS, DEMO_CURRICULUM, DEMO_CUSTOM_CHALLENGES } from './demoData';
 
+const LONG_CHALLENGE_KEYWORDS = ['400m', '100 reps', '5 min', '7 min', '10 min', 'amrap', 'mile', 'marathon'];
+const MAX_VIDEO_SIZE_MB = 50;
+const MAX_VIDEO_DURATION_SHORT = 15;
+const MAX_VIDEO_DURATION_LONG = 30;
+
+const isLongChallenge = (challengeName: string): boolean => {
+    const lower = challengeName.toLowerCase();
+    return LONG_CHALLENGE_KEYWORDS.some(kw => lower.includes(kw));
+};
+
+const getVideoDuration = (file: File): Promise<number> => {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+            URL.revokeObjectURL(video.src);
+            resolve(Math.round(video.duration));
+        };
+        video.onerror = () => resolve(0);
+        video.src = URL.createObjectURL(file);
+    });
+};
+
 const calculateVideoHash = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
         const chunkSize = 2097152; // 2MB chunks
@@ -567,6 +590,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Video Upload State (Premium Feature)
     const [showVideoUpload, setShowVideoUpload] = useState(false);
     const [videoFile, setVideoFile] = useState<File | null>(null);
+    const [videoDurationSec, setVideoDurationSec] = useState<number>(0);
     const [videoUploadProgress, setVideoUploadProgress] = useState(0);
     const [isUploadingVideo, setIsUploadingVideo] = useState(false);
     const [videoUploadError, setVideoUploadError] = useState<string | null>(null);
@@ -2306,15 +2330,32 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         }
     };
 
-    const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 100 * 1024 * 1024) {
-                setVideoUploadError('Video must be under 100MB');
+            if (file.size > MAX_VIDEO_SIZE_MB * 1024 * 1024) {
+                setVideoUploadError(`Video must be under ${MAX_VIDEO_SIZE_MB}MB. Use timelapse for long challenges!`);
                 return;
             }
             if (!file.type.startsWith('video/')) {
                 setVideoUploadError('Please select a video file');
+                return;
+            }
+            const duration = await getVideoDuration(file);
+            setVideoDurationSec(duration);
+
+            const challengeName = gauntletVideoMode
+                ? gauntletData?.challenges?.find((c: any) => c.id === selectedGauntletChallenge)?.name || ''
+                : (selectedChallenge ? getChallengeInfo(selectedChallenge).name : '');
+            const isLong = isLongChallenge(challengeName);
+            const maxDuration = isLong ? MAX_VIDEO_DURATION_LONG : MAX_VIDEO_DURATION_SHORT;
+
+            if (duration > maxDuration) {
+                setVideoUploadError(
+                    isLong
+                        ? `Video too long (${duration}s). Max ${maxDuration}s. Use your phone's timelapse mode to record long activities!`
+                        : `Video too long (${duration}s). Max ${maxDuration}s. Record only the key moment of your challenge.`
+                );
                 return;
             }
             setVideoFile(file);
@@ -2378,6 +2419,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     challengeId: challengeIdToUse,
                     filename: videoFile.name,
                     contentType: videoFile.type,
+                    fileSize: videoFile.size,
                     isGauntlet: gauntletVideoMode
                 })
             });
@@ -2550,6 +2592,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     challengeId: `academy-${selectedAcademyContent.id}`,
                     filename: videoFile.name,
                     contentType: videoFile.type,
+                    fileSize: videoFile.size,
                     isAcademy: true
                 })
             });
@@ -3468,7 +3511,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 ref={videoInputRef}
                                 type="file"
                                 accept="video/*"
-                                onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                                onChange={handleVideoFileChange}
                                 className="hidden"
                             />
                             {videoFile ? (
@@ -3476,14 +3519,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     <span className="text-3xl mb-2 block">🎬</span>
                                     <p className="font-bold">{videoFile.name}</p>
                                     <p className="text-xs text-gray-400 mt-1">
-                                        {(videoFile.size / 1024 / 1024).toFixed(2)} MB
+                                        {(videoFile.size / 1024 / 1024).toFixed(2)} MB {videoDurationSec > 0 && `• ${videoDurationSec}s`}
                                     </p>
                                 </div>
                             ) : (
                                 <>
                                     <span className="text-4xl mb-2 block">📹</span>
                                     <p className="text-gray-300 font-bold">Tap to select video</p>
-                                    <p className="text-xs text-gray-500 mt-1">Max 100MB • MP4, MOV, WebM</p>
+                                    <p className="text-xs text-gray-500 mt-1">Max {MAX_VIDEO_SIZE_MB}MB • MP4, MOV, WebM</p>
+                                    <p className="text-xs mt-1 text-amber-400">Max {MAX_VIDEO_DURATION_SHORT}s - Record the key moment</p>
                                 </>
                             )}
                         </div>
@@ -5049,14 +5093,28 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             <span className="text-4xl">✅</span>
                                                             <p className="text-white font-bold mt-2">{videoFile.name}</p>
                                                             <p className="text-gray-400 text-xs mt-1">
-                                                                {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
+                                                                {(videoFile.size / (1024 * 1024)).toFixed(1)} MB {videoDurationSec > 0 && `• ${videoDurationSec}s`}
                                                             </p>
                                                         </div>
                                                     ) : (
                                                         <div>
                                                             <span className="text-4xl">📹</span>
                                                             <p className="text-gray-300 font-medium mt-2">Tap to select video</p>
-                                                            <p className="text-gray-500 text-xs mt-1">MP4, MOV, WEBM • Max 100MB</p>
+                                                            <p className="text-gray-500 text-xs mt-1">MP4, MOV, WEBM • Max {MAX_VIDEO_SIZE_MB}MB</p>
+                                                            {(() => {
+                                                                const cName = gauntletVideoMode
+                                                                    ? gauntletData?.challenges?.find((c: any) => c.id === selectedGauntletChallenge)?.name || ''
+                                                                    : challengeCategories.flatMap(c => c.challenges).find(ch => ch.id === selectedChallenge)?.name || '';
+                                                                const longCh = isLongChallenge(cName);
+                                                                return (
+                                                                    <p className="text-xs mt-2 text-amber-400">
+                                                                        {longCh
+                                                                            ? `Max ${MAX_VIDEO_DURATION_LONG}s - Use Timelapse mode for long activities!`
+                                                                            : `Max ${MAX_VIDEO_DURATION_SHORT}s - Record the key moment`
+                                                                        }
+                                                                    </p>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     )}
                                                 </div>
