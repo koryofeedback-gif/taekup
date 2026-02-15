@@ -1245,6 +1245,18 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         <input type="text" value={data.slogan} onChange={e => onUpdateData({ slogan: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white" />
                     </div>
                     <div>
+                        <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.general.language')}</label>
+                        <p className="text-xs text-gray-500 mb-2">{t('admin.settings.general.languageDesc')}</p>
+                        <select
+                            value={data.language || 'English'}
+                            onChange={e => onUpdateData({ language: e.target.value })}
+                            className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white"
+                        >
+                            <option value="English">{t('admin.settings.general.languageEnglish')}</option>
+                            <option value="French">{t('admin.settings.general.languageFrench')}</option>
+                        </select>
+                    </div>
+                    <div>
                         <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.general.primaryBrandColor')}</label>
                         <div className="flex items-center space-x-2">
                             <input type="color" value={data.primaryColor} onChange={e => onUpdateData({ primaryColor: e.target.value })} className="h-10 w-10 bg-gray-800 border border-gray-700 rounded cursor-pointer" />
