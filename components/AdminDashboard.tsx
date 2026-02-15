@@ -1382,7 +1382,8 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                     case 'custom': break;
                                 }
                                 if (system !== 'custom') {
-                                    onUpdateData({ beltSystemType: system, belts: newBelts });
+                                    const customBelts = data.belts.filter(b => b.id.startsWith('custom-'));
+                                    onUpdateData({ beltSystemType: system, belts: [...newBelts, ...customBelts] });
                                 } else {
                                     onUpdateData({ beltSystemType: 'custom' });
                                 }
@@ -1429,15 +1430,52 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                         }}
                                         className="w-8 h-8 p-0 border-none bg-transparent"
                                     />
+                                    {(data.beltSystemType === 'custom' || belt.id.startsWith('custom-')) && (
+                                        <button 
+                                            onClick={() => onUpdateData({ belts: data.belts.filter(b => b.id !== belt.id) })}
+                                            className="text-gray-500 hover:text-red-400"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
-                        <button 
-                            onClick={() => onUpdateData({ belts: [...data.belts, { id: `custom-${Date.now()}`, name: t('admin.settings.belts.newBelt'), color1: '#ffffff' }] })}
-                            className="mt-4 text-sky-300 hover:text-blue-300 text-sm font-bold"
-                        >
-                            {t('admin.settings.belts.addBeltLevel')}
-                        </button>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg border border-dashed border-gray-600 p-4">
+                        <h3 className="font-bold text-white mb-1">{data.beltSystemType === 'custom' ? t('admin.settings.belts.addBeltLevel') : t('admin.settings.belts.addCustomAfterTop')}</h3>
+                        <p className="text-xs text-gray-500 mb-3">
+                            {data.beltSystemType === 'custom' 
+                                ? t('admin.settings.belts.buildFromScratch')
+                                : t('admin.settings.belts.addExtraRanks', { topBelt: data.belts.length > 0 ? data.belts[data.belts.length - 1]?.name : '' })}
+                        </p>
+                        <div className="flex items-center space-x-2">
+                            <input 
+                                type="text" 
+                                placeholder={t('admin.settings.belts.beltNamePlaceholder')}
+                                id="admin-new-belt-name"
+                                className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"
+                            />
+                            <input 
+                                type="color" 
+                                defaultValue="#ffffff"
+                                id="admin-new-belt-color"
+                                className="w-10 h-10 p-1 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                            />
+                            <button 
+                                onClick={() => {
+                                    const nameInput = document.getElementById('admin-new-belt-name') as HTMLInputElement;
+                                    const colorInput = document.getElementById('admin-new-belt-color') as HTMLInputElement;
+                                    if (!nameInput?.value.trim()) return;
+                                    onUpdateData({ belts: [...data.belts, { id: `custom-${Date.now()}`, name: nameInput.value.trim(), color1: colorInput?.value || '#ffffff' }] });
+                                    nameInput.value = '';
+                                    colorInput.value = '#ffffff';
+                                }}
+                                className="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-4 rounded text-sm"
+                            >
+                                {t('common.add')}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

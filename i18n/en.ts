@@ -907,6 +907,10 @@ export const en = {
         customizeBelts: "Customize belt names and colors. You can add custom belts at any time.",
         newBelt: "New Belt",
         addBeltLevel: "+ Add Belt Level",
+        addCustomAfterTop: "Add Custom Belt After Top Rank",
+        buildFromScratch: "Build your belt system from scratch.",
+        addExtraRanks: "Add extra ranks beyond {topBelt}.",
+        beltNamePlaceholder: "Belt Name (e.g. 1st Dan)",
       },
 
       locations: {

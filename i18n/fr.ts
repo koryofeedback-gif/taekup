@@ -907,6 +907,10 @@ export const fr = {
         customizeBelts: "Personnalisez les noms et couleurs des ceintures. Vous pouvez ajouter des ceintures à tout moment.",
         newBelt: "Nouvelle ceinture",
         addBeltLevel: "+ Ajouter un niveau de ceinture",
+        addCustomAfterTop: "Ajouter une ceinture après le rang le plus élevé",
+        buildFromScratch: "Construisez votre système de ceintures à partir de zéro.",
+        addExtraRanks: "Ajoutez des rangs supplémentaires après {topBelt}.",
+        beltNamePlaceholder: "Nom de la ceinture (ex. 1er Dan)",
       },
 
       locations: {
