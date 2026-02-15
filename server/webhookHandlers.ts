@@ -58,13 +58,14 @@ export class WebhookHandlers {
       }
 
       const clubResult = await db.execute(
-        sql`SELECT id, name, owner_email, owner_name FROM clubs WHERE owner_email = ${customerEmail} LIMIT 1`
+        sql`SELECT id, name, owner_email, owner_name, wizard_data FROM clubs WHERE owner_email = ${customerEmail} LIMIT 1`
       );
       
       const club = (clubResult as any[])[0];
       
       if (club) {
         console.log('[Webhook] Found club for welcome email:', club.name);
+        const clubLanguage = (club?.wizard_data as any)?.language || 'English';
         
         const alreadySent = await db.execute(
           sql`SELECT id FROM email_log WHERE club_id = ${club.id} AND email_type = 'welcome' LIMIT 1`
@@ -73,7 +74,8 @@ export class WebhookHandlers {
         if ((alreadySent as any[]).length === 0) {
           const result = await emailService.sendWelcomeEmail(customerEmail, {
             ownerName: club.owner_name || 'Club Owner',
-            clubName: club.name
+            clubName: club.name,
+            language: clubLanguage
           });
           
           if (result.success) {
@@ -128,12 +130,13 @@ export class WebhookHandlers {
       }
 
       const clubResult = await db.execute(
-        sql`SELECT id, name, owner_email, owner_name FROM clubs WHERE owner_email = ${customerEmail} LIMIT 1`
+        sql`SELECT id, name, owner_email, owner_name, wizard_data FROM clubs WHERE owner_email = ${customerEmail} LIMIT 1`
       );
       
       const club = (clubResult as any[])[0];
       
       if (club) {
+        const clubLanguage = (club?.wizard_data as any)?.language || 'English';
         // Update club's trial status to converted and store subscription ID
         await db.execute(sql`
           UPDATE clubs 
@@ -152,7 +155,8 @@ export class WebhookHandlers {
         if ((alreadySent as any[]).length === 0) {
           const result = await emailService.sendWelcomeEmail(customerEmail, {
             ownerName: club.owner_name || 'Club Owner',
-            clubName: club.name
+            clubName: club.name,
+            language: clubLanguage
           });
           
           if (result.success) {
@@ -197,7 +201,7 @@ export class WebhookHandlers {
       
       if (customerEmail) {
         const clubResult = await db.execute(
-          sql`SELECT id, name, owner_email, owner_name FROM clubs WHERE owner_email = ${customerEmail} LIMIT 1`
+          sql`SELECT id, name, owner_email, owner_name, wizard_data FROM clubs WHERE owner_email = ${customerEmail} LIMIT 1`
         );
         club = (clubResult as any[])[0];
         clubId = club?.id || null;
@@ -237,13 +241,15 @@ export class WebhookHandlers {
         const billingPeriod = invoice.lines?.data?.[0]?.period ? 
           (invoice.lines.data[0].period.end - invoice.lines.data[0].period.start > 60 * 60 * 24 * 35 ? 'Annual' : 'Monthly') 
           : 'Monthly';
+        const paymentClubLanguage = (club?.wizard_data as any)?.language || 'English';
         
         const result = await emailService.sendPaymentConfirmationEmail(customerEmail, {
           ownerName: club.owner_name || 'Club Owner',
           clubName: club.name,
           planName: planName,
           amount: '$' + (amount / 100).toFixed(2),
-          billingPeriod: billingPeriod
+          billingPeriod: billingPeriod,
+          language: paymentClubLanguage
         });
 
         if (result.success) {

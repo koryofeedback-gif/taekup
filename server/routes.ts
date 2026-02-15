@@ -1700,7 +1700,7 @@ export function registerRoutes(app: Express) {
       }
 
       const userResult = await db.execute(
-        sql`SELECT id, email, name FROM users WHERE email = ${email} AND is_active = true LIMIT 1`
+        sql`SELECT id, email, name, club_id FROM users WHERE email = ${email} AND is_active = true LIMIT 1`
       );
       
       const user = (userResult as any[])[0];
@@ -1710,6 +1710,13 @@ export function registerRoutes(app: Express) {
           success: true, 
           message: 'If an account exists with this email, a password reset link has been sent.' 
         });
+      }
+
+      let clubLanguage = 'English';
+      if (user.club_id) {
+        const clubLangResult = await db.execute(sql`SELECT wizard_data FROM clubs WHERE id = ${user.club_id}::uuid LIMIT 1`);
+        const clubLangData = (clubLangResult as any[])[0];
+        clubLanguage = (clubLangData?.wizard_data as any)?.language || 'English';
       }
 
       const resetToken = crypto.randomBytes(32).toString('hex');
@@ -1723,7 +1730,8 @@ export function registerRoutes(app: Express) {
 
       const emailResult = await emailService.sendResetPasswordEmail(user.email, {
         userName: user.name || 'User',
-        resetToken: resetToken
+        resetToken: resetToken,
+        language: clubLanguage
       });
 
       if (emailResult.success) {
@@ -2032,7 +2040,7 @@ export function registerRoutes(app: Express) {
       }
 
       const clubResult = await db.execute(
-        sql`SELECT id, name, owner_email, owner_name FROM clubs WHERE id = ${clubId}::uuid`
+        sql`SELECT id, name, owner_email, owner_name, wizard_data FROM clubs WHERE id = ${clubId}::uuid`
       );
       
       const club = (clubResult as any[])[0];
@@ -2040,6 +2048,8 @@ export function registerRoutes(app: Express) {
       if (!club) {
         return res.status(404).json({ error: 'Club not found' });
       }
+
+      const clubLanguage = (club?.wizard_data as any)?.language || 'English';
 
       const currentYear = new Date().getFullYear();
       const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -2061,7 +2071,8 @@ export function registerRoutes(app: Express) {
         beltLevel: belt || 'White',
         studentAge: age ? `${age} years old` : 'Not specified',
         parentName: parentName || 'Not specified',
-        studentId: student.id
+        studentId: student.id,
+        language: clubLanguage
       });
 
       if (notifyEmailResult.success) {
@@ -2446,7 +2457,7 @@ export function registerRoutes(app: Express) {
       }
 
       const clubResult = await db.execute(sql`
-        SELECT id, name, owner_email FROM clubs WHERE id = ${clubId}::uuid
+        SELECT id, name, owner_email, wizard_data FROM clubs WHERE id = ${clubId}::uuid
       `);
       
       const club = (clubResult as any[])[0];
@@ -2454,6 +2465,8 @@ export function registerRoutes(app: Express) {
       if (!club) {
         return res.status(404).json({ error: 'Club not found' });
       }
+
+      const clubLanguage = (club?.wizard_data as any)?.language || 'English';
 
       const tempPassword = '1234';
       const passwordHash = await bcrypt.hash(tempPassword, 10);
@@ -2490,7 +2503,8 @@ export function registerRoutes(app: Express) {
         clubName: club.name,
         coachEmail: email,
         tempPassword: tempPassword,
-        ownerName: club.name
+        ownerName: club.name,
+        language: clubLanguage
       });
 
       await db.execute(sql`
@@ -2597,7 +2611,7 @@ export function registerRoutes(app: Express) {
       }
 
       const studentResult = await db.execute(sql`
-        SELECT s.id, s.name, s.parent_email, c.id as club_id, c.name as club_name 
+        SELECT s.id, s.name, s.parent_email, c.id as club_id, c.name as club_name, c.wizard_data as club_wizard_data 
         FROM students s
         JOIN clubs c ON s.club_id = c.id
         WHERE s.id = ${id}::uuid
@@ -3191,7 +3205,7 @@ export function registerRoutes(app: Express) {
       try {
         const studentResult = await db.execute(sql`SELECT name FROM students WHERE id = ${studentId}::uuid`);
         const clubResult = await db.execute(sql`
-          SELECT c.name as club_name, co.email as coach_email, co.name as coach_name
+          SELECT c.name as club_name, c.wizard_data, co.email as coach_email, co.name as coach_name
           FROM clubs c
           LEFT JOIN coaches co ON co.club_id = c.id AND co.is_active = true
           WHERE c.id = ${clubId}::uuid
@@ -3199,13 +3213,15 @@ export function registerRoutes(app: Express) {
         
         const studentName = (studentResult as any[])[0]?.name || 'Student';
         const clubData = clubResult as any[];
+        const videoClubLanguage = (clubData[0]?.wizard_data as any)?.language || 'English';
         
         for (const coach of clubData.filter(c => c.coach_email)) {
           emailService.sendVideoSubmittedNotification(coach.coach_email, {
             coachName: coach.coach_name || 'Coach',
             studentName,
             challengeName: challengeName || challengeId,
-            clubName: coach.club_name || 'Your Club'
+            clubName: coach.club_name || 'Your Club',
+            language: videoClubLanguage
           }).catch(err => console.error('[Videos] Email notification error:', err));
         }
       } catch (emailErr) {
@@ -3424,7 +3440,7 @@ export function registerRoutes(app: Express) {
       // Send email notification to parent
       try {
         const videoResult = await db.execute(sql`
-          SELECT cv.challenge_name, s.name as student_name, s.parent_email, s.parent_name
+          SELECT cv.challenge_name, cv.club_id, s.name as student_name, s.parent_email, s.parent_name
           FROM challenge_videos cv
           JOIN students s ON cv.student_id = s.id
           WHERE cv.id = ${videoId}::uuid
@@ -3432,13 +3448,19 @@ export function registerRoutes(app: Express) {
         
         const videoData = (videoResult as any[])[0];
         if (videoData?.parent_email) {
+          let verifyClubLanguage = 'English';
+          if (videoData.club_id) {
+            const verifyClubResult = await db.execute(sql`SELECT wizard_data FROM clubs WHERE id = ${videoData.club_id}::uuid LIMIT 1`);
+            verifyClubLanguage = ((verifyClubResult as any[])[0]?.wizard_data as any)?.language || 'English';
+          }
           emailService.sendVideoVerifiedNotification(videoData.parent_email, {
             parentName: videoData.parent_name || 'Parent',
             studentName: videoData.student_name,
             challengeName: videoData.challenge_name,
             status: status as 'approved' | 'rejected',
             coachNotes: coachNotes || undefined,
-            xpAwarded: status === 'approved' ? (xpAwarded || 0) : undefined
+            xpAwarded: status === 'approved' ? (xpAwarded || 0) : undefined,
+            language: verifyClubLanguage
           }).catch(err => console.error('[Videos] Parent notification error:', err));
         }
       } catch (emailErr) {

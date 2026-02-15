@@ -155,7 +155,13 @@ export async function sendWelcomeEmailAuto(
     return { success: true, skipped: true, reason: 'Already sent' };
   }
   
-  const result = await emailService.sendWelcomeEmail(ownerEmail, { ownerName, clubName });
+  let clubLanguage = 'English';
+  try {
+    const clubLangResult = await db.execute(sql`SELECT wizard_data FROM clubs WHERE id = ${clubId}::uuid LIMIT 1`);
+    clubLanguage = ((clubLangResult as any[])[0]?.wizard_data as any)?.language || 'English';
+  } catch (e) {}
+  
+  const result = await emailService.sendWelcomeEmail(ownerEmail, { ownerName, clubName, language: clubLanguage });
   
   await logEmail(
     triggerType, ownerEmail, MASTER_TEMPLATE,
@@ -183,11 +189,18 @@ export async function sendParentWelcomeEmailAuto(
     return { success: true, skipped: true, reason: 'Already sent' };
   }
   
+  let clubLanguage = 'English';
+  try {
+    const clubLangResult = await db.execute(sql`SELECT wizard_data FROM clubs WHERE id = ${clubId}::uuid LIMIT 1`);
+    clubLanguage = ((clubLangResult as any[])[0]?.wizard_data as any)?.language || 'English';
+  } catch (e) {}
+  
   const result = await emailService.sendParentWelcomeEmail(parentEmail, {
     parentName,
     studentName,
     clubName,
     studentId,
+    language: clubLanguage,
   });
   
   await logEmail(
@@ -220,6 +233,12 @@ export async function sendBeltPromotionEmailAuto(
     return { success: true, skipped: true, reason: 'Already sent' };
   }
   
+  let clubLanguage = 'English';
+  try {
+    const clubLangResult = await db.execute(sql`SELECT wizard_data FROM clubs WHERE id = ${clubId}::uuid LIMIT 1`);
+    clubLanguage = ((clubLangResult as any[])[0]?.wizard_data as any)?.language || 'English';
+  } catch (e) {}
+  
   const result = await emailService.sendBeltPromotionEmail(parentEmail, {
     studentName,
     beltColor,
@@ -229,6 +248,7 @@ export async function sendBeltPromotionEmailAuto(
     classesAttended,
     monthsTrained,
     promotionId,
+    language: clubLanguage,
   });
   
   await logEmail(
@@ -257,9 +277,16 @@ export async function sendBirthdayWishEmailAuto(
     return { success: true, skipped: true, reason: 'Already sent this year' };
   }
   
+  let clubLanguage = 'English';
+  try {
+    const clubLangResult = await db.execute(sql`SELECT wizard_data FROM clubs WHERE id = ${clubId}::uuid LIMIT 1`);
+    clubLanguage = ((clubLangResult as any[])[0]?.wizard_data as any)?.language || 'English';
+  } catch (e) {}
+  
   const result = await emailService.sendBirthdayWishEmail(parentEmail, {
     studentName,
     clubName,
+    language: clubLanguage,
   });
   
   await logEmail(
@@ -289,11 +316,18 @@ export async function sendAttendanceAlertEmailAuto(
     return { success: true, skipped: true, reason: 'Already sent recently' };
   }
   
+  let clubLanguage = 'English';
+  try {
+    const clubLangResult = await db.execute(sql`SELECT wizard_data FROM clubs WHERE id = ${clubId}::uuid LIMIT 1`);
+    clubLanguage = ((clubLangResult as any[])[0]?.wizard_data as any)?.language || 'English';
+  } catch (e) {}
+  
   const result = await emailService.sendAttendanceAlertEmail(parentEmail, {
     parentName,
     studentName,
     clubName,
     daysSinceLastClass,
+    language: clubLanguage,
   });
   
   await logEmail(
@@ -330,7 +364,7 @@ async function sendDay3CheckinEmails(): Promise<void> {
   const triggerType: AutomatedEmailTrigger = 'day_3_checkin';
   
   const clubs = await db.execute(sql`
-    SELECT id, owner_email, owner_name, name
+    SELECT id, owner_email, owner_name, name, wizard_data
     FROM clubs
     WHERE trial_status = 'active'
     AND created_at >= NOW() - INTERVAL '4 days'
@@ -342,8 +376,10 @@ async function sendDay3CheckinEmails(): Promise<void> {
   `);
   
   for (const club of clubs as any[]) {
+    const clubLanguage = (club?.wizard_data as any)?.language || 'English';
     const result = await emailService.sendDay3CheckinEmail(club.owner_email, {
       ownerName: club.owner_name || 'there',
+      language: clubLanguage,
     });
     
     await logEmail(
@@ -361,7 +397,7 @@ async function sendDay7MidTrialEmails(): Promise<void> {
   const triggerType: AutomatedEmailTrigger = 'day_7_mid_trial';
   
   const clubs = await db.execute(sql`
-    SELECT id, owner_email, owner_name, name
+    SELECT id, owner_email, owner_name, name, wizard_data
     FROM clubs
     WHERE trial_status = 'active'
     AND created_at >= NOW() - INTERVAL '8 days'
@@ -373,8 +409,10 @@ async function sendDay7MidTrialEmails(): Promise<void> {
   `);
   
   for (const club of clubs as any[]) {
+    const clubLanguage = (club?.wizard_data as any)?.language || 'English';
     const result = await emailService.sendDay7MidTrialEmail(club.owner_email, {
       ownerName: club.owner_name || 'there',
+      language: clubLanguage,
     });
     
     await logEmail(
@@ -392,7 +430,7 @@ async function sendTrialEndingSoonEmails(): Promise<void> {
   const triggerType: AutomatedEmailTrigger = 'trial_ending_soon';
   
   const clubs = await db.execute(sql`
-    SELECT id, owner_email, owner_name, name, trial_end
+    SELECT id, owner_email, owner_name, name, trial_end, wizard_data
     FROM clubs
     WHERE trial_status = 'active'
     AND trial_end IS NOT NULL
@@ -406,11 +444,13 @@ async function sendTrialEndingSoonEmails(): Promise<void> {
   
   for (const club of clubs as any[]) {
     const daysLeft = Math.ceil((new Date(club.trial_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const clubLanguage = (club?.wizard_data as any)?.language || 'English';
     
     const result = await emailService.sendTrialEndingSoonEmail(club.owner_email, {
       ownerName: club.owner_name || 'there',
       clubName: club.name,
       daysLeft,
+      language: clubLanguage,
     });
     
     await logEmail(
@@ -428,7 +468,7 @@ async function sendTrialExpiredEmails(): Promise<void> {
   const triggerType: AutomatedEmailTrigger = 'trial_expired';
   
   const clubs = await db.execute(sql`
-    SELECT id, owner_email, owner_name, name
+    SELECT id, owner_email, owner_name, name, wizard_data
     FROM clubs
     WHERE trial_status = 'active'
     AND trial_end IS NOT NULL
@@ -441,9 +481,11 @@ async function sendTrialExpiredEmails(): Promise<void> {
   `);
   
   for (const club of clubs as any[]) {
+    const clubLanguage = (club?.wizard_data as any)?.language || 'English';
     const result = await emailService.sendTrialExpiredEmail(club.owner_email, {
       ownerName: club.owner_name || 'there',
       clubName: club.name,
+      language: clubLanguage,
     });
     
     await logEmail(

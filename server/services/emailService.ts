@@ -378,9 +378,9 @@ async function sendEmail(
 
 export async function sendWelcomeEmail(
   to: string,
-  data: { ownerName: string; clubName: string }
+  data: { ownerName: string; clubName: string; language?: string }
 ): Promise<EmailResult> {
-  return sendNotification('welcome_club', { email: to, name: data.ownerName }, {
+  return sendNotification('welcome_club', { email: to, name: data.ownerName, language: data.language }, {
     name: data.ownerName,
     clubName: data.clubName,
   });
@@ -396,9 +396,10 @@ export async function sendPaymentConfirmationEmail(
     billingPeriod: string;
     invoiceNumber?: string;
     invoiceUrl?: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('payment_receipt', { email: to, name: data.ownerName }, {
+  return sendNotification('payment_receipt', { email: to, name: data.ownerName, language: data.language }, {
     name: data.ownerName,
     amount: data.amount,
     nextBillingDate: data.billingPeriod,
@@ -409,28 +410,28 @@ export async function sendPaymentConfirmationEmail(
 
 export async function sendDay3CheckinEmail(
   to: string,
-  data: { ownerName: string }
+  data: { ownerName: string; language?: string }
 ): Promise<EmailResult> {
-  return sendNotification('day_3_checkin', { email: to, name: data.ownerName }, {
+  return sendNotification('day_3_checkin', { email: to, name: data.ownerName, language: data.language }, {
     name: data.ownerName,
   });
 }
 
 export async function sendDay7MidTrialEmail(
   to: string,
-  data: { ownerName: string }
+  data: { ownerName: string; language?: string }
 ): Promise<EmailResult> {
-  return sendNotification('day_7_mid_trial', { email: to, name: data.ownerName }, {
+  return sendNotification('day_7_mid_trial', { email: to, name: data.ownerName, language: data.language }, {
     name: data.ownerName,
   });
 }
 
 export async function sendTrialEndingSoonEmail(
   to: string,
-  data: { ownerName: string; clubName: string; daysLeft: number; planName?: string; planPrice?: string; trialEndDate?: string }
+  data: { ownerName: string; clubName: string; daysLeft: number; planName?: string; planPrice?: string; trialEndDate?: string; language?: string }
 ): Promise<EmailResult> {
   const endDate = data.trialEndDate || new Date(Date.now() + data.daysLeft * 24 * 60 * 60 * 1000).toLocaleDateString();
-  return sendNotification('trial_ending', { email: to, name: data.ownerName }, {
+  return sendNotification('trial_ending', { email: to, name: data.ownerName, language: data.language }, {
     name: data.ownerName,
     daysLeft: data.daysLeft,
     trialEndDate: endDate,
@@ -441,9 +442,9 @@ export async function sendTrialEndingSoonEmail(
 
 export async function sendTrialExpiredEmail(
   to: string,
-  data: { ownerName: string; clubName: string }
+  data: { ownerName: string; clubName: string; language?: string }
 ): Promise<EmailResult> {
-  return sendNotification('trial_expired', { email: to, name: data.ownerName }, {
+  return sendNotification('trial_expired', { email: to, name: data.ownerName, language: data.language }, {
     name: data.ownerName,
     clubName: data.clubName,
   });
@@ -456,10 +457,11 @@ export async function sendCoachInviteEmail(
     coachEmail: string;
     ownerName: string; 
     clubName: string; 
-    tempPassword: string 
+    tempPassword: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('coach_invite', { email: to, name: data.coachName }, {
+  return sendNotification('coach_invite', { email: to, name: data.coachName, language: data.language }, {
     name: data.coachName,
     clubName: data.clubName,
     tempPassword: data.tempPassword,
@@ -468,9 +470,9 @@ export async function sendCoachInviteEmail(
 
 export async function sendResetPasswordEmail(
   to: string,
-  data: { userName: string; resetToken: string }
+  data: { userName: string; resetToken: string; language?: string }
 ): Promise<EmailResult> {
-  return sendNotification('password_reset', { email: to, name: data.userName }, {
+  return sendNotification('password_reset', { email: to, name: data.userName, language: data.language }, {
     name: data.userName,
     resetUrl: `${BASE_URL}/reset-password?token=${data.resetToken}`,
   });
@@ -485,9 +487,10 @@ export async function sendNewStudentAddedEmail(
     studentAge: string;
     parentName: string;
     studentId: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('new_student_added', { email: to }, {
+  return sendNotification('new_student_added', { email: to, language: data.language }, {
     name: 'there',
     studentName: data.studentName,
     clubName: data.clubName,
@@ -504,9 +507,10 @@ export async function sendMonthlyRevenueReportEmail(
     totalEarnings: string;
     premiumParents: number;
     newThisMonth: number;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('monthly_revenue_report', { email: to, name: 'there' }, {
+  return sendNotification('monthly_revenue_report', { email: to, name: 'there', language: data.language }, {
     name: 'there',
     monthName: data.monthName,
     totalEarnings: data.totalEarnings,
@@ -522,9 +526,10 @@ export async function sendParentWelcomeEmail(
     studentName: string; 
     clubName: string;
     studentId: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('welcome_parent', { email: to, name: data.parentName }, {
+  return sendNotification('welcome_parent', { email: to, name: data.parentName, language: data.language }, {
     name: data.parentName,
     parentEmail: to,
     clubName: data.clubName,
@@ -547,13 +552,14 @@ export async function sendClassFeedbackEmail(
     stripeProgress: string;
     studentId?: string;
     feedbackId?: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
   const coachNoteSection = data.coachNote 
     ? `<br><br><strong>Coach's Note:</strong><br><em>"${data.coachNote}"</em>` 
     : '';
   
-  return sendNotification('class_feedback', { email: to, name: data.parentName }, {
+  return sendNotification('class_feedback', { email: to, name: data.parentName, language: data.language }, {
     parentName: data.parentName,
     studentName: data.studentName,
     clubName: data.clubName,
@@ -578,9 +584,10 @@ export async function sendBeltPromotionEmail(
     classesAttended: number;
     monthsTrained: number;
     promotionId: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('belt_promotion', { email: to }, {
+  return sendNotification('belt_promotion', { email: to, language: data.language }, {
     childName: data.studentName,
     newBelt: data.beltColor,
     clubName: data.clubName,
@@ -595,9 +602,10 @@ export async function sendAttendanceAlertEmail(
     studentName: string; 
     clubName: string;
     daysSinceLastClass: number;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('attendance_alert', { email: to, name: data.parentName }, {
+  return sendNotification('attendance_alert', { email: to, name: data.parentName, language: data.language }, {
     parentName: data.parentName,
     studentName: data.studentName,
     clubName: data.clubName,
@@ -610,9 +618,10 @@ export async function sendBirthdayWishEmail(
   data: { 
     studentName: string; 
     clubName: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('birthday_wish', { email: to }, {
+  return sendNotification('birthday_wish', { email: to, language: data.language }, {
     studentName: data.studentName,
     clubName: data.clubName,
   });
@@ -624,9 +633,10 @@ export async function sendWinBackEmail(
     ownerName: string; 
     clubName: string;
     discountCode?: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('win_back', { email: to, name: data.ownerName }, {
+  return sendNotification('win_back', { email: to, name: data.ownerName, language: data.language }, {
     name: data.ownerName,
     clubName: data.clubName,
     discountCode: data.discountCode || 'WINBACK25',
@@ -638,9 +648,10 @@ export async function sendChurnRiskEmail(
   data: { 
     ownerName: string; 
     clubName: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('churn_risk', { email: to, name: data.ownerName }, {
+  return sendNotification('churn_risk', { email: to, name: data.ownerName, language: data.language }, {
     name: data.ownerName,
   });
 }
@@ -652,9 +663,10 @@ export async function sendVideoSubmittedNotification(
     studentName: string;
     challengeName: string;
     clubName: string;
+    language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('video_submitted', { email: to, name: data.coachName }, {
+  return sendNotification('video_submitted', { email: to, name: data.coachName, language: data.language }, {
     coachName: data.coachName,
     studentName: data.studentName,
     challengeName: data.challengeName,
@@ -671,10 +683,11 @@ export async function sendVideoVerifiedNotification(
     status: 'approved' | 'rejected';
     coachNotes?: string;
     xpAwarded?: number;
+    language?: string;
   }
 ): Promise<EmailResult> {
   const emailType = data.status === 'approved' ? 'video_approved' : 'video_retry';
-  return sendNotification(emailType, { email: to, name: data.parentName }, {
+  return sendNotification(emailType, { email: to, name: data.parentName, language: data.language }, {
     childName: data.studentName,
     coachName: 'Sensei',
     xpAmount: data.xpAwarded || 0,
