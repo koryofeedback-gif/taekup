@@ -23,7 +23,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSignupSuccess }) => {
       return;
     }
     if (!agreed) {
-      setError('You must agree to the terms and conditions.');
+      setError('You must agree to the Terms of Service and Privacy Policy.');
       return;
     }
     setError('');
@@ -80,7 +80,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSignupSuccess }) => {
             className="h-4 w-4 text-sky-500 bg-gray-700 border-gray-600 rounded focus:ring-sky-500"
           />
           <label htmlFor="agree" className="ml-2 block text-sm text-gray-400">
-            I agree to the <a href="#" className="font-medium text-sky-300 hover:text-blue-300">Terms and Conditions</a>
+            I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-medium text-sky-300 hover:text-blue-300">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-medium text-sky-300 hover:text-blue-300">Privacy Policy</a>.
           </label>
         </div>
         {error && <p className="text-red-400 text-sm">{error}</p>}
