@@ -188,9 +188,7 @@ export const WT_BELTS: Belt[] = [
     { id: 'wt-8', name: 'Blue/Red Stripe', color1: '#0000FF', color2: '#FF0000' },
     { id: 'wt-9', name: 'Red Belt', color1: '#FF0000' },
     { id: 'wt-10', name: 'Red/Black Stripe', color1: '#FF0000', color2: '#000000' },
-    { id: 'wt-11', name: 'Black Belt (1st Dan)', color1: '#000000' },
-    { id: 'wt-12', name: 'Black Belt (2nd Dan)', color1: '#000000' },
-    { id: 'wt-13', name: 'Black Belt (3rd Dan)', color1: '#000000' }
+    { id: 'wt-11', name: 'Black Belt', color1: '#000000' }
 ];
 
 export const ITF_BELTS: Belt[] = [
@@ -202,9 +200,7 @@ export const ITF_BELTS: Belt[] = [
     { id: 'itf-6', name: 'Purple', color1: '#800080' },
     { id: 'itf-7', name: 'Brown', color1: '#A52A2A' },
     { id: 'itf-8', name: 'Red', color1: '#FF0000' },
-    { id: 'itf-9', name: 'Black (1st Dan)', color1: '#000000' },
-    { id: 'itf-10', name: 'Black (2nd Dan)', color1: '#000000' },
-    { id: 'itf-11', name: 'Black (3rd Dan)', color1: '#000000' }
+    { id: 'itf-9', name: 'Black', color1: '#000000' }
 ];
 
 export const KARATE_BELTS: Belt[] = [
@@ -217,9 +213,7 @@ export const KARATE_BELTS: Belt[] = [
     { id: 'k-7', name: 'Brown (3rd Kyu)', color1: '#A52A2A' },
     { id: 'k-8', name: 'Brown (2nd Kyu)', color1: '#A52A2A' },
     { id: 'k-9', name: 'Brown (1st Kyu)', color1: '#A52A2A' },
-    { id: 'k-10', name: 'Black (Shodan)', color1: '#000000' },
-    { id: 'k-11', name: 'Black (Nidan)', color1: '#000000' },
-    { id: 'k-12', name: 'Black (Sandan)', color1: '#000000' }
+    { id: 'k-10', name: 'Black', color1: '#000000' }
 ];
 
 export const BJJ_BELTS: Belt[] = [
@@ -227,11 +221,8 @@ export const BJJ_BELTS: Belt[] = [
     { id: 'bjj-2', name: 'Blue', color1: '#0000FF' },
     { id: 'bjj-3', name: 'Purple', color1: '#800080' },
     { id: 'bjj-4', name: 'Brown', color1: '#A52A2A' },
-    { id: 'bjj-5', name: 'Black (1st Degree)', color1: '#000000' },
-    { id: 'bjj-6', name: 'Black (2nd Degree)', color1: '#000000' },
-    { id: 'bjj-7', name: 'Black (3rd Degree)', color1: '#000000' },
-    { id: 'bjj-8', name: 'Red/Black (Coral)', color1: '#FF0000', color2: '#000000' },
-    { id: 'bjj-9', name: 'Red', color1: '#FF0000' }
+    { id: 'bjj-5', name: 'Black', color1: '#000000' },
+    { id: 'bjj-6', name: 'Red', color1: '#FF0000' }
 ];
 
 export const JUDO_BELTS: Belt[] = [
@@ -241,9 +232,7 @@ export const JUDO_BELTS: Belt[] = [
     { id: 'j-4', name: 'Green', color1: '#008000' },
     { id: 'j-5', name: 'Blue', color1: '#0000FF' },
     { id: 'j-6', name: 'Brown', color1: '#A52A2A' },
-    { id: 'j-7', name: 'Black (1st Dan)', color1: '#000000' },
-    { id: 'j-8', name: 'Black (2nd Dan)', color1: '#000000' },
-    { id: 'j-9', name: 'Black (3rd Dan)', color1: '#000000' }
+    { id: 'j-7', name: 'Black', color1: '#000000' }
 ];
 
 export const HAPKIDO_BELTS: Belt[] = [
@@ -254,9 +243,7 @@ export const HAPKIDO_BELTS: Belt[] = [
     { id: 'hkd-5', name: 'Blue', color1: '#0000FF' },
     { id: 'hkd-6', name: 'Brown', color1: '#A52A2A' },
     { id: 'hkd-7', name: 'Red', color1: '#FF0000' },
-    { id: 'hkd-8', name: 'Black (1st Dan)', color1: '#000000' },
-    { id: 'hkd-9', name: 'Black (2nd Dan)', color1: '#000000' },
-    { id: 'hkd-10', name: 'Black (3rd Dan)', color1: '#000000' }
+    { id: 'hkd-8', name: 'Black', color1: '#000000' }
 ];
 
 export const TANGSOODO_BELTS: Belt[] = [
@@ -267,9 +254,7 @@ export const TANGSOODO_BELTS: Belt[] = [
     { id: 'tsd-5', name: 'Red', color1: '#FF0000' },
     { id: 'tsd-6', name: 'Red (1 Stripe)', color1: '#FF0000' },
     { id: 'tsd-7', name: 'Red (2 Stripes)', color1: '#FF0000' },
-    { id: 'tsd-8', name: 'Midnight Blue (1st Dan)', color1: '#191970' },
-    { id: 'tsd-9', name: 'Midnight Blue (2nd Dan)', color1: '#191970' },
-    { id: 'tsd-10', name: 'Midnight Blue (3rd Dan)', color1: '#191970' }
+    { id: 'tsd-8', name: 'Midnight Blue', color1: '#191970' }
 ];
 
 export const AIKIDO_BELTS: Belt[] = [
@@ -279,9 +264,7 @@ export const AIKIDO_BELTS: Belt[] = [
     { id: 'aik-4', name: 'Green (3rd Kyu)', color1: '#008000' },
     { id: 'aik-5', name: 'Blue (2nd Kyu)', color1: '#0000FF' },
     { id: 'aik-6', name: 'Brown (1st Kyu)', color1: '#A52A2A' },
-    { id: 'aik-7', name: 'Black (Shodan)', color1: '#000000' },
-    { id: 'aik-8', name: 'Black (Nidan)', color1: '#000000' },
-    { id: 'aik-9', name: 'Black (Sandan)', color1: '#000000' }
+    { id: 'aik-7', name: 'Black (Shodan)', color1: '#000000' }
 ];
 
 export const KRAVMAGA_BELTS: Belt[] = [
@@ -291,9 +274,7 @@ export const KRAVMAGA_BELTS: Belt[] = [
     { id: 'km-4', name: 'Green (Graduate 1)', color1: '#008000' },
     { id: 'km-5', name: 'Blue (Graduate 2)', color1: '#0000FF' },
     { id: 'km-6', name: 'Brown (Graduate 3)', color1: '#A52A2A' },
-    { id: 'km-7', name: 'Black (Expert 1)', color1: '#000000' },
-    { id: 'km-8', name: 'Black (Expert 2)', color1: '#000000' },
-    { id: 'km-9', name: 'Black (Expert 3)', color1: '#000000' }
+    { id: 'km-7', name: 'Black (Expert)', color1: '#000000' }
 ];
 
 export const KUNGFU_BELTS: Belt[] = [
@@ -305,7 +286,5 @@ export const KUNGFU_BELTS: Belt[] = [
     { id: 'kf-6', name: 'Purple Sash', color1: '#800080' },
     { id: 'kf-7', name: 'Brown Sash', color1: '#A52A2A' },
     { id: 'kf-8', name: 'Red Sash', color1: '#FF0000' },
-    { id: 'kf-9', name: 'Black Sash (1st Degree)', color1: '#000000' },
-    { id: 'kf-10', name: 'Black Sash (2nd Degree)', color1: '#000000' },
-    { id: 'kf-11', name: 'Black Sash (3rd Degree)', color1: '#000000' }
+    { id: 'kf-9', name: 'Black Sash', color1: '#000000' }
 ];
