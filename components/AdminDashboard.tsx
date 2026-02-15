@@ -6,6 +6,7 @@ import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
 import { DEMO_MODE_KEY, isDemoModeEnabled, DEMO_STUDENTS, DEMO_COACHES, DEMO_SCHEDULE, DEMO_STATS, DEMO_LEADERBOARD, DEMO_RECENT_ACTIVITY, DEMO_CURRICULUM } from './demoData';
 import { CSVImport, ImportedStudent } from './CSVImport';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface AdminDashboardProps {
   data: WizardData;
@@ -281,6 +282,7 @@ const MarginCalculatorCard: React.FC<{
 // --- SUB-SECTIONS ---
 
 const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void, onOpenModal: (type: string) => void, onNavigateTab?: (tab: 'overview' | 'students' | 'staff' | 'schedule' | 'creator' | 'settings' | 'billing') => void }> = ({ data, onNavigate, onOpenModal, onNavigateTab }) => {
+    const { t } = useTranslation(data.language);
     const totalStudents = data.students.length;
     
     // Revenue Simulator State - Premium is $4.99, club owner gets 70%, TaekUp gets 30%
@@ -323,30 +325,30 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <StatCard label="Total Students" value={totalStudents} subtext={selectedTier ? `${selectedTier.limit === Infinity ? 'Unlimited' : selectedTier.limit - totalStudents + ' spots left'} in ${selectedTier.name}` : `Recommended: ${recommendedTier.name}`} icon="🥋" color="blue" />
-                <StatCard label="Premium Families" value={data.students.filter((s: any) => s.premiumStatus === 'parent_paid' || s.premiumStatus === 'club_sponsored').length} subtext={`$${(data.students.filter((s: any) => s.premiumStatus === 'parent_paid').length * 4.99).toFixed(2)}/mo revenue`} icon="⭐" color="green" />
-                <StatCard label="Active Staff" value={data.coaches.length + 1} subtext="1 Owner" icon="👥" color="purple" />
-                <StatCard label="Locations" value={data.branches} subtext="Unlimited Plan" icon="🌍" color="orange" />
+                <StatCard label={t('admin.overview.totalStudents')} value={totalStudents} subtext={selectedTier ? `${selectedTier.limit === Infinity ? t('admin.overview.unlimited') : t('admin.overview.spotsLeft', { count: selectedTier.limit - totalStudents })} ${t('admin.overview.inPlan', { plan: selectedTier.name })}` : t('admin.overview.recommended', { plan: recommendedTier.name })} icon="🥋" color="blue" />
+                <StatCard label={t('admin.overview.premiumFamilies')} value={data.students.filter((s: any) => s.premiumStatus === 'parent_paid' || s.premiumStatus === 'club_sponsored').length} subtext={t('admin.overview.moRevenue', { amount: (data.students.filter((s: any) => s.premiumStatus === 'parent_paid').length * 4.99).toFixed(2) })} icon="⭐" color="green" />
+                <StatCard label={t('admin.overview.activeStaff')} value={data.coaches.length + 1} subtext={t('admin.overview.oneOwner')} icon="👥" color="purple" />
+                <StatCard label={t('admin.overview.locations')} value={data.branches} subtext={t('admin.overview.unlimitedPlan')} icon="🌍" color="orange" />
             </div>
 
             {/* Quick Actions */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <button onClick={() => onOpenModal('student')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all hover:-translate-y-1">
                     <span className="text-2xl mb-2">👤</span>
-                    <span className="font-bold text-white text-sm">+ Add Student</span>
+                    <span className="font-bold text-white text-sm">{t('admin.overview.addStudent')}</span>
                 </button>
                 <button onClick={() => onOpenModal('coach')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all hover:-translate-y-1">
                     <span className="text-2xl mb-2">🥋</span>
-                    <span className="font-bold text-white text-sm">+ Add Coach</span>
+                    <span className="font-bold text-white text-sm">{t('admin.overview.addCoach')}</span>
                 </button>
                 <button onClick={() => onNavigate('coach-dashboard')} className="bg-blue-900/30 hover:bg-blue-900/50 p-4 rounded-lg border border-sky-500/30 flex flex-col items-center justify-center transition-all hover:-translate-y-1">
                     <span className="text-2xl mb-2">📋</span>
-                    <span className="font-bold text-blue-200 text-sm">Coach Dashboard</span>
+                    <span className="font-bold text-blue-200 text-sm">{t('admin.overview.coachDashboard')}</span>
                 </button>
                 <button onClick={() => onNavigate('dojang-tv')} className="bg-purple-900/30 hover:bg-purple-900/50 p-4 rounded-lg border border-purple-500/30 flex flex-col items-center justify-center transition-all hover:-translate-y-1 relative overflow-hidden group">
                     <div className="absolute inset-0 bg-purple-500/10 animate-pulse"></div>
                     <span className="text-2xl mb-2 relative z-10">📺</span>
-                    <span className="font-bold text-purple-200 text-sm relative z-10">Launch Lobby TV</span>
+                    <span className="font-bold text-purple-200 text-sm relative z-10">{t('admin.overview.launchLobbyTV')}</span>
                 </button>
             </div>
 
@@ -354,27 +356,27 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
             <div className="md:hidden grid grid-cols-2 gap-3">
                 <button onClick={() => onNavigateTab('students')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
                     <span className="text-2xl mb-2">👥</span>
-                    <span className="font-bold text-white text-sm">Students</span>
+                    <span className="font-bold text-white text-sm">{t('admin.sidebar.students')}</span>
                 </button>
                 <button onClick={() => onNavigateTab('staff')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
                     <span className="text-2xl mb-2">🥋</span>
-                    <span className="font-bold text-white text-sm">Staff</span>
+                    <span className="font-bold text-white text-sm">{t('admin.sidebar.staff')}</span>
                 </button>
                 <button onClick={() => onNavigateTab('schedule')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
                     <span className="text-2xl mb-2">📅</span>
-                    <span className="font-bold text-white text-sm">Schedule</span>
+                    <span className="font-bold text-white text-sm">{t('admin.sidebar.schedule')}</span>
                 </button>
                 <button onClick={() => onNavigateTab('creator')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
                     <span className="text-2xl mb-2">🎥</span>
-                    <span className="font-bold text-white text-sm">Creator Hub</span>
+                    <span className="font-bold text-white text-sm">{t('admin.sidebar.creatorHub')}</span>
                 </button>
                 <button onClick={() => onNavigateTab('settings')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
                     <span className="text-2xl mb-2">⚙️</span>
-                    <span className="font-bold text-white text-sm">Settings</span>
+                    <span className="font-bold text-white text-sm">{t('admin.sidebar.settings')}</span>
                 </button>
                 <button onClick={() => onNavigateTab('billing')} className="bg-gray-800 hover:bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col items-center justify-center transition-all">
                     <span className="text-2xl mb-2">💳</span>
-                    <span className="font-bold text-white text-sm">Billing</span>
+                    <span className="font-bold text-white text-sm">{t('admin.sidebar.billing')}</span>
                 </button>
             </div>
 
@@ -427,7 +429,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                         <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700 text-center relative overflow-hidden">
                             {revenue.profit > 0 && (
                                 <div className="absolute top-0 right-0 bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-bl-lg shadow-lg animate-pulse">
-                                    🎉 100% COVERED
+                                    {t('admin.overview.hundredPercentCovered')}
                                 </div>
                             )}
                             <div className="mb-4 space-y-1">
@@ -469,6 +471,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
 }
 
 const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void, onViewPortal?: (id: string) => void, onEditStudent?: (student: Student) => void, clubId?: string }> = ({ data, onUpdateData, onOpenModal, onViewPortal, onEditStudent, clubId }) => {
+    const { t } = useTranslation(data.language);
     const [search, setSearch] = useState('');
     const [locationFilter, setLocationFilter] = useState('All Locations');
     const [classFilter, setClassFilter] = useState('All Classes');
@@ -545,10 +548,10 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
 
     const handleDelete = async (id: string) => {
         if (isDemoModeEnabled()) {
-            alert('Demo mode is active. Turn off demo mode to make changes.');
+            alert(t('common.demoModeActive'));
             return;
         }
-        if(confirm('Are you sure? This cannot be undone.')) {
+        if(confirm(t('common.areYouSure'))) {
             try {
                 const response = await fetch(`/api/students/${id}`, {
                     method: 'DELETE',
@@ -574,7 +577,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 }
             } catch (err: any) {
                 console.error('Failed to delete student:', err);
-                alert(err.message || 'Failed to delete student');
+                alert(err.message || t('admin.students.failedToDeleteStudent'));
             }
         }
     }
@@ -582,86 +585,86 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     return (
         <div>
             <SectionHeader 
-                title="Student Roster" 
-                description="Manage your students, belts, and assignments." 
+                title={t('admin.students.studentRoster')} 
+                description={t('admin.students.manageStudents')} 
                 action={
                     <div className="flex gap-2">
                         <button onClick={() => setShowTransfers(true)} className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded shadow-lg">
-                            Transfers
+                            {t('admin.students.transfers')}
                         </button>
                         <button onClick={() => onOpenModal('student')} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded shadow-lg">
-                            + Add Student
+                            {t('admin.students.addStudent')}
                         </button>
                     </div>
                 }
             />
             
             {showTransfers && (
-                <Modal title="Transfer Requests" onClose={() => setShowTransfers(false)}>
+                <Modal title={t('admin.students.transferRequests')} onClose={() => setShowTransfers(false)}>
                     {transfersError && (
                         <div className="bg-red-900/30 border border-red-500/30 p-3 rounded text-red-300 text-sm mb-4">
                             {transfersError}
                         </div>
                     )}
                     {transfersLoading ? (
-                        <div className="text-center py-8 text-gray-400">Loading transfers...</div>
+                        <div className="text-center py-8 text-gray-400">{t('admin.students.loadingTransfers')}</div>
                     ) : transfers.length === 0 ? (
                         <div className="text-center py-8">
-                            <p className="text-gray-400 mb-4">No transfer requests</p>
-                            <p className="text-sm text-gray-500">Request transfers from "Add Student" → Transfer tab</p>
+                            <p className="text-gray-400 mb-4">{t('admin.students.noTransferRequests')}</p>
+                            <p className="text-sm text-gray-500">{t('admin.students.requestTransfersFrom')}</p>
                         </div>
                     ) : (
                         <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                            {transfers.map(t => (
-                                <div key={t.id} className={`p-4 rounded-lg border ${
-                                    t.status === 'pending' ? 'bg-yellow-900/20 border-yellow-500/30' :
-                                    t.status === 'approved' ? 'bg-green-900/20 border-green-500/30' :
+                            {transfers.map(tr => (
+                                <div key={tr.id} className={`p-4 rounded-lg border ${
+                                    tr.status === 'pending' ? 'bg-yellow-900/20 border-yellow-500/30' :
+                                    tr.status === 'approved' ? 'bg-green-900/20 border-green-500/30' :
                                     'bg-red-900/20 border-red-500/30'
                                 }`}>
                                     <div className="flex items-center justify-between mb-2">
                                         <div>
-                                            <p className="font-bold text-white">{t.student.name}</p>
-                                            <p className="text-xs text-cyan-400 font-mono">{t.student.mytaekId}</p>
+                                            <p className="font-bold text-white">{tr.student.name}</p>
+                                            <p className="text-xs text-cyan-400 font-mono">{tr.student.mytaekId}</p>
                                         </div>
                                         <div className={`px-2 py-1 rounded text-xs font-bold ${
-                                            t.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
-                                            t.status === 'approved' ? 'bg-green-500/20 text-green-300' :
+                                            tr.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
+                                            tr.status === 'approved' ? 'bg-green-500/20 text-green-300' :
                                             'bg-red-500/20 text-red-300'
                                         }`}>
-                                            {t.status.toUpperCase()}
+                                            {tr.status.toUpperCase()}
                                         </div>
                                     </div>
                                     <div className="text-sm text-gray-400 mb-2">
-                                        {t.direction === 'outgoing' ? (
-                                            <><span className="text-orange-400">OUTGOING:</span> {t.toClub.name} wants this student</>
+                                        {tr.direction === 'outgoing' ? (
+                                            <><span className="text-orange-400">{t('admin.students.outgoing')}:</span> {t('admin.students.outgoingDesc', { club: tr.toClub.name })}</>
                                         ) : (
-                                            <><span className="text-cyan-400">INCOMING:</span> Student from {t.fromClub?.name || 'Unknown'}</>
+                                            <><span className="text-cyan-400">{t('admin.students.incoming')}:</span> {t('admin.students.incomingDesc', { club: tr.fromClub?.name || 'Unknown' })}</>
                                         )}
                                     </div>
                                     <div className="flex gap-2 text-xs text-gray-500 mb-2">
-                                        <span>Belt: {t.beltAtTransfer}</span>
+                                        <span>{t('admin.students.belt')}: {tr.beltAtTransfer}</span>
                                         <span>|</span>
-                                        <span>XP: {(t.xpAtTransfer || 0).toLocaleString()}</span>
+                                        <span>XP: {(tr.xpAtTransfer || 0).toLocaleString()}</span>
                                     </div>
-                                    {t.status === 'pending' && t.fromClub?.id === clubId && (
+                                    {tr.status === 'pending' && tr.fromClub?.id === clubId && (
                                         <div className="flex gap-2 mt-3">
                                             <button 
-                                                onClick={() => handleTransferAction(t.id, 'approve')}
+                                                onClick={() => handleTransferAction(tr.id, 'approve')}
                                                 className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded font-bold text-sm"
                                             >
-                                                Approve Transfer
+                                                {t('admin.students.approveTransfer')}
                                             </button>
                                             <button 
-                                                onClick={() => handleTransferAction(t.id, 'reject')}
+                                                onClick={() => handleTransferAction(tr.id, 'reject')}
                                                 className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded font-bold text-sm"
                                             >
-                                                Reject
+                                                {t('admin.students.reject')}
                                             </button>
                                         </div>
                                     )}
-                                    {t.status === 'pending' && t.toClub?.id === clubId && (
+                                    {tr.status === 'pending' && tr.toClub?.id === clubId && (
                                         <div className="text-xs text-yellow-300 mt-2">
-                                            Waiting for {t.fromClub?.name || 'current club'} to approve
+                                            {t('admin.students.waitingForApproval', { club: tr.fromClub?.name || 'current club' })}
                                         </div>
                                     )}
                                 </div>
@@ -673,7 +676,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             <div className="flex flex-wrap gap-4 mb-4">
                 <input 
                     type="text" 
-                    placeholder="Search students..." 
+                    placeholder={t('admin.students.searchStudents')} 
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500 w-full md:w-64"
@@ -686,7 +689,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     }}
                     className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500"
                 >
-                    <option>All Locations</option>
+                    <option>{t('common.allLocations')}</option>
                     {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
                 <select 
@@ -695,7 +698,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500"
                     disabled={locationFilter === 'All Locations' && (!data.classes || data.classes.length === 0)}
                 >
-                    <option>All Classes</option>
+                    <option>{t('common.allClasses')}</option>
                     {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <select 
@@ -703,7 +706,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     onChange={e => setBeltFilter(e.target.value)}
                     className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500"
                 >
-                    <option>All Belts</option>
+                    <option>{t('common.allBelts')}</option>
                     {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
             </div>
@@ -712,11 +715,11 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 <table className="w-full text-left text-sm text-gray-300">
                     <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                         <tr>
-                            <th className="px-6 py-3">Name</th>
-                            <th className="px-6 py-3">Belt</th>
-                            <th className="px-6 py-3">Location / Class</th>
-                            <th className="px-6 py-3">Joined</th>
-                            <th className="px-6 py-3 text-right">Actions</th>
+                            <th className="px-6 py-3">{t('common.name')}</th>
+                            <th className="px-6 py-3">{t('admin.students.belt')}</th>
+                            <th className="px-6 py-3">{t('admin.students.locationClass')}</th>
+                            <th className="px-6 py-3">{t('admin.students.joined')}</th>
+                            <th className="px-6 py-3 text-right">{t('common.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700">
@@ -731,20 +734,20 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                 <td className="px-6 py-4">{s.joinDate ? new Date(s.joinDate).toLocaleDateString() : 'N/A'}</td>
                                 <td className="px-6 py-4 text-right space-x-3">
                                     {onEditStudent && (
-                                        <button onClick={() => onEditStudent(s)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs" title="Edit Student">
-                                            Edit
+                                        <button onClick={() => onEditStudent(s)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs" title={t('admin.students.editStudentModal.title')}>
+                                            {t('common.edit')}
                                         </button>
                                     )}
                                     {onViewPortal && (
-                                        <button onClick={() => onViewPortal(s.id)} className="text-sky-300 hover:text-blue-300 font-bold text-xs" title="View as Parent">
-                                            👁️ Portal
+                                        <button onClick={() => onViewPortal(s.id)} className="text-sky-300 hover:text-blue-300 font-bold text-xs" title={t('admin.students.viewAsParent')}>
+                                            👁️ {t('admin.students.portal')}
                                         </button>
                                     )}
-                                    <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">Delete</button>
+                                    <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.delete')}</button>
                                 </td>
                             </tr>
                         ))}
-                        {filtered.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No students found.</td></tr>}
+                        {filtered.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">{t('admin.students.noStudentsFound')}</td></tr>}
                     </tbody>
                 </table>
             </div>
@@ -771,23 +774,23 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         <div className="flex gap-3 pt-2 border-t border-gray-700">
                             {onEditStudent && (
                                 <button onClick={() => onEditStudent(s)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs">
-                                    Edit
+                                    {t('common.edit')}
                                 </button>
                             )}
                             {onViewPortal && (
                                 <button onClick={() => onViewPortal(s.id)} className="text-sky-300 hover:text-blue-300 font-bold text-xs">
-                                    👁️ Portal
+                                    👁️ {t('admin.students.portal')}
                                 </button>
                             )}
                             <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
-                                Delete
+                                {t('common.delete')}
                             </button>
                         </div>
                     </div>
                 ))}
                 {filtered.length === 0 && (
                     <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
-                        No students found.
+                        {t('admin.students.noStudentsFound')}
                     </div>
                 )}
             </div>
@@ -796,14 +799,15 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
 }
 
 const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void, onEditCoach?: (coach: any) => void }> = ({ data, onUpdateData, onOpenModal, onEditCoach }) => {
+    const { t } = useTranslation(data.language);
     const [deleting, setDeleting] = useState<string | null>(null);
 
     const handleDelete = async (id: string) => {
         if (isDemoModeEnabled()) {
-            alert('Demo mode is active. Turn off demo mode to make changes.');
+            alert(t('common.demoModeActive'));
             return;
         }
-        if(!confirm('Remove this coach? They will lose access immediately.')) return;
+        if(!confirm(t('admin.staff.removeCoachConfirm'))) return;
         
         setDeleting(id);
         try {
@@ -811,11 +815,11 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
             if (response.ok) {
                 onUpdateData({ coaches: data.coaches.filter(c => c.id !== id) });
             } else {
-                alert('Failed to remove coach');
+                alert(t('admin.staff.failedToRemoveCoach'));
             }
         } catch (error) {
             console.error('Delete coach error:', error);
-            alert('Failed to remove coach');
+            alert(t('admin.staff.failedToRemoveCoach'));
         } finally {
             setDeleting(null);
         }
@@ -824,11 +828,11 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
     return (
         <div>
             <SectionHeader 
-                title="Staff Management" 
-                description="Manage coaches, permissions, and assignments." 
+                title={t('admin.staff.staffManagement')} 
+                description={t('admin.staff.manageCoaches')} 
                 action={
                     <button onClick={() => onOpenModal('coach')} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded shadow-lg">
-                        + Add Coach
+                        {t('admin.staff.addCoach')}
                     </button>
                 }
             />
@@ -838,19 +842,19 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                 <table className="w-full text-left text-sm text-gray-300">
                     <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                         <tr>
-                            <th className="px-6 py-3">Name</th>
-                            <th className="px-6 py-3">Email</th>
-                            <th className="px-6 py-3">Location</th>
-                            <th className="px-6 py-3">Classes</th>
-                            <th className="px-6 py-3 text-right">Actions</th>
+                            <th className="px-6 py-3">{t('admin.staff.tableHeaders.name')}</th>
+                            <th className="px-6 py-3">{t('admin.staff.tableHeaders.email')}</th>
+                            <th className="px-6 py-3">{t('admin.staff.tableHeaders.location')}</th>
+                            <th className="px-6 py-3">{t('admin.staff.tableHeaders.classes')}</th>
+                            <th className="px-6 py-3 text-right">{t('admin.staff.tableHeaders.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700">
                         <tr className="bg-blue-900/10">
-                            <td className="px-6 py-4 font-bold text-white">{data.ownerName} <span className="text-[10px] bg-blue-900 text-blue-300 px-2 py-0.5 rounded ml-2">OWNER</span></td>
-                            <td className="px-6 py-4 text-gray-400">Account Admin</td>
-                            <td className="px-6 py-4">All Locations</td>
-                            <td className="px-6 py-4">All Classes</td>
+                            <td className="px-6 py-4 font-bold text-white">{data.ownerName} <span className="text-[10px] bg-blue-900 text-blue-300 px-2 py-0.5 rounded ml-2">{t('common.owner')}</span></td>
+                            <td className="px-6 py-4 text-gray-400">{t('admin.staff.accountAdmin')}</td>
+                            <td className="px-6 py-4">{t('common.allLocations')}</td>
+                            <td className="px-6 py-4">{t('common.allClasses')}</td>
                             <td className="px-6 py-4 text-right"></td>
                         </tr>
                         {data.coaches.map(c => (
@@ -858,17 +862,17 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                                 <td className="px-6 py-4 font-medium text-white">{c.name}</td>
                                 <td className="px-6 py-4">{c.email}</td>
                                 <td className="px-6 py-4">{c.location || '-'}</td>
-                                <td className="px-6 py-4 text-xs">{c.assignedClasses?.join(', ') || 'None'}</td>
+                                <td className="px-6 py-4 text-xs">{c.assignedClasses?.join(', ') || t('admin.staff.none')}</td>
                                 <td className="px-6 py-4 text-right space-x-3">
                                     {onEditCoach && (
-                                        <button onClick={() => onEditCoach(c)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs">Edit</button>
+                                        <button onClick={() => onEditCoach(c)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs">{t('common.edit')}</button>
                                     )}
                                     <button 
                                         onClick={() => handleDelete(c.id)} 
                                         disabled={deleting === c.id}
                                         className="text-red-400 hover:text-red-300 font-bold text-xs disabled:opacity-50"
                                     >
-                                        {deleting === c.id ? 'Removing...' : 'Remove'}
+                                        {deleting === c.id ? t('common.removing') : t('common.remove')}
                                     </button>
                                 </td>
                             </tr>
@@ -885,11 +889,11 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                     <div className="flex justify-between items-start mb-2">
                         <div>
                             <h3 className="font-bold text-white text-lg">{data.ownerName}</h3>
-                            <span className="inline-block bg-blue-900 text-blue-300 text-[10px] px-2 py-0.5 rounded mt-1">OWNER</span>
+                            <span className="inline-block bg-blue-900 text-blue-300 text-[10px] px-2 py-0.5 rounded mt-1">{t('common.owner')}</span>
                         </div>
                     </div>
                     <div className="text-sm text-gray-400">
-                        <div>All Locations · All Classes</div>
+                        <div>{t('common.allLocations')} · {t('common.allClasses')}</div>
                     </div>
                 </div>
 
@@ -902,7 +906,7 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                         <div className="text-sm text-gray-400 mb-3 space-y-1">
                             <div className="truncate">{c.email}</div>
                             <div>
-                                <span className="text-white">{c.location || 'No location'}</span>
+                                <span className="text-white">{c.location || t('admin.staff.noLocation')}</span>
                                 {c.assignedClasses?.length > 0 && (
                                     <span className="text-gray-500"> · {c.assignedClasses.join(', ')}</span>
                                 )}
@@ -911,7 +915,7 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                         <div className="flex gap-3 pt-2 border-t border-gray-700">
                             {onEditCoach && (
                                 <button onClick={() => onEditCoach(c)} className="text-yellow-400 hover:text-yellow-300 font-bold text-xs">
-                                    Edit
+                                    {t('common.edit')}
                                 </button>
                             )}
                             <button 
@@ -919,14 +923,14 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
                                 disabled={deleting === c.id}
                                 className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto disabled:opacity-50"
                             >
-                                {deleting === c.id ? 'Removing...' : 'Remove'}
+                                {deleting === c.id ? t('common.removing') : t('common.remove')}
                             </button>
                         </div>
                     </div>
                 ))}
                 {data.coaches.length === 0 && (
                     <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
-                        No coaches added yet.
+                        {t('admin.staff.noCoachesAdded')}
                     </div>
                 )}
             </div>
@@ -935,22 +939,24 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
 }
 
 const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void }> = ({ data, onUpdateData, onOpenModal }) => {
+    const { t } = useTranslation(data.language);
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayKeys: Record<string, string> = { Monday: 'monday', Tuesday: 'tuesday', Wednesday: 'wednesday', Thursday: 'thursday', Friday: 'friday', Saturday: 'saturday', Sunday: 'sunday' };
 
     const handleRemoveClass = (id: string) => {
-        if(confirm('Remove this class from the schedule?')) {
+        if(confirm(t('admin.schedule.removeClassConfirm'))) {
             onUpdateData({ schedule: data.schedule.filter(s => s.id !== id) });
         }
     }
 
     const handleRemoveEvent = (id: string) => {
-        if(confirm('Cancel this event?')) {
+        if(confirm(t('admin.schedule.cancelEventConfirm'))) {
             onUpdateData({ events: data.events.filter(e => e.id !== id) });
         }
     }
 
     const handleRemovePrivateSlot = (id: string) => {
-        if(confirm('Remove this private lesson slot?')) {
+        if(confirm(t('admin.schedule.removeSlotConfirm'))) {
             onUpdateData({ privateSlots: (data.privateSlots || []).filter(s => s.id !== id) });
         }
     }
@@ -960,11 +966,11 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             {/* Weekly Schedule */}
             <div>
                 <SectionHeader 
-                    title="Weekly Class Schedule" 
-                    description="Define your recurring weekly classes." 
+                    title={t('admin.schedule.weeklyClassSchedule')} 
+                    description={t('admin.schedule.defineRecurring')} 
                     action={
                         <button onClick={() => onOpenModal('class')} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-lg">
-                            + Add Class
+                            {t('admin.schedule.addClass')}
                         </button>
                     }
                 />
@@ -973,7 +979,7 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         const classes = (data.schedule || []).filter(s => s.day === day).sort((a,b) => a.time.localeCompare(b.time));
                         return (
                             <div key={day} className="bg-gray-800 rounded-lg border border-gray-700 p-3 min-h-[200px]">
-                                <h4 className="font-bold text-gray-400 text-sm mb-3 border-b border-gray-700 pb-2">{day}</h4>
+                                <h4 className="font-bold text-gray-400 text-sm mb-3 border-b border-gray-700 pb-2">{t(`admin.schedule.days.${dayKeys[day]}`)}</h4>
                                 <div className="space-y-2">
                                     {classes.map(c => (
                                         <div key={c.id} className="bg-gray-700/50 p-2 rounded text-xs group relative hover:bg-gray-700 transition-colors">
@@ -988,7 +994,7 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                             </button>
                                         </div>
                                     ))}
-                                    {classes.length === 0 && <p className="text-gray-600 text-xs italic">No classes</p>}
+                                    {classes.length === 0 && <p className="text-gray-600 text-xs italic">{t('admin.schedule.noClasses')}</p>}
                                 </div>
                             </div>
                         )
@@ -999,11 +1005,11 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             {/* Private Lessons */}
             <div>
                 <SectionHeader 
-                    title="Private Lesson Slots" 
-                    description="Create bookable private lesson slots for parents." 
+                    title={t('admin.schedule.privateLessonSlots')} 
+                    description={t('admin.schedule.createBookable')} 
                     action={
                         <button onClick={() => onOpenModal('private')} className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded shadow-lg">
-                            + Add Private Slot
+                            {t('admin.schedule.addPrivateSlot')}
                         </button>
                     }
                 />
@@ -1012,12 +1018,12 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     <table className="w-full text-left text-sm text-gray-300">
                         <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                             <tr>
-                                <th className="px-6 py-3">Date</th>
-                                <th className="px-6 py-3">Time</th>
-                                <th className="px-6 py-3">Coach</th>
-                                <th className="px-6 py-3">Price</th>
-                                <th className="px-6 py-3">Status</th>
-                                <th className="px-6 py-3 text-right">Actions</th>
+                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.date')}</th>
+                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.time')}</th>
+                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.coach')}</th>
+                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.price')}</th>
+                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.status')}</th>
+                                <th className="px-6 py-3 text-right">{t('admin.schedule.tableHeaders.actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700">
@@ -1029,17 +1035,17 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                     <td className="px-6 py-4 text-green-400 font-bold">${slot.price}</td>
                                     <td className="px-6 py-4">
                                         {slot.isBooked ? (
-                                            <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">Booked</span>
+                                            <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
                                         ) : (
-                                            <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">Available</span>
+                                            <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">Remove</button>
+                                        <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.remove')}</button>
                                     </td>
                                 </tr>
                             ))}
-                            {(data.privateSlots || []).length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">No private lesson slots. Add slots for parents to book.</td></tr>}
+                            {(data.privateSlots || []).length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">{t('admin.schedule.noPrivateSlots')}</td></tr>}
                         </tbody>
                     </table>
                 </div>
@@ -1054,9 +1060,9 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                     <span className="text-gray-400 text-sm">{slot.time}</span>
                                 </div>
                                 {slot.isBooked ? (
-                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">Booked</span>
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
                                 ) : (
-                                    <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">Available</span>
+                                    <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
                                 )}
                             </div>
                             <div className="text-sm text-gray-400 mb-3">
@@ -1065,14 +1071,14 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             </div>
                             <div className="flex pt-2 border-t border-gray-700">
                                 <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
-                                    Remove
+                                    {t('common.remove')}
                                 </button>
                             </div>
                         </div>
                     ))}
                     {(data.privateSlots || []).length === 0 && (
                         <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
-                            No private lesson slots. Add slots for parents to book.
+                            {t('admin.schedule.noPrivateSlots')}
                         </div>
                     )}
                 </div>
@@ -1081,11 +1087,11 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             {/* Events */}
             <div>
                 <SectionHeader 
-                    title="Upcoming Events" 
-                    description="Competitions, belt tests, and seminars." 
+                    title={t('admin.schedule.upcomingEvents')} 
+                    description={t('admin.schedule.competitionsBeltTests')} 
                     action={
                         <button onClick={() => onOpenModal('event')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow-lg">
-                            + Add Event
+                            {t('admin.schedule.addEvent')}
                         </button>
                     }
                 />
@@ -1094,11 +1100,11 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     <table className="w-full text-left text-sm text-gray-300">
                         <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                             <tr>
-                                <th className="px-6 py-3">Event</th>
-                                <th className="px-6 py-3">Type</th>
-                                <th className="px-6 py-3">Date</th>
-                                <th className="px-6 py-3">Location</th>
-                                <th className="px-6 py-3 text-right">Actions</th>
+                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.event')}</th>
+                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.type')}</th>
+                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.date')}</th>
+                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.location')}</th>
+                                <th className="px-6 py-3 text-right">{t('admin.schedule.tableHeaders.actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700">
@@ -1109,11 +1115,11 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                     <td className="px-6 py-4">{new Date(evt.date).toLocaleDateString()} {evt.time}</td>
                                     <td className="px-6 py-4">{evt.location}</td>
                                     <td className="px-6 py-4 text-right">
-                                        <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">Cancel</button>
+                                        <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.cancel')}</button>
                                     </td>
                                 </tr>
                             ))}
-                            {(data.events || []).length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No upcoming events.</td></tr>}
+                            {(data.events || []).length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">{t('admin.schedule.noUpcomingEvents')}</td></tr>}
                         </tbody>
                     </table>
                 </div>
@@ -1132,14 +1138,14 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             </div>
                             <div className="flex pt-2 border-t border-gray-700">
                                 <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
-                                    Cancel
+                                    {t('common.cancel')}
                                 </button>
                             </div>
                         </div>
                     ))}
                     {(data.events || []).length === 0 && (
                         <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
-                            No upcoming events.
+                            {t('admin.schedule.noUpcomingEvents')}
                         </div>
                     )}
                 </div>
@@ -1162,11 +1168,13 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ c
 
 
 const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
+    const { t } = useTranslation(data.language);
     const [activeSubTab, setActiveSubTab] = useState<'general' | 'belts' | 'locations' | 'rules'>('general');
+    const settingsTabLabels: Record<string, string> = { general: t('admin.settings.tabs.general'), belts: t('admin.settings.tabs.belts'), locations: t('admin.settings.tabs.locations'), rules: t('admin.settings.tabs.rules') };
 
     return (
         <div>
-            <SectionHeader title="System Settings" description="Configure your club rules, branding, and structure." />
+            <SectionHeader title={t('admin.settings.systemSettings')} description={t('admin.settings.configureClub')} />
             
             {/* Sub-Nav */}
             <div className="flex space-x-4 border-b border-gray-700 mb-6">
@@ -1176,7 +1184,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         onClick={() => setActiveSubTab(tab as any)}
                         className={`pb-2 px-2 text-sm font-medium capitalize transition-colors ${activeSubTab === tab ? 'text-sky-300 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
                     >
-                        {tab}
+                        {settingsTabLabels[tab] || tab}
                     </button>
                 ))}
             </div>
@@ -1184,7 +1192,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             {activeSubTab === 'general' && (
                 <div className="space-y-6 max-w-2xl">
                     <div>
-                        <label className="block text-sm text-gray-400 mb-2">Club Logo</label>
+                        <label className="block text-sm text-gray-400 mb-2">{t('admin.settings.general.clubLogo')}</label>
                         <div className="flex items-center space-x-4">
                             {data.logo ? (
                                 <img 
@@ -1199,7 +1207,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             )}
                             <div className="flex flex-col space-y-2">
                                 <label className="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
-                                    Upload Logo
+                                    {t('admin.settings.general.uploadLogo')}
                                     <input 
                                         type="file" 
                                         accept="image/*" 
@@ -1221,23 +1229,23 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                         onClick={() => onUpdateData({ logo: null })}
                                         className="text-red-400 hover:text-red-300 text-sm"
                                     >
-                                        Remove Logo
+                                        {t('admin.settings.general.removeLogo')}
                                     </button>
                                 )}
                             </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Recommended: Square image, at least 200x200 pixels</p>
+                        <p className="text-xs text-gray-500 mt-2">{t('admin.settings.general.logoRecommendation')}</p>
                     </div>
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Club Name</label>
+                        <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.general.clubName')}</label>
                         <input type="text" value={data.clubName} onChange={e => onUpdateData({ clubName: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white" />
                     </div>
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Slogan</label>
+                        <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.general.slogan')}</label>
                         <input type="text" value={data.slogan} onChange={e => onUpdateData({ slogan: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white" />
                     </div>
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Primary Brand Color</label>
+                        <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.general.primaryBrandColor')}</label>
                         <div className="flex items-center space-x-2">
                             <input type="color" value={data.primaryColor} onChange={e => onUpdateData({ primaryColor: e.target.value })} className="h-10 w-10 bg-gray-800 border border-gray-700 rounded cursor-pointer" />
                             <span className="text-gray-300">{data.primaryColor}</span>
@@ -1246,22 +1254,22 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     
                     {/* Holiday Schedule Setting - Improves ChronosBelt™ Predictor accuracy */}
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                        <label className="block text-sm text-gray-400 mb-1">Holiday Schedule</label>
-                        <p className="text-xs text-gray-500 mb-3">This affects the accuracy of the ChronosBelt™ Predictor for parents.</p>
+                        <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.general.holidaySchedule')}</label>
+                        <p className="text-xs text-gray-500 mb-3">{t('admin.settings.general.holidayScheduleDesc')}</p>
                         <select 
                             value={data.holidaySchedule || 'minimal'} 
                             onChange={e => onUpdateData({ holidaySchedule: e.target.value as any })}
                             className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white mb-3"
                         >
-                            <option value="minimal">Minimal - Only major holidays (~2 weeks/year)</option>
-                            <option value="school_holidays">School Calendar - Summer, winter, spring breaks (~8 weeks/year)</option>
-                            <option value="extended">Extended - All public holidays + long breaks (~12 weeks/year)</option>
-                            <option value="custom">Custom</option>
+                            <option value="minimal">{t('admin.settings.general.holidayMinimal')}</option>
+                            <option value="school_holidays">{t('admin.settings.general.holidaySchool')}</option>
+                            <option value="extended">{t('admin.settings.general.holidayExtended')}</option>
+                            <option value="custom">{t('admin.settings.general.holidayCustom')}</option>
                         </select>
                         
                         {data.holidaySchedule === 'custom' && (
                             <div className="flex items-center gap-3">
-                                <label className="text-sm text-gray-400">Weeks closed per year:</label>
+                                <label className="text-sm text-gray-400">{t('admin.settings.general.weeksClosedPerYear')}</label>
                                 <input 
                                     type="number" 
                                     min="0" 
@@ -1276,11 +1284,11 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         <div className="mt-3 text-xs text-gray-500 flex items-center gap-2">
                             <span className="text-blue-400">i</span>
                             <span>
-                                {data.holidaySchedule === 'minimal' && 'Your school operates year-round with minimal closures.'}
-                                {data.holidaySchedule === 'school_holidays' && 'Your school follows the academic calendar with standard breaks.'}
-                                {data.holidaySchedule === 'extended' && 'Your school takes extended breaks throughout the year.'}
-                                {data.holidaySchedule === 'custom' && `Your school closes for ${data.customHolidayWeeks || 4} weeks per year.`}
-                                {!data.holidaySchedule && 'Your school operates year-round with minimal closures.'}
+                                {data.holidaySchedule === 'minimal' && t('admin.settings.general.holidayMinimalDesc')}
+                                {data.holidaySchedule === 'school_holidays' && t('admin.settings.general.holidaySchoolDesc')}
+                                {data.holidaySchedule === 'extended' && t('admin.settings.general.holidayExtendedDesc')}
+                                {data.holidaySchedule === 'custom' && t('admin.settings.general.holidayCustomDesc', { weeks: data.customHolidayWeeks || 4 })}
+                                {!data.holidaySchedule && t('admin.settings.general.holidayMinimalDesc')}
                             </span>
                         </div>
                     </div>
@@ -1291,8 +1299,8 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             <div className="flex items-center gap-3">
                                 <span className="text-2xl">🌍</span>
                                 <div>
-                                    <label className="block text-sm font-bold text-white">World Rankings</label>
-                                    <p className="text-xs text-gray-400">Enable to participate in global martial arts rankings</p>
+                                    <label className="block text-sm font-bold text-white">{t('admin.settings.general.worldRankings')}</label>
+                                    <p className="text-xs text-gray-400">{t('admin.settings.general.worldRankingsDesc')}</p>
                                 </div>
                             </div>
                             <ToggleSwitch 
@@ -1319,17 +1327,17 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         {data.worldRankingsEnabled && (
                             <div className="mt-4 pt-4 border-t border-gray-700">
                                 <div className="bg-gray-800/50 rounded-lg p-3">
-                                    <h4 className="text-sm font-bold text-cyan-300 mb-2">How it works:</h4>
+                                    <h4 className="text-sm font-bold text-cyan-300 mb-2">{t('admin.settings.general.howItWorks')}</h4>
                                     <ul className="text-xs text-gray-400 space-y-1">
-                                        <li>• Students earn Global XP using a standardized formula (fair across all clubs)</li>
-                                        <li>• Rankings update weekly and show positions by sport and country</li>
-                                        <li>• Your club and students will appear in public leaderboards</li>
-                                        <li>• Only rank positions are shown (not raw XP values)</li>
+                                        <li>• {t('admin.settings.general.worldRankingsPoint1')}</li>
+                                        <li>• {t('admin.settings.general.worldRankingsPoint2')}</li>
+                                        <li>• {t('admin.settings.general.worldRankingsPoint3')}</li>
+                                        <li>• {t('admin.settings.general.worldRankingsPoint4')}</li>
                                     </ul>
                                 </div>
                                 <div className="mt-3 flex items-center gap-2 text-xs text-cyan-400">
                                     <span>✓</span>
-                                    <span>Your club is participating in World Rankings</span>
+                                    <span>{t('admin.settings.general.worldRankingsActive')}</span>
                                 </div>
                             </div>
                         )}
@@ -1341,8 +1349,8 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             {activeSubTab === 'belts' && (
                 <div className="space-y-6">
                     <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                        <h3 className="font-bold text-white mb-4">Belt System</h3>
-                        <p className="text-xs text-gray-500 mb-3">Choose a preset or customize your own belt ranking system.</p>
+                        <h3 className="font-bold text-white mb-4">{t('admin.settings.belts.beltSystem')}</h3>
+                        <p className="text-xs text-gray-500 mb-3">{t('admin.settings.belts.choosePreset')}</p>
                         <select 
                             value={data.beltSystemType}
                             onChange={(e) => {
@@ -1369,22 +1377,22 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             }}
                             className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white mb-4"
                         >
-                            <option value="wt">Taekwondo (WT)</option>
-                            <option value="itf">Taekwondo (ITF)</option>
-                            <option value="karate">Karate</option>
-                            <option value="bjj">Brazilian Jiu-Jitsu</option>
-                            <option value="judo">Judo</option>
-                            <option value="hapkido">Hapkido</option>
-                            <option value="tangsoodo">Tang Soo Do</option>
-                            <option value="aikido">Aikido</option>
-                            <option value="kravmaga">Krav Maga</option>
-                            <option value="kungfu">Kung Fu</option>
-                            <option value="custom">Custom</option>
+                            <option value="wt">{t('admin.settings.belts.taekwondoWT')}</option>
+                            <option value="itf">{t('admin.settings.belts.taekwondoITF')}</option>
+                            <option value="karate">{t('admin.settings.belts.karate')}</option>
+                            <option value="bjj">{t('admin.settings.belts.bjj')}</option>
+                            <option value="judo">{t('admin.settings.belts.judo')}</option>
+                            <option value="hapkido">{t('admin.settings.belts.hapkido')}</option>
+                            <option value="tangsoodo">{t('admin.settings.belts.tangSooDo')}</option>
+                            <option value="aikido">{t('admin.settings.belts.aikido')}</option>
+                            <option value="kravmaga">{t('admin.settings.belts.kravMaga')}</option>
+                            <option value="kungfu">{t('admin.settings.belts.kungFu')}</option>
+                            <option value="custom">{t('admin.settings.belts.custom')}</option>
                         </select>
                     </div>
                     <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                        <h3 className="font-bold text-white mb-4">Edit Belt Ranks</h3>
-                        <p className="text-xs text-gray-500 mb-3">Customize belt names and colors. You can add custom belts at any time.</p>
+                        <h3 className="font-bold text-white mb-4">{t('admin.settings.belts.editBeltRanks')}</h3>
+                        <p className="text-xs text-gray-500 mb-3">{t('admin.settings.belts.customizeBelts')}</p>
                         <div className="space-y-2">
                             {data.belts.map((belt, idx) => (
                                 <div key={belt.id} className="flex items-center space-x-3 bg-gray-900/50 p-2 rounded">
@@ -1413,10 +1421,10 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             ))}
                         </div>
                         <button 
-                            onClick={() => onUpdateData({ belts: [...data.belts, { id: `custom-${Date.now()}`, name: 'New Belt', color1: '#ffffff' }] })}
+                            onClick={() => onUpdateData({ belts: [...data.belts, { id: `custom-${Date.now()}`, name: t('admin.settings.belts.newBelt'), color1: '#ffffff' }] })}
                             className="mt-4 text-sky-300 hover:text-blue-300 text-sm font-bold"
                         >
-                            + Add Belt Level
+                            {t('admin.settings.belts.addBeltLevel')}
                         </button>
                     </div>
                 </div>
@@ -1427,7 +1435,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     <div className="grid gap-4">
                         {data.branchNames?.map((branch, idx) => (
                             <div key={idx} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                                <label className="block text-xs text-gray-500 uppercase mb-1">Location {idx + 1}</label>
+                                <label className="block text-xs text-gray-500 uppercase mb-1">{t('admin.settings.locations.location')} {idx + 1}</label>
                                 <input 
                                     type="text" 
                                     value={branch}
@@ -1441,7 +1449,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                 <input 
                                     type="text" 
                                     value={data.branchAddresses?.[idx] || ''}
-                                    placeholder="Address"
+                                    placeholder={t('admin.settings.locations.address')}
                                     onChange={(e) => {
                                         const newAddrs = [...(data.branchAddresses || [])];
                                         newAddrs[idx] = e.target.value;
@@ -1462,7 +1470,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         }}
                         className="bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-4 rounded"
                     >
-                        + Add New Location
+                        {t('admin.settings.locations.addNewLocation')}
                     </button>
                 </div>
             )}
@@ -1471,10 +1479,10 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 <div className="space-y-6 max-w-2xl">
                     {/* Promotion Pace */}
                     <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                        <h3 className="font-bold text-white mb-4">Promotion Pace</h3>
+                        <h3 className="font-bold text-white mb-4">{t('admin.settings.rules.promotionPace')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Stripes per Belt</label>
+                                <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.rules.stripesPerBelt')}</label>
                                 <input 
                                     type="number" 
                                     min="1" 
@@ -1489,7 +1497,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         {/* Stripe Progress Rule */}
                         <div className="bg-gray-700/30 p-4 rounded-md border border-gray-700">
                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
-                                <label className="block text-sm font-medium text-gray-300">Stripe Progress Rule</label>
+                                <label className="block text-sm font-medium text-gray-300">{t('admin.settings.rules.stripeProgressRule')}</label>
                                 <div className="flex space-x-4 text-sm mt-2 sm:mt-0">
                                     <label className="flex items-center cursor-pointer">
                                         <input 
@@ -1499,7 +1507,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                             onChange={() => onUpdateData({ useCustomPointsPerBelt: false })}
                                             className="form-radio text-sky-500 h-4 w-4"
                                         />
-                                        <span className="ml-2 text-white">Simple (Same for all)</span>
+                                        <span className="ml-2 text-white">{t('admin.settings.rules.simpleRule')}</span>
                                     </label>
                                     <label className="flex items-center cursor-pointer">
                                         <input 
@@ -1521,14 +1529,14 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                             }}
                                             className="form-radio text-sky-500 h-4 w-4"
                                         />
-                                        <span className="ml-2 text-white">Advanced (Per Belt)</span>
+                                        <span className="ml-2 text-white">{t('admin.settings.rules.advancedRule')}</span>
                                     </label>
                                 </div>
                             </div>
 
                             {!data.useCustomPointsPerBelt ? (
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Points per Stripe</label>
+                                    <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.rules.pointsPerStripe')}</label>
                                     <input 
                                         type="number" 
                                         min="1"
@@ -1536,15 +1544,15 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                         onChange={e => onUpdateData({ pointsPerStripe: parseInt(e.target.value, 10) || 64 })} 
                                         className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white"
                                     />
-                                    <p className="text-xs text-gray-500 mt-2">Standard setting for most clubs.</p>
+                                    <p className="text-xs text-gray-500 mt-2">{t('admin.settings.rules.standardSetting')}</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm text-left text-gray-300">
                                         <thead className="text-xs text-gray-400 uppercase bg-gray-700">
                                             <tr>
-                                                <th className="px-4 py-2">Belt</th>
-                                                <th className="px-4 py-2">Points per Stripe</th>
+                                                <th className="px-4 py-2">{t('admin.students.belt')}</th>
+                                                <th className="px-4 py-2">{t('admin.settings.rules.pointsPerStripe')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1569,7 +1577,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                             ))}
                                         </tbody>
                                     </table>
-                                    <p className="text-xs text-gray-500 mt-2">Adjust difficulty as students advance.</p>
+                                    <p className="text-xs text-gray-500 mt-2">{t('admin.settings.rules.adjustDifficulty')}</p>
                                 </div>
                             )}
                         </div>
@@ -1579,8 +1587,8 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <h3 className="font-bold text-white">Color-Coded Stripes</h3>
-                                <p className="text-sm text-gray-400">Add visual flair to stripe progression.</p>
+                                <h3 className="font-bold text-white">{t('admin.settings.rules.colorCodedStripes')}</h3>
+                                <p className="text-sm text-gray-400">{t('admin.settings.rules.colorCodedStripesDesc')}</p>
                             </div>
                             <ToggleSwitch checked={data.useColorCodedStripes} onChange={() => onUpdateData({ useColorCodedStripes: !data.useColorCodedStripes })} />
                         </div>
@@ -1613,20 +1621,20 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
 
                     {/* Bonus Point Sources */}
                     <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                        <h3 className="font-bold text-white mb-4">Bonus Point Sources</h3>
-                        <p className="text-sm text-gray-400 mb-4">Enable extra ways for students to earn points.</p>
+                        <h3 className="font-bold text-white mb-4">{t('admin.settings.rules.bonusPointSources')}</h3>
+                        <p className="text-sm text-gray-400 mb-4">{t('admin.settings.rules.bonusPointSourcesDesc')}</p>
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="font-medium text-white">Coach Bonus</p>
-                                    <p className="text-sm text-gray-400">Allow coaches to award bonus points during class.</p>
+                                    <p className="font-medium text-white">{t('admin.settings.rules.coachBonus')}</p>
+                                    <p className="text-sm text-gray-400">{t('admin.settings.rules.coachBonusDesc')}</p>
                                 </div>
                                 <ToggleSwitch checked={data.coachBonus} onChange={() => onUpdateData({ coachBonus: !data.coachBonus })} />
                             </div>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="font-medium text-white">Homework</p>
-                                    <p className="text-sm text-gray-400">Students earn points by completing homework assignments.</p>
+                                    <p className="font-medium text-white">{t('admin.settings.rules.homework')}</p>
+                                    <p className="text-sm text-gray-400">{t('admin.settings.rules.homeworkDesc')}</p>
                                 </div>
                                 <ToggleSwitch checked={data.homeworkBonus} onChange={() => onUpdateData({ homeworkBonus: !data.homeworkBonus })} />
                             </div>
@@ -1635,29 +1643,29 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
 
                     {/* Grading Requirement */}
                     <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                        <h3 className="font-bold text-white mb-4">Grading Requirement</h3>
+                        <h3 className="font-bold text-white mb-4">{t('admin.settings.rules.gradingRequirement')}</h3>
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="font-medium text-white">Require specific skill before promotion?</p>
-                                    <p className="text-sm text-gray-400">Students must pass this before the belt test.</p>
+                                    <p className="font-medium text-white">{t('admin.settings.rules.requireSpecificSkill')}</p>
+                                    <p className="text-sm text-gray-400">{t('admin.settings.rules.requireSpecificSkillDesc')}</p>
                                 </div>
                                 <ToggleSwitch checked={data.gradingRequirementEnabled} onChange={() => onUpdateData({ gradingRequirementEnabled: !data.gradingRequirementEnabled })} />
                             </div>
                             {data.gradingRequirementEnabled && (
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Requirement Name</label>
+                                    <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.rules.requirementName')}</label>
                                     <input 
                                         type="text" 
                                         value={data.gradingRequirementName || ''} 
                                         onChange={e => onUpdateData({ gradingRequirementName: e.target.value })}
-                                        placeholder="e.g. Poomsae, Kata, Forms, Technique"
+                                        placeholder={t('admin.settings.rules.requirementPlaceholder')}
                                         className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white"
                                     />
                                 </div>
                             )}
                             {!data.gradingRequirementEnabled && (
-                                <p className="text-xs text-gray-500">Examples: Poomsae, Kata, Forms, Hyung, Patterns, Technique Test</p>
+                                <p className="text-xs text-gray-500">{t('admin.settings.rules.requirementExamples')}</p>
                             )}
                         </div>
                     </div>
@@ -1665,8 +1673,8 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     {/* Summary */}
                     <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
                         <p className="text-lg text-gray-300">
-                            <span className="font-bold text-white">Promotion Rule: </span>
-                            {data.stripesPerBelt} Stripes {data.gradingRequirementEnabled ? `+ ${data.gradingRequirementName || 'Requirement'} Ready ` : ''}= New Belt
+                            <span className="font-bold text-white">{t('admin.settings.rules.promotionRule')} </span>
+                            {t('admin.settings.rules.stripesEqualsNewBelt', { stripes: data.stripesPerBelt, requirement: data.gradingRequirementEnabled ? t('admin.settings.rules.plusRequirementReady', { requirement: data.gradingRequirementName || 'Requirement' }) : '' })}
                         </p>
                     </div>
                 </div>
@@ -1686,6 +1694,7 @@ const DEFAULT_VIDEO_TAGS = [
 ];
 
 const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
+    const { t } = useTranslation(data.language);
     const [newVideo, setNewVideo] = useState({ 
         title: '', 
         url: '', 
@@ -1835,7 +1844,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
 
     return (
         <div>
-            <SectionHeader title="Creator Hub" description="Upload and manage your training content." />
+            <SectionHeader title={t('admin.creatorHub.title')} description={t('admin.creatorHub.description')} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
@@ -1845,7 +1854,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 <div className="flex-1">
                                     <input 
                                         type="text" 
-                                        placeholder="Search content by title or description..." 
+                                        placeholder={t('admin.creatorHub.searchPlaceholder')} 
                                         value={searchQuery}
                                         onChange={e => setSearchQuery(e.target.value)}
                                         className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
@@ -1857,7 +1866,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                         onChange={e => setFilterBelt(e.target.value)}
                                         className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
                                     >
-                                        <option value="all">All Belts</option>
+                                        <option value="all">{t('common.allBelts')}</option>
                                         {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                     </select>
                                     <select 
@@ -1865,88 +1874,88 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                         onChange={e => setFilterType(e.target.value as 'all' | 'video' | 'document')}
                                         className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
                                     >
-                                        <option value="all">All Types</option>
-                                        <option value="video">Videos</option>
-                                        <option value="document">Documents</option>
+                                        <option value="all">{t('admin.creatorHub.allTypes')}</option>
+                                        <option value="video">{t('admin.creatorHub.videos')}</option>
+                                        <option value="document">{t('admin.creatorHub.documents')}</option>
                                     </select>
                                     <select 
                                         value={filterAccess}
                                         onChange={e => setFilterAccess(e.target.value as 'all' | 'free' | 'premium')}
                                         className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
                                     >
-                                        <option value="all">All Access</option>
-                                        <option value="free">Free</option>
-                                        <option value="premium">Premium</option>
+                                        <option value="all">{t('admin.creatorHub.allAccess')}</option>
+                                        <option value="free">{t('common.free')}</option>
+                                        <option value="premium">{t('common.premium')}</option>
                                     </select>
                                     {hasActiveFilters && (
                                         <button 
                                             onClick={() => { setSearchQuery(''); setFilterBelt('all'); setFilterType('all'); setFilterAccess('all'); }}
                                             className="px-3 py-2 bg-red-600/20 text-red-400 rounded text-sm hover:bg-red-600/30"
                                         >
-                                            Clear
+                                            {t('common.clear')}
                                         </button>
                                     )}
                                 </div>
                             </div>
                             {hasActiveFilters && (
                                 <p className="text-xs text-gray-400 mt-2">
-                                    Showing {liveContent.length + draftContent.length} of {curriculum.length} items
+                                    {t('admin.creatorHub.showingItems', { shown: liveContent.length + draftContent.length, total: curriculum.length })}
                                 </p>
                             )}
                         </div>
 
                         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <h3 className="font-bold text-white mb-2">Add New Content</h3>
+                            <h3 className="font-bold text-white mb-2">{t('admin.creatorHub.addNewContent')}</h3>
                             <p className="text-xs text-gray-400 mb-4">
-                                📚 Content appears in <span className="text-cyan-400">Sensei Academy</span> (Parent Portal → Practice tab)
+                                {t('admin.creatorHub.contentAppearsIn')}
                                 <br/>
-                                📹 Video proofs go to <span className="text-orange-400">Coach Dashboard → Videos</span> for review
+                                {t('admin.creatorHub.videoProofsGoTo')}
                             </p>
                             <div className="space-y-4">
                                 <div className="flex gap-2 mb-4">
                                     <button 
                                         onClick={() => setNewVideo({...newVideo, contentType: 'video'})}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium ${newVideo.contentType === 'video' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300'}`}
-                                    >📹 Video</button>
+                                    >{t('admin.creatorHub.videoType')}</button>
                                     <button 
                                         onClick={() => setNewVideo({...newVideo, contentType: 'document'})}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium ${newVideo.contentType === 'document' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300'}`}
-                                    >📄 Document</button>
+                                    >{t('admin.creatorHub.documentType')}</button>
                                 </div>
                                 <input 
                                     type="text" 
-                                    placeholder="Title (e.g. Yellow Belt Form Tutorial)" 
+                                    placeholder={t('admin.creatorHub.titlePlaceholder')} 
                                     value={newVideo.title} 
                                     onChange={e => setNewVideo({...newVideo, title: e.target.value})}
                                     className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
                                 />
                                 <input 
                                     type="text" 
-                                    placeholder={newVideo.contentType === 'video' ? "Video URL - optional (YouTube, Vimeo, etc)" : "Document URL - optional (Google Drive, Dropbox, etc)"} 
+                                    placeholder={newVideo.contentType === 'video' ? t('admin.creatorHub.videoUrlPlaceholder') : t('admin.creatorHub.documentUrlPlaceholder')} 
                                     value={newVideo.url} 
                                     onChange={e => setNewVideo({...newVideo, url: e.target.value})}
                                     className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
                                 />
                                 <textarea 
-                                    placeholder="Description (optional)" 
+                                    placeholder={t('admin.creatorHub.descriptionPlaceholder')} 
                                     value={newVideo.description} 
                                     onChange={e => setNewVideo({...newVideo, description: e.target.value})}
                                     className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white h-20"
                                 />
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Belt Level</label>
+                                        <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.beltLevel')}</label>
                                         <select 
                                             value={newVideo.beltId}
                                             onChange={e => setNewVideo({...newVideo, beltId: e.target.value})}
                                             className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                         >
-                                            <option value="all">All Belts</option>
+                                            <option value="all">{t('common.allBelts')}</option>
                                             {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-400 mb-1">XP Reward</label>
+                                        <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.xpReward')}</label>
                                         <input 
                                             type="number" 
                                             min="0" 
@@ -1956,41 +1965,41 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                             className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                         />
                                         {newVideo.pricingType === 'premium' && newVideo.xpReward < 25 && (
-                                            <p className="text-[10px] text-amber-400 mt-1">💡 Tip: Premium content works best with 30-45 XP</p>
+                                            <p className="text-[10px] text-amber-400 mt-1">{t('admin.creatorHub.premiumTip')}</p>
                                         )}
                                         {newVideo.pricingType === 'free' && newVideo.xpReward > 20 && (
-                                            <p className="text-[10px] text-sky-400 mt-1">💡 Tip: Free content usually has 10-15 XP</p>
+                                            <p className="text-[10px] text-sky-400 mt-1">{t('admin.creatorHub.freeTip')}</p>
                                         )}
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Access</label>
+                                        <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.access')}</label>
                                         <select 
                                             value={newVideo.pricingType}
                                             onChange={e => setNewVideo({...newVideo, pricingType: e.target.value as 'free' | 'premium'})}
                                             className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                         >
-                                            <option value="free">Free for All</option>
-                                            <option value="premium">Premium Only</option>
+                                            <option value="free">{t('admin.creatorHub.freeForAll')}</option>
+                                            <option value="premium">{t('admin.creatorHub.premiumOnly')}</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Status</label>
+                                        <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.statusLabel')}</label>
                                         <select 
                                             value={newVideo.status}
                                             onChange={e => setNewVideo({...newVideo, status: e.target.value as 'draft' | 'live', publishAt: ''})}
                                             className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                         >
-                                            <option value="draft">Draft (Hidden)</option>
-                                            <option value="live">Live (Published)</option>
+                                            <option value="draft">{t('admin.creatorHub.draftHidden')}</option>
+                                            <option value="live">{t('admin.creatorHub.livePublished')}</option>
                                         </select>
                                     </div>
                                 </div>
                                 {/* Scheduled Publishing */}
                                 <div className="bg-gray-700/50 p-3 rounded border border-gray-600">
                                     <label className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-                                        <span>📅</span> Schedule Publishing (Optional)
+                                        <span>📅</span> {t('admin.creatorHub.schedulePublishing')}
                                     </label>
                                     <input 
                                         type="datetime-local"
@@ -2001,7 +2010,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     />
                                     {newVideo.publishAt && (
                                         <p className="text-xs text-sky-400 mt-1">
-                                            Content will auto-publish on {new Date(newVideo.publishAt).toLocaleString()}
+                                            {t('admin.creatorHub.contentWillAutoPublish')} {new Date(newVideo.publishAt).toLocaleString()}
                                         </p>
                                     )}
                                 </div>
@@ -2014,56 +2023,56 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                             onChange={e => setNewVideo({...newVideo, requiresVideo: e.target.checked})}
                                             className="w-4 h-4 rounded border-gray-500 bg-gray-600 text-cyan-500 focus:ring-cyan-500"
                                         />
-                                        <span className="text-sm text-white">Require Video Proof</span>
-                                        <span className="text-xs text-gray-400 ml-auto">Students must submit practice video</span>
+                                        <span className="text-sm text-white">{t('admin.creatorHub.requireVideoProof')}</span>
+                                        <span className="text-xs text-gray-400 ml-auto">{t('admin.creatorHub.studentsMustSubmit')}</span>
                                     </label>
                                     {newVideo.requiresVideo && (
                                         <div className="mt-3 pl-7">
-                                            <label className="block text-xs text-gray-400 mb-1">Who Can Submit Video</label>
+                                            <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.whoCanSubmitVideo')}</label>
                                             <select
                                                 value={newVideo.videoAccess}
                                                 onChange={e => setNewVideo({...newVideo, videoAccess: e.target.value as 'premium' | 'free'})}
                                                 className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                             >
-                                                <option value="premium">Premium Only</option>
-                                                <option value="free">Free for All</option>
+                                                <option value="premium">{t('admin.creatorHub.premiumOnly')}</option>
+                                                <option value="free">{t('admin.creatorHub.freeForAll')}</option>
                                             </select>
                                             <p className="text-xs text-gray-500 mt-1">
                                                 {newVideo.videoAccess === 'premium' 
-                                                    ? 'Only premium users can submit video proof for this content'
-                                                    : 'All users can submit video proof (great for key techniques!)'}
+                                                    ? t('admin.creatorHub.onlyPremiumCanSubmit')
+                                                    : t('admin.creatorHub.allUsersCanSubmit')}
                                             </p>
                                         </div>
                                     )}
                                 </div>
                                 {/* Weekly Limit - Prevent Overtraining */}
                                 <div className="bg-gray-700/50 p-3 rounded border border-gray-600">
-                                    <label className="block text-xs text-gray-400 mb-2">Weekly Limit (Injury Prevention)</label>
+                                    <label className="block text-xs text-gray-400 mb-2">{t('admin.creatorHub.weeklyLimit')}</label>
                                     <select
                                         value={newVideo.maxPerWeek === null ? '' : newVideo.maxPerWeek}
                                         onChange={e => setNewVideo({...newVideo, maxPerWeek: e.target.value ? parseInt(e.target.value) : null})}
                                         className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                     >
-                                        <option value="">Unlimited (no limit)</option>
-                                        <option value="1">1x per week</option>
-                                        <option value="2">2x per week</option>
-                                        <option value="3">3x per week</option>
-                                        <option value="4">4x per week</option>
-                                        <option value="5">5x per week</option>
-                                        <option value="6">6x per week</option>
-                                        <option value="7">7x per week (daily)</option>
+                                        <option value="">{t('admin.creatorHub.unlimitedNoLimit')}</option>
+                                        <option value="1">{t('admin.creatorHub.perWeek', { count: 1 })}</option>
+                                        <option value="2">{t('admin.creatorHub.perWeek', { count: 2 })}</option>
+                                        <option value="3">{t('admin.creatorHub.perWeek', { count: 3 })}</option>
+                                        <option value="4">{t('admin.creatorHub.perWeek', { count: 4 })}</option>
+                                        <option value="5">{t('admin.creatorHub.perWeek', { count: 5 })}</option>
+                                        <option value="6">{t('admin.creatorHub.perWeek', { count: 6 })}</option>
+                                        <option value="7">{t('admin.creatorHub.dailyPerWeek')}</option>
                                     </select>
                                     <p className="text-xs text-gray-500 mt-1">
                                         {newVideo.maxPerWeek 
-                                            ? `Students can complete max ${newVideo.maxPerWeek}x/week, 1x/day to prevent overtraining`
-                                            : 'No weekly limit - students can complete anytime (1x per day still enforced)'}
+                                            ? `${t('admin.creatorHub.studentsCanCompleteMax')} ${newVideo.maxPerWeek}x/week, 1x/day`
+                                            : t('admin.creatorHub.noWeeklyLimit')}
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-400 mb-2">Tags (comma-separated)</label>
+                                    <label className="block text-xs text-gray-400 mb-2">{t('admin.creatorHub.tagsLabel')}</label>
                                     <input 
                                         type="text" 
-                                        placeholder="e.g. Forms, Yellow Belt, Self-Defense" 
+                                        placeholder={t('admin.creatorHub.tagsPlaceholder')} 
                                         value={newVideo.tagsInput ?? newVideo.tags.join(', ')}
                                         onChange={e => {
                                             const rawValue = e.target.value;
@@ -2091,17 +2100,17 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     disabled={!newVideo.title}
                                     className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-2 rounded"
                                 >
-                                    {newVideo.publishAt ? '📅 Schedule Content' : (newVideo.status === 'live' ? '📤 Publish Content' : '💾 Save as Draft')}
+                                    {newVideo.publishAt ? t('admin.creatorHub.scheduleContent') : (newVideo.status === 'live' ? t('admin.creatorHub.publishContent') : t('admin.creatorHub.saveAsDraft'))}
                                 </button>
                             </div>
                         </div>
 
                         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-bold text-white">Published Content ({liveContent.length})</h3>
+                                <h3 className="font-bold text-white">{t('admin.creatorHub.publishedContent')} ({liveContent.length})</h3>
                             </div>
                             <div className="space-y-2">
-                                {liveContent.length === 0 && <p className="text-gray-500 italic text-sm">No published content yet.</p>}
+                                {liveContent.length === 0 && <p className="text-gray-500 italic text-sm">{t('admin.creatorHub.noPublishedContent')}</p>}
                                 {liveContent.map(vid => {
                                     const tags = vid.category?.split(',').filter(Boolean) || [];
                                     return (
@@ -2111,26 +2120,26 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                                 <div>
                                                     <p className="font-bold text-white text-sm flex items-center gap-2 flex-wrap">
                                                         {vid.title}
-                                                        <span className="text-xs px-2 py-0.5 bg-green-600/20 text-green-400 rounded">LIVE</span>
-                                                        {vid.pricingType === 'premium' && <span className="text-xs px-2 py-0.5 bg-yellow-600/20 text-yellow-400 rounded">PREMIUM</span>}
+                                                        <span className="text-xs px-2 py-0.5 bg-green-600/20 text-green-400 rounded">{t('admin.creatorHub.liveLabel')}</span>
+                                                        {vid.pricingType === 'premium' && <span className="text-xs px-2 py-0.5 bg-yellow-600/20 text-yellow-400 rounded">{t('admin.creatorHub.premiumLabel')}</span>}
                                                         {vid.requiresVideo && (
                                                             <span className={`text-xs px-2 py-0.5 rounded ${vid.videoAccess === 'free' ? 'bg-cyan-600/20 text-cyan-400' : 'bg-purple-600/20 text-purple-400'}`}>
-                                                                {vid.videoAccess === 'free' ? '📹 VIDEO' : '📹 VIDEO+'}
+                                                                {vid.videoAccess === 'free' ? t('admin.creatorHub.videoLabel') : t('admin.creatorHub.videoPlusLabel')}
                                                             </span>
                                                         )}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
-                                                        {vid.beltId === 'all' ? 'All Belts' : data.belts.find(b => b.id === vid.beltId)?.name}
+                                                        {vid.beltId === 'all' ? t('common.allBelts') : data.belts.find(b => b.id === vid.beltId)?.name}
                                                         <span className="mx-2">•</span>
-                                                        {vid.xpReward || 10} XP
+                                                        {t('admin.creatorHub.xpLabel', { xp: vid.xpReward || 10 })}
                                                         <span className="mx-2">•</span>
-                                                        {vid.viewCount || 0} views
+                                                        {t('admin.creatorHub.viewsLabel', { count: vid.viewCount || 0 })}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <button onClick={() => toggleContentStatus(vid.id)} className="text-yellow-400 hover:text-yellow-300 text-xs px-2 py-1 bg-gray-700 rounded">Unpublish</button>
-                                                <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 rounded">Delete</button>
+                                                <button onClick={() => toggleContentStatus(vid.id)} className="text-yellow-400 hover:text-yellow-300 text-xs px-2 py-1 bg-gray-700 rounded">{t('admin.creatorHub.unpublish')}</button>
+                                                <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 rounded">{t('common.delete')}</button>
                                             </div>
                                         </div>
                                     );
@@ -2140,15 +2149,15 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
 
                         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                             <h3 className="font-bold text-white mb-4">
-                                Drafts ({draftContent.length})
+                                {t('admin.creatorHub.drafts')} ({draftContent.length})
                                 {scheduledContent.length > 0 && (
                                     <span className="text-xs font-normal text-sky-400 ml-2">
-                                        ({scheduledContent.length} scheduled)
+                                        ({scheduledContent.length} {t('admin.creatorHub.scheduledLabel')})
                                     </span>
                                 )}
                             </h3>
                             <div className="space-y-2">
-                                {draftContent.length === 0 && <p className="text-gray-500 italic text-sm">No drafts.</p>}
+                                {draftContent.length === 0 && <p className="text-gray-500 italic text-sm">{t('admin.creatorHub.noDrafts')}</p>}
                                 {draftContent.map(vid => (
                                     <div key={vid.id} className={`flex justify-between items-center bg-gray-900/50 p-3 rounded border ${vid.publishAt ? 'border-sky-500/50' : 'border-gray-700'} opacity-75`}>
                                         <div className="flex items-center gap-3">
@@ -2161,19 +2170,19 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                                             📅 {new Date(vid.publishAt).toLocaleDateString()}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-xs px-2 py-0.5 bg-gray-600/50 text-gray-400 rounded">DRAFT</span>
+                                                        <span className="text-xs px-2 py-0.5 bg-gray-600/50 text-gray-400 rounded">{t('admin.creatorHub.draftLabel')}</span>
                                                     )}
                                                     {vid.requiresVideo && (
                                                         <span className={`text-xs px-2 py-0.5 rounded ${vid.videoAccess === 'free' ? 'bg-cyan-600/20 text-cyan-400' : 'bg-purple-600/20 text-purple-400'}`}>
-                                                            {vid.videoAccess === 'free' ? '📹 VIDEO' : '📹 VIDEO+'}
+                                                            {vid.videoAccess === 'free' ? t('admin.creatorHub.videoLabel') : t('admin.creatorHub.videoPlusLabel')}
                                                         </span>
                                                     )}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    {vid.beltId === 'all' ? 'All Belts' : data.belts.find(b => b.id === vid.beltId)?.name}
+                                                    {vid.beltId === 'all' ? t('common.allBelts') : data.belts.find(b => b.id === vid.beltId)?.name}
                                                     {vid.publishAt && (
                                                         <span className="ml-2 text-sky-400">
-                                                            publishes {new Date(vid.publishAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                            {t('admin.creatorHub.publishes')} {new Date(vid.publishAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                                         </span>
                                                     )}
                                                 </p>
@@ -2181,9 +2190,9 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button onClick={() => toggleContentStatus(vid.id)} className="text-green-400 hover:text-green-300 text-xs px-2 py-1 bg-gray-700 rounded">
-                                                {vid.publishAt ? 'Publish Now' : 'Publish'}
+                                                {vid.publishAt ? t('admin.creatorHub.publishNow') : t('admin.creatorHub.publish')}
                                             </button>
-                                            <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 rounded">Delete</button>
+                                            <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 rounded">{t('common.delete')}</button>
                                         </div>
                                     </div>
                                 ))}
@@ -2193,23 +2202,23 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
 
                     <div className="space-y-6">
                         <div className="bg-gradient-to-br from-sky-600 to-blue-700 p-6 rounded-lg">
-                            <h3 className="font-bold text-white mb-2">Quick Stats</h3>
+                            <h3 className="font-bold text-white mb-2">{t('admin.creatorHub.quickStats')}</h3>
                             <div className="grid grid-cols-2 gap-4 mt-4">
                                 <div className="bg-white/10 p-3 rounded">
                                     <p className="text-3xl font-bold text-white">{curriculum.length}</p>
-                                    <p className="text-xs text-white/70">Total Items</p>
+                                    <p className="text-xs text-white/70">{t('admin.creatorHub.totalItems')}</p>
                                 </div>
                                 <div className="bg-white/10 p-3 rounded">
                                     <p className="text-3xl font-bold text-white">{liveContent.length}</p>
-                                    <p className="text-xs text-white/70">Published</p>
+                                    <p className="text-xs text-white/70">{t('admin.creatorHub.published')}</p>
                                 </div>
                                 <div className="bg-white/10 p-3 rounded">
                                     <p className="text-3xl font-bold text-white">{curriculum.filter(c => c.pricingType === 'premium').length}</p>
-                                    <p className="text-xs text-white/70">Premium</p>
+                                    <p className="text-xs text-white/70">{t('common.premium')}</p>
                                 </div>
                                 <div className="bg-white/10 p-3 rounded">
                                     <p className="text-3xl font-bold text-white">{draftContent.length}</p>
-                                    <p className="text-xs text-white/70">Drafts</p>
+                                    <p className="text-xs text-white/70">{t('admin.creatorHub.drafts')}</p>
                                 </div>
                             </div>
                         </div>
@@ -2221,8 +2230,9 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
 }
 
 const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
+    const { t } = useTranslation(data.language);
     const totalStudents = data.students.length;
-    const recommendedTier = PRICING_TIERS.find(t => totalStudents <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
+    const recommendedTier = PRICING_TIERS.find(tier => totalStudents <= tier.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
     const [subscribedPlanId, setSubscribedPlanId] = useState<string | null>(() => {
         // Initialize from localStorage if available
         try {
@@ -2236,7 +2246,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     });
     // Use actual subscribed plan if available, otherwise fall back to recommended based on student count
     const currentTier = subscribedPlanId 
-        ? (PRICING_TIERS.find(t => t.name.toLowerCase() === subscribedPlanId.toLowerCase()) || recommendedTier)
+        ? (PRICING_TIERS.find(tier => tier.name.toLowerCase() === subscribedPlanId.toLowerCase()) || recommendedTier)
         : recommendedTier;
     const [connectingBank, setConnectingBank] = useState(false);
     const [verifiedStatus, setVerifiedStatus] = useState<{ status: string; label: string; color: string; daysLeft: number } | null>(null);
@@ -2252,7 +2262,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
         
         const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
         if (!effectiveClubId) {
-            alert('Club not found. Please log in again.');
+            alert(t('admin.billing.noStripeCustomer'));
             return;
         }
         
@@ -2274,11 +2284,11 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                 console.log('[BillingTab] Universal Access toggled:', result);
             } else {
                 console.error('[BillingTab] Universal Access toggle failed:', result);
-                alert(result.error || 'Failed to update Universal Access');
+                alert(result.error || t('admin.billing.universalAccess.failedToUpdate'));
             }
         } catch (err: any) {
             console.error('[BillingTab] Universal Access toggle error:', err);
-            alert('Failed to update subscription. Please try again.');
+            alert(t('admin.billing.universalAccess.failedToUpdateSubscription'));
         } finally {
             setToggleLoading(false);
         }
@@ -2423,14 +2433,14 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
 
     return (
         <div>
-            <SectionHeader title="Billing & Subscription" description="Manage your TaekUp plan and payouts." />
+            <SectionHeader title={t('admin.billing.billingAndSubscription')} description={t('admin.billing.managePlan')} />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Current Plan Card */}
                 <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 relative overflow-hidden">
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <p className="text-sm text-gray-400 uppercase">Current Plan</p>
+                            <p className="text-sm text-gray-400 uppercase">{t('admin.billing.currentPlan')}</p>
                             <h3 className="text-2xl font-bold text-white">{currentTier.name}</h3>
                         </div>
                         <span className={`${subscriptionStatus.color} px-3 py-1 rounded-full text-xs font-bold`}>{subscriptionStatus.label}</span>
@@ -2439,8 +2449,8 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     <div className="space-y-4 mb-6">
                         <div>
                             <div className="flex justify-between text-sm mb-1 text-gray-400">
-                                <span>Usage</span>
-                                <span>{totalStudents} / {currentTier.limit === Infinity ? '∞' : currentTier.limit} Students</span>
+                                <span>{t('admin.billing.usage')}</span>
+                                <span>{t('admin.billing.usageCount', { current: totalStudents, limit: currentTier.limit === Infinity ? '∞' : currentTier.limit })}</span>
                             </div>
                             <div className="w-full bg-gray-700 rounded-full h-2">
                                 <div 
@@ -2452,16 +2462,16 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         
                         <div className="bg-gray-900/50 p-4 rounded border border-gray-700">
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-gray-300">Base Subscription</span>
+                                <span className="text-gray-300">{t('admin.billing.baseSubscription')}</span>
                                 <span className="text-white font-bold">${currentTier.price}/mo</span>
                             </div>
                             {data.clubSponsoredPremium && (
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-indigo-300">{data.isDemo ? 'Universal Access Add-on' : 'DojoMint™ Club Rate'}</span>
+                                    <span className="text-indigo-300">{data.isDemo ? t('admin.billing.universalAccessAddon') : t('admin.billing.dojoMintClubRate')}</span>
                                     {data.isDemo ? (
                                         <span className="text-amber-400 font-bold flex items-center">
                                             <span className="mr-1">🔒</span>
-                                            B2B Rate
+                                            {t('admin.billing.b2bRate')}
                                         </span>
                                     ) : (
                                         <span className="text-indigo-300 font-bold">+${bulkCost.toFixed(2)}</span>
@@ -2469,11 +2479,11 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                 </div>
                             )}
                             <div className="flex justify-between items-center pt-2 border-t border-gray-600 mt-2">
-                                <span className="text-white font-bold">{data.isDemo ? 'Total Monthly' : 'Total Monthly'}</span>
+                                <span className="text-white font-bold">{t('admin.billing.totalMonthly')}</span>
                                 {data.isDemo ? (
                                     <span className="text-lg font-bold text-amber-400 flex items-center">
                                         <span className="mr-1">🔒</span>
-                                        Calculated at Checkout
+                                        {t('admin.billing.calculatedAtCheckout')}
                                     </span>
                                 ) : (
                                     <span className="text-xl font-extrabold text-white">${totalBill.toFixed(2)}</span>
@@ -2492,7 +2502,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                 });
                                 const verifyResult = await verifyRes.json();
                                 if (!verifyResult.customerId) {
-                                    alert('No Stripe customer found. Please subscribe first.');
+                                    alert(t('admin.billing.noStripeCustomer'));
                                     return;
                                 }
                                 const res = await fetch('/api/customer-portal', {
@@ -2504,15 +2514,15 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                 if (result.url) {
                                     window.location.href = result.url;
                                 } else {
-                                    alert(result.error || 'Failed to open billing portal');
+                                    alert(result.error || t('admin.billing.failedToOpenPortal'));
                                 }
                             } catch (err) {
-                                alert('Failed to open billing portal');
+                                alert(t('admin.billing.failedToOpenPortal'));
                             }
                         }}
                         className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded"
                     >
-                        Manage Payment Method
+                        {t('admin.billing.managePaymentMethod')}
                     </button>
                 </div>
 
@@ -2542,26 +2552,26 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="flex items-center">
                             <span className="text-3xl mr-3">💰</span>
                             <div>
-                                <h3 className="font-bold text-white text-lg">Parent Premium Revenue Share</h3>
-                                <p className="text-sm text-gray-400">Earn 70% ($3.28) from each parent premium subscription</p>
+                                <h3 className="font-bold text-white text-lg">{t('admin.billing.revenueShare.parentPremiumRevenueShare')}</h3>
+                                <p className="text-sm text-gray-400">{t('admin.billing.revenueShare.earnPercentage')}</p>
                             </div>
                         </div>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                            <p className="text-xs text-gray-500 uppercase mb-2">How It Works</p>
+                            <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.howItWorks')}</p>
                             <ul className="text-sm text-gray-300 space-y-2">
-                                <li className="flex items-start"><span className="text-green-400 mr-2">1.</span> Parents subscribe to Premium ($4.99/mo)</li>
-                                <li className="flex items-start"><span className="text-green-400 mr-2">2.</span> You receive 70% ($3.28) automatically</li>
-                                <li className="flex items-start"><span className="text-green-400 mr-2">3.</span> Payments go directly to your bank</li>
+                                <li className="flex items-start"><span className="text-green-400 mr-2">1.</span> {t('admin.billing.revenueShare.step1')}</li>
+                                <li className="flex items-start"><span className="text-green-400 mr-2">2.</span> {t('admin.billing.revenueShare.step2')}</li>
+                                <li className="flex items-start"><span className="text-green-400 mr-2">3.</span> {t('admin.billing.revenueShare.step3')}</li>
                             </ul>
                         </div>
                         
                         <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 flex flex-col justify-between">
                             <div>
-                                <p className="text-xs text-gray-500 uppercase mb-2">Connect Your Bank</p>
-                                <p className="text-sm text-gray-300 mb-4">Link your Stripe account to receive automatic payouts from parent premium subscriptions.</p>
+                                <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.connectYourBank')}</p>
+                                <p className="text-sm text-gray-300 mb-4">{t('admin.billing.revenueShare.connectBankDesc')}</p>
                             </div>
                             <button
                                 onClick={handleConnectBank}
@@ -2574,12 +2584,12 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                                         </svg>
-                                        Connecting...
+                                        {t('common.loading')}
                                     </>
                                 ) : (
                                     <>
                                         <span className="mr-2">🔗</span>
-                                        Connect Stripe Account
+                                        {t('admin.billing.revenueShare.connectStripeAccount')}
                                     </>
                                 )}
                             </button>
@@ -2588,7 +2598,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     
                     <div className="bg-indigo-900/30 p-3 rounded-lg border border-indigo-500/20">
                         <p className="text-xs text-indigo-300">
-                            <span className="font-bold">Example:</span> With 20 premium parents, you earn <span className="text-green-400 font-bold">$65.60/month</span> automatically deposited to your bank!
+                            <span className="font-bold">{t('admin.billing.revenueShare.example')}</span> {t('admin.billing.revenueShare.exampleText')}
                         </p>
                     </div>
                 </div>
@@ -2602,28 +2612,28 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="flex items-center mb-4">
                             <span className="text-3xl mr-2">📊</span>
                             <div>
-                                <h3 className="font-bold text-white text-lg">External Profit Tracker</h3>
-                                <p className="text-sm text-gray-400">Your tuition-based revenue projection</p>
+                                <h3 className="font-bold text-white text-lg">{t('admin.billing.externalProfitTracker.title')}</h3>
+                                <p className="text-sm text-gray-400">{t('admin.billing.externalProfitTracker.tuitionProjection')}</p>
                             </div>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div className="bg-gray-900 p-3 rounded-lg text-center border border-gray-700">
-                                <p className="text-[10px] text-gray-500 uppercase mb-1">Total Tuition</p>
+                                <p className="text-[10px] text-gray-500 uppercase mb-1">{t('admin.billing.externalProfitTracker.totalTuition')}</p>
                                 <p className="text-lg font-bold text-amber-400 flex items-center justify-center">
                                     <span className="mr-1 text-sm">🔒</span>
                                 </p>
                             </div>
                             
                             <div className="bg-gray-900 p-3 rounded-lg text-center border border-gray-700">
-                                <p className="text-[10px] text-gray-500 uppercase mb-1">Platform Fees</p>
+                                <p className="text-[10px] text-gray-500 uppercase mb-1">{t('admin.billing.externalProfitTracker.platformFees')}</p>
                                 <p className="text-lg font-bold text-amber-400 flex items-center justify-center">
                                     <span className="mr-1 text-sm">🔒</span>
                                 </p>
                             </div>
                             
                             <div className="bg-gray-900 p-3 rounded-lg text-center border border-gray-700">
-                                <p className="text-[10px] text-gray-500 uppercase mb-1">Net Profit</p>
+                                <p className="text-[10px] text-gray-500 uppercase mb-1">{t('admin.billing.externalProfitTracker.netProfit')}</p>
                                 <p className="text-lg font-bold text-amber-400 flex items-center justify-center">
                                     <span className="mr-1 text-sm">🔒</span>
                                 </p>
@@ -2633,7 +2643,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="bg-green-900/30 p-4 rounded-lg border border-green-500/30">
                             <p className="text-sm text-gray-300 flex items-start">
                                 <span className="text-green-400 mr-2 mt-0.5">✅</span>
-                                <span>This profit is collected by you directly via your gym membership fees.</span>
+                                <span>{t('admin.billing.externalProfitTracker.profitCollectedDirectly')}</span>
                             </p>
                         </div>
                     </div>
@@ -2643,8 +2653,8 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="flex items-center mb-4">
                             <span className="text-3xl mr-2">📊</span>
                             <div>
-                                <h3 className="font-bold text-white text-lg">External Profit Tracker</h3>
-                                <p className="text-sm text-gray-400">This profit is collected by you directly via your gym tuition.</p>
+                                <h3 className="font-bold text-white text-lg">{t('admin.billing.externalProfitTracker.title')}</h3>
+                                <p className="text-sm text-gray-400">{t('admin.billing.externalProfitTracker.profitCollectedViaTuition')}</p>
                             </div>
                         </div>
                         
@@ -2652,21 +2662,21 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                             <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
                                 <div className="text-sm text-gray-300 space-y-2">
                                     <div className="flex justify-between">
-                                        <span>Students Covered</span>
+                                        <span>{t('admin.billing.externalProfitTracker.studentsCovered')}</span>
                                         <span className="font-bold text-white">{totalStudents}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span>Your Tuition Increase</span>
-                                        <span className="font-bold text-green-400">You set this</span>
+                                        <span>{t('admin.billing.externalProfitTracker.yourTuitionIncrease')}</span>
+                                        <span className="font-bold text-green-400">{t('admin.billing.externalProfitTracker.youSetThis')}</span>
                                     </div>
                                 </div>
                             </div>
                             
                             <div className="bg-green-900/30 p-4 rounded-lg border border-green-500/30">
-                                <p className="text-xs text-green-300 uppercase mb-1">How This Works</p>
+                                <p className="text-xs text-green-300 uppercase mb-1">{t('admin.billing.externalProfitTracker.howThisWorks')}</p>
                                 <p className="text-sm text-gray-300">
-                                    You pay us the Club Rate. You raise your gym tuition by whatever amount you choose. 
-                                    <span className="text-green-400 font-medium"> The difference is your profit — collected directly by you.</span>
+                                    {t('admin.billing.externalProfitTracker.howThisWorksDesc')}
+                                    <span className="text-green-400 font-medium"> {t('admin.billing.externalProfitTracker.differenceIsProfit')}</span>
                                 </p>
                             </div>
                         </div>
@@ -2677,8 +2687,8 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         <div className="flex items-center mb-4">
                             <span className="text-3xl mr-2">💎</span>
                             <div>
-                                <h3 className="font-bold text-white text-lg">DojoMint™ Not Active</h3>
-                                <p className="text-sm text-gray-400">Enable Universal Access above to unlock monetization features.</p>
+                                <h3 className="font-bold text-white text-lg">{t('admin.billing.dojoMintNotActive.title')}</h3>
+                                <p className="text-sm text-gray-400">{t('admin.billing.dojoMintNotActive.description')}</p>
                             </div>
                         </div>
                     </div>
@@ -2691,6 +2701,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
 // --- MAIN COMPONENT ---
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, onBack, onUpdateData, onNavigate, onViewStudentPortal }) => {
+    const { t } = useTranslation(data?.language);
     const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'staff' | 'schedule' | 'creator' | 'settings' | 'billing'>('overview');
     
     // Demo Mode - use static demo data when enabled (no database operations)
@@ -3351,14 +3362,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto py-4 space-y-1">
-                    <SidebarItem icon="📊" label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                    <SidebarItem icon="👥" label="Students" active={activeTab === 'students'} onClick={() => setActiveTab('students')} />
-                    <SidebarItem icon="🥋" label="Staff" active={activeTab === 'staff'} onClick={() => setActiveTab('staff')} />
-                    <SidebarItem icon="📅" label="Schedule" active={activeTab === 'schedule'} onClick={() => setActiveTab('schedule')} />
-                    <SidebarItem icon="🎥" label="Creator Hub" active={activeTab === 'creator'} onClick={() => setActiveTab('creator')} />
+                    <SidebarItem icon="📊" label={t('admin.sidebar.overview')} active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                    <SidebarItem icon="👥" label={t('admin.sidebar.students')} active={activeTab === 'students'} onClick={() => setActiveTab('students')} />
+                    <SidebarItem icon="🥋" label={t('admin.sidebar.staff')} active={activeTab === 'staff'} onClick={() => setActiveTab('staff')} />
+                    <SidebarItem icon="📅" label={t('admin.sidebar.schedule')} active={activeTab === 'schedule'} onClick={() => setActiveTab('schedule')} />
+                    <SidebarItem icon="🎥" label={t('admin.sidebar.creatorHub')} active={activeTab === 'creator'} onClick={() => setActiveTab('creator')} />
                     <div className="pt-4 pb-2 px-4 text-xs font-bold text-gray-500 uppercase">Configuration</div>
-                    <SidebarItem icon="⚙️" label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-                    <SidebarItem icon="💳" label="Billing" active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
+                    <SidebarItem icon="⚙️" label={t('admin.sidebar.settings')} active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                    <SidebarItem icon="💳" label={t('admin.sidebar.billing')} active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
                 </div>
                 <div className="p-4 border-t border-gray-700">
                     <button onClick={onBack} className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 rounded text-sm font-bold">
@@ -3394,12 +3405,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
             {/* MODALS */}
             {modalType === 'student' && (
-                <Modal title="Add Students" onClose={() => setModalType(null)}>
+                <Modal title={t('admin.students.addStudentModal.title')} onClose={() => setModalType(null)}>
                     <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4 flex-wrap gap-1">
-                        <button onClick={() => setStudentImportMethod('single')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'single' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>Single</button>
-                        <button onClick={() => setStudentImportMethod('transfer')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'transfer' ? 'bg-cyan-500 text-white' : 'text-gray-400'}`}>Transfer</button>
-                        <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Paste Data</button>
-                        <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Upload File</button>
+                        <button onClick={() => setStudentImportMethod('single')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'single' ? 'bg-sky-500 text-white' : 'text-gray-400'}`}>{t('admin.students.addStudentModal.single')}</button>
+                        <button onClick={() => setStudentImportMethod('transfer')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'transfer' ? 'bg-cyan-500 text-white' : 'text-gray-400'}`}>{t('admin.students.transferTab.lookupStudent')}</button>
+                        <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>{t('admin.students.addStudentModal.bulk')}</button>
+                        <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>{t('admin.students.addStudentModal.excel')}</button>
                     </div>
 
                     {studentImportMethod === 'transfer' ? (
@@ -3516,14 +3527,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         </div>
                     ) : studentImportMethod === 'single' ? (
                         <div className="space-y-4">
-                            <input type="text" placeholder="Full Name *" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.name || ''} onChange={e => setTempStudent({...tempStudent, name: e.target.value})} />
+                            <input type="text" placeholder={t('admin.students.addStudentModal.fullName')} className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.name || ''} onChange={e => setTempStudent({...tempStudent, name: e.target.value})} />
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs text-gray-400 mb-1">Birthday</label>
+                                    <label className="block text-xs text-gray-400 mb-1">{t('admin.students.addStudentModal.birthday')}</label>
                                     <input type="date" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.birthday || ''} onChange={e => setTempStudent({...tempStudent, birthday: e.target.value})} />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-400 mb-1">Gender</label>
+                                    <label className="block text-xs text-gray-400 mb-1">{t('admin.students.addStudentModal.gender')}</label>
                                     <select className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.gender || ''} onChange={e => setTempStudent({...tempStudent, gender: e.target.value as any})}>
                                         <option value="">Select Gender</option>
                                         <option value="Male">Male</option>
@@ -3535,26 +3546,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <select className="bg-gray-700 rounded p-2 text-white" value={tempStudent.beltId || ''} onChange={e => setTempStudent({...tempStudent, beltId: e.target.value})}>
-                                    <option value="">Select Belt *</option>
+                                    <option value="">{t('admin.students.addStudentModal.selectBelt')}</option>
                                     {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                 </select>
-                                <input type="number" placeholder="Stripes" className="bg-gray-700 rounded p-2 text-white" value={tempStudent.stripes ?? ''} onChange={e => setTempStudent({...tempStudent, stripes: parseInt(e.target.value) || 0})} />
+                                <input type="number" placeholder={t('admin.students.addStudentModal.stripes')} className="bg-gray-700 rounded p-2 text-white" value={tempStudent.stripes ?? ''} onChange={e => setTempStudent({...tempStudent, stripes: parseInt(e.target.value) || 0})} />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Join Date</label>
+                                <label className="block text-xs text-gray-400 mb-1">{t('admin.students.addStudentModal.joinDate')}</label>
                                 <input type="date" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.joinDate || new Date().toISOString().split('T')[0]} onChange={e => setTempStudent({...tempStudent, joinDate: e.target.value})} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs text-gray-400 mb-1">Points</label>
+                                    <label className="block text-xs text-gray-400 mb-1">{t('admin.students.addStudentModal.points')}</label>
                                     <input type="number" min="0" placeholder="0" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.totalPoints ?? ''} onChange={e => setTempStudent({...tempStudent, totalPoints: parseInt(e.target.value) || 0})} />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-400 mb-1">Local HonorXP™</label>
+                                    <label className="block text-xs text-gray-400 mb-1">{t('admin.students.addStudentModal.localHonorXP')}</label>
                                     <input type="number" min="0" placeholder="0" className="w-full bg-gray-700 rounded p-2 text-white" value={tempStudent.totalXP ?? ''} onChange={e => setTempStudent({...tempStudent, totalXP: parseInt(e.target.value) || 0})} />
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500">Global Rank points cannot be set manually to prevent cheating.</p>
+                            <p className="text-xs text-gray-500">{t('admin.students.addStudentModal.globalRankNote')}</p>
                             <div className="grid grid-cols-2 gap-4">
                                 <select 
                                     className="bg-gray-700 rounded p-2 text-white" 
@@ -3568,7 +3579,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     value={tempStudent.assignedClass || ''}
                                     onChange={e => setTempStudent({...tempStudent, assignedClass: e.target.value})}
                                 >
-                                    <option value="">Select Class</option>
+                                    <option value="">{t('admin.students.addStudentModal.selectClass')}</option>
                                     {(() => {
                                         const loc = tempStudent.location || data.branchNames?.[0] || '';
                                         const classes = data.locationClasses?.[loc] || data.classes || [];
@@ -3577,42 +3588,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 </select>
                             </div>
                             <div className="border-t border-gray-600 pt-4">
-                                <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent/Guardian Info</p>
-                                <input type="text" placeholder="Parent Name *" className="w-full bg-gray-700 rounded p-2 text-white mb-2" value={tempStudent.parentName || ''} onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} />
-                                <input type="email" placeholder="Parent Email *" className="w-full bg-gray-700 rounded p-2 text-white mb-2" value={tempStudent.parentEmail || ''} onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} />
-                                <input type="tel" placeholder="Parent Phone" className="w-full bg-gray-700 rounded p-2 text-white mb-2" value={tempStudent.parentPhone || ''} onChange={e => setTempStudent({...tempStudent, parentPhone: e.target.value})} />
-                                <p className="text-xs text-gray-400">Default password: 1234 (user will be prompted to change)</p>
+                                <p className="text-xs text-gray-400 mb-2 uppercase font-bold">{t('admin.students.addStudentModal.parentGuardianInfo')}</p>
+                                <input type="text" placeholder={t('admin.students.addStudentModal.parentName')} className="w-full bg-gray-700 rounded p-2 text-white mb-2" value={tempStudent.parentName || ''} onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} />
+                                <input type="email" placeholder={t('admin.students.addStudentModal.parentEmail')} className="w-full bg-gray-700 rounded p-2 text-white mb-2" value={tempStudent.parentEmail || ''} onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} />
+                                <input type="tel" placeholder={t('admin.students.addStudentModal.parentPhone')} className="w-full bg-gray-700 rounded p-2 text-white mb-2" value={tempStudent.parentPhone || ''} onChange={e => setTempStudent({...tempStudent, parentPhone: e.target.value})} />
+                                <p className="text-xs text-gray-400">{t('admin.students.addStudentModal.defaultPassword')}</p>
                             </div>
                             <div className="border-t border-gray-600 pt-4">
-                                <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Medical Information (Optional)</p>
-                                <textarea placeholder="Any allergies, conditions, or notes..." className="w-full bg-gray-700 rounded p-2 text-white text-sm h-20" value={tempStudent.medicalInfo || ''} onChange={e => setTempStudent({...tempStudent, medicalInfo: e.target.value})} />
+                                <p className="text-xs text-gray-400 mb-2 uppercase font-bold">{t('admin.students.addStudentModal.medicalInfo')}</p>
+                                <textarea placeholder={t('admin.students.addStudentModal.medicalPlaceholder')} className="w-full bg-gray-700 rounded p-2 text-white text-sm h-20" value={tempStudent.medicalInfo || ''} onChange={e => setTempStudent({...tempStudent, medicalInfo: e.target.value})} />
                             </div>
                             {data.clubSponsoredPremium && (
                                 <p className="text-xs text-indigo-300 bg-indigo-900/20 p-2 rounded">
-                                    Adds $1.99/mo to your bill (Sponsored Premium active).
+                                    {t('admin.students.addStudentModal.addsToBill')}
                                 </p>
                             )}
-                            <button onClick={handleAddStudent} className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded">Add Student</button>
+                            <button onClick={handleAddStudent} className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded">{t('admin.students.addStudentModal.addStudentButton')}</button>
                         </div>
                     ) : studentImportMethod === 'bulk' ? (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
+                                    <label className="block text-xs font-bold text-gray-400 mb-1">{t('admin.students.bulkImport.defaultLocation')}</label>
                                     <select value={bulkLocation} onChange={e => setBulkLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
                                         {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
+                                    <label className="block text-xs font-bold text-gray-400 mb-1">{t('admin.students.bulkImport.defaultClass')}</label>
                                     <select value={bulkClass} onChange={e => setBulkClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                                        <option value="">Auto-assign</option>
+                                        <option value="">{t('admin.students.bulkImport.autoAssign')}</option>
                                         {(data.locationClasses?.[bulkLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
-                                <p className="text-xs text-gray-400"><span className="font-bold">Format:</span> Name, Age, Birthday, Gender, Belt, Stripes, Points, LocalXP, Parent, Email, Phone</p>
+                                <p className="text-xs text-gray-400"><span className="font-bold">{t('admin.students.bulkImport.format')}</span> {t('admin.students.bulkImport.formatDesc')}</p>
                                 <button 
                                     onClick={() => {
                                         const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Points,LocalXP,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,0,0,Jane Smith,jane@email.com,555-1234";
@@ -3626,21 +3637,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     }}
                                     className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
                                 >
-                                    Download template CSV
+                                    {t('admin.students.bulkImport.downloadTemplateCSV')}
                                 </button>
                             </div>
-                            <textarea value={bulkStudentData} onChange={e => { setBulkStudentData(e.target.value); setParsedBulkStudents([]); }} placeholder="Paste CSV data here..." className="w-full h-24 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
-                            <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">Parse Data</button>
+                            <textarea value={bulkStudentData} onChange={e => { setBulkStudentData(e.target.value); setParsedBulkStudents([]); }} placeholder={t('admin.students.bulkImport.pasteCSVData')} className="w-full h-24 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
+                            <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">{t('admin.students.bulkImport.parseData')}</button>
                             {bulkError && <p className="text-red-400 text-sm">{bulkError}</p>}
                             {parsedBulkStudents.length > 0 && (
                                 <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
-                                    <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedBulkStudents.length}):</p>
+                                    <p className="text-xs text-gray-400 mb-2 font-bold">{t('admin.students.bulkImport.preview')} ({parsedBulkStudents.length}):</p>
                                     {parsedBulkStudents.map((s, i) => (
                                         <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 grid grid-cols-3 gap-1">
                                             <span className="truncate">{s.name}</span>
                                             <span className="text-gray-500 truncate">{data.belts.find(b => b.id === s.beltId)?.name || '?'}</span>
                                             <span className={`truncate text-right ${s.parentEmail ? 'text-green-400' : 'text-yellow-500'}`}>
-                                                {s.parentEmail || 'No email'}
+                                                {s.parentEmail || t('admin.students.bulkImport.noEmail')}
                                             </span>
                                         </div>
                                     ))}
@@ -3667,7 +3678,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                         Importing...
                                     </>
                                 ) : (
-                                    `Import ${parsedBulkStudents.length} Students`
+                                    t('admin.students.bulkImport.importStudents', { count: parsedBulkStudents.length })
                                 )}
                             </button>
                         </div>
@@ -3675,15 +3686,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
+                                    <label className="block text-xs font-bold text-gray-400 mb-1">{t('admin.students.bulkImport.defaultLocation')}</label>
                                     <select value={bulkLocation} onChange={e => setBulkLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
                                         {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
+                                    <label className="block text-xs font-bold text-gray-400 mb-1">{t('admin.students.bulkImport.defaultClass')}</label>
                                     <select value={bulkClass} onChange={e => setBulkClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                                        <option value="">Auto-assign</option>
+                                        <option value="">{t('admin.students.bulkImport.autoAssign')}</option>
                                         {(data.locationClasses?.[bulkLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
@@ -3710,15 +3721,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 >
                                     <div className="text-4xl mb-2">📊</div>
                                     <p className="text-white font-medium mb-1">
-                                        {uploadedFileName || 'Click or drag Excel/CSV file'}
+                                        {uploadedFileName || t('admin.students.bulkImport.clickOrDragFile')}
                                     </p>
-                                    <p className="text-xs text-gray-500">Supports .xlsx, .xls, .csv</p>
+                                    <p className="text-xs text-gray-500">{t('admin.students.bulkImport.supportsFormats')}</p>
                                 </div>
                             </div>
 
                             <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
-                                <p className="text-xs text-gray-400 font-bold mb-1">Required Column Order:</p>
-                                <p className="text-xs text-gray-500">Name | Age | Birthday | Gender | Belt | Stripes | Points | LocalXP | Parent Name | Email | Phone</p>
+                                <p className="text-xs text-gray-400 font-bold mb-1">{t('admin.students.bulkImport.requiredColumnOrder')}</p>
+                                <p className="text-xs text-gray-500">{t('admin.students.bulkImport.columnOrder')}</p>
                                 <button 
                                     onClick={() => {
                                         const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Points,LocalXP,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,0,0,Jane Smith,jane@email.com,555-1234";
@@ -3732,7 +3743,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     }}
                                     className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
                                 >
-                                    Download template
+                                    {t('admin.students.bulkImport.downloadTemplate')}
                                 </button>
                             </div>
 
@@ -3740,13 +3751,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             
                             {parsedBulkStudents.length > 0 && (
                                 <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
-                                    <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedBulkStudents.length} students):</p>
+                                    <p className="text-xs text-gray-400 mb-2 font-bold">{t('admin.students.bulkImport.previewStudents', { count: parsedBulkStudents.length })}</p>
                                     {parsedBulkStudents.map((s, i) => (
                                         <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 grid grid-cols-3 gap-1">
                                             <span className="truncate">{s.name}</span>
                                             <span className="text-gray-500 truncate">{data.belts.find(b => b.id === s.beltId)?.name || 'White Belt'}</span>
                                             <span className={`truncate text-right ${s.parentEmail ? 'text-green-400' : 'text-yellow-500'}`}>
-                                                {s.parentEmail || 'No email'}
+                                                {s.parentEmail || t('admin.students.bulkImport.noEmail')}
                                             </span>
                                         </div>
                                     ))}
@@ -3775,7 +3786,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                         Importing...
                                     </>
                                 ) : (
-                                    `Import ${parsedBulkStudents.length} Students`
+                                    t('admin.students.bulkImport.importStudents', { count: parsedBulkStudents.length })
                                 )}
                             </button>
                         </div>
@@ -3784,18 +3795,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             )}
 
             {modalType === 'editStudent' && editingStudentId && (
-                <Modal title="Edit Student" onClose={() => { setModalType(null); setEditingStudentId(null); setTempStudent({}); }}>
+                <Modal title={t('admin.students.editStudentModal.title')} onClose={() => { setModalType(null); setEditingStudentId(null); setTempStudent({}); }}>
                     <div className="space-y-4">
                         {tempStudent.mytaekId && (
                             <div className="bg-cyan-900/30 border border-cyan-500/30 rounded-lg p-3 flex items-center justify-between">
                                 <div>
-                                    <span className="text-xs text-cyan-400 uppercase tracking-wider font-bold">MyTaek ID</span>
+                                    <span className="text-xs text-cyan-400 uppercase tracking-wider font-bold">{t('admin.students.editStudentModal.myTaekId')}</span>
                                     <p className="text-lg font-mono text-white">{tempStudent.mytaekId}</p>
                                 </div>
                                 <button 
                                     onClick={() => {
                                         navigator.clipboard.writeText(tempStudent.mytaekId || '');
-                                        alert('MyTaek ID copied!');
+                                        alert(t('admin.students.editStudentModal.myTaekIdCopied'));
                                     }}
                                     className="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1 rounded text-sm"
                                 >
@@ -3863,17 +3874,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             </div>
                         </div>
                         <div className="border-t border-gray-600 pt-4">
-                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent Info</p>
+                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">{t('admin.students.addStudentModal.parentGuardianInfo')}</p>
                             <input 
                                 type="text" 
-                                placeholder="Parent Name" 
+                                placeholder={t('admin.students.editStudentModal.parentName')} 
                                 value={tempStudent.parentName || ''} 
                                 className="w-full bg-gray-700 rounded p-2 text-white mb-2" 
                                 onChange={e => setTempStudent({...tempStudent, parentName: e.target.value})} 
                             />
                             <input 
                                 type="email" 
-                                placeholder="Parent Email" 
+                                placeholder={t('admin.students.editStudentModal.parentEmail')} 
                                 value={tempStudent.parentEmail || ''} 
                                 className="w-full bg-gray-700 rounded p-2 text-white" 
                                 onChange={e => setTempStudent({...tempStudent, parentEmail: e.target.value})} 
@@ -3924,17 +3935,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             }} 
                             className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded"
                         >
-                            Save Changes
+                            {t('common.save')}
                         </button>
                     </div>
                 </Modal>
             )}
 
             {modalType === 'coach' && (
-                <Modal title="Add New Coach" onClose={() => setModalType(null)}>
+                <Modal title={t('admin.staff.addCoachModal.title')} onClose={() => setModalType(null)}>
                     <div className="space-y-4">
-                        <input type="text" placeholder="Coach Name" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, name: e.target.value})} />
-                        <input type="email" placeholder="Email Address" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, email: e.target.value})} />
+                        <input type="text" placeholder={t('admin.staff.addCoachModal.coachName')} className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, name: e.target.value})} />
+                        <input type="email" placeholder={t('admin.staff.addCoachModal.emailAddress')} className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempCoach({...tempCoach, email: e.target.value})} />
                         <p className="text-xs text-gray-400">Default password: 1234 (coach will be prompted to change)</p>
                         <div>
                             <label className="block text-xs text-gray-400 mb-1 font-bold">Main Location</label>
@@ -3958,7 +3969,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             )}
 
             {modalType === 'editCoach' && editingCoachId && (
-                <Modal title="Edit Coach" onClose={() => { setModalType(null); setEditingCoachId(null); setTempCoach({}); }}>
+                <Modal title={t('admin.staff.editCoachModal.title')} onClose={() => { setModalType(null); setEditingCoachId(null); setTempCoach({}); }}>
                     <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-bold text-gray-400 mb-1">Name</label>
@@ -4041,16 +4052,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             }} 
                             className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded"
                         >
-                            Save Changes
+                            {t('common.save')}
                         </button>
                     </div>
                 </Modal>
             )}
 
             {modalType === 'class' && (
-                <Modal title="Add Weekly Class" onClose={() => setModalType(null)}>
+                <Modal title={t('admin.schedule.addClassModal.title')} onClose={() => setModalType(null)}>
                     <div className="space-y-4">
-                        <input type="text" placeholder="Class Name (e.g. Tiny Tigers)" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, className: e.target.value})} />
+                        <input type="text" placeholder={t('admin.schedule.addClassModal.className')} className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, className: e.target.value})} />
                         <div className="grid grid-cols-2 gap-4">
                             <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, day: e.target.value})}>
                                 <option value="">Select Day</option>
@@ -4076,9 +4087,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             )}
 
             {modalType === 'event' && (
-                <Modal title="Add Club Event" onClose={() => setModalType(null)}>
+                <Modal title={t('admin.schedule.addEventModal.title')} onClose={() => setModalType(null)}>
                     <div className="space-y-4">
-                        <input type="text" placeholder="Event Title" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempEvent({...tempEvent, title: e.target.value})} />
+                        <input type="text" placeholder={t('admin.schedule.addEventModal.eventTitle')} className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempEvent({...tempEvent, title: e.target.value})} />
                         <div className="grid grid-cols-2 gap-4">
                             <input type="date" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempEvent({...tempEvent, date: e.target.value})} />
                             <input type="time" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempEvent({...tempEvent, time: e.target.value})} />
@@ -4096,7 +4107,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             )}
 
             {modalType === 'private' && (
-                <Modal title="Add Private Lesson Slot" onClose={() => setModalType(null)}>
+                <Modal title={t('admin.schedule.addPrivateSlotModal.title')} onClose={() => setModalType(null)}>
                     <div className="space-y-4">
                         <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempPrivate({...tempPrivate, coachName: e.target.value})}>
                             <option value="">Select Coach</option>

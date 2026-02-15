@@ -9,6 +9,7 @@ import { useChallengeRealtime } from '../hooks/useChallengeRealtime';
 import { ChallengeToast } from './ChallengeToast';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { useStudentProgress } from '../hooks/useStudentProgress';
+import { useTranslation } from '../i18n/useTranslation';
 import SparkMD5 from 'spark-md5';
 import { 
     DEMO_PARENT_LEADERBOARD, 
@@ -90,6 +91,7 @@ interface ParentPortalProps {
 const getBelt = (beltId: string, belts: Belt[]) => belts.find(b => b.id === beltId);
 
 export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack, onUpdateStudent }) => {
+    const { t } = useTranslation(data?.language);
     const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'rivals' | 'feedback'>('home');
     const [isPremium, setIsPremium] = useState(false); // Toggle to simulate upgrade
     const [serverConfirmedPremium, setServerConfirmedPremium] = useState(false); // Premium status from API
@@ -2740,7 +2742,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             <div className="flex justify-between items-center">
                 {data.clubSponsoredPremium && (
                     <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center">
-                        💎 Premium Unlocked by {data.clubName}
+                        {t('parent.home.premiumUnlockedBy', { clubName: data.clubName || '' })}
                     </div>
                 )}
                 <div className="flex-1 flex justify-end">
@@ -2767,7 +2769,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         )}
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-white">Hi, {student.name.split(' ')[0]}!</h2>
+                        <h2 className="text-xl font-bold text-white">{t('parent.home.greeting', { name: student.name.split(' ')[0] })}</h2>
                         <div className="flex items-center text-sm text-gray-400 mt-1">
                             <div className="w-3 h-3 rounded-full mr-2 shadow-sm" style={{ background: currentBelt?.color1 || '#fff' }}></div>
                             {currentBelt?.name}
@@ -2777,9 +2779,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 className="text-xs text-cyan-400/70 mt-1 font-mono cursor-pointer hover:text-cyan-300 transition-colors"
                                 onClick={() => {
                                     navigator.clipboard.writeText(student.mytaekId || '');
-                                    alert('MyTaek ID copied!');
+                                    alert(t('parent.home.myTaekIdCopied'));
                                 }}
-                                title="Click to copy your MyTaek ID"
+                                title={t('parent.home.clickToCopyId')}
                             >
                                 🆔 {student.mytaekId}
                             </div>
@@ -2790,11 +2792,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-2 gap-3 mt-6">
                     <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Attendance</p>
-                        <p className="text-2xl font-bold text-white mt-1">{student.attendanceCount} <span className="text-xs font-normal text-gray-500">classes</span></p>
+                        <p className="text-xs text-gray-400 uppercase tracking-wider">{t('parent.home.attendance')}</p>
+                        <p className="text-2xl font-bold text-white mt-1">{student.attendanceCount} <span className="text-xs font-normal text-gray-500">{t('common.classes')}</span></p>
                     </div>
                     <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Total HonorXP™</p>
+                        <p className="text-xs text-gray-400 uppercase tracking-wider">{t('parent.home.totalHonorXP')}</p>
                         <p className="text-2xl font-bold text-cyan-400 mt-1">{(student.lifetimeXp || serverTotalXP || 0).toLocaleString()}</p>
                     </div>
                 </div>
@@ -2808,11 +2810,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <div className="flex items-center">
                             <span className="text-xl mr-2">🌍</span>
                             <div>
-                                <p className="text-xs text-cyan-300 font-bold">Global Shogun Rank™ #{worldRankData.myRank}</p>
-                                <p className="text-[10px] text-gray-400">{worldRankData.myGlobalXP} Global HonorXP™</p>
+                                <p className="text-xs text-cyan-300 font-bold">{t('parent.home.globalShogunRank', { rank: worldRankData.myRank })}</p>
+                                <p className="text-[10px] text-gray-400">{t('parent.home.globalHonorXP', { xp: worldRankData.myGlobalXP })}</p>
                             </div>
                         </div>
-                        <span className="text-cyan-400 text-xs">View →</span>
+                        <span className="text-cyan-400 text-xs">{t('parent.home.viewArrow')}</span>
                     </div>
                 )}
 
@@ -2821,7 +2823,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {/* Overall Progress Bar */}
                     <div>
                         <div className="flex justify-between text-xs text-gray-400 mb-2">
-                            <span>Progress to Next Belt</span>
+                            <span>{t('parent.home.progressToNextBelt')}</span>
                             <span>{Math.round(progressPercent)}%</span>
                         </div>
                         <div className="w-full bg-gray-700/50 rounded-full h-3 overflow-hidden shadow-inner">
@@ -2832,8 +2834,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {/* Stripes Earned */}
                     <div>
                         <div className="flex justify-between text-xs text-gray-400 mb-2">
-                            <span>Stripes Earned</span>
-                            <span>{currentBeltStripes} of {data.stripesPerBelt}</span>
+                            <span>{t('parent.home.stripesEarned')}</span>
+                            <span>{t('parent.home.stripesOf', { current: currentBeltStripes, total: data.stripesPerBelt })}</span>
                         </div>
                         <div className="flex justify-between">
                             {Array.from({ length: data.stripesPerBelt }).map((_, i) => {
@@ -2860,8 +2862,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     className="bg-gradient-to-br from-blue-900/80 to-blue-950 border border-blue-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-blue-500/70 transition-all"
                 >
                     <div className="text-3xl mb-2">🏅</div>
-                    <h4 className="font-bold text-white text-sm">Legacy Card</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Digital ID & Rarity</p>
+                    <h4 className="font-bold text-white text-sm">{t('parent.home.legacyCard')}</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">{t('parent.home.legacyCardDesc')}</p>
                 </div>
 
                 {/* Battle Arena - Now includes Daily Quests */}
@@ -2870,14 +2872,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     className="bg-gradient-to-br from-orange-900/80 to-orange-950 border border-orange-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-orange-500/70 transition-all relative"
                 >
                     <div className="text-3xl mb-2">⚔️</div>
-                    <h4 className="font-bold text-white text-sm">Battle Arena</h4>
+                    <h4 className="font-bold text-white text-sm">{t('parent.home.battleArena')}</h4>
                     <p className="text-[10px] text-gray-400 mt-1">
                         {atDailyLimit ? (
-                            <span className="text-green-400">✓ Quests Done!</span>
+                            <span className="text-green-400">{t('parent.home.questsDone')}</span>
                         ) : habitXpToday > 0 ? (
-                            <span className="text-yellow-400">{habitXpToday} XP today</span>
+                            <span className="text-yellow-400">{t('parent.home.xpToday', { xp: habitXpToday })}</span>
                         ) : (
-                            'Challenges & Quests'
+                            t('parent.home.challengesAndQuests')
                         )}
                     </p>
                 </div>
@@ -2888,8 +2890,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     className="bg-gradient-to-br from-purple-900/80 to-purple-950 border border-purple-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-purple-500/70 transition-all"
                 >
                     <div className="text-3xl mb-2">📅</div>
-                    <h4 className="font-bold text-white text-sm">Training Ops</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Book Classes</p>
+                    <h4 className="font-bold text-white text-sm">{t('parent.home.trainingOps')}</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">{t('parent.home.bookClasses')}</p>
                 </div>
 
                 {/* Chronos Forecast - Featured */}
@@ -2899,12 +2901,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 >
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 animate-pulse"></div>
                     <div className="absolute top-1 right-1">
-                        <span className="bg-cyan-500 text-[8px] text-white font-bold px-1.5 py-0.5 rounded">NEW</span>
+                        <span className="bg-cyan-500 text-[8px] text-white font-bold px-1.5 py-0.5 rounded">{t('common.new')}</span>
                     </div>
                     <div className="relative z-10">
                         <div className="text-3xl mb-2">🔮</div>
-                        <h4 className="font-bold text-white text-sm">Chronos Forecast</h4>
-                        <p className="text-[10px] text-cyan-300 mt-1">AI Black Belt Date</p>
+                        <h4 className="font-bold text-white text-sm">{t('parent.home.chronosForecast')}</h4>
+                        <p className="text-[10px] text-cyan-300 mt-1">{t('parent.home.aiBlackBeltDate')}</p>
                     </div>
                 </div>
 
@@ -2914,8 +2916,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     className="bg-gradient-to-br from-indigo-900/80 to-purple-950 border border-indigo-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-indigo-500/70 transition-all"
                 >
                     <div className="text-3xl mb-2">🧠</div>
-                    <h4 className="font-bold text-white text-sm">Sensei Mind</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">AI Training Intel</p>
+                    <h4 className="font-bold text-white text-sm">{t('parent.home.senseiMind')}</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">{t('parent.home.aiTrainingIntel')}</p>
                 </div>
 
                 {/* Sensei Academy - Practice Content */}
@@ -2924,15 +2926,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     className="bg-gradient-to-br from-emerald-900/80 to-emerald-950 border border-emerald-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-emerald-500/70 transition-all"
                 >
                     <div className="text-3xl mb-2">📚</div>
-                    <h4 className="font-bold text-white text-sm">Sensei Academy</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">Curriculum & Videos</p>
+                    <h4 className="font-bold text-white text-sm">{t('parent.home.senseiAcademy')}</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">{t('parent.home.curriculumAndVideos')}</p>
                 </div>
             </div>
 
             {/* Sensei Intel Section */}
             <div className="space-y-3">
                 <h3 className="font-bold text-gray-200 text-sm uppercase tracking-wider flex items-center">
-                    <span className="mr-2">💬</span> Sensei Intel
+                    <span className="mr-2">💬</span> {t('parent.home.senseiIntel')}
                     {student.feedbackHistory && student.feedbackHistory.length > 0 && (
                         <span className="ml-2 bg-sky-500/20 text-sky-400 text-[10px] px-2 py-0.5 rounded-full">{student.feedbackHistory.length}</span>
                     )}
@@ -2943,13 +2945,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <p className="text-gray-300 text-sm italic relative z-10 line-clamp-2">"{fb.text}"</p>
                             <div className="flex justify-between items-center text-[10px] text-gray-500 mt-2 relative z-10">
                                 <span>{new Date(fb.date).toLocaleDateString()}</span>
-                                <span className="text-sky-400">{fb.isAIGenerated ? '✨ AI' : fb.coachName}</span>
+                                <span className="text-sky-400">{fb.isAIGenerated ? t('parent.home.aiLabel') : fb.coachName}</span>
                             </div>
                         </div>
                     ))
                 ) : (
                     <div className="text-center py-6 text-gray-500 bg-gray-800/30 rounded-xl border border-dashed border-gray-700 text-sm">
-                        No active missions yet. Keep training hard!
+                        {t('parent.home.noActiveMissions')}
                     </div>
                 )}
             </div>
@@ -2988,7 +2990,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <span className="text-2xl">🧠</span>
                         </div>
                         <div>
-                            <h3 className="font-bold text-white text-base">AI Parenting Coach</h3>
+                            <h3 className="font-bold text-white text-base">{t('parent.insights.aiParentingCoach')}</h3>
                             <p className="text-xs text-indigo-300">Personalized guidance for {student.name.split(' ')[0]}'s journey</p>
                         </div>
                     </div>
@@ -3009,9 +3011,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex justify-center items-center"
                             >
                                 {isGeneratingAdvice ? (
-                                    <span className="animate-pulse">🔮 Analyzing {student.name.split(' ')[0]}'s progress...</span>
+                                    <span className="animate-pulse">{t('parent.insights.generating')}</span>
                                 ) : (
-                                    "✨ Get Personalized Advice"
+                                    t('parent.insights.generateAdvice')
                                 )}
                             </button>
                         )
@@ -3021,14 +3023,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
                                 <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">💡 General Tip</p>
                                 <p className="text-sm text-gray-300 italic">
-                                    "Encourage your child to practice their stances at home for 5 minutes daily. Consistency builds champions!"
+                                    "{t('parent.insights.encourageChild')}"
                                 </p>
                             </div>
                             <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 p-4 rounded-xl border border-indigo-500/20 text-center">
                                 <p className="text-xs text-gray-400 mb-3">
                                     Want advice <span className="text-indigo-400 font-bold">specific to {student.name.split(' ')[0]}</span>?
                                     <br/>
-                                    <span className="text-gray-500">Get insights like: "Focus is improving but discipline needs work. Try asking about breathing technique tonight."</span>
+                                    <span className="text-gray-500">{t('parent.insights.getInsightsLike')}</span>
                                 </p>
                                 <button
                                     onClick={() => setShowUpgradeModal(true)}
@@ -3058,15 +3060,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <div className="space-y-6 pb-20">
                     <div className="bg-gradient-to-r from-emerald-700 to-teal-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
                         <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-4 -mt-2">📚</div>
-                        <h3 className="font-bold text-white text-lg relative z-10">Sensei Academy</h3>
+                        <h3 className="font-bold text-white text-lg relative z-10">{t('parent.curriculum.senseiAcademy')}</h3>
                         <p className="text-sm text-emerald-100 relative z-10 mt-1">
                             {hasVideos 
-                                ? "Training videos and resources from your instructor. Watch and practice at home!" 
-                                : "Complete these family challenges to build discipline together."}
+                                ? t('parent.curriculum.trainingVideosDesc')
+                                : t('parent.curriculum.familyMissionsDesc')}
                         </p>
                         {hasVideos && (
                             <p className="text-[11px] text-emerald-200/70 relative z-10 mt-2">
-                                ✓ Your progress is tracked and visible to your coach
+                                {t('parent.curriculum.progressTracked')}
                             </p>
                         )}
                     </div>
@@ -3074,11 +3076,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <div className="space-y-2">
                         <div className="flex items-center justify-between pl-1">
                             <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">
-                                {hasVideos ? "Training Library" : "Family Missions"}
+                                {hasVideos ? t('parent.curriculum.trainingLibrary') : t('parent.curriculum.familyMissions')}
                             </h4>
                             {hasVideos && (
                                 <span className="text-[10px] text-gray-500">
-                                    {freeVideos.filter(v => isContentCompleted(v.id)).length}/{freeVideos.length} completed
+                                    {freeVideos.filter(v => isContentCompleted(v.id)).length}/{freeVideos.length} {t('parent.curriculum.completed')}
                                 </span>
                             )}
                         </div>
@@ -3160,7 +3162,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                                                             isLimitBlocked ? 'bg-orange-500/30 text-orange-300' : 'bg-blue-500/30 text-blue-300'
                                                         }`}>
-                                                            {weeklyCount}/{video.maxPerWeek} this week
+                                                            {weeklyCount}/{video.maxPerWeek} {t('parent.curriculum.thisWeek')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -3170,8 +3172,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <p className="text-[11px] text-gray-500">
                                                         {isLimitBlocked ? limitCheck.reason : 
-                                                         isCompleted ? 'Completed!' : 
-                                                         requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
+                                                         isCompleted ? t('parent.curriculum.completedStatus') : 
+                                                         requiresVideo ? t('parent.curriculum.watchAndSubmitVideo') : t('parent.curriculum.watchThenMarkDone')}
                                                     </p>
                                                     {!isLimitBlocked && (
                                                         <span className={`text-[11px] font-bold ${isCompleted ? 'text-green-400' : 'text-yellow-400'}`}>
@@ -3184,7 +3186,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <button
                                                     onClick={handleWatch}
                                                     className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg bg-emerald-500 hover:bg-emerald-400 shadow-emerald-600/30 transition-colors"
-                                                    title="Watch video"
+                                                    title={t('parent.curriculum.watchVideo')}
                                                 >
                                                     <span className="text-white text-sm">▶</span>
                                                 </button>
@@ -3202,10 +3204,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500'
                                                                         : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
                                                         }`}
-                                                        title={isLimitBlocked ? 'Rest day!' : isCompleted ? 'Completed' : videoAccessLocked ? 'Premium Only' : 'Submit Video'}
+                                                        title={isLimitBlocked ? t('parent.curriculum.restDay') : isCompleted ? t('parent.curriculum.completed') : videoAccessLocked ? t('parent.curriculum.premiumOnly') : t('parent.curriculum.submitVideo')}
                                                     >
                                                         {isLimitBlocked ? '⏸️' : isCompleted ? '✓' : videoAccessLocked ? '🔒' : '📹'}
-                                                        <span className="hidden sm:inline">{isLimitBlocked ? 'Rest' : isCompleted ? 'Done' : videoAccessLocked ? 'Unlock' : 'Submit'}</span>
+                                                        <span className="hidden sm:inline">{isLimitBlocked ? t('parent.curriculum.rest') : isCompleted ? t('common.done') : videoAccessLocked ? t('common.unlock') : t('common.submit')}</span>
                                                     </button>
                                                 ) : (
                                                     <button
@@ -3218,7 +3220,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     ? 'bg-green-500 shadow-green-600/30 cursor-default' 
                                                                     : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-gray-500 hover:border-green-400'
                                                         }`}
-                                                        title={isLimitBlocked ? 'Rest day!' : isCompleted ? 'Completed' : 'Mark as done'}
+                                                        title={isLimitBlocked ? t('parent.curriculum.restDay') : isCompleted ? t('parent.curriculum.completed') : t('parent.curriculum.watchThenMarkDone')}
                                                     >
                                                         <span className="text-white text-sm">{isLimitBlocked ? '⏸️' : isCompleted ? '✓' : ''}</span>
                                                     </button>
@@ -3234,11 +3236,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="mt-4 space-y-2">
                                     <div className="flex items-center gap-2 pl-1">
                                         <h4 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                                            <span>👑</span> Legacy Collection
+                                            <span>👑</span> {t('parent.curriculum.legacyCollection')}
                                         </h4>
                                         {hasPremiumAccess && (
                                             <span className="text-[10px] text-amber-500/70">
-                                                {premiumVideos.filter(v => isContentCompleted(v.id)).length}/{premiumVideos.length} completed
+                                                {premiumVideos.filter(v => isContentCompleted(v.id)).length}/{premiumVideos.length} {t('parent.curriculum.completed')}
                                             </span>
                                         )}
                                     </div>
@@ -3324,7 +3326,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 {video.title}
                                                             </h4>
                                                             <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/30 text-amber-300 rounded-full font-bold">
-                                                                LEGACY
+                                                                {t('parent.curriculum.legacyCollection')}
                                                             </span>
                                                             {requiresVideo && !isLocked && (
                                                                 <span className="text-[10px] px-1.5 py-0.5 bg-cyan-500/30 text-cyan-300 rounded-full font-bold">
@@ -3337,7 +3339,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         )}
                                                         <div className="flex items-center gap-2">
                                                             <p className="text-[11px] text-gray-400">
-                                                                {isLocked ? 'Unlock to access' : isCompleted ? 'Completed!' : requiresVideo ? 'Watch & submit video proof' : 'Watch then mark as done'}
+                                                                {isLocked ? t('parent.curriculum.unlockToAccess') : isCompleted ? t('parent.curriculum.completedStatus') : requiresVideo ? t('parent.curriculum.watchAndSubmitVideo') : t('parent.curriculum.watchThenMarkDone')}
                                                             </p>
                                                             <span className={`text-[11px] font-black ${isLocked ? 'text-amber-400 animate-pulse' : isCompleted ? 'text-green-400' : 'text-amber-300'}`}>
                                                                 +{xpReward} HonorXP™
@@ -3349,16 +3351,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             <button
                                                                 onClick={handleWatch}
                                                                 className="px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 transition-colors"
-                                                                title="Unlock with Premium"
+                                                                title={t('parent.curriculum.unlockWithPremium')}
                                                             >
-                                                                <span className="text-black text-xs font-bold">🔓 Unlock</span>
+                                                                <span className="text-black text-xs font-bold">🔓 {t('common.unlock')}</span>
                                                             </button>
                                                         ) : (
                                                             <>
                                                                 <button
                                                                     onClick={handleWatch}
                                                                     className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg bg-amber-500 hover:bg-amber-400 shadow-amber-600/30 transition-colors"
-                                                                    title="Watch video"
+                                                                    title={t('parent.curriculum.watchVideo')}
                                                                 >
                                                                     <span className="text-white text-sm">▶</span>
                                                                 </button>
@@ -3372,10 +3374,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                 ? 'bg-green-500 shadow-green-600/30 cursor-default text-white' 
                                                                                 : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500'
                                                                         }`}
-                                                                        title={isCompleted ? 'Completed' : 'Submit Video'}
+                                                                        title={isCompleted ? t('parent.curriculum.completed') : t('parent.curriculum.submitVideo')}
                                                                     >
                                                                         {isCompleted ? '✓' : '📹'}
-                                                                        <span className="hidden sm:inline">{isCompleted ? 'Done' : 'Submit'}</span>
+                                                                        <span className="hidden sm:inline">{isCompleted ? t('common.done') : t('common.submit')}</span>
                                                                     </button>
                                                                 ) : (
                                                                     <button
@@ -3386,7 +3388,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                 ? 'bg-green-500 shadow-green-600/30 cursor-default' 
                                                                                 : 'bg-gray-600 hover:bg-green-500 shadow-gray-700/30 cursor-pointer border-2 border-dashed border-amber-500 hover:border-green-400'
                                                                         }`}
-                                                                        title={isCompleted ? 'Completed' : 'Mark as done'}
+                                                                        title={isCompleted ? t('parent.curriculum.completed') : t('parent.curriculum.watchThenMarkDone')}
                                                                     >
                                                                         <span className="text-white text-sm">{isCompleted ? '✓' : ''}</span>
                                                                     </button>
@@ -3410,9 +3412,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     <div className="flex items-center gap-2">
                                         <span className="text-lg">💬</span>
                                         <div className="text-left">
-                                            <p className="text-sm font-bold text-indigo-300">View Feedback</p>
+                                            <p className="text-sm font-bold text-indigo-300">{t('parent.curriculum.viewFeedback')}</p>
                                             <p className="text-xs text-gray-500">
-                                                {myVideos.filter(v => (v.challengeCategory === 'academy' || v.challengeId?.startsWith('academy-')) && v.status === 'pending').length} pending
+                                                {t('parent.curriculum.pendingCount', { count: myVideos.filter(v => (v.challengeCategory === 'academy' || v.challengeId?.startsWith('academy-')) && v.status === 'pending').length })}
                                             </p>
                                         </div>
                                     </div>
@@ -3424,9 +3426,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             // Fallback: Family Missions if no videos
                             <div className="space-y-3">
                                 {[
-                                    { id: 'm1', title: 'Team Staring Contest', desc: 'Challenge your parent! First to blink loses. Builds Focus.', icon: '👀' },
-                                    { id: 'm2', title: 'Pillow Kicking', desc: 'Parent holds a pillow. Student does 10 kicks. Builds Speed.', icon: '🦶' },
-                                    { id: 'm3', title: 'The Teacher', desc: 'Teach your parent 1 move you learned in class today.', icon: '🎓' }
+                                    { id: 'm1', title: t('parent.curriculum.fallbackMissions.teamStaringContest'), desc: t('parent.curriculum.fallbackMissions.teamStaringContestDesc'), icon: '👀' },
+                                    { id: 'm2', title: t('parent.curriculum.fallbackMissions.pillowKicking'), desc: t('parent.curriculum.fallbackMissions.pillowKickingDesc'), icon: '🦶' },
+                                    { id: 'm3', title: t('parent.curriculum.fallbackMissions.theTeacher'), desc: t('parent.curriculum.fallbackMissions.theTeacherDesc'), icon: '🎓' }
                                 ].map(mission => (
                                     <div 
                                         key={mission.id} 
@@ -3449,13 +3451,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         </div>
                                     </div>
                                 ))}
-                                <p className="text-xs text-center text-gray-500 mt-4 italic">Complete missions to earn a Family Star!</p>
+                                <p className="text-xs text-center text-gray-500 mt-4 italic">{t('parent.curriculum.completeMissions')}</p>
                             </div>
                         )}
                     </div>
 
                     <div className="mt-8 p-4 bg-gray-800/50 rounded-lg text-center border border-gray-700/50">
-                        <p className="text-xs text-gray-500">Questions? Ask your instructor at your next class!</p>
+                        <p className="text-xs text-gray-500">{t('parent.curriculum.askInstructor')}</p>
                     </div>
                 </div>
             </div>
@@ -3467,7 +3469,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-black text-white flex items-center gap-2">
                                 <span className="text-2xl">📚</span> 
-                                Technique Proof
+                                {t('parent.curriculum.techniqueProof')}
                             </h3>
                             <button 
                                 type="button"
@@ -3487,13 +3489,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
                         {/* Content Info */}
                         <div className="rounded-xl p-4 mb-4 bg-cyan-900/30">
-                            <p className="text-gray-400 text-xs mb-1">Submitting for:</p>
+                            <p className="text-gray-400 text-xs mb-1">{t('parent.videoUpload.submitForVerification')}</p>
                             <p className="text-white font-bold">
-                                {selectedAcademyContent?.title || 'Training Content'}
+                                {selectedAcademyContent?.title || t('parent.curriculum.trainingContent')}
                             </p>
                             {selectedAcademyContent && (
                                 <p className="text-sm mt-1 text-cyan-400">
-                                    +{selectedAcademyContent.xpReward || 10} HonorXP™ on approval
+                                    {t('parent.curriculum.honorXPOnApproval', { xp: `+${selectedAcademyContent.xpReward || 10}` })}
                                 </p>
                             )}
                         </div>
@@ -3525,9 +3527,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             ) : (
                                 <>
                                     <span className="text-4xl mb-2 block">📹</span>
-                                    <p className="text-gray-300 font-bold">Tap to select video</p>
-                                    <p className="text-xs text-gray-500 mt-1">Max {MAX_VIDEO_SIZE_MB}MB • MP4, MOV, WebM</p>
-                                    <p className="text-xs mt-1 text-amber-400">Max {MAX_VIDEO_DURATION_SHORT}s - Record the key moment</p>
+                                    <p className="text-gray-300 font-bold">{t('parent.videoUpload.tapToSelectVideo')}</p>
+                                    <p className="text-xs text-gray-500 mt-1">{t('parent.videoUpload.maxSize', { size: MAX_VIDEO_SIZE_MB })}</p>
+                                    <p className="text-xs mt-1 text-amber-400">{t('parent.videoUpload.maxDurationShort', { seconds: MAX_VIDEO_DURATION_SHORT })}</p>
                                 </>
                             )}
                         </div>
@@ -3542,7 +3544,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     ></div>
                                 </div>
                                 <p className="text-xs text-center text-gray-400 mt-2">
-                                    Uploading... {videoUploadProgress}%
+                                    {t('parent.videoUpload.uploadingPercent', { percent: videoUploadProgress })}
                                 </p>
                             </div>
                         )}
@@ -3567,17 +3569,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         >
                             {isUploadingVideo ? (
                                 <>
-                                    <span className="animate-spin">⏳</span> Uploading...
+                                    <span className="animate-spin">⏳</span> {t('parent.videoUpload.uploadingPercent', { percent: videoUploadProgress })}
                                 </>
                             ) : (
                                 <>
-                                    <span>🚀</span> Submit Technique Video
+                                    {t('parent.videoUpload.submitTechniqueVideo')}
                                 </>
                             )}
                         </button>
 
                         <p className="text-xs text-center text-gray-500 mt-3">
-                            Your coach will review and award XP once approved
+                            {t('parent.videoUpload.coachReviewXP')}
                         </p>
                     </div>
                 </div>
@@ -3595,11 +3597,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-2 bg-gradient-to-r from-transparent via-purple-500 to-transparent blur-sm"></div>
                     
                     <h3 className="text-center text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">
-                        <span className="text-purple-400">🔮</span> ChronosBelt™ Predictor
+                        <span className="text-purple-400">🔮</span> {t('parent.journey.chronosBeltPredictor')}
                     </h3>
                     
                     <div className="text-center mb-6">
-                        <p className="text-sm text-gray-500">When will {student.name.split(' ')[0]} reach {blackBeltPrediction.targetBeltName}?</p>
+                        <p className="text-sm text-gray-500">{t('parent.journey.whenWillReach', { name: student.name.split(' ')[0], belt: blackBeltPrediction.targetBeltName })}</p>
                         
                         {/* FREE: Vague year only | PREMIUM: Exact date */}
                         {hasPremiumAccess ? (
@@ -3609,19 +3611,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 </h2>
                                 <div className="flex items-center justify-center gap-2 mt-1">
                                     <p className="text-[10px] text-gray-500 uppercase tracking-wider">
-                                        Target: {blackBeltPrediction.targetBeltName}
+                                        {t('parent.journey.target', { belt: blackBeltPrediction.targetBeltName })}
                                     </p>
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 text-purple-300">
-                                        ~{blackBeltPrediction.confidenceScore}% confidence
+                                        {t('parent.journey.confidence', { score: blackBeltPrediction.confidenceScore })}
                                     </span>
                                 </div>
                                 {simulatedAttendance > 1 && Number(blackBeltPrediction.yearsSaved) > 0 && (
                                     <p className="text-green-400 text-xs font-bold mt-2 animate-pulse">
-                                        ⚡ You save {blackBeltPrediction.yearsSaved} years by training {simulatedAttendance}x/week!
+                                        {t('parent.journey.youSaveYears', { years: blackBeltPrediction.yearsSaved, frequency: simulatedAttendance })}
                                     </p>
                                 )}
                                 <p className="text-[9px] text-gray-600 mt-2">
-                                    Accounts for {blackBeltPrediction.weeksClosedPerYear} weeks/year holidays
+                                    {t('parent.journey.accountsForHolidays', { weeks: blackBeltPrediction.weeksClosedPerYear })}
                                 </p>
                             </>
                         ) : (
@@ -3629,13 +3631,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <h2 className="text-4xl md:text-5xl font-black text-white mt-2 text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-gray-600">
                                     {blackBeltPrediction.estimatedDate.getFullYear()}
                                 </h2>
-                                <p className="text-xs text-gray-500 mt-1">Calculating journey...</p>
+                                <p className="text-xs text-gray-500 mt-1">{t('parent.journey.calculatingJourney')}</p>
                                 <div className="mt-3">
                                     <button
                                         onClick={() => setShowUpgradeModal(true)}
                                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-sm shadow-lg shadow-purple-500/30 transition-all"
                                     >
-                                        <span>🔮</span> Unlock Exact Date
+                                        {t('parent.journey.unlockExactDate')}
                                     </button>
                                 </div>
                             </>
@@ -3648,24 +3650,24 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30">
                                 <span className="text-2xl">⏰</span>
                             </div>
-                            <h4 className="text-white font-bold text-base mb-2">Time Machine</h4>
+                            <h4 className="text-white font-bold text-base mb-2">{t('parent.journey.timeMachine')}</h4>
                             <p className="text-gray-300 text-xs leading-relaxed mb-4">
-                                What if {student.name.split(' ')[0]} trained <span className="text-green-400 font-bold">2x or 3x per week</span>?
+                                {t('parent.journey.timeMachineDesc', { name: student.name.split(' ')[0] })}
                                 <br/>
-                                <span className="text-gray-400">Unlock to see how much faster they could reach Black Belt!</span>
+                                <span className="text-gray-400">{t('parent.journey.timeMachineUnlock')}</span>
                             </p>
                             <button
                                 onClick={() => setShowUpgradeModal(true)}
                                 className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-sm hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg shadow-purple-500/30"
                             >
-                                🔮 Unlock Future Vision
+                                {t('parent.journey.unlockFutureVision')}
                             </button>
                         </div>
                     ) : (
                         <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-4">
                             <div className="flex justify-between text-xs text-gray-300 mb-2">
-                                <span>Training Frequency</span>
-                                <span className="font-bold text-purple-300">{simulatedAttendance} Classes / Week</span>
+                                <span>{t('parent.journey.trainingFrequency')}</span>
+                                <span className="font-bold text-purple-300">{t('parent.journey.classesPerWeek', { count: simulatedAttendance })}</span>
                             </div>
                             <input 
                                 type="range" 
@@ -3675,9 +3677,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
                             />
                             <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                                <span>Relaxed (1x)</span>
-                                <span>Dedicated (3x)</span>
-                                <span>Elite (6x)</span>
+                                <span>{t('parent.journey.relaxed')}</span>
+                                <span>{t('parent.journey.dedicated')}</span>
+                                <span>{t('parent.journey.elite')}</span>
                             </div>
                         </div>
                     )}
@@ -3685,7 +3687,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {/* Road to Final Belt Progress - Always visible */}
                     <div>
                         <div className="flex justify-between text-xs text-gray-400 mb-1">
-                            <span>Road to {blackBeltPrediction.targetBeltName}</span>
+                            <span>{t('parent.journey.roadTo', { belt: blackBeltPrediction.targetBeltName })}</span>
                             <span>{Math.round(blackBeltPrediction.percentComplete)}%</span>
                         </div>
                         <div className="w-full bg-gray-800 rounded-full h-3 border border-gray-700">
@@ -3750,11 +3752,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
         // RARITY SYSTEM based on OVR
         const getRarity = (rating: number) => {
-            if (rating >= 95) return { name: 'LEGENDARY', gradient: 'from-amber-400 via-yellow-300 to-amber-500', glow: 'shadow-[0_0_40px_rgba(251,191,36,0.8)]', icon: '💎', textColor: 'text-amber-300', borderColor: 'border-amber-400' };
-            if (rating >= 90) return { name: 'DIAMOND', gradient: 'from-cyan-300 via-blue-200 to-cyan-400', glow: 'shadow-[0_0_35px_rgba(34,211,238,0.7)]', icon: '💠', textColor: 'text-cyan-200', borderColor: 'border-cyan-300' };
-            if (rating >= 85) return { name: 'GOLD', gradient: 'from-yellow-500 via-amber-400 to-yellow-600', glow: 'shadow-[0_0_30px_rgba(234,179,8,0.6)]', icon: '🥇', textColor: 'text-yellow-300', borderColor: 'border-yellow-400' };
-            if (rating >= 80) return { name: 'SILVER', gradient: 'from-gray-300 via-slate-200 to-gray-400', glow: 'shadow-[0_0_25px_rgba(148,163,184,0.5)]', icon: '🥈', textColor: 'text-gray-200', borderColor: 'border-gray-300' };
-            return { name: 'BRONZE', gradient: 'from-orange-600 via-amber-700 to-orange-700', glow: 'shadow-[0_0_20px_rgba(194,65,12,0.5)]', icon: '🥉', textColor: 'text-orange-300', borderColor: 'border-orange-400' };
+            if (rating >= 95) return { name: t('parent.cards.legendary'), gradient: 'from-amber-400 via-yellow-300 to-amber-500', glow: 'shadow-[0_0_40px_rgba(251,191,36,0.8)]', icon: '💎', textColor: 'text-amber-300', borderColor: 'border-amber-400' };
+            if (rating >= 90) return { name: t('parent.cards.diamond'), gradient: 'from-cyan-300 via-blue-200 to-cyan-400', glow: 'shadow-[0_0_35px_rgba(34,211,238,0.7)]', icon: '💠', textColor: 'text-cyan-200', borderColor: 'border-cyan-300' };
+            if (rating >= 85) return { name: t('parent.cards.gold'), gradient: 'from-yellow-500 via-amber-400 to-yellow-600', glow: 'shadow-[0_0_30px_rgba(234,179,8,0.6)]', icon: '🥇', textColor: 'text-yellow-300', borderColor: 'border-yellow-400' };
+            if (rating >= 80) return { name: t('parent.cards.silver'), gradient: 'from-gray-300 via-slate-200 to-gray-400', glow: 'shadow-[0_0_25px_rgba(148,163,184,0.5)]', icon: '🥈', textColor: 'text-gray-200', borderColor: 'border-gray-300' };
+            return { name: t('parent.cards.bronze'), gradient: 'from-orange-600 via-amber-700 to-orange-700', glow: 'shadow-[0_0_20px_rgba(194,65,12,0.5)]', icon: '🥉', textColor: 'text-orange-300', borderColor: 'border-orange-400' };
         };
 
         const rarity = getRarity(ovr);
@@ -3763,11 +3765,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         // Use rivalStats.xp as primary source (tracks real-time XP), fall back to student.lifetimeXp or serverTotalXP
         const actualXP = rivalStats.xp || student.lifetimeXp || serverTotalXP || 0;
         const achievements = [
-            { icon: '🎯', label: 'Classes Attended', value: student.attendanceCount || 0 },
-            { icon: '🏆', label: 'Total Wins', value: rivalStats?.wins || 0 },
-            { icon: '⭐', label: 'XP Earned', value: actualXP },
-            { icon: '🥋', label: 'Belt Rank', value: currentBelt?.name || 'White' },
-            { icon: '📅', label: 'Member Since', value: student.joinDate ? new Date(student.joinDate).getFullYear() : new Date().getFullYear() },
+            { icon: '🎯', label: t('parent.cards.classesAttended'), value: student.attendanceCount || 0 },
+            { icon: '🏆', label: t('parent.cards.totalWins'), value: rivalStats?.wins || 0 },
+            { icon: '⭐', label: t('parent.cards.xpEarned'), value: actualXP },
+            { icon: '🥋', label: t('parent.cards.beltRank'), value: currentBelt?.name || 'White' },
+            { icon: '📅', label: t('parent.cards.memberSince'), value: student.joinDate ? new Date(student.joinDate).getFullYear() : new Date().getFullYear() },
         ];
 
         // Sparkle positions (deterministic to avoid hydration issues)
@@ -3806,7 +3808,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 link.click();
             } catch (err) {
                 console.error('Failed to generate card image:', err);
-                alert('Could not download card. Try again later.');
+                alert(t('parent.cards.couldNotDownload'));
             }
         };
 
@@ -3816,7 +3818,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             glow: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]',
             textColor: 'text-blue-300',
             borderColor: 'border-blue-500',
-            name: 'BASIC',
+            name: t('parent.cards.basic'),
             icon: '🥋'
         };
 
@@ -3880,7 +3882,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         <div className="flex justify-between items-start relative z-10 mb-2">
                                             <div>
                                                 <span className={`text-5xl font-black ${cardStyle.textColor} italic drop-shadow-lg`}>{ovr}</span>
-                                                <span className="block text-[10px] text-gray-300 font-bold uppercase">OVR</span>
+                                                <span className="block text-[10px] text-gray-300 font-bold uppercase">{t('parent.cards.ovr')}</span>
                                                 <span className={`block text-[9px] font-bold uppercase mt-0.5 ${rarity.textColor}`}>{rarity.icon} {rarity.name}</span>
                                             </div>
                                             <div className="text-right">
@@ -4057,7 +4059,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             <div className="space-y-8 pb-20">
                  {/* Section 1: My Schedule */}
                  <div className="space-y-4">
-                     <h3 className="font-bold text-white text-lg px-2 flex items-center"><CalendarIcon /><span className="ml-2">My Class Schedule</span></h3>
+                     <h3 className="font-bold text-white text-lg px-2 flex items-center"><CalendarIcon /><span className="ml-2">{t('parent.booking.myClassSchedule')}</span></h3>
                      {relevantClasses.length > 0 ? (
                          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
                              {relevantClasses.map(cls => (
@@ -4068,19 +4070,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                          <p className="text-xs text-gray-500 mt-1">Instructor: {cls.instructor}</p>
                                      </div>
                                      <div className="text-right">
-                                         <button className="bg-gray-700 text-gray-300 text-xs px-3 py-1 rounded-full">Weekly</button>
+                                         <button className="bg-gray-700 text-gray-300 text-xs px-3 py-1 rounded-full">{t('parent.booking.weekly')}</button>
                                      </div>
                                  </div>
                              ))}
                          </div>
                      ) : (
-                         <p className="text-gray-500 text-center italic py-4">No specific classes scheduled for your belt level yet.</p>
+                         <p className="text-gray-500 text-center italic py-4">{t('parent.booking.noClassesScheduled')}</p>
                      )}
                  </div>
                  
                  {/* Section 2: Upcoming Events */}
                  <div className="space-y-4">
-                     <h3 className="font-bold text-white text-lg px-2">Upcoming Events</h3>
+                     <h3 className="font-bold text-white text-lg px-2">{t('parent.booking.upcomingEvents')}</h3>
                      {eventsData.length > 0 ? (
                          eventsData.map(evt => (
                              <div key={evt.id} className="bg-gray-800 p-4 rounded-xl border border-gray-700">
@@ -4101,23 +4103,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                      rel="noopener noreferrer"
                                      className="block w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded-lg text-sm transition-colors"
                                  >
-                                     📅 Add to Google Calendar
+                                     {t('parent.booking.addToGoogleCalendar')}
                                  </a>
                              </div>
                          ))
                      ) : (
-                         <p className="text-gray-500 text-center italic py-4">No upcoming events.</p>
+                         <p className="text-gray-500 text-center italic py-4">{t('parent.booking.noUpcomingEvents')}</p>
                      )}
                  </div>
 
                  {/* Section 3: Private Lessons Upsell */}
                  <div className="bg-gradient-to-br from-purple-900/50 to-indigo-900/50 p-6 rounded-2xl border border-purple-500/30">
-                     <h3 className="font-bold text-white text-lg mb-2">🚀 Accelerate Progress</h3>
-                     <p className="text-sm text-gray-300 mb-4">Book a 1-on-1 private lesson with a Master Instructor.</p>
+                     <h3 className="font-bold text-white text-lg mb-2">{t('parent.booking.accelerateProgress')}</h3>
+                     <p className="text-sm text-gray-300 mb-4">{t('parent.booking.bookPrivateLesson')}</p>
                      
                      <div className="space-y-3">
                          {privateSlotsData.filter(s => !s.isBooked).length === 0 && (
-                             <p className="text-gray-400 text-sm italic">No slots available right now.</p>
+                             <p className="text-gray-400 text-sm italic">{t('parent.booking.noSlotsAvailable')}</p>
                          )}
                          {privateSlotsData.filter(s => !s.isBooked).map(slot => (
                              <div key={slot.id} className="bg-gray-800 p-3 rounded-lg border border-gray-600 flex justify-between items-center">
@@ -4126,13 +4128,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                      <p className="text-sm text-gray-400">{slot.time} with {slot.coachName}</p>
                                  </div>
                                  {bookedSlots[slot.id] ? (
-                                     <span className="text-green-400 font-bold text-sm">Booked!</span>
+                                     <span className="text-green-400 font-bold text-sm">{t('parent.booking.bookedStatus')}</span>
                                  ) : (
                                      <button 
                                          onClick={() => handleBookSlot(slot.id)}
                                          className="bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold px-4 py-2 rounded-lg"
                                      >
-                                         Book ${slot.price}
+                                         {t('parent.booking.bookPrice', { price: slot.price })}
                                      </button>
                                  )}
                              </div>
@@ -4416,22 +4418,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
                         
                         
-                        <h3 className="text-2xl font-black text-white italic tracking-tighter relative z-10">DOJANG RIVALS</h3>
-                        <p className="text-red-400 font-bold uppercase tracking-widest text-[10px] relative z-10">Challenge. Compete. Win.</p>
+                        <h3 className="text-2xl font-black text-white italic tracking-tighter relative z-10">{t('parent.rivals.dojangRivals')}</h3>
+                        <p className="text-red-400 font-bold uppercase tracking-widest text-[10px] relative z-10">{t('parent.rivals.challengeCompeteWin')}</p>
                         
                         {/* Simplified Stats Bar - Rank + XP + Streak */}
                         <div className="flex justify-center gap-6 mt-3 relative z-10">
                             <div className="text-center">
                                 <div className="text-2xl font-black text-cyan-400">#{leaderboard.find(p => p.isYou)?.rank || '-'}</div>
-                                <div className="text-[10px] text-gray-400 uppercase">Rank</div>
+                                <div className="text-[10px] text-gray-400 uppercase">{t('parent.rivals.rank')}</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-black text-purple-400">{allTimeLeaderboard.find(p => p.isYou)?.displayXP ?? 0}</div>
-                                <div className="text-[10px] text-gray-400 uppercase">Total HonorXP™</div>
+                                <div className="text-[10px] text-gray-400 uppercase">{t('parent.rivals.totalHonorXP')}</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-black text-yellow-400">{dailyStreak}🔥</div>
-                                <div className="text-[10px] text-gray-400 uppercase">Streak</div>
+                                <div className="text-[10px] text-gray-400 uppercase">{t('parent.rivals.streak')}</div>
                             </div>
                         </div>
                     </div>
@@ -4442,15 +4444,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <div className="flex items-center gap-2">
                                 <span className="text-2xl">{dailyStreak >= 7 ? '🌟' : '🔥'}</span>
                                 <div>
-                                    <p className="text-white font-bold text-sm">{dailyStreak}-Day Streak!</p>
+                                    <p className="text-white font-bold text-sm">{t('parent.rivals.dayStreak', { days: dailyStreak })}</p>
                                     <p className="text-orange-300 text-xs">
-                                        {dailyStreak >= 7 ? '2x HonorXP™ Bonus Active!' : '1.5x HonorXP™ Bonus Active!'}
+                                        {dailyStreak >= 7 ? t('parent.rivals.doubleXpBonus') : t('parent.rivals.onePointFiveXpBonus')}
                                     </p>
                                 </div>
                             </div>
                             <div className="text-right">
                                 <p className="text-yellow-400 font-black text-lg">{getStreakMultiplier()}x</p>
-                                <p className="text-gray-400 text-[10px] uppercase">Multiplier</p>
+                                <p className="text-gray-400 text-[10px] uppercase">{t('parent.rivals.multiplier')}</p>
                             </div>
                         </div>
                     )}
@@ -4497,7 +4499,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                         ))}
                                         {allBadges.filter(b => b.earned).length === 0 && (
-                                            <p className="text-gray-500 text-xs italic">Complete challenges to earn badges!</p>
+                                            <p className="text-gray-500 text-xs italic">{t('parent.rivals.completeChallengesForBadges')}</p>
                                         )}
                                     </div>
 
@@ -4506,7 +4508,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         <div className="flex items-center justify-between mb-4">
                                             <h4 className="font-bold text-white text-lg flex items-center">
                                                 <span className="w-8 h-8 bg-red-600/20 rounded-lg flex items-center justify-center mr-3">🎮</span>
-                                                Select Challenge
+                                                {t('parent.gauntlet.selectChallenge') || 'Select Challenge'}
                                             </h4>
                                             {hasPremiumAccess && (
                                                 <span className="text-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-bold">
@@ -4583,7 +4585,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             <div className="text-xs font-semibold text-gray-200 leading-tight">{challenge.name}</div>
                                                             <div className="mt-1 inline-block px-2 py-0.5 bg-yellow-900/30 rounded-full">
                                                                 <span className="text-[10px] font-bold text-yellow-400">
-                                                                    {isCompleted ? 'Done ✓' : `+${challenge.xp} XP`}
+                                                                    {isCompleted ? t('parent.arena.completedBadge') : `+${challenge.xp} XP`}
                                                                 </span>
                                                             </div>
                                                             {challengeData.demoVideoUrl && (
@@ -4607,7 +4609,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         <span className="text-2xl">⚔️</span>
                                                     </span>
                                                     <div>
-                                                        <h4 className="font-black text-white text-lg">Daily Training</h4>
+                                                        <h4 className="font-black text-white text-lg">{t('parent.gauntlet.dailyQuests')}</h4>
                                                         <p className="text-orange-300 text-xs font-bold">
                                                             {gauntletData.dayTheme} {gauntletData.dayOfWeek.charAt(0) + gauntletData.dayOfWeek.slice(1).toLowerCase()}
                                                         </p>
@@ -4666,7 +4668,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                         onClick={(e) => e.stopPropagation()}
                                                                                         className="text-[10px] bg-cyan-900/50 text-cyan-400 px-2 py-0.5 rounded font-bold hover:bg-cyan-800/50 transition-colors"
                                                                                     >
-                                                                                        📺 Watch Demo
+                                                                                        {t('parent.rivals.family.watchDemo')}
                                                                                     </a>
                                                                                 )}
                                                                             </div>
@@ -4675,7 +4677,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     <div className="text-right">
                                                                         {isCompleted ? (
                                                                             <div className="flex flex-col items-end">
-                                                                                <span className="text-green-400 text-sm font-bold">Done ✓</span>
+                                                                                <span className="text-green-400 text-sm font-bold">{t('parent.arena.completedBadge')}</span>
                                                                                 <span className="text-gray-500 text-xs">Score: {challenge.thisWeekScore}</span>
                                                                             </div>
                                                                         ) : (
@@ -4706,7 +4708,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                     🏆 Last time: {challenge.personalBest} {challenge.score_type.toLowerCase()}
                                                                                 </p>
                                                                                 <p className="text-yellow-300/80 text-xs mt-0.5">
-                                                                                    Think you can beat your record this week?
+                                                                                    {t('parent.gauntlet.beatYourRecord') || 'Think you can beat your record this week?'}
                                                                                 </p>
                                                                             </div>
                                                                         )}
@@ -4722,7 +4724,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                     : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                                                                             }`}
                                                                         >
-                                                                            {gauntletSubmitting ? '...' : '✓ Trust +20 XP'}
+                                                                            {gauntletSubmitting ? '...' : t('parent.gauntlet.trustSubmit') || '✓ Trust +20 XP'}
                                                                         </button>
                                                                         <button
                                                                             onClick={() => {
@@ -4743,7 +4745,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                     : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                                                                             }`}
                                                                         >
-                                                                            {!hasPremiumAccess && '🔒 '}📹 Video +40 XP
+                                                                            {!hasPremiumAccess && '🔒 '}{t('parent.gauntlet.videoSubmit') || '📹 Video +40 XP'}
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -4762,10 +4764,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <>
                                                                             <div className="text-4xl mb-2">🏆🔥🏆</div>
                                                                             <p className="text-yellow-400 font-black text-lg animate-pulse">
-                                                                                NEW PERSONAL BEST!
+                                                                                {t('parent.gauntlet.newPersonalBest') || 'NEW PERSONAL BEST!'}
                                                                             </p>
                                                                             <p className="text-yellow-300 text-sm mt-1">
-                                                                                You crushed your old record!
+                                                                                {t('parent.gauntlet.crushedOldRecord') || 'You crushed your old record!'}
                                                                             </p>
                                                                         </>
                                                                     ) : (
@@ -4782,7 +4784,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <p className="text-yellow-400 font-black text-xl mt-2">+{gauntletResult.xp} XP!</p>
                                                                     )}
                                                                     {gauntletResult.pendingVerification && gauntletResult.pendingXp && gauntletResult.pendingXp > 0 && (
-                                                                        <p className="text-purple-400 font-bold text-sm mt-2">⏳ +{gauntletResult.pendingXp} XP pending coach verification</p>
+                                                                        <p className="text-purple-400 font-bold text-sm mt-2">{t('parent.arena.coachWillReview')}</p>
                                                                     )}
                                                                 </div>
                                                             )}
@@ -4792,7 +4794,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                             
                                             <div className="mt-4 pt-3 border-t border-orange-900/50 text-center">
-                                                <p className="text-gray-500 text-xs">Resets weekly • Beat your personal best each week!</p>
+                                                <p className="text-gray-500 text-xs">{t('parent.gauntlet.resetsWeekly') || 'Resets weekly • Beat your personal best each week!'}</p>
                                             </div>
                                         </div>
                                     )}
@@ -4816,7 +4818,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     }`}>
                                                         {isCoachPickChallenge ? '🥋' : '🏋️'}
                                                     </span>
-                                                    {isCoachPickChallenge ? 'Coach Pick Challenge' : 'Solo Practice'}
+                                                    {isCoachPickChallenge ? (t('parent.gauntlet.coachPickChallenge') || 'Coach Pick Challenge') : t('parent.gauntlet.soloPractice')}
                                                 </h4>
                                                 <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${
                                                     isChallengeCompletedToday(selectedChallenge) 
@@ -4825,12 +4827,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             ? 'bg-amber-700 text-amber-200'
                                                             : 'bg-gray-700 text-gray-300'
                                                 }`}>
-                                                    {isChallengeCompletedToday(selectedChallenge) ? '✅ Completed' : isCoachPickChallenge ? '⭐ High Value' : 'Daily Mission'}
+                                                    {isChallengeCompletedToday(selectedChallenge) ? t('parent.arena.completedBadge') : isCoachPickChallenge ? t('parent.arena.highValue') : t('parent.arena.dailyMission')}
                                                 </span>
                                             </div>
                                             
                                             <p className="text-gray-400 text-sm mb-4">
-                                                {selectedChallengeObj?.description || 'Complete this challenge solo and earn XP!'}
+                                                {selectedChallengeObj?.description || t('parent.gauntlet.completeChallengeSolo')}
                                             </p>
                                             
                                             {demoVideoLink && (
@@ -4839,8 +4841,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-xl">📺</span>
                                                             <div>
-                                                                <p className="text-cyan-300 text-sm font-bold">Watch Demo First!</p>
-                                                                <p className="text-gray-400 text-xs">Learn the proper technique before attempting</p>
+                                                                <p className="text-cyan-300 text-sm font-bold">{t('parent.gauntlet.watchDemoFirst')}</p>
+                                                                <p className="text-gray-400 text-xs">{t('parent.gauntlet.learnProperTechnique')}</p>
                                                             </div>
                                                         </div>
                                                         <a 
@@ -4849,7 +4851,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             rel="noopener noreferrer"
                                                             className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
                                                         >
-                                                            ▶️ Watch
+                                                            {t('parent.gauntlet.watch')}
                                                         </a>
                                                     </div>
                                                 </div>
@@ -4857,12 +4859,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             
                                             {/* Score Input */}
                                             <div className="mb-4">
-                                                <label className="text-gray-400 text-xs mb-2 block">Your Score (reps, seconds, etc.)</label>
+                                                <label className="text-gray-400 text-xs mb-2 block">{t('parent.gauntlet.yourScore')}</label>
                                                 <input
                                                     type="number"
                                                     value={soloScore}
                                                     onChange={e => setSoloScore(e.target.value)}
-                                                    placeholder="Enter your score..."
+                                                    placeholder={t('parent.gauntlet.enterYourScore')}
                                                     className="w-full bg-gray-800 text-white p-3 rounded-xl border border-gray-600 focus:border-green-500 focus:outline-none"
                                                 />
                                             </div>
@@ -4885,11 +4887,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 }`}
                                                             >
                                                                 {soloSubmitting ? (
-                                                                    <span>Submitting...</span>
+                                                                    <span>{t('parent.gauntlet.submitting') || 'Submitting...'}</span>
                                                                 ) : (
                                                                     <>
                                                                         <span className="text-lg">✓</span>
-                                                                        Submit (Trust System) • +{challengeXpValue} XP
+                                                                        {t('parent.gauntlet.submitTrust', { xp: challengeXpValue })}
                                                                     </>
                                                                 )}
                                                             </button>
@@ -4915,7 +4917,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             >
                                                                 {!hasPremiumAccess && <span className="text-lg">🔒</span>}
                                                                 <span className="text-lg">📹</span>
-                                                                Submit Video Proof • +{challengeXpValue * 2} XP
+                                                                {t('parent.gauntlet.submitVideoProof', { xp: challengeXpValue * 2 }) || `Submit Video Proof • +${challengeXpValue * 2} XP`}
                                                                 {!hasPremiumAccess && <span className="text-[10px] ml-1">PREMIUM</span>}
                                                             </button>
                                                         </>
@@ -4951,38 +4953,38 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-yellow-500/30">
                                                         <span className="text-4xl">🏆</span>
                                                     </div>
-                                                    <h3 className="text-xl font-black text-white">Unlock Your Child's</h3>
-                                                    <h3 className="text-2xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Full Potential</h3>
+                                                    <h3 className="text-xl font-black text-white">{t('parent.premium.unlockYourChilds')}</h3>
+                                                    <h3 className="text-2xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">{t('parent.premium.fullPotential')}</h3>
                                                 </div>
                                                 
                                                 <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-5">
                                                     <ul className="text-sm space-y-3">
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">🌍</span>
-                                                            <span className="text-white">Global Shogun Rank™</span>
+                                                            <span className="text-white">{t('parent.premium.globalShogunRank')}</span>
                                                         </li>
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">🔮</span>
-                                                            <span className="text-white">AI Belt Predictions</span>
+                                                            <span className="text-white">{t('parent.premium.aiBeltPredictions')}</span>
                                                         </li>
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">📊</span>
-                                                            <span className="text-white">Custom Home Habits</span>
+                                                            <span className="text-white">{t('parent.premium.customHomeHabits')}</span>
                                                         </li>
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">📹</span>
-                                                            <span className="text-white">Video Proof (2x XP)</span>
+                                                            <span className="text-white">{t('parent.premium.videoProof2xXP')}</span>
                                                         </li>
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">🎴</span>
-                                                            <span className="text-white">Digital Legacy Card™</span>
+                                                            <span className="text-white">{t('parent.premium.digitalLegacyCard')}</span>
                                                         </li>
                                                     </ul>
                                                 </div>
                                                 
                                                 <div className="text-center mb-4">
-                                                    <p className="text-gray-400 text-sm">All this for just</p>
-                                                    <p className="text-3xl font-black text-white">$4.99<span className="text-lg text-gray-400 font-normal">/mo</span></p>
+                                                    <p className="text-gray-400 text-sm">{t('parent.premium.allThisForJust')}</p>
+                                                    <p className="text-3xl font-black text-white">{t('parent.premium.pricePerMonth')}</p>
                                                 </div>
                                                 
                                                 <div className="space-y-2">
@@ -4991,14 +4993,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         disabled={premiumCheckoutLoading}
                                                         className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg disabled:opacity-50"
                                                     >
-                                                        {premiumCheckoutLoading ? '⏳ Loading...' : 'Unlock Premium - $4.99/mo'}
+                                                        {premiumCheckoutLoading ? t('parent.premium.loadingCheckout') : t('parent.premium.unlockPremium')}
                                                     </button>
                                                     <button
                                                         onClick={() => setShowUpgradeModal(false)}
                                                         disabled={premiumCheckoutLoading}
                                                         className="w-full py-2 text-gray-500 text-sm hover:text-gray-400 disabled:opacity-50"
                                                     >
-                                                        Maybe Later
+                                                        {t('parent.premium.maybeLater')}
                                                     </button>
                                                 </div>
                                             </div>
@@ -5052,7 +5054,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
 
                                                 {/* Challenge/Content Info */}
                                                 <div className={`rounded-xl p-4 mb-4 ${academyVideoMode ? 'bg-cyan-900/30' : 'bg-gray-800'}`}>
-                                                    <p className="text-gray-400 text-xs mb-1">Submitting for:</p>
+                                                    <p className="text-gray-400 text-xs mb-1">{t('parent.gauntlet.submittingFor')}</p>
                                                     <p className="text-white font-bold">
                                                         {academyVideoMode 
                                                             ? selectedAcademyContent?.title || 'Training Content'
@@ -5099,8 +5101,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     ) : (
                                                         <div>
                                                             <span className="text-4xl">📹</span>
-                                                            <p className="text-gray-300 font-medium mt-2">Tap to select video</p>
-                                                            <p className="text-gray-500 text-xs mt-1">MP4, MOV, WEBM • Max {MAX_VIDEO_SIZE_MB}MB</p>
+                                                            <p className="text-gray-300 font-medium mt-2">{t('parent.videoUpload.tapToSelectVideo')}</p>
+                                                            <p className="text-gray-500 text-xs mt-1">{t('parent.videoUpload.mpMovWebm', { size: MAX_VIDEO_SIZE_MB })}</p>
                                                             {(() => {
                                                                 const cName = gauntletVideoMode
                                                                     ? gauntletData?.challenges?.find((c: any) => c.id === selectedGauntletChallenge)?.name || ''
@@ -5156,23 +5158,23 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 >
                                                     {isUploadingVideo ? (
                                                         <span className="flex items-center justify-center gap-2">
-                                                            <span className="animate-spin">⏳</span> Uploading...
+                                                            <span className="animate-spin">⏳</span> {t('parent.videoUpload.uploadingPercent', { percent: videoUploadProgress })}
                                                         </span>
                                                     ) : videoUploadProgress === 100 ? (
                                                         <span className="flex items-center justify-center gap-2">
-                                                            <span>✅</span> Submitted!
+                                                            <span>✅</span> {t('parent.arena.submitted')}
                                                         </span>
                                                     ) : (
                                                         <span className="flex items-center justify-center gap-2">
-                                                            <span>🚀</span> {academyVideoMode ? 'Submit Technique Video' : 'Submit for Verification'}
+                                                            <span>🚀</span> {academyVideoMode ? t('parent.videoUpload.submitTechniqueVideo') : t('parent.videoUpload.submitForVerification')}
                                                         </span>
                                                     )}
                                                 </button>
 
                                                 <p className="text-gray-500 text-xs text-center mt-3">
                                                     {academyVideoMode 
-                                                        ? 'Your coach will review and award XP once approved'
-                                                        : 'Your coach will review and verify your video within 24 hours'}
+                                                        ? t('parent.arena.coachWillReview')
+                                                        : t('parent.arena.coachWillVerify')}
                                                 </p>
                                             </div>
                                         </div>
@@ -5187,19 +5189,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     {showScoreSubmit && activeChallenge && (
                                         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                                             <div className="bg-gray-900 rounded-2xl p-6 max-w-sm w-full border border-red-500">
-                                                <h3 className="text-xl font-black text-white text-center mb-4">Submit Your Score</h3>
+                                                <h3 className="text-xl font-black text-white text-center mb-4">{t('parent.rivals.inbox.acceptAndSubmit')}</h3>
                                                 <div className="text-center mb-6">
                                                     <div className="text-4xl mb-2">🎯</div>
                                                     <p className="text-gray-400 text-sm">{activeChallenge.challengeName}</p>
                                                     <p className="text-xs text-gray-500">vs {activeChallenge.fromName}</p>
                                                 </div>
                                                 <div className="mb-4">
-                                                    <label className="text-gray-400 text-xs block mb-2">Your Score (reps, seconds, etc.)</label>
+                                                    <label className="text-gray-400 text-xs block mb-2">{t('parent.gauntlet.yourScore')}</label>
                                                     <input
                                                         type="number"
                                                         value={myScore}
                                                         onChange={(e) => setMyScore(e.target.value)}
-                                                        placeholder="Enter your score..."
+                                                        placeholder={t('parent.gauntlet.enterYourScore')}
                                                         className="w-full bg-gray-800 text-white text-2xl font-bold text-center p-4 rounded-xl border border-gray-600 focus:border-red-500 focus:outline-none"
                                                     />
                                                 </div>
@@ -5228,9 +5230,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     {/* Inbox Header */}
                                     <div className="bg-gradient-to-r from-orange-900/50 to-red-900/50 p-4 rounded-xl border border-orange-500/30">
                                         <h4 className="font-bold text-white flex items-center">
-                                            <span className="mr-2">📬</span> Challenge Inbox
+                                            <span className="mr-2">📬</span> {t('parent.rivals.inbox.challengeInbox')}
                                         </h4>
-                                        <p className="text-xs text-gray-400">Accept challenges to compete!</p>
+                                        <p className="text-xs text-gray-400">{t('parent.rivals.inbox.acceptChallenges')}</p>
                                     </div>
 
                                     {/* Inbox Tabs */}
@@ -5241,7 +5243,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 inboxTab === 'received' ? 'bg-orange-600 text-white' : 'text-gray-400'
                                             }`}
                                         >
-                                            Received ({mergedReceivedChallenges.filter(c => c.status === 'pending').length})
+                                            {t('parent.rivals.inbox.received')} ({mergedReceivedChallenges.filter(c => c.status === 'pending').length})
                                         </button>
                                         <button
                                             onClick={() => setInboxTab('sent')}
@@ -5249,7 +5251,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 inboxTab === 'sent' ? 'bg-orange-600 text-white' : 'text-gray-400'
                                             }`}
                                         >
-                                            Sent ({mergedSentChallenges.length})
+                                            {t('parent.rivals.inbox.sent')} ({mergedSentChallenges.length})
                                         </button>
                                     </div>
 
@@ -5259,8 +5261,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             {mergedReceivedChallenges.filter(c => c.status === 'pending').length === 0 ? (
                                                 <div className="text-center py-12">
                                                     <div className="text-5xl mb-4">📭</div>
-                                                    <p className="text-gray-500 font-bold">No pending challenges</p>
-                                                    <p className="text-gray-600 text-xs">When someone challenges you, it'll appear here!</p>
+                                                    <p className="text-gray-500 font-bold">{t('parent.rivals.inbox.noPendingChallenges')}</p>
+                                                    <p className="text-gray-600 text-xs">{t('parent.rivals.inbox.whenChallenged')}</p>
                                                 </div>
                                             ) : (
                                                 mergedReceivedChallenges.filter(c => c.status === 'pending').map(challenge => (
@@ -5282,9 +5284,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             </div>
                                                             
                                                             <div className="bg-gray-900/50 rounded-lg p-3 mb-3">
-                                                                <p className="text-xs text-gray-400 mb-1">Challenge:</p>
+                                                                <p className="text-xs text-gray-400 mb-1">{t('parent.rivals.inbox.challenge')}</p>
                                                                 <p className="text-white font-bold">{challenge.challengeName}</p>
-                                                                <p className="text-yellow-500 text-xs mt-1">+{challenge.challengeXp} XP if you win</p>
+                                                                <p className="text-yellow-500 text-xs mt-1">{t('parent.rivals.inbox.xpIfYouWin', { xp: challenge.challengeXp })}</p>
                                                             </div>
                                                             
                                                             <div className="flex gap-2">
@@ -5292,13 +5294,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     onClick={() => handleDeclineChallengeAction(challenge.id)}
                                                                     className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-2.5 rounded-lg text-sm transition-colors"
                                                                 >
-                                                                    Decline
+                                                                    {t('parent.rivals.inbox.decline')}
                                                                 </button>
                                                                 <button 
                                                                     onClick={() => handleAcceptChallenge(challenge)}
                                                                     className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-lg text-sm transition-colors"
                                                                 >
-                                                                    Accept & Submit Score
+                                                                    {t('parent.rivals.inbox.acceptAndSubmit')}
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -5314,8 +5316,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             {mergedSentChallenges.length === 0 ? (
                                                 <div className="text-center py-12">
                                                     <div className="text-5xl mb-4">📤</div>
-                                                    <p className="text-gray-500 font-bold">No challenges sent</p>
-                                                    <p className="text-gray-600 text-xs">Go to Arena to challenge a rival!</p>
+                                                    <p className="text-gray-500 font-bold">{t('parent.rivals.inbox.noChallengesSent')}</p>
+                                                    <p className="text-gray-600 text-xs">{t('parent.rivals.inbox.goToArena')}</p>
                                                 </div>
                                             ) : (
                                                 mergedSentChallenges.map(challenge => (
@@ -5326,7 +5328,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     📨
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-gray-400 text-xs">Challenged:</p>
+                                                                    <p className="text-gray-400 text-xs">{t('parent.rivals.inbox.challenged')}</p>
                                                                     <p className="font-bold text-white text-sm">{challenge.toName}</p>
                                                                 </div>
                                                             </div>
@@ -5361,9 +5363,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="space-y-3">
                                     <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 rounded-xl border border-purple-500/30">
                                         <h4 className="font-bold text-white flex items-center mb-1">
-                                            <span className="mr-2">🎯</span> Weekly Challenges
+                                            <span className="mr-2">🎯</span> {t('parent.rivals.weekly.weeklyChallenges')}
                                         </h4>
-                                        <p className="text-xs text-gray-400">Complete special challenges for bonus rewards!</p>
+                                        <p className="text-xs text-gray-400">{t('parent.rivals.weekly.specialChallenges')}</p>
                                     </div>
                                     
                                     {weeklyChallenges.map(challenge => (
@@ -5403,15 +5405,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     {/* Header */}
                                     <div className="bg-gradient-to-r from-green-800 to-teal-900 p-5 rounded-xl shadow-lg relative overflow-hidden">
                                         <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-2 -mt-2">📋</div>
-                                        <h3 className="font-bold text-white text-lg relative z-10">Daily Quests</h3>
+                                        <h3 className="font-bold text-white text-lg relative z-10">{t('parent.gauntlet.dailyQuests')}</h3>
                                         <p className="text-sm text-green-100 relative z-10 mt-1">
-                                            Building character starts at home.
+                                            {t('parent.homeDojo.buildingCharacterAtHome')}
                                         </p>
                                     </div>
 
                                     {/* Controls */}
                                     <div className="flex justify-between items-center">
-                                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Today's Check-in</h4>
+                                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">{t('parent.homeDojo.todaysCheckin')}</h4>
                                         <button 
                                             onClick={() => {
                                                 if (!hasPremiumAccess) {
@@ -5423,7 +5425,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             className={`text-xs font-bold px-3 py-1 rounded-full border transition-colors flex items-center ${hasPremiumAccess ? 'bg-gray-800 text-sky-300 border-sky-500 hover:bg-gray-700' : 'bg-gray-800 text-gray-500 border-gray-600'}`}
                                         >
                                             {!hasPremiumAccess && <span className="mr-1">🔒</span>}
-                                            {isEditingHabits ? 'Done' : 'Customize'}
+                                            {isEditingHabits ? t('parent.homeDojo.doneLabel') : t('parent.homeDojo.customizeLabel')}
                                         </button>
                                     </div>
 
@@ -5438,7 +5440,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             <div className={`p-4 rounded-xl ${isComplete ? 'bg-gradient-to-r from-green-900/60 to-emerald-900/60 border border-green-500/50' : 'bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700'}`}>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className={`font-bold text-sm ${isComplete ? 'text-green-400' : 'text-gray-300'}`}>
-                                                        {isComplete ? '🎉 Daily Goal Complete!' : 'Today\'s Progress'}
+                                                        {isComplete ? t('parent.gauntlet.dailyGoalComplete') : t('parent.gauntlet.todaysProgress')}
                                                     </span>
                                                     <span className={`font-black text-lg ${isComplete ? 'text-green-300' : 'text-yellow-400'}`}>
                                                         {habitXpToday} / {currentCap} XP
@@ -5451,13 +5453,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     />
                                                 </div>
                                                 <p className="text-[10px] text-gray-500 mt-1.5 text-center">
-                                                    {habitsRemaining > 0 ? `${habitsRemaining} of ${maxHabits} habits remaining today` : 'All habits complete!'}
+                                                    {habitsRemaining > 0 ? t('parent.gauntlet.habitsRemaining', { remaining: habitsRemaining, max: maxHabits }) : t('parent.gauntlet.allHabitsComplete')}
                                                 </p>
                                                 
                                                 {!hasPremiumAccess && (
                                                     <div className="mt-3 p-2 bg-purple-900/30 rounded-lg border border-purple-500/30 text-center">
                                                         <p className="text-[11px] text-purple-300">
-                                                            👑 <span className="font-bold">Premium unlocks 7 daily habits</span> for more XP & faster progress
+                                                            {t('parent.gauntlet.premiumUnlocks7')}
                                                         </p>
                                                     </div>
                                                 )}
@@ -5520,14 +5522,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             );
                                             })}
                                             {customHabitList.filter(h => h.isActive).length === 0 && (
-                                                <p className="text-gray-500 text-center italic py-8">No active habits. Click customize to add some!</p>
+                                                <p className="text-gray-500 text-center italic py-8">{t('parent.homeDojo.noActiveHabits')}</p>
                                             )}
                                         </div>
                                     ) : (
                                         // EDIT MODE (Premium Only)
                                         <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 animate-fade-in">
                                             <h4 className="font-bold text-white mb-4 flex items-center">
-                                                <span className="text-xl mr-2">⚙️</span> Habit Builder
+                                                <span className="text-xl mr-2">⚙️</span> {t('parent.homeDojo.habitBuilder')}
                                             </h4>
                                             
                                             {/* Custom Habit Creation */}
@@ -5538,18 +5540,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         className="w-full p-3 border-2 border-dashed border-cyan-500/50 rounded-xl text-cyan-400 hover:bg-cyan-900/20 transition-colors flex items-center justify-center space-x-2"
                                                     >
                                                         <span className="text-xl">+</span>
-                                                        <span className="font-bold">Create Custom Habit</span>
+                                                        <span className="font-bold">{t('parent.homeDojo.createCustomHabit')}</span>
                                                     </button>
                                                 ) : (
                                                     <div className="bg-gray-900 p-4 rounded-xl border border-cyan-500/30 space-y-3">
                                                         <div className="flex justify-between items-center">
-                                                            <h5 className="font-bold text-cyan-400 text-sm">New Custom Habit</h5>
+                                                            <h5 className="font-bold text-cyan-400 text-sm">{t('parent.homeDojo.newCustomHabit')}</h5>
                                                             <button onClick={() => setShowCustomForm(false)} className="text-gray-500 hover:text-white">✕</button>
                                                         </div>
                                                         
                                                         {/* Icon Picker */}
                                                         <div>
-                                                            <label className="text-xs text-gray-400 mb-1 block">Choose an Icon</label>
+                                                            <label className="text-xs text-gray-400 mb-1 block">{t('parent.homeDojo.chooseAnIcon')}</label>
                                                             <div className="flex flex-wrap gap-2">
                                                                 {['🎯', '💪', '📖', '🧘', '🏃', '💤', '🙏', '🎨', '🎵', '🧹', '💧', '🍎'].map(emoji => (
                                                                     <button
@@ -5565,19 +5567,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         
                                                         {/* Question Input */}
                                                         <div>
-                                                            <label className="text-xs text-gray-400 mb-1 block">Habit Question</label>
+                                                            <label className="text-xs text-gray-400 mb-1 block">{t('parent.homeDojo.habitQuestion')}</label>
                                                             <input
                                                                 type="text"
                                                                 value={customHabitQuestion}
                                                                 onChange={(e) => setCustomHabitQuestion(e.target.value)}
-                                                                placeholder="Did they practice 10 minutes of forms?"
+                                                                placeholder={t('parent.homeDojo.habitQuestionPlaceholder')}
                                                                 className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white text-sm focus:border-cyan-500 focus:outline-none"
                                                             />
                                                         </div>
                                                         
                                                         {/* Category Selector */}
                                                         <div>
-                                                            <label className="text-xs text-gray-400 mb-1 block">Category</label>
+                                                            <label className="text-xs text-gray-400 mb-1 block">{t('parent.homeDojo.category')}</label>
                                                             <select
                                                                 value={customHabitCategory}
                                                                 onChange={(e) => setCustomHabitCategory(e.target.value as Habit['category'])}
@@ -5598,7 +5600,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             disabled={!customHabitQuestion.trim()}
                                                             className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-2 rounded-lg transition-colors"
                                                         >
-                                                            Add Custom Habit
+                                                            {t('parent.homeDojo.addCustomHabit')}
                                                         </button>
                                                     </div>
                                                 )}
@@ -5606,7 +5608,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             
                                             {/* Premium Habit Packs */}
                                             <div className="mb-4">
-                                                <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Habit Packs</h5>
+                                                <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">{t('parent.homeDojo.habitPacks')}</h5>
                                                 <div className="grid grid-cols-1 gap-2">
                                                     {Object.entries(habitPacks).map(([key, pack]) => {
                                                         const alreadyAdded = pack.habits.every(h => customHabitList.some(ch => ch.id === h.id));
@@ -5649,7 +5651,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                 : 'bg-cyan-600 hover:bg-cyan-500 text-white'
                                                                         }`}
                                                                     >
-                                                                        {alreadyAdded ? '✓ Added' : '+ Add'}
+                                                                        {alreadyAdded ? t('parent.homeDojo.added') : t('common.add')}
                                                                     </button>
                                                                 </div>
                                                                 <div className="mt-2 flex flex-wrap gap-1">
@@ -5668,7 +5670,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             {/* Existing Custom Habits */}
                                             {customHabitList.filter(h => h.isCustom).length > 0 && (
                                                 <div className="mb-4">
-                                                    <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Your Custom Habits</h5>
+                                                    <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">{t('parent.homeDojo.yourCustomHabits')}</h5>
                                                     <div className="space-y-2">
                                                         {customHabitList.filter(h => h.isCustom).map(habit => (
                                                             <div key={habit.id} className="flex items-center justify-between p-3 bg-cyan-900/20 rounded border border-cyan-500/30">
@@ -5688,7 +5690,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     }}
                                                                     className="px-3 py-1 rounded text-xs font-bold bg-red-900/50 text-red-400 border border-red-900 hover:bg-red-900/80 transition-colors"
                                                                 >
-                                                                    Remove
+                                                                    {t('common.remove')}
                                                                 </button>
                                                             </div>
                                                         ))}
@@ -5697,7 +5699,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             )}
                                             
                                             {/* Preset Habits */}
-                                            <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Preset Habits</h5>
+                                            <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">{t('parent.homeDojo.presetHabits')}</h5>
                                             <div className="space-y-2 max-h-[250px] overflow-y-auto">
                                                 {PRESET_HABITS.map(preset => {
                                                     const isActive = customHabitList.some(h => h.question === preset.question);
@@ -5711,13 +5713,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 onClick={() => handleToggleCustomHabit(preset)}
                                                                 className={`px-3 py-1 rounded text-xs font-bold transition-colors ${isActive ? 'bg-red-900/50 text-red-400 border border-red-900' : 'bg-green-900/50 text-green-400 border border-green-900'}`}
                                                             >
-                                                                {isActive ? 'Remove' : 'Add'}
+                                                                {isActive ? t('common.remove') : t('common.add')}
                                                             </button>
                                                         </div>
                                                     )
                                                 })}
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-4 text-center">Changes save automatically.</p>
+                                            <p className="text-xs text-gray-500 mt-4 text-center">{t('parent.homeDojo.changesSaveAutomatically')}</p>
                                         </div>
                                     )}
                                 </div>
@@ -5738,7 +5740,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             ? 'bg-purple-600 text-white shadow-lg' 
                                                             : 'text-gray-400 hover:text-white'
                                                     }`}
-                                                >This Month</button>
+                                                >{t('parent.rivals.leaderboard.monthly')}</button>
                                                 <button 
                                                     onClick={() => setLeaderboardMode('alltime')}
                                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -5746,7 +5748,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             ? 'bg-purple-600 text-white shadow-lg' 
                                                             : 'text-gray-400 hover:text-white'
                                                     }`}
-                                                >All-Time</button>
+                                                >{t('parent.rivals.leaderboard.allTime')}</button>
                                             </div>
                                             
                                             <span className="text-gray-600 mx-1">|</span>
@@ -5760,16 +5762,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' 
                                                             : 'text-gray-400 hover:text-white'
                                                     }`}
-                                                >🌍 World</button>
+                                                >🌍 {t('parent.rivals.leaderboard.world')}</button>
                                             </div>
                                         </div>
                                         
                                         <p className="text-xs text-center text-gray-400">
                                             {leaderboardMode === 'monthly' 
-                                                ? '🏠 Your club\'s monthly leaderboard' 
+                                                ? t('parent.rivals.clubMonthlyLeaderboard')
                                                 : leaderboardMode === 'alltime'
-                                                ? '🏠 Your club\'s all-time champions'
-                                                : '🌍 Global Shogun League - compete worldwide!'}
+                                                ? t('parent.rivals.clubAllTimeChampions')
+                                                : t('parent.rivals.globalCompeteWorldwide')}
                                         </p>
                                     </div>
                                     
@@ -5779,8 +5781,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             {leaderboard.filter(p => p.displayXP > 0).length === 0 ? (
                                                 <p className="text-gray-500 text-center py-8 italic">
                                                     {leaderboardMode === 'monthly' 
-                                                        ? 'No HonorXP™ earned this month yet. Start training!' 
-                                                        : 'No HonorXP™ recorded yet. Complete challenges to rank up!'}
+                                                        ? t('parent.rivals.noXpThisMonth')
+                                                        : t('parent.rivals.noXpRecorded')}
                                                 </p>
                                             ) : (
                                                 leaderboard.filter(p => p.displayXP > 0).map((player) => {
@@ -5807,10 +5809,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             </div>
                                                             <div>
                                                                 <p className={`font-bold text-sm ${player.isYou ? 'text-cyan-400' : 'text-white'}`}>
-                                                                    {player.name} {player.isYou && '(You)'}
+                                                                    {player.name} {player.isYou && t('parent.rivals.globalLeaderboard.you')}
                                                                 </p>
                                                                 <p className="text-[10px] text-gray-500">
-                                                                    {data.belts.find(b => b.id === player.beltId)?.name || 'Student'}{player.isYou && ' • Tap to view history'}
+                                                                    {data.belts.find(b => b.id === player.beltId)?.name || t('parent.rivals.globalLeaderboard.unknown')}{player.isYou && ` • ${t('parent.rivals.tapToViewHistory')}`}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -5838,12 +5840,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             <div className="space-y-4">
                                                 {/* Your Rank Card - Always visible */}
                                                 <div className="bg-gray-800 rounded-xl p-5 text-center border border-gray-700">
-                                                    <p className="text-gray-400 text-xs mb-2">🌍 Your Global Rank</p>
+                                                    <p className="text-gray-400 text-xs mb-2">🌍 {t('parent.rivals.globalLeaderboard.yourGlobalRank')}</p>
                                                     <p className="text-5xl font-black bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">#{worldRankData.myRank}</p>
-                                                    <p className="text-gray-500 text-sm mt-1">of {worldRankData.totalStudents.toLocaleString()} warriors worldwide</p>
+                                                    <p className="text-gray-500 text-sm mt-1">{t('parent.rivals.globalLeaderboard.warriorsWorldwide', { count: worldRankData.totalStudents.toLocaleString() })}</p>
                                                     <div className="mt-3 inline-block bg-purple-900/50 px-4 py-2 rounded-full border border-purple-500/30">
                                                         <span className="text-purple-400 font-bold">{worldRankData.myGlobalXP.toLocaleString()}</span>
-                                                        <span className="text-gray-400 text-sm ml-1">Global HonorXP™</span>
+                                                        <span className="text-gray-400 text-sm ml-1">{t('parent.rivals.globalLeaderboard.globalHonorXP')}</span>
                                                     </div>
                                                 </div>
                                                 
@@ -5851,7 +5853,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 {isPremium ? (
                                                     <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
                                                         <p className="text-white text-sm font-bold mb-3 flex items-center gap-2">
-                                                            🏆 Top 10 Worldwide
+                                                            🏆 {t('parent.rivals.globalLeaderboard.top10Worldwide')}
                                                             {worldRankData.topPlayers.length > 0 && worldRankData.topPlayers[0] && (
                                                                 <span className="text-yellow-400 text-[10px]">
                                                                     ({(worldRankData.topPlayers[0].global_xp - worldRankData.myGlobalXP).toLocaleString()} pts to #1)
@@ -5879,7 +5881,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         </div>
                                                                         <div>
                                                                             <p className={`font-bold text-sm ${player.id === student.id ? 'text-cyan-400' : 'text-white'}`}>
-                                                                                {player.name} {player.id === student.id && '(You)'}
+                                                                                {player.name} {player.id === student.id && t('parent.rivals.globalLeaderboard.you')}
                                                                             </p>
                                                                             <p className="text-[10px] text-gray-500">{player.club_name}</p>
                                                                         </div>
@@ -5898,10 +5900,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         <div className="w-16 h-16 mx-auto mb-4 bg-yellow-500/20 rounded-full flex items-center justify-center">
                                                             <span className="text-4xl">🔒</span>
                                                         </div>
-                                                        <h4 className="text-white font-bold text-lg mb-2">Global Shogun League™</h4>
+                                                        <h4 className="text-white font-bold text-lg mb-2">{t('parent.rivals.globalLeaderboard.globalShogunLeague')}</h4>
                                                         <p className="text-gray-400 text-sm mb-4">
-                                                            See how your child ranks among<br/>
-                                                            <span className="text-cyan-400 font-bold">{worldRankData.totalStudents.toLocaleString()} warriors worldwide</span>
+                                                            {t('parent.rivals.globalLeaderboard.seeHowChildRanks', { count: worldRankData.totalStudents.toLocaleString() })}
                                                         </p>
                                                         <button 
                                                             onClick={(e) => {
@@ -5910,7 +5911,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             }}
                                                             className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold py-3 px-6 rounded-xl text-sm transition-all shadow-lg"
                                                         >
-                                                            🏆 Unlock World Rankings
+                                                            🏆 {t('parent.rivals.globalLeaderboard.unlockWorldRankings')}
                                                         </button>
                                                     </div>
                                                 )}
@@ -5920,13 +5921,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <div className="text-center py-4">
                                                     {worldRankData.message?.includes('opted') ? (
                                                         <>
-                                                            <p className="text-yellow-400 text-sm">Your club hasn't joined the Global Shogun League yet.</p>
-                                                            <p className="text-gray-500 text-xs mt-2">Ask your club owner to enable Global Shogun League in settings!</p>
+                                                            <p className="text-yellow-400 text-sm">{t('parent.rivals.globalLeaderboard.clubNotJoined')}</p>
+                                                            <p className="text-gray-500 text-xs mt-2">{t('parent.rivals.globalLeaderboard.askClubOwner')}</p>
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <p className="text-gray-400 text-sm">Complete challenges to earn Global HonorXP™ and appear on the Global Shogun League!</p>
-                                                            <p className="text-gray-500 text-xs mt-2">Only challenges with video proof count toward global rankings.</p>
+                                                            <p className="text-gray-400 text-sm">{t('parent.rivals.globalLeaderboard.completeChallengesForGlobal')}</p>
+                                                            <p className="text-gray-500 text-xs mt-2">{t('parent.rivals.globalLeaderboard.onlyVideoProof')}</p>
                                                         </>
                                                     )}
                                                 </div>
@@ -5936,13 +5937,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         onClick={() => setShowGlobalLeaderboard(!showGlobalLeaderboard)}
                                                         className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm"
                                                     >
-                                                        {showGlobalLeaderboard ? 'Hide' : 'View'} Global Shogun Rank™
+                                                        {showGlobalLeaderboard ? t('parent.rivals.globalLeaderboard.hideGlobalRank') : t('parent.rivals.globalLeaderboard.viewGlobalRank')}
                                                     </button>
                                                 )}
                                                 
                                                 {showGlobalLeaderboard && isPremium && worldRankData.topPlayers.length > 0 && (
                                                     <div className="space-y-2 mt-3">
-                                                        <p className="text-gray-400 text-xs font-bold">Top 10 Worldwide</p>
+                                                        <p className="text-gray-400 text-xs font-bold">{t('parent.rivals.globalLeaderboard.top10Worldwide')}</p>
                                                         {worldRankData.topPlayers.map((player, index) => (
                                                             <div 
                                                                 key={player.id} 
@@ -5959,7 +5960,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     </div>
                                                                     <div>
                                                                         <p className="font-bold text-xs text-white">{player.name}</p>
-                                                                        <p className="text-[10px] text-gray-500">{player.club_name} • {player.country || 'Unknown'}</p>
+                                                                        <p className="text-[10px] text-gray-500">{player.club_name} • {player.country || t('parent.rivals.globalLeaderboard.unknown')}</p>
                                                                     </div>
                                                                 </div>
                                                                 <p className="font-bold text-cyan-400 text-xs">{player.global_xp.toLocaleString()} HonorXP™</p>
@@ -5980,38 +5981,38 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-yellow-500/30">
                                                         <span className="text-4xl">🏆</span>
                                                     </div>
-                                                    <h3 className="text-xl font-black text-white">Unlock Your Child's</h3>
-                                                    <h3 className="text-2xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Full Potential</h3>
+                                                    <h3 className="text-xl font-black text-white">{t('parent.premium.unlockYourChilds')}</h3>
+                                                    <h3 className="text-2xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">{t('parent.premium.fullPotential')}</h3>
                                                 </div>
                                                 
                                                 <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-5">
                                                     <ul className="text-sm space-y-3">
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">🌍</span>
-                                                            <span className="text-white">Global Shogun Rank™</span>
+                                                            <span className="text-white">{t('parent.premium.globalShogunRank')}</span>
                                                         </li>
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">🔮</span>
-                                                            <span className="text-white">AI Belt Predictions</span>
+                                                            <span className="text-white">{t('parent.premium.aiBeltPredictions')}</span>
                                                         </li>
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">📊</span>
-                                                            <span className="text-white">Custom Home Habits</span>
+                                                            <span className="text-white">{t('parent.premium.customHomeHabits')}</span>
                                                         </li>
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">📹</span>
-                                                            <span className="text-white">Video Proof (2x XP)</span>
+                                                            <span className="text-white">{t('parent.premium.videoProof2xXP')}</span>
                                                         </li>
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">🎴</span>
-                                                            <span className="text-white">Digital Legacy Card™</span>
+                                                            <span className="text-white">{t('parent.premium.digitalLegacyCard')}</span>
                                                         </li>
                                                     </ul>
                                                 </div>
                                                 
                                                 <div className="text-center mb-4">
-                                                    <p className="text-gray-400 text-sm">All this for just</p>
-                                                    <p className="text-3xl font-black text-white">$4.99<span className="text-lg text-gray-400 font-normal">/mo</span></p>
+                                                    <p className="text-gray-400 text-sm">{t('parent.premium.allThisForJust')}</p>
+                                                    <p className="text-3xl font-black text-white">{t('parent.premium.pricePerMonth')}</p>
                                                 </div>
                                                 
                                                 <div className="space-y-2">
@@ -6020,14 +6021,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         disabled={premiumCheckoutLoading}
                                                         className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg disabled:opacity-50"
                                                     >
-                                                        {premiumCheckoutLoading ? '⏳ Loading...' : 'Unlock Premium - $4.99/mo'}
+                                                        {premiumCheckoutLoading ? t('parent.premium.loadingCheckout') : t('parent.premium.unlockPremium')}
                                                     </button>
                                                     <button
                                                         onClick={() => setShowUpgradeModal(false)}
                                                         disabled={premiumCheckoutLoading}
                                                         className="w-full py-2 text-gray-500 text-sm hover:text-gray-400 disabled:opacity-50"
                                                     >
-                                                        Maybe Later
+                                                        {t('parent.premium.maybeLater')}
                                                     </button>
                                                 </div>
                                             </div>
@@ -6041,33 +6042,33 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="space-y-4">
                                     <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 rounded-xl border border-purple-500/30 text-center">
                                         <h4 className="font-bold text-white flex items-center justify-center mb-2">
-                                            <span className="mr-2 text-2xl">🎁</span> Daily Mystery Challenge
+                                            <span className="mr-2 text-2xl">🎁</span> {t('parent.rivals.mystery.dailyMysteryChallenge')}
                                         </h4>
-                                        <p className="text-xs text-purple-300">AI-powered daily quiz - test your martial arts knowledge!</p>
+                                        <p className="text-xs text-purple-300">{t('parent.rivals.mystery.aiPoweredQuiz')}</p>
                                     </div>
                                     
                                     {loadingMysteryChallenge ? (
                                         <div className="bg-gray-800 rounded-xl border border-purple-500/30 p-8 text-center">
                                             <div className="text-5xl mb-4 animate-spin">🎁</div>
-                                            <p className="text-purple-300">Generating your mystery challenge...</p>
+                                            <p className="text-purple-300">{t('parent.rivals.mystery.generatingChallenge')}</p>
                                         </div>
                                     ) : mysteryCompleted ? (
                                         <div className="bg-gray-800 rounded-xl border border-green-500/30 p-6 text-center">
                                             <div className="text-6xl mb-4">{mysteryWasCorrect ? '🎉' : '📚'}</div>
                                             <h4 className={`text-xl font-bold mb-2 ${mysteryWasCorrect ? 'text-green-400' : 'text-yellow-400'}`}>
-                                                {mysteryWasCorrect ? 'Correct!' : 'Good Try!'}
+                                                {mysteryWasCorrect ? t('parent.rivals.mystery.correct') : t('parent.rivals.mystery.goodTry')}
                                             </h4>
                                             <p className="text-gray-300 text-sm mb-3">{mysteryCompletionMessage}</p>
                                             {quizExplanation && (
                                                 <div className="bg-gray-700/50 rounded-lg p-3 mb-4 text-left">
-                                                    <p className="text-xs text-gray-400 mb-1">Explanation:</p>
+                                                    <p className="text-xs text-gray-400 mb-1">{t('parent.rivals.mystery.explanation')}</p>
                                                     <p className="text-sm text-purple-200">{quizExplanation}</p>
                                                 </div>
                                             )}
                                             <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
-                                                <p className="text-yellow-400 font-bold">+{mysteryXpAwarded} HonorXP™ earned!</p>
+                                                <p className="text-yellow-400 font-bold">{t('parent.rivals.mystery.xpEarned', { xp: mysteryXpAwarded })}</p>
                                             </div>
-                                            <p className="text-gray-500 text-xs mt-4">Come back tomorrow for a new challenge!</p>
+                                            <p className="text-gray-500 text-xs mt-4">{t('parent.rivals.mystery.comeBackTomorrow')}</p>
                                         </div>
                                     ) : mysteryChallenge ? (
                                         <div className="bg-gray-800 rounded-xl border border-purple-500/50 overflow-hidden">
@@ -6080,12 +6081,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <div className="flex items-center justify-center gap-4 mb-4 py-2 px-3 bg-gradient-to-r from-yellow-900/30 via-amber-900/40 to-yellow-900/30 rounded-lg border border-yellow-600/30">
                                                     <div className="flex items-center gap-1.5">
                                                         <span className="text-lg">✅</span>
-                                                        <span className="text-yellow-400 font-bold text-sm">+15 HonorXP™</span>
+                                                        <span className="text-yellow-400 font-bold text-sm">{t('parent.rivals.mystery.plusFifteenXP')}</span>
                                                     </div>
                                                     <div className="w-px h-5 bg-yellow-600/40"></div>
                                                     <div className="flex items-center gap-1.5">
                                                         <span className="text-lg">💪</span>
-                                                        <span className="text-yellow-500/70 font-medium text-sm">+5 HonorXP™</span>
+                                                        <span className="text-yellow-500/70 font-medium text-sm">{t('parent.rivals.mystery.plusFiveXP')}</span>
                                                     </div>
                                                 </div>
                                                 
@@ -6127,17 +6128,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
                                                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                                                                     </svg>
-                                                                    Submitting...
+                                                                    {t('parent.rivals.submitting')}
                                                                 </>
                                                             ) : (
-                                                                'Submit Answer'
+                                                                t('parent.rivals.mystery.submitAnswer')
                                                             )}
                                                         </button>
                                                         
                                                     </div>
                                                 ) : (
                                                     <div className="text-center py-4">
-                                                        <p className="text-gray-400 text-sm">Challenge type not yet supported. Check back later!</p>
+                                                        <p className="text-gray-400 text-sm">{t('parent.rivals.mystery.challengeNotSupported')}</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -6145,7 +6146,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     ) : (
                                         <div className="bg-gray-800 rounded-xl border border-gray-600 p-6 text-center">
                                             <div className="text-4xl mb-4">🎁</div>
-                                            <p className="text-gray-400">No challenge available right now.</p>
+                                            <p className="text-gray-400">{t('parent.rivals.mystery.noChallengeAvailable')}</p>
                                         </div>
                                     )}
                                 </div>
@@ -6156,25 +6157,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <div className="space-y-4">
                                     <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 p-4 rounded-xl border border-blue-500/30">
                                         <h4 className="font-bold text-white flex items-center">
-                                            <span className="mr-2">👥</span> Team Battles
-                                            <span className="ml-2 text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">Coming Soon</span>
+                                            <span className="mr-2">👥</span> {t('parent.rivals.teams.teamBattles')}
+                                            <span className="ml-2 text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">{t('parent.rivals.teams.comingSoon')}</span>
                                         </h4>
-                                        <p className="text-xs text-blue-300">Team up with classmates for combined challenges!</p>
+                                        <p className="text-xs text-blue-300">{t('parent.rivals.teams.teamDescription')}</p>
                                     </div>
                                     
                                     <div className="bg-gray-800/30 p-8 rounded-xl border border-gray-700 text-center">
                                         <div className="text-6xl mb-4">🚀</div>
-                                        <h5 className="font-bold text-white text-lg mb-2">Team Battles Coming Soon!</h5>
+                                        <h5 className="font-bold text-white text-lg mb-2">{t('parent.rivals.teams.teamBattlesComingSoon')}</h5>
                                         <p className="text-gray-400 text-sm mb-4">
-                                            We're working hard to bring you an exciting team-based challenge experience.
+                                            {t('parent.rivals.teams.workingHard')}
                                         </p>
                                         <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/20">
-                                            <h6 className="font-bold text-blue-300 text-sm mb-2">What to expect:</h6>
+                                            <h6 className="font-bold text-blue-300 text-sm mb-2">{t('parent.rivals.teams.whatToExpect')}</h6>
                                             <ul className="text-gray-400 text-xs space-y-1 text-left">
-                                                <li>• Build squads with 2-3 classmates</li>
-                                                <li>• Combined scores from all team members</li>
-                                                <li>• XP split equally among teammates</li>
-                                                <li>• Fair matchmaking by belt level</li>
+                                                <li>• {t('parent.rivals.teams.buildSquads')}</li>
+                                                <li>• {t('parent.rivals.teams.combinedScores')}</li>
+                                                <li>• {t('parent.rivals.teams.xpSplitEqually')}</li>
+                                                <li>• {t('parent.rivals.teams.fairMatchmaking')}</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -6193,27 +6194,27 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         }`}>
                                             <div className="text-4xl mb-2">{familyResult.won ? '🏆' : '💪'}</div>
                                             <h4 className="font-black text-white text-xl mb-1">
-                                                {familyResult.won ? 'YOU WON!' : 'GREAT EFFORT!'}
+                                                {familyResult.won ? t('parent.rivals.family.youWon') : t('parent.rivals.family.greatEffort')}
                                             </h4>
                                             <p className="text-gray-200 text-sm mb-2">{familyResult.challengeName}</p>
                                             <div className={`inline-block px-4 py-2 rounded-full font-bold ${
                                                 familyResult.won ? 'bg-green-600 text-white' : 'bg-orange-600 text-white'
                                             }`}>
-                                                +{familyResult.xp} XP {familyResult.won ? 'Winner Bonus!' : 'Participation!'}
+                                                {familyResult.won ? t('parent.rivals.family.winnerBonus', { xp: familyResult.xp }) : t('parent.rivals.family.participationXP', { xp: familyResult.xp })}
                                             </div>
                                             <p className="text-gray-400 text-xs mt-2">
                                                 {familyResult.won 
-                                                    ? 'Amazing work! Keep training with your family!' 
-                                                    : 'You still earned XP! Practice makes perfect!'}
+                                                    ? t('parent.rivals.family.amazingWork')
+                                                    : t('parent.rivals.family.practiceMore')}
                                             </p>
                                         </div>
                                     )}
                                     
                                     <div className="bg-gradient-to-r from-pink-900/50 to-red-900/50 p-4 rounded-xl border border-pink-500/30">
                                         <h4 className="font-bold text-white flex items-center">
-                                            <span className="mr-2">👨‍👧</span> Family Challenges
+                                            <span className="mr-2">👨‍👧</span> {t('parent.rivals.family.familyChallenges')}
                                         </h4>
-                                        <p className="text-xs text-pink-300">Challenge your parents at home for bonus XP!</p>
+                                        <p className="text-xs text-pink-300">{t('parent.rivals.family.challengeParents')}</p>
                                     </div>
                                     
                                     <div className="grid gap-3">
@@ -6249,7 +6250,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             <p className="text-white font-bold text-sm flex items-center gap-2">
                                                                 {challenge.name}
                                                                 {isCompletedToday && (
-                                                                    <span className="text-[10px] bg-green-600/30 text-green-400 px-2 py-0.5 rounded-full">Done Today</span>
+                                                                    <span className="text-[10px] bg-green-600/30 text-green-400 px-2 py-0.5 rounded-full">{t('parent.rivals.family.doneToday')}</span>
                                                                 )}
                                                             </p>
                                                             <p className="text-gray-400 text-[10px]">{challenge.description}</p>
@@ -6261,18 +6262,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     onClick={(e) => e.stopPropagation()}
                                                                     className="inline-flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 mt-1"
                                                                 >
-                                                                    📺 Watch Demo
+                                                                    {t('parent.rivals.family.watchDemo')}
                                                                 </a>
                                                             )}
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
                                                         {isCompletedToday ? (
-                                                            <p className="text-green-400 font-bold text-sm">Completed!</p>
+                                                            <p className="text-green-400 font-bold text-sm">{t('parent.rivals.family.completedBadge')}</p>
                                                         ) : (
                                                             <>
-                                                                <p className="text-yellow-400 font-bold">+{challenge.xp} XP</p>
-                                                                <p className="text-gray-500 text-[10px]">for winner</p>
+                                                                <p className="text-yellow-400 font-bold">{t('parent.rivals.family.xpForWinner', { xp: challenge.xp })}</p>
+                                                                <p className="text-gray-500 text-[10px]">{t('parent.rivals.family.forWinner')}</p>
                                                             </>
                                                         )}
                                                     </div>
@@ -6280,7 +6281,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 
                                                 {activeFamilyChallenge === challenge.id && (
                                                     <div className="border-t border-gray-700 p-4 bg-gray-900/50">
-                                                        <p className="text-gray-400 text-xs text-center mb-3">Who won this challenge?</p>
+                                                        <p className="text-gray-400 text-xs text-center mb-3">{t('parent.rivals.family.whoWon')}</p>
                                                         <div className="grid grid-cols-2 gap-3">
                                                             <button
                                                                 onClick={async () => {
@@ -6314,8 +6315,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all flex flex-col items-center"
                                                             >
                                                                 <span className="text-2xl mb-1">🧒</span>
-                                                                <span className="text-sm">Kid Won!</span>
-                                                                <span className="text-[10px] text-green-200">+15 XP</span>
+                                                                <span className="text-sm">{t('parent.rivals.family.kidWon')}</span>
+                                                                <span className="text-[10px] text-green-200">{t('parent.rivals.family.kidWonXP')}</span>
                                                             </button>
                                                             <button
                                                                 onClick={async () => {
@@ -6348,8 +6349,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all flex flex-col items-center"
                                                             >
                                                                 <span className="text-2xl mb-1">👨</span>
-                                                                <span className="text-sm">Parent Won!</span>
-                                                                <span className="text-[10px] text-blue-200">+5 XP</span>
+                                                                <span className="text-sm">{t('parent.rivals.family.parentWon')}</span>
+                                                                <span className="text-[10px] text-blue-200">{t('parent.rivals.family.parentWonXP')}</span>
                                                             </button>
                                                         </div>
                                                     </div>
@@ -6361,13 +6362,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     
                                     <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
                                         <h5 className="font-bold text-white mb-2 text-sm flex items-center">
-                                            <span className="mr-2">💝</span> Family Bonding Benefits
+                                            <span className="mr-2">💝</span> {t('parent.rivals.family.familyBondingBenefits')}
                                         </h5>
                                         <ul className="text-gray-400 text-xs space-y-1">
-                                            <li>• Winner: +15 XP</li>
-                                            <li>• Loser: +5 XP - everyone wins!</li>
-                                            <li>• Max 3 challenges per day</li>
-                                            <li>• Builds family martial arts culture</li>
+                                            <li>• {t('parent.rivals.family.winnerXP')}</li>
+                                            <li>• {t('parent.rivals.family.loserXP')}</li>
+                                            <li>• {t('parent.rivals.family.maxChallenges')}</li>
+                                            <li>• {t('parent.rivals.family.buildsFamilyCulture')}</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -6381,7 +6382,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             {challengeResult === 'pending' ? (
                                 <>
                                     <div className="text-7xl mb-6 animate-bounce">⚔️</div>
-                                    <h3 className="text-2xl font-black text-white italic mb-2">BATTLE IN PROGRESS...</h3>
+                                    <h3 className="text-2xl font-black text-white italic mb-2">{t('parent.rivals.battleInProgress')}</h3>
                                     <p className="text-gray-400 text-sm">
                                         {challengeCategories.flatMap(c => c.challenges).find(c => c.id === selectedChallenge)?.name || 'Challenge'}
                                     </p>
@@ -6395,17 +6396,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 <>
                                     <div className="text-7xl mb-4">{challengeResult === 'win' ? '👑' : '💀'}</div>
                                     <h3 className={`text-4xl font-black italic mb-2 ${challengeResult === 'win' ? 'text-yellow-400' : 'text-gray-500'}`}>
-                                        {challengeResult === 'win' ? 'VICTORY!' : 'DEFEAT'}
+                                        {challengeResult === 'win' ? t('parent.rivals.victory') : t('parent.rivals.defeat')}
                                     </h3>
                                     {challengeResult === 'win' ? (
                                         <div className="space-y-2">
                                             <p className="text-green-400 font-bold animate-pulse">
-                                                +{challengeCategories.flatMap(c => c.challenges).find(c => c.id === selectedChallenge)?.xp || 50} XP Earned!
+                                                {t('parent.rivals.xpEarned', { xp: challengeCategories.flatMap(c => c.challenges).find(c => c.id === selectedChallenge)?.xp || 50 })}
                                             </p>
-                                            <p className="text-yellow-400 text-sm">🔥 Streak: {rivalStats.streak}</p>
+                                            <p className="text-yellow-400 text-sm">{t('parent.rivals.streakCount', { count: rivalStats.streak })}</p>
                                         </div>
                                     ) : (
-                                        <p className="text-gray-400 text-sm">+10 XP for trying. Keep training!</p>
+                                        <p className="text-gray-400 text-sm">{t('parent.rivals.xpForTrying')}</p>
                                     )}
                                     <button 
                                         onClick={() => {
@@ -6416,7 +6417,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         }}
                                         className="mt-8 bg-gray-800 hover:bg-gray-700 text-white font-bold px-6 py-2 rounded-lg transition-colors"
                                     >
-                                        Back to Arena
+                                        {t('parent.rivals.backToArena')}
                                     </button>
                                 </>
                             )}
@@ -6444,21 +6445,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <div className="space-y-6 pb-20">
                     <div className="bg-gradient-to-r from-green-800 to-teal-900 p-6 rounded-xl shadow-lg relative overflow-hidden">
                         <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-2 -mt-2">🏠</div>
-                        <h3 className="font-bold text-white text-xl relative z-10">The Home Dojo</h3>
+                        <h3 className="font-bold text-white text-xl relative z-10">{t('parent.homeDojo.theHomeDojo')}</h3>
                         <p className="text-sm text-green-100 relative z-10 mt-1">
-                            Building character starts at home.
+                            {t('parent.homeDojo.buildingCharacterAtHome')}
                         </p>
                     </div>
 
                     {/* Controls */}
                     <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Today's Check-in</h4>
+                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">{t('parent.homeDojo.todaysCheckin')}</h4>
                         <button 
                             onClick={toggleEditMode}
                             className={`text-xs font-bold px-3 py-1 rounded-full border transition-colors flex items-center ${hasPremiumAccess ? 'bg-gray-800 text-sky-300 border-sky-500 hover:bg-gray-700' : 'bg-gray-800 text-gray-500 border-gray-600'}`}
                         >
                             {!hasPremiumAccess && <span className="mr-1">🔒</span>}
-                            {isEditingHabits ? 'Done' : 'Customize'}
+                            {isEditingHabits ? t('parent.homeDojo.doneLabel') : t('parent.homeDojo.customizeLabel')}
                         </button>
                     </div>
 
@@ -6474,7 +6475,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <div className={`p-4 rounded-xl ${isComplete ? 'bg-gradient-to-r from-green-900/60 to-emerald-900/60 border border-green-500/50' : 'bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700'}`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className={`font-bold text-sm ${isComplete ? 'text-green-400' : 'text-gray-300'}`}>
-                                        {isComplete ? '🎉 Daily Goal Complete!' : 'Today\'s Progress'}
+                                        {isComplete ? t('parent.gauntlet.dailyGoalComplete') : t('parent.gauntlet.todaysProgress')}
                                     </span>
                                     <span className={`font-black text-lg ${isComplete ? 'text-green-300' : 'text-yellow-400'}`}>
                                         {habitXpToday} / {currentCap} XP
@@ -6487,14 +6488,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     />
                                 </div>
                                 <p className="text-[10px] text-gray-500 mt-1.5 text-center">
-                                    {habitsRemaining > 0 ? `${habitsRemaining} of ${maxHabits} habits remaining today` : 'All habits complete!'}
+                                    {habitsRemaining > 0 ? t('parent.gauntlet.habitsRemaining', { remaining: habitsRemaining, max: maxHabits }) : t('parent.gauntlet.allHabitsComplete')}
                                 </p>
                                 
                                 {/* Upgrade prompt for free users */}
                                 {!hasPremiumAccess && (
                                     <div className="mt-3 p-2 bg-purple-900/30 rounded-lg border border-purple-500/30 text-center">
                                         <p className="text-[11px] text-purple-300">
-                                            👑 <span className="font-bold">Premium unlocks 7 daily habits</span> for more XP & faster progress
+                                            {t('parent.gauntlet.premiumUnlocks7')}
                                         </p>
                                     </div>
                                 )}
@@ -6557,14 +6558,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             );
                             })}
                             {activeHabits.length === 0 && (
-                                <p className="text-gray-500 text-center italic py-8">No active habits. Click customize to add some!</p>
+                                <p className="text-gray-500 text-center italic py-8">{t('parent.homeDojo.noActiveHabits')}</p>
                             )}
                         </div>
                     ) : (
                         // EDIT MODE (Premium Only)
                         <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 animate-fade-in">
                             <h4 className="font-bold text-white mb-4 flex items-center">
-                                <span className="text-xl mr-2">⚙️</span> Habit Builder
+                                <span className="text-xl mr-2">⚙️</span> {t('parent.homeDojo.habitBuilder')}
                             </h4>
                             
                             {/* Custom Habit Creation */}
@@ -6575,18 +6576,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         className="w-full p-3 border-2 border-dashed border-cyan-500/50 rounded-xl text-cyan-400 hover:bg-cyan-900/20 transition-colors flex items-center justify-center space-x-2"
                                     >
                                         <span className="text-xl">+</span>
-                                        <span className="font-bold">Create Custom Habit</span>
+                                        <span className="font-bold">{t('parent.homeDojo.createCustomHabit')}</span>
                                     </button>
                                 ) : (
                                     <div className="bg-gray-900 p-4 rounded-xl border border-cyan-500/30 space-y-3">
                                         <div className="flex justify-between items-center">
-                                            <h5 className="font-bold text-cyan-400 text-sm">New Custom Habit</h5>
+                                            <h5 className="font-bold text-cyan-400 text-sm">{t('parent.homeDojo.newCustomHabit')}</h5>
                                             <button onClick={() => setShowCustomForm(false)} className="text-gray-500 hover:text-white">✕</button>
                                         </div>
                                         
                                         {/* Icon Picker */}
                                         <div>
-                                            <label className="text-xs text-gray-400 mb-1 block">Choose an Icon</label>
+                                            <label className="text-xs text-gray-400 mb-1 block">{t('parent.homeDojo.chooseAnIcon')}</label>
                                             <div className="flex flex-wrap gap-2">
                                                 {['🎯', '💪', '📖', '🧘', '🏃', '💤', '🙏', '🎨', '🎵', '🧹', '💧', '🍎'].map(emoji => (
                                                     <button
@@ -6602,19 +6603,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         
                                         {/* Question Input */}
                                         <div>
-                                            <label className="text-xs text-gray-400 mb-1 block">Habit Question</label>
+                                            <label className="text-xs text-gray-400 mb-1 block">{t('parent.homeDojo.habitQuestion')}</label>
                                             <input
                                                 type="text"
                                                 value={customHabitQuestion}
                                                 onChange={(e) => setCustomHabitQuestion(e.target.value)}
-                                                placeholder="Did they practice 10 minutes of forms?"
+                                                placeholder={t('parent.homeDojo.habitQuestionPlaceholder')}
                                                 className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white text-sm focus:border-cyan-500 focus:outline-none"
                                             />
                                         </div>
                                         
                                         {/* Category Selector */}
                                         <div>
-                                            <label className="text-xs text-gray-400 mb-1 block">Category</label>
+                                            <label className="text-xs text-gray-400 mb-1 block">{t('parent.homeDojo.category')}</label>
                                             <select
                                                 value={customHabitCategory}
                                                 onChange={(e) => setCustomHabitCategory(e.target.value as Habit['category'])}
@@ -6635,7 +6636,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             disabled={!customHabitQuestion.trim()}
                                             className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-2 rounded-lg transition-colors"
                                         >
-                                            Add Custom Habit
+                                            {t('parent.homeDojo.addCustomHabit')}
                                         </button>
                                     </div>
                                 )}
@@ -6643,7 +6644,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             
                             {/* Premium Habit Packs */}
                             <div className="mb-4">
-                                <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Habit Packs</h5>
+                                <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">{t('parent.homeDojo.habitPacks')}</h5>
                                 <div className="grid grid-cols-1 gap-2">
                                     {Object.entries(habitPacks).map(([key, pack]) => {
                                         const alreadyAdded = pack.habits.every(h => customHabitList.some(ch => ch.id === h.id));
@@ -6687,7 +6688,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 : 'bg-cyan-600 hover:bg-cyan-500 text-white'
                                                         }`}
                                                     >
-                                                        {alreadyAdded ? '✓ Added' : '+ Add'}
+                                                        {alreadyAdded ? t('parent.homeDojo.added') : t('common.add')}
                                                     </button>
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap gap-1">
@@ -6706,7 +6707,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             {/* Existing Custom Habits */}
                             {customHabitList.filter(h => h.isCustom).length > 0 && (
                                 <div className="mb-4">
-                                    <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Your Custom Habits</h5>
+                                    <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">{t('parent.homeDojo.yourCustomHabits')}</h5>
                                     <div className="space-y-2">
                                         {customHabitList.filter(h => h.isCustom).map(habit => (
                                             <div key={habit.id} className="flex items-center justify-between p-3 bg-cyan-900/20 rounded border border-cyan-500/30">
@@ -6726,7 +6727,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     }}
                                                     className="px-3 py-1 rounded text-xs font-bold bg-red-900/50 text-red-400 border border-red-900 hover:bg-red-900/80 transition-colors"
                                                 >
-                                                    Remove
+                                                    {t('common.remove')}
                                                 </button>
                                             </div>
                                         ))}
@@ -6735,7 +6736,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             )}
                             
                             {/* Preset Habits */}
-                            <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">Preset Habits</h5>
+                            <h5 className="text-xs text-gray-500 uppercase font-bold mb-2">{t('parent.homeDojo.presetHabits')}</h5>
                             <div className="space-y-2 max-h-[250px] overflow-y-auto">
                                 {PRESET_HABITS.map(preset => {
                                     const isActive = customHabitList.some(h => h.question === preset.question);
@@ -6749,13 +6750,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 onClick={() => handleToggleCustomHabit(preset)}
                                                 className={`px-3 py-1 rounded text-xs font-bold transition-colors ${isActive ? 'bg-red-900/50 text-red-400 border border-red-900' : 'bg-green-900/50 text-green-400 border border-green-900'}`}
                                             >
-                                                {isActive ? 'Remove' : 'Add'}
+                                                {isActive ? t('common.remove') : t('common.add')}
                                             </button>
                                         </div>
                                     )
                                 })}
                             </div>
-                            <p className="text-xs text-gray-500 mt-4 text-center">Changes save automatically.</p>
+                            <p className="text-xs text-gray-500 mt-4 text-center">{t('parent.homeDojo.changesSaveAutomatically')}</p>
                         </div>
                     )}
                 </div>
@@ -6809,7 +6810,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const allSubmissions = sourceVideos.map(video => ({
             ...video,
             type: isAcademyVideo(video) ? 'academy' : 'arena',
-            typeLabel: isAcademyVideo(video) ? '📚 Academy' : '⚔️ Arena'
+            typeLabel: isAcademyVideo(video) ? t('parent.feedback.academyLabel') : t('parent.feedback.arenaLabel')
         }));
 
         // Apply filters
@@ -6860,7 +6861,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         video.status === 'approved' ? 'bg-green-900/50 text-green-400 border border-green-700' : 
                         'bg-red-900/50 text-red-400 border border-red-700'
                     }`}>
-                        {video.status === 'pending' ? 'Pending Review' : video.status === 'approved' ? 'Approved' : 'Needs Revision'}
+                        {video.status === 'pending' ? t('parent.feedback.pendingReview') : video.status === 'approved' ? t('parent.feedback.approvedTab') : t('parent.feedback.needsRevision')}
                     </span>
                 </div>
                 
@@ -6870,7 +6871,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         'bg-red-900/20 border border-red-700/50'
                     }`}>
                         <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
-                            <span>💬</span> Coach Feedback:
+                            <span>💬</span> {t('parent.feedback.coachFeedback')}
                         </p>
                         <p className={`text-sm ${video.status === 'approved' ? 'text-green-300' : 'text-red-300'}`}>
                             {video.coachNotes}
@@ -6907,9 +6908,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {/* Header */}
                     <div className="bg-gradient-to-r from-indigo-700 to-purple-800 p-5 rounded-xl shadow-lg relative overflow-hidden">
                         <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-4 -mt-2">💬</div>
-                        <h3 className="font-bold text-white text-lg relative z-10">Feedback Center</h3>
+                        <h3 className="font-bold text-white text-lg relative z-10">{t('parent.feedback.feedbackCenter')}</h3>
                         <p className="text-sm text-indigo-100 relative z-10 mt-1">
-                            All your video submissions and coach feedback in one place
+                            {t('parent.feedback.allSubmissions')}
                         </p>
                     </div>
 
@@ -6919,19 +6920,19 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <p className="text-2xl font-black text-yellow-400">
                                 {allSubmissions.filter(v => v.status === 'pending').length}
                             </p>
-                            <p className="text-[10px] text-yellow-500 font-bold uppercase">Pending</p>
+                            <p className="text-[10px] text-yellow-500 font-bold uppercase">{t('parent.feedback.pendingTab')}</p>
                         </div>
                         <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-3 text-center">
                             <p className="text-2xl font-black text-green-400">
                                 {allSubmissions.filter(v => v.status === 'approved').length}
                             </p>
-                            <p className="text-[10px] text-green-500 font-bold uppercase">Approved</p>
+                            <p className="text-[10px] text-green-500 font-bold uppercase">{t('parent.feedback.approvedTab')}</p>
                         </div>
                         <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3 text-center">
                             <p className="text-2xl font-black text-red-400">
                                 {allSubmissions.filter(v => v.status === 'rejected').length}
                             </p>
-                            <p className="text-[10px] text-red-500 font-bold uppercase">Revision</p>
+                            <p className="text-[10px] text-red-500 font-bold uppercase">{t('parent.feedback.revisionTab')}</p>
                         </div>
                     </div>
 
@@ -6976,9 +6977,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     {filteredSubmissions.length === 0 ? (
                         <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700">
                             <span className="text-5xl mb-4 block">📭</span>
-                            <p className="text-gray-400 font-bold">No submissions yet</p>
+                            <p className="text-gray-400 font-bold">{t('parent.feedback.noSubmissionsYet')}</p>
                             <p className="text-gray-500 text-sm mt-1">
-                                Submit videos in Arena or Sensei Academy to see them here
+                                {t('parent.feedback.submitVideosToSee')}
                             </p>
                         </div>
                     ) : (
@@ -7014,13 +7015,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 <div className="bg-gradient-to-r from-cyan-600 via-teal-600 to-cyan-600 text-white text-xs font-bold py-2 px-4 sticky top-0 z-50 shadow-lg flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                         <span className="text-lg">🎮</span>
-                        <span>DEMO MODE - Sample data for demonstration</span>
+                        <span>{t('parent.feedback.demoMode')}</span>
                     </div>
                     <button 
                         onClick={onBack}
                         className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs font-bold transition-colors flex items-center gap-1"
                     >
-                        ✕ Exit
+                        {t('parent.feedback.exitPreview')}
                     </button>
                 </div>
             )}
@@ -7028,8 +7029,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
              {/* Preview Header for Owner (non-demo mode) */}
             {!data.isDemo && (
                 <div className="bg-yellow-600 text-white text-xs font-bold text-center py-2 sticky top-0 z-50 shadow-md flex justify-between px-4 items-center">
-                    <span>PREVIEW MODE</span>
-                    <button onClick={onBack} className="underline text-yellow-100 hover:text-white">Close</button>
+                    <span>{t('parent.feedback.previewMode')}</span>
+                    <button onClick={onBack} className="underline text-yellow-100 hover:text-white">{t('common.close')}</button>
                 </div>
             )}
 
@@ -7037,8 +7038,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             {data.clubSponsoredPremium && (
                 <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 text-white text-xs font-bold text-center py-2 px-4 flex items-center justify-center space-x-2 shadow-lg">
                     <span className="text-base">💎</span>
-                    <span>Premium Included by <span className="font-extrabold">{data.clubName}</span></span>
-                    <span className="bg-white/20 text-[10px] px-2 py-0.5 rounded-full">FREE</span>
+                    <span>{t('parent.premium.premiumIncludedBy', { clubName: data.clubName || '' })}</span>
+                    <span className="bg-white/20 text-[10px] px-2 py-0.5 rounded-full">{t('parent.premium.freeLabel')}</span>
                 </div>
             )}
 
@@ -7062,38 +7063,38 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-yellow-500/30">
                                 <span className="text-4xl">🏆</span>
                             </div>
-                            <h3 className="text-xl font-black text-white">Unlock Your Child's</h3>
-                            <h3 className="text-2xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Full Potential</h3>
+                            <h3 className="text-xl font-black text-white">{t('parent.premium.unlockYourChilds')}</h3>
+                            <h3 className="text-2xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">{t('parent.premium.fullPotential')}</h3>
                         </div>
                         
                         <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 mb-5">
                             <ul className="text-sm space-y-3">
                                 <li className="flex items-center gap-3">
                                     <span className="text-xl">🌍</span>
-                                    <span className="text-white">Global Shogun Rank™</span>
+                                    <span className="text-white">{t('parent.premium.globalShogunRank')}</span>
                                 </li>
                                 <li className="flex items-center gap-3">
                                     <span className="text-xl">🔮</span>
-                                    <span className="text-white">AI Belt Predictions</span>
+                                    <span className="text-white">{t('parent.premium.aiBeltPredictions')}</span>
                                 </li>
                                 <li className="flex items-center gap-3">
                                     <span className="text-xl">📊</span>
-                                    <span className="text-white">Custom Home Habits</span>
+                                    <span className="text-white">{t('parent.premium.customHomeHabits')}</span>
                                 </li>
                                 <li className="flex items-center gap-3">
                                     <span className="text-xl">📹</span>
-                                    <span className="text-white">Video Proof (2x XP)</span>
+                                    <span className="text-white">{t('parent.premium.videoProof2xXP')}</span>
                                 </li>
                                 <li className="flex items-center gap-3">
                                     <span className="text-xl">🎴</span>
-                                    <span className="text-white">Digital Legacy Card™</span>
+                                    <span className="text-white">{t('parent.premium.digitalLegacyCard')}</span>
                                 </li>
                             </ul>
                         </div>
                         
                         <div className="text-center mb-4">
-                            <p className="text-gray-400 text-sm">All this for just</p>
-                            <p className="text-3xl font-black text-white">$4.99<span className="text-lg text-gray-400 font-normal">/mo</span></p>
+                            <p className="text-gray-400 text-sm">{t('parent.premium.allThisForJust')}</p>
+                            <p className="text-3xl font-black text-white">{t('parent.premium.pricePerMonth')}</p>
                         </div>
                         
                         <div className="space-y-2">
@@ -7102,14 +7103,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 disabled={premiumCheckoutLoading}
                                 className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg disabled:opacity-50"
                             >
-                                {premiumCheckoutLoading ? '⏳ Loading...' : 'Unlock Premium - $4.99/mo'}
+                                {premiumCheckoutLoading ? t('parent.premium.loadingCheckout') : t('parent.premium.unlockPremium')}
                             </button>
                             <button
                                 onClick={() => setShowUpgradeModal(false)}
                                 disabled={premiumCheckoutLoading}
                                 className="w-full py-2 text-gray-500 text-sm hover:text-gray-400 disabled:opacity-50"
                             >
-                                Maybe Later
+                                {t('parent.premium.maybeLater')}
                             </button>
                         </div>
                     </div>
@@ -7126,7 +7127,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                         <span>📜</span> {viewingStudentHistory.student.name}'s History
                                     </h3>
-                                    <p className="text-xs text-gray-400">Activity log and HonorXP earnings</p>
+                                    <p className="text-xs text-gray-400">{t('parent.feedback.activityLog')}</p>
                                 </div>
                                 <button 
                                     onClick={() => setViewingStudentHistory({ student: null, history: [], xpHistory: [], loading: false, historyTab: 'challenges' })}
@@ -7146,7 +7147,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                                     }`}
                                 >
-                                    ⚔️ Challenges
+                                    {t('parent.feedback.challengesTab')}
                                 </button>
                                 <button
                                     onClick={() => setViewingStudentHistory(prev => ({ ...prev, historyTab: 'xp' }))}
@@ -7156,7 +7157,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                                     }`}
                                 >
-                                    ⭐ XP Log
+                                    {t('parent.feedback.xpLogTab')}
                                 </button>
                             </div>
                         </div>
@@ -7165,14 +7166,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             {viewingStudentHistory.loading ? (
                                 <div className="text-center py-12">
                                     <div className="text-4xl animate-spin mb-3">⏳</div>
-                                    <p className="text-gray-400 text-sm">Loading history...</p>
+                                    <p className="text-gray-400 text-sm">{t('parent.feedback.loadingHistory')}</p>
                                 </div>
                             ) : viewingStudentHistory.historyTab === 'challenges' ? (
                                 viewingStudentHistory.history.length === 0 ? (
                                     <div className="text-center py-12">
                                         <div className="text-4xl mb-3">🥋</div>
-                                        <p className="text-gray-400 text-sm">No challenge history yet</p>
-                                        <p className="text-gray-500 text-xs mt-1">Complete challenges to build your history!</p>
+                                        <p className="text-gray-400 text-sm">{t('parent.feedback.noChallengeHistory')}</p>
+                                        <p className="text-gray-500 text-xs mt-1">{t('parent.feedback.completeChallengesHistory')}</p>
                                     </div>
                                 ) : (
                                     viewingStudentHistory.history.map(entry => {
@@ -7180,9 +7181,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         const dateDisplay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                         
                                         const statusConfig: Record<string, { badge: string; color: string; bg: string }> = {
-                                            'PENDING': { badge: '🟡 In Review', color: 'text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/30' },
-                                            'VERIFIED': { badge: '🟢 Verified', color: 'text-green-400', bg: 'bg-green-900/20 border-green-500/30' },
-                                            'COMPLETED': { badge: '✅ Completed', color: 'text-green-400', bg: 'bg-gray-800 border-gray-600' },
+                                            'PENDING': { badge: t('parent.feedback.inReview'), color: 'text-yellow-400', bg: 'bg-yellow-900/20 border-yellow-500/30' },
+                                            'VERIFIED': { badge: t('parent.feedback.verified'), color: 'text-green-400', bg: 'bg-green-900/20 border-green-500/30' },
+                                            'COMPLETED': { badge: `✅ ${t('parent.curriculum.completed')}`, color: 'text-green-400', bg: 'bg-gray-800 border-gray-600' },
                                         };
                                         const config = statusConfig[entry.status] || statusConfig['COMPLETED'];
                                         
@@ -7198,7 +7199,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <div>
                                                         <p className="font-bold text-white text-sm">{entry.challengeName}</p>
                                                         <p className="text-[10px] text-gray-400">
-                                                            {entry.category} • {dateDisplay} • {entry.proofType === 'VIDEO' ? '📹 Video' : '✓ Trust'}
+                                                            {entry.category} • {dateDisplay} • {entry.proofType === 'VIDEO' ? t('parent.feedback.videoProof') : t('parent.feedback.trustProof')}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -7216,8 +7217,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 viewingStudentHistory.xpHistory.length === 0 ? (
                                     <div className="text-center py-12">
                                         <div className="text-4xl mb-3">⭐</div>
-                                        <p className="text-gray-400 text-sm">No XP transactions yet</p>
-                                        <p className="text-gray-500 text-xs mt-1">Complete activities to earn HonorXP!</p>
+                                        <p className="text-gray-400 text-sm">{t('parent.feedback.noXpTransactions')}</p>
+                                        <p className="text-gray-500 text-xs mt-1">{t('parent.feedback.completeActivitiesXP')}</p>
                                     </div>
                                 ) : (
                                     viewingStudentHistory.xpHistory.map(entry => {
@@ -7270,11 +7271,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             {/* Bottom Navigation */}
             <div className="fixed bottom-0 w-full max-w-md bg-gray-800 border-t border-gray-700 pb-safe z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
                 <div className="flex justify-between items-center h-16 px-2 overflow-x-auto no-scrollbar">
-                    <NavButton icon="🏠" label="HQ" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                    <NavButton icon="⚔️" label="Arena" active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
-                    <NavButton icon="💬" label="Feedback" active={activeTab === 'feedback'} onClick={() => setActiveTab('feedback')} badge={unseenFeedbackCount} />
-                    <NavButton icon="🔮" label="Chronos" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
-                    <NavButton icon="🧠" label="Sensei" active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} isPremium={!hasPremiumAccess} />
+                    <NavButton icon="🏠" label={t('parent.tabs.hq')} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                    <NavButton icon="⚔️" label={t('parent.tabs.arena')} active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
+                    <NavButton icon="💬" label={t('parent.tabs.feedback')} active={activeTab === 'feedback'} onClick={() => setActiveTab('feedback')} badge={unseenFeedbackCount} />
+                    <NavButton icon="🔮" label={t('parent.tabs.chronos')} active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
+                    <NavButton icon="🧠" label={t('parent.tabs.sensei')} active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} isPremium={!hasPremiumAccess} />
                 </div>
             </div>
 
