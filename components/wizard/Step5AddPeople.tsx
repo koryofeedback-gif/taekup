@@ -30,6 +30,7 @@ const initialStudentState: Omit<Student, 'id'> = {
     parentPhone: '',
     parentPassword: '',
     totalPoints: 0,
+    totalXP: 0,
     medicalInfo: '',
     attendanceCount: 0,
     lastPromotionDate: new Date().toISOString(),
@@ -112,13 +113,11 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
     const handleAddStudent = () => {
         if (!newStudent.name || !newStudent.beltId) return;
         
-        // Calculate initial points based on stripes
         const pps = getPointsPerStripeForBelt(newStudent.beltId);
-        const initialPoints = (newStudent.stripes || 0) * pps;
+        const stripeBasedPoints = (newStudent.stripes || 0) * pps;
+        const finalPoints = newStudent.totalPoints || stripeBasedPoints;
 
-        // Determine class and location defaults
         const finalLocation = newStudent.location || locations[0];
-        // Ensure the assigned class is actually valid for this location, otherwise pick first available or generic
         const validClasses = data.locationClasses?.[finalLocation] || data.classes || [];
         const finalClass = (newStudent.assignedClass && validClasses.includes(newStudent.assignedClass))
             ? newStudent.assignedClass 
@@ -127,7 +126,8 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
         const studentToAdd: Student = {
             id: `student-${Date.now()}`,
             ...newStudent,
-            totalPoints: initialPoints, // Initialize correctly based on stripes
+            totalPoints: finalPoints,
+            totalXP: newStudent.totalXP || 0,
             location: finalLocation,
             assignedClass: finalClass,
             sparringStats: { matches: 0, wins: 0, draws: 0, headKicks: 0, bodyKicks: 0, punches: 0, takedowns: 0, defense: 0 },
@@ -458,48 +458,78 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                 </div>
 
                 {studentAddMode === 'manual' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <input type="text" value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} placeholder="Student Name" className="wizard-input" />
+                    <div className="space-y-4 mb-4">
+                        <input type="text" value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} placeholder="Full Name *" className="wizard-input" />
                         
-                        <select value={newStudent.beltId} onChange={e => setNewStudent({...newStudent, beltId: e.target.value})} className="wizard-input">
-                            <option value="">Select Belt...</option>
-                            {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                        </select>
-
-                        <div className="flex items-center space-x-2">
-                             <input type="number" value={newStudent.stripes || ''} onChange={e => setNewStudent({...newStudent, stripes: parseInt(e.target.value) || 0})} placeholder="Stripes" className="wizard-input" />
-                             <span className="text-xs text-gray-400">stripes</span>
-                        </div>
-
-                        <select value={newStudent.location} onChange={e => setNewStudent({...newStudent, location: e.target.value, assignedClass: ''})} className="wizard-input">
-                            {locations.map(l => <option key={l} value={l}>{l}</option>)}
-                        </select>
-
-                        <select value={newStudent.assignedClass} onChange={e => setNewStudent({...newStudent, assignedClass: e.target.value})} className="wizard-input">
-                            <option value="">Select Class...</option>
-                            {availableClassesForStudent.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                            <input type="number" value={newStudent.age || ''} onChange={e => setNewStudent({...newStudent, age: parseInt(e.target.value)})} placeholder="Age" className="wizard-input" />
-                            <div className="relative">
-                                <input 
-                                    type="date" 
-                                    value={newStudent.birthday} 
-                                    onChange={e => setNewStudent({...newStudent, birthday: e.target.value})} 
-                                    className="wizard-input text-xs" 
-                                    title="Birthday (Optional)"
-                                />
-                                <label className="absolute -top-3 left-1 text-[10px] bg-gray-800 px-1 text-gray-400">Birthday</label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Birthday</label>
+                                <input type="date" value={newStudent.birthday} onChange={e => setNewStudent({...newStudent, birthday: e.target.value})} className="wizard-input text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Gender</label>
+                                <select value={newStudent.gender || ''} onChange={e => setNewStudent({...newStudent, gender: e.target.value as any})} className="wizard-input">
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                    <option value="Prefer not to say">Prefer not to say</option>
+                                </select>
                             </div>
                         </div>
-                        
-                        <input type="text" value={newStudent.parentEmail} onChange={e => setNewStudent({...newStudent, parentEmail: e.target.value})} placeholder="Parent Email (Optional)" className="wizard-input" />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <select value={newStudent.beltId} onChange={e => setNewStudent({...newStudent, beltId: e.target.value})} className="wizard-input">
+                                <option value="">Select Belt... *</option>
+                                {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                            </select>
+                            <input type="number" value={newStudent.stripes ?? ''} onChange={e => setNewStudent({...newStudent, stripes: parseInt(e.target.value) || 0})} placeholder="Stripes" className="wizard-input" />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1">Join Date</label>
+                            <input type="date" value={newStudent.joinDate || new Date().toISOString().split('T')[0]} onChange={e => setNewStudent({...newStudent, joinDate: e.target.value})} className="wizard-input" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Points</label>
+                                <input type="number" min="0" placeholder="0" value={newStudent.totalPoints ?? ''} onChange={e => setNewStudent({...newStudent, totalPoints: parseInt(e.target.value) || 0})} className="wizard-input" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Local HonorXP™</label>
+                                <input type="number" min="0" placeholder="0" value={newStudent.totalXP ?? ''} onChange={e => setNewStudent({...newStudent, totalXP: parseInt(e.target.value) || 0})} className="wizard-input" />
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500">Global Shogun Rank™ points are earned through the Arena and cannot be set manually.</p>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <select value={newStudent.location} onChange={e => setNewStudent({...newStudent, location: e.target.value, assignedClass: ''})} className="wizard-input">
+                                {locations.map(l => <option key={l} value={l}>{l}</option>)}
+                            </select>
+                            <select value={newStudent.assignedClass} onChange={e => setNewStudent({...newStudent, assignedClass: e.target.value})} className="wizard-input">
+                                <option value="">Select Class...</option>
+                                {availableClassesForStudent.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        </div>
+
+                        <div className="border-t border-gray-600 pt-4">
+                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent / Guardian Info</p>
+                            <input type="text" value={newStudent.parentName || ''} onChange={e => setNewStudent({...newStudent, parentName: e.target.value})} placeholder="Parent Name" className="wizard-input mb-2" />
+                            <input type="email" value={newStudent.parentEmail || ''} onChange={e => setNewStudent({...newStudent, parentEmail: e.target.value})} placeholder="Parent Email" className="wizard-input mb-2" />
+                            <input type="tel" value={newStudent.parentPhone || ''} onChange={e => setNewStudent({...newStudent, parentPhone: e.target.value})} placeholder="Parent Phone" className="wizard-input mb-2" />
+                            <p className="text-xs text-gray-400">Default password: student's first name in lowercase</p>
+                        </div>
+
+                        <div className="border-t border-gray-600 pt-4">
+                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Medical Information</p>
+                            <textarea value={newStudent.medicalInfo || ''} onChange={e => setNewStudent({...newStudent, medicalInfo: e.target.value})} placeholder="Allergies, conditions, or notes..." className="wizard-input text-sm h-20 resize-none" />
+                        </div>
 
                         <button 
                             onClick={handleAddStudent}
                             disabled={!newStudent.name || !newStudent.beltId}
-                            className="md:col-span-2 w-full bg-sky-500 hover:bg-sky-600 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors"
+                            className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors"
                         >
                             Add Student
                         </button>
