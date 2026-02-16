@@ -1366,53 +1366,59 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
         onUpdateStudents(updatedStudents);
         setStudents(updatedStudents);
+        resetDashboard();
 
-        // Persist grading data to database using keepalive to survive unmount/navigation
-        const gradedStudents = updatedStudents.filter(s => attendance[s.id]);
-        gradedStudents.forEach((student) => {
-            const studentAny = student as any;
-            const sessionXpValue = studentAny.sessionXp || 0;
-            const sessionPtsValue = studentAny.sessionPts || 0;
-            
-            console.log('[Grading] Persisting for', student.name, '- totalPoints:', student.totalPoints, 'XP:', sessionXpValue, 'PTS:', sessionPtsValue);
-            
-            fetch(`/api/students/${student.id}/grading`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    totalPoints: student.totalPoints,
-                    lifetimeXp: student.lifetimeXp,
-                    sessionXp: sessionXpValue,
-                    sessionPts: sessionPtsValue
-                }),
-                keepalive: true
-            }).then(response => {
-                if (!response.ok) {
-                    console.error('[Grading] API error for', student.name);
-                } else {
-                    console.log('[Grading] Saved to DB for', student.name, '✓');
-                }
-            }).catch(err => {
-                console.error('Failed to persist grading for student:', student.id, err);
-            });
-            
-            if (data.worldRankingsEnabled && sessionXpValue > 0) {
-                fetch(`/api/students/${student.id}/global-xp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ scorePercentage: sessionXpValue }),
-                    keepalive: true
-                }).then(response => response.json()).then(result => {
-                    if (result.alreadyGraded) {
-                        console.log('[Global XP] Already submitted today for', student.name);
-                    } else if (result.globalXpAwarded > 0) {
-                        console.log('[Global XP] Awarded', result.globalXpAwarded, 'to', student.name);
+        // Persist grading data to database (totalPoints + lifetimeXp + sessionXp for monthly tracking)
+        updatedStudents.forEach(async (student) => {
+            if (attendance[student.id]) {
+                // Extract session values from the updated student object
+                const studentAny = student as any;
+                const sessionXpValue = studentAny.sessionXp || 0;
+                const sessionPtsValue = studentAny.sessionPts || 0;
+                
+                console.log('[Grading] Persisting for', student.name, '- XP:', sessionXpValue, 'PTS:', sessionPtsValue);
+                
+                try {
+                    // 1. Save local grading data
+                    const response = await fetch(`/api/students/${student.id}/grading`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            totalPoints: student.totalPoints,
+                            lifetimeXp: student.lifetimeXp,
+                            sessionXp: sessionXpValue,
+                            sessionPts: sessionPtsValue
+                        })
+                    });
+                    if (!response.ok) {
+                        console.error('[Grading] API error for', student.name, ':', await response.text());
                     }
-                }).catch(err => console.error('[Global XP] Error for', student.name, err));
+                    
+                    // 2. Submit Global XP for World Rankings (server calculates: 20 + score×0.3 = max 50)
+                    if (data.worldRankingsEnabled && sessionXpValue > 0) {
+                        try {
+                            const globalResponse = await fetch(`/api/students/${student.id}/global-xp`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    scorePercentage: sessionXpValue // Server converts: 20 + (score% × 0.3) = max 50 Global XP
+                                })
+                            });
+                            const globalResult = await globalResponse.json();
+                            if (globalResult.alreadyGraded) {
+                                console.log('[Global XP] Already submitted today for', student.name);
+                            } else if (globalResult.globalXpAwarded > 0) {
+                                console.log('[Global XP] Awarded', globalResult.globalXpAwarded, 'to', student.name);
+                            }
+                        } catch (globalErr) {
+                            console.error('[Global XP] Error for', student.name, globalErr);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to persist grading for student:', student.id, err);
+                }
             }
         });
-        console.log('[Grading] Initiated persistence for', gradedStudents.length, 'students (keepalive)');
-        resetDashboard();
 
         // Send class feedback emails to parents
         const studentsToNotify = updatedStudents.filter(student => 

@@ -502,21 +502,6 @@ export function registerRoutes(app: Express) {
         };
       });
 
-      // One-time safety net: recover totalPoints from wizard_data when DB has 0
-      // Only runs for students with wizard_data points > 0 and DB points = 0
-      const studentsNeedingSync = students.filter(s => {
-        const dbStudent = (studentsResult as any[]).find(d => d.id === s.id);
-        return dbStudent && s.totalPoints > 0 && (dbStudent.total_points || 0) === 0;
-      });
-      if (studentsNeedingSync.length > 0) {
-        await Promise.all(studentsNeedingSync.map(student =>
-          db.execute(sql`
-            UPDATE students SET total_points = ${student.totalPoints}, updated_at = NOW()
-            WHERE id = ${student.id}::uuid AND (total_points IS NULL OR total_points = 0)
-          `).then(() => console.log('[DataSync] Recovered totalPoints for', student.name, ':', student.totalPoints))
-        ));
-      }
-
       const coaches = (coachesResult as any[]).map(c => ({
         id: c.id,
         name: c.name,
@@ -5228,20 +5213,15 @@ export function registerRoutes(app: Express) {
       const monthlyPtsMap = new Map((monthlyPtsData as any[]).map(r => [r.student_id, parseInt(r.monthly_pts) || 0]));
 
       // Build leaderboard: totalXP from students table, monthlyXP and monthlyPTS from logs
-      // Per-student fallback: if student has no PTS_EARN, use their EARN (XP) as monthly effort
-      const leaderboard = (students as any[]).map(s => {
-        const pts = monthlyPtsMap.get(s.id) || 0;
-        const xp = monthlyXpMap.get(s.id) || 0;
-        return {
-          id: s.id,
-          name: s.name,
-          belt: s.belt,
-          stripes: s.stripes || 0,
-          totalXP: parseInt(s.total_xp) || 0,
-          monthlyXP: xp,
-          monthlyPTS: pts > 0 ? pts : xp
-        };
-      })
+      const leaderboard = (students as any[]).map(s => ({
+        id: s.id,
+        name: s.name,
+        belt: s.belt,
+        stripes: s.stripes || 0,
+        totalXP: parseInt(s.total_xp) || 0,
+        monthlyXP: monthlyXpMap.get(s.id) || 0,
+        monthlyPTS: monthlyPtsMap.get(s.id) || 0
+      }))
       .sort((a, b) => b.totalXP - a.totalXP)
       .map((s, index) => ({ ...s, rank: index + 1 }));
 
