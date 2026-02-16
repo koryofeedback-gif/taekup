@@ -75,20 +75,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                 localStorage.setItem('taekup_wizard_data', JSON.stringify(data.wizardData));
                 console.log('[Login] Saved fresh wizard data from login API (with database UUIDs)');
             }
-            // FALLBACK: For owners with completed wizard, try to fetch wizard data from database if not in login response
-            // NOTE: We only fetch if wizardCompleted is TRUE - this populates dashboard data, not wizard draft
-            else if (userType === 'owner' && user.clubId && user.wizardCompleted) {
+            // FALLBACK: For ALL user types with a clubId, fetch fresh wizard data from database
+            // This ensures coaches and parents also get up-to-date student points/XP from the DB
+            if (user.clubId) {
                 try {
                     const wizardResponse = await fetch(`/api/club/${user.clubId}/data`);
                     const wizardResult = await wizardResponse.json();
                     if (wizardResult.success && wizardResult.wizardData) {
-                        // Merge club settings (like worldRankingsEnabled) into wizardData
                         const mergedData = {
                             ...wizardResult.wizardData,
                             worldRankingsEnabled: wizardResult.club?.worldRankingsEnabled || false
                         };
                         localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
-                        console.log('[Login] Saved wizard data from /api/club/:id/data, worldRankingsEnabled:', mergedData.worldRankingsEnabled);
+                        console.log('[Login] Saved fresh wizard data from /api/club/:id/data for', userType);
                     }
                 } catch (err) {
                     console.error('[Login] Failed to fetch wizard data:', err);

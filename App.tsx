@@ -655,49 +655,32 @@ const App: React.FC = () => {
                     }
                 }
 
-                // For owners, try to fetch wizard data from database OR use localStorage fallback
-                if (userType === 'owner') {
-                    try {
-                        const response = await fetch(`/api/club/${userData.clubId}/data`);
-                        const data = await response.json();
-                        if (data.success && data.wizardData) {
-                            // Merge club settings (like worldRankingsEnabled) into wizardData
-                            const mergedData = {
-                                ...data.wizardData,
-                                worldRankingsEnabled: data.club?.worldRankingsEnabled || false
-                            };
-                            setFinalWizardData(mergedData);
-                            localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
-                            console.log('[Login] Restored wizard data from database, worldRankingsEnabled:', mergedData.worldRankingsEnabled);
-                        } else {
-                            // Fallback to localStorage if database doesn't have wizard data
-                            const localData = localStorage.getItem('taekup_wizard_data');
-                            if (localData) {
-                                setFinalWizardData(JSON.parse(localData));
-                                console.log('[Login] Using localStorage wizard data as fallback');
-                            }
-                        }
-                    } catch (err) {
-                        console.error('[Login] Failed to fetch wizard data:', err);
-                        // Fallback to localStorage on error
+                // For ALL user types, fetch fresh wizard data from database
+                // This ensures coaches and parents get up-to-date student points/XP
+                try {
+                    const response = await fetch(`/api/club/${userData.clubId}/data`);
+                    const data = await response.json();
+                    if (data.success && data.wizardData) {
+                        const mergedData = {
+                            ...data.wizardData,
+                            worldRankingsEnabled: data.club?.worldRankingsEnabled || false
+                        };
+                        setFinalWizardData(mergedData);
+                        localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
+                        console.log('[Login] Restored wizard data from database for', userType);
+                    } else {
                         const localData = localStorage.getItem('taekup_wizard_data');
                         if (localData) {
                             setFinalWizardData(JSON.parse(localData));
-                            console.log('[Login] Using localStorage wizard data after fetch error');
+                            console.log('[Login] Using localStorage wizard data as fallback for', userType);
                         }
                     }
-                } else {
-                    // CRITICAL: For non-owners (coaches, parents), update React state with fresh wizard data
-                    // Login.tsx saves fresh wizard data to localStorage, we need to pick it up here
-                    const freshWizardData = localStorage.getItem('taekup_wizard_data');
-                    if (freshWizardData) {
-                        try {
-                            const parsed = JSON.parse(freshWizardData);
-                            setFinalWizardData(parsed);
-                            console.log('[Login] Updated wizard data state with fresh localStorage data for', userType);
-                        } catch (e) {
-                            console.error('[Login] Failed to parse fresh wizard data:', e);
-                        }
+                } catch (err) {
+                    console.error('[Login] Failed to fetch wizard data:', err);
+                    const localData = localStorage.getItem('taekup_wizard_data');
+                    if (localData) {
+                        setFinalWizardData(JSON.parse(localData));
+                        console.log('[Login] Using localStorage wizard data after fetch error for', userType);
                     }
                 }
             } else {
