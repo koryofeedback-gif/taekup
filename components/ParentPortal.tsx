@@ -2797,7 +2797,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                     <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
                         <p className="text-xs text-gray-400 uppercase tracking-wider">{t('parent.home.totalHonorXP')}</p>
-                        <p className="text-2xl font-bold text-cyan-400 mt-1">{(student.lifetimeXp || serverTotalXP || 0).toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-cyan-400 mt-1">{(rivalStats.xp || student.lifetimeXp || serverTotalXP || 0).toLocaleString()}</p>
                     </div>
                 </div>
                 
