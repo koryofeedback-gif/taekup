@@ -536,7 +536,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                     </button>
                                 </div>
                                 <textarea value={bulkStudentData} onChange={e => { setBulkStudentData(e.target.value); setParsedStudents([]); }} placeholder="Paste CSV data here..." className="w-full h-24 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
-                                <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">Parse Data</button>
+                                <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">Paste</button>
                                 {bulkError && <p className="text-red-400 text-sm">{bulkError}</p>}
                                 {parsedStudents.length > 0 && (
                                     <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
