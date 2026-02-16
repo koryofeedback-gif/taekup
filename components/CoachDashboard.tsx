@@ -137,13 +137,12 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const hasApiData = apiMonthlyPTS.size > 0;
+        const apiHasNonZero = hasApiData && Array.from(apiMonthlyPTS.values()).some(v => v > 0);
         
         return [...students]
             .map(student => {
-                // Try API data first (production with clubId)
-                let monthlyPTS = apiMonthlyPTS.get(student.id) || 0;
+                let monthlyPTS = apiHasNonZero ? (apiMonthlyPTS.get(student.id) || 0) : 0;
                 
-                // Fallback 1: Calculate from performance history
                 if (monthlyPTS === 0 && student.performanceHistory && student.performanceHistory.length > 0) {
                     monthlyPTS = student.performanceHistory
                         .filter(p => new Date(p.date) >= monthStart)
@@ -155,8 +154,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                         }, 0);
                 }
                 
-                // Fallback 2: For sample/preview data without API, use totalPoints as monthly effort indicator
-                if (monthlyPTS === 0 && !hasApiData) {
+                if (monthlyPTS === 0) {
                     monthlyPTS = student.totalPoints || 0;
                 }
                 
