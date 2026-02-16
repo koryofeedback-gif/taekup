@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useRef, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import type { WizardData, Coach, Student } from '../../types';
 
 interface Step5Props {
@@ -54,17 +55,16 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
     const [newCoach, setNewCoach] = useState(() => getInitialCoachState(locations));
     const [newStudent, setNewStudent] = useState(initialStudentState);
     const [studentAddMode, setStudentAddMode] = useState<'manual' | 'bulk'>('manual');
+    const [studentImportMethod, setStudentImportMethod] = useState<'bulk' | 'excel'>('bulk');
     
-    // Bulk Import State
     const [parsedStudents, setParsedStudents] = useState<Student[]>([]);
     const [bulkError, setBulkError] = useState('');
-    const [pasteData, setPasteData] = useState('');
+    const [bulkStudentData, setBulkStudentData] = useState('');
     const [batchLocation, setBatchLocation] = useState(data.branchNames?.[0] || 'Main Location');
     const [batchClass, setBatchClass] = useState('');
-    const [isValidated, setIsValidated] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
-    const [importMethod, setImportMethod] = useState<'file' | 'paste'>('file');
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadedFileName, setUploadedFileName] = useState('');
+    const excelFileInputRef = useRef<HTMLInputElement>(null);
 
     // Get classes specific to the currently selected student location (Manual)
     const availableClassesForStudent = newStudent.location && data.locationClasses 
@@ -143,134 +143,163 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
         onUpdate({ students: data.students.filter(s => s.id !== id) });
     };
     
-    // --- BULK PARSING LOGIC ---
-    const validateBulkData = (inputText?: string) => {
-        const textToProcess = inputText ?? pasteData;
-        if (!textToProcess.trim()) return;
-        setBulkError('');
-        setParsedStudents([]);
-        setIsValidated(false);
-
-        const rows = textToProcess.split(/\r?\n/).filter(r => r.trim().length > 0);
+    const parseBulkStudents = (csv: string) => {
+        const lines = csv.split('\n').filter(l => l.trim());
         const newStudents: Student[] = [];
-        let hasError = false;
 
-        // Try to detect if header exists. If first row has "Name" or "Belt", skip it.
-        let startIndex = 0;
-        if (rows[0].toLowerCase().includes('name') && rows[0].toLowerCase().includes('belt')) {
-            startIndex = 1;
-        }
+        const startLine = lines[0]?.toLowerCase().includes('name') && lines[0]?.toLowerCase().includes('belt') ? 1 : 0;
 
-        for (let i = startIndex; i < rows.length; i++) {
-            const row = rows[i];
-            // Split by Tab (Excel copy) OR Comma (CSV)
-            let columns = row.split(/\t/);
-            if (columns.length < 2 && row.includes(',')) {
-                columns = row.split(',');
-            }
+        lines.forEach((line, i) => {
+            if (i < startLine) return;
+            const cols = line.split(/[,\t]/).map(c => c.trim().replace(/^"|"$/g, ''));
+            const name = cols[0];
+            const beltName = cols[4];
             
-            columns = columns.map(c => c.trim().replace(/^"|"$/g, '')); // Remove quotes
+            if (!name) return;
 
-            // Mapping Logic:
-            // Expecting: Name | Age | Birthday | Gender | Belt | Stripes | Parent Name | Email | Phone | [Location] | [Class]
-            
-            const name = columns[0];
-            const ageStr = columns[1];
-            const birthdayStr = columns[2]; // New Field
-            const genderStr = columns[3];
-            const beltName = columns[4];
-            const stripesStr = columns[5];
-            const parentName = columns[6];
-            const parentEmail = columns[7];
-            const parentPhone = columns[8];
-            
-            // Optional overrides from columns, otherwise use Batch Defaults
-            const locFromFile = columns[9];
-            const classFromFile = columns[10];
-
-            if (!name) {
-                // Skip empty lines, but if it looks like data, flag it
-                if (columns.length > 2) hasError = true;
-                continue;
-            }
-
-            // 1. Resolve Belt
             let belt = data.belts.find(b => b.name.toLowerCase() === beltName?.toLowerCase());
             if (!belt) {
-                // Fallback: Try to match by index (e.g. if they typed '1' for White Belt)
-                const beltIndex = parseInt(beltName) - 1;
-                if (!isNaN(beltIndex) && data.belts[beltIndex]) {
-                    belt = data.belts[beltIndex];
-                } else {
-                    // Critical Error: Belt not found - will be flagged in preview
-                    belt = undefined; 
-                }
+                const beltIdx = parseInt(beltName) - 1;
+                if (!isNaN(beltIdx) && data.belts[beltIdx]) belt = data.belts[beltIdx];
             }
-
-            // 2. Resolve Location & Class
-            let finalLocation = batchLocation;
-            if (locFromFile && data.branchNames?.includes(locFromFile)) {
-                finalLocation = locFromFile;
-            }
-
-            let finalClass = batchClass || 'General Class';
-            // If file specifies class, validate it
-            const validClasses = data.locationClasses?.[finalLocation] || data.classes || [];
-            if (classFromFile && validClasses.includes(classFromFile)) {
-                finalClass = classFromFile;
-            } else if (!batchClass && validClasses.length > 0) {
-                // If no batch class and no file class, pick first valid
-                finalClass = validClasses[0];
-            }
-
-            // 3. Calculate Points
-            const stripes = parseInt(stripesStr, 10) || 0;
-            // Use 64 as safe default if belt invalid, will be fixed before import
-            const pps = belt ? getPointsPerStripeForBelt(belt.id) : 64; 
-            const initialPoints = stripes * pps;
-
-            const genderVal = ['Male', 'Female', 'Other'].includes(genderStr) ? genderStr as any : 'Prefer not to say';
 
             newStudents.push({
-                id: `bulk-${Date.now()}-${i}`,
-                name: name,
-                photo: null,
-                age: parseInt(ageStr, 10) || undefined,
-                birthday: birthdayStr || '', // Store raw string, validated on input
-                gender: genderVal,
-                beltId: belt ? belt.id : 'INVALID_BELT', // Flag for visual error
-                stripes: stripes,
-                parentName: parentName,
-                parentEmail: parentEmail,
-                parentPhone: parentPhone,
-                location: finalLocation,
-                assignedClass: finalClass,
-                totalPoints: initialPoints,
+                id: `student-${Date.now()}-${i}`,
+                name: cols[0],
+                age: parseInt(cols[1]) || undefined,
+                birthday: cols[2] || '',
+                gender: (['Male', 'Female', 'Other', 'Prefer not to say'].includes(cols[3]) ? cols[3] : 'Male') as 'Male' | 'Female' | 'Other' | 'Prefer not to say',
+                beltId: belt?.id || 'INVALID_BELT',
+                stripes: parseInt(cols[5]) || 0,
+                parentName: cols[8] || '',
+                parentEmail: cols[9] || '',
+                parentPhone: cols[10] || '',
+                location: batchLocation,
+                assignedClass: batchClass || 'General Class',
                 joinDate: new Date().toISOString().split('T')[0],
-                medicalInfo: '',
+                totalPoints: parseInt(cols[6]) || 0,
+                totalXP: parseInt(cols[7]) || 0,
                 attendanceCount: 0,
                 lastPromotionDate: new Date().toISOString(),
                 isReadyForGrading: false,
                 performanceHistory: [],
                 feedbackHistory: [],
-                sparringStats: { matches: 0, wins: 0, draws: 0, headKicks: 0, bodyKicks: 0, punches: 0, takedowns: 0, defense: 0 },
+                photo: null,
+                medicalInfo: '',
                 badges: [],
+                sparringStats: { matches: 0, wins: 0, draws: 0, headKicks: 0, bodyKicks: 0, punches: 0, takedowns: 0, defense: 0 },
                 lifeSkillsHistory: [],
-                customHabits: initialStudentState.customHabits
+                customHabits: [
+                    { id: 'h1', question: 'Did they make their bed?', category: 'Chores', icon: '🛏️', isActive: true },
+                    { id: 'h2', question: 'Did they brush their teeth?', category: 'Health', icon: '🦷', isActive: true },
+                    { id: 'h3', question: 'Did they show respect to parents?', category: 'Character', icon: '🙇', isActive: true },
+                ]
+            });
+        });
+
+        setParsedStudents(newStudents);
+        setBulkError(newStudents.length === 0 ? 'No valid data found' : '');
+    };
+
+    const parseExcelStudents = (rows: string[][]) => {
+        const newStudents: Student[] = [];
+        
+        const startRow = rows[0]?.some(cell => 
+            typeof cell === 'string' && 
+            ['name', 'student', 'age', 'belt', 'parent'].some(h => cell.toLowerCase().includes(h))
+        ) ? 1 : 0;
+
+        for (let i = startRow; i < rows.length; i++) {
+            const cols = rows[i];
+            if (!cols || !cols[0]) continue;
+            
+            const name = String(cols[0] || '').trim();
+            if (!name) continue;
+
+            const beltName = String(cols[4] || '').trim();
+            let belt = data.belts.find(b => b.name.toLowerCase() === beltName?.toLowerCase());
+            if (!belt) {
+                const beltIdx = parseInt(beltName) - 1;
+                if (!isNaN(beltIdx) && data.belts[beltIdx]) belt = data.belts[beltIdx];
+            }
+
+            newStudents.push({
+                id: `student-${Date.now()}-${i}`,
+                name,
+                age: parseInt(String(cols[1])) || undefined,
+                birthday: String(cols[2] || ''),
+                gender: (['Male', 'Female', 'Other', 'Prefer not to say'].includes(String(cols[3])) ? String(cols[3]) : 'Male') as 'Male' | 'Female' | 'Other' | 'Prefer not to say',
+                beltId: belt?.id || data.belts[0]?.id || 'white',
+                stripes: parseInt(String(cols[5])) || 0,
+                parentName: String(cols[8] || ''),
+                parentEmail: String(cols[9] || ''),
+                parentPhone: String(cols[10] || ''),
+                location: batchLocation,
+                assignedClass: batchClass || 'General Class',
+                joinDate: new Date().toISOString().split('T')[0],
+                totalPoints: parseInt(String(cols[6])) || 0,
+                totalXP: parseInt(String(cols[7])) || 0,
+                attendanceCount: 0,
+                lastPromotionDate: new Date().toISOString(),
+                isReadyForGrading: false,
+                performanceHistory: [],
+                feedbackHistory: [],
+                photo: null,
+                medicalInfo: '',
+                badges: [],
+                sparringStats: { matches: 0, wins: 0, draws: 0, headKicks: 0, bodyKicks: 0, punches: 0, takedowns: 0, defense: 0 },
+                lifeSkillsHistory: [],
+                customHabits: [
+                    { id: 'h1', question: 'Did they make their bed?', category: 'Chores', icon: '🛏️', isActive: true },
+                    { id: 'h2', question: 'Did they brush their teeth?', category: 'Health', icon: '🦷', isActive: true },
+                    { id: 'h3', question: 'Did they show respect to parents?', category: 'Character', icon: '🙇', isActive: true },
+                ]
             });
         }
-        
+
         setParsedStudents(newStudents);
+        setBulkError(newStudents.length === 0 ? 'No valid student data found. Check column order.' : '');
+    };
+
+    const handleExcelUpload = (file: File) => {
+        setUploadedFileName(file.name);
+        setBulkError('');
+        setParsedStudents([]);
         
-        // Check for validity
-        const invalidCount = newStudents.filter(s => s.beltId === 'INVALID_BELT' || !s.name).length;
+        const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
         
-        if (newStudents.length === 0) {
-            setBulkError("No data found. Please paste rows from Excel.");
-        } else if (invalidCount > 0) {
-            setBulkError(`Found ${invalidCount} rows with errors (Invalid Belt Name). Please fix and re-validate.`);
+        if (isExcel) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const arrayBuffer = e.target?.result;
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+                    
+                    const csvText = jsonData.map(row => row.join(',')).join('\n');
+                    setBulkStudentData(csvText);
+                    parseExcelStudents(jsonData);
+                } catch (err: any) {
+                    setBulkError(`Failed to parse Excel file: ${err.message || 'Unknown error'}`);
+                }
+            };
+            reader.onerror = () => {
+                setBulkError('Failed to read file. Please try again.');
+            };
+            reader.readAsArrayBuffer(file);
         } else {
-            setIsValidated(true);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target?.result as string;
+                setBulkStudentData(text);
+                parseBulkStudents(text);
+            };
+            reader.onerror = () => {
+                setBulkError('Failed to read file. Please try again.');
+            };
+            reader.readAsText(file);
         }
     };
 
@@ -278,82 +307,21 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
         const validStudents = parsedStudents.filter(s => s.beltId !== 'INVALID_BELT' && s.name);
         onUpdate({ students: [...data.students, ...validStudents] });
         setParsedStudents([]);
-        setPasteData('');
-        setIsValidated(false);
+        setBulkStudentData('');
+        setUploadedFileName('');
         setStudentAddMode('manual');
     };
 
     const downloadTemplate = () => {
-        const headers = ['Name', 'Age', 'Birthday', 'Gender', 'Belt', 'Stripes', 'Parent Name', 'Parent Email', 'Parent Phone', 'Location', 'Class'];
-        const sampleRow = ['John Doe', '8', '2016-05-15', 'Male', data.belts[0]?.name || 'White Belt', '0', 'Jane Doe', 'jane@example.com', '555-0123', locations[0], ''];
-        const csvContent = [headers.join(','), sampleRow.join(',')].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Points,LocalXP,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male," + (data.belts[0]?.name || 'White') + ",0,0,0,Jane Smith,jane@email.com,555-1234";
+        const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'student_import_template.csv';
-        link.click();
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'student_import_template.csv';
+        a.click();
         URL.revokeObjectURL(url);
     };
-
-    const handleFileUpload = useCallback((file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target?.result as string;
-            setPasteData(text);
-            setIsValidated(false);
-            setTimeout(() => validateBulkData(text), 100);
-        };
-        reader.readAsText(file);
-    }, []);
-
-    const handleDragOver = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(true);
-    }, []);
-
-    const handleDragLeave = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-    }, []);
-
-    const handleDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const file = e.dataTransfer.files[0];
-        if (file && (file.type === 'text/csv' || file.name.endsWith('.csv') || file.type === 'text/plain')) {
-            handleFileUpload(file);
-        } else {
-            setBulkError('Please upload a CSV file');
-        }
-    }, [handleFileUpload]);
-
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            handleFileUpload(file);
-        }
-    };
-
-    const updateParsedStudent = (index: number, field: keyof Student, value: any) => {
-        setParsedStudents(prev => {
-            const updated = [...prev];
-            updated[index] = { ...updated[index], [field]: value };
-            if (field === 'beltId' && value !== 'INVALID_BELT') {
-                const pps = getPointsPerStripeForBelt(value);
-                updated[index].totalPoints = (updated[index].stripes || 0) * pps;
-            }
-            return updated;
-        });
-        setIsValidated(false);
-    };
-
-    const removeFromPreview = (index: number) => {
-        setParsedStudents(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const validCount = parsedStudents.filter(s => s.beltId !== 'INVALID_BELT' && s.name).length;
-    const errorCount = parsedStudents.filter(s => s.beltId === 'INVALID_BELT' || !s.name).length;
 
     return (
         <div className="space-y-8">
@@ -536,237 +504,142 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                     </div>
                 ) : (
                     <div className="space-y-4 mb-4">
-                        {/* Download Template Button */}
-                        <div className="flex justify-between items-center">
-                            <p className="text-gray-400 text-sm">Import students from a spreadsheet</p>
-                            <button
-                                onClick={downloadTemplate}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                Download Template
-                            </button>
+                        <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4 flex-wrap gap-1">
+                            <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Bulk Paste</button>
+                            <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Excel / File Upload</button>
                         </div>
 
-                        {/* Import Method Toggle */}
-                        <div className="flex bg-gray-700/50 rounded p-1 w-fit">
-                            <button 
-                                onClick={() => setImportMethod('file')}
-                                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${importMethod === 'file' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                Upload File
-                            </button>
-                            <button 
-                                onClick={() => setImportMethod('paste')}
-                                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${importMethod === 'paste' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                Paste Data
-                            </button>
-                        </div>
-
-                        {/* Default Location & Class */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
-                                <select value={batchLocation} onChange={e => setBatchLocation(e.target.value)} className="wizard-input text-sm">
-                                    {locations.map(l => <option key={l} value={l}>{l}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
-                                <select value={batchClass} onChange={e => setBatchClass(e.target.value)} className="wizard-input text-sm">
-                                    <option value="">Auto-assign</option>
-                                    {(data.locationClasses?.[batchLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* File Upload Dropzone */}
-                        {importMethod === 'file' ? (
-                            <div
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onDrop={handleDrop}
-                                onClick={() => fileInputRef.current?.click()}
-                                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
-                                    isDragging 
-                                        ? 'border-sky-500 bg-sky-400/10' 
-                                        : 'border-gray-600 hover:border-gray-500 hover:bg-gray-800/50'
-                                }`}
-                            >
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept=".csv,.txt"
-                                    onChange={handleFileSelect}
-                                    className="hidden"
-                                />
-                                <svg className="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                                <p className="text-white font-medium mb-1">
-                                    {isDragging ? 'Drop your file here' : 'Drag & drop your CSV file here'}
-                                </p>
-                                <p className="text-gray-500 text-sm">or click to browse</p>
-                            </div>
-                        ) : (
-                            <div>
-                                <div className="bg-gray-900/50 p-3 rounded border border-gray-700 mb-2">
-                                    <p className="text-xs text-gray-400">
-                                        <span className="font-bold text-gray-300">Format:</span> Name, Age, Birthday, Gender, Belt, Stripes, Parent, Email, Phone
-                                    </p>
+                        {studentImportMethod === 'bulk' ? (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
+                                        <select value={batchLocation} onChange={e => setBatchLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                            {locations.map(l => <option key={l} value={l}>{l}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
+                                        <select value={batchClass} onChange={e => setBatchClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                            <option value="">Auto-assign</option>
+                                            {(data.locationClasses?.[batchLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
-                                <textarea 
-                                    value={pasteData}
-                                    onChange={e => { setPasteData(e.target.value); setIsValidated(false); setParsedStudents([]); }}
-                                    className="w-full h-32 bg-gray-900 border border-gray-600 rounded p-3 text-white text-sm font-mono focus:border-sky-500 focus:outline-none"
-                                    placeholder={`John Doe, 8, 2016-05-15, Male, White Belt, 0, Jane Doe, jane@example.com, 555-0123`}
-                                />
+                                <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
+                                    <p className="text-xs text-gray-400"><span className="font-bold">Format:</span> Name, Age, Birthday, Gender, Belt, Stripes, Points, LocalXP, Parent Name, Email, Phone</p>
+                                    <button 
+                                        onClick={downloadTemplate}
+                                        className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
+                                    >
+                                        Download Template CSV
+                                    </button>
+                                </div>
+                                <textarea value={bulkStudentData} onChange={e => { setBulkStudentData(e.target.value); setParsedStudents([]); }} placeholder="Paste CSV data here..." className="w-full h-24 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
+                                <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">Parse Data</button>
+                                {bulkError && <p className="text-red-400 text-sm">{bulkError}</p>}
+                                {parsedStudents.length > 0 && (
+                                    <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
+                                        <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedStudents.length}):</p>
+                                        {parsedStudents.map((s, i) => (
+                                            <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 grid grid-cols-3 gap-1">
+                                                <span className="truncate">{s.name}</span>
+                                                <span className="text-gray-500 truncate">{data.belts.find(b => b.id === s.beltId)?.name || '?'}</span>
+                                                <span className={`truncate text-right ${s.parentEmail ? 'text-green-400' : 'text-yellow-500'}`}>
+                                                    {s.parentEmail || 'No email'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 <button 
-                                    onClick={() => validateBulkData()}
-                                    disabled={!pasteData.trim()}
-                                    className="mt-2 w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-2 px-4 rounded transition-colors"
+                                    onClick={confirmBulkImport} 
+                                    disabled={parsedStudents.length === 0} 
+                                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded"
                                 >
-                                    Parse Data
+                                    Import {parsedStudents.length} Student{parsedStudents.length !== 1 ? 's' : ''}
                                 </button>
                             </div>
-                        )}
-                        
-                        {/* Error Message */}
-                        {bulkError && (
-                            <div className="flex items-center gap-2 text-red-400 text-sm font-medium bg-red-900/20 p-3 rounded border border-red-800/50">
-                                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                {bulkError}
-                            </div>
-                        )}
-                        
-                        {/* Preview Table with Status Summary */}
-                        {parsedStudents.length > 0 && (
-                            <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
-                                {/* Summary Header */}
-                                <div className="flex items-center justify-between p-3 bg-gray-800/50 border-b border-gray-700">
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-white font-bold">Preview</span>
-                                        <div className="flex items-center gap-3 text-sm">
-                                            {validCount > 0 && (
-                                                <span className="flex items-center gap-1 text-green-400">
-                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                    </svg>
-                                                    {validCount} ready
-                                                </span>
-                                            )}
-                                            {errorCount > 0 && (
-                                                <span className="flex items-center gap-1 text-red-400">
-                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                    </svg>
-                                                    {errorCount} need fixes
-                                                </span>
-                                            )}
-                                        </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
+                                        <select value={batchLocation} onChange={e => setBatchLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                            {locations.map(l => <option key={l} value={l}>{l}</option>)}
+                                        </select>
                                     </div>
-                                    <button
-                                        onClick={() => { setParsedStudents([]); setPasteData(''); }}
-                                        className="text-gray-400 hover:text-white text-sm"
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
+                                        <select value={batchClass} onChange={e => setBatchClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                                            <option value="">Auto-assign</option>
+                                            {(data.locationClasses?.[batchLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-gray-900/50 p-4 rounded border border-dashed border-gray-600 text-center">
+                                    <input
+                                        type="file"
+                                        ref={excelFileInputRef}
+                                        accept=".xlsx,.xls,.csv"
+                                        onChange={(e) => e.target.files?.[0] && handleExcelUpload(e.target.files[0])}
+                                        className="hidden"
+                                    />
+                                    <div 
+                                        onClick={() => excelFileInputRef.current?.click()}
+                                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                        onDragLeave={() => setIsDragging(false)}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            setIsDragging(false);
+                                            if (e.dataTransfer.files?.[0]) handleExcelUpload(e.dataTransfer.files[0]);
+                                        }}
+                                        className={`cursor-pointer p-6 rounded transition-colors ${isDragging ? 'bg-sky-500/20 border-sky-500' : 'hover:bg-gray-800'}`}
                                     >
-                                        Clear All
-                                    </button>
+                                        <div className="text-4xl mb-2">📊</div>
+                                        <p className="text-white font-medium mb-1">
+                                            {uploadedFileName || 'Click or drag file to upload'}
+                                        </p>
+                                        <p className="text-xs text-gray-500">Supports .xlsx, .xls, .csv</p>
+                                    </div>
                                 </div>
 
-                                {/* Table */}
-                                <div className="max-h-64 overflow-y-auto">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="text-gray-400 text-xs uppercase bg-gray-800/50 sticky top-0">
-                                            <tr>
-                                                <th className="px-3 py-2">Status</th>
-                                                <th className="px-3 py-2">Name</th>
-                                                <th className="px-3 py-2">Belt</th>
-                                                <th className="px-3 py-2">Age</th>
-                                                <th className="px-3 py-2">Parent Email</th>
-                                                <th className="px-3 py-2">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-800">
-                                            {parsedStudents.map((student, index) => {
-                                                const hasError = student.beltId === 'INVALID_BELT' || !student.name;
-                                                return (
-                                                    <tr key={index} className={`${hasError ? 'bg-red-900/10' : 'bg-gray-900/50'} hover:bg-gray-800/50`}>
-                                                        <td className="px-3 py-2">
-                                                            {hasError ? (
-                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20 text-red-400">
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                    </svg>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400">
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                    </svg>
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-3 py-2">
-                                                            <input
-                                                                type="text"
-                                                                value={student.name}
-                                                                onChange={(e) => updateParsedStudent(index, 'name', e.target.value)}
-                                                                className={`bg-transparent border-b ${!student.name ? 'border-red-500' : 'border-transparent hover:border-gray-600'} focus:border-sky-500 outline-none text-white w-full py-1`}
-                                                            />
-                                                        </td>
-                                                        <td className="px-3 py-2">
-                                                            <select
-                                                                value={student.beltId}
-                                                                onChange={(e) => updateParsedStudent(index, 'beltId', e.target.value)}
-                                                                className={`bg-gray-800 border ${student.beltId === 'INVALID_BELT' ? 'border-red-500' : 'border-gray-700'} rounded px-2 py-1 text-white text-xs focus:border-sky-500 outline-none`}
-                                                            >
-                                                                {student.beltId === 'INVALID_BELT' && (
-                                                                    <option value="INVALID_BELT" className="text-red-400">Select Belt...</option>
-                                                                )}
-                                                                {data.belts.map(b => (
-                                                                    <option key={b.id} value={b.id}>{b.name}</option>
-                                                                ))}
-                                                            </select>
-                                                        </td>
-                                                        <td className="px-3 py-2 text-gray-300">{student.age || '-'}</td>
-                                                        <td className="px-3 py-2 text-gray-400 text-xs">{student.parentEmail || '-'}</td>
-                                                        <td className="px-3 py-2">
-                                                            <button
-                                                                onClick={() => removeFromPreview(index)}
-                                                                className="text-gray-500 hover:text-red-400 transition-colors"
-                                                                title="Remove"
-                                                            >
-                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                </svg>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {/* Import Button */}
-                                <div className="p-3 bg-gray-800/50 border-t border-gray-700">
+                                <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
+                                    <p className="text-xs text-gray-400 font-bold mb-1">Required Column Order:</p>
+                                    <p className="text-xs text-gray-500">Name, Age, Birthday, Gender, Belt, Stripes, Points, LocalXP, Parent Name, Email, Phone</p>
                                     <button 
-                                        onClick={confirmBulkImport}
-                                        disabled={validCount === 0}
-                                        className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                        onClick={downloadTemplate}
+                                        className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
                                     >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Import {validCount} Student{validCount !== 1 ? 's' : ''}
-                                        {errorCount > 0 && <span className="text-green-200/70 text-sm ml-1">({errorCount} will be skipped)</span>}
+                                        Download Template
                                     </button>
                                 </div>
+
+                                {bulkError && <p className="text-red-400 text-sm">{bulkError}</p>}
+                                
+                                {parsedStudents.length > 0 && (
+                                    <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
+                                        <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedStudents.length} students):</p>
+                                        {parsedStudents.map((s, i) => (
+                                            <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 grid grid-cols-3 gap-1">
+                                                <span className="truncate">{s.name}</span>
+                                                <span className="text-gray-500 truncate">{data.belts.find(b => b.id === s.beltId)?.name || 'White Belt'}</span>
+                                                <span className={`truncate text-right ${s.parentEmail ? 'text-green-400' : 'text-yellow-500'}`}>
+                                                    {s.parentEmail || 'No email'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                <button 
+                                    onClick={confirmBulkImport} 
+                                    disabled={parsedStudents.length === 0} 
+                                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded"
+                                >
+                                    Import {parsedStudents.length} Student{parsedStudents.length !== 1 ? 's' : ''}
+                                </button>
                             </div>
                         )}
                     </div>
