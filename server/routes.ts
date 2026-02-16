@@ -5202,7 +5202,7 @@ export function registerRoutes(app: Express) {
       `);
       const monthlyXpMap = new Map((monthlyXpData as any[]).map(r => [r.student_id, parseInt(r.monthly_xp) || 0]));
 
-      // Calculate monthly PTS from xp_transactions (PTS_EARN type)
+      // Calculate monthly PTS from xp_transactions (PTS_EARN type, fallback to EARN)
       const monthlyPtsData = await db.execute(sql`
         SELECT student_id, COALESCE(SUM(amount), 0) as monthly_pts
         FROM xp_transactions 
@@ -5210,7 +5210,13 @@ export function registerRoutes(app: Express) {
           AND type = 'PTS_EARN' AND created_at >= ${monthStartStr}::timestamp
         GROUP BY student_id
       `);
-      const monthlyPtsMap = new Map((monthlyPtsData as any[]).map(r => [r.student_id, parseInt(r.monthly_pts) || 0]));
+      let monthlyPtsMap = new Map((monthlyPtsData as any[]).map(r => [r.student_id, parseInt(r.monthly_pts) || 0]));
+      
+      // Fallback: if no PTS_EARN records exist, use EARN (XP) records as monthly effort indicator
+      const hasPtsRecords = Array.from(monthlyPtsMap.values()).some(v => v > 0);
+      if (!hasPtsRecords) {
+        monthlyPtsMap = monthlyXpMap;
+      }
 
       // Build leaderboard: totalXP from students table, monthlyXP and monthlyPTS from logs
       const leaderboard = (students as any[]).map(s => ({
