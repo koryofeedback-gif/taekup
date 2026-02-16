@@ -1852,21 +1852,27 @@ export function registerRoutes(app: Express) {
       const { id } = req.params;
       const { totalPoints, lifetimeXp, sessionXp, sessionPts } = req.body;
       
+      console.log('[Grading] Received:', { id, totalPoints, lifetimeXp, sessionXp, sessionPts });
+      
       if (!id) {
         return res.status(400).json({ error: 'Student ID is required' });
       }
 
       // Use sessionXp to INCREMENT total_xp (single source of truth)
       const xpEarned = sessionXp || 0;
+      const ptsEarned = sessionPts || 0;
       
-      await db.execute(sql`
+      const result = await db.execute(sql`
         UPDATE students SET 
           total_points = COALESCE(${totalPoints}, total_points),
           total_xp = COALESCE(total_xp, 0) + ${xpEarned},
           last_class_at = NOW(),
           updated_at = NOW()
         WHERE id = ${id}::uuid
+        RETURNING id, total_points, total_xp
       `);
+      
+      console.log('[Grading] DB update result:', result);
 
       // Log XP transaction for monthly leaderboard tracking
       if (xpEarned > 0) {
@@ -1878,7 +1884,6 @@ export function registerRoutes(app: Express) {
       }
 
       // Log PTS transaction for monthly effort widget tracking
-      const ptsEarned = sessionPts || 0;
       if (ptsEarned > 0) {
         await db.execute(sql`
           INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
@@ -1887,7 +1892,7 @@ export function registerRoutes(app: Express) {
         console.log('[Grading] Logged PTS transaction:', id, '+', ptsEarned, 'PTS');
       }
 
-      console.log('[Grading] Updated student:', id, 'totalPoints:', totalPoints, 'total_xp:', lifetimeXp);
+      console.log('[Grading] Updated student:', id, 'totalPoints:', totalPoints, 'sessionPts:', ptsEarned, 'sessionXp:', xpEarned);
       res.json({ success: true });
     } catch (error: any) {
       console.error('[Grading] Update error:', error.message);
