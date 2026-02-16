@@ -132,16 +132,14 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         return () => clearInterval(interval);
     }, [clubId]);
     
-    // Mode 1: Monthly Effort - Use API data, performance history, or totalPoints as fallback
+    // Mode 1: Monthly Effort - Use API PTS_EARN data or performance history for current month only
     const monthlyEffortStudents = useMemo(() => {
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const hasApiData = apiMonthlyPTS.size > 0;
-        const apiHasNonZero = hasApiData && Array.from(apiMonthlyPTS.values()).some(v => v > 0);
         
         return [...students]
             .map(student => {
-                let monthlyPTS = apiHasNonZero ? (apiMonthlyPTS.get(student.id) || 0) : 0;
+                let monthlyPTS = apiMonthlyPTS.get(student.id) || 0;
                 
                 if (monthlyPTS === 0 && student.performanceHistory && student.performanceHistory.length > 0) {
                     monthlyPTS = student.performanceHistory
@@ -152,10 +150,6 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                                 .reduce((total: number, score) => total + (score as number || 0), 0);
                             return sum + scoresSum + (p.bonusPoints || 0);
                         }, 0);
-                }
-                
-                if (monthlyPTS === 0) {
-                    monthlyPTS = student.totalPoints || 0;
                 }
                 
                 return { ...student, displayPTS: monthlyPTS };
