@@ -413,7 +413,44 @@ export function registerRoutes(app: Express) {
         ORDER BY order_index ASC, created_at DESC
       `);
 
-      const savedWizardData = club.wizard_data || {};
+      const defaultWizardFields = {
+        beltSystemType: 'wt',
+        belts: [],
+        stripesPerBelt: 4,
+        skills: [
+          { id: 'skill-1', name: 'Technique', isActive: true, isCustom: false },
+          { id: 'skill-2', name: 'Effort', isActive: true, isCustom: false },
+          { id: 'skill-3', name: 'Focus', isActive: true, isCustom: false },
+          { id: 'skill-4', name: 'Discipline', isActive: true, isCustom: false },
+        ],
+        homeworkBonus: false,
+        coachBonus: false,
+        pointsPerStripe: 64,
+        useCustomPointsPerBelt: false,
+        pointsPerBelt: {},
+        useColorCodedStripes: false,
+        stripeColors: ['#000000', '#000000', '#000000', '#000000'],
+        gradingRequirementEnabled: false,
+        gradingRequirementName: '',
+        primaryColor: '#3B82F6',
+        themeStyle: 'modern',
+        slogan: '',
+        classes: ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'],
+        locationClasses: {},
+        schedule: [],
+        events: [],
+        privateSlots: [],
+        clubSponsoredPremium: false,
+        challenges: [],
+        customChallenges: [],
+        holidaySchedule: 'minimal',
+        customHolidayWeeks: 4,
+        language: 'English',
+        branches: 1,
+        branchNames: ['Main Location'],
+        branchAddresses: [''],
+      };
+      const savedWizardData = { ...defaultWizardFields, ...(club.wizard_data || {}) };
       const savedBelts = savedWizardData.belts || [];
       
       const getBeltIdFromName = (beltName: string): string => {

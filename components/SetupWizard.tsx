@@ -54,61 +54,60 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
     );
   }
 
+  const getDefaults = (): Partial<WizardData> => ({
+    ownerName: '',
+    city: '',
+    language: 'English',
+    branches: 1,
+    branchNames: ['Main Location'],
+    branchAddresses: [''],
+    logo: null,
+    slogan: '',
+    beltSystemType: 'wt',
+    belts: WT_BELTS,
+    stripesPerBelt: 4,
+    skills: [
+      { id: 'skill-1', name: 'Technique', isActive: true, isCustom: false },
+      { id: 'skill-2', name: 'Effort', isActive: true, isCustom: false },
+      { id: 'skill-3', name: 'Focus', isActive: true, isCustom: false },
+      { id: 'skill-4', name: 'Discipline', isActive: true, isCustom: false },
+    ],
+    homeworkBonus: false,
+    coachBonus: false,
+    pointsPerStripe: 64,
+    useCustomPointsPerBelt: false,
+    pointsPerBelt: {},
+    useColorCodedStripes: false,
+    stripeColors: ['#000000', '#000000', '#000000', '#000000'],
+    gradingRequirementEnabled: false,
+    gradingRequirementName: '',
+    coaches: [],
+    students: [],
+    primaryColor: '#3B82F6',
+    themeStyle: 'modern',
+    clubPhoto: null,
+    welcomeBanner: `Welcome to the ${initialData.clubName} Family!`,
+    curriculum: [],
+    classes: ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'],
+    locationClasses: { 'Main Location': ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'] },
+    schedule: [],
+    events: [],
+    privateSlots: [],
+    clubSponsoredPremium: false,
+    challenges: [],
+    customChallenges: [],
+    holidaySchedule: 'minimal',
+    customHolidayWeeks: 4,
+  });
+
   // Initialize state from LocalStorage if available, otherwise use defaults
   const [wizardData, setWizardData] = useState<WizardData>(() => {
       const savedData = localStorage.getItem(STORAGE_KEY);
-      
-      // Default initial state
-      const defaults: Partial<WizardData> = {
-        ownerName: '',
-        city: '',
-        language: 'English',
-        branches: 1,
-        branchNames: ['Main Location'], // Default branch name
-        branchAddresses: [''],
-        logo: null,
-        slogan: '',
-        beltSystemType: 'wt',
-        belts: WT_BELTS,
-        stripesPerBelt: 4,
-        skills: [
-          { id: 'skill-1', name: 'Technique', isActive: true, isCustom: false },
-          { id: 'skill-2', name: 'Effort', isActive: true, isCustom: false },
-          { id: 'skill-3', name: 'Focus', isActive: true, isCustom: false },
-          { id: 'skill-4', name: 'Discipline', isActive: true, isCustom: false },
-        ],
-        homeworkBonus: false,
-        coachBonus: false,
-        pointsPerStripe: 64,
-        useCustomPointsPerBelt: false,
-        pointsPerBelt: {},
-        useColorCodedStripes: false,
-        stripeColors: ['#000000', '#000000', '#000000', '#000000'],
-        gradingRequirementEnabled: false,
-        gradingRequirementName: '',
-        coaches: [],
-        students: [],
-        primaryColor: '#3B82F6',
-        themeStyle: 'modern',
-        clubPhoto: null,
-        welcomeBanner: `Welcome to the ${initialData.clubName} Family!`,
-        curriculum: [],
-        classes: ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'],
-        locationClasses: { 'Main Location': ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'] },
-        schedule: [],
-        events: [],
-        privateSlots: [],
-        clubSponsoredPremium: false,
-        challenges: [],
-        customChallenges: [],
-        holidaySchedule: 'minimal',
-        customHolidayWeeks: 4,
-      };
+      const defaults = getDefaults();
 
       if (savedData) {
           try {
               const parsed = JSON.parse(savedData);
-              // robust merge: defaults <- parsed <- initialData
               return { ...defaults, ...parsed, ...initialData }; 
           } catch (e) {
               console.error("Failed to parse saved wizard data", e);
@@ -119,6 +118,28 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
+  const [isLoadingFromDb, setIsLoadingFromDb] = useState(false);
+
+  // On mount: if no local draft exists, try to restore wizard data from the database
+  useEffect(() => {
+      const localDraft = localStorage.getItem(STORAGE_KEY);
+      if (!localDraft && clubId) {
+          setIsLoadingFromDb(true);
+          fetch(`/api/club/${clubId}/data`)
+              .then(res => res.json())
+              .then(data => {
+                  if (data.success && data.wizardData && Object.keys(data.wizardData).length > 0) {
+                      const defaults = getDefaults();
+                      const restored = { ...defaults, ...data.wizardData, ...initialData };
+                      setWizardData(restored as WizardData);
+                      localStorage.setItem(STORAGE_KEY, JSON.stringify(restored));
+                      console.log('[SetupWizard] Restored wizard data from database');
+                  }
+              })
+              .catch(err => console.error('[SetupWizard] Failed to fetch wizard data from DB:', err))
+              .finally(() => setIsLoadingFromDb(false));
+      }
+  }, [clubId]);
 
   // Auto-Save Effect
   useEffect(() => {
@@ -190,56 +211,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   const handleClearDraft = () => {
       if(confirm("Are you sure? This will clear all entered data and restart the wizard.")) {
           localStorage.removeItem(STORAGE_KEY);
-          
-          // Reset to default state
-          setWizardData({
-            ...initialData,
-            ownerName: '',
-            city: '',
-            language: 'English',
-            branches: 1,
-            branchNames: ['Main Location'],
-            branchAddresses: [''],
-            logo: null,
-            slogan: '',
-            beltSystemType: 'wt',
-            belts: WT_BELTS,
-            stripesPerBelt: 4,
-            skills: [
-              { id: 'skill-1', name: 'Technique', isActive: true, isCustom: false },
-              { id: 'skill-2', name: 'Effort', isActive: true, isCustom: false },
-              { id: 'skill-3', name: 'Focus', isActive: true, isCustom: false },
-              { id: 'skill-4', name: 'Discipline', isActive: true, isCustom: false },
-            ],
-            homeworkBonus: false,
-            coachBonus: false,
-            pointsPerStripe: 64,
-            useCustomPointsPerBelt: false,
-            pointsPerBelt: {},
-            useColorCodedStripes: false,
-            stripeColors: ['#000000', '#000000', '#000000', '#000000'],
-            gradingRequirementEnabled: false,
-            gradingRequirementName: '',
-            coaches: [],
-            students: [],
-            primaryColor: '#3B82F6',
-            themeStyle: 'modern',
-            clubPhoto: null,
-            welcomeBanner: `Welcome to the ${initialData.clubName} Family!`,
-            curriculum: [],
-            classes: ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'],
-            locationClasses: { 'Main Location': ['General Class', 'Kids Class', 'Adult Class', 'Sparring Team'] },
-            schedule: [],
-            events: [],
-            privateSlots: [],
-            clubSponsoredPremium: false,
-            challenges: [],
-            customChallenges: [],
-            holidaySchedule: 'minimal',
-            customHolidayWeeks: 4,
-          });
+          const defaults = getDefaults();
+          setWizardData({ ...initialData, ...defaults } as WizardData);
           setCurrentStep(1);
-          setFormKey(prev => prev + 1); // Force re-mount of all step components
+          setFormKey(prev => prev + 1);
       }
   }
 
