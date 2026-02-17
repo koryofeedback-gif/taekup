@@ -975,6 +975,17 @@ export function registerRoutes(app: Express) {
             FROM students WHERE club_id = ${user.club_id}::uuid
           `);
           
+          const now = new Date();
+          const monthStartStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+          const monthlyPtsResult = await db.execute(sql`
+            SELECT student_id, COALESCE(SUM(amount), 0) as monthly_pts
+            FROM xp_transactions
+            WHERE student_id IN (SELECT id FROM students WHERE club_id = ${user.club_id}::uuid)
+              AND type = 'PTS_EARN' AND created_at >= ${monthStartStr}::timestamp
+            GROUP BY student_id
+          `);
+          const monthlyPtsMap = new Map((monthlyPtsResult as any[]).map(r => [r.student_id, parseInt(r.monthly_pts) || 0]));
+          
           const savedBelts = wizardData.belts || [];
           const getBeltIdFromName = (beltName: string): string => {
             if (!beltName) return savedBelts[0]?.id || 'white';
@@ -1019,7 +1030,8 @@ export function registerRoutes(app: Express) {
               trustTier: s.trust_tier || saved.trustTier || 'unverified',
               videoApprovalStreak: s.video_approval_streak || saved.videoApprovalStreak || 0,
               homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] },
-              lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null
+              lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null,
+              monthlyPTS: monthlyPtsMap.get(s.id) || 0
             };
           });
           
