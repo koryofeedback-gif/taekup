@@ -133,10 +133,11 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
     
     // Fetch monthly PTS from API (persisted in database)
     useEffect(() => {
-        if (!clubId) return;
+        const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
+        if (!effectiveClubId) return;
         const fetchMonthlyPTS = async () => {
             try {
-                const response = await fetch(`/api/leaderboard?clubId=${clubId}`);
+                const response = await fetch(`/api/leaderboard?clubId=${effectiveClubId}`);
                 const result = await response.json();
                 if (result.leaderboard) {
                     const ptsMap = new Map<string, number>();
@@ -152,7 +153,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         fetchMonthlyPTS();
         const interval = setInterval(fetchMonthlyPTS, 30000);
         return () => clearInterval(interval);
-    }, [clubId]);
+    }, [clubId, students.length]);
     
     // Mode 1: Monthly Effort - Use API PTS_EARN data or performance history for current month only
     const monthlyEffortStudents = useMemo(() => {
