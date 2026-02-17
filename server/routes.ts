@@ -503,6 +503,21 @@ export function registerRoutes(app: Express) {
         };
       });
 
+      for (const s of studentsResult as any[]) {
+        if (!s.last_class_at) {
+          const saved = savedStudents.find((ws: any) => ws.id === s.id || ws.name === s.name) || {} as any;
+          const perfHistory = saved.performanceHistory || [];
+          if (perfHistory.length > 0) {
+            const lastEntry = perfHistory[perfHistory.length - 1];
+            if (lastEntry?.date) {
+              await db.execute(sql`
+                UPDATE students SET last_class_at = ${new Date(lastEntry.date)} WHERE id = ${s.id}::uuid AND last_class_at IS NULL
+              `);
+            }
+          }
+        }
+      }
+
       const coaches = (coachesResult as any[]).map(c => ({
         id: c.id,
         name: c.name,
