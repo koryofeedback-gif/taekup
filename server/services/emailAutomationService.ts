@@ -535,7 +535,7 @@ async function sendAttendanceAlertEmails(): Promise<void> {
     SELECT DISTINCT c.id as club_id
     FROM clubs c
     JOIN students s ON s.club_id = c.id
-    WHERE s.last_class_at > NOW() - INTERVAL '14 days'
+    WHERE s.last_class_at > NOW() - INTERVAL '10 days'
   `);
   const activeClubIds = (activeClubs as any[]).map(c => c.club_id);
   
@@ -554,7 +554,7 @@ async function sendAttendanceAlertEmails(): Promise<void> {
     AND s.last_class_at < NOW() - INTERVAL '7 days'
     AND s.club_id IN (
       SELECT DISTINCT ss.club_id FROM students ss 
-      WHERE ss.last_class_at > NOW() - INTERVAL '14 days'
+      WHERE ss.last_class_at > NOW() - INTERVAL '10 days'
       AND ss.club_id = s.club_id
     )
     AND s.id NOT IN (
