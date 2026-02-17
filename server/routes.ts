@@ -969,7 +969,9 @@ export function registerRoutes(app: Express) {
           // CRITICAL: Replace wizard_data students with fresh database students (proper UUIDs)
           const studentsResult = await db.execute(sql`
             SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
-                   total_points, total_xp, stripes
+                   total_points, total_xp, stripes, join_date, created_at,
+                   location, assigned_class, global_xp, is_demo, premium_status,
+                   trust_tier, video_approval_streak, last_class_at
             FROM students WHERE club_id = ${user.club_id}::uuid
           `);
           
@@ -1000,19 +1002,24 @@ export function registerRoutes(app: Express) {
               parentPhone: s.parent_phone,
               beltId: getBeltIdFromName(s.belt),
               birthday: s.birthdate?.toISOString?.()?.split('T')[0] || saved.birthday || null,
+              joinDate: s.join_date || s.created_at || saved.joinDate || new Date().toISOString(),
               totalXP: s.total_xp || 0,
               totalPoints: s.total_points || saved.totalPoints || 0,
               lifetimeXp: s.total_xp || saved.lifetimeXp || 0,
-              globalXp: saved.globalXp || 0,
+              globalXp: s.global_xp || saved.globalXp || 0,
               currentStreak: saved.currentStreak || 0,
               stripes: s.stripes || 0,
               stripeCount: s.stripes || 0,
+              location: s.location || saved.location || '',
+              assignedClass: s.assigned_class || saved.assignedClass || '',
               performanceHistory: saved.performanceHistory || [],
               attendanceCount: saved.attendanceCount || 0,
-              joinDate: saved.joinDate || new Date().toISOString(),
-              premiumStatus: saved.premiumStatus || 'none',
-              isDemo: saved.isDemo || false,
-              homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] }
+              premiumStatus: s.premium_status || saved.premiumStatus || 'none',
+              isDemo: s.is_demo || saved.isDemo || false,
+              trustTier: s.trust_tier || saved.trustTier || 'unverified',
+              videoApprovalStreak: s.video_approval_streak || saved.videoApprovalStreak || 0,
+              homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] },
+              lastClassAt: s.last_class_at?.toISOString?.() || saved.lastClassAt || null
             };
           });
           
