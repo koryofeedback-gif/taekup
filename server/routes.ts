@@ -409,7 +409,7 @@ export function registerRoutes(app: Express) {
       const curriculumResult = await db.execute(sql`
         SELECT id, title, description, url, thumbnail_url, content_type, belt_id, 
                tags, duration, status, pricing_type, price, xp_reward, order_index,
-               view_count, completion_count, author_name, publish_at, created_at
+               view_count, completion_count, author_name, created_at
         FROM curriculum_content 
         WHERE club_id = ${clubId}::uuid AND status = 'live'
         ORDER BY order_index ASC, created_at DESC
@@ -499,7 +499,7 @@ export function registerRoutes(app: Express) {
           trustTier: s.trust_tier || saved.trustTier || 'unverified',
           videoApprovalStreak: s.video_approval_streak || saved.videoApprovalStreak || 0,
           homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] },
-          lastClassAt: s.last_class_at?.toISOString?.() || saved.lastClassAt || null
+          lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null
         };
       });
 
@@ -1019,7 +1019,7 @@ export function registerRoutes(app: Express) {
               trustTier: s.trust_tier || saved.trustTier || 'unverified',
               videoApprovalStreak: s.video_approval_streak || saved.videoApprovalStreak || 0,
               homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] },
-              lastClassAt: s.last_class_at?.toISOString?.() || saved.lastClassAt || null
+              lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null
             };
           });
           
