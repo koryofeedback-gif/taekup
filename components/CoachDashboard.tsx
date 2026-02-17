@@ -111,11 +111,14 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
     const [retentionData, setRetentionData] = useState<Record<string, string | null>>({});
 
     useEffect(() => {
-        if (!clubId) return;
+        const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
+        console.log('[InsightSidebar] Retention fetch - clubId prop:', clubId, 'effective:', effectiveClubId);
+        if (!effectiveClubId) return;
         const fetchRetention = async () => {
             try {
-                const response = await fetch(`/api/retention-radar?clubId=${clubId}`);
+                const response = await fetch(`/api/retention-radar?clubId=${effectiveClubId}`);
                 const result = await response.json();
+                console.log('[InsightSidebar] Retention data received:', Object.keys(result.retentionData || {}).length, 'students');
                 if (result.success && result.retentionData) {
                     setRetentionData(result.retentionData);
                 }
