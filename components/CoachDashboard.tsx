@@ -189,11 +189,11 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         if (lastDate === 0) {
             const joinTime = new Date(s.joinDate).getTime();
             const daysSinceJoin = (today - joinTime) / (1000 * 3600 * 24);
-            return daysSinceJoin > 10;
+            return daysSinceJoin > 14;
         }
         
         const daysSince = (today - lastDate) / (1000 * 3600 * 24);
-        return daysSince > 10;
+        return daysSince > 14;
     });
 
     // 3. Birthday Radar Logic
@@ -302,7 +302,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                 <h3 className="font-bold text-white flex items-center mb-3">
                     <span className="text-xl mr-2">📡</span> Retention Radar
                 </h3>
-                <p className="text-xs text-gray-400 mb-3">Absent 3+ Sessions</p>
+                <p className="text-xs text-gray-400 mb-3">Absent 14+ Days</p>
                 <div className="space-y-2">
                      {atRiskStudents.length > 0 ? (
                          atRiskStudents.slice(0, 3).map(s => (
