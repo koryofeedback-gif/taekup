@@ -1474,6 +1474,17 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       [clubId]
     );
 
+    // Count attendance from grading sessions (EARN transactions = class attended)
+    const attendanceResult = await client.query(
+      `SELECT student_id, COUNT(DISTINCT DATE(created_at)) as class_count
+       FROM xp_transactions 
+       WHERE student_id IN (SELECT id FROM students WHERE club_id = $1::uuid)
+         AND type = 'EARN' AND reason = 'Class grading'
+       GROUP BY student_id`,
+      [clubId]
+    );
+    const attendanceMap = new Map(attendanceResult.rows.map((r: any) => [r.student_id, parseInt(r.class_count) || 0]));
+
     const savedWizardData = club.wizard_data || {};
     const savedBelts = savedWizardData.belts || [];
     
@@ -1502,6 +1513,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       location: s.location || '',
       assignedClass: s.assigned_class || '',
       mytaekId: s.mytaek_id || '',
+      attendanceCount: attendanceMap.get(s.id) || 0,
       performanceHistory: [],
       homeDojo: { character: [], chores: [], school: [], health: [] }
     }));
