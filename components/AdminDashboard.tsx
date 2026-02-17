@@ -1264,30 +1264,6 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         </div>
                     </div>
                     
-                    {/* Holiday Mode Toggle - Pauses attendance alerts */}
-                    <div className="bg-gray-800/50 p-4 rounded-lg border border-amber-700/50">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl">🏖️</span>
-                                <div>
-                                    <label className="block text-sm font-bold text-white">{t('admin.settings.general.holidayMode') || 'Holiday Mode'}</label>
-                                    <p className="text-xs text-gray-400">{t('admin.settings.general.holidayModeDesc') || 'Pause attendance alert emails during school holidays'}</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => onUpdateData({ holidayModeActive: !data.holidayModeActive })}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${data.holidayModeActive ? 'bg-amber-500' : 'bg-gray-600'}`}
-                            >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.holidayModeActive ? 'translate-x-6' : 'translate-x-1'}`} />
-                            </button>
-                        </div>
-                        {data.holidayModeActive && (
-                            <p className="mt-2 text-xs text-amber-400 flex items-center gap-1">
-                                <span>⚠️</span> {t('admin.settings.general.holidayModeWarning') || 'Attendance alert emails are paused. Remember to turn this off when classes resume.'}
-                            </p>
-                        )}
-                    </div>
-
                     {/* Holiday Schedule Setting - Improves ChronosBelt™ Predictor accuracy */}
                     <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
                         <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.general.holidaySchedule')}</label>
