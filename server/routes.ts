@@ -5190,6 +5190,28 @@ export function registerRoutes(app: Express) {
   // =====================================================
   // LEADERBOARD - SIMPLE: Read directly from students.total_xp (single source of truth)
   // =====================================================
+  app.get('/api/retention-radar', async (req: Request, res: Response) => {
+    try {
+      const clubId = req.query.clubId as string;
+      if (!clubId) {
+        return res.status(400).json({ error: 'clubId is required' });
+      }
+      const result = await db.execute(sql`
+        SELECT id, name, last_class_at, join_date, created_at
+        FROM students WHERE club_id = ${clubId}::uuid
+      `);
+      const retentionData: Record<string, string | null> = {};
+      for (const s of result as any[]) {
+        const lastClass = s.last_class_at;
+        retentionData[s.id] = lastClass ? (typeof lastClass === 'string' ? lastClass : lastClass.toISOString()) : null;
+      }
+      return res.json({ success: true, retentionData });
+    } catch (error: any) {
+      console.error('[RetentionRadar] Error:', error.message);
+      return res.status(500).json({ error: 'Failed to fetch retention data' });
+    }
+  });
+
   app.get('/api/leaderboard', async (req: Request, res: Response) => {
     try {
       const clubId = req.query.clubId as string;

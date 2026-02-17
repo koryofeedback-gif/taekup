@@ -108,6 +108,23 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string }> = ({ students, belts, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
     const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
+    const [retentionData, setRetentionData] = useState<Record<string, string | null>>({});
+
+    useEffect(() => {
+        if (!clubId) return;
+        const fetchRetention = async () => {
+            try {
+                const response = await fetch(`/api/retention-radar?clubId=${clubId}`);
+                const result = await response.json();
+                if (result.success && result.retentionData) {
+                    setRetentionData(result.retentionData);
+                }
+            } catch (error) {
+                console.error('[InsightSidebar] Failed to fetch retention data:', error);
+            }
+        };
+        fetchRetention();
+    }, [clubId]);
     
     // Fetch monthly PTS from API (persisted in database)
     useEffect(() => {
@@ -174,11 +191,12 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
     // Select which list to display based on mode
     const topStudents = leaderboardMode === 'effort' ? monthlyEffortStudents : beltProgressStudents;
 
-    // 2. Retention Radar Logic
+    // 2. Retention Radar Logic — uses retentionData fetched directly from database
     const atRiskStudents = students.filter(s => {
         const today = new Date().getTime();
         
-        const dbLastClass = (s as any).lastClassAt ? new Date((s as any).lastClassAt).getTime() : 0;
+        const dbLastClassStr = retentionData[s.id];
+        const dbLastClass = dbLastClassStr ? new Date(dbLastClassStr).getTime() : 0;
         
         const historyLastClass = s.performanceHistory?.length > 0 
             ? new Date(s.performanceHistory[s.performanceHistory.length - 1].date).getTime() 
