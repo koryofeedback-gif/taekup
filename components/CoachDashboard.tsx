@@ -108,26 +108,28 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string }> = ({ students, belts, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
     const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
-    const [retentionData, setRetentionData] = useState<Record<string, string | null>>({});
+    const [retentionData, setRetentionData] = useState<Record<string, string | null> | null>(null);
 
     useEffect(() => {
         const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
-        console.log('[InsightSidebar] Retention fetch - clubId prop:', clubId, 'effective:', effectiveClubId);
         if (!effectiveClubId) return;
+        setRetentionData(null);
         const fetchRetention = async () => {
             try {
                 const response = await fetch(`/api/retention-radar?clubId=${effectiveClubId}`);
                 const result = await response.json();
-                console.log('[InsightSidebar] Retention data received:', Object.keys(result.retentionData || {}).length, 'students');
                 if (result.success && result.retentionData) {
                     setRetentionData(result.retentionData);
+                } else {
+                    setRetentionData({});
                 }
             } catch (error) {
                 console.error('[InsightSidebar] Failed to fetch retention data:', error);
+                setRetentionData({});
             }
         };
         fetchRetention();
-    }, [clubId]);
+    }, [clubId, students.length]);
     
     // Fetch monthly PTS from API (persisted in database)
     useEffect(() => {
@@ -195,10 +197,11 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
     const topStudents = leaderboardMode === 'effort' ? monthlyEffortStudents : beltProgressStudents;
 
     // 2. Retention Radar Logic — uses retentionData fetched directly from database
-    const atRiskStudents = students.filter(s => {
+    const retentionLoaded = retentionData !== null;
+    const atRiskStudents = retentionLoaded ? students.filter(s => {
         const today = new Date().getTime();
         
-        const dbLastClassStr = retentionData[s.id];
+        const dbLastClassStr = retentionData![s.id];
         const dbLastClass = dbLastClassStr ? new Date(dbLastClassStr).getTime() : 0;
         
         const historyLastClass = s.performanceHistory?.length > 0 
@@ -215,7 +218,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         
         const daysSince = (today - lastDate) / (1000 * 3600 * 24);
         return daysSince > 14;
-    });
+    }) : [];
 
     // 3. Birthday Radar Logic
     const birthdayStudents = students.filter(s => {
@@ -325,7 +328,11 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                 </h3>
                 <p className="text-xs text-gray-400 mb-3">Absent 14+ Days</p>
                 <div className="space-y-2">
-                     {atRiskStudents.length > 0 ? (
+                     {!retentionLoaded ? (
+                         <div className="flex items-center justify-center p-2 text-gray-400 text-sm">
+                             <span>Loading...</span>
+                         </div>
+                     ) : atRiskStudents.length > 0 ? (
                          atRiskStudents.slice(0, 3).map(s => (
                             <div key={s.id} className="flex items-center justify-between bg-red-900/20 p-2 rounded border border-red-900/50">
                                 <span className="text-sm text-red-200">{s.name}</span>
@@ -337,7 +344,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                              <span>✅ Everyone is active!</span>
                          </div>
                      )}
-                     {atRiskStudents.length > 3 && <p className="text-xs text-center text-red-400">+{atRiskStudents.length - 3} more...</p>}
+                     {retentionLoaded && atRiskStudents.length > 3 && <p className="text-xs text-center text-red-400">+{atRiskStudents.length - 3} more...</p>}
                 </div>
             </div>
         </div>
