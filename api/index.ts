@@ -5210,6 +5210,26 @@ async function handleFamilyChallengeStatus(req: VercelRequest, res: VercelRespon
   }
 }
 
+async function handleRetentionRadar(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const clubId = req.query.clubId as string;
+  if (!clubId) return res.status(400).json({ error: 'clubId is required' });
+  try {
+    const result = await pool.query(
+      'SELECT id, last_class_at FROM students WHERE club_id = $1',
+      [clubId]
+    );
+    const retentionData: Record<string, string | null> = {};
+    for (const s of result.rows) {
+      retentionData[s.id] = s.last_class_at ? new Date(s.last_class_at).toISOString() : null;
+    }
+    return res.json({ success: true, retentionData });
+  } catch (error: any) {
+    console.error('[RetentionRadar] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch retention data' });
+  }
+}
+
 async function handleLeaderboard(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -8028,6 +8048,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (pendingVerificationMatch) return await handlePendingVerification(req, res, pendingVerificationMatch[1]);
     
     if (path === '/challenges/verify' || path === '/challenges/verify/') return await handleChallengeVerify(req, res);
+    
+    // Retention Radar
+    if (path === '/retention-radar' || path === '/retention-radar/') return await handleRetentionRadar(req, res);
     
     // Leaderboard
     if (path === '/leaderboard' || path === '/leaderboard/') return await handleLeaderboard(req, res);
