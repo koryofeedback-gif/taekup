@@ -176,14 +176,22 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
 
     // 2. Retention Radar Logic
     const atRiskStudents = students.filter(s => {
-        if (!s.performanceHistory || s.performanceHistory.length === 0) {
-             const joinTime = new Date(s.joinDate).getTime();
-             const daysSinceJoin = (new Date().getTime() - joinTime) / (1000 * 3600 * 24);
-             return daysSinceJoin > 10;
-        }
-        const lastClass = s.performanceHistory[s.performanceHistory.length - 1];
-        const lastDate = new Date(lastClass.date).getTime();
         const today = new Date().getTime();
+        
+        const dbLastClass = (s as any).lastClassAt ? new Date((s as any).lastClassAt).getTime() : 0;
+        
+        const historyLastClass = s.performanceHistory?.length > 0 
+            ? new Date(s.performanceHistory[s.performanceHistory.length - 1].date).getTime() 
+            : 0;
+        
+        const lastDate = Math.max(dbLastClass, historyLastClass);
+        
+        if (lastDate === 0) {
+            const joinTime = new Date(s.joinDate).getTime();
+            const daysSinceJoin = (today - joinTime) / (1000 * 3600 * 24);
+            return daysSinceJoin > 10;
+        }
+        
         const daysSince = (today - lastDate) / (1000 * 3600 * 24);
         return daysSince > 10;
     });

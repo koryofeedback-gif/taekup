@@ -396,7 +396,7 @@ export function registerRoutes(app: Express) {
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
                total_points, total_xp, stripes, join_date, created_at,
                location, assigned_class, global_xp, is_demo, premium_status,
-               trust_tier, video_approval_streak
+               trust_tier, video_approval_streak, last_class_at
         FROM students WHERE club_id = ${clubId}::uuid
       `);
 
@@ -498,7 +498,8 @@ export function registerRoutes(app: Express) {
           isDemo: s.is_demo || saved.isDemo || false,
           trustTier: s.trust_tier || saved.trustTier || 'unverified',
           videoApprovalStreak: s.video_approval_streak || saved.videoApprovalStreak || 0,
-          homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] }
+          homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] },
+          lastClassAt: s.last_class_at?.toISOString?.() || saved.lastClassAt || null
         };
       });
 
