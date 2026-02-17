@@ -107,18 +107,74 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 
 const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string }> = ({ students, belts, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
+    const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
+    const [retentionData, setRetentionData] = useState<Record<string, string | null>>({});
+
+    useEffect(() => {
+        if (!clubId) return;
+        const fetchRetention = async () => {
+            try {
+                const response = await fetch(`/api/retention-radar?clubId=${clubId}`);
+                const result = await response.json();
+                if (result.success && result.retentionData) {
+                    setRetentionData(result.retentionData);
+                }
+            } catch (error) {
+                console.error('[InsightSidebar] Failed to fetch retention data:', error);
+            }
+        };
+        fetchRetention();
+    }, [clubId]);
     
-    // Mode 1: Monthly Effort - Uses student.monthlyPTS embedded at login (same as Belt Progress pattern)
+    // Fetch monthly PTS from API (persisted in database)
+    useEffect(() => {
+        if (!clubId) return;
+        const fetchMonthlyPTS = async () => {
+            try {
+                const response = await fetch(`/api/leaderboard?clubId=${clubId}`);
+                const result = await response.json();
+                if (result.leaderboard) {
+                    const ptsMap = new Map<string, number>();
+                    result.leaderboard.forEach((s: any) => {
+                        ptsMap.set(s.id, s.monthlyPTS || 0);
+                    });
+                    setApiMonthlyPTS(ptsMap);
+                }
+            } catch (error) {
+                console.error('[InsightSidebar] Failed to fetch monthly PTS:', error);
+            }
+        };
+        fetchMonthlyPTS();
+        const interval = setInterval(fetchMonthlyPTS, 30000);
+        return () => clearInterval(interval);
+    }, [clubId]);
+    
+    // Mode 1: Monthly Effort - Use API PTS_EARN data or performance history for current month only
     const monthlyEffortStudents = useMemo(() => {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        
         return [...students]
-            .map(student => ({
-                ...student,
-                displayPTS: (student as any).monthlyPTS || 0
-            }))
+            .map(student => {
+                let monthlyPTS = apiMonthlyPTS.get(student.id) || 0;
+                
+                if (monthlyPTS === 0 && student.performanceHistory && student.performanceHistory.length > 0) {
+                    monthlyPTS = student.performanceHistory
+                        .filter(p => new Date(p.date) >= monthStart)
+                        .reduce((sum, p) => {
+                            const scoresSum = Object.values(p.scores || {})
+                                .filter(s => s !== null)
+                                .reduce((total: number, score) => total + (score as number || 0), 0);
+                            return sum + scoresSum + (p.bonusPoints || 0);
+                        }, 0);
+                }
+                
+                return { ...student, displayPTS: monthlyPTS };
+            })
             .sort((a, b) => b.displayPTS - a.displayPTS)
             .filter(s => s.displayPTS > 0)
             .slice(0, 3);
-    }, [students]);
+    }, [students, apiMonthlyPTS]);
     
     // Mode 2: Belt Progress - Live current_stripe_points (totalPoints)
     const beltProgressStudents = useMemo(() => {
@@ -135,12 +191,12 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
     // Select which list to display based on mode
     const topStudents = leaderboardMode === 'effort' ? monthlyEffortStudents : beltProgressStudents;
 
-    // 2. Retention Radar Logic — uses student.lastClassAt embedded at login (same as Belt Progress pattern)
+    // 2. Retention Radar Logic — uses retentionData fetched directly from database
     const atRiskStudents = students.filter(s => {
         const today = new Date().getTime();
         
-        const lastClassVal = (s as any).lastClassAt;
-        const dbLastClass = lastClassVal ? new Date(lastClassVal).getTime() : 0;
+        const dbLastClassStr = retentionData[s.id];
+        const dbLastClass = dbLastClassStr ? new Date(dbLastClassStr).getTime() : 0;
         
         const historyLastClass = s.performanceHistory?.length > 0 
             ? new Date(s.performanceHistory[s.performanceHistory.length - 1].date).getTime() 
