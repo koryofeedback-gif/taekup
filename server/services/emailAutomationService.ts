@@ -531,6 +531,19 @@ async function sendBirthdayEmails(): Promise<void> {
 }
 
 async function sendAttendanceAlertEmails(): Promise<void> {
+  const activeClubs = await db.execute(sql`
+    SELECT DISTINCT c.id as club_id
+    FROM clubs c
+    JOIN students s ON s.club_id = c.id
+    WHERE s.last_class_at > NOW() - INTERVAL '14 days'
+  `);
+  const activeClubIds = (activeClubs as any[]).map(c => c.club_id);
+  
+  if (activeClubIds.length === 0) {
+    console.log('[EmailAutomation] No clubs with recent grading activity - skipping attendance alerts (likely holiday)');
+    return;
+  }
+
   const students = await db.execute(sql`
     SELECT s.id, s.name, s.parent_email, s.parent_name, s.club_id, s.last_class_at, c.name as club_name,
            EXTRACT(DAY FROM NOW() - s.last_class_at) as days_since
@@ -539,6 +552,11 @@ async function sendAttendanceAlertEmails(): Promise<void> {
     WHERE s.parent_email IS NOT NULL
     AND s.last_class_at IS NOT NULL
     AND s.last_class_at < NOW() - INTERVAL '7 days'
+    AND s.club_id IN (
+      SELECT DISTINCT ss.club_id FROM students ss 
+      WHERE ss.last_class_at > NOW() - INTERVAL '14 days'
+      AND ss.club_id = s.club_id
+    )
     AND s.id NOT IN (
       SELECT student_id FROM automated_email_logs 
       WHERE trigger_type = 'attendance_alert' 
