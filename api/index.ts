@@ -2081,7 +2081,18 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
       console.log('[Grading] Logged XP transaction:', studentId, '+', xpEarned, 'XP');
     }
 
-    console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, 'total_xp:', xpEarned);
+    // Log PTS transaction for Monthly Effort widget tracking
+    const ptsEarned = sessionPts || 0;
+    if (ptsEarned > 0) {
+      await client.query(
+        `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+         VALUES ($1::uuid, $2, 'PTS_EARN', 'Class grading PTS', NOW())`,
+        [studentId, ptsEarned]
+      );
+      console.log('[Grading] Logged PTS transaction:', studentId, '+', ptsEarned, 'PTS');
+    }
+
+    console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, 'total_xp:', xpEarned, 'pts:', ptsEarned);
     return res.json({ success: true });
   } catch (error: any) {
     console.error('[Grading] Update error:', error.message);
