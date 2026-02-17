@@ -1007,6 +1007,18 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const isDemo = data.isDemo === true;
     
     const [students, setStudents] = useState<Student[]>(() => safeStudents.map(s => ({ ...s, totalPoints: s.totalPoints || 0 })));
+    
+    useEffect(() => {
+        if (safeStudents.length > 0) {
+            setStudents(prev => {
+                if (prev.length === 0 && safeStudents.length > 0) {
+                    return safeStudents.map(s => ({ ...s, totalPoints: s.totalPoints || 0 }));
+                }
+                return prev;
+            });
+        }
+    }, [safeStudents.length]);
+    
     const [sessionScores, setSessionScores] = useState<SessionScores>({});
     const [bonusPoints, setBonusPoints] = useState<Record<string, number>>({});
     const [homeworkPoints, setHomeworkPoints] = useState<Record<string, number>>({});
