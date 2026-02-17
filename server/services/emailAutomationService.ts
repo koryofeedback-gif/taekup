@@ -539,6 +539,7 @@ async function sendAttendanceAlertEmails(): Promise<void> {
     WHERE s.parent_email IS NOT NULL
     AND s.last_class_at IS NOT NULL
     AND s.last_class_at < NOW() - INTERVAL '7 days'
+    AND COALESCE((c.wizard_data->>'holidayModeActive')::boolean, false) = false
     AND s.id NOT IN (
       SELECT student_id FROM automated_email_logs 
       WHERE trigger_type = 'attendance_alert' 

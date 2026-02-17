@@ -345,7 +345,8 @@ export interface WizardData {
   customChallenges: CustomChallenge[]; // Coach-created custom challenges
   // Holiday Schedule for Time Machine accuracy
   holidaySchedule: HolidayScheduleType;
-  customHolidayWeeks?: number; // Only used when holidaySchedule is 'custom'
+  customHolidayWeeks?: number;
+  holidayModeActive?: boolean;
   // World Rankings participation
   worldRankingsEnabled?: boolean;
   // Selected subscription plan index for Profit Engine Simulator
