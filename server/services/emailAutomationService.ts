@@ -538,7 +538,7 @@ async function sendAttendanceAlertEmails(): Promise<void> {
     JOIN clubs c ON s.club_id = c.id
     WHERE s.parent_email IS NOT NULL
     AND s.last_class_at IS NOT NULL
-    AND s.last_class_at < NOW() - INTERVAL '14 days'
+    AND s.last_class_at < NOW() - INTERVAL '7 days'
     AND s.id NOT IN (
       SELECT student_id FROM automated_email_logs 
       WHERE trigger_type = 'attendance_alert' 
