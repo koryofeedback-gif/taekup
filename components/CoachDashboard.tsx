@@ -107,15 +107,13 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 
 const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string }> = ({ students, belts, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
-    const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(() => {
+    const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
+    const [cachedLeaderboard, setCachedLeaderboard] = useState<Array<{id: string, name: string, monthlyPTS: number}>>(() => {
         try {
-            const cached = localStorage.getItem('taekup_monthly_pts');
-            if (cached) {
-                const parsed = JSON.parse(cached);
-                return new Map(Object.entries(parsed).map(([k, v]) => [k, Number(v)]));
-            }
+            const cached = localStorage.getItem('taekup_monthly_effort_top3');
+            if (cached) return JSON.parse(cached);
         } catch (e) {}
-        return new Map();
+        return [];
     });
     const [retentionData, setRetentionData] = useState<Record<string, string | null> | null>(null);
 
@@ -140,7 +138,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         fetchRetention();
     }, [clubId, students.length]);
     
-    // Fetch monthly PTS from API (persisted in database) with localStorage cache
+    // Fetch monthly PTS from API (persisted in database) — also caches top 3 directly from API response
     useEffect(() => {
         const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
         if (!effectiveClubId) return;
@@ -150,14 +148,17 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                 const result = await response.json();
                 if (result.leaderboard) {
                     const ptsMap = new Map<string, number>();
-                    const cacheObj: Record<string, number> = {};
+                    const top3: Array<{id: string, name: string, monthlyPTS: number}> = [];
                     result.leaderboard.forEach((s: any) => {
                         const pts = s.monthlyPTS || 0;
                         ptsMap.set(s.id, pts);
-                        cacheObj[s.id] = pts;
+                        if (pts > 0) top3.push({ id: s.id, name: s.name, monthlyPTS: pts });
                     });
+                    top3.sort((a, b) => b.monthlyPTS - a.monthlyPTS);
+                    const finalTop3 = top3.slice(0, 3);
                     setApiMonthlyPTS(ptsMap);
-                    try { localStorage.setItem('taekup_monthly_pts', JSON.stringify(cacheObj)); } catch (e) {}
+                    setCachedLeaderboard(finalTop3);
+                    try { localStorage.setItem('taekup_monthly_effort_top3', JSON.stringify(finalTop3)); } catch (e) {}
                 }
             } catch (error) {
                 console.error('[InsightSidebar] Failed to fetch monthly PTS:', error);
@@ -168,12 +169,12 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         return () => clearInterval(interval);
     }, [clubId, students.length]);
     
-    // Mode 1: Monthly Effort - Use API PTS_EARN data or performance history for current month only
+    // Mode 1: Monthly Effort — merge students with API data, fallback to cached leaderboard
     const monthlyEffortStudents = useMemo(() => {
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         
-        return [...students]
+        const fromStudents = [...students]
             .map(student => {
                 let monthlyPTS = apiMonthlyPTS.get(student.id) || 0;
                 
@@ -193,7 +194,20 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
             .sort((a, b) => b.displayPTS - a.displayPTS)
             .filter(s => s.displayPTS > 0)
             .slice(0, 3);
-    }, [students, apiMonthlyPTS]);
+        
+        if (fromStudents.length > 0) return fromStudents;
+        
+        if (cachedLeaderboard.length > 0) {
+            return cachedLeaderboard.map(c => {
+                const matchedStudent = students.find(s => s.id === c.id);
+                return matchedStudent 
+                    ? { ...matchedStudent, displayPTS: c.monthlyPTS }
+                    : { id: c.id, name: c.name, displayPTS: c.monthlyPTS } as any;
+            });
+        }
+        
+        return [];
+    }, [students, apiMonthlyPTS, cachedLeaderboard]);
     
     // Mode 2: Belt Progress - Live current_stripe_points (totalPoints)
     const beltProgressStudents = useMemo(() => {
