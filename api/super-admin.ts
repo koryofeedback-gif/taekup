@@ -2280,19 +2280,25 @@ async function handleDeleteClub(req: VercelRequest, res: VercelResponse, clubId:
     
     // Delete all student-related data first (foreign key dependencies)
     if (studentIds.length > 0) {
-      await db`DELETE FROM xp_transactions WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM challenge_submissions WHERE student_id = ANY(${studentIds}::uuid[]) OR opponent_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM challenge_video_votes WHERE voter_student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM challenge_videos WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM content_views WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM course_enrollments WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM dojo_inventory WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM family_logs WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM gauntlet_personal_bests WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM gauntlet_submissions WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM habit_logs WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM user_custom_habits WHERE student_id = ANY(${studentIds}::uuid[])`;
-      await db`DELETE FROM world_rankings WHERE student_id = ANY(${studentIds}::uuid[])`;
+      const studentTables = [
+        { table: 'xp_transactions', col: 'student_id' },
+        { table: 'challenge_submissions', col: 'student_id' },
+        { table: 'challenge_video_votes', col: 'voter_student_id' },
+        { table: 'challenge_videos', col: 'student_id' },
+        { table: 'content_views', col: 'student_id' },
+        { table: 'course_enrollments', col: 'student_id' },
+        { table: 'dojo_inventory', col: 'student_id' },
+        { table: 'family_logs', col: 'student_id' },
+        { table: 'gauntlet_personal_bests', col: 'student_id' },
+        { table: 'gauntlet_submissions', col: 'student_id' },
+        { table: 'habit_logs', col: 'student_id' },
+        { table: 'user_custom_habits', col: 'student_id' },
+        { table: 'world_rankings', col: 'student_id' }
+      ];
+      for (const { table, col } of studentTables) {
+        try { await db.unsafe(`DELETE FROM ${table} WHERE ${col} = ANY($1::uuid[])`, [studentIds]); } catch (e) {}
+      }
+      try { await db.unsafe('DELETE FROM challenge_submissions WHERE opponent_id = ANY($1::uuid[])', [studentIds]); } catch (e) {}
     }
 
     // Delete coach-related references
@@ -2302,13 +2308,10 @@ async function handleDeleteClub(req: VercelRequest, res: VercelResponse, clubId:
 
     // Delete club-level data
     await db`DELETE FROM student_transfers WHERE from_club_id = ${clubId}::uuid OR to_club_id = ${clubId}::uuid`;
-    await db`DELETE FROM arena_challenges WHERE club_id = ${clubId}::uuid`;
-    await db`DELETE FROM challenge_videos WHERE club_id = ${clubId}::uuid`;
-    await db`DELETE FROM challenge_submissions WHERE club_id = ${clubId}::uuid`;
-    await db`DELETE FROM attendance_events WHERE club_id = ${clubId}::uuid`;
-    await db`DELETE FROM curriculum_content WHERE club_id = ${clubId}::uuid`;
-    await db`DELETE FROM curriculum_courses WHERE club_id = ${clubId}::uuid`;
-    await db`DELETE FROM creator_earnings WHERE club_id = ${clubId}::uuid`;
+    const clubTablesToClean = ['arena_challenges', 'challenge_videos', 'challenge_submissions', 'attendance_events', 'curriculum_content', 'curriculum_courses', 'creator_earnings'];
+    for (const table of clubTablesToClean) {
+      try { await db.unsafe(`DELETE FROM ${table} WHERE club_id = $1::uuid`, [clubId]); } catch (e) {}
+    }
     
     // Delete core entities
     await db`DELETE FROM coaches WHERE club_id = ${clubId}::uuid`;
