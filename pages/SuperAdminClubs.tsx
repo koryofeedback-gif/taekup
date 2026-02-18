@@ -177,14 +177,16 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
     }
   };
 
-  const handleTogglePlatformOwner = async (club: Club) => {
-    const newStatus = !club.is_platform_owner;
-    const confirmed = window.confirm(
-      newStatus 
-        ? `Mark "${club.name}" as Platform Owner? They will be exempt from club subscription fees.`
-        : `Remove Platform Owner status from "${club.name}"? They will need to pay subscription fees.`
-    );
-    if (!confirmed) return;
+  const [platformOwnerModal, setPlatformOwnerModal] = useState<{ club: Club; newStatus: boolean } | null>(null);
+
+  const handleTogglePlatformOwner = (club: Club) => {
+    setPlatformOwnerModal({ club, newStatus: !club.is_platform_owner });
+  };
+
+  const confirmTogglePlatformOwner = async () => {
+    if (!platformOwnerModal) return;
+    const { club, newStatus } = platformOwnerModal;
+    setPlatformOwnerModal(null);
     
     try {
       const response = await fetch('/api/super-admin/toggle-platform-owner', {
@@ -384,6 +386,99 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
 
   return (
     <div className="min-h-screen bg-gray-900">
+      {platformOwnerModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setPlatformOwnerModal(null)}>
+          <div className="bg-gray-800 rounded-xl border border-gray-600 max-w-md w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center mb-4">
+              <div className={`p-3 rounded-lg mr-3 ${platformOwnerModal.newStatus ? 'bg-amber-600/30' : 'bg-red-600/30'}`}>
+                <Crown className={`w-6 h-6 ${platformOwnerModal.newStatus ? 'text-amber-400' : 'text-red-400'}`} />
+              </div>
+              <h3 className="text-xl font-bold text-white">
+                {platformOwnerModal.newStatus ? 'Grant Platform Owner Status' : 'Remove Platform Owner Status'}
+              </h3>
+            </div>
+            
+            <div className="bg-gray-900/60 rounded-lg p-4 mb-4 border border-gray-700">
+              <p className="text-sm text-gray-300 mb-1">Club:</p>
+              <p className="text-lg font-bold text-white">{platformOwnerModal.club.name}</p>
+            </div>
+
+            {platformOwnerModal.newStatus ? (
+              <>
+                <p className="text-gray-300 text-sm mb-4">
+                  This club will become a <span className="text-amber-400 font-bold">Platform Owner</span>. Here's what that means:
+                </p>
+                <div className="bg-gray-900/60 rounded-lg p-4 mb-4 border border-gray-700">
+                  <p className="text-xs text-gray-400 uppercase font-bold mb-3">What changes</p>
+                  <ul className="space-y-2">
+                    <li className="flex items-start text-sm">
+                      <span className="mr-2 text-green-400 mt-0.5">✓</span>
+                      <span className="text-green-300">Club subscription fees are <strong>waived</strong> — they pay $0 for the platform</span>
+                    </li>
+                    <li className="flex items-start text-sm">
+                      <span className="mr-2 text-green-400 mt-0.5">✓</span>
+                      <span className="text-green-300">Full access to all club management features (Admin Dashboard, Coach tools, etc.)</span>
+                    </li>
+                    <li className="flex items-start text-sm">
+                      <span className="mr-2 text-green-400 mt-0.5">✓</span>
+                      <span className="text-green-300">No trial expiration — always active</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3 mb-4">
+                  <p className="text-amber-300 text-xs">
+                    <strong>Note:</strong> Parents still need to pay $4.99/mo for Premium features (video proofs, Home Dojo, Legacy Cards™, etc.). 
+                    The club owner can also enable "Universal Access" in their Billing tab to sponsor Premium for all parents at $1.99/student/mo.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-300 text-sm mb-4">
+                  This club will <span className="text-red-400 font-bold">lose Platform Owner status</span>. Here's what that means:
+                </p>
+                <div className="bg-gray-900/60 rounded-lg p-4 mb-4 border border-gray-700">
+                  <p className="text-xs text-gray-400 uppercase font-bold mb-3">What changes</p>
+                  <ul className="space-y-2">
+                    <li className="flex items-start text-sm">
+                      <span className="mr-2 text-red-400 mt-0.5">✗</span>
+                      <span className="text-red-300">Club will need to <strong>pay subscription fees</strong> based on their student count</span>
+                    </li>
+                    <li className="flex items-start text-sm">
+                      <span className="mr-2 text-red-400 mt-0.5">✗</span>
+                      <span className="text-red-300">If no active subscription, they'll be treated as expired trial</span>
+                    </li>
+                    <li className="flex items-start text-sm">
+                      <span className="mr-2 text-yellow-400 mt-0.5">—</span>
+                      <span className="text-gray-300">Parent Premium subscriptions are <strong>not affected</strong></span>
+                    </li>
+                  </ul>
+                </div>
+              </>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPlatformOwnerModal(null)}
+                className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmTogglePlatformOwner}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                  platformOwnerModal.newStatus 
+                    ? 'bg-amber-600 hover:bg-amber-500 text-white' 
+                    : 'bg-red-600 hover:bg-red-500 text-white'
+                }`}
+              >
+                {platformOwnerModal.newStatus ? 'Grant Platform Owner' : 'Remove Status'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
