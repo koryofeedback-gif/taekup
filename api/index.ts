@@ -7470,8 +7470,9 @@ async function handleSuperAdminDeleteClub(req: VercelRequest, res: VercelRespons
     }
 
     // Delete club-level data (use try/catch per table in case some don't exist)
+    try { await client.query('DELETE FROM support_sessions WHERE target_club_id = $1::uuid', [clubId]); } catch (e) {}
     await client.query('DELETE FROM student_transfers WHERE from_club_id = $1::uuid OR to_club_id = $1::uuid', [clubId]);
-    const clubTables = ['arena_challenges', 'challenge_videos', 'challenge_submissions', 'attendance_events', 'curriculum_content', 'curriculum_courses', 'creator_earnings'];
+    const clubTables = ['arena_challenges', 'challenge_videos', 'challenge_submissions', 'attendance_events', 'curriculum_content', 'curriculum_courses', 'creator_earnings', 'challenges', 'onboarding_progress', 'activity_log', 'automated_email_logs', 'email_log', 'payments', 'promotions', 'discounts', 'daily_challenges', 'family_challenges', 'class_feedback', 'mrr_goals', 'automation_rules', 'automation_executions', 'payment_recovery_attempts', 'trial_extensions', 'churn_reasons'];
     for (const table of clubTables) {
       try { await client.query(`DELETE FROM ${table} WHERE club_id = $1::uuid`, [clubId]); } catch (e) {}
     }

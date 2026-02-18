@@ -2307,8 +2307,9 @@ async function handleDeleteClub(req: VercelRequest, res: VercelResponse, clubId:
     }
 
     // Delete club-level data
+    try { await db.unsafe('DELETE FROM support_sessions WHERE target_club_id = $1::uuid', [clubId]); } catch (e) {}
     await db`DELETE FROM student_transfers WHERE from_club_id = ${clubId}::uuid OR to_club_id = ${clubId}::uuid`;
-    const clubTablesToClean = ['arena_challenges', 'challenge_videos', 'challenge_submissions', 'attendance_events', 'curriculum_content', 'curriculum_courses', 'creator_earnings'];
+    const clubTablesToClean = ['arena_challenges', 'challenge_videos', 'challenge_submissions', 'attendance_events', 'curriculum_content', 'curriculum_courses', 'creator_earnings', 'challenges', 'onboarding_progress', 'activity_log', 'automated_email_logs', 'email_log', 'payments', 'promotions', 'discounts', 'daily_challenges', 'family_challenges', 'class_feedback', 'mrr_goals', 'automation_rules', 'automation_executions', 'payment_recovery_attempts', 'trial_extensions', 'churn_reasons'];
     for (const table of clubTablesToClean) {
       try { await db.unsafe(`DELETE FROM ${table} WHERE club_id = $1::uuid`, [clubId]); } catch (e) {}
     }
