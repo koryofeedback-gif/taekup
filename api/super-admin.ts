@@ -2272,18 +2272,56 @@ async function handleDeleteClub(req: VercelRequest, res: VercelResponse, clubId:
   try {
     const db = getDb();
     
-    // Delete in proper order (foreign key dependencies)
+    // Get all student IDs and coach IDs for this club
+    const studentRows = await db`SELECT id FROM students WHERE club_id = ${clubId}::uuid`;
+    const studentIds = studentRows.map((r: any) => r.id);
+    const coachRows = await db`SELECT id FROM coaches WHERE club_id = ${clubId}::uuid`;
+    const coachIds = coachRows.map((r: any) => r.id);
+    
+    // Delete all student-related data first (foreign key dependencies)
+    if (studentIds.length > 0) {
+      await db`DELETE FROM xp_transactions WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM challenge_submissions WHERE student_id = ANY(${studentIds}::uuid[]) OR opponent_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM challenge_video_votes WHERE voter_student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM challenge_videos WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM content_views WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM course_enrollments WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM dojo_inventory WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM family_logs WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM gauntlet_personal_bests WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM gauntlet_submissions WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM habit_logs WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM user_custom_habits WHERE student_id = ANY(${studentIds}::uuid[])`;
+      await db`DELETE FROM world_rankings WHERE student_id = ANY(${studentIds}::uuid[])`;
+    }
+
+    // Delete coach-related references
+    if (coachIds.length > 0) {
+      await db`UPDATE challenge_videos SET verified_by = NULL WHERE verified_by = ANY(${coachIds}::uuid[])`;
+    }
+
+    // Delete club-level data
     await db`DELETE FROM student_transfers WHERE from_club_id = ${clubId}::uuid OR to_club_id = ${clubId}::uuid`;
+    await db`DELETE FROM arena_challenges WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM challenge_videos WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM challenge_submissions WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM attendance_events WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM curriculum_content WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM curriculum_courses WHERE club_id = ${clubId}::uuid`;
+    await db`DELETE FROM creator_earnings WHERE club_id = ${clubId}::uuid`;
+    
+    // Delete core entities
     await db`DELETE FROM coaches WHERE club_id = ${clubId}::uuid`;
     await db`DELETE FROM students WHERE club_id = ${clubId}::uuid`;
     await db`DELETE FROM subscriptions WHERE club_id = ${clubId}::uuid`;
     await db`DELETE FROM users WHERE club_id = ${clubId}::uuid`;
     await db`DELETE FROM clubs WHERE id = ${clubId}::uuid`;
     
+    console.log('[SuperAdmin] Successfully deleted club:', clubId);
     return res.json({ success: true });
   } catch (error: any) {
-    console.error('[SuperAdmin] Delete club error:', error);
-    return res.status(500).json({ error: 'Failed to delete club' });
+    console.error('[SuperAdmin] Delete club error:', error.message);
+    return res.status(500).json({ error: 'Failed to delete club: ' + error.message });
   }
 }
 

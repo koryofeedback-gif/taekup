@@ -7443,8 +7443,43 @@ async function handleSuperAdminDeleteClub(req: VercelRequest, res: VercelRespons
   try {
     await client.query('BEGIN');
     
-    // Delete in proper order (foreign key dependencies)
+    // Get all student IDs and coach IDs for this club
+    const studentIds = (await client.query('SELECT id FROM students WHERE club_id = $1::uuid', [clubId])).rows.map((r: any) => r.id);
+    const coachIds = (await client.query('SELECT id FROM coaches WHERE club_id = $1::uuid', [clubId])).rows.map((r: any) => r.id);
+    
+    // Delete all student-related data first (foreign key dependencies)
+    if (studentIds.length > 0) {
+      await client.query('DELETE FROM xp_transactions WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM challenge_submissions WHERE student_id = ANY($1::uuid[]) OR opponent_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM challenge_video_votes WHERE voter_student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM challenge_videos WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM content_views WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM course_enrollments WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM dojo_inventory WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM family_logs WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM gauntlet_personal_bests WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM gauntlet_submissions WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM habit_logs WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM user_custom_habits WHERE student_id = ANY($1::uuid[])', [studentIds]);
+      await client.query('DELETE FROM world_rankings WHERE student_id = ANY($1::uuid[])', [studentIds]);
+    }
+
+    // Delete coach-related references
+    if (coachIds.length > 0) {
+      await client.query('UPDATE challenge_videos SET verified_by = NULL WHERE verified_by = ANY($1::uuid[])', [coachIds]);
+    }
+
+    // Delete club-level data
     await client.query('DELETE FROM student_transfers WHERE from_club_id = $1::uuid OR to_club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM arena_challenges WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM challenge_videos WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM challenge_submissions WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM attendance_events WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM curriculum_content WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM curriculum_courses WHERE club_id = $1::uuid', [clubId]);
+    await client.query('DELETE FROM creator_earnings WHERE club_id = $1::uuid', [clubId]);
+    
+    // Delete core entities
     await client.query('DELETE FROM coaches WHERE club_id = $1::uuid', [clubId]);
     await client.query('DELETE FROM students WHERE club_id = $1::uuid', [clubId]);
     await client.query('DELETE FROM subscriptions WHERE club_id = $1::uuid', [clubId]);
@@ -7452,11 +7487,12 @@ async function handleSuperAdminDeleteClub(req: VercelRequest, res: VercelRespons
     await client.query('DELETE FROM clubs WHERE id = $1::uuid', [clubId]);
     
     await client.query('COMMIT');
+    console.log('[SuperAdmin] Successfully deleted club:', clubId);
     return res.json({ success: true });
   } catch (error: any) {
     await client.query('ROLLBACK');
-    console.error('Error deleting club:', error);
-    return res.status(500).json({ error: 'Failed to delete club' });
+    console.error('[SuperAdmin] Error deleting club:', error.message);
+    return res.status(500).json({ error: 'Failed to delete club: ' + error.message });
   } finally {
     client.release();
   }
