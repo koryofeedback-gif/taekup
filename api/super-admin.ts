@@ -1196,14 +1196,16 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
       },
       'custom': {
         subject: customSubject || 'Message from TaekUp',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #22d3ee;">Message from TaekUp</h2>
-            <p>Hi ${club.owner_name || 'there'},</p>
-            <div>${customMessage || ''}</div>
-            <p style="margin-top: 20px; color: #666;">The TaekUp Team</p>
-          </div>
-        `
+        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        getDynamicData: () => ({
+          subject: customSubject || 'Message from TaekUp',
+          title: customSubject || 'Message from TaekUp',
+          name: club.owner_name || 'there',
+          clubName: club.name,
+          body_content: customMessage || '',
+          btn_text: 'Go to Dashboard',
+          btn_url: 'https://mytaek.com/dashboard',
+        }),
       }
     };
     
