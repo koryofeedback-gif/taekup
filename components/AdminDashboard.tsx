@@ -2304,7 +2304,15 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     
     const bulkCost = data.clubSponsoredPremium ? (totalStudents * 1.99) : 0;
     
-    const handleUniversalAccessToggle = async () => {
+    const [showUniversalAccessModal, setShowUniversalAccessModal] = useState(false);
+
+    const handleUniversalAccessToggle = () => {
+        setShowUniversalAccessModal(true);
+    };
+
+    const confirmUniversalAccessToggle = async () => {
+        setShowUniversalAccessModal(false);
+        
         if (data.isDemo) {
             onUpdateData({ clubSponsoredPremium: !data.clubSponsoredPremium });
             return;
@@ -2483,6 +2491,78 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
 
     return (
         <div>
+            {showUniversalAccessModal && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowUniversalAccessModal(false)}>
+                    <div className="bg-gray-800 rounded-xl border border-gray-600 max-w-md w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center mb-4">
+                            <span className="text-3xl mr-3">💎</span>
+                            <h3 className="text-xl font-bold text-white">
+                                {data.clubSponsoredPremium 
+                                    ? t('admin.billing.universalAccess.confirmDisableTitle')
+                                    : t('admin.billing.universalAccess.confirmEnableTitle')}
+                            </h3>
+                        </div>
+                        
+                        <p className="text-gray-300 text-sm mb-4">
+                            {data.clubSponsoredPremium
+                                ? t('admin.billing.universalAccess.confirmDisableDesc')
+                                : t('admin.billing.universalAccess.confirmEnableDesc')}
+                        </p>
+
+                        <div className="bg-gray-900/60 rounded-lg p-4 mb-4 border border-gray-700">
+                            <p className="text-xs text-gray-400 uppercase font-bold mb-3">{t('admin.billing.universalAccess.featuresIncluded')}</p>
+                            <ul className="space-y-2">
+                                {[
+                                    { icon: '🎥', text: t('admin.billing.universalAccess.featureVideo') },
+                                    { icon: '📚', text: t('admin.billing.universalAccess.featureCurriculum') },
+                                    { icon: '🏆', text: t('admin.billing.universalAccess.featureLeaderboard') },
+                                    { icon: '🤖', text: t('admin.billing.universalAccess.featureAI') },
+                                    { icon: '🃏', text: t('admin.billing.universalAccess.featureCards') },
+                                    { icon: '📊', text: t('admin.billing.universalAccess.featureAnalytics') },
+                                    { icon: '🏠', text: t('admin.billing.universalAccess.featureHomeDojo') },
+                                ].map((f, i) => (
+                                    <li key={i} className="flex items-center text-sm">
+                                        <span className="mr-2">{f.icon}</span>
+                                        <span className={data.clubSponsoredPremium ? 'text-red-300' : 'text-green-300'}>{f.text}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {data.clubSponsoredPremium ? (
+                            <div className="bg-red-900/30 border border-red-500/30 rounded-lg p-3 mb-4">
+                                <p className="text-red-300 text-xs">{t('admin.billing.universalAccess.disableWarning')}</p>
+                            </div>
+                        ) : (
+                            <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-3 mb-4">
+                                <p className="text-green-300 text-xs">{t('admin.billing.universalAccess.enableInfo', { cost: `$${(totalStudents * 1.99).toFixed(2)}`, count: totalStudents })}</p>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowUniversalAccessModal(false)}
+                                className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                                {t('admin.billing.universalAccess.cancel')}
+                            </button>
+                            <button
+                                onClick={confirmUniversalAccessToggle}
+                                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                                    data.clubSponsoredPremium 
+                                        ? 'bg-red-600 hover:bg-red-500 text-white' 
+                                        : 'bg-green-600 hover:bg-green-500 text-white'
+                                }`}
+                            >
+                                {data.clubSponsoredPremium 
+                                    ? t('admin.billing.universalAccess.confirmDisable')
+                                    : t('admin.billing.universalAccess.confirmEnable')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <SectionHeader title={t('admin.billing.billingAndSubscription')} description={t('admin.billing.managePlan')} />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
