@@ -4633,23 +4633,17 @@ const HOME_DOJO_PREMIUM_CAP = 21; // 7 habits × 3 XP
 
 async function hasHomeDojoPremium(client: any, studentId: string): Promise<boolean> {
   try {
-    // Check premium sources: student.premium_status or club.parent_premium_enabled
     const result = await client.query(
-      `SELECT s.premium_status, c.parent_premium_enabled
+      `SELECT s.premium_status
        FROM students s 
-       LEFT JOIN clubs c ON s.club_id = c.id 
        WHERE s.id = $1::uuid`,
       [studentId]
     );
     const student = result.rows[0];
     if (!student) return false;
     
-    // Check all premium sources
-    const hasPremiumStatus = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid';
-    const hasClubPremium = student.parent_premium_enabled === true;
-    
-    const isPremium = hasPremiumStatus || hasClubPremium;
-    console.log(`[HomeDojo] Premium check for ${studentId}: status=${student.premium_status}, clubPremium=${hasClubPremium} => ${isPremium}`);
+    const isPremium = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid';
+    console.log(`[HomeDojo] Premium check for ${studentId}: status=${student.premium_status} => ${isPremium}`);
     
     return isPremium;
   } catch (e) {
@@ -5559,8 +5553,8 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
       }
 
       const studentResult = await client.query(
-        `SELECT s.id, s.club_id, s.premium_status, c.parent_premium_enabled
-         FROM students s LEFT JOIN clubs c ON s.club_id = c.id
+        `SELECT s.id, s.club_id, s.premium_status
+         FROM students s
          WHERE s.id = $1::uuid`,
         [studentId]
       );
@@ -5570,7 +5564,7 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
       }
 
       const student = studentResult.rows[0];
-      const hasPremium = student.premium_status !== 'none' || student.parent_premium_enabled;
+      const hasPremium = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid';
 
       if (!hasPremium) {
         return res.status(403).json({
