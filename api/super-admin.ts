@@ -1098,146 +1098,124 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
     const club = clubResult[0];
     const toEmail = club.owner_email;
     
-    // Master SendGrid Dynamic Template ID (all emails use the same template)
-    const MASTER_TEMPLATE_ID = 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
+    const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
+    const LOGO_URL = 'https://www.mytaek.com/mytaek-logo.png';
     
-    // Define email templates with dynamic template support
     interface EmailTemplateConfig {
       subject: string;
-      dynamicTemplateId?: string;
-      getDynamicData?: () => Record<string, any>;
-      html?: string;
+      from: string;
+      getDynamicData: () => Record<string, any>;
     }
     
     const templates: Record<string, EmailTemplateConfig> = {
       'trial-ending': {
-        subject: `Your TaekUp trial ends soon!`,
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        subject: 'Your TaekUp trial ends soon!',
+        from: 'billing@mytaek.com',
         getDynamicData: () => ({
           subject: 'Your TaekUp trial ends soon!',
           title: 'Trial Ending Soon',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: `Your 14-day free trial for <strong>${club.name}</strong> is ending soon! Don't lose access to all the amazing features that help you run your martial arts club.<br><br>Upgrade now to keep your students engaged with HonorXP™, Legacy Cards™, and the Global Shogun Rank™.`,
           btn_text: 'Upgrade Now',
-          btn_url: 'https://mytaek.com/pricing',
+          btn_url: 'https://www.mytaek.com/pricing',
         }),
       },
       'win_back': {
         subject: 'We Want You Back! 25% Off for 3 Months',
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        from: 'hello@mytaek.com',
         getDynamicData: () => ({
           subject: 'We Want You Back! 25% Off for 3 Months',
           title: 'We Miss You!',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: `We noticed you haven't been around lately at <strong>${club.name}</strong>. We'd love to have you back!<br><br>As a special offer, use code <strong>WINBACK25</strong> to get 25% off for 3 months. Your students are waiting to level up their HonorXP™!`,
           btn_text: 'Come Back',
-          btn_url: 'https://mytaek.com/pricing',
+          btn_url: 'https://www.mytaek.com/pricing',
         }),
       },
       'churn-risk': {
         subject: 'Need Help Getting Started? We\'re Here for You!',
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        from: 'support@mytaek.com',
         getDynamicData: () => ({
           subject: 'Need Help Getting Started? We\'re Here for You!',
           title: 'We\'re Here to Help',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: `We noticed you might need some help getting <strong>${club.name}</strong> set up. Our team is here to support you!<br><br>Whether you need help with the setup wizard, adding students, or configuring your club settings, we're just a click away.`,
           btn_text: 'Get Help',
-          btn_url: 'https://mytaek.com/wizard',
+          btn_url: 'https://www.mytaek.com/wizard',
         }),
       },
       'welcome_club': {
         subject: 'Welcome to TaekUp! Your 14-Day Free Trial Has Started',
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        from: 'hello@mytaek.com',
         getDynamicData: () => ({
           subject: 'Welcome to TaekUp! Your 14-Day Free Trial Has Started',
           title: 'Your Dojo is Live!',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: `Congratulations on joining TaekUp! Your club <strong>${club.name}</strong> is now active.<br><br>Here's what to do next:<br>• Add your first student<br>• Set up your Stripe wallet via DojoMint™ Protocol<br>• Customize your belt system<br><br>Your 14-day free trial has started!`,
           btn_text: 'Go to Dashboard',
-          btn_url: 'https://mytaek.com/dashboard',
+          btn_url: 'https://www.mytaek.com/app/admin',
         }),
       },
       'day_3_checkin': {
         subject: 'How\'s Your Setup Going? Day 3 Check-in',
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        from: 'hello@mytaek.com',
         getDynamicData: () => ({
           subject: 'How\'s Your Setup Going? Day 3 Check-in',
           title: 'Day 3 Check-in',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: `Just checking in to see how things are going with <strong>${club.name}</strong>!<br><br>Have you had a chance to:<br>• Add your students?<br>• Set up your class schedule?<br>• Explore the gamification features?<br><br>We're here if you need any help getting started!`,
           btn_text: 'Continue Setup',
-          btn_url: 'https://mytaek.com/dashboard',
+          btn_url: 'https://www.mytaek.com/app/admin',
         }),
       },
       'day_7_mid_trial': {
         subject: 'Halfway Through Your Trial - How\'s It Going?',
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        from: 'billing@mytaek.com',
         getDynamicData: () => ({
           subject: 'Halfway Through Your Trial - How\'s It Going?',
           title: 'Mid-Trial Check-in',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: `You're halfway through your 14-day trial with <strong>${club.name}</strong>! We hope you're enjoying the platform.<br><br>Have you tried these features yet?<br>• Legacy Cards™ for your students<br>• Global Shogun Rank™ leaderboards<br>• AI-powered TaekBot assistant<br><br>Let us know if you have any questions!`,
           btn_text: 'Explore Features',
-          btn_url: 'https://mytaek.com/dashboard',
+          btn_url: 'https://www.mytaek.com/app/admin',
         }),
       },
       'trial_expired': {
         subject: 'Your TaekUp Trial Has Expired - We Miss You!',
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        from: 'billing@mytaek.com',
         getDynamicData: () => ({
           subject: 'Your TaekUp Trial Has Expired - We Miss You!',
           title: 'Trial Expired',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: `Your 14-day free trial for <strong>${club.name}</strong> has expired. But don't worry - your data is safe!<br><br>Reactivate your account now to continue using all the features that help you run your martial arts club more efficiently.`,
           btn_text: 'Reactivate Now',
-          btn_url: 'https://mytaek.com/pricing',
+          btn_url: 'https://www.mytaek.com/pricing',
         }),
       },
       'payment_failed': {
         subject: 'Action Required: Payment Failed',
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        from: 'billing@mytaek.com',
         getDynamicData: () => ({
           subject: 'Action Required: Payment Failed',
           title: 'Payment Issue',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: `We were unable to process your payment for <strong>${club.name}</strong>. Please update your payment method to avoid service interruption.<br><br>Your students depend on TaekUp for their HonorXP™ tracking and Legacy Cards™ - let's keep them engaged!`,
           btn_text: 'Update Payment',
-          btn_url: 'https://mytaek.com/billing',
+          btn_url: 'https://www.mytaek.com/billing',
         }),
       },
       'feature_announcement': {
         subject: 'New Feature: Exciting Updates for Your Dojo!',
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        from: 'updates@mytaek.com',
         getDynamicData: () => ({
           subject: 'New Feature: Exciting Updates for Your Dojo!',
           title: 'New Features Available',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: `We've just released exciting new features for <strong>${club.name}</strong>!<br><br>Check out what's new:<br>• Enhanced ChronosBelt™ Predictor for belt promotions<br>• Improved DojoMint™ Protocol for payments<br>• New challenge categories in Dojang Rivals<br><br>Log in to explore these updates!`,
           btn_text: 'See What\'s New',
-          btn_url: 'https://mytaek.com/dashboard',
+          btn_url: 'https://www.mytaek.com/app/admin',
         }),
       },
       'custom': {
         subject: customSubject || 'Message from TaekUp',
-        dynamicTemplateId: MASTER_TEMPLATE_ID,
+        from: 'hello@mytaek.com',
         getDynamicData: () => ({
           subject: customSubject || 'Message from TaekUp',
           title: customSubject || 'Message from TaekUp',
-          name: club.owner_name || 'there',
-          clubName: club.name,
           body_content: customMessage || '',
           btn_text: 'Go to Dashboard',
-          btn_url: 'https://mytaek.com/dashboard',
+          btn_url: 'https://www.mytaek.com/app/admin',
         }),
       }
     };
@@ -1251,53 +1229,37 @@ async function handleSendEmail(req: VercelRequest, res: VercelResponse) {
     let sendError: string | null = 'Not attempted';
     let messageId = null;
     
-    // Send via SendGrid (using Replit connector or legacy env var)
     const sendgrid = await getUncachableSendGridClient();
     if (sendgrid) {
       try {
-        // Check if template has a dynamic template ID
-        if (emailTemplate.dynamicTemplateId && emailTemplate.getDynamicData) {
-          const dynamicData = emailTemplate.getDynamicData();
-          const msg: any = {
-            to: toEmail,
-            from: {
-              email: sendgrid.fromEmail,
-              name: 'TaekUp'
-            },
-            templateId: emailTemplate.dynamicTemplateId,
-            dynamicTemplateData: {
-              ...dynamicData,
-              unsubscribeUrl: 'https://mytaek.com/email-preferences',
-              privacyUrl: 'https://mytaek.com/privacy',
-            },
-          };
-          
-          const result = await sendgrid.client.send(msg);
-          sendStatus = 'sent';
-          sendError = null;
-          messageId = result[0]?.headers?.['x-message-id'] || null;
-          console.log(`[SendGrid] Dynamic template email sent: ${template} (${emailTemplate.dynamicTemplateId})`);
-        } else if (emailTemplate.html) {
-          // Fallback to HTML
-          const result = await sendgrid.client.send({
-            to: toEmail,
-            from: {
-              email: sendgrid.fromEmail,
-              name: 'TaekUp'
-            },
-            subject: emailTemplate.subject,
-            html: emailTemplate.html,
-          });
-          sendStatus = 'sent';
-          sendError = null;
-          messageId = result[0]?.headers?.['x-message-id'] || null;
-        } else {
-          sendError = 'Template has no content';
-        }
+        const dynamicData = emailTemplate.getDynamicData();
+        const msg: any = {
+          to: toEmail,
+          from: {
+            email: emailTemplate.from,
+            name: 'MyTaek'
+          },
+          templateId: MASTER_TEMPLATE_ID,
+          dynamicTemplateData: {
+            ...dynamicData,
+            name: club.owner_name || 'there',
+            clubName: club.name,
+            image_url: LOGO_URL,
+            is_rtl: false,
+            unsubscribeUrl: 'https://www.mytaek.com/email-preferences',
+            privacyUrl: 'https://www.mytaek.com/privacy',
+          },
+        };
+        
+        const result = await sendgrid.client.send(msg);
+        sendStatus = 'sent';
+        sendError = null;
+        messageId = result[0]?.headers?.['x-message-id'] || null;
+        console.log(`[SendGrid] SA email sent via master template: ${template} → ${toEmail}`);
       } catch (sgErr: any) {
         sendStatus = 'failed';
         sendError = sgErr.message;
-        console.error('SendGrid error:', sgErr);
+        console.error('[SendGrid] SA email error:', sgErr?.response?.body?.errors || sgErr.message);
       }
     } else {
       sendStatus = 'failed';
