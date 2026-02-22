@@ -62,15 +62,6 @@ function getClientIp(req: VercelRequest): string {
   return req.socket?.remoteAddress || 'unknown';
 }
 
-function setSecurityHeaders(res: VercelResponse) {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-}
-
 // Trust Tier thresholds for video auto-approval
 const TRUST_TIER_VERIFIED_THRESHOLD = 10; // 10 consecutive approvals = verified
 const TRUST_TIER_TRUSTED_THRESHOLD = 25; // 25 consecutive approvals = trusted
