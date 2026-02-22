@@ -425,7 +425,12 @@ const App: React.FC = () => {
                         parentName: student.parentName || null,
                         parentPhone: student.parentPhone || null,
                         belt: belt?.name || 'White',
-                        birthdate: student.birthday || null
+                        birthdate: student.birthday || null,
+                        totalXP: student.totalXP || 0,
+                        totalPoints: student.totalPoints || 0,
+                        stripes: student.stripes || 0,
+                        location: student.location || null,
+                        assignedClass: student.assignedClass || null
                     })
                 }).catch(err => console.error('Failed to add student:', student.name, err));
             });

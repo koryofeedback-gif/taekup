@@ -2104,7 +2104,7 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/students', async (req: Request, res: Response) => {
     try {
-      const { clubId, name, parentEmail, parentName, parentPhone, belt, birthdate, totalPoints, totalXP, lifetimeXp, location, assignedClass } = req.body;
+      const { clubId, name, parentEmail, parentName, parentPhone, belt, birthdate, totalPoints, totalXP, lifetimeXp, location, assignedClass, stripes } = req.body;
       
       if (!clubId || !name) {
         return res.status(400).json({ error: 'Club ID and student name are required' });
@@ -2127,9 +2127,9 @@ export function registerRoutes(app: Express) {
       const mytaekId = `MTK-${currentYear}-${randomCode}`;
       
       const studentResult = await db.execute(sql`
-        INSERT INTO students (club_id, mytaek_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, total_xp, location, assigned_class, created_at)
-        VALUES (${clubId}::uuid, ${mytaekId}, ${name}, ${parentEmail || null}, ${parentName || null}, ${parentPhone || null}, ${belt || 'White'}, ${birthdate ? birthdate + 'T00:00:00Z' : null}::timestamptz, ${totalPoints || 0}, ${totalXP || lifetimeXp || 0}, ${location || null}, ${assignedClass || null}, NOW())
-        RETURNING id, mytaek_id, name, parent_email, parent_name, belt, total_points, total_xp
+        INSERT INTO students (club_id, mytaek_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, total_xp, stripes, location, assigned_class, created_at)
+        VALUES (${clubId}::uuid, ${mytaekId}, ${name}, ${parentEmail || null}, ${parentName || null}, ${parentPhone || null}, ${belt || 'White'}, ${birthdate ? birthdate + 'T00:00:00Z' : null}::timestamptz, ${totalPoints || 0}, ${totalXP || lifetimeXp || 0}, ${stripes || 0}, ${location || null}, ${assignedClass || null}, NOW())
+        RETURNING id, mytaek_id, name, parent_email, parent_name, belt, total_points, total_xp, stripes
       `);
       
       const student = (studentResult as any[])[0];
