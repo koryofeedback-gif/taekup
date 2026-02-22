@@ -1,4 +1,4 @@
-// TaekUp API v2.1.1 - Class feedback email fix (Jan 2026)
+// TaekUp API v2.2.0 - Security hardening (Feb 2026)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
@@ -15,6 +15,61 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
   max: 5
 });
+
+// =====================================================
+// SECURITY: Rate Limiting (in-memory, resets on cold start)
+// =====================================================
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+function isRateLimited(key: string, maxAttempts: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+    return false;
+  }
+  entry.count++;
+  if (entry.count > maxAttempts) return true;
+  return false;
+}
+
+function getRateLimitRemaining(key: string, maxAttempts: number): number {
+  const entry = rateLimitStore.get(key);
+  if (!entry) return maxAttempts;
+  return Math.max(0, maxAttempts - entry.count);
+}
+
+// Cleanup stale entries every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (now > entry.resetAt) rateLimitStore.delete(key);
+  }
+}, 10 * 60 * 1000);
+
+// =====================================================
+// SECURITY: Headers & CORS
+// =====================================================
+const ALLOWED_ORIGINS = [
+  'https://www.mytaek.com',
+  'https://mytaek.com',
+  'https://taekup.vercel.app',
+];
+
+function getClientIp(req: VercelRequest): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
+  return req.socket?.remoteAddress || 'unknown';
+}
+
+function setSecurityHeaders(res: VercelResponse) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+}
 
 // Trust Tier thresholds for video auto-approval
 const TRUST_TIER_VERIFIED_THRESHOLD = 10; // 10 consecutive approvals = verified
@@ -403,10 +458,25 @@ function getGeminiClient(): GoogleGenerativeAI | null {
   return geminiClient;
 }
 
-function setCorsHeaders(res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+function setCorsHeaders(res: VercelResponse, req?: VercelRequest) {
+  const origin = req?.headers?.origin || '';
+  if (ALLOWED_ORIGINS.includes(origin) || process.env.NODE_ENV !== 'production') {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://www.mytaek.com');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+function setSecurityHeaders(res: VercelResponse) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 }
 
 // Super Admin token verification
@@ -475,6 +545,19 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
   
   const { email, password } = parseBody(req);
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+
+  // Rate limit: 10 login attempts per email per 15 minutes
+  const emailKey = `login:${email.toLowerCase().trim()}`;
+  const ipKey = `login-ip:${getClientIp(req)}`;
+  if (isRateLimited(emailKey, 10, 15 * 60 * 1000)) {
+    console.warn(`[Security] Login rate limited for email: ${email}`);
+    return res.status(429).json({ error: 'Too many login attempts. Please try again in 15 minutes.' });
+  }
+  // Rate limit: 30 login attempts per IP per 15 minutes
+  if (isRateLimited(ipKey, 30, 15 * 60 * 1000)) {
+    console.warn(`[Security] Login rate limited for IP: ${getClientIp(req)}`);
+    return res.status(429).json({ error: 'Too many login attempts from this location. Please try again later.' });
+  }
 
   const client = await pool.connect();
   try {
@@ -688,6 +771,16 @@ async function handleForgotPassword(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { email } = parseBody(req);
   if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  // Rate limit: 5 reset requests per email per 30 minutes
+  const resetKey = `reset:${email.toLowerCase().trim()}`;
+  const resetIpKey = `reset-ip:${getClientIp(req)}`;
+  if (isRateLimited(resetKey, 5, 30 * 60 * 1000)) {
+    return res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
+  }
+  if (isRateLimited(resetIpKey, 10, 30 * 60 * 1000)) {
+    return res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
+  }
 
   const client = await pool.connect();
   try {
@@ -8033,7 +8126,8 @@ async function handleContentCompletions(req: VercelRequest, res: VercelResponse,
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(res);
+  setCorsHeaders(res, req);
+  setSecurityHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const url = req.url || '';

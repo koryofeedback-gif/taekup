@@ -367,16 +367,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let event: Stripe.Event;
   
   try {
-    if (webhookSecret) {
-      event = stripe.webhooks.constructEvent(
-        rawBody,
-        signature as string,
-        webhookSecret
-      );
-    } else {
-      event = JSON.parse(rawBody.toString()) as Stripe.Event;
-      console.warn('[Webhook] No webhook secret configured, skipping signature verification');
+    if (!webhookSecret) {
+      console.error('[Webhook] STRIPE_WEBHOOK_SECRET not configured - rejecting request');
+      return res.status(500).json({ error: 'Webhook secret not configured' });
     }
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      signature as string,
+      webhookSecret
+    );
   } catch (err: any) {
     console.error('[Webhook] Signature verification failed:', err.message);
     return res.status(400).json({ error: 'Webhook signature verification failed' });

@@ -74,10 +74,24 @@ function getDb() {
   return sql;
 }
 
-function setCorsHeaders(res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+const SA_ALLOWED_ORIGINS = [
+  'https://www.mytaek.com',
+  'https://mytaek.com',
+  'https://taekup.vercel.app',
+];
+
+function setCorsHeaders(res: VercelResponse, req?: VercelRequest) {
+  const origin = req?.headers?.origin || '';
+  if (SA_ALLOWED_ORIGINS.includes(origin) || process.env.NODE_ENV !== 'production') {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://www.mytaek.com');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 }
 
@@ -163,18 +177,38 @@ function generateToken(): string {
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@mytaek.com';
 const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
 
+// Rate limiting for Super Admin
+const saRateLimitStore = new Map<string, { count: number; resetAt: number }>();
+function isSaRateLimited(key: string, maxAttempts: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = saRateLimitStore.get(key);
+  if (!entry || now > entry.resetAt) {
+    saRateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+    return false;
+  }
+  entry.count++;
+  return entry.count > maxAttempts;
+}
+
 async function handleLogin(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
+  // Rate limit: 5 Super Admin login attempts per 30 minutes
+  const forwarded = req.headers['x-forwarded-for'];
+  const clientIp = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : 'unknown';
+  if (isSaRateLimited(`sa-login:${clientIp}`, 5, 30 * 60 * 1000)) {
+    console.warn(`[Security] Super Admin login rate limited for IP: ${clientIp}`);
+    return res.status(429).json({ error: 'Too many login attempts. Please try again in 30 minutes.' });
+  }
+
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const email = body?.email;
     const password = body?.password;
     
     console.log('[SA Login] Attempt for:', email);
-    console.log('[SA Login] ENV password configured:', !!SUPER_ADMIN_PASSWORD);
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
@@ -186,11 +220,10 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD && SUPER_ADMIN_PASSWORD) {
       isValid = true;
       userEmail = SUPER_ADMIN_EMAIL;
-      console.log('[SA Login] Matched env credentials');
     }
     
     if (!isValid) {
-      console.log('[SA Login] Invalid credentials for:', email);
+      console.warn(`[Security] Failed Super Admin login attempt from IP: ${clientIp}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
@@ -2332,7 +2365,7 @@ async function handleDeleteClub(req: VercelRequest, res: VercelResponse, clubId:
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(res);
+  setCorsHeaders(res, req);
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
