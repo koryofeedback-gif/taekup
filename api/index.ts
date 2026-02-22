@@ -1979,18 +1979,6 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const age = birthdate ? Math.floor((Date.now() - new Date(birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
-
-    const notifySent = await sendTemplateEmail(club.owner_email, 'WELCOME', {
-      ownerName: club.name,
-      clubName: club.name,
-      studentName: name,
-      beltLevel: belt || 'White',
-      studentAge: age ? `${age} years old` : 'Not specified',
-      parentName: parentName || 'Not specified',
-    });
-    console.log(`[AddStudent] Owner notification email ${notifySent ? 'sent' : 'failed'} to:`, club.owner_email);
-
     if (parentEmail) {
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
         parentName: parentName || 'Parent',
