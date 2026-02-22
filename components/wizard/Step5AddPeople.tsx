@@ -459,17 +459,6 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                             <input type="date" value={newStudent.joinDate || new Date().toISOString().split('T')[0]} onChange={e => setNewStudent({...newStudent, joinDate: e.target.value})} className="wizard-input" />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-gray-400 mb-1">Points</label>
-                                <input type="number" min="0" placeholder="0" value={newStudent.totalPoints ?? ''} onChange={e => setNewStudent({...newStudent, totalPoints: parseInt(e.target.value) || 0})} className="wizard-input" />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-400 mb-1">Local HonorXP™</label>
-                                <input type="number" min="0" placeholder="0" value={newStudent.totalXP ?? ''} onChange={e => setNewStudent({...newStudent, totalXP: parseInt(e.target.value) || 0})} className="wizard-input" />
-                            </div>
-                        </div>
-                        <p className="text-xs text-gray-500">Global Shogun Rank™ points are earned through the Arena and cannot be set manually.</p>
 
                         <div className="grid grid-cols-2 gap-4">
                             <select value={newStudent.location} onChange={e => setNewStudent({...newStudent, location: e.target.value, assignedClass: ''})} className="wizard-input">
