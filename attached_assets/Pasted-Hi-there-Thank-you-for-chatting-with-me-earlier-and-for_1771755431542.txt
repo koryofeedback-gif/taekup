@@ -1,0 +1,267 @@
+Hi there,
+
+Thank you for chatting with me earlier and for your patience as we work towards resolving this for you. I'm connecting you with another member of our team who is looking into this further, and we'll be in touch as soon as we have an update to share.
+
+If you'd like to check on the status at any point, please feel free to reply to this email directly and we’ll be in touch.
+
+Below you'll also find the transcript of our chat.
+
+Best,
+Madison
+
+
+Chat started: 2026-02-03 23:56:44 UTC
+(11:56:44 PM) Hamed Konarivand: Selected: connect User message: Subject: Unable to create Connect accounts - "Complete platform profile" error persists after profile completion Dear Stripe Support Team, I am writing to request assistance with an issue I'm experiencing with Stripe Connect on my platform account. Account ID: acct_1SZL3cRhYhunDn2j Platform Name: MyTaek (mytaek.com) Issue: When attempting to create connected accounts via the API, I receive the following error: "You must complete your platform profile to use Connect and create live connected accounts. Visit your dashboard at https://dashboard.stripe.com/connect/accounts/overview to answer the questionnaire." Steps I have already completed: Completed the Platform Profile at /settings/connect/platform-profile (all acknowledgements completed on February 4, 2026) Added branding (logo, icon, colors) at /settings/connect/onboarding-interface Verified my identity Completed "Go live" setup checklist (shows "You're ready to go!") Created live customers and invoices Confirmed API keys are from live mode Despite completing all visible requirements, the error persists when calling stripe.accounts.create() with type 'express'. Request: Could you please review my account to identify any incomplete requirements or manually enable Connect account creation for my platform? Thank you for your assistance. Best regards,
+(11:57:07 PM) Leigh: Hi, Hamed! Thanks for contacting Stripe Support. This is Leigh, and will be at your service today.
+(11:57:20 PM) Hamed Konarivand: Subject: Unable to create Connect accounts - "Complete platform profile" error persists after profile completion Dear Stripe Support Team, I am writing to request assistance with an issue I'm experiencing with Stripe Connect on my platform account. Account ID: acct_1SZL3cRhYhunDn2j Platform Name: MyTaek (mytaek.com) Issue: When attempting to create connected accounts via the API, I receive the following error: "You must complete your platform profile to use Connect and create live connected accounts. Visit your dashboard at https://dashboard.stripe.com/connect/accounts/overview to answer the questionnaire." Steps I have already completed: Completed the Platform Profile at /settings/connect/platform-profile (all acknowledgements completed on February 4, 2026) Added branding (logo, icon, colors) at /settings/connect/onboarding-interface Verified my identity Completed "Go live" setup checklist (shows "You're ready to go!") Created live customers and invoices Confirmed API keys are from live mode Despite completing all visible requirements, the error persists when calling stripe.accounts.create() with type 'express'. Request: Could you please review my account to identify any incomplete requirements or manually enable Connect account creation for my platform? Thank you for your assistance. Best regards,
+(11:58:43 PM) Leigh: Thanks for sharing this his over. Allow me to further check your account.
+(12:00:47 AM) Leigh: Please give me 3-5 minutes here.
+(12:00:57 AM) Hamed Konarivand: sure
+(12:04:38 AM) Leigh: Thanks for waiting, Hamed! Upon checking, your account Mytaek is fully verified and all set.
+(12:04:43 AM) Leigh: Due to regulations in France, you can only create connected accounts using Stripe-hosted onboarding, which is why there's an error when you try to onboard connected accounts using API.
+(12:05:53 AM) Leigh: I hope I was able to give more clarification to your concern.
+(12:06:15 AM) Hamed Konarivand: "Thank you for confirming that! I understand that due to France regulations, I need to use Stripe-hosted onboarding. My current implementation already uses Stripe-hosted onboarding - I create an Express account via API and then redirect users to Stripe's hosted onboarding page using stripe.accountLinks.create(). Could you please clarify: Is creating Express accounts via stripe.accounts.create() not allowed for France-based platforms? Should I use a different account type or onboarding method? What is the recommended approach for platforms in France to onboard connected accounts? Thank you for your help!"
+(12:07:23 AM) Leigh: That's correct. If your platform is based in France, you can't create Express connected accounts directly via stripe.accounts.create(). This restriction applies specifically to French platforms due to local regulations.
+(12:07:47 AM) Leigh: Instead, you must use Stripe-hosted onboarding for connected accounts. This means you'll need to: 1. Create an Account Link or OAuth flow to start the onboarding process 2. Have your users complete the Stripe-hosted onboarding flow
+(12:08:38 AM) Leigh: Wait, Hamed, let me check other updates on our end.
+(12:10:13 AM) Leigh: Thanks for waiting.
+(12:10:19 AM) Leigh: Please give me 3-5 minutes here.
+(12:10:26 AM) Hamed Konarivand: sure
+(12:13:05 AM) Leigh: You mentioned that you have already created an express conected account via API. Kindly provide me the account ID of that express account so I can further review.
+(12:15:16 AM) Hamed Konarivand: We've now updated our code to use the OAuth flow instead, as recommended for French platforms. what do you think?is it a good idea
+(12:17:09 AM) Leigh: Let me verify that, Hamed.
+(12:19:07 AM) Leigh: Almost, done here. Just gathering all the information. Please continue to stay on the line.
+(12:23:53 AM) Leigh: Thanks for waiting! Is your "Complete platform profile" error still persisting?
+(12:25:29 AM) Leigh: Are you still with me?
+(12:25:43 AM) Hamed Konarivand: "We haven't tested yet because we just finished updating our code to use the OAuth flow. We need to: Add our STRIPE_CLIENT_ID to the application Configure the OAuth redirect URI in Stripe settings Deploy the updated code Could you confirm: Is the OAuth flow the correct approach for French platforms? What redirect URI should we register? It will be: https://www.mytaek.com/api/stripe/connect/callback Once you confirm, we'll test and let you know if the error is resolved."
+(12:27:30 AM) Leigh: Let me review your question.
+(12:29:22 AM) Leigh: Consulting now here.
+(12:29:38 AM) Leigh: Please continue to hold on the line.
+(12:35:38 AM) Leigh: Thanks for waiting, Hamed!
+(12:37:58 AM) Leigh: Let’s revisit the available onboarding options for the France platform. Due to regulations, you can onboard connected accounts using Stripe Hosted Onboarding. For more details, please refer to the following link: https://docs.stripe.com/connect/hosted-onboarding
+(12:38:49 AM) Leigh: Meaning, using Oauth and API in onboarding your connected account is currently not yet available due to France's regulations.
+(12:39:54 AM) Leigh: You may create a connected account via your dashboard: https://dashboard.stripe.com/acct_1SZL3cRhYhunDn2j/connect/accounts
+(12:40:16 AM) Hamed Konarivand: Thank you for the documentation link. I see it shows creating an account with controller properties, then using Account Links. For French platforms specifically, can we: Option A: Create account with controller properties (not type: 'express') + use Account Links? stripe.accounts.create({ controller: { fees: { payer: 'application' }, losses: { payments: 'application' }, stripe_dashboard: { type: 'express' } } }); Option B: Use OAuth flow without calling accounts.create at all? Which option is compliant with French regulations?"
+(12:43:50 AM) Leigh: May I know what errors are you getting?
+(12:44:17 AM) Leigh: Please use the Stripe hosted onboarding and not the Oauth, Hamed.
+(12:44:32 AM) Leigh: We will check your API keys one by one if you have errors.
+(12:45:31 AM) Leigh: The compliant with French regulations is using the Stripe hosted onbaording: https://docs.stripe.com/connect/hosted-onboarding?accounts-namespace=v2
+(12:45:46 AM) Leigh: Please refer to this website shared.
+(12:47:06 AM) Hamed Konarivand: I've updated the code to use controller properties with Account Links instead of OAuth. Here's our approach: stripe.accounts.create({ email: email, controller: { fees: { payer: 'application' }, losses: { payments: 'application' }, stripe_dashboard: { type: 'express' }, } }); Then we use stripe.accountLinks.create() for hosted onboarding. Can we test this now while you're on the line? If there's an error, you can help us debug it."
+(12:47:41 AM) Leigh: Thanks for this one. Yes, please test it.
+(12:47:56 AM) Leigh: Will be here to attend to your concern.
+(12:49:19 AM) Hamed Konarivand: You must complete your platform profile to use Connect and create live connected accounts. Visit your dashboard at https://dashboard.stripe.com/connect/accounts/overview to answer the questionnaire.
+(12:50:06 AM) Leigh: Could you please share a screenshot of this error via this secure file link: https://dashboard.stripe.com/filepickup/fpur_1SwuIARhYhunDn2j2IWhLrIA
+(12:52:28 AM) Leigh: Are you still with me?
+(12:53:46 AM) Hamed Konarivand: yes i sent it
+(12:54:35 AM) Leigh: Thanks for sharing! Let me take a look and consult with the technical team here.
+(12:56:16 AM) Leigh: Please give us 3-5 minutes.
+(01:00:53 AM) Leigh: Please continue to hold on to the line, Hamed.
+(01:01:25 AM) Hamed Konarivand: "I'm still getting the same error with our updated code. Here's the error: Error: You must complete your platform profile to use Connect and create live connected accounts Request ID: req_S9ilLQoooTEFs8 But my platform profile IS complete (I showed you screenshots earlier - everything shows 'Completed February 4, 2026'). Can you check this specific request ID in your system and tell me what's actually missing? There seems to be a mismatch between what the dashboard shows and what the API is checking."
+(01:04:04 AM) Leigh: Thanks for sharing this with me.
+(01:04:09 AM) Leigh: I'm reaching out to a member of my team who is best positioned to help you resolve this issue, and I'll transfer you over to them now. Please allow just a few minutes for them to catch up on your situation, and they'll enter the chat to help you shortly.
+(01:04:40 AM) Hamed Konarivand: great thanks
+(01:05:21 AM) Leigh: You're most welcome!
+(01:05:30 AM) Leigh: Transferring you now, Hamed.
+(01:06:04 AM) Madison: Hi Hamed, my name is Madison and I'll be assisting you today. Please allow me to read through your message.
+(01:06:22 AM) Hamed Konarivand: hello yes sure
+(01:07:27 AM) Madison: I understand your concern about the issue you are encountering when creating a Connected account. Allow me to help.
+(01:07:39 AM) Madison: Give me 3-5 minutes while I check this for you. I'll be right back.
+(01:07:54 AM) Hamed Konarivand: thanks
+(01:12:12 AM) Madison: I just need more time to review your account. Please bear with me additional 3-5 minutes to further check this for you. Thank you.
+(01:12:32 AM) Hamed Konarivand: no problem
+(01:17:20 AM) Madison: Kindly bear with me for additional 3-5 minutes. I'm still checking this on my end. Thank you.
+(01:17:39 AM) Hamed Konarivand: ok
+(01:20:19 AM) Madison: Thanks for patiently waiting, Hamed. I appreciate it.
+(01:20:53 AM) Madison: I understand that my previous colleague assisted you already in going through the verification earlier.
+(01:21:19 AM) Madison: Upon checking your account, the best way for me to help you here would be to convert this chat into email. This way, I can work with my team to help you your concern. We'll keep you posted via email once we have an update to share or, in case we need more information from you. I hope that's okay with you?
+(01:22:18 AM) Hamed Konarivand: yes good idea,
+(01:22:38 AM) Hamed Konarivand: you think tomorrow i will receive answer?
+(01:22:40 AM) Madison: Thank you. For additional information, can you please describe how you intend to use Connect as part of your business model?
+(01:23:05 AM) Madison: I’m afraid I won’t be able to provide a specific timeline when we can complete the review. It varies depending on the complexity of the specific process we're conducting and the information/documents required for each process.
+(01:23:09 AM) Madison: Please be assured that we are working on your case, as we recognize the gravity of the situation, and we’ll get back to you as soon as we have an update to share.
+(01:23:35 AM) Hamed Konarivand: thanks
+(01:24:20 AM) Madison: You're welcome. Can you please describe how you intend to use Connect as part of your business model?
+(01:26:28 AM) Hamed Konarivand: TaekUp is a martial arts club management platform. We use Stripe Connect to share subscription revenue with clubs. How it works: Parents pay $4.99/month for premium features We split this revenue: 70% goes to the club, 30% to platform We use transfer_data with destination to automatically send 70% ($3.28) to the club's connected account Flow: Club owner connects their Stripe account via our platform When a parent subscribes, the payment goes to our platform account We automatically transfer 70% to the club's connected account This is a standard marketplace revenue-sharing model."
+(01:27:13 AM) Madison: Thank you for providing that information. I will go ahead and share this with my team. In the meantime, would there be anything else that I can help you with today?
+(01:27:30 AM) Hamed Konarivand: no thanks
+(01:27:38 AM) Hamed Konarivand: have a great time
+(01:27:46 AM) Madison: Alright, if you need further support, or have any questions, feel free to contact us again.
+(01:27:51 AM) Madison: Thanks for contacting Stripe support and you have a good day!
+
+Stripe Support
+Feb 6, 2026, 5:29 AM
+to me
+
+Hello Hamed,
+ 
+Thank you for reaching out to us!
+
+I understand that you're currently facing identity verification issues while attempting to create connected accounts. I know this has been highly inconvenient. Please rest assured that we are committed to resolving this for you.
+
+I have escalated your case to our specialized team, who will thoroughly investigate the issue and work towards a suitable resolution. We will keep you updated and get back to you as soon as we have any news. 
+
+Meanwhile, if you have any further questions, please feel free to reach out.
+
+Sincerely,
+Bruce
+
+
+Stripe Support
+
+
+AI Reply
+
+Hamed Konarivand <konarivand.hamed@gmail.com>
+Feb 9, 2026, 12:04 PM (13 days ago)
+to Stripe
+
+Hello Bruce,
+
+I’m just following up, as I’m still waiting for an update regarding the identity verification issue. Could you please let me know if there is any progress or if you need anything further from my side?
+
+Thank you again for your support.
+
+Best regards,
+Hamed
+
+
+Stripe Support
+Feb 10, 2026, 8:17 AM (12 days ago)
+to me
+
+Hello,
+ 
+Thank you for your follow-up regarding your case.
+ 
+We apologize for the delay in resolution. Please be assured that we have escalated your issue to our internal team, who are working to expedite the process. We kindly request some additional time to thoroughly review your account.
+ 
+We aim to provide you with an update in next 48 hours.
+ 
+In the meantime, please let us know if you have any questions or concerns.
+ 
+Best,
+Lily
+Stripe
+
+
+Stripe Support
+Feb 11, 2026, 9:44 PM (11 days ago)
+to me
+
+Hello Hamed,
+
+ 
+
+I hope this message finds you well. I'm reaching out to provide an update on the ongoing review of your account.
+
+ 
+
+Our team is still in the process of conducting a thorough review. While I don't have any new information to share at this moment, I wanted to assure you that we're actively working on it and haven't forgotten about your case.
+
+ 
+
+We appreciate your patience during this process. As soon as we have any updates or require any additional information, I'll be sure to contact you promptly.
+
+ 
+
+Thank you for your understanding.
+
+ 
+
+Best regards, 
+
+Jake 
+
+Stripe Team
+
+
+Hamed Konarivand <konarivand.hamed@gmail.com>
+Feb 16, 2026, 4:27 PM (6 days ago)
+to Stripe
+
+Hello, 
+I am still awaiting your response and a resolution to my issue. 
+Thank you.
+
+
+Photo
+
+
+Logo
+
+facebook icon   twitter icon   instagram icon  
+
+Hamed Konarivand
+CEO & FOUNDER | SAFRANEE Company
+
+phone-icon  +41779792139         phone-icon  +33641393091
+phone-icon  h.konarivand@safranee.com
+phone-icon  19 IMPASSE DE SERIVON, 01170,FRANCE
+phone-icon  www.safranee.com
+Banner
+
+
+Stripe Support
+Feb 18, 2026, 4:04 AM (4 days ago)
+to me
+
+Hi there,
+
+ 
+
+Sincere apologies for the delay here!
+
+ 
+
+I wanted to assure you that we are actively reviewing your request and are working diligently to resolve any outstanding issues. Although we are still in the process of finalizing our review, please rest assured that we will get back to you with an update as soon as possible.
+
+ 
+
+In the meantime, if you have any additional questions or concerns, please don't hesitate to contact us. We're here to assist you with anything you need.
+
+ 
+
+Best regards,  
+Sarah
+
+
+Stripe Support
+Feb 20, 2026, 6:12 AM (2 days ago)
+to me
+
+Hi there,
+
+ 
+
+I hope this message finds you well!
+
+ 
+
+We've been reviewing your recent issues regarding platform onboarding. On February 3, 2026, we received confirmation that your Identity Verification to create connected accounts was successful. 
+
+ 
+
+Additionally, on February 4th, we noted that you reported the "Complete platform profile" error persists even after completing your profile.
+
+ 
+
+We are currently investigating the situation to understand any potential underlying issues. In the meantime, please confirm if you are still facing difficulties in creating connected accounts.
+
+ 
+
+Thank you for your patience and cooperation. If you have any questions, please feel free to reach out.
+
+
+Stripe Support <support@stripe.com>
+6:13 AM (5 hours ago)
+to me
+
+Stripe		
+Hello,
+
+We wanted to let you know that your case is on hold while we await your response to our previous note. We look forward to resolving this issue for you and will be on the lookout for your response. To proceed with your case, please reply directly to this email.
+
+—The Stripe team
+
+Stripe, 354 Oyster Point Blvd, South San Francisco, CA 94080	
