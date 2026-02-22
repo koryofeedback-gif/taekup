@@ -1807,13 +1807,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Use actual streak from rivalStats (daily practice streak)
     const streak = student.rivalsStats?.dailyStreak || dailyStreak || 0; 
 
-    // Calculate Progress
+    // Calculate Progress - use the higher of: admin-set stripes, or calculated from grading points
     let pointsPerStripe = data.pointsPerStripe;
     if (data.useCustomPointsPerBelt && data.pointsPerBelt[student.beltId]) {
         pointsPerStripe = data.pointsPerBelt[student.beltId];
     }
-    const totalStripes = Math.floor(student.totalPoints / pointsPerStripe);
-    const currentBeltStripes = Math.min(totalStripes, data.stripesPerBelt);
+    const calculatedStripes = Math.floor((student.totalPoints || 0) / pointsPerStripe);
+    const adminStripes = student.stripes || 0;
+    const currentBeltStripes = Math.min(Math.max(calculatedStripes, adminStripes), data.stripesPerBelt);
     const progressPercent = (currentBeltStripes / data.stripesPerBelt) * 100;
 
     // Filter Curriculum for this student (use demo curriculum in preview mode)

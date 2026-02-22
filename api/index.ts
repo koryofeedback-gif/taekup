@@ -1593,6 +1593,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       totalXP: s.total_xp || 0,
       totalPoints: s.total_points || 0,
       currentStreak: 0,
+      stripes: s.stripes || 0,
       stripeCount: s.stripes || 0,
       location: s.location || '',
       assignedClass: s.assigned_class || '',
