@@ -719,7 +719,7 @@ export const en = {
         defaultClass: "Default Class",
         autoAssign: "Auto-assign",
         format: "Format:",
-        formatDesc: "Name, Age, Birthday, Gender, Belt, Stripes, Points, LocalXP, Parent, Email, Phone",
+        formatDesc: "Name, Age, Birthday, Gender, Belt, Stripes, Parent, Email, Phone",
         downloadTemplateCSV: "Download template CSV",
         downloadTemplate: "Download template",
         pasteCSVData: "Paste CSV data here...",
@@ -733,7 +733,7 @@ export const en = {
         clickOrDragFile: "Click or drag Excel/CSV file",
         supportsFormats: "Supports .xlsx, .xls, .csv",
         requiredColumnOrder: "Required Column Order:",
-        columnOrder: "Name | Age | Birthday | Gender | Belt | Stripes | Points | LocalXP | Parent Name | Email | Phone",
+        columnOrder: "Name | Age | Birthday | Gender | Belt | Stripes | Parent Name | Email | Phone",
         failedToReadFile: "Failed to read file. Please try again.",
       },
 

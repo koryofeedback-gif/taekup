@@ -719,7 +719,7 @@ export const fr = {
         defaultClass: "Cours par défaut",
         autoAssign: "Attribution automatique",
         format: "Format :",
-        formatDesc: "Nom, Âge, Date de naissance, Genre, Ceinture, Barrettes, Points, XP local, Parent, E-mail, Téléphone",
+        formatDesc: "Nom, Âge, Date de naissance, Genre, Ceinture, Barrettes, Parent, E-mail, Téléphone",
         downloadTemplateCSV: "Télécharger le modèle CSV",
         downloadTemplate: "Télécharger le modèle",
         pasteCSVData: "Collez les données CSV ici...",
@@ -733,7 +733,7 @@ export const fr = {
         clickOrDragFile: "Cliquez ou glissez un fichier Excel/CSV",
         supportsFormats: "Formats supportés : .xlsx, .xls, .csv",
         requiredColumnOrder: "Ordre des colonnes requis :",
-        columnOrder: "Nom | Âge | Date de naissance | Genre | Ceinture | Barrettes | Points | XP local | Nom du parent | E-mail | Téléphone",
+        columnOrder: "Nom | Âge | Date de naissance | Genre | Ceinture | Barrettes | Nom du parent | E-mail | Téléphone",
         failedToReadFile: "Impossible de lire le fichier. Veuillez réessayer.",
       },
 

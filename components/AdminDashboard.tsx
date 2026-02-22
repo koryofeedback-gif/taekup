@@ -2966,14 +2966,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 gender: (['Male', 'Female', 'Other', 'Prefer not to say'].includes(String(cols[3])) ? String(cols[3]) : 'Male') as 'Male' | 'Female' | 'Other' | 'Prefer not to say',
                 beltId: belt?.id || data.belts[0]?.id || 'white',
                 stripes: parseInt(String(cols[5])) || 0,
-                parentName: String(cols[8] || ''),
-                parentEmail: String(cols[9] || ''),
-                parentPhone: String(cols[10] || ''),
+                parentName: String(cols[6] || ''),
+                parentEmail: String(cols[7] || ''),
+                parentPhone: String(cols[8] || ''),
                 location: bulkLocation,
                 assignedClass: bulkClass || 'General Class',
                 joinDate: new Date().toISOString().split('T')[0],
-                totalPoints: parseInt(String(cols[6])) || 0,
-                totalXP: parseInt(String(cols[7])) || 0,
+                totalPoints: 0,
+                totalXP: 0,
                 attendanceCount: 0,
                 lastPromotionDate: new Date().toISOString(),
                 isReadyForGrading: false,
@@ -3022,14 +3022,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 gender: (['Male', 'Female', 'Other', 'Prefer not to say'].includes(cols[3]) ? cols[3] : 'Male') as 'Male' | 'Female' | 'Other' | 'Prefer not to say',
                 beltId: belt?.id || 'INVALID_BELT',
                 stripes: parseInt(cols[5]) || 0,
-                parentName: cols[8] || '',
-                parentEmail: cols[9] || '',
-                parentPhone: cols[10] || '',
+                parentName: cols[6] || '',
+                parentEmail: cols[7] || '',
+                parentPhone: cols[8] || '',
                 location: bulkLocation,
                 assignedClass: bulkClass || 'General Class',
                 joinDate: new Date().toISOString().split('T')[0],
-                totalPoints: parseInt(cols[6]) || 0,
-                totalXP: parseInt(cols[7]) || 0,
+                totalPoints: 0,
+                totalXP: 0,
                 attendanceCount: 0,
                 lastPromotionDate: new Date().toISOString(),
                 isReadyForGrading: false,
@@ -3745,7 +3745,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 <p className="text-xs text-gray-400"><span className="font-bold">{t('admin.students.bulkImport.format')}</span> {t('admin.students.bulkImport.formatDesc')}</p>
                                 <button 
                                     onClick={() => {
-                                        const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Points,LocalXP,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,0,0,Jane Smith,jane@email.com,555-1234";
+                                        const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,Jane Smith,jane@email.com,555-1234";
                                         const blob = new Blob([csvContent], { type: 'text/csv' });
                                         const url = URL.createObjectURL(blob);
                                         const a = document.createElement('a');
@@ -3851,7 +3851,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 <p className="text-xs text-gray-500">{t('admin.students.bulkImport.columnOrder')}</p>
                                 <button 
                                     onClick={() => {
-                                        const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Points,LocalXP,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,0,0,Jane Smith,jane@email.com,555-1234";
+                                        const csvContent = "Name,Age,Birthday,Gender,Belt,Stripes,Parent Name,Email,Phone\nJohn Smith,12,2014-03-15,Male,White,0,Jane Smith,jane@email.com,555-1234";
                                         const blob = new Blob([csvContent], { type: 'text/csv' });
                                         const url = URL.createObjectURL(blob);
                                         const a = document.createElement('a');
