@@ -2009,41 +2009,50 @@ async function handleGauntletChallenges(req: VercelRequest, res: VercelResponse)
   }
 }
 
+let familyColumnsMigrated = false;
 async function handleFamilyChallenges(req: VercelRequest, res: VercelResponse) {
-  console.log('[FamilyChallenges] Request received:', req.method);
-  
   const auth = await verifySuperAdminToken(req);
-  console.log('[FamilyChallenges] Auth result:', auth.valid, auth.error);
-  
   if (!auth.valid) {
     return res.status(401).json({ error: auth.error });
   }
   
   try {
     const db = getDb();
-    console.log('[FamilyChallenges] DB connection obtained');
+    
+    if (!familyColumnsMigrated) {
+      try {
+        await db`ALTER TABLE family_challenges ADD COLUMN IF NOT EXISTS description_fr TEXT`;
+        await db`ALTER TABLE family_challenges ADD COLUMN IF NOT EXISTS description_de TEXT`;
+        familyColumnsMigrated = true;
+      } catch (e) {
+        console.error('[FamilyChallenges] Migration error:', e);
+      }
+    }
     
     if (req.method === 'GET') {
-      console.log('[FamilyChallenges] Executing GET query...');
       const challenges = await db`
-        SELECT * FROM family_challenges 
+        SELECT id, name, description, description_fr, description_de, icon, category, demo_video_url, is_active, display_order, created_at
+        FROM family_challenges 
         ORDER BY display_order ASC, created_at ASC
       `;
-      console.log('[FamilyChallenges] Query returned', challenges?.length || 0, 'challenges');
       return res.json(challenges);
     }
     
     if (req.method === 'POST') {
-      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder, descriptionFr, descriptionDe, description_fr, description_de } = body;
       
       if (!name || !description || !category) {
         return res.status(400).json({ error: 'Name, description, and category are required' });
       }
       
+      const frVal = descriptionFr || description_fr || null;
+      const deVal = descriptionDe || description_de || null;
+      
       const result = await db`
-        INSERT INTO family_challenges (name, description, icon, category, demo_video_url, is_active, display_order)
-        VALUES (${name}, ${description}, ${icon || '🎯'}, ${category}, ${demoVideoUrl || null}, ${isActive !== false}, ${displayOrder || 0})
-        RETURNING *
+        INSERT INTO family_challenges (name, description, description_fr, description_de, icon, category, demo_video_url, is_active, display_order)
+        VALUES (${name}, ${description}, ${frVal}, ${deVal}, ${icon || '🎯'}, ${category}, ${demoVideoUrl || null}, ${isActive !== false}, ${displayOrder || 0})
+        RETURNING id, name, description, description_fr, description_de, icon, category, demo_video_url, is_active, display_order, created_at
       `;
       return res.json(result[0]);
     }
@@ -2065,22 +2074,41 @@ async function handleFamilyChallengeUpdate(req: VercelRequest, res: VercelRespon
     const db = getDb();
     
     if (req.method === 'PUT' || req.method === 'PATCH') {
-      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder, descriptionFr, descriptionDe, description_fr, description_de } = body;
       
-      const result = await db`
-        UPDATE family_challenges
-        SET 
-          name = COALESCE(${name}, name),
-          description = COALESCE(${description}, description),
-          icon = COALESCE(${icon}, icon),
-          category = COALESCE(${category}, category),
-          demo_video_url = ${demoVideoUrl ?? null},
-          is_active = COALESCE(${isActive}, is_active),
-          display_order = COALESCE(${displayOrder}, display_order),
-          updated_at = NOW()
-        WHERE id = ${challengeId}::uuid
-        RETURNING *
-      `;
+      const frVal = descriptionFr !== undefined ? descriptionFr : description_fr;
+      const deVal = descriptionDe !== undefined ? descriptionDe : description_de;
+      
+      if (name !== undefined) {
+        await db`UPDATE family_challenges SET name = ${name} WHERE id = ${challengeId}::uuid`;
+      }
+      if (description !== undefined) {
+        await db`UPDATE family_challenges SET description = ${description} WHERE id = ${challengeId}::uuid`;
+      }
+      if (frVal !== undefined) {
+        await db`UPDATE family_challenges SET description_fr = ${frVal || null} WHERE id = ${challengeId}::uuid`;
+      }
+      if (deVal !== undefined) {
+        await db`UPDATE family_challenges SET description_de = ${deVal || null} WHERE id = ${challengeId}::uuid`;
+      }
+      if (icon !== undefined) {
+        await db`UPDATE family_challenges SET icon = ${icon} WHERE id = ${challengeId}::uuid`;
+      }
+      if (category !== undefined) {
+        await db`UPDATE family_challenges SET category = ${category} WHERE id = ${challengeId}::uuid`;
+      }
+      if (demoVideoUrl !== undefined) {
+        await db`UPDATE family_challenges SET demo_video_url = ${demoVideoUrl || null} WHERE id = ${challengeId}::uuid`;
+      }
+      if (isActive !== undefined) {
+        await db`UPDATE family_challenges SET is_active = ${isActive} WHERE id = ${challengeId}::uuid`;
+      }
+      if (displayOrder !== undefined) {
+        await db`UPDATE family_challenges SET display_order = ${displayOrder} WHERE id = ${challengeId}::uuid`;
+      }
+      
+      const result = await db`SELECT id, name, description, description_fr, description_de, icon, category, demo_video_url, is_active, display_order, created_at FROM family_challenges WHERE id = ${challengeId}::uuid`;
       
       if (result.length === 0) {
         return res.status(404).json({ error: 'Challenge not found' });
