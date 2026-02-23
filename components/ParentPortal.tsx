@@ -1708,6 +1708,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     };
     
     const [customHabitList, setCustomHabitList] = useState<Habit[]>(student.customHabits?.length ? student.customHabits : defaultHabits);
+
+    useEffect(() => {
+        const defaultIds = new Set(defaultHabits.map(h => h.id));
+        setCustomHabitList(prev => {
+            const customOnly = prev.filter(h => !defaultIds.has(h.id));
+            return [...defaultHabits, ...customOnly];
+        });
+    }, [lang]);
+
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     // Custom habit creation state
     const [showCustomForm, setShowCustomForm] = useState(false);
