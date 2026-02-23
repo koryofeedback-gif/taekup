@@ -290,10 +290,17 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
         throw new Error(data.error || 'Failed to save');
       }
       
+      const result = await response.json();
+      
+      if (result.updated) {
+        setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, ...result.updated } : c));
+      } else {
+        await fetchChallenges();
+      }
+      
       setSuccessMessage('Challenge updated successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
       setEditingChallenge(null);
-      fetchChallenges();
     } catch (err: any) {
       setError(err.message);
     } finally {

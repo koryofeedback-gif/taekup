@@ -1800,9 +1800,10 @@ router.patch('/gauntlet-challenges/:id', verifySuperAdmin, async (req: Request, 
       RETURNING *
     `);
     
-    console.log('[SuperAdmin] Updated challenge result:', JSON.stringify((updated as any[])[0] || {}));
+    const updatedRow = (updated as any[])[0] || {};
+    console.log('[SuperAdmin] Updated challenge:', updatedRow.name, 'fr:', updatedRow.description_fr, 'de:', updatedRow.description_de);
     
-    res.json({ success: true });
+    res.json({ success: true, updated: updatedRow });
   } catch (error: any) {
     console.error('[SuperAdmin] Update gauntlet challenge error:', error);
     res.status(500).json({ error: 'Failed to update challenge' });
