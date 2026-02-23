@@ -705,7 +705,7 @@ const AddEventModal: React.FC<{ onClose: () => void, onAdd: (event: CalendarEven
 const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastCommand: string | null, students: Student[], skills: {id: string, name: string}[] }> = ({ transcript, isActive, lastCommand, students, skills }) => {
     if (!isActive) return null;
     
-    const exampleStudent = students[0]?.name || "Amin";
+    const exampleStudent = "Alex";
     const exampleSkill = skills[0]?.name || "Kicks";
     
     return (
