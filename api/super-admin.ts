@@ -2123,20 +2123,10 @@ async function handleGauntletChallengeUpdate(req: VercelRequest, res: VercelResp
       await db`UPDATE gauntlet_challenges SET description = ${description} WHERE id = ${challengeId}::uuid`;
     }
     if (description_fr !== undefined) {
-      try {
-        await db`ALTER TABLE gauntlet_challenges ADD COLUMN IF NOT EXISTS description_fr TEXT`;
-        await db`UPDATE gauntlet_challenges SET description_fr = ${description_fr || null} WHERE id = ${challengeId}::uuid`;
-      } catch (e: any) {
-        console.error('[SuperAdmin] description_fr update error:', e.message);
-      }
+      await db`UPDATE gauntlet_challenges SET description_fr = ${description_fr || null} WHERE id = ${challengeId}::uuid`;
     }
     if (description_de !== undefined) {
-      try {
-        await db`ALTER TABLE gauntlet_challenges ADD COLUMN IF NOT EXISTS description_de TEXT`;
-        await db`UPDATE gauntlet_challenges SET description_de = ${description_de || null} WHERE id = ${challengeId}::uuid`;
-      } catch (e: any) {
-        console.error('[SuperAdmin] description_de update error:', e.message);
-      }
+      await db`UPDATE gauntlet_challenges SET description_de = ${description_de || null} WHERE id = ${challengeId}::uuid`;
     }
     if (icon !== undefined) {
       await db`UPDATE gauntlet_challenges SET icon = ${icon} WHERE id = ${challengeId}::uuid`;
@@ -2148,7 +2138,7 @@ async function handleGauntletChallengeUpdate(req: VercelRequest, res: VercelResp
       await db`UPDATE gauntlet_challenges SET is_active = ${is_active} WHERE id = ${challengeId}::uuid`;
     }
     
-    const updated = await db`SELECT * FROM gauntlet_challenges WHERE id = ${challengeId}::uuid`;
+    const updated = await db`SELECT id, day_of_week, day_theme, name, description, description_fr, description_de, icon, score_type, sort_order, target_value, is_active, display_order, created_at, demo_video_url FROM gauntlet_challenges WHERE id = ${challengeId}::uuid`;
     
     return res.json({ success: true, updated: updated[0] });
   } catch (error: any) {
