@@ -6497,13 +6497,13 @@ export function registerRoutes(app: Express) {
   // Super Admin: Create family challenge - for local dev
   app.post('/api/super-admin/family-challenges', async (req: Request, res: Response) => {
     try {
-      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      const { name, description, descriptionFr, descriptionDe, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
       if (!name || !description || !category) {
         return res.status(400).json({ error: 'Name, description, and category are required' });
       }
       const result = await db.execute(sql`
-        INSERT INTO family_challenges (name, description, icon, category, demo_video_url, is_active, display_order)
-        VALUES (${name}, ${description}, ${icon || '🎯'}, ${category}, ${demoVideoUrl || null}, ${isActive !== false}, ${displayOrder || 0})
+        INSERT INTO family_challenges (name, description, description_fr, description_de, icon, category, demo_video_url, is_active, display_order)
+        VALUES (${name}, ${description}, ${descriptionFr || null}, ${descriptionDe || null}, ${icon || '🎯'}, ${category}, ${demoVideoUrl || null}, ${isActive !== false}, ${displayOrder || 0})
         RETURNING *
       `);
       res.json((result as any[])[0]);
@@ -6517,10 +6517,12 @@ export function registerRoutes(app: Express) {
   app.put('/api/super-admin/family-challenges/:id', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { name, description, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
+      const { name, description, descriptionFr, descriptionDe, icon, category, demoVideoUrl, isActive, displayOrder } = req.body;
       const result = await db.execute(sql`
         UPDATE family_challenges
         SET name = COALESCE(${name}, name), description = COALESCE(${description}, description),
+            description_fr = ${descriptionFr !== undefined ? (descriptionFr || null) : null},
+            description_de = ${descriptionDe !== undefined ? (descriptionDe || null) : null},
             icon = COALESCE(${icon}, icon), category = COALESCE(${category}, category),
             demo_video_url = ${demoVideoUrl ?? null}, is_active = COALESCE(${isActive}, is_active),
             display_order = COALESCE(${displayOrder}, display_order), updated_at = NOW()

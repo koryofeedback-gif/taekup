@@ -1742,7 +1742,7 @@ router.get('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: R
 // Create a new gauntlet challenge
 router.post('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
-    const { name, description, icon, day_of_week, day_theme, score_type, sort_order, target_value, demo_video_url, display_order } = req.body;
+    const { name, description, description_fr, description_de, icon, day_of_week, day_theme, score_type, sort_order, target_value, demo_video_url, display_order } = req.body;
     
     if (!name || !day_of_week || !score_type) {
       return res.status(400).json({ error: 'Name, day_of_week, and score_type are required' });
@@ -1750,10 +1750,10 @@ router.post('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: 
     
     const result = await db.execute(sql`
       INSERT INTO gauntlet_challenges (
-        name, description, icon, day_of_week, day_theme, score_type, sort_order, 
+        name, description, description_fr, description_de, icon, day_of_week, day_theme, score_type, sort_order, 
         target_value, demo_video_url, display_order, is_active
       ) VALUES (
-        ${name}, ${description || ''}, ${icon || '💪'}, ${day_of_week.toUpperCase()}, 
+        ${name}, ${description || ''}, ${description_fr || null}, ${description_de || null}, ${icon || '💪'}, ${day_of_week.toUpperCase()}, 
         ${day_theme || DAY_THEMES[day_of_week.toUpperCase()] || 'Challenge'}, 
         ${score_type}, ${sort_order || 'DESC'}, ${target_value || null}, 
         ${demo_video_url || null}, ${display_order || 1}, true
@@ -1783,11 +1783,10 @@ const DAY_THEMES: Record<string, string> = {
 router.patch('/gauntlet-challenges/:id', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description, icon, demo_video_url, is_active } = req.body;
+    const { name, description, description_fr, description_de, icon, demo_video_url, is_active } = req.body;
     
     console.log('[SuperAdmin] Updating gauntlet challenge:', id, { name, description, icon, demo_video_url, is_active });
     
-    // Build SQL update fragments using sql template
     const setClauses: ReturnType<typeof sql>[] = [];
     
     if (name !== undefined) {
@@ -1795,6 +1794,12 @@ router.patch('/gauntlet-challenges/:id', verifySuperAdmin, async (req: Request, 
     }
     if (description !== undefined) {
       setClauses.push(sql`description = ${description}`);
+    }
+    if (description_fr !== undefined) {
+      setClauses.push(sql`description_fr = ${description_fr || null}`);
+    }
+    if (description_de !== undefined) {
+      setClauses.push(sql`description_de = ${description_de || null}`);
     }
     if (icon !== undefined) {
       setClauses.push(sql`icon = ${icon}`);

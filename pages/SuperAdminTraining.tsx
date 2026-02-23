@@ -107,6 +107,8 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
     setFamilyForm({
       name: challenge.name,
       description: challenge.description,
+      description_fr: challenge.description_fr,
+      description_de: challenge.description_de,
       icon: challenge.icon,
       category: challenge.category,
       demo_video_url: challenge.demo_video_url || '',
@@ -124,6 +126,8 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
         body: JSON.stringify({
           name: familyForm.name,
           description: familyForm.description,
+          descriptionFr: familyForm.description_fr || null,
+          descriptionDe: familyForm.description_de || null,
           icon: familyForm.icon,
           category: familyForm.category,
           demoVideoUrl: familyForm.demo_video_url || null,
@@ -198,6 +202,8 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
         body: JSON.stringify({
           name: familyForm.name,
           description: familyForm.description,
+          descriptionFr: familyForm.description_fr || null,
+          descriptionDe: familyForm.description_de || null,
           icon: familyForm.icon || '🎯',
           category: familyForm.category,
           demoVideoUrl: familyForm.demo_video_url || null,
@@ -463,14 +469,36 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="text-gray-400 text-sm block mb-1">Description</label>
+                  <label className="text-gray-400 text-sm block mb-1">Description (English)</label>
                   <textarea
                     value={familyForm.description || ''}
                     onChange={(e) => setFamilyForm(prev => ({ ...prev, description: e.target.value }))}
                     className="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"
-                    rows={3}
+                    rows={2}
                     placeholder="Describe the challenge..."
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="text-gray-400 text-sm block mb-1">🇫🇷 Description (French)</label>
+                    <textarea
+                      value={familyForm.description_fr || ''}
+                      onChange={(e) => setFamilyForm(prev => ({ ...prev, description_fr: e.target.value }))}
+                      className="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"
+                      rows={2}
+                      placeholder="Décrivez le défi..."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-gray-400 text-sm block mb-1">🇩🇪 Description (German)</label>
+                    <textarea
+                      value={familyForm.description_de || ''}
+                      onChange={(e) => setFamilyForm(prev => ({ ...prev, description_de: e.target.value }))}
+                      className="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"
+                      rows={2}
+                      placeholder="Beschreiben Sie die Herausforderung..."
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   <div>
@@ -565,7 +593,24 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
                             onChange={(e) => setFamilyForm(prev => ({ ...prev, description: e.target.value }))}
                             className="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"
                             rows={2}
+                            placeholder="Description (English)"
                           />
+                          <div className="grid grid-cols-2 gap-3">
+                            <textarea
+                              value={familyForm.description_fr || ''}
+                              onChange={(e) => setFamilyForm(prev => ({ ...prev, description_fr: e.target.value }))}
+                              className="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"
+                              rows={2}
+                              placeholder="🇫🇷 Description (French)"
+                            />
+                            <textarea
+                              value={familyForm.description_de || ''}
+                              onChange={(e) => setFamilyForm(prev => ({ ...prev, description_de: e.target.value }))}
+                              className="w-full bg-gray-700 text-white p-2 rounded-lg border border-gray-600"
+                              rows={2}
+                              placeholder="🇩🇪 Description (German)"
+                            />
+                          </div>
                           <input
                             type="text"
                             value={familyForm.demo_video_url || ''}
@@ -827,12 +872,32 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
                           </div>
                         </div>
                         <div>
-                          <label className="text-gray-400 text-xs block mb-1">Description</label>
+                          <label className="text-gray-400 text-xs block mb-1">Description (English)</label>
                           <textarea
                             value={editForm.description || ''}
                             onChange={e => setEditForm({ ...editForm, description: e.target.value })}
                             rows={2}
                             className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-xs block mb-1">🇫🇷 Description (French)</label>
+                          <textarea
+                            value={editForm.description_fr || ''}
+                            onChange={e => setEditForm({ ...editForm, description_fr: e.target.value })}
+                            rows={2}
+                            placeholder="Décrivez le défi..."
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-gray-400 text-xs block mb-1">🇩🇪 Description (German)</label>
+                          <textarea
+                            value={editForm.description_de || ''}
+                            onChange={e => setEditForm({ ...editForm, description_de: e.target.value })}
+                            rows={2}
+                            placeholder="Beschreiben Sie die Herausforderung..."
+                            className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-yellow-500 focus:outline-none"
                           />
                         </div>
                         <div>
