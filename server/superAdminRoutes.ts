@@ -1732,6 +1732,11 @@ router.get('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: R
     `);
     
     console.log('[SuperAdmin] Found', (challenges as any[]).length, 'challenges');
+    if ((challenges as any[]).length > 0) {
+      const first = (challenges as any[])[0];
+      console.log('[SuperAdmin] First challenge keys:', Object.keys(first));
+      console.log('[SuperAdmin] First challenge fr/de:', first.description_fr, first.description_de);
+    }
     res.json({ challenges });
   } catch (error: any) {
     console.error('[SuperAdmin] Gauntlet challenges error:', error);
@@ -1785,40 +1790,22 @@ router.patch('/gauntlet-challenges/:id', verifySuperAdmin, async (req: Request, 
     const { id } = req.params;
     const { name, description, description_fr, description_de, icon, demo_video_url, is_active } = req.body;
     
-    console.log('[SuperAdmin] Updating gauntlet challenge:', id, { name, description, description_fr, description_de, icon, demo_video_url, is_active });
+    console.log('[SuperAdmin] Updating gauntlet challenge:', id, JSON.stringify({ name, description, description_fr, description_de, icon, demo_video_url, is_active }));
     
-    const setClauses: ReturnType<typeof sql>[] = [];
+    const updated = await db.execute(sql`
+      UPDATE gauntlet_challenges SET
+        name = COALESCE(${name ?? null}, name),
+        description = COALESCE(${description ?? null}, description),
+        description_fr = ${description_fr !== undefined ? (description_fr || null) : null},
+        description_de = ${description_de !== undefined ? (description_de || null) : null},
+        icon = COALESCE(${icon ?? null}, icon),
+        demo_video_url = ${demo_video_url !== undefined ? (demo_video_url || null) : null},
+        is_active = COALESCE(${is_active ?? null}, is_active)
+      WHERE id = ${id}::uuid
+      RETURNING *
+    `);
     
-    if (name !== undefined) {
-      setClauses.push(sql`name = ${name}`);
-    }
-    if (description !== undefined) {
-      setClauses.push(sql`description = ${description}`);
-    }
-    if (description_fr !== undefined) {
-      setClauses.push(sql`description_fr = ${description_fr || null}`);
-    }
-    if (description_de !== undefined) {
-      setClauses.push(sql`description_de = ${description_de || null}`);
-    }
-    if (icon !== undefined) {
-      setClauses.push(sql`icon = ${icon}`);
-    }
-    if (demo_video_url !== undefined) {
-      setClauses.push(sql`demo_video_url = ${demo_video_url || null}`);
-    }
-    if (is_active !== undefined) {
-      setClauses.push(sql`is_active = ${is_active}`);
-    }
-    
-    if (setClauses.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-    
-    // Join SET clauses with commas using sql.join
-    const setClause = sql.join(setClauses, sql`, `);
-    
-    await db.execute(sql`UPDATE gauntlet_challenges SET ${setClause} WHERE id = ${id}::uuid`);
+    console.log('[SuperAdmin] Updated challenge result:', JSON.stringify((updated as any[])[0] || {}));
     
     res.json({ success: true });
   } catch (error: any) {
