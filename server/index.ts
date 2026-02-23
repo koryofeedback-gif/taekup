@@ -233,7 +233,10 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', stripeInitialized });
 });
 
-app.use('/api/super-admin', superAdminRouter);
+app.use('/api/super-admin', (req, res, next) => {
+  console.log(`[Express] ${req.method} ${req.originalUrl} at ${new Date().toISOString()}`);
+  next();
+}, superAdminRouter);
 
 // Direct login endpoint (bypasses any /api caching issues)
 app.post('/sa-login', async (req, res) => {
