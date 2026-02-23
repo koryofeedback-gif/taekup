@@ -1732,11 +1732,6 @@ router.get('/gauntlet-challenges', verifySuperAdmin, async (req: Request, res: R
     `);
     
     console.log('[SuperAdmin] Found', (challenges as any[]).length, 'challenges');
-    if ((challenges as any[]).length > 0) {
-      const first = (challenges as any[])[0];
-      console.log('[SuperAdmin] First challenge keys:', Object.keys(first));
-      console.log('[SuperAdmin] First challenge fr/de:', first.description_fr, first.description_de);
-    }
     res.json({ challenges });
   } catch (error: any) {
     console.error('[SuperAdmin] Gauntlet challenges error:', error);
