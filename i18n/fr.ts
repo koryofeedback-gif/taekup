@@ -246,6 +246,8 @@ export const fr = {
         familyStretchSession: "Séance d'étirements en famille",
         partnerKickDrills: "Exercices de coups de pied en binôme",
         reactionTimeChallenge: "Défi de temps de réaction",
+        dailyLimitReached: "Limite quotidienne atteinte !",
+        alreadyCompletedToday: "déjà terminé aujourd'hui",
       },
 
       inbox: {
@@ -372,6 +374,15 @@ export const fr = {
         firstCommandQ: "A-t-il/elle obéi du premier coup ?",
         serveTheTribe: "Servir la tribu",
         serveTheTribeQ: "A-t-il/elle aidé aux corvées ?",
+      },
+
+      presets: {
+        madeBedQ: "A-t-il/elle fait son lit ?",
+        brushedTeethQ: "S'est-il/elle brossé les dents ?",
+        showedRespectQ: "A-t-il/elle montré du respect envers les parents ?",
+        didChoresQ: "A-t-il/elle aidé aux corvées ?",
+        homeworkQ: "A-t-il/elle terminé les devoirs à temps ?",
+        kindnessQ: "A-t-il/elle pratiqué la gentillesse ?",
       },
 
       packs: {

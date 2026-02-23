@@ -953,7 +953,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         setMysteryCompleted(true);
                         setMysteryXpAwarded(xpAwarded);
                         setMysteryWasCorrect(wasCorrect);
-                        setMysteryCompletionMessage('You already completed today\'s challenge!');
+                        setMysteryCompletionMessage(t('parent.rivals.mystery.alreadyCompleted'));
                         setMysterySource('api');
                         return; // Don't show fallback
                     }
@@ -1217,7 +1217,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 setMysteryCompleted(true);
                 setMysteryXpAwarded(xpAwarded);
                 setMysteryWasCorrect(wasCorrect);
-                setMysteryCompletionMessage(result.message || 'You already completed today\'s challenge! Come back tomorrow.');
+                setMysteryCompletionMessage(result.message || t('parent.rivals.mystery.alreadyCompletedToday'));
                 setSelectedQuizAnswer(null);
                 
                 // Update header XP - trigger student refresh
@@ -1662,39 +1662,39 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [isEditingHabits, setIsEditingHabits] = useState(false);
     // Local state for habit customization before saving (simulated)
     const defaultHabits: Habit[] = [
-        { id: 'secure_base', question: 'Did they make their bed?', category: 'Chores', icon: '🏯', isActive: true, title: 'Secure the Base' },
-        { id: 'polish_armor', question: 'Did they brush teeth & wash face?', category: 'Health', icon: '🛡️', isActive: true, title: 'Polish the Armor' },
-        { id: 'first_command', question: 'Did they listen the first time asked?', category: 'Character', icon: '🥋', isActive: true, title: 'The First Command' },
-        { id: 'serve_tribe', question: 'Did they help with chores?', category: 'Chores', icon: '🤝', isActive: true, title: 'Serve the Tribe' },
+        { id: 'secure_base', question: t('parent.homeDojo.defaultHabits.secureTheBaseQ'), category: 'Chores', icon: '🏯', isActive: true, title: t('parent.homeDojo.defaultHabits.secureTheBase') },
+        { id: 'polish_armor', question: t('parent.homeDojo.defaultHabits.polishTheArmorQ'), category: 'Health', icon: '🛡️', isActive: true, title: t('parent.homeDojo.defaultHabits.polishTheArmor') },
+        { id: 'first_command', question: t('parent.homeDojo.defaultHabits.firstCommandQ'), category: 'Character', icon: '🥋', isActive: true, title: t('parent.homeDojo.defaultHabits.firstCommand') },
+        { id: 'serve_tribe', question: t('parent.homeDojo.defaultHabits.serveTheTribeQ'), category: 'Chores', icon: '🤝', isActive: true, title: t('parent.homeDojo.defaultHabits.serveTheTribe') },
     ];
     
     // Premium Habit Packs
     const habitPacks = {
         focus: {
-            name: 'Focus Master',
+            name: t('parent.homeDojo.packs.focusMaster'),
             icon: '🦁',
-            description: 'For school & concentration',
+            description: t('parent.homeDojo.packs.focusMasterDesc'),
             habits: [
-                { id: 'homework_strike', question: 'Completed homework before play or screens?', category: 'School' as const, icon: '📚', isActive: true, title: 'Homework Strike', isCustom: true },
-                { id: 'gear_up', question: 'Packed school bag the night before?', category: 'School' as const, icon: '🎒', isActive: true, title: 'Gear Up', isCustom: true },
+                { id: 'homework_strike', question: t('parent.homeDojo.packs.homeworkStrikeQ'), category: 'School' as const, icon: '📚', isActive: true, title: t('parent.homeDojo.packs.homeworkStrike'), isCustom: true },
+                { id: 'gear_up', question: t('parent.homeDojo.packs.gearUpQ'), category: 'School' as const, icon: '🎒', isActive: true, title: t('parent.homeDojo.packs.gearUp'), isCustom: true },
             ]
         },
         peace: {
-            name: 'Peacekeeper',
+            name: t('parent.homeDojo.packs.peacekeeper'),
             icon: '🕊️',
-            description: 'For sibling harmony',
+            description: t('parent.homeDojo.packs.peacekeeperDesc'),
             habits: [
-                { id: 'peace_treaty', question: 'Resolved a conflict without yelling?', category: 'Character' as const, icon: '🤝', isActive: true, title: 'Peace Treaty', isCustom: true },
-                { id: 'kindness_warrior', question: 'Said something kind to a sibling or parent?', category: 'Character' as const, icon: '👼', isActive: true, title: 'Kindness Warrior', isCustom: true },
+                { id: 'peace_treaty', question: t('parent.homeDojo.packs.peaceTreatyQ'), category: 'Character' as const, icon: '🤝', isActive: true, title: t('parent.homeDojo.packs.peaceTreaty'), isCustom: true },
+                { id: 'kindness_warrior', question: t('parent.homeDojo.packs.kindnessWarriorQ'), category: 'Character' as const, icon: '👼', isActive: true, title: t('parent.homeDojo.packs.kindnessWarrior'), isCustom: true },
             ]
         },
         health: {
-            name: 'Iron Body',
+            name: t('parent.homeDojo.packs.ironBody'),
             icon: '🥦',
-            description: 'For health & nutrition',
+            description: t('parent.homeDojo.packs.ironBodyDesc'),
             habits: [
-                { id: 'veggie_powerup', question: 'Ate vegetables at a meal without complaining?', category: 'Health' as const, icon: '🥦', isActive: true, title: 'Veggie Power-Up', isCustom: true },
-                { id: 'hydration_quest', question: 'Drank 6+ glasses of water today?', category: 'Health' as const, icon: '💧', isActive: true, title: 'Hydration Quest', isCustom: true },
+                { id: 'veggie_powerup', question: t('parent.homeDojo.packs.veggiePowerUpQ'), category: 'Health' as const, icon: '🥦', isActive: true, title: t('parent.homeDojo.packs.veggiePowerUp'), isCustom: true },
+                { id: 'hydration_quest', question: t('parent.homeDojo.packs.hydrationQuestQ'), category: 'Health' as const, icon: '💧', isActive: true, title: t('parent.homeDojo.packs.hydrationQuest'), isCustom: true },
             ]
         }
     };
@@ -2135,12 +2135,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     }
 
     const PRESET_HABITS: Habit[] = [
-        { id: 'made_bed', question: 'Did they make their bed?', category: 'Chores', icon: '🛏️', isActive: true },
-        { id: 'brushed_teeth', question: 'Did they brush their teeth?', category: 'Health', icon: '🦷', isActive: true },
-        { id: 'showed_respect', question: 'Did they show respect to parents?', category: 'Character', icon: '🙇', isActive: true },
-        { id: 'did_chores', question: 'Did they help with chores?', category: 'Chores', icon: '🧹', isActive: true },
-        { id: 'homework', question: 'Did they finish homework on time?', category: 'School', icon: '📚', isActive: false },
-        { id: 'kindness', question: 'Did they practice kindness?', category: 'Character', icon: '❤️', isActive: false },
+        { id: 'made_bed', question: t('parent.homeDojo.presets.madeBedQ'), category: 'Chores', icon: '🛏️', isActive: true },
+        { id: 'brushed_teeth', question: t('parent.homeDojo.presets.brushedTeethQ'), category: 'Health', icon: '🦷', isActive: true },
+        { id: 'showed_respect', question: t('parent.homeDojo.presets.showedRespectQ'), category: 'Character', icon: '🙇', isActive: true },
+        { id: 'did_chores', question: t('parent.homeDojo.presets.didChoresQ'), category: 'Chores', icon: '🧹', isActive: true },
+        { id: 'homework', question: t('parent.homeDojo.presets.homeworkQ'), category: 'School', icon: '📚', isActive: false },
+        { id: 'kindness', question: t('parent.homeDojo.presets.kindnessQ'), category: 'Character', icon: '❤️', isActive: false },
     ];
 
     const handleToggleCustomHabit = (preset: Habit) => {
@@ -5586,12 +5586,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                 onChange={(e) => setCustomHabitCategory(e.target.value as Habit['category'])}
                                                                 className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white text-sm focus:border-cyan-500 focus:outline-none"
                                                             >
-                                                                <option value="Custom">Custom</option>
-                                                                <option value="Martial Arts">Martial Arts</option>
-                                                                <option value="Health">Health</option>
-                                                                <option value="School">School</option>
-                                                                <option value="Character">Character</option>
-                                                                <option value="Family">Family</option>
+                                                                <option value="Custom">{t('parent.homeDojo.categories.custom')}</option>
+                                                                <option value="Martial Arts">{t('parent.homeDojo.categories.martialArts')}</option>
+                                                                <option value="Health">{t('parent.homeDojo.categories.health')}</option>
+                                                                <option value="School">{t('parent.homeDojo.categories.school')}</option>
+                                                                <option value="Character">{t('parent.homeDojo.categories.character')}</option>
+                                                                <option value="Family">{t('parent.homeDojo.categories.family')}</option>
                                                             </select>
                                                         </div>
                                                         
@@ -6290,7 +6290,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     const result = await submitFamilyChallenge(challenge.id, won);
                                                                     
                                                                     if (result.alreadyCompleted || result.dailyLimitReached) {
-                                                                        setFamilyResult({ show: true, won: false, xp: 0, challengeName: result.dailyLimitReached ? 'Daily limit reached!' : challenge.name + ' (already completed today)' });
+                                                                        setFamilyResult({ show: true, won: false, xp: 0, challengeName: result.dailyLimitReached ? t('parent.rivals.family.dailyLimitReached') : challenge.name + ` (${t('parent.rivals.family.alreadyCompletedToday')})` });
                                                                         setTimeout(() => setFamilyResult(null), 4000);
                                                                         setActiveFamilyChallenge(null);
                                                                         return;
@@ -6325,7 +6325,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     const result = await submitFamilyChallenge(challenge.id, won);
                                                                     
                                                                     if (result.alreadyCompleted || result.dailyLimitReached) {
-                                                                        setFamilyResult({ show: true, won: false, xp: 0, challengeName: result.dailyLimitReached ? 'Daily limit reached!' : challenge.name + ' (already completed today)' });
+                                                                        setFamilyResult({ show: true, won: false, xp: 0, challengeName: result.dailyLimitReached ? t('parent.rivals.family.dailyLimitReached') : challenge.name + ` (${t('parent.rivals.family.alreadyCompletedToday')})` });
                                                                         setTimeout(() => setFamilyResult(null), 4000);
                                                                         setActiveFamilyChallenge(null);
                                                                         return;

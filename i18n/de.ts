@@ -246,6 +246,8 @@ export const de = {
         familyStretchSession: "Familien-Dehnübung",
         partnerKickDrills: "Partner-Tritt-Übungen",
         reactionTimeChallenge: "Reaktionszeit-Herausforderung",
+        dailyLimitReached: "Tageslimit erreicht!",
+        alreadyCompletedToday: "bereits heute abgeschlossen",
       },
 
       inbox: {
@@ -372,6 +374,15 @@ export const de = {
         firstCommandQ: "Hat er/sie beim ersten Mal zugehört?",
         serveTheTribe: "Dem Stamm dienen",
         serveTheTribeQ: "Hat er/sie bei der Hausarbeit geholfen?",
+      },
+
+      presets: {
+        madeBedQ: "Hat er/sie das Bett gemacht?",
+        brushedTeethQ: "Hat er/sie die Zähne geputzt?",
+        showedRespectQ: "Hat er/sie den Eltern Respekt gezeigt?",
+        didChoresQ: "Hat er/sie bei der Hausarbeit geholfen?",
+        homeworkQ: "Hat er/sie die Hausaufgaben rechtzeitig erledigt?",
+        kindnessQ: "Hat er/sie Freundlichkeit geübt?",
       },
 
       packs: {

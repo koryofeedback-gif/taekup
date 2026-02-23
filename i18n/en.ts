@@ -246,6 +246,8 @@ export const en = {
         familyStretchSession: "Family Stretch Session",
         partnerKickDrills: "Partner Kick Drills",
         reactionTimeChallenge: "Reaction Time Challenge",
+        dailyLimitReached: "Daily limit reached!",
+        alreadyCompletedToday: "already completed today",
       },
 
       inbox: {
@@ -372,6 +374,15 @@ export const en = {
         firstCommandQ: "Did they listen the first time asked?",
         serveTheTribe: "Serve the Tribe",
         serveTheTribeQ: "Did they help with chores?",
+      },
+
+      presets: {
+        madeBedQ: "Did they make their bed?",
+        brushedTeethQ: "Did they brush their teeth?",
+        showedRespectQ: "Did they show respect to parents?",
+        didChoresQ: "Did they help with chores?",
+        homeworkQ: "Did they finish homework on time?",
+        kindnessQ: "Did they practice kindness?",
       },
 
       packs: {
