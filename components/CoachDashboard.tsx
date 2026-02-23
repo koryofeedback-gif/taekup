@@ -1176,8 +1176,14 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     }, [students, activeBeltFilter, activeLocationFilter, activeClassFilter]);
 
     // --- VOICE RECOGNITION EFFECT ---
+    const isVoiceActiveRef = useRef(false);
+    const studentsRef = useRef(students);
+    const activeSkillsRef = useRef(activeSkills);
+    studentsRef.current = students;
+    activeSkillsRef.current = activeSkills;
+
     useEffect(() => {
-        if ('webkitSpeechRecognition' in window) {
+        if ('webkitSpeechRecognition' in window && !recognitionRef.current) {
             const recognition = new window.webkitSpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = true;
@@ -1191,62 +1197,75 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                 if (event.results[0].isFinal) {
                     processVoiceCommand(transcript);
-                    setVoiceTranscript(''); // Reset for next command
+                    setVoiceTranscript('');
                 }
             };
 
             recognition.onerror = (event: any) => {
                 console.error('Voice error', event.error);
+                isVoiceActiveRef.current = false;
                 setIsVoiceActive(false);
             };
             
             recognition.onend = () => {
-                // Auto-restart if supposed to be active (unless manually stopped)
-                if (isVoiceActive) recognition.start();
+                if (isVoiceActiveRef.current) {
+                    try { recognition.start(); } catch (e) {}
+                }
             };
 
             recognitionRef.current = recognition;
         }
-    }, [students, activeSkills]);
+    }, []);
 
     const toggleVoiceMode = () => {
         if (!recognitionRef.current) {
             alert("Voice recognition is not supported in this browser. Try Chrome.");
             return;
         }
-        if (isVoiceActive) {
-            recognitionRef.current.stop();
+        if (isVoiceActiveRef.current) {
+            isVoiceActiveRef.current = false;
             setIsVoiceActive(false);
+            recognitionRef.current.stop();
         } else {
-            recognitionRef.current.start();
+            isVoiceActiveRef.current = true;
             setIsVoiceActive(true);
+            recognitionRef.current.start();
         }
     };
 
     const processVoiceCommand = (cmd: string) => {
-        const lowerCmd = cmd.toLowerCase();
-        if (lowerCmd.includes("stop") || lowerCmd.includes("exit")) {
-            toggleVoiceMode();
+        const lowerCmd = cmd.toLowerCase().trim();
+        if (lowerCmd.includes("stop") || lowerCmd.includes("exit") || lowerCmd.includes("quit")) {
+            isVoiceActiveRef.current = false;
+            setIsVoiceActive(false);
+            if (recognitionRef.current) recognitionRef.current.stop();
+            setLastVoiceCommand("Voice mode stopped");
+            setTimeout(() => setLastVoiceCommand(null), 3000);
             return;
         }
 
-        // 1. Find Student
-        const targetStudent = students.find(s => lowerCmd.includes(s.name.toLowerCase()));
-        if (!targetStudent) return;
+        const currentStudents = studentsRef.current;
+        const currentSkills = activeSkillsRef.current;
 
-        // 2. Find Skill
-        let targetSkill = activeSkills.find(s => lowerCmd.includes(s.name.toLowerCase()));
-        
-        // 3. Find Score
+        const targetStudent = currentStudents.find(s => lowerCmd.includes(s.name.toLowerCase()));
+
+        let targetSkill = currentSkills.find(s => lowerCmd.includes(s.name.toLowerCase()));
+
         let score = -1;
-        if (lowerCmd.includes("green") || lowerCmd.includes("good") || lowerCmd.includes("point") || lowerCmd.includes("yes")) score = 2;
-        else if (lowerCmd.includes("yellow") || lowerCmd.includes("okay") || lowerCmd.includes("half")) score = 1;
-        else if (lowerCmd.includes("red") || lowerCmd.includes("bad") || lowerCmd.includes("no")) score = 0;
+        if (lowerCmd.includes("green") || lowerCmd.includes("good") || lowerCmd.includes("point") || lowerCmd.includes("yes") || lowerCmd.includes("great") || lowerCmd.includes("excellent")) score = 2;
+        else if (lowerCmd.includes("yellow") || lowerCmd.includes("okay") || lowerCmd.includes("half") || lowerCmd.includes("average") || lowerCmd.includes("so so")) score = 1;
+        else if (lowerCmd.includes("red") || lowerCmd.includes("bad") || lowerCmd.includes("no") || lowerCmd.includes("miss") || lowerCmd.includes("fail")) score = 0;
 
         if (targetStudent && targetSkill && score !== -1) {
             handleScoreChange(targetStudent.id, targetSkill.id, score);
             setLastVoiceCommand(`${targetStudent.name}: ${targetSkill.name} = ${score === 2 ? '💚' : score === 1 ? '💛' : '❤️'}`);
             setTimeout(() => setLastVoiceCommand(null), 3000);
+        } else if (targetStudent && score !== -1 && !targetSkill) {
+            setLastVoiceCommand(`Heard "${cmd}" — student found but no skill matched`);
+            setTimeout(() => setLastVoiceCommand(null), 4000);
+        } else if (!targetStudent) {
+            setLastVoiceCommand(`Heard "${cmd}" — no student name matched`);
+            setTimeout(() => setLastVoiceCommand(null), 4000);
         }
     };
 
