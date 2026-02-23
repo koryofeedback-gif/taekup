@@ -294,6 +294,7 @@ export const en = {
       newPersonalBest: "NEW PERSONAL BEST!",
       crushedOldRecord: "You crushed your old record!",
       resetsWeekly: "Resets weekly • Beat your personal best each week!",
+      warriorsGauntlet: "Warrior's Gauntlet",
       dailyQuests: "Daily Quests",
       todaysCheckin: "Today's Check-in",
       dailyGoalComplete: "🎉 Daily Goal Complete!",

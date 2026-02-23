@@ -4610,7 +4610,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         <span className="text-2xl">⚔️</span>
                                                     </span>
                                                     <div>
-                                                        <h4 className="font-black text-white text-lg">{t('parent.gauntlet.dailyQuests')}</h4>
+                                                        <h4 className="font-black text-white text-lg">{t('parent.gauntlet.warriorsGauntlet')}</h4>
                                                         <p className="text-orange-300 text-xs font-bold">
                                                             {gauntletData.dayTheme} {gauntletData.dayOfWeek.charAt(0) + gauntletData.dayOfWeek.slice(1).toLowerCase()}
                                                         </p>

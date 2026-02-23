@@ -294,6 +294,7 @@ export const fr = {
       newPersonalBest: "NOUVEAU RECORD PERSONNEL !",
       crushedOldRecord: "Vous avez pulvérisé votre ancien record !",
       resetsWeekly: "Réinitialisation hebdomadaire • Battez votre record chaque semaine !",
+      warriorsGauntlet: "Défi du Guerrier",
       dailyQuests: "Quêtes quotidiennes",
       todaysCheckin: "Check-in du jour",
       dailyGoalComplete: "🎉 Objectif du jour atteint !",
