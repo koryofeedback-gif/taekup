@@ -1,18 +1,23 @@
 import { useMemo } from 'react';
 import { en } from './en';
 import { fr } from './fr';
+import { de } from './de';
 
 const translations: Record<string, typeof en> = {
   en,
   fr,
+  de,
 };
 
 const languageMap: Record<string, string> = {
   'English': 'en',
   'French': 'fr',
   'Français': 'fr',
+  'German': 'de',
+  'Deutsch': 'de',
   'en': 'en',
   'fr': 'fr',
+  'de': 'de',
 };
 
 function getNestedValue(obj: any, path: string): string | undefined {
