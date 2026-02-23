@@ -681,7 +681,12 @@ export const fr = {
       editStudent: "Modifier l'élève",
       viewAsParent: "Voir en tant que parent",
       portalButton: "👁️ Portail",
+      portal: "Portail",
       noStudentsFound: "Aucun élève trouvé.",
+
+      belt: "Ceinture",
+      locationClass: "Lieu / Cours",
+      joined: "Inscrit le",
 
       tableHeaders: {
         name: "Nom",

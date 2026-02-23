@@ -681,7 +681,12 @@ export const de = {
       editStudent: "Schüler bearbeiten",
       viewAsParent: "Als Elternteil anzeigen",
       portalButton: "👁️ Portal",
+      portal: "Portal",
       noStudentsFound: "Keine Schüler gefunden.",
+
+      belt: "Gürtel",
+      locationClass: "Standort / Kurs",
+      joined: "Beigetreten",
 
       tableHeaders: {
         name: "Name",
