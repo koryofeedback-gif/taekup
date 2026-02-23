@@ -1785,7 +1785,7 @@ router.patch('/gauntlet-challenges/:id', verifySuperAdmin, async (req: Request, 
     const { id } = req.params;
     const { name, description, description_fr, description_de, icon, demo_video_url, is_active } = req.body;
     
-    console.log('[SuperAdmin] Updating gauntlet challenge:', id, { name, description, icon, demo_video_url, is_active });
+    console.log('[SuperAdmin] Updating gauntlet challenge:', id, { name, description, description_fr, description_de, icon, demo_video_url, is_active });
     
     const setClauses: ReturnType<typeof sql>[] = [];
     
