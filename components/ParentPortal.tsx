@@ -2877,7 +2877,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {/* Legacy Card */}
                 <div 
                     onClick={() => setActiveTab('card')}
-                    className="bg-gradient-to-br from-blue-900/80 to-blue-950 border border-blue-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-blue-500/70 transition-all"
+                    className="bg-gradient-to-br from-slate-800/90 to-slate-900 border border-slate-600/40 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-slate-500/60 transition-all"
                 >
                     <div className="text-3xl mb-2">🏅</div>
                     <h4 className="font-bold text-white text-sm">{t('parent.home.legacyCard')}</h4>
@@ -2887,7 +2887,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {/* Battle Arena - Now includes Daily Quests */}
                 <div 
                     onClick={() => setActiveTab('rivals')}
-                    className="bg-gradient-to-br from-orange-900/80 to-orange-950 border border-orange-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-orange-500/70 transition-all relative"
+                    className="bg-gradient-to-br from-red-900/70 to-red-950 border border-red-700/40 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-red-500/60 transition-all relative"
                 >
                     <div className="text-3xl mb-2">⚔️</div>
                     <h4 className="font-bold text-white text-sm">{t('parent.home.battleArena')}</h4>
@@ -2905,7 +2905,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {/* Training Ops */}
                 <div 
                     onClick={() => setActiveTab('booking')}
-                    className="bg-gradient-to-br from-purple-900/80 to-purple-950 border border-purple-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-purple-500/70 transition-all"
+                    className="bg-gradient-to-br from-cyan-900/70 to-cyan-950 border border-cyan-700/40 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-cyan-500/60 transition-all"
                 >
                     <div className="text-3xl mb-2">📅</div>
                     <h4 className="font-bold text-white text-sm">{t('parent.home.trainingOps')}</h4>
@@ -2931,7 +2931,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {/* Sensei Mind */}
                 <div 
                     onClick={() => setActiveTab('insights')}
-                    className="bg-gradient-to-br from-indigo-900/80 to-purple-950 border border-indigo-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-indigo-500/70 transition-all"
+                    className="bg-gradient-to-br from-violet-900/70 to-violet-950 border border-violet-700/40 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-violet-500/60 transition-all"
                 >
                     <div className="text-3xl mb-2">🧠</div>
                     <h4 className="font-bold text-white text-sm">{t('parent.home.senseiMind')}</h4>
@@ -2941,7 +2941,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {/* Arena Ranks */}
                 <div 
                     onClick={() => { setActiveTab('rivals'); setRivalsView('leaderboard'); }}
-                    className="bg-gradient-to-br from-amber-900/80 to-orange-950 border border-amber-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-amber-500/70 transition-all"
+                    className="bg-gradient-to-br from-amber-900/70 to-amber-950 border border-amber-700/40 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-amber-500/60 transition-all"
                 >
                     <div className="text-3xl mb-2">🏆</div>
                     <h4 className="font-bold text-white text-sm">{t('parent.home.arenaRanks')}</h4>
