@@ -92,7 +92,13 @@ const getBelt = (beltId: string, belts: Belt[]) => belts.find(b => b.id === belt
 
 export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack, onUpdateStudent }) => {
     const [language, setLanguage] = useState(data.language || 'English');
-    const { t } = useTranslation(language);
+    const { t, lang } = useTranslation(language);
+
+    const getLocalizedDesc = (item: any) => {
+        if (lang === 'fr' && item?.description_fr) return item.description_fr;
+        if (lang === 'de' && item?.description_de) return item.description_de;
+        return item?.description || '';
+    };
     const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'rivals' | 'feedback'>('home');
     const [isPremium, setIsPremium] = useState(false); // Toggle to simulate upgrade
     const [serverConfirmedPremium, setServerConfirmedPremium] = useState(false); // Premium status from API
@@ -442,6 +448,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         id: string;
         name: string;
         description: string;
+        description_fr?: string | null;
+        description_de?: string | null;
         icon: string;
         category: 'Strength' | 'Speed' | 'Focus';
         demo_video_url: string | null;
@@ -4278,6 +4286,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             xp: FAMILY_XP.win,
             category: c.category,
             description: c.description,
+            description_fr: c.description_fr,
+            description_de: c.description_de,
             demoVideoUrl: c.demo_video_url
         }));
 
@@ -4651,7 +4661,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <span className="text-3xl">{challenge.icon}</span>
                                                                         <div>
                                                                             <h5 className="font-bold text-white">{challenge.name}</h5>
-                                                                            <p className="text-gray-400 text-xs mt-1">{challenge.description}</p>
+                                                                            <p className="text-gray-400 text-xs mt-1">{getLocalizedDesc(challenge)}</p>
                                                                             <div className="flex items-center gap-2 mt-2 flex-wrap">
                                                                                 <span className="text-[10px] bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
                                                                                     {challenge.score_type} • {sortLabel}
@@ -4833,7 +4843,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </div>
                                             
                                             <p className="text-gray-400 text-sm mb-4">
-                                                {selectedChallengeObj?.description || t('parent.gauntlet.completeChallengeSolo')}
+                                                {getLocalizedDesc(selectedChallengeObj) || t('parent.gauntlet.completeChallengeSolo')}
                                             </p>
                                             
                                             {demoVideoLink && (
@@ -6254,7 +6264,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     <span className="text-[10px] bg-green-600/30 text-green-400 px-2 py-0.5 rounded-full">{t('parent.rivals.family.doneToday')}</span>
                                                                 )}
                                                             </p>
-                                                            <p className="text-gray-400 text-[10px]">{challenge.description}</p>
+                                                            <p className="text-gray-400 text-[10px]">{getLocalizedDesc(challenge)}</p>
                                                             {challenge.demoVideoUrl && (
                                                                 <a 
                                                                     href={challenge.demoVideoUrl}
