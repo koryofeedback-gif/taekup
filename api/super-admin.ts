@@ -1987,7 +1987,8 @@ async function handleGauntletChallenges(req: VercelRequest, res: VercelResponse)
   try {
     const db = getDb();
     const challenges = await db`
-      SELECT * FROM gauntlet_challenges 
+      SELECT id, day_of_week, day_theme, name, description, description_fr, description_de, icon, score_type, sort_order, target_value, is_active, display_order, created_at, demo_video_url
+      FROM gauntlet_challenges 
       ORDER BY 
         CASE day_of_week 
           WHEN 'MONDAY' THEN 1 
