@@ -2009,7 +2009,15 @@ async function handleGauntletChallenges(req: VercelRequest, res: VercelResponse)
   }
 }
 
-let familyColumnsMigrated = false;
+async function ensureFamilyTranslationColumns(db: ReturnType<typeof postgres>) {
+  try {
+    await db`SELECT description_fr FROM family_challenges LIMIT 0`;
+  } catch (e) {
+    await db`ALTER TABLE family_challenges ADD COLUMN IF NOT EXISTS description_fr TEXT`;
+    await db`ALTER TABLE family_challenges ADD COLUMN IF NOT EXISTS description_de TEXT`;
+  }
+}
+
 async function handleFamilyChallenges(req: VercelRequest, res: VercelResponse) {
   const auth = await verifySuperAdminToken(req);
   if (!auth.valid) {
@@ -2018,16 +2026,7 @@ async function handleFamilyChallenges(req: VercelRequest, res: VercelResponse) {
   
   try {
     const db = getDb();
-    
-    if (!familyColumnsMigrated) {
-      try {
-        await db`ALTER TABLE family_challenges ADD COLUMN IF NOT EXISTS description_fr TEXT`;
-        await db`ALTER TABLE family_challenges ADD COLUMN IF NOT EXISTS description_de TEXT`;
-        familyColumnsMigrated = true;
-      } catch (e) {
-        console.error('[FamilyChallenges] Migration error:', e);
-      }
-    }
+    await ensureFamilyTranslationColumns(db);
     
     if (req.method === 'GET') {
       const challenges = await db`
