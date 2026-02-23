@@ -6,6 +6,8 @@ interface FamilyChallenge {
   id: string;
   name: string;
   description: string;
+  description_fr: string | null;
+  description_de: string | null;
   icon: string;
   category: 'Strength' | 'Speed' | 'Focus';
   demo_video_url: string | null;
@@ -19,6 +21,8 @@ interface GauntletChallenge {
   day_theme: string;
   name: string;
   description: string;
+  description_fr: string | null;
+  description_de: string | null;
   icon: string;
   score_type: string;
   sort_order: string;
@@ -154,6 +158,8 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
         body: JSON.stringify({
           name: gauntletForm.name,
           description: gauntletForm.description || '',
+          description_fr: gauntletForm.description_fr || null,
+          description_de: gauntletForm.description_de || null,
           icon: gauntletForm.icon || '💪',
           day_of_week: gauntletForm.day_of_week,
           day_theme: gauntletForm.day_theme || DAY_THEMES[gauntletForm.day_of_week] || 'Challenge',
@@ -253,6 +259,8 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
     setEditForm({
       name: challenge.name,
       description: challenge.description,
+      description_fr: challenge.description_fr,
+      description_de: challenge.description_de,
       icon: challenge.icon,
       demo_video_url: challenge.demo_video_url || '',
       is_active: challenge.is_active
@@ -709,13 +717,33 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
                   </select>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="text-gray-400 text-xs block mb-1">Description</label>
+                  <label className="text-gray-400 text-xs block mb-1">Description (English)</label>
                   <textarea
                     value={gauntletForm.description || ''}
                     onChange={e => setGauntletForm({ ...gauntletForm, description: e.target.value })}
                     placeholder="Describe the challenge..."
                     rows={2}
                     className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">🇫🇷 Description (French)</label>
+                  <textarea
+                    value={gauntletForm.description_fr || ''}
+                    onChange={e => setGauntletForm({ ...gauntletForm, description_fr: e.target.value })}
+                    placeholder="Décrivez le défi..."
+                    rows={2}
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">🇩🇪 Description (German)</label>
+                  <textarea
+                    value={gauntletForm.description_de || ''}
+                    onChange={e => setGauntletForm({ ...gauntletForm, description_de: e.target.value })}
+                    placeholder="Beschreiben Sie die Herausforderung..."
+                    rows={2}
+                    className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-yellow-500 focus:outline-none"
                   />
                 </div>
                 <div>
