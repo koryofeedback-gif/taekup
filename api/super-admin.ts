@@ -2123,10 +2123,20 @@ async function handleGauntletChallengeUpdate(req: VercelRequest, res: VercelResp
       await db`UPDATE gauntlet_challenges SET description = ${description} WHERE id = ${challengeId}::uuid`;
     }
     if (description_fr !== undefined) {
-      await db`UPDATE gauntlet_challenges SET description_fr = ${description_fr || null} WHERE id = ${challengeId}::uuid`;
+      try {
+        await db`ALTER TABLE gauntlet_challenges ADD COLUMN IF NOT EXISTS description_fr TEXT`;
+        await db`UPDATE gauntlet_challenges SET description_fr = ${description_fr || null} WHERE id = ${challengeId}::uuid`;
+      } catch (e: any) {
+        console.error('[SuperAdmin] description_fr update error:', e.message);
+      }
     }
     if (description_de !== undefined) {
-      await db`UPDATE gauntlet_challenges SET description_de = ${description_de || null} WHERE id = ${challengeId}::uuid`;
+      try {
+        await db`ALTER TABLE gauntlet_challenges ADD COLUMN IF NOT EXISTS description_de TEXT`;
+        await db`UPDATE gauntlet_challenges SET description_de = ${description_de || null} WHERE id = ${challengeId}::uuid`;
+      } catch (e: any) {
+        console.error('[SuperAdmin] description_de update error:', e.message);
+      }
     }
     if (icon !== undefined) {
       await db`UPDATE gauntlet_challenges SET icon = ${icon} WHERE id = ${challengeId}::uuid`;
