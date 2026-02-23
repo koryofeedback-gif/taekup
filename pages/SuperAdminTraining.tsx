@@ -276,13 +276,23 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
   const handleSave = async (challengeId: string) => {
     setSaving(challengeId);
     try {
+      const body = {
+        name: editForm.name,
+        description: editForm.description,
+        description_fr: editForm.description_fr || null,
+        description_de: editForm.description_de || null,
+        icon: editForm.icon,
+        demo_video_url: editForm.demo_video_url || null,
+        is_active: editForm.is_active
+      };
+      
       const response = await fetch(`/api/super-admin/gauntlet-challenges/${challengeId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify(body)
       });
       
       if (!response.ok) {
@@ -298,11 +308,11 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
         await fetchChallenges();
       }
       
-      setSuccessMessage('Challenge updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessMessage(`Saved! FR: ${body.description_fr ? 'YES' : 'no'}, DE: ${body.description_de ? 'YES' : 'no'}`);
+      setTimeout(() => setSuccessMessage(''), 5000);
       setEditingChallenge(null);
     } catch (err: any) {
-      setError(err.message);
+      setError(`Save failed: ${err.message}`);
     } finally {
       setSaving(null);
     }
