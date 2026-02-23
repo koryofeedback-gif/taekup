@@ -304,6 +304,18 @@ export const en = {
       premiumUnlocks7: "👑 Premium unlocks 7 daily habits for more XP & faster progress",
       perfectDay: "PERFECT DAY! You are living like a True Warrior.",
       goodStart: "Good start. Discipline increasing.",
+      videoProofBadge: "✓ Video Proof",
+      videoProof: "Video Proof",
+      techniqueProof: "Technique Proof",
+    },
+
+    xpHistory: {
+      senseiAcademy: "Sensei Academy",
+      dailyMystery: "Daily Mystery",
+      battleArena: "Battle Arena",
+      dailyTraining: "Daily Training",
+      homeDojo: "Home Dojo",
+      bonus: "Bonus",
     },
 
     arena: {

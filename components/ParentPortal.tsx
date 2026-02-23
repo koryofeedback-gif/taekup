@@ -4513,7 +4513,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             </h4>
                                             {hasPremiumAccess && (
                                                 <span className="text-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-bold">
-                                                    ✓ Video Proof
+                                                    {t('parent.gauntlet.videoProofBadge')}
                                                 </span>
                                             )}
                                         </div>
@@ -5035,7 +5035,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 <div className="flex items-center justify-between mb-4">
                                                     <h3 className="text-xl font-black text-white flex items-center gap-2">
                                                         <span className="text-2xl">{academyVideoMode ? '📚' : '🎬'}</span> 
-                                                        {academyVideoMode ? 'Technique Proof' : 'Video Proof'}
+                                                        {academyVideoMode ? t('parent.gauntlet.techniqueProof') : t('parent.gauntlet.videoProof')}
                                                     </h3>
                                                     <button 
                                                         onClick={() => {
@@ -7228,12 +7228,12 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         const timeDisplay = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
                                         
                                         const reasonLabels: Record<string, { icon: string; label: string }> = {
-                                            'content_completion': { icon: '📚', label: 'Sensei Academy' },
-                                            'daily_challenge': { icon: '🎯', label: 'Daily Mystery' },
-                                            'arena_challenge': { icon: '⚔️', label: 'Battle Arena' },
-                                            'gauntlet': { icon: '🏋️', label: 'Daily Training' },
-                                            'habit': { icon: '🏠', label: 'Home Dojo' },
-                                            'bonus': { icon: '🎁', label: 'Bonus' },
+                                            'content_completion': { icon: '📚', label: t('parent.xpHistory.senseiAcademy') },
+                                            'daily_challenge': { icon: '🎯', label: t('parent.xpHistory.dailyMystery') },
+                                            'arena_challenge': { icon: '⚔️', label: t('parent.xpHistory.battleArena') },
+                                            'gauntlet': { icon: '🏋️', label: t('parent.xpHistory.dailyTraining') },
+                                            'habit': { icon: '🏠', label: t('parent.xpHistory.homeDojo') },
+                                            'bonus': { icon: '🎁', label: t('parent.xpHistory.bonus') },
                                         };
                                         const reasonConfig = reasonLabels[entry.reason] || { icon: '⭐', label: entry.reason };
                                         

@@ -304,6 +304,18 @@ export const fr = {
       premiumUnlocks7: "👑 Premium débloque 7 habitudes quotidiennes pour plus de XP et une progression plus rapide",
       perfectDay: "JOURNÉE PARFAITE ! Vous vivez comme un vrai guerrier.",
       goodStart: "Bon début. La discipline augmente.",
+      videoProofBadge: "✓ Preuve vidéo",
+      videoProof: "Preuve vidéo",
+      techniqueProof: "Preuve technique",
+    },
+
+    xpHistory: {
+      senseiAcademy: "Académie Sensei",
+      dailyMystery: "Mystère du jour",
+      battleArena: "Arène de combat",
+      dailyTraining: "Entraînement quotidien",
+      homeDojo: "Home Dojo",
+      bonus: "Bonus",
     },
 
     arena: {
