@@ -308,8 +308,8 @@ export const SuperAdminTraining: React.FC<SuperAdminTrainingProps> = ({ token, o
         await fetchChallenges();
       }
       
-      setSuccessMessage(`Saved! FR: ${body.description_fr ? 'YES' : 'no'}, DE: ${body.description_de ? 'YES' : 'no'}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      setSuccessMessage('Challenge updated successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
       setEditingChallenge(null);
     } catch (err: any) {
       setError(`Save failed: ${err.message}`);
