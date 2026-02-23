@@ -91,14 +91,14 @@ interface ParentPortalProps {
 const getBelt = (beltId: string, belts: Belt[]) => belts.find(b => b.id === beltId);
 
 export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack, onUpdateStudent }) => {
-    const { t } = useTranslation(data?.language);
+    const [language, setLanguage] = useState(data.language || 'English');
+    const { t } = useTranslation(language);
     const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'rivals' | 'feedback'>('home');
     const [isPremium, setIsPremium] = useState(false); // Toggle to simulate upgrade
     const [serverConfirmedPremium, setServerConfirmedPremium] = useState(false); // Premium status from API
     const [missionChecks, setMissionChecks] = useState<Record<string, boolean>>({});
     const [parentingAdvice, setParentingAdvice] = useState<string | null>(null);
     const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
-    const [language, setLanguage] = useState(data.language || 'English');
     const [bookedSlots, setBookedSlots] = useState<Record<string, boolean>>({}); // Simulating bookings
     
     // Fresh leaderboard data from API
