@@ -169,6 +169,10 @@ export const de = {
         world: "Welt",
       },
 
+      clubMonthlyLeaderboard: "Monatliche Club-Rangliste — tritt gegen dein Dojo an!",
+      clubAllTimeChampions: "Ewige Club-Champions — Legenden des Dojos!",
+      globalCompeteWorldwide: "Tritt gegen Kämpfer weltweit an!",
+
       globalLeaderboard: {
         yourGlobalRank: "Ihr globaler Rang",
         warriorsWorldwide: "von {count} Kämpfern weltweit",

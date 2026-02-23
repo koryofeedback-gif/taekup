@@ -169,6 +169,10 @@ export const fr = {
         world: "Monde",
       },
 
+      clubMonthlyLeaderboard: "Classement mensuel du club — rivalisez avec votre dojo !",
+      clubAllTimeChampions: "Champions historiques du club — légendes du dojo !",
+      globalCompeteWorldwide: "Affrontez des guerriers du monde entier !",
+
       globalLeaderboard: {
         yourGlobalRank: "Votre rang mondial",
         warriorsWorldwide: "sur {count} guerriers dans le monde",
