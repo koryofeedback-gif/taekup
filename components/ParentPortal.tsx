@@ -3441,35 +3441,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             )}
                             </>
                         ) : (
-                            // Fallback: Family Missions if no videos
-                            <div className="space-y-3">
-                                {[
-                                    { id: 'm1', title: t('parent.curriculum.fallbackMissions.teamStaringContest'), desc: t('parent.curriculum.fallbackMissions.teamStaringContestDesc'), icon: '👀' },
-                                    { id: 'm2', title: t('parent.curriculum.fallbackMissions.pillowKicking'), desc: t('parent.curriculum.fallbackMissions.pillowKickingDesc'), icon: '🦶' },
-                                    { id: 'm3', title: t('parent.curriculum.fallbackMissions.theTeacher'), desc: t('parent.curriculum.fallbackMissions.theTeacherDesc'), icon: '🎓' }
-                                ].map(mission => (
-                                    <div 
-                                        key={mission.id} 
-                                        onClick={() => toggleMission(mission.id)}
-                                        className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between
-                                            ${missionChecks[mission.id] 
-                                                ? 'bg-green-900/20 border-green-500/50' 
-                                                : 'bg-gray-800 border-gray-700 hover:border-gray-500'}`}
-                                    >
-                                        <div className="flex items-center space-x-3">
-                                            <div className="text-2xl">{mission.icon}</div>
-                                            <div>
-                                                <h4 className={`font-bold text-sm ${missionChecks[mission.id] ? 'text-green-400 line-through' : 'text-white'}`}>{mission.title}</h4>
-                                                <p className="text-xs text-gray-400">{mission.desc}</p>
-                                            </div>
-                                        </div>
-                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center
-                                            ${missionChecks[mission.id] ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}>
-                                            {missionChecks[mission.id] && <span className="text-white text-xs">✓</span>}
-                                        </div>
-                                    </div>
-                                ))}
-                                <p className="text-xs text-center text-gray-500 mt-4 italic">{t('parent.curriculum.completeMissions')}</p>
+                            <div className="text-center py-8 space-y-4">
+                                <div className="text-5xl mb-2">🏆</div>
+                                <h4 className="font-bold text-white text-lg">{t('parent.curriculum.noContentYet')}</h4>
+                                <p className="text-sm text-gray-400 max-w-xs mx-auto">{t('parent.curriculum.checkArenaRanks')}</p>
+                                <button
+                                    onClick={() => { setActiveTab('rivals'); setRivalsView('leaderboard'); }}
+                                    className="mt-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-600/30"
+                                >
+                                    ⚔️ {t('parent.curriculum.goToArenaRanks')}
+                                </button>
                             </div>
                         )}
                     </div>

@@ -441,15 +441,9 @@ export const fr = {
       pendingCount: "{count} en attente",
       legacyCollection: "LEGACY",
 
-      fallbackMissions: {
-        teamStaringContest: "Concours de regard en équipe",
-        teamStaringContestDesc: "Défiez votre parent ! Le premier qui cligne des yeux perd. Développe la concentration.",
-        pillowKicking: "Coups de pied dans le coussin",
-        pillowKickingDesc: "Le parent tient un coussin. L'élève fait 10 coups de pied. Développe la vitesse.",
-        theTeacher: "Le professeur",
-        theTeacherDesc: "Enseignez à votre parent un mouvement appris en cours aujourd'hui.",
-      },
-      completeMissions: "Terminez les missions pour gagner une étoile familiale !",
+      noContentYet: "Pas encore de contenu",
+      checkArenaRanks: "Votre coach n'a pas encore ajouté de contenu. Rendez-vous dans l'Arène pour voir vos classements et affronter d'autres guerriers !",
+      goToArenaRanks: "Aller aux classements de l'Arène",
       askInstructor: "Des questions ? Demandez à votre instructeur au prochain cours !",
 
       techniqueProof: "Preuve technique",

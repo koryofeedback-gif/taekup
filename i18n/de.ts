@@ -441,15 +441,9 @@ export const de = {
       pendingCount: "{count} ausstehend",
       legacyCollection: "LEGACY",
 
-      fallbackMissions: {
-        teamStaringContest: "Team-Starrwettbewerb",
-        teamStaringContestDesc: "Fordern Sie Ihr Elternteil heraus! Wer zuerst blinzelt, verliert. Fördert die Konzentration.",
-        pillowKicking: "Kissen-Tritte",
-        pillowKickingDesc: "Ein Elternteil hält ein Kissen. Der Schüler macht 10 Tritte. Fördert die Schnelligkeit.",
-        theTeacher: "Der Lehrer",
-        theTeacherDesc: "Bringe deinem Elternteil eine Bewegung bei, die du heute im Unterricht gelernt hast.",
-      },
-      completeMissions: "Schließen Sie Missionen ab, um einen Familienstern zu verdienen!",
+      noContentYet: "Noch keine Inhalte verfügbar",
+      checkArenaRanks: "Dein Trainer hat noch keine Inhalte hinzugefügt. Geh zur Arena, um deine Rangliste zu sehen und anzutreten!",
+      goToArenaRanks: "Zur Arena-Rangliste",
       askInstructor: "Fragen? Fragen Sie Ihren Trainer beim nächsten Unterricht!",
 
       techniqueProof: "Technikbeweis",

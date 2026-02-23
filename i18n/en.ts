@@ -441,15 +441,9 @@ export const en = {
       pendingCount: "{count} pending",
       legacyCollection: "LEGACY",
 
-      fallbackMissions: {
-        teamStaringContest: "Team Staring Contest",
-        teamStaringContestDesc: "Challenge your parent! First to blink loses. Builds Focus.",
-        pillowKicking: "Pillow Kicking",
-        pillowKickingDesc: "Parent holds a pillow. Student does 10 kicks. Builds Speed.",
-        theTeacher: "The Teacher",
-        theTeacherDesc: "Teach your parent 1 move you learned in class today.",
-      },
-      completeMissions: "Complete missions to earn a Family Star!",
+      noContentYet: "No curriculum content yet",
+      checkArenaRanks: "Your coach hasn't added content yet. Head to the Arena to check your rankings and compete!",
+      goToArenaRanks: "Go to Arena Ranks",
       askInstructor: "Questions? Ask your instructor at your next class!",
 
       techniqueProof: "Technique Proof",
