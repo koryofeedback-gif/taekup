@@ -2112,45 +2112,21 @@ async function handleGauntletChallengeUpdate(req: VercelRequest, res: VercelResp
   try {
     const db = getDb();
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    const { name, description, icon, demo_video_url, is_active } = body;
+    const { name, description, description_fr, description_de, icon, demo_video_url, is_active } = body;
     
-    console.log('[SuperAdmin] Updating gauntlet challenge:', challengeId, body);
+    console.log('[SuperAdmin] Updating gauntlet challenge:', challengeId, { name, description, description_fr, description_de, icon, demo_video_url, is_active });
     
-    // Build update query dynamically
-    const updates: string[] = [];
-    const values: any[] = [];
-    
-    if (name !== undefined) {
-      updates.push(`name = $${updates.length + 1}`);
-      values.push(name);
-    }
-    if (description !== undefined) {
-      updates.push(`description = $${updates.length + 1}`);
-      values.push(description);
-    }
-    if (icon !== undefined) {
-      updates.push(`icon = $${updates.length + 1}`);
-      values.push(icon);
-    }
-    if (demo_video_url !== undefined) {
-      updates.push(`demo_video_url = $${updates.length + 1}`);
-      values.push(demo_video_url || null);
-    }
-    if (is_active !== undefined) {
-      updates.push(`is_active = $${updates.length + 1}`);
-      values.push(is_active);
-    }
-    
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-    
-    // Use template literal with postgres.js for each field
     if (name !== undefined) {
       await db`UPDATE gauntlet_challenges SET name = ${name} WHERE id = ${challengeId}::uuid`;
     }
     if (description !== undefined) {
       await db`UPDATE gauntlet_challenges SET description = ${description} WHERE id = ${challengeId}::uuid`;
+    }
+    if (description_fr !== undefined) {
+      await db`UPDATE gauntlet_challenges SET description_fr = ${description_fr || null} WHERE id = ${challengeId}::uuid`;
+    }
+    if (description_de !== undefined) {
+      await db`UPDATE gauntlet_challenges SET description_de = ${description_de || null} WHERE id = ${challengeId}::uuid`;
     }
     if (icon !== undefined) {
       await db`UPDATE gauntlet_challenges SET icon = ${icon} WHERE id = ${challengeId}::uuid`;
@@ -2162,10 +2138,9 @@ async function handleGauntletChallengeUpdate(req: VercelRequest, res: VercelResp
       await db`UPDATE gauntlet_challenges SET is_active = ${is_active} WHERE id = ${challengeId}::uuid`;
     }
     
-    // Fetch updated challenge
     const updated = await db`SELECT * FROM gauntlet_challenges WHERE id = ${challengeId}::uuid`;
     
-    return res.json({ success: true, challenge: updated[0] });
+    return res.json({ success: true, updated: updated[0] });
   } catch (error: any) {
     console.error('[SuperAdmin] Update gauntlet challenge error:', error);
     return res.status(500).json({ error: 'Failed to update challenge: ' + error.message });
