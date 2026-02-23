@@ -109,8 +109,8 @@ export const fr = {
       aiBlackBeltDate: "Date IA ceinture noire",
       senseiMind: "Esprit Sensei",
       aiTrainingIntel: "Intelligence IA d'entraînement",
-      senseiAcademy: "Sensei Academy",
-      curriculumAndVideos: "Programme & Vidéos",
+      arenaRanks: "Classements de l'Arène",
+      leaderboardAndRankings: "Classement & Rangliste",
 
       senseiIntel: "Intel Sensei",
       noActiveMissions: "Aucune mission active pour le moment. Continuez à vous entraîner !",

@@ -109,8 +109,8 @@ export const en = {
       aiBlackBeltDate: "AI Black Belt Date",
       senseiMind: "Sensei Mind",
       aiTrainingIntel: "AI Training Intel",
-      senseiAcademy: "Sensei Academy",
-      curriculumAndVideos: "Curriculum & Videos",
+      arenaRanks: "Arena Ranks",
+      leaderboardAndRankings: "Leaderboard & Rankings",
 
       senseiIntel: "Sensei Intel",
       noActiveMissions: "No active missions yet. Keep training hard!",

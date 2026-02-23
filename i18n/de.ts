@@ -109,8 +109,8 @@ export const de = {
       aiBlackBeltDate: "KI-Schwarzgurt-Datum",
       senseiMind: "Sensei-Verstand",
       aiTrainingIntel: "KI-Trainingsanalyse",
-      senseiAcademy: "Sensei Academy",
-      curriculumAndVideos: "Lehrplan & Videos",
+      arenaRanks: "Arena-Rangliste",
+      leaderboardAndRankings: "Bestenliste & Ranglisten",
 
       senseiIntel: "Sensei-Analyse",
       noActiveMissions: "Noch keine aktiven Missionen. Trainieren Sie weiter!",

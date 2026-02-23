@@ -2938,14 +2938,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <p className="text-[10px] text-gray-400 mt-1">{t('parent.home.aiTrainingIntel')}</p>
                 </div>
 
-                {/* Sensei Academy - Practice Content */}
+                {/* Arena Ranks */}
                 <div 
-                    onClick={() => setActiveTab('practice')}
-                    className="bg-gradient-to-br from-emerald-900/80 to-emerald-950 border border-emerald-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-emerald-500/70 transition-all"
+                    onClick={() => { setActiveTab('rivals'); setRivalsView('leaderboard'); }}
+                    className="bg-gradient-to-br from-amber-900/80 to-orange-950 border border-amber-700/50 p-4 rounded-xl cursor-pointer group shadow-lg hover:border-amber-500/70 transition-all"
                 >
-                    <div className="text-3xl mb-2">📚</div>
-                    <h4 className="font-bold text-white text-sm">{t('parent.home.senseiAcademy')}</h4>
-                    <p className="text-[10px] text-gray-400 mt-1">{t('parent.home.curriculumAndVideos')}</p>
+                    <div className="text-3xl mb-2">🏆</div>
+                    <h4 className="font-bold text-white text-sm">{t('parent.home.arenaRanks')}</h4>
+                    <p className="text-[10px] text-gray-400 mt-1">{t('parent.home.leaderboardAndRankings')}</p>
                 </div>
             </div>
 
