@@ -47,7 +47,7 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
                         <span className="text-transparent bg-clip-text bg-gradient-to-b from-red-500 to-red-800">REVOLUTION.</span>
                     </h1>
                     <p className="text-xl md:text-2xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed font-light">
-                        One platform to manage your <span className="text-white font-medium">Business</span>, 
+                        One platform to Grow your <span className="text-white font-medium">Business</span>, 
                         teach your <span className="text-white font-medium">Curriculum</span>, 
                         and elevate your <span className="text-white font-medium">Students</span>.
                     </p>
