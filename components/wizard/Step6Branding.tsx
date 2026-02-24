@@ -83,81 +83,144 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
            <div className="bg-gray-900 rounded-3xl border-4 border-gray-800 overflow-hidden relative mx-auto max-w-sm shadow-2xl h-[400px] md:h-[500px] lg:h-[600px]">
                 
                 {/* App Header */}
-                <div className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center">
+                <div className="absolute top-0 left-0 right-0 z-20 p-3 flex justify-between items-center bg-gray-900/80 backdrop-blur-sm">
                     <div className="flex items-center space-x-2">
                         {logoPreview ? (
-                            <img src={logoPreview} className="w-8 h-8 rounded-full object-cover border border-white/20" alt="logo" />
+                            <img src={logoPreview} className="w-7 h-7 rounded-full object-cover border border-white/20" alt="logo" />
                         ) : (
-                            <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-[10px] font-bold">Logo</div>
+                            <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center text-[10px] font-bold">Logo</div>
                         )}
                     </div>
-                    <div className="text-xs text-gray-400 border border-gray-700 rounded px-2 py-1">English</div>
+                    <div className="text-[10px] text-gray-400 border border-gray-700 rounded px-2 py-0.5">English</div>
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="h-full overflow-y-auto p-4 pt-16 pb-20 no-scrollbar">
+                <div className="h-full overflow-y-auto p-4 pt-14 pb-20 no-scrollbar">
                     
                     {/* Hero Card */}
-                    <div className="rounded-2xl p-6 shadow-xl border border-gray-700 relative overflow-hidden mb-4" style={{ background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)' }}>
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-4 shadow-xl border border-gray-700 relative overflow-hidden mb-3">
                         {bgPreview && <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `url(${bgPreview})`, backgroundSize: 'cover' }}></div>}
+                        <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl -mr-8 -mt-8" style={{ backgroundColor: data.primaryColor, opacity: 0.1 }}></div>
                         
                         <div className="relative z-10">
-                            <div className="flex items-center space-x-4 mb-6">
-                                <div className="w-14 h-14 rounded-full border-2 border-white/20 bg-gray-700 flex items-center justify-center text-2xl shadow-md">
+                            <div className="flex items-center space-x-3 mb-4">
+                                <div className="w-12 h-12 rounded-full border-2 border-white/20 bg-gray-700 flex items-center justify-center text-xl shadow-md">
                                     🥋
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-white">Hi, Alex!</h2>
-                                    <div className="flex items-center text-xs text-gray-400 mt-1">
-                                        <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: data.belts[0]?.color1 || 'white' }}></div>
+                                    <h2 className="text-base font-bold text-white">Hi, Alex!</h2>
+                                    <div className="flex items-center text-[11px] text-gray-400 mt-0.5">
+                                        <div className="w-2.5 h-2.5 rounded-full mr-1.5 shadow-sm" style={{ backgroundColor: data.belts[0]?.color1 || 'white' }}></div>
                                         {data.belts[0]?.name || 'White Belt'}
                                     </div>
+                                    <div className="text-[9px] text-cyan-400/70 mt-0.5 font-mono">MTK-2026-A7X9K2</div>
                                 </div>
                             </div>
 
                             {/* Stats */}
-                            <div className="grid grid-cols-2 gap-2 mb-4">
-                                <div className="bg-gray-800/60 rounded-lg p-2 border border-gray-600/30 backdrop-blur-sm">
-                                    <p className="text-[10px] text-gray-400 uppercase">Attendance</p>
-                                    <p className="text-lg font-bold text-white">12 <span className="text-[10px] font-normal text-gray-500">classes</span></p>
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                <div className="bg-gray-800/50 rounded-xl p-2 border border-gray-700/50">
+                                    <p className="text-[9px] text-gray-400 uppercase tracking-wider">Attendance</p>
+                                    <p className="text-base font-bold text-white">12 <span className="text-[9px] font-normal text-gray-500">classes</span></p>
                                 </div>
-                                <div className="bg-gray-800/60 rounded-lg p-2 border border-gray-600/30 backdrop-blur-sm">
-                                    <p className="text-[10px] text-gray-400 uppercase">Streak</p>
-                                    <p className="text-lg font-bold text-green-400">🔥 5 <span className="text-[10px] font-normal text-gray-500">days</span></p>
+                                <div className="bg-gray-800/50 rounded-xl p-2 border border-gray-700/50">
+                                    <p className="text-[9px] text-gray-400 uppercase tracking-wider">Total HonorXP</p>
+                                    <p className="text-base font-bold text-cyan-400">1,250</p>
                                 </div>
+                            </div>
+
+                            {/* Global Rank Preview */}
+                            <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-xl p-2 border border-cyan-500/30 flex items-center justify-between mb-3">
+                                <div className="flex items-center">
+                                    <span className="text-sm mr-1.5">🌍</span>
+                                    <div>
+                                        <p className="text-[10px] text-cyan-300 font-bold">Global Shogun Rank #42</p>
+                                        <p className="text-[8px] text-gray-400">180 Global HonorXP</p>
+                                    </div>
+                                </div>
+                                <span className="text-cyan-400 text-[10px]">View &gt;</span>
                             </div>
 
                             {/* Progress Bar */}
-                            <div>
+                            <div className="mb-2">
                                 <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                                    <span>Next Belt Progress</span>
+                                    <span>Progress to Next Belt</span>
                                     <span>65%</span>
                                 </div>
-                                <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
-                                    <div className="h-full transition-all" style={{ width: '65%', backgroundColor: data.primaryColor }}></div>
+                                <div className="w-full bg-gray-700/50 rounded-full h-2.5 overflow-hidden shadow-inner">
+                                    <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all" style={{ width: '65%' }}></div>
+                                </div>
+                            </div>
+
+                            {/* Stripes Earned */}
+                            <div>
+                                <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                                    <span>Stripes Earned</span>
+                                    <span>2 of {data.stripesPerBelt}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    {Array.from({ length: data.stripesPerBelt }).map((_, i) => {
+                                        const isEarned = i < 2;
+                                        const stripeColor = data.useColorCodedStripes && data.stripeColors?.[i] ? data.stripeColors[i] : '#FACC15';
+                                        return (
+                                            <div key={i} className={`h-1.5 flex-1 rounded-full mx-0.5 ${isEarned ? '' : 'bg-gray-700'}`}
+                                                style={isEarned ? { backgroundColor: stripeColor, boxShadow: `0 0 6px ${stripeColor}80` } : {}}
+                                            ></div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Premium Teaser */}
-                    <div className="bg-gray-800 border border-gray-700 p-3 rounded-xl flex items-center justify-between mb-4 group">
-                        <div className="flex items-center">
-                            <div className="w-8 h-8 bg-yellow-500/20 rounded-full flex items-center justify-center text-sm mr-3">📹</div>
-                            <div>
-                                <h4 className="font-bold text-white text-xs">Practice at Home</h4>
-                                <p className="text-[10px] text-gray-400">Unlock training videos</p>
+                    {/* Quick Action Cards */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-gradient-to-br from-slate-800/90 to-slate-900 border border-slate-600/40 p-3 rounded-xl">
+                            <div className="text-xl mb-1">🏅</div>
+                            <h4 className="font-bold text-white text-[11px]">Legacy Card</h4>
+                            <p className="text-[8px] text-gray-400 mt-0.5">Digital student card</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-red-900/70 to-red-950 border border-red-700/40 p-3 rounded-xl">
+                            <div className="text-xl mb-1">⚔️</div>
+                            <h4 className="font-bold text-white text-[11px]">Battle Arena</h4>
+                            <p className="text-[8px] text-gray-400 mt-0.5">Challenges & quests</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-cyan-900/70 to-cyan-950 border border-cyan-700/40 p-3 rounded-xl">
+                            <div className="text-xl mb-1">📅</div>
+                            <h4 className="font-bold text-white text-[11px]">Training Ops</h4>
+                            <p className="text-[8px] text-gray-400 mt-0.5">Book classes</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-purple-800/90 via-indigo-800/90 to-cyan-800/90 border border-purple-500/60 p-3 rounded-xl relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10"></div>
+                            <div className="absolute top-0.5 right-0.5">
+                                <span className="text-[7px] text-white font-bold px-1 py-0.5 rounded" style={{ backgroundColor: data.primaryColor }}>NEW</span>
+                            </div>
+                            <div className="relative z-10">
+                                <div className="text-xl mb-1">🔮</div>
+                                <h4 className="font-bold text-white text-[11px]">ChronosBelt</h4>
+                                <p className="text-[8px] text-cyan-300 mt-0.5">AI black belt date</p>
                             </div>
                         </div>
-                        <div className="text-gray-500 text-xs">→</div>
+                        <div className="bg-gradient-to-br from-violet-900/70 to-violet-950 border border-violet-700/40 p-3 rounded-xl">
+                            <div className="text-xl mb-1">🧠</div>
+                            <h4 className="font-bold text-white text-[11px]">Sensei Mind</h4>
+                            <p className="text-[8px] text-gray-400 mt-0.5">AI training intel</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-amber-900/70 to-amber-950 border border-amber-700/40 p-3 rounded-xl">
+                            <div className="text-xl mb-1">🏆</div>
+                            <h4 className="font-bold text-white text-[11px]">Arena Ranks</h4>
+                            <p className="text-[8px] text-gray-400 mt-0.5">Leaderboard</p>
+                        </div>
                     </div>
 
-                    {/* Recent Feedback */}
+                    {/* Sensei Intel / Recent Feedback */}
                     <div>
-                        <h3 className="font-bold text-gray-300 px-1 text-xs uppercase tracking-wider mb-2">Recent Feedback</h3>
+                        <h3 className="font-bold text-gray-300 px-1 text-[10px] uppercase tracking-wider mb-2 flex items-center">
+                            <span className="mr-1">💬</span> Sensei Intel
+                        </h3>
                         <div className="bg-gray-800 p-3 rounded-xl border-l-2 shadow-sm relative" style={{ borderLeftColor: data.primaryColor }}>
-                            <p className="text-gray-300 text-xs italic mb-2">"Alex showed great focus today! Keep up the good work on the new form."</p>
-                            <div className="flex justify-between items-center text-[10px] text-gray-500">
+                            <p className="text-gray-300 text-[11px] italic mb-2">"Alex showed great focus today! Keep up the good work on the new form."</p>
+                            <div className="flex justify-between items-center text-[9px] text-gray-500">
                                 <span>Today</span>
                                 <span className="font-medium" style={{ color: data.primaryColor }}>✨ Coach AI</span>
                             </div>
@@ -166,23 +229,27 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
 
                 </div>
 
-                {/* Bottom Nav */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-16 flex justify-around items-center z-20">
+                {/* Bottom Nav - matches real app */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-14 flex justify-around items-center z-20">
                     <div className="flex flex-col items-center" style={{ color: data.primaryColor }}>
-                        <span className="text-lg">🏠</span>
-                        <span className="text-[9px] mt-1 font-medium">Home</span>
+                        <span className="text-base">🏠</span>
+                        <span className="text-[8px] mt-0.5 font-medium">HQ</span>
                     </div>
                     <div className="flex flex-col items-center text-gray-500">
-                        <span className="text-lg">📅</span>
-                        <span className="text-[9px] mt-1">Booking</span>
+                        <span className="text-base">⚔️</span>
+                        <span className="text-[8px] mt-0.5">Arena</span>
                     </div>
                     <div className="flex flex-col items-center text-gray-500">
-                        <span className="text-lg">🚀</span>
-                        <span className="text-[9px] mt-1">Journey</span>
+                        <span className="text-base">💬</span>
+                        <span className="text-[8px] mt-0.5">Feedback</span>
                     </div>
                     <div className="flex flex-col items-center text-gray-500">
-                        <span className="text-lg">📊</span>
-                        <span className="text-[9px] mt-1">Insights</span>
+                        <span className="text-base">🔮</span>
+                        <span className="text-[8px] mt-0.5">Chronos</span>
+                    </div>
+                    <div className="flex flex-col items-center text-gray-500">
+                        <span className="text-base">🧠</span>
+                        <span className="text-[8px] mt-0.5">Sensei</span>
                     </div>
                 </div>
 
