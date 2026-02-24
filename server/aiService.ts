@@ -637,10 +637,18 @@ export interface DailyChallengeResult {
   };
 }
 
-export async function generateDailyChallenge(belt: string, artType: string = 'Taekwondo'): Promise<DailyChallengeResult> {
+export async function generateDailyChallenge(belt: string, artType: string = 'Taekwondo', lang: string = 'en'): Promise<DailyChallengeResult> {
   const openai = getOpenAIClient();
   
+  const langInstruction = lang === 'fr' 
+    ? 'LANGUAGE: Generate ALL text (title, description, question, options, explanation) in FRENCH.'
+    : lang === 'de' 
+    ? 'LANGUAGE: Generate ALL text (title, description, question, options, explanation) in GERMAN.'
+    : 'LANGUAGE: Generate all text in English.';
+  
   const prompt = `Generate a fun daily quiz challenge for a ${belt} belt student practicing ${artType}.
+
+${langInstruction}
 
 IMPORTANT: The martial art is ${artType} (NOT Taekwondo unless that's the art specified). Make sure the title and question are specific to ${artType}.
 

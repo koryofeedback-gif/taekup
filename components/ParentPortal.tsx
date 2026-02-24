@@ -919,16 +919,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
             
             setLoadingMysteryChallenge(true);
+            const langCode = language === 'French' ? 'fr' : language === 'German' ? 'de' : 'en';
             try {
                 const params = new URLSearchParams({
                     studentId: student.id,
                     belt: studentBeltName,
                 });
                 
-                // Add clubId for proper art type detection
                 if (student.clubId) {
                     params.append('clubId', student.clubId);
                 }
+                
+                params.append('language', langCode);
                 
                 const response = await fetch(`/api/daily-challenge?${params}`);
                 const result = await response.json();
@@ -969,58 +971,36 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     console.log('[MysteryChallenge] Status check failed, showing fallback');
                 }
                 
-                // Static fallback questions - rotates daily to prevent same question every day
-                const fallbackQuestions = [
-                    {
-                        title: "Martial Arts Respect",
-                        question: "What is the traditional bow called in Korean martial arts?",
-                        options: ["Hajime", "Kyungye (경례)", "Rei", "Salute"],
-                        correctIndex: 1,
-                        explanation: "Kyungye (경례) means 'bow' in Korean and is used to show respect."
-                    },
-                    {
-                        title: "Belt Wisdom",
-                        question: "What does the color of the White Belt represent?",
-                        options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
-                        correctIndex: 1,
-                        explanation: "The White Belt represents innocence and a beginner's pure mind."
-                    },
-                    {
-                        title: "Taekwondo Origins",
-                        question: "What country did Taekwondo originate from?",
-                        options: ["Japan", "China", "Korea", "Vietnam"],
-                        correctIndex: 2,
-                        explanation: "Taekwondo was developed in Korea in the 1940s and 1950s."
-                    },
-                    {
-                        title: "Training Space",
-                        question: "What is the training hall called in Taekwondo?",
-                        options: ["Dojo", "Dojang", "Gym", "Studio"],
-                        correctIndex: 1,
-                        explanation: "Dojang (도장) is the Korean word for a martial arts training hall."
-                    },
-                    {
-                        title: "Spirit of Taekwondo",
-                        question: "What does 'Taekwondo' literally mean?",
-                        options: ["Art of fighting", "The way of the foot and fist", "Korean karate", "Self-defense"],
-                        correctIndex: 1,
-                        explanation: "Taekwondo means 'the way of the foot and fist' - Tae (foot), Kwon (fist), Do (way)."
-                    },
-                    {
-                        title: "Forms Practice",
-                        question: "What are the choreographed patterns called in Taekwondo?",
-                        options: ["Kata", "Poomsae", "Kihon", "Sparring"],
-                        correctIndex: 1,
-                        explanation: "Poomsae (품새) are the forms or patterns in Taekwondo."
-                    },
-                    {
-                        title: "Black Belt Meaning",
-                        question: "What does the Black Belt traditionally symbolize?",
-                        options: ["End of training", "Mastery and maturity", "Danger level", "Teaching ability"],
-                        correctIndex: 1,
-                        explanation: "The Black Belt symbolizes maturity - it's actually the beginning of deeper learning!"
-                    }
-                ];
+                const fallbackByLang: Record<string, Array<{title: string; question: string; options: string[]; correctIndex: number; explanation: string}>> = {
+                    en: [
+                        { title: "Martial Arts Respect", question: "What is the traditional bow called in Korean martial arts?", options: ["Hajime", "Kyungye (경례)", "Rei", "Salute"], correctIndex: 1, explanation: "Kyungye (경례) means 'bow' in Korean and is used to show respect." },
+                        { title: "Belt Wisdom", question: "What does the color of the White Belt represent?", options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"], correctIndex: 1, explanation: "The White Belt represents innocence and a beginner's pure mind." },
+                        { title: "Taekwondo Origins", question: "What country did Taekwondo originate from?", options: ["Japan", "China", "Korea", "Vietnam"], correctIndex: 2, explanation: "Taekwondo was developed in Korea in the 1940s and 1950s." },
+                        { title: "Training Space", question: "What is the training hall called in Taekwondo?", options: ["Dojo", "Dojang", "Gym", "Studio"], correctIndex: 1, explanation: "Dojang (도장) is the Korean word for a martial arts training hall." },
+                        { title: "Spirit of Taekwondo", question: "What does 'Taekwondo' literally mean?", options: ["Art of fighting", "The way of the foot and fist", "Korean karate", "Self-defense"], correctIndex: 1, explanation: "Taekwondo means 'the way of the foot and fist' - Tae (foot), Kwon (fist), Do (way)." },
+                        { title: "Forms Practice", question: "What are the choreographed patterns called in Taekwondo?", options: ["Kata", "Poomsae", "Kihon", "Sparring"], correctIndex: 1, explanation: "Poomsae (품새) are the forms or patterns in Taekwondo." },
+                        { title: "Black Belt Meaning", question: "What does the Black Belt traditionally symbolize?", options: ["End of training", "Mastery and maturity", "Danger level", "Teaching ability"], correctIndex: 1, explanation: "The Black Belt symbolizes maturity - it's actually the beginning of deeper learning!" }
+                    ],
+                    fr: [
+                        { title: "Respect en Arts Martiaux", question: "Comment s'appelle le salut traditionnel dans les arts martiaux coréens ?", options: ["Hajime", "Kyungye (경례)", "Rei", "Salut"], correctIndex: 1, explanation: "Kyungye (경례) signifie 'salut' en coréen et est utilisé pour montrer le respect." },
+                        { title: "Sagesse des Ceintures", question: "Que représente la couleur de la ceinture blanche ?", options: ["Le danger", "L'innocence/Débutant", "La maîtrise", "Le feu"], correctIndex: 1, explanation: "La ceinture blanche représente l'innocence et l'esprit pur du débutant." },
+                        { title: "Origines du Taekwondo", question: "De quel pays le Taekwondo est-il originaire ?", options: ["Japon", "Chine", "Corée", "Vietnam"], correctIndex: 2, explanation: "Le Taekwondo a été développé en Corée dans les années 1940 et 1950." },
+                        { title: "Lieu d'Entraînement", question: "Comment s'appelle la salle d'entraînement en Taekwondo ?", options: ["Dojo", "Dojang", "Gymnase", "Studio"], correctIndex: 1, explanation: "Dojang (도장) est le mot coréen pour une salle d'arts martiaux." },
+                        { title: "Esprit du Taekwondo", question: "Que signifie littéralement 'Taekwondo' ?", options: ["Art du combat", "La voie du pied et du poing", "Karaté coréen", "Art de l'auto-défense"], correctIndex: 1, explanation: "Taekwondo signifie 'la voie du pied et du poing' - Tae (pied), Kwon (poing), Do (voie)." },
+                        { title: "Pratique des Formes", question: "Comment s'appellent les enchaînements chorégraphiés en Taekwondo ?", options: ["Kata", "Poomsae", "Kihon", "Combat"], correctIndex: 1, explanation: "Les Poomsae (품새) sont les formes ou enchaînements en Taekwondo." },
+                        { title: "Signification Ceinture Noire", question: "Que symbolise traditionnellement la ceinture noire ?", options: ["Fin de l'entraînement", "Maturité et maîtrise", "Niveau de danger", "Capacité d'enseigner"], correctIndex: 1, explanation: "La ceinture noire symbolise la maturité - c'est en fait le début d'un apprentissage plus profond !" }
+                    ],
+                    de: [
+                        { title: "Respekt in Kampfkünsten", question: "Wie heißt die traditionelle Verbeugung in koreanischen Kampfkünsten?", options: ["Hajime", "Kyungye (경례)", "Rei", "Gruß"], correctIndex: 1, explanation: "Kyungye (경례) bedeutet 'Verbeugung' auf Koreanisch und zeigt Respekt." },
+                        { title: "Gürtel-Weisheit", question: "Was symbolisiert die Farbe des weißen Gürtels?", options: ["Gefahr", "Unschuld/Anfänger", "Meisterschaft", "Feuer"], correctIndex: 1, explanation: "Der weiße Gürtel steht für Unschuld und den reinen Geist des Anfängers." },
+                        { title: "Ursprünge des Taekwondo", question: "Aus welchem Land stammt Taekwondo?", options: ["Japan", "China", "Korea", "Vietnam"], correctIndex: 2, explanation: "Taekwondo wurde in den 1940er und 1950er Jahren in Korea entwickelt." },
+                        { title: "Trainingsraum", question: "Wie heißt die Trainingshalle im Taekwondo?", options: ["Dojo", "Dojang", "Fitnessstudio", "Studio"], correctIndex: 1, explanation: "Dojang (도장) ist das koreanische Wort für eine Kampfkunst-Trainingshalle." },
+                        { title: "Geist des Taekwondo", question: "Was bedeutet 'Taekwondo' wörtlich?", options: ["Kampfkunst", "Der Weg des Fußes und der Faust", "Koreanisches Karate", "Selbstverteidigung"], correctIndex: 1, explanation: "Taekwondo bedeutet 'Der Weg des Fußes und der Faust' - Tae (Fuß), Kwon (Faust), Do (Weg)." },
+                        { title: "Formentraining", question: "Wie heißen die choreografierten Bewegungsabläufe im Taekwondo?", options: ["Kata", "Poomsae", "Kihon", "Sparring"], correctIndex: 1, explanation: "Poomsae (품새) sind die Formen oder Bewegungsabläufe im Taekwondo." },
+                        { title: "Bedeutung Schwarzer Gürtel", question: "Was symbolisiert der schwarze Gürtel traditionell?", options: ["Ende des Trainings", "Reife und Meisterschaft", "Gefahrenstufe", "Lehrfähigkeit"], correctIndex: 1, explanation: "Der schwarze Gürtel symbolisiert Reife - er ist tatsächlich der Beginn tieferen Lernens!" }
+                    ]
+                };
+                const fallbackQuestions = fallbackByLang[langCode] || fallbackByLang.en;
                 
                 // Select question based on day of year
                 const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
@@ -1030,7 +1010,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 const fallbackChallenge = {
                     id: `fallback-${today}-${student.id.slice(0, 8)}`,
                     title: selectedQ.title,
-                    description: 'Test your knowledge while we reconnect!',
+                    description: langCode === 'fr' ? 'Testez vos connaissances !' : langCode === 'de' ? 'Teste dein Wissen!' : 'Test your knowledge while we reconnect!',
                     type: 'quiz' as const,
                     xpReward: 15,
                     isStaticFallback: true,
@@ -1050,7 +1030,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         };
         
         fetchDailyChallenge();
-    }, [student.id, studentBeltName]);
+    }, [student.id, studentBeltName, language]);
     
     // Fetch own student's history for badge calculations when viewing Rivals
     useEffect(() => {

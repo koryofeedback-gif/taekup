@@ -3476,67 +3476,50 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
 // DAILY MYSTERY CHALLENGE - with robust fallback
 // =====================================================
 
-function getFallbackChallenge() {
-  // Array of fallback questions - rotates daily to prevent same question every day
-  const fallbackQuestions = [
-    {
-      title: "Belt Wisdom",
-      question: "What does the color of the White Belt represent?",
-      options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
-      correctIndex: 1,
-      explanation: "The White Belt represents innocence and a beginner's pure mind - ready to absorb new knowledge like a blank canvas!"
-    },
-    {
-      title: "Taekwondo Origins",
-      question: "What country did Taekwondo originate from?",
-      options: ["Japan", "China", "Korea", "Vietnam"],
-      correctIndex: 2,
-      explanation: "Taekwondo was developed in Korea in the 1940s and 1950s, combining traditional Korean martial arts with influences from other disciplines."
-    },
-    {
-      title: "Martial Arts Respect",
-      question: "What is the traditional bow called in Korean martial arts?",
-      options: ["Hajime", "Kyungye", "Rei", "Salute"],
-      correctIndex: 1,
-      explanation: "Kyungye (경례) means 'bow' in Korean and is used to show respect to instructors, training partners, and the dojang."
-    },
-    {
-      title: "Training Space",
-      question: "What is the training hall called in Taekwondo?",
-      options: ["Dojo", "Dojang", "Gym", "Studio"],
-      correctIndex: 1,
-      explanation: "Dojang (도장) is the Korean word for a martial arts training hall, literally meaning 'the place of the way'."
-    },
-    {
-      title: "Black Belt Meaning",
-      question: "What does the Black Belt traditionally symbolize?",
-      options: ["End of training", "Mastery and maturity", "Danger level", "Teaching ability"],
-      correctIndex: 1,
-      explanation: "The Black Belt symbolizes maturity and proficiency in the basics - it's actually the beginning of deeper learning, not the end!"
-    },
-    {
-      title: "Spirit of Taekwondo",
-      question: "What does 'Taekwondo' literally mean?",
-      options: ["Art of fighting", "The way of the foot and fist", "Korean karate", "Self-defense art"],
-      correctIndex: 1,
-      explanation: "Taekwondo (태권도) literally means 'the way of the foot and fist' - Tae (foot), Kwon (fist), Do (way/art)."
-    },
-    {
-      title: "Forms Practice",
-      question: "What are the choreographed patterns of movements called in Taekwondo?",
-      options: ["Kata", "Poomsae", "Kihon", "Sparring"],
-      correctIndex: 1,
-      explanation: "Poomsae (품새) are the forms or patterns in Taekwondo - a sequence of techniques practiced solo to develop precision and focus."
-    }
-  ];
+function getFallbackChallenge(lang: string = 'en') {
+  const fallbackByLang: Record<string, Array<{title: string; question: string; options: string[]; correctIndex: number; explanation: string}>> = {
+    en: [
+      { title: "Belt Wisdom", question: "What does the color of the White Belt represent?", options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"], correctIndex: 1, explanation: "The White Belt represents innocence and a beginner's pure mind - ready to absorb new knowledge like a blank canvas!" },
+      { title: "Taekwondo Origins", question: "What country did Taekwondo originate from?", options: ["Japan", "China", "Korea", "Vietnam"], correctIndex: 2, explanation: "Taekwondo was developed in Korea in the 1940s and 1950s." },
+      { title: "Martial Arts Respect", question: "What is the traditional bow called in Korean martial arts?", options: ["Hajime", "Kyungye", "Rei", "Salute"], correctIndex: 1, explanation: "Kyungye (경례) means 'bow' in Korean and is used to show respect." },
+      { title: "Training Space", question: "What is the training hall called in Taekwondo?", options: ["Dojo", "Dojang", "Gym", "Studio"], correctIndex: 1, explanation: "Dojang (도장) is the Korean word for a martial arts training hall." },
+      { title: "Black Belt Meaning", question: "What does the Black Belt traditionally symbolize?", options: ["End of training", "Mastery and maturity", "Danger level", "Teaching ability"], correctIndex: 1, explanation: "The Black Belt symbolizes maturity - it's actually the beginning of deeper learning!" },
+      { title: "Spirit of Taekwondo", question: "What does 'Taekwondo' literally mean?", options: ["Art of fighting", "The way of the foot and fist", "Korean karate", "Self-defense art"], correctIndex: 1, explanation: "Taekwondo means 'the way of the foot and fist' - Tae (foot), Kwon (fist), Do (way)." },
+      { title: "Forms Practice", question: "What are the choreographed patterns called in Taekwondo?", options: ["Kata", "Poomsae", "Kihon", "Sparring"], correctIndex: 1, explanation: "Poomsae (품새) are the forms or patterns in Taekwondo." }
+    ],
+    fr: [
+      { title: "Sagesse des Ceintures", question: "Que représente la couleur de la ceinture blanche ?", options: ["Le danger", "L'innocence/Débutant", "La maîtrise", "Le feu"], correctIndex: 1, explanation: "La ceinture blanche représente l'innocence et l'esprit pur du débutant." },
+      { title: "Origines du Taekwondo", question: "De quel pays le Taekwondo est-il originaire ?", options: ["Japon", "Chine", "Corée", "Vietnam"], correctIndex: 2, explanation: "Le Taekwondo a été développé en Corée dans les années 1940 et 1950." },
+      { title: "Respect en Arts Martiaux", question: "Comment s'appelle le salut traditionnel dans les arts martiaux coréens ?", options: ["Hajime", "Kyungye (경례)", "Rei", "Salut"], correctIndex: 1, explanation: "Kyungye (경례) signifie 'salut' en coréen et est utilisé pour montrer le respect." },
+      { title: "Lieu d'Entraînement", question: "Comment s'appelle la salle d'entraînement en Taekwondo ?", options: ["Dojo", "Dojang", "Gymnase", "Studio"], correctIndex: 1, explanation: "Dojang (도장) est le mot coréen pour une salle d'arts martiaux." },
+      { title: "Signification Ceinture Noire", question: "Que symbolise traditionnellement la ceinture noire ?", options: ["Fin de l'entraînement", "Maturité et maîtrise", "Niveau de danger", "Capacité d'enseigner"], correctIndex: 1, explanation: "La ceinture noire symbolise la maturité - c'est le début d'un apprentissage plus profond !" },
+      { title: "Esprit du Taekwondo", question: "Que signifie littéralement 'Taekwondo' ?", options: ["Art du combat", "La voie du pied et du poing", "Karaté coréen", "Art de l'auto-défense"], correctIndex: 1, explanation: "Taekwondo signifie 'la voie du pied et du poing' - Tae (pied), Kwon (poing), Do (voie)." },
+      { title: "Pratique des Formes", question: "Comment s'appellent les enchaînements chorégraphiés en Taekwondo ?", options: ["Kata", "Poomsae", "Kihon", "Combat"], correctIndex: 1, explanation: "Les Poomsae (품새) sont les formes ou enchaînements en Taekwondo." }
+    ],
+    de: [
+      { title: "Gürtel-Weisheit", question: "Was symbolisiert die Farbe des weißen Gürtels?", options: ["Gefahr", "Unschuld/Anfänger", "Meisterschaft", "Feuer"], correctIndex: 1, explanation: "Der weiße Gürtel steht für Unschuld und den reinen Geist des Anfängers." },
+      { title: "Ursprünge des Taekwondo", question: "Aus welchem Land stammt Taekwondo?", options: ["Japan", "China", "Korea", "Vietnam"], correctIndex: 2, explanation: "Taekwondo wurde in den 1940er und 1950er Jahren in Korea entwickelt." },
+      { title: "Respekt in Kampfkünsten", question: "Wie heißt die traditionelle Verbeugung in koreanischen Kampfkünsten?", options: ["Hajime", "Kyungye (경례)", "Rei", "Gruß"], correctIndex: 1, explanation: "Kyungye (경례) bedeutet 'Verbeugung' auf Koreanisch und zeigt Respekt." },
+      { title: "Trainingsraum", question: "Wie heißt die Trainingshalle im Taekwondo?", options: ["Dojo", "Dojang", "Fitnessstudio", "Studio"], correctIndex: 1, explanation: "Dojang (도장) ist das koreanische Wort für eine Kampfkunst-Trainingshalle." },
+      { title: "Bedeutung Schwarzer Gürtel", question: "Was symbolisiert der schwarze Gürtel traditionell?", options: ["Ende des Trainings", "Reife und Meisterschaft", "Gefahrenstufe", "Lehrfähigkeit"], correctIndex: 1, explanation: "Der schwarze Gürtel symbolisiert Reife - er ist tatsächlich der Beginn tieferen Lernens!" },
+      { title: "Geist des Taekwondo", question: "Was bedeutet 'Taekwondo' wörtlich?", options: ["Kampfkunst", "Der Weg des Fußes und der Faust", "Koreanisches Karate", "Selbstverteidigung"], correctIndex: 1, explanation: "Taekwondo bedeutet 'Der Weg des Fußes und der Faust' - Tae (Fuß), Kwon (Faust), Do (Weg)." },
+      { title: "Formentraining", question: "Wie heißen die choreografierten Bewegungsabläufe im Taekwondo?", options: ["Kata", "Poomsae", "Kihon", "Sparring"], correctIndex: 1, explanation: "Poomsae (품새) sind die Formen oder Bewegungsabläufe im Taekwondo." }
+    ]
+  };
   
-  // Select question based on day of year (rotates through all questions)
+  const questions = fallbackByLang[lang] || fallbackByLang.en;
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-  const selectedQuestion = fallbackQuestions[dayOfYear % fallbackQuestions.length];
+  const selectedQuestion = questions[dayOfYear % questions.length];
+  
+  const descByLang: Record<string, string> = {
+    en: "Test your martial arts knowledge!",
+    fr: "Testez vos connaissances en arts martiaux !",
+    de: "Teste dein Kampfkunst-Wissen!"
+  };
   
   return {
     title: selectedQuestion.title,
-    description: "Test your martial arts knowledge!",
+    description: descByLang[lang] || descByLang.en,
     type: 'quiz' as const,
     xpReward: 15,
     quizData: {
@@ -3548,11 +3531,19 @@ function getFallbackChallenge() {
   };
 }
 
-async function generateDailyChallengeAI(targetBelt: string, artType: string): Promise<any> {
+async function generateDailyChallengeAI(targetBelt: string, artType: string, lang: string = 'en'): Promise<any> {
   const gemini = getGeminiClient();
   const openai = getOpenAIClient();
   
+  const langInstruction = lang === 'fr' 
+    ? 'LANGUAGE: Generate ALL text (title, description, question, options, explanation) in FRENCH.'
+    : lang === 'de' 
+    ? 'LANGUAGE: Generate ALL text (title, description, question, options, explanation) in GERMAN.'
+    : 'LANGUAGE: Generate all text in English.';
+  
   const prompt = `Generate a fun daily quiz challenge for a ${targetBelt} belt student practicing ${artType}.
+
+${langInstruction}
 
 IMPORTANT: The martial art is ${artType} (NOT Taekwondo unless that's the art specified). Make sure the title and question are specific to ${artType}.
 
@@ -3633,7 +3624,7 @@ Return ONLY valid JSON, no markdown.`;
 async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   
-  const { studentId, clubId, belt } = req.query;
+  const { studentId, clubId, belt, language } = req.query;
   
   if (!studentId || !belt) {
     return res.status(400).json({ error: 'studentId and belt are required' });
@@ -3641,6 +3632,7 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
 
   const today = new Date().toISOString().split('T')[0];
   const targetBelt = (belt as string).toLowerCase();
+  const lang = (language as string) || 'en';
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const isValidUuid = uuidRegex.test(studentId as string);
 
@@ -3719,12 +3711,12 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
       // Generate new challenge with AI, with fallback
       let generated;
       try {
-        generated = await generateDailyChallengeAI(targetBelt, artType);
-        console.log(`[DailyChallenge] AI generated challenge for ${artType} ${targetBelt} belt`);
+        generated = await generateDailyChallengeAI(targetBelt, artType, lang);
+        console.log(`[DailyChallenge] AI generated challenge for ${artType} ${targetBelt} belt in ${lang}`);
       } catch (aiError: any) {
         console.error(`[DailyChallenge] AI generation failed: ${aiError.message}`);
         console.log(`[DailyChallenge] Using fallback challenge`);
-        generated = getFallbackChallenge();
+        generated = getFallbackChallenge(lang);
       }
       
       // Cache in database with art_type
@@ -3766,7 +3758,7 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     console.error('[DailyChallenge] Critical error:', error.message);
-    const fallback = getFallbackChallenge();
+    const fallback = getFallbackChallenge(lang);
     return res.json({
       completed: false,
       challenge: {

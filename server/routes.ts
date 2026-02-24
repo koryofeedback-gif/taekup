@@ -3675,7 +3675,7 @@ export function registerRoutes(app: Express) {
 
   app.get('/api/daily-challenge', async (req: Request, res: Response) => {
     try {
-      const { studentId, clubId, belt } = req.query;
+      const { studentId, clubId, belt, language } = req.query;
       
       if (!studentId || !belt) {
         return res.status(400).json({ error: 'studentId and belt are required' });
@@ -3683,6 +3683,7 @@ export function registerRoutes(app: Express) {
 
       const today = new Date().toISOString().split('T')[0];
       const targetBelt = (belt as string).toLowerCase();
+      const lang = (language as string) || 'en';
       
       // STRICT MODE: Validate UUID - NO DEMO MODE
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -3741,8 +3742,8 @@ export function registerRoutes(app: Express) {
         // Try to generate new challenge with AI, with fallback on failure
         let generated;
         try {
-          generated = await generateDailyChallenge(targetBelt, artType);
-          console.log(`[DailyChallenge] AI generated challenge for ${artType} ${targetBelt} belt`);
+          generated = await generateDailyChallenge(targetBelt, artType, lang);
+          console.log(`[DailyChallenge] AI generated challenge for ${artType} ${targetBelt} belt in ${lang}`);
         } catch (aiError: any) {
           // AI generation failed - use fallback challenge
           console.error(`[DailyChallenge] AI generation failed: ${aiError.message}`);
