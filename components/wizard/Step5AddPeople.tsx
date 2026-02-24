@@ -447,11 +447,17 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <select value={newStudent.beltId} onChange={e => setNewStudent({...newStudent, beltId: e.target.value})} className="wizard-input">
-                                <option value="">Select Belt... *</option>
-                                {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
-                            <input type="number" value={newStudent.stripes ?? ''} onChange={e => setNewStudent({...newStudent, stripes: parseInt(e.target.value) || 0})} placeholder="Stripes" className="wizard-input" />
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Belt</label>
+                                <select value={newStudent.beltId} onChange={e => setNewStudent({...newStudent, beltId: e.target.value})} className="wizard-input">
+                                    <option value="">Select Belt... *</option>
+                                    {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Stripes</label>
+                                <input type="number" min={0} max={data.stripesPerBelt || 10} value={newStudent.stripes ?? ''} onChange={e => setNewStudent({...newStudent, stripes: parseInt(e.target.value) || 0})} placeholder="0" className="wizard-input" />
+                            </div>
                         </div>
 
                         <div>
