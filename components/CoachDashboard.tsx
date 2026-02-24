@@ -34,27 +34,14 @@ declare global {
 // --- HELPER COMPONENTS ---
 
 const ScoreDropdown: React.FC<{ score: number | null | undefined; onChange: (score: number) => void }> = ({ score, onChange }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const wrapperRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [wrapperRef]);
-    
-    const scoreDisplay: Record<string, { emoji: string; color: string }> = {
-        '2': { emoji: '💚', color: 'bg-green-500' },
-        '1': { emoji: '💛', color: 'bg-yellow-500' },
-        '0': { emoji: '❤️', color: 'bg-red-500' },
-        'null': { emoji: '⚪', color: 'bg-gray-600' }
+    const scoreOrder: Array<number | null> = [null, 2, 1, 0];
+    const scoreDisplay: Record<string, { emoji: string; color: string; ring: string }> = {
+        '2': { emoji: '💚', color: 'bg-green-500', ring: 'ring-green-400' },
+        '1': { emoji: '💛', color: 'bg-yellow-500', ring: 'ring-yellow-400' },
+        '0': { emoji: '❤️', color: 'bg-red-500', ring: 'ring-red-400' },
+        'null': { emoji: '⚪', color: 'bg-gray-600', ring: 'ring-gray-500' }
     };
 
-    // Robustly handle undefined or null scores
     let currentDisplayKey = 'null';
     if (score !== null && score !== undefined) {
         currentDisplayKey = String(score);
@@ -62,21 +49,26 @@ const ScoreDropdown: React.FC<{ score: number | null | undefined; onChange: (sco
     
     const currentDisplay = scoreDisplay[currentDisplayKey] || scoreDisplay['null'];
 
+    const handleClick = () => {
+        const currentIndex = scoreOrder.indexOf(score === undefined ? null : score);
+        const nextIndex = (currentIndex + 1) % scoreOrder.length;
+        const nextScore = scoreOrder[nextIndex];
+        if (nextScore !== null) {
+            onChange(nextScore);
+        } else {
+            onChange(null as any);
+        }
+    };
+
     return (
-        <div className="relative flex justify-center" ref={wrapperRef}>
-            <button onClick={() => setIsOpen(!isOpen)} className={`w-9 h-7 flex items-center justify-center rounded-md text-sm transition-colors ${currentDisplay.color}`}>
-                {currentDisplay.emoji} <span className="text-xs ml-0.5 opacity-70">▼</span>
+        <div className="flex justify-center">
+            <button 
+                onClick={handleClick}
+                className={`w-10 h-10 flex items-center justify-center rounded-full text-lg transition-all duration-150 ${currentDisplay.color} ring-2 ${currentDisplay.ring} hover:scale-110 active:scale-95 shadow-md`}
+                title="Tap to cycle: ⚪ → 💚 → 💛 → ❤️"
+            >
+                {currentDisplay.emoji}
             </button>
-            {isOpen && (
-                <div className="absolute z-20 top-full mt-1 bg-gray-700 rounded-md shadow-lg p-1 space-y-1">
-                    {[2, 1, 0].map(val => (
-                        <button key={val} onClick={() => { onChange(val); setIsOpen(false); }}
-                            className={`w-9 h-7 flex items-center justify-center rounded-md text-lg ${scoreDisplay[String(val)].color}`}>
-                            {scoreDisplay[String(val)].emoji}
-                        </button>
-                    ))}
-                </div>
-            )}
         </div>
     );
 };
