@@ -1440,7 +1440,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             } : null;
 
             // Calculate new lifetimeXp (normalized XP for Dojang Rivals - never resets)
-            const lifetimeXpBefore = student.lifetimeXp || 0;
+            const lifetimeXpBefore = student.lifetimeXp || student.totalXP || 0;
             const lifetimeXpAfter = lifetimeXpBefore + gradingXP; // Fair normalized XP with bonus/homework
 
             return { 
