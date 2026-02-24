@@ -3696,7 +3696,38 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
       } catch (e) { /* ignore */ }
     }
 
-    // Check if challenge exists for today + belt + art_type (PROPER CACHING)
+    // For non-English, generate translated challenge directly (skip DB cache which is English-only)
+    if (lang !== 'en') {
+      let generated;
+      try {
+        generated = await generateDailyChallengeAI(targetBelt, artType, lang);
+        console.log(`[DailyChallenge] AI generated ${lang} challenge for ${artType} ${targetBelt} belt`);
+      } catch (aiError: any) {
+        console.error(`[DailyChallenge] AI generation failed for ${lang}: ${aiError.message}`);
+        generated = getFallbackChallenge(lang);
+      }
+      
+      // Still try to get the cached English challenge ID for submission tracking
+      const cachedEn = await client.query(
+        `SELECT id FROM daily_challenges WHERE date = $1 AND target_belt = $2 AND art_type = $3 LIMIT 1`,
+        [today, targetBelt, artType]
+      );
+      const challengeId = cachedEn.rows.length > 0 ? cachedEn.rows[0].id : ('lang-' + Date.now());
+      
+      return res.json({
+        completed: false,
+        challenge: {
+          id: challengeId,
+          title: generated.title,
+          description: generated.description,
+          type: generated.type || 'quiz',
+          xpReward: generated.xpReward || 15,
+          quizData: generated.quizData,
+        }
+      });
+    }
+
+    // English: use DB cache as before
     const existingChallenge = await client.query(
       `SELECT * FROM daily_challenges WHERE date = $1 AND target_belt = $2 AND art_type = $3 LIMIT 1`,
       [today, targetBelt, artType]
@@ -3708,18 +3739,15 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
       challenge = existingChallenge.rows[0];
       console.log(`[DailyChallenge] Using cached challenge for ${artType} ${targetBelt} belt`);
     } else {
-      // Generate new challenge with AI, with fallback
       let generated;
       try {
-        generated = await generateDailyChallengeAI(targetBelt, artType, lang);
-        console.log(`[DailyChallenge] AI generated challenge for ${artType} ${targetBelt} belt in ${lang}`);
+        generated = await generateDailyChallengeAI(targetBelt, artType, 'en');
+        console.log(`[DailyChallenge] AI generated challenge for ${artType} ${targetBelt} belt`);
       } catch (aiError: any) {
         console.error(`[DailyChallenge] AI generation failed: ${aiError.message}`);
-        console.log(`[DailyChallenge] Using fallback challenge`);
-        generated = getFallbackChallenge(lang);
+        generated = getFallbackChallenge('en');
       }
       
-      // Cache in database with art_type
       try {
         const insertResult = await client.query(
           `INSERT INTO daily_challenges (date, target_belt, art_type, title, description, xp_reward, type, quiz_data, created_by_ai)
