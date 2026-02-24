@@ -108,14 +108,12 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
 const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string }> = ({ students, belts, clubId }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
     const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
-    const [cachedLeaderboard, setCachedLeaderboard] = useState<Array<{id: string, name: string, monthlyPTS: number}>>(() => {
-        try {
-            const cached = localStorage.getItem('taekup_monthly_effort_top3');
-            if (cached) return JSON.parse(cached);
-        } catch (e) {}
-        return [];
-    });
+    const [cachedLeaderboard, setCachedLeaderboard] = useState<Array<{id: string, name: string, monthlyPTS: number}>>([]);
     const [retentionData, setRetentionData] = useState<Record<string, string | null> | null>(null);
+
+    const studentDataFingerprint = useMemo(() => {
+        return students.reduce((sum, s) => sum + (s.totalPoints || 0) + (s.totalXP || 0), 0) + '-' + students.length;
+    }, [students]);
 
     useEffect(() => {
         const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
@@ -136,9 +134,8 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
             }
         };
         fetchRetention();
-    }, [clubId, students.length]);
+    }, [clubId, studentDataFingerprint]);
     
-    // Fetch monthly PTS from API (persisted in database) — also caches top 3 directly from API response
     useEffect(() => {
         const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || undefined;
         if (!effectiveClubId) return;
@@ -158,7 +155,6 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                     const finalTop3 = top3.slice(0, 3);
                     setApiMonthlyPTS(ptsMap);
                     setCachedLeaderboard(finalTop3);
-                    try { localStorage.setItem('taekup_monthly_effort_top3', JSON.stringify(finalTop3)); } catch (e) {}
                 }
             } catch (error) {
                 console.error('[InsightSidebar] Failed to fetch monthly PTS:', error);
@@ -167,7 +163,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
         fetchMonthlyPTS();
         const interval = setInterval(fetchMonthlyPTS, 30000);
         return () => clearInterval(interval);
-    }, [clubId, students.length]);
+    }, [clubId, studentDataFingerprint]);
     
     // Mode 1: Monthly Effort — merge students with API data, fallback to cached leaderboard
     const monthlyEffortStudents = useMemo(() => {
