@@ -2166,15 +2166,21 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
     // Use sessionXp to INCREMENT total_xp (single source of truth)
     const xpEarned = sessionXp || 0;
     
-    await client.query(
+    const updateResult = await client.query(
       `UPDATE students SET 
         total_points = COALESCE($1, total_points),
         total_xp = COALESCE(total_xp, 0) + $2,
         last_class_at = NOW(),
         updated_at = NOW()
-      WHERE id = $3::uuid`,
+      WHERE id = $3::uuid
+      RETURNING id`,
       [totalPoints, xpEarned, studentId]
     );
+
+    if (updateResult.rows.length === 0) {
+      console.error('[Grading] WARNING: No student found with ID:', studentId, '- grading data NOT saved to DB');
+      return res.status(404).json({ error: 'Student not found in database', studentId });
+    }
 
     // Log XP transaction for monthly leaderboard tracking
     if (xpEarned > 0) {

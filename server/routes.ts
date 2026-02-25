@@ -1921,14 +1921,20 @@ export function registerRoutes(app: Express) {
       // Use sessionXp to INCREMENT total_xp (single source of truth)
       const xpEarned = sessionXp || 0;
       
-      await db.execute(sql`
+      const updateResult = await db.execute(sql`
         UPDATE students SET 
           total_points = COALESCE(${totalPoints}, total_points),
           total_xp = COALESCE(total_xp, 0) + ${xpEarned},
           last_class_at = NOW(),
           updated_at = NOW()
         WHERE id = ${id}::uuid
+        RETURNING id
       `);
+
+      if ((updateResult as any[]).length === 0) {
+        console.error('[Grading] WARNING: No student found with ID:', id, '- grading data NOT saved to DB');
+        return res.status(404).json({ error: 'Student not found in database', studentId: id });
+      }
 
       // Log XP transaction for monthly leaderboard tracking
       if (xpEarned > 0) {

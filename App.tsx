@@ -384,7 +384,8 @@ const App: React.FC = () => {
         return () => window.removeEventListener('subscription-updated', handleSubscriptionUpdate);
     }, []);
 
-    const handleSetupComplete = useCallback(async (data: WizardData) => {
+    const handleSetupComplete = useCallback(async (inputData: WizardData) => {
+        let data = { ...inputData };
         setIsProcessing(true);
         setFinalWizardData(data);
 
@@ -410,40 +411,62 @@ const App: React.FC = () => {
         }
 
         // Add students via backend API (sends real emails via SendGrid)
-        // - Notifies owner when student is added
-        // - Sends parent welcome email if parent email provided
+        // CRITICAL: Update local student IDs with database-generated UUIDs
         if (clubId && data.students.length > 0) {
-            const studentAddPromises = data.students.map(student => {
+            const updatedStudents = [...data.students];
+            for (let i = 0; i < data.students.length; i++) {
+                const student = data.students[i];
                 const belt = data.belts.find(b => b.id === student.beltId);
-                return fetch('/api/students', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        clubId,
-                        name: student.name,
-                        parentEmail: student.parentEmail || null,
-                        parentName: student.parentName || null,
-                        parentPhone: student.parentPhone || null,
-                        belt: belt?.name || 'White',
-                        birthdate: student.birthday || null,
-                        totalXP: student.totalXP || 0,
-                        totalPoints: student.totalPoints || 0,
-                        stripes: student.stripes || 0,
-                        location: student.location || null,
-                        assignedClass: student.assignedClass || null
-                    })
-                }).catch(err => console.error('Failed to add student:', student.name, err));
-            });
-            await Promise.all(studentAddPromises);
+                const payload = {
+                    clubId,
+                    name: student.name,
+                    parentEmail: student.parentEmail || null,
+                    parentName: student.parentName || null,
+                    parentPhone: student.parentPhone || null,
+                    belt: belt?.name || 'White',
+                    birthdate: student.birthday || null,
+                    totalXP: student.totalXP || 0,
+                    totalPoints: student.totalPoints || 0,
+                    stripes: student.stripes || 0,
+                    location: student.location || null,
+                    assignedClass: student.assignedClass || null
+                };
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    try {
+                        const response = await fetch('/api/students', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.student?.id) {
+                                updatedStudents[i] = { ...student, id: result.student.id };
+                                console.log('[Wizard] Student created with DB ID:', student.name, result.student.id);
+                                break;
+                            }
+                        }
+                        if (attempt === 0) console.warn('[Wizard] Retrying student creation:', student.name);
+                    } catch (err) {
+                        if (attempt === 1) console.error('[Wizard] Failed to add student after retry:', student.name, err);
+                    }
+                }
+            }
+            data = { ...data, students: updatedStudents };
+            setFinalWizardData(data);
         }
 
         // Save wizard data to database for persistence across logins
         if (clubId) {
             try {
+                const wizardToSave = { ...data };
+                if (typeof wizardToSave.logo === 'string' && wizardToSave.logo.startsWith('data:')) {
+                    delete (wizardToSave as any).logo;
+                }
                 await fetch('/api/club/save-wizard-data', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ clubId, wizardData: data })
+                    body: JSON.stringify({ clubId, wizardData: wizardToSave })
                 });
                 console.log('[Wizard] Saved wizard data to database');
             } catch (err) {

@@ -3088,13 +3088,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 lifeSkillsHistory: [],
                 customHabits: []
             };
-            studentsWithDbIds.push(newStudent);
-
-            // Save to database
             if (clubId) {
                 try {
                     const beltName = data.belts.find(b => b.id === newStudent.beltId)?.name || 'White';
-                    await fetch('/api/students', {
+                    const response = await fetch('/api/students', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -3112,9 +3109,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             lifetimeXp: newStudent.lifetimeXp
                         })
                     });
+                    const result = await response.json();
+                    if (response.ok && result.student?.id) {
+                        studentsWithDbIds.push({ ...newStudent, id: result.student.id });
+                    } else {
+                        studentsWithDbIds.push(newStudent);
+                    }
                 } catch (err) {
                     console.error('Failed to save student to database:', newStudent.name, err);
+                    studentsWithDbIds.push(newStudent);
                 }
+            } else {
+                studentsWithDbIds.push(newStudent);
             }
         }
 
