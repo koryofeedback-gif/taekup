@@ -32,10 +32,11 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      onUpdate({ logo: file });
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
+        const dataUrl = reader.result as string;
+        setLogoPreview(dataUrl);
+        onUpdate({ logo: dataUrl });
       };
       reader.readAsDataURL(file);
     }

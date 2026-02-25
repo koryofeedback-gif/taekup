@@ -458,6 +458,15 @@ const App: React.FC = () => {
 
         // Save wizard data to database for persistence across logins
         if (clubId) {
+            // Save logo separately to dedicated column
+            if (data.logo && typeof data.logo === 'string' && data.logo.startsWith('data:')) {
+                fetch('/api/club/save-logo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clubId, logo: data.logo })
+                }).then(() => console.log('[Wizard] Logo saved to database'))
+                  .catch(err => console.error('[Wizard] Failed to save logo:', err));
+            }
             try {
                 const wizardToSave = { ...data };
                 if (typeof wizardToSave.logo === 'string' && wizardToSave.logo.startsWith('data:')) {
