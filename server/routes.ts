@@ -196,6 +196,23 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.post('/api/club/save-logo', async (req: Request, res: Response) => {
+    try {
+      const { clubId, logo } = req.body;
+      if (!clubId) return res.status(400).json({ error: 'Club ID is required' });
+      await db.execute(sql`
+        ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_data TEXT
+      `);
+      await db.execute(sql`
+        UPDATE clubs SET logo_data = ${logo || null} WHERE id = ${clubId}::uuid
+      `);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Logo Save] Error:', error.message);
+      res.status(500).json({ error: 'Failed to save logo' });
+    }
+  });
+
   app.post('/api/club/save-wizard-data', async (req: Request, res: Response) => {
     try {
       const { clubId, wizardData } = req.body;
@@ -380,10 +397,11 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Club ID is required' });
       }
 
+      await db.execute(sql`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_data TEXT`);
       const clubResult = await db.execute(sql`
         SELECT id, name, owner_email, owner_name, country, city, art_type, 
                wizard_data, trial_start, trial_end, trial_status, status,
-               world_rankings_enabled, has_demo_data
+               world_rankings_enabled, has_demo_data, logo_data
         FROM clubs WHERE id = ${clubId}::uuid
       `);
       const club = (clubResult as any[])[0];
@@ -582,7 +600,7 @@ export function registerRoutes(app: Express) {
         clubName: savedWizardData.clubName || club.name,
         ownerName: savedWizardData.ownerName || club.owner_name || '',
         country: savedWizardData.country || club.country || 'US',
-        logo: savedWizardData.logo || null,
+        logo: club.logo_data || savedWizardData.logo || null,
       };
 
       return res.json({

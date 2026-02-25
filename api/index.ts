@@ -1514,10 +1514,11 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
 
   const client = await pool.connect();
   try {
+    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_data TEXT`);
     const clubResult = await client.query(
       `SELECT id, name, owner_email, owner_name, country, city, art_type, 
               wizard_data, trial_start, trial_end, trial_status, status,
-              world_rankings_enabled
+              world_rankings_enabled, logo_data
        FROM clubs WHERE id = $1::uuid`,
       [clubId]
     );
@@ -1619,6 +1620,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       clubName: savedWizardData.clubName || club.name,
       ownerName: savedWizardData.ownerName || club.owner_name || '',
       country: savedWizardData.country || club.country || 'US',
+      logo: club.logo_data || savedWizardData.logo || null,
     };
 
     // Check if demo data exists (students with demo names or wizard_data with demo flag)
@@ -1645,6 +1647,23 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
   } catch (error: any) {
     console.error('[Club Data] Fetch error:', error);
     return res.status(500).json({ error: 'Failed to fetch club data' });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleSaveLogo(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { clubId, logo } = parseBody(req);
+  if (!clubId) return res.status(400).json({ error: 'Club ID is required' });
+  const client = await pool.connect();
+  try {
+    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_data TEXT`);
+    await client.query(`UPDATE clubs SET logo_data = $1 WHERE id = $2::uuid`, [logo || null, clubId]);
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[Logo Save] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to save logo' });
   } finally {
     client.release();
   }
@@ -8258,6 +8277,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     // Club data routes
+    if (path === '/club/save-logo' || path === '/club/save-logo/') return await handleSaveLogo(req, res);
     if (path === '/club/save-wizard-data' || path === '/club/save-wizard-data/') return await handleSaveWizardData(req, res);
     
     const clubDataMatch = path.match(/^\/club\/([^/]+)\/data\/?$/);

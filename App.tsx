@@ -485,10 +485,14 @@ const App: React.FC = () => {
                 ? sessionStorage.getItem('impersonationClubId')
                 : (localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId'));
             if (clubId) {
+                const wizardToSave = { ...updated };
+                if (typeof wizardToSave.logo === 'string' && wizardToSave.logo.startsWith('data:')) {
+                    delete wizardToSave.logo;
+                }
                 fetch('/api/club/save-wizard-data', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ clubId, wizardData: updated })
+                    body: JSON.stringify({ clubId, wizardData: wizardToSave })
                 }).catch(err => console.error('Failed to save wizard data after grading:', err));
             }
             return updated;
@@ -512,16 +516,25 @@ const App: React.FC = () => {
                     localStorage.setItem('taekup_wizard_data', JSON.stringify(updated));
                 }
                 
-                // Also save to database for persistence across logins
-                // Check both regular clubId and impersonation clubId (for Super Admin view-as mode)
                 const clubId = isImpersonating 
                     ? sessionStorage.getItem('impersonationClubId')
                     : (localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId'));
                 if (clubId) {
+                    if (updates.logo !== undefined) {
+                        fetch('/api/club/save-logo', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ clubId, logo: updates.logo })
+                        }).catch(err => console.error('Failed to save logo:', err));
+                    }
+                    const wizardToSave = { ...updated };
+                    if (typeof wizardToSave.logo === 'string' && wizardToSave.logo.startsWith('data:')) {
+                        delete wizardToSave.logo;
+                    }
                     fetch('/api/club/save-wizard-data', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ clubId, wizardData: updated })
+                        body: JSON.stringify({ clubId, wizardData: wizardToSave })
                     }).catch(err => console.error('Failed to save wizard data:', err));
                 }
                 
