@@ -120,8 +120,8 @@ export const LobbyDisplay: React.FC<LobbyDisplayProps> = ({ data, onClose }) => 
         return (
             <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
                 <div className="w-56 h-56 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center border-4 border-cyan-500 shadow-[0_0_60px_rgba(6,182,212,0.4)] mb-10 overflow-hidden">
-                    {!isDemo && typeof data.logo === 'string' ? (
-                        <img src={data.logo} alt="Logo" className="w-full h-full object-cover" />
+                    {!isDemo && typeof data.logo === 'string' && data.logo.startsWith('data:') ? (
+                        <img src={data.logo} alt="Logo" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     ) : (
                         <span className="text-8xl">🥋</span>
                     )}

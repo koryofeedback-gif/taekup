@@ -815,6 +815,17 @@ const App: React.FC = () => {
                             });
                         }
 
+                        // Preserve logo from localStorage if DB doesn't have it
+                        if (!mergedData.logo && localData?.logo && typeof localData.logo === 'string' && localData.logo.startsWith('data:')) {
+                            mergedData.logo = localData.logo;
+                            console.log('[Login] Preserved logo from localStorage, saving to DB...');
+                            fetch('/api/club/save-logo', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ clubId: userData.clubId, logo: localData.logo })
+                            }).catch(err => console.error('[Login] Failed to save logo to DB:', err));
+                        }
+
                         setFinalWizardData(mergedData);
                         localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
                         console.log('[Login] Restored wizard data from database for', userType, '- students:', mergedData.students?.length || 0);
@@ -861,6 +872,15 @@ const App: React.FC = () => {
                                     }
                                 }
                                 parsed.students = updatedStudents;
+                                // Save logo separately to logo_data column
+                                if (parsed.logo && typeof parsed.logo === 'string' && parsed.logo.startsWith('data:')) {
+                                    fetch('/api/club/save-logo', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ clubId: userData.clubId, logo: parsed.logo })
+                                    }).catch(err => console.error('[Login] Failed to save logo:', err));
+                                    console.log('[Login] Saving logo to database');
+                                }
                                 // Also save wizard data blob to DB
                                 try {
                                     const wizardToSave = { ...parsed };

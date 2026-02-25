@@ -1194,11 +1194,12 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     <div>
                         <label className="block text-sm text-gray-400 mb-2">{t('admin.settings.general.clubLogo')}</label>
                         <div className="flex items-center space-x-4">
-                            {data.logo ? (
+                            {data.logo && typeof data.logo === 'string' && data.logo.startsWith('data:') ? (
                                 <img 
-                                    src={typeof data.logo === 'string' ? data.logo : (data.logo instanceof Blob ? URL.createObjectURL(data.logo) : '')} 
+                                    src={data.logo} 
                                     alt="Club Logo" 
                                     className="w-20 h-20 rounded-lg object-cover border border-gray-600"
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                 />
                             ) : (
                                 <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white font-bold text-2xl">
@@ -3480,11 +3481,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             <div className="w-64 bg-gray-800 border-r border-gray-700 hidden md:flex flex-col">
                 <div className="p-6 border-b border-gray-700">
                     <div className="flex items-center space-x-3">
-                        {data.logo ? (
+                        {data.logo && typeof data.logo === 'string' && data.logo.startsWith('data:') ? (
                             <img 
-                                src={typeof data.logo === 'string' ? data.logo : (data.logo instanceof Blob ? URL.createObjectURL(data.logo) : '')} 
+                                src={data.logo} 
                                 alt="Club Logo" 
                                 className="w-12 h-12 rounded-lg object-cover border border-gray-600"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                         ) : (
                             <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white font-bold text-lg">
