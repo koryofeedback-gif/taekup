@@ -464,13 +464,34 @@ export function registerRoutes(app: Express) {
         return matchedBelt?.id || savedBelts[0]?.id || 'white';
       };
       
+      // Count attendance from grading sessions (EARN transactions = class attended)
+      const studentIds = (studentsResult as any[]).map(s => s.id);
+      let attendanceMap = new Map<string, number>();
+      if (studentIds.length > 0) {
+        try {
+          const attendanceResult = await db.execute(sql`
+            SELECT student_id, COUNT(DISTINCT DATE(created_at)) as class_count
+            FROM xp_transactions 
+            WHERE student_id = ANY(${studentIds}::uuid[])
+              AND type = 'EARN' AND reason = 'Class grading'
+            GROUP BY student_id
+          `);
+          for (const r of attendanceResult as any[]) {
+            attendanceMap.set(r.student_id, parseInt(r.class_count) || 0);
+          }
+        } catch (e) {
+          console.log('[ClubData] Attendance query fallback - table may not exist yet');
+        }
+      }
+
       // Preserve extra fields from saved wizard_data (performanceHistory, isDemo, etc.)
       const savedStudents = savedWizardData.students || [];
       const students = (studentsResult as any[]).map(s => {
-        // Find matching saved student to preserve extra fields
         const saved = savedStudents.find((ws: any) => 
           ws.id === s.id || ws.name === s.name
         ) || {};
+        const dbAttendance = attendanceMap.get(s.id) || 0;
+        const savedAttendance = (saved as any).attendanceCount || 0;
         return {
           id: s.id,
           name: s.name,
@@ -493,7 +514,7 @@ export function registerRoutes(app: Express) {
           medicalInfo: saved.medicalInfo || '',
           age: saved.age || undefined,
           performanceHistory: saved.performanceHistory || [],
-          attendanceCount: saved.attendanceCount || 0,
+          attendanceCount: Math.max(dbAttendance, savedAttendance),
           premiumStatus: s.premium_status || saved.premiumStatus || 'none',
           isDemo: s.is_demo || saved.isDemo || false,
           trustTier: s.trust_tier || saved.trustTier || 'unverified',

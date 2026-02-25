@@ -475,7 +475,22 @@ const App: React.FC = () => {
                 ...prevData,
                 students: updatedStudents,
             };
-            localStorage.setItem('taekup_wizard_data', JSON.stringify(updated));
+            const isImpersonating = !!sessionStorage.getItem('impersonationToken');
+            if (isImpersonating) {
+                sessionStorage.setItem('impersonation_wizard_data', JSON.stringify(updated));
+            } else {
+                localStorage.setItem('taekup_wizard_data', JSON.stringify(updated));
+            }
+            const clubId = isImpersonating 
+                ? sessionStorage.getItem('impersonationClubId')
+                : (localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId'));
+            if (clubId) {
+                fetch('/api/club/save-wizard-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clubId, wizardData: updated })
+                }).catch(err => console.error('Failed to save wizard data after grading:', err));
+            }
             return updated;
         });
     }, []);
