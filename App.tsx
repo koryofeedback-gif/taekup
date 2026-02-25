@@ -715,19 +715,169 @@ const App: React.FC = () => {
                 // This ensures coaches and parents get up-to-date student points/XP
                 try {
                     const response = await fetch(`/api/club/${userData.clubId}/data`);
-                    const data = await response.json();
-                    if (data.success && data.wizardData) {
+                    const dbResult = await response.json();
+                    if (dbResult.success && dbResult.wizardData) {
+                        const dbStudents = dbResult.wizardData.students || [];
+                        const localRaw = localStorage.getItem('taekup_wizard_data');
+                        const localData = localRaw ? JSON.parse(localRaw) : null;
+                        const localStudents: any[] = localData?.students || [];
+
+                        // Sync: find students in localStorage that don't exist in the database
+                        // Match by name since local IDs won't match DB UUIDs
+                        const dbStudentNames = new Set(dbStudents.map((s: any) => s.name?.toLowerCase()));
+                        const missingStudents = localStudents.filter(
+                            (ls: any) => ls.name && !dbStudentNames.has(ls.name.toLowerCase())
+                        );
+
+                        if (missingStudents.length > 0 && userType === 'owner') {
+                            console.log('[Login] Found', missingStudents.length, 'local-only students, syncing to database...');
+                            const belts = dbResult.wizardData.belts || localData?.belts || [];
+                            for (const student of missingStudents) {
+                                try {
+                                    const belt = belts.find((b: any) => b.id === student.beltId);
+                                    const syncResp = await fetch('/api/students', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            clubId: userData.clubId,
+                                            name: student.name,
+                                            parentEmail: student.parentEmail || null,
+                                            parentName: student.parentName || null,
+                                            parentPhone: student.parentPhone || null,
+                                            belt: belt?.name || 'White',
+                                            birthdate: student.birthday || null,
+                                            totalXP: student.totalXP || student.lifetimeXp || 0,
+                                            totalPoints: student.totalPoints || 0,
+                                            stripes: student.stripes || 0,
+                                            location: student.location || null,
+                                            assignedClass: student.assignedClass || null
+                                        })
+                                    });
+                                    if (syncResp.ok) {
+                                        const syncResult = await syncResp.json();
+                                        if (syncResult.student?.id) {
+                                            dbStudents.push({
+                                                ...student,
+                                                id: syncResult.student.id
+                                            });
+                                            console.log('[Login] Synced student to DB:', student.name, '->', syncResult.student.id);
+                                        }
+                                    }
+                                } catch (syncErr) {
+                                    console.error('[Login] Failed to sync student:', student.name, syncErr);
+                                }
+                            }
+                            dbResult.wizardData.students = dbStudents;
+                        }
+
+                        // Also update IDs for students that exist in both but have mismatched IDs
+                        if (localStudents.length > 0 && dbStudents.length > 0) {
+                            const dbByName = new Map(dbStudents.map((s: any) => [s.name?.toLowerCase(), s]));
+                            let idsFixed = 0;
+                            for (const localStudent of localStudents) {
+                                const dbMatch = dbByName.get(localStudent.name?.toLowerCase());
+                                if (dbMatch && dbMatch.id !== localStudent.id) {
+                                    idsFixed++;
+                                }
+                            }
+                            if (idsFixed > 0) {
+                                console.log('[Login] Fixed', idsFixed, 'student ID mismatches (local -> DB)');
+                            }
+                        }
+
                         const mergedData = {
-                            ...data.wizardData,
-                            worldRankingsEnabled: data.club?.worldRankingsEnabled || false
+                            ...dbResult.wizardData,
+                            worldRankingsEnabled: dbResult.club?.worldRankingsEnabled || false
                         };
+
+                        // Preserve local-only fields (performanceHistory, homeDojo, etc.)
+                        if (localData && mergedData.students) {
+                            mergedData.students = mergedData.students.map((dbStudent: any) => {
+                                const localMatch = localStudents.find(
+                                    (ls: any) => ls.name?.toLowerCase() === dbStudent.name?.toLowerCase()
+                                );
+                                if (localMatch) {
+                                    return {
+                                        ...dbStudent,
+                                        performanceHistory: dbStudent.performanceHistory?.length > 0 
+                                            ? dbStudent.performanceHistory 
+                                            : (localMatch.performanceHistory || []),
+                                        feedbackHistory: dbStudent.feedbackHistory?.length > 0
+                                            ? dbStudent.feedbackHistory
+                                            : (localMatch.feedbackHistory || []),
+                                        homeDojo: dbStudent.homeDojo || localMatch.homeDojo || { character: [], chores: [], school: [], health: [] },
+                                        totalPoints: Math.max(dbStudent.totalPoints || 0, localMatch.totalPoints || 0),
+                                        lifetimeXp: Math.max(dbStudent.lifetimeXp || 0, localMatch.lifetimeXp || 0),
+                                        attendanceCount: Math.max(dbStudent.attendanceCount || 0, localMatch.attendanceCount || 0),
+                                    };
+                                }
+                                return dbStudent;
+                            });
+                        }
+
                         setFinalWizardData(mergedData);
                         localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
-                        console.log('[Login] Restored wizard data from database for', userType);
+                        console.log('[Login] Restored wizard data from database for', userType, '- students:', mergedData.students?.length || 0);
                     } else {
                         const localData = localStorage.getItem('taekup_wizard_data');
                         if (localData) {
-                            setFinalWizardData(JSON.parse(localData));
+                            const parsed = JSON.parse(localData);
+                            // If we have local data but DB has nothing, sync it all to DB
+                            if (userType === 'owner' && parsed.students?.length > 0) {
+                                console.log('[Login] No DB data, syncing', parsed.students.length, 'local students to database...');
+                                const updatedStudents = [...parsed.students];
+                                const belts = parsed.belts || [];
+                                for (let i = 0; i < updatedStudents.length; i++) {
+                                    const student = updatedStudents[i];
+                                    try {
+                                        const belt = belts.find((b: any) => b.id === student.beltId);
+                                        const syncResp = await fetch('/api/students', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                clubId: userData.clubId,
+                                                name: student.name,
+                                                parentEmail: student.parentEmail || null,
+                                                parentName: student.parentName || null,
+                                                parentPhone: student.parentPhone || null,
+                                                belt: belt?.name || 'White',
+                                                birthdate: student.birthday || null,
+                                                totalXP: student.totalXP || student.lifetimeXp || 0,
+                                                totalPoints: student.totalPoints || 0,
+                                                stripes: student.stripes || 0,
+                                                location: student.location || null,
+                                                assignedClass: student.assignedClass || null
+                                            })
+                                        });
+                                        if (syncResp.ok) {
+                                            const syncResult = await syncResp.json();
+                                            if (syncResult.student?.id) {
+                                                updatedStudents[i] = { ...student, id: syncResult.student.id };
+                                                console.log('[Login] Synced local student to DB:', student.name, '->', syncResult.student.id);
+                                            }
+                                        }
+                                    } catch (syncErr) {
+                                        console.error('[Login] Failed to sync student:', student.name, syncErr);
+                                    }
+                                }
+                                parsed.students = updatedStudents;
+                                // Also save wizard data blob to DB
+                                try {
+                                    const wizardToSave = { ...parsed };
+                                    if (typeof wizardToSave.logo === 'string' && wizardToSave.logo.startsWith('data:')) {
+                                        delete wizardToSave.logo;
+                                    }
+                                    await fetch('/api/club/save-wizard-data', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ clubId: userData.clubId, wizardData: wizardToSave })
+                                    });
+                                    console.log('[Login] Saved wizard data to database');
+                                } catch (saveErr) {
+                                    console.error('[Login] Failed to save wizard data:', saveErr);
+                                }
+                            }
+                            setFinalWizardData(parsed);
                             console.log('[Login] Using localStorage wizard data as fallback for', userType);
                         }
                     }
