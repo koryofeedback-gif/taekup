@@ -1303,7 +1303,7 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
     await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
     
     const clubResult = await client.query(
-      `SELECT id, owner_email, trial_status, COALESCE(is_platform_owner, false) as is_platform_owner FROM clubs WHERE id = $1::uuid`,
+      `SELECT id, owner_email, trial_status, trial_start, trial_end, COALESCE(is_platform_owner, false) as is_platform_owner FROM clubs WHERE id = $1::uuid`,
       [clubId]
     );
     const club = clubResult.rows[0];
@@ -1331,7 +1331,9 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
         success: true, 
         hasActiveSubscription: isPlatformOwner, // Platform owners always active
         isPlatformOwner,
-        trialStatus: isPlatformOwner ? 'converted' : club.trial_status, 
+        trialStatus: isPlatformOwner ? 'converted' : club.trial_status,
+        trialStart: club.trial_start,
+        trialEnd: club.trial_end,
         searchedEmail: emailToSearch,
         debug: { customerCount: 0, reason: isPlatformOwner ? 'platform_owner' : 'no_customer_found' }
       });
@@ -1406,6 +1408,8 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
       hasActiveSubscription: effectiveHasSubscription,
       isPlatformOwner,
       trialStatus: effectiveHasSubscription ? 'converted' : club.trial_status,
+      trialStart: club.trial_start,
+      trialEnd: club.trial_end,
       planId: isPlatformOwner && !planId ? 'empire' : planId, // Platform owners get Empire plan by default
       customerId: foundCustomerId || customers.data[0]?.id,
       searchedEmail: emailToSearch,
