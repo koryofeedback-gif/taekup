@@ -1245,9 +1245,9 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.post('/api/stripe-connect/onboard', async (req: Request, res: Response) => {
+  const stripeConnectOnboardHandler = async (req: Request, res: Response) => {
     try {
-      const { clubId, email, clubName } = req.body;
+      const { clubId, email, clubName, accountToken, businessType, country } = req.body;
       
       if (!clubId) {
         return res.status(400).json({ error: 'Club ID is required' });
@@ -1275,23 +1275,45 @@ export function registerRoutes(app: Express) {
       let accountId = club?.stripe_connect_account_id;
 
       if (!accountId) {
-        const account = await stripe.accounts.create({
+        if (!accountToken) {
+          return res.status(400).json({ error: 'Account token is required for PSD2 compliance. Please fill out the connection form.' });
+        }
+
+        const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+          || (req.headers['x-real-ip'] as string)
+          || req.ip
+          || '0.0.0.0';
+
+        const createParams: any = {
           type: 'express',
+          country: country || 'FR',
           email: ownerEmail,
-          business_profile: {
-            name: ownerClubName || 'Martial Arts Club',
-            product_description: 'Martial arts training and curriculum videos'
-          },
+          account_token: accountToken,
           capabilities: {
             card_payments: { requested: true },
             transfers: { requested: true },
           },
-        });
+          business_profile: {
+            name: ownerClubName || 'Martial Arts Club',
+            product_description: 'Martial arts training and education',
+            mcc: '7941',
+          },
+          tos_acceptance: {
+            date: Math.floor(Date.now() / 1000),
+            ip: clientIp,
+          },
+          metadata: { club_id: clubId, club_name: ownerClubName || '' },
+        };
+
+        console.log(`[Stripe Connect] Creating Express account with account token (PSD2 compliant) for club ${clubId}, country: ${country || 'FR'}`);
+
+        const account = await stripe.accounts.create(createParams);
         accountId = account.id;
 
         await db.execute(sql`
           UPDATE clubs SET stripe_connect_account_id = ${accountId} WHERE id = ${clubId}
         `);
+        console.log(`[Stripe Connect] Created account ${accountId} for club ${clubId}`);
       }
 
       const accountLink = await stripe.accountLinks.create({
@@ -1301,12 +1323,14 @@ export function registerRoutes(app: Express) {
         type: 'account_onboarding',
       });
 
-      res.json({ url: accountLink.url });
+      res.json({ url: accountLink.url, accountId });
     } catch (error: any) {
       console.error('Stripe Connect onboarding error:', error);
-      res.status(500).json({ error: 'Failed to create bank connection link' });
+      res.status(500).json({ error: error.message || 'Failed to create bank connection link' });
     }
-  });
+  };
+  app.post('/api/stripe-connect/onboard', stripeConnectOnboardHandler);
+  app.post('/api/stripe/connect/onboard', stripeConnectOnboardHandler);
 
   app.get('/api/stripe-connect/status/:clubId', async (req: Request, res: Response) => {
     try {

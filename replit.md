@@ -57,8 +57,12 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
 - **Stripe Connect Revenue Share** (Feb 2026): Clubs earn 70% from parent premium subscriptions:
     - **Revenue Split**: Platform 30% + fees, Club 70% ($3.28 per $4.99 subscription)
     - **Onboarding**: Club owners connect Stripe in Billing tab → "Connect Stripe Account" button
+    - **PSD2 Compliance (France)**: Uses Stripe Account Tokens — business info collected client-side via Stripe.js `createToken('account')`, tokenized before sending to server. Platform never handles PII directly.
+    - **Account Type**: Express accounts with Account Links for Stripe-hosted onboarding/verification
+    - **TOS Acceptance**: Server records timestamp + client IP for Stripe Connected Account Agreement
+    - **Frontend Component**: `StripeConnectModal.tsx` — collects business type (individual/company), name, address, DOB, with country selector
     - **API Endpoints**:
-        - `POST /api/stripe/connect/onboard` - Creates Express account and onboarding link (auth: club owner only)
+        - `POST /api/stripe/connect/onboard` - Creates Express account with account token and returns onboarding link (auth: club owner only)
         - `GET /api/stripe/connect/status` - Check account connection status
     - **Auto-Transfer**: When parent subscribes to premium, 70% automatically transfers to club's connected account
 - **MyTaek ID Federation System** (Feb 2026): Global unique student identifier for cross-club transfers:

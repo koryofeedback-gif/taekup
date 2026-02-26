@@ -1008,7 +1008,7 @@ async function handleCustomerPortal(req: VercelRequest, res: VercelResponse) {
 
 async function handleStripeConnectOnboard(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { clubId, email, clubName } = parseBody(req);
+  const { clubId, email, clubName, accountToken, businessType, country } = parseBody(req);
   if (!clubId || !email) return res.status(400).json({ error: 'clubId and email are required' });
 
   const stripe = getStripeClient();
@@ -1020,7 +1020,6 @@ async function handleStripeConnectOnboard(req: VercelRequest, res: VercelRespons
 
   const client = await pool.connect();
   try {
-    // Security: Verify the requesting user is the club owner
     const ownerCheck = await client.query(
       `SELECT u.id, u.email FROM users u 
        JOIN clubs c ON u.club_id = c.id 
@@ -1039,18 +1038,39 @@ async function handleStripeConnectOnboard(req: VercelRequest, res: VercelRespons
     
     let accountId = existing.rows[0]?.stripe_connect_account_id;
     
-    // For French platforms, use Stripe-hosted onboarding with controller properties
     if (!accountId) {
-      // Create account with controller properties (recommended for French platforms)
-      const account = await stripe.accounts.create({
+      if (!accountToken) {
+        return res.status(400).json({ error: 'Account token is required for PSD2 compliance. Please fill out the connection form.' });
+      }
+
+      const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+        || (req.headers['x-real-ip'] as string)
+        || '0.0.0.0';
+
+      const createParams: any = {
+        type: 'express',
+        country: country || 'FR',
         email: email,
-        controller: {
-          fees: { payer: 'application' },
-          losses: { payments: 'application' },
-          stripe_dashboard: { type: 'express' },
+        account_token: accountToken,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_profile: {
+          name: clubName || 'Martial Arts Club',
+          product_description: 'Martial arts training and education',
+          mcc: '7941',
+        },
+        tos_acceptance: {
+          date: Math.floor(Date.now() / 1000),
+          ip: clientIp,
         },
         metadata: { club_id: clubId, club_name: clubName || '' },
-      });
+      };
+
+      console.log(`[Stripe Connect] Creating Express account with account token (PSD2 compliant) for club ${clubId}, country: ${country || 'FR'}`);
+
+      const account = await stripe.accounts.create(createParams);
       accountId = account.id;
       
       await client.query(
@@ -1060,7 +1080,6 @@ async function handleStripeConnectOnboard(req: VercelRequest, res: VercelRespons
       console.log(`[Stripe Connect] Created account ${accountId} for club ${clubId}`);
     }
 
-    // If account already exists, create account link for them to complete/update
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${baseUrl}/app/admin?stripe_connect=refresh`,

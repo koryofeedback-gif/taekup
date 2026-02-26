@@ -6,6 +6,7 @@ import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
 import { DEMO_MODE_KEY, isDemoModeEnabled, DEMO_STUDENTS, DEMO_COACHES, DEMO_SCHEDULE, DEMO_STATS, DEMO_LEADERBOARD, DEMO_RECENT_ACTIVITY, DEMO_CURRICULUM } from './demoData';
 import { CSVImport, ImportedStudent } from './CSVImport';
+import { StripeConnectModal } from './StripeConnectModal';
 import { useTranslation } from '../i18n/useTranslation';
 
 interface AdminDashboardProps {
@@ -2300,6 +2301,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
         ? (PRICING_TIERS.find(tier => tier.name.toLowerCase() === subscribedPlanId.toLowerCase()) || recommendedTier)
         : recommendedTier;
     const [connectingBank, setConnectingBank] = useState(false);
+    const [showStripeConnectModal, setShowStripeConnectModal] = useState(false);
     const [verifiedStatus, setVerifiedStatus] = useState<{ status: string; label: string; color: string; daysLeft: number } | null>(null);
     const [toggleLoading, setToggleLoading] = useState(false);
     
@@ -2458,40 +2460,24 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const subscriptionStatus = verifiedStatus || getSubscriptionStatus();
 
     const handleConnectBank = async () => {
-        setConnectingBank(true);
-        try {
-            const effectiveClubId = clubId || localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId');
-            if (!effectiveClubId) {
-                alert('Club not found. Please log in again.');
-                setConnectingBank(false);
-                return;
-            }
-            const ownerEmail = localStorage.getItem('taekup_user_email') || data.ownerEmail || '';
-            const response = await fetch('/api/stripe/connect/onboard', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    clubId: effectiveClubId,
-                    email: ownerEmail,
-                    clubName: data.clubName || ''
-                })
-            });
-            const result = await response.json();
-            if (result.url) {
-                window.location.href = result.url;
-            } else {
-                alert(result.error || 'Failed to create bank connection link. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error connecting bank:', error);
-            alert('Error connecting bank account. Please try again.');
-        } finally {
-            setConnectingBank(false);
-        }
+        setShowStripeConnectModal(true);
     };
 
     return (
         <div>
+            {showStripeConnectModal && (
+                <StripeConnectModal
+                    clubId={clubId || localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId') || ''}
+                    ownerEmail={localStorage.getItem('taekup_user_email') || data.ownerEmail || ''}
+                    clubName={data.clubName || ''}
+                    onClose={() => setShowStripeConnectModal(false)}
+                    onSuccess={(url) => {
+                        setShowStripeConnectModal(false);
+                        window.location.href = url;
+                    }}
+                    t={t}
+                />
+            )}
             {showUniversalAccessModal && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowUniversalAccessModal(false)}>
                     <div className="bg-gray-800 rounded-xl border border-gray-600 max-w-md w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
