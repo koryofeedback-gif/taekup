@@ -78,15 +78,15 @@ function generateChallengeUUID(challengeType: string): string {
 
 export function registerRoutes(app: Express) {
   app.post('/api/request-access', async (req: Request, res: Response) => {
-    const { fullName, clubName, websiteUrl, email, phone } = req.body;
+    const { fullName, clubName, websiteUrl, email, phone, cityState } = req.body;
     if (!email || !clubName || !fullName || !websiteUrl) {
       return res.status(400).json({ error: 'Full name, club name, website URL, and email are required' });
     }
     try {
       await db.execute(sql`
-        INSERT INTO access_requests (email, club_name, full_name, website_url, phone, created_at, status)
-        VALUES (${email.toLowerCase()}, ${clubName}, ${fullName}, ${websiteUrl}, ${phone || null}, NOW(), 'pending')
-        ON CONFLICT (email) DO UPDATE SET club_name = ${clubName}, full_name = ${fullName}, website_url = ${websiteUrl}, phone = ${phone || null}, created_at = NOW(), status = 'pending'
+        INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, created_at, status)
+        VALUES (${email.toLowerCase()}, ${clubName}, ${fullName}, ${websiteUrl}, ${phone || null}, ${cityState || null}, NOW(), 'pending')
+        ON CONFLICT (email) DO UPDATE SET club_name = ${clubName}, full_name = ${fullName}, website_url = ${websiteUrl}, phone = ${phone || null}, city_state = ${cityState || null}, created_at = NOW(), status = 'pending'
       `);
       console.log(`[RequestAccess] New VIP request from ${fullName} (${email}) - ${clubName} - ${websiteUrl}`);
       res.json({ success: true });

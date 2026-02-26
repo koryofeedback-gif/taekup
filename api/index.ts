@@ -717,7 +717,7 @@ async function handleLoginByName(req: VercelRequest, res: VercelResponse) {
 
 async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { fullName, clubName, websiteUrl, email, phone } = parseBody(req);
+  const { fullName, clubName, websiteUrl, email, phone, cityState } = parseBody(req);
   if (!email || !clubName || !fullName || !websiteUrl) {
     return res.status(400).json({ error: 'Full name, club name, website URL, and email are required' });
   }
@@ -725,10 +725,10 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
   const client = await pool.connect();
   try {
     await client.query(
-      `INSERT INTO access_requests (email, club_name, full_name, website_url, phone, created_at, status)
-       VALUES ($1, $2, $3, $4, $5, NOW(), 'pending')
-       ON CONFLICT (email) DO UPDATE SET club_name = $2, full_name = $3, website_url = $4, phone = $5, created_at = NOW(), status = 'pending'`,
-      [email.toLowerCase(), clubName, fullName, websiteUrl, phone || null]
+      `INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, created_at, status)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), 'pending')
+       ON CONFLICT (email) DO UPDATE SET club_name = $2, full_name = $3, website_url = $4, phone = $5, city_state = $6, created_at = NOW(), status = 'pending'`,
+      [email.toLowerCase(), clubName, fullName, websiteUrl, phone || null, cityState || null]
     );
     console.log(`[RequestAccess] New VIP request from ${fullName} (${email}) - ${clubName} - ${websiteUrl}`);
     return res.json({ success: true });

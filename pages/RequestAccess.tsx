@@ -8,6 +8,7 @@ export const RequestAccessPage: React.FC = () => {
     const [websiteUrl, setWebsiteUrl] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
+    const [cityState, setCityState] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -25,7 +26,7 @@ export const RequestAccessPage: React.FC = () => {
             const response = await fetch('/api/request-access', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullName, clubName, websiteUrl, email, phone }),
+                body: JSON.stringify({ fullName, clubName, websiteUrl, email, phone, cityState }),
             });
 
             if (response.ok) {
@@ -132,18 +133,32 @@ export const RequestAccessPage: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                                            Club Website URL <span className="text-cyan-500">*</span>
+                                            Club Website, Instagram, or Google Maps Link <span className="text-cyan-500">*</span>
                                         </label>
                                         <input
-                                            type="url"
+                                            type="text"
                                             value={websiteUrl}
                                             onChange={e => setWebsiteUrl(e.target.value)}
                                             className="w-full bg-zinc-800/50 text-white border border-zinc-700 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all placeholder-zinc-600"
-                                            placeholder="https://yourdojo.com"
+                                            placeholder="https://yourdojo.com or @yourdojo"
                                             disabled={isLoading}
                                             required
                                         />
                                         <p className="text-xs text-zinc-600 mt-1">We verify this to ensure quality partners</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                                            City / State (Physical Location) <span className="text-zinc-600">(optional)</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={cityState}
+                                            onChange={e => setCityState(e.target.value)}
+                                            className="w-full bg-zinc-800/50 text-white border border-zinc-700 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all placeholder-zinc-600"
+                                            placeholder="e.g. Paris, France"
+                                            disabled={isLoading}
+                                        />
                                     </div>
 
                                     <div>
