@@ -5,6 +5,7 @@ import { storage } from './storage';
 import { stripeService } from './stripeService';
 import { getStripePublishableKey, getUncachableStripeClient } from './stripeClient';
 import { generateTaekBotResponse, generateClassPlan, generateWelcomeEmail, generateVideoFeedback, generateDailyChallenge } from './aiService';
+import sgMail from '@sendgrid/mail';
 import emailService from './services/emailService';
 import * as emailAutomation from './services/emailAutomationService';
 import { db } from './db';
@@ -89,6 +90,34 @@ export function registerRoutes(app: Express) {
         ON CONFLICT (email) DO UPDATE SET club_name = ${clubName}, full_name = ${fullName}, website_url = ${websiteUrl}, phone = ${phone || null}, city_state = ${cityState || null}, created_at = NOW(), status = 'pending'
       `);
       console.log(`[RequestAccess] New VIP request from ${fullName} (${email}) - ${clubName} - ${websiteUrl}`);
+
+      try {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+        await sgMail.send({
+          to: 'info@mytaek.com',
+          from: { email: 'noreply@mytaek.com', name: 'TaekUp Platform' },
+          subject: `New VIP Access Request: ${clubName}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #e0e0e0; border-radius: 12px;">
+              <h2 style="color: #22d3ee; margin-bottom: 20px;">New VIP Access Request</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px 0; color: #9ca3af; width: 140px;">Full Name</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${fullName}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Club Name</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${clubName}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Website / Link</td><td style="padding: 8px 0;"><a href="${websiteUrl}" style="color: #22d3ee;">${websiteUrl}</a></td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #22d3ee;">${email}</a></td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Phone</td><td style="padding: 8px 0; color: #fff;">${phone || 'Not provided'}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Location</td><td style="padding: 8px 0; color: #fff;">${cityState || 'Not provided'}</td></tr>
+              </table>
+              <hr style="border: 1px solid #333; margin: 20px 0;" />
+              <p style="color: #6b7280; font-size: 12px;">Submitted at ${new Date().toISOString()}</p>
+            </div>
+          `,
+        });
+        console.log(`[RequestAccess] Admin notification sent to info@mytaek.com`);
+      } catch (emailErr: any) {
+        console.error(`[RequestAccess] Failed to send admin notification:`, emailErr.message);
+      }
+
       res.json({ success: true });
     } catch (error: any) {
       console.error(`[RequestAccess] Error:`, error.message);
