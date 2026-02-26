@@ -749,7 +749,7 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
     try {
       sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
       await sgMail.send({
-        to: 'info@mytaek.com',
+        to: 'hello@mytaek.com',
         from: { email: 'noreply@mytaek.com', name: 'TaekUp Platform' },
         subject: `New VIP Access Request: ${clubName}`,
         html: `
@@ -768,7 +768,7 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
           </div>
         `,
       });
-      console.log(`[RequestAccess] Admin notification sent to info@mytaek.com`);
+      console.log(`[RequestAccess] Admin notification sent to hello@mytaek.com`);
     } catch (emailErr: any) {
       console.error(`[RequestAccess] Failed to send admin notification:`, emailErr.message);
     }
