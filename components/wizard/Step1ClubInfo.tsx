@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { WizardData } from '../../types';
 import { COUNTRIES, LANGUAGES, COUNTRY_LANGUAGE_MAP } from '../../constants';
 import { generateSlogan } from '../../services/geminiService';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface Step1Props {
   data: WizardData;
@@ -10,13 +11,12 @@ interface Step1Props {
 }
 
 export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
+  const { t } = useTranslation(data.language);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSloganLoading, setIsSloganLoading] = useState(false);
-  // State to manage adding class per location
   const [newClassName, setNewClassName] = useState<Record<number, string>>({});
 
-  // Synchronize branch names array size when branch count changes
   useEffect(() => {
       const count = data.branches || 1;
       const currentNames = data.branchNames || [];
@@ -60,7 +60,6 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
       const newNames = [...(data.branchNames || [])];
       newNames[index] = newName;
       
-      // If name changes, migrate the classes in location map
       const newLocationClasses = { ...data.locationClasses };
       
       if (newLocationClasses[oldName]) {
@@ -89,7 +88,6 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
           [locationName]: [...classesForLocation, className]
       };
       
-      // Also update the flat global list for legacy/fallback compatibility
       const allUniqueClasses = Array.from(new Set([...(data.classes || []), className]));
 
       onUpdate({ locationClasses: newMap, classes: allUniqueClasses });
@@ -107,38 +105,38 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl md:text-3xl font-bold text-white">
-          Welcome to {data.clubName}!
+        <h1 className="text-2xl md:text-3xl font-bold text-white break-words">
+          {t('wizard.step1.welcome')}
         </h1>
-        <p className="text-gray-400 mt-2">
-            Let’s set up your TaekUp Dojang account, Master <span className={data.ownerName ? 'text-sky-300' : 'text-gray-500 italic'}>{data.ownerName || '(Your Name)'}</span>.
+        <p className="text-gray-400 mt-2 break-words">
+            {data.clubName} — {data.ownerName || ''}
         </p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <InputField id="clubName" label="Club Name" value={data.clubName} onChange={e => onUpdate({ clubName: e.target.value })} />
-        <InputField id="ownerName" label="Owner Name" value={data.ownerName} onChange={e => onUpdate({ ownerName: e.target.value })} placeholder="e.g., Master Hamed"/>
+        <InputField id="clubName" label={t('wizard.step1.clubName')} value={data.clubName} onChange={e => onUpdate({ clubName: e.target.value })} />
+        <InputField id="ownerName" label={t('wizard.step1.ownerName')} value={data.ownerName} onChange={e => onUpdate({ ownerName: e.target.value })} placeholder="e.g., Master Hamed"/>
         
         <div>
-          <label htmlFor="country" className="block text-sm font-medium text-gray-300">Country</label>
+          <label htmlFor="country" className="block text-sm font-medium text-gray-300">{t('wizard.step1.country')}</label>
           <select id="country" value={data.country} onChange={handleCountryChange} className="mt-1 wizard-input">
             {COUNTRIES.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
           </select>
         </div>
 
         <div>
-          <label htmlFor="language" className="block text-sm font-medium text-gray-300">Communication Language</label>
+          <label htmlFor="language" className="block text-sm font-medium text-gray-300">{t('wizard.step1.language')}</label>
           <select id="language" value={data.language || 'English'} onChange={e => onUpdate({ language: e.target.value })} className="mt-1 wizard-input">
             {LANGUAGES.map(l => <option key={l}>{l}</option>)}
           </select>
-          <p className="text-xs text-gray-500 mt-1">AI feedback will be generated in this language.</p>
+          <p className="text-xs text-gray-500 mt-1 break-words">{t('wizard.step1.languageHint')}</p>
         </div>
 
-        <InputField id="city" label="City" value={data.city} onChange={e => onUpdate({ city: e.target.value })} />
-        <InputField id="branches" label="Number of Branches / Locations" type="number" min="1" value={data.branches} onChange={e => onUpdate({ branches: parseInt(e.target.value, 10) })} />
+        <InputField id="city" label={t('wizard.step1.city')} value={data.city} onChange={e => onUpdate({ city: e.target.value })} />
+        <InputField id="branches" label={t('wizard.step1.branches')} type="number" min="1" value={data.branches} onChange={e => onUpdate({ branches: parseInt(e.target.value, 10) })} />
         
         <div>
-          <label className="block text-sm font-medium text-gray-300">Club Logo (Optional)</label>
+          <label className="block text-sm font-medium text-gray-300">{t('wizard.step1.logo')}</label>
           <div className="mt-1 flex items-center space-x-4">
               <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
                 {logoPreview ? (
@@ -148,30 +146,28 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                 )}
               </div>
               <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold py-2 px-4 rounded-md transition-colors">
-                Upload
+                {t('common.uploading').replace('...', '')}
               </button>
               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
           </div>
         </div>
       </div>
 
-      {/* Branch & Class Manager */}
       <div className="space-y-6 mt-4">
           <div className="flex items-center space-x-2 text-lg font-bold text-white border-b border-gray-700 pb-2">
               <span>📍</span>
-              <h3>Locations & Classes</h3>
+              <h3>{t('wizard.step1.locations')} & {t('wizard.step1.classes')}</h3>
           </div>
-          <p className="text-sm text-gray-400 -mt-4">
-              Unlimited Locations. Add all your branches and satellite classes here.
+          <p className="text-sm text-gray-400 -mt-4 break-words">
+              {t('wizard.step1.unlimitedLocations')}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {data.branchNames?.map((branchName, index) => (
                   <div key={index} className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-lg relative overflow-hidden">
-                      {/* Location Settings Header */}
                       <div className="mb-4 space-y-3">
                           <div>
-                              <label className="block text-xs text-sky-300 font-bold uppercase tracking-wider mb-1">Location {index + 1} Name</label>
+                              <label className="block text-xs text-sky-300 font-bold uppercase tracking-wider mb-1">{t('wizard.step1.locationName')} {index + 1}</label>
                               <input 
                                   type="text" 
                                   value={branchName} 
@@ -181,7 +177,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                               />
                           </div>
                           <div>
-                              <label className="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Physical Address</label>
+                              <label className="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">{t('wizard.step1.address')}</label>
                               <input 
                                   type="text" 
                                   value={data.branchAddresses?.[index] || ''} 
@@ -192,18 +188,16 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                           </div>
                       </div>
 
-                      {/* Class List for this Location */}
                       <div className="bg-gray-700/30 p-3 rounded-md border border-gray-700">
-                          <label className="block text-xs text-gray-400 mb-2">Classes at this location</label>
+                          <label className="block text-xs text-gray-400 mb-2">{t('wizard.step1.classes')}</label>
                           
-                          {/* Add Class Input */}
                           <div className="flex space-x-2 mb-3">
                               <input 
                                   type="text" 
                                   value={newClassName[index] || ''} 
                                   onChange={(e) => setNewClassName(p => ({...p, [index]: e.target.value}))}
                                   onKeyDown={(e) => e.key === 'Enter' && handleAddClassToLocation(index, branchName)}
-                                  placeholder="Class name (e.g. Tiny Tigers)"
+                                  placeholder={t('wizard.step1.className')}
                                   className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white w-full focus:outline-none focus:border-sky-500"
                               />
                               <button 
@@ -214,7 +208,6 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                               </button>
                           </div>
 
-                          {/* List of Classes */}
                           <div className="flex flex-wrap gap-2">
                               {(data.locationClasses?.[branchName] || []).map((cls, clsIdx) => (
                                   <div key={clsIdx} className="bg-gray-600 text-white px-2 py-1 rounded text-xs flex items-center">
@@ -223,7 +216,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                                   </div>
                               ))}
                               {(!data.locationClasses?.[branchName] || data.locationClasses[branchName].length === 0) && (
-                                  <span className="text-xs text-gray-500 italic">No classes added yet.</span>
+                                  <span className="text-xs text-gray-500 italic">{t('wizard.step5.noStudents').replace('students', t('wizard.step1.classes').toLowerCase())}</span>
                               )}
                           </div>
                       </div>
@@ -233,9 +226,9 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
       </div>
       
       <div>
-        <label htmlFor="slogan" className="block text-sm font-medium text-gray-300">Slogan (Optional)</label>
+        <label htmlFor="slogan" className="block text-sm font-medium text-gray-300">{t('wizard.step1.slogan')}</label>
         <div className="mt-1 flex items-center space-x-2">
-            <input id="slogan" value={data.slogan} onChange={e => onUpdate({ slogan: e.target.value })} placeholder="e.g., Discipline. Focus. Spirit." className="wizard-input flex-1" />
+            <input id="slogan" value={data.slogan} onChange={e => onUpdate({ slogan: e.target.value })} placeholder={t('wizard.step1.sloganPlaceholder')} className="wizard-input flex-1" />
             <button type="button" onClick={handleGenerateSlogan} disabled={isSloganLoading} className="bg-sky-500/50 hover:bg-sky-500/70 text-sm text-white font-semibold py-2 px-3 rounded-md transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center">
               {isSloganLoading ? (
                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

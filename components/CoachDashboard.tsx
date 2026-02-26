@@ -9,6 +9,7 @@ import { ChallengeBuilder } from './ChallengeBuilder';
 import { CoachLeaderboard } from './CoachLeaderboard';
 import { WorldRankings } from './WorldRankings';
 import { calculateClassPTS, calculateGradingXP } from '../services/gamificationService';
+import { useTranslation } from '../i18n/useTranslation';
 
 // --- TYPE DEFINITIONS ---
 type SessionScores = Record<string, Record<string, number | null>>;
@@ -97,7 +98,7 @@ const ProgressBar: React.FC<{ student: Student; sessionTotal: number; pointsPerS
     );
 };
 
-const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string }> = ({ students, belts, clubId }) => {
+const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: string, t: (key: string, vars?: Record<string, string | number>) => string }> = ({ students, belts, clubId, t }) => {
     const [leaderboardMode, setLeaderboardMode] = useState<'effort' | 'progress'>('effort');
     const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
     const [cachedLeaderboard, setCachedLeaderboard] = useState<Array<{id: string, name: string, monthlyPTS: number}>>([]);
@@ -262,7 +263,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
             {/* Birthday Widget */}
             <div className="bg-gray-800/50 rounded-lg border border-yellow-500/30 p-4">
                 <h3 className="font-bold text-white flex items-center mb-3">
-                    <span className="text-xl mr-2">🎂</span> Birthday Radar
+                    <span className="text-xl mr-2">🎂</span> {t('coach.widgets.birthdayRadar')}
                 </h3>
                 <div className="space-y-2">
                     {birthdayStudents.length > 0 ? (
@@ -279,15 +280,15 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                                             {s.name}
                                         </p>
                                         <p className="text-xs text-gray-400">
-                                            {isToday ? 'Turning' : new Date(s.birthday).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})} • {newAge}
+                                            {isToday ? t('coach.widgets.turning') : new Date(s.birthday).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})} • {newAge}
                                         </p>
                                     </div>
-                                    {isToday && <span className="text-xs bg-yellow-500 text-black px-2 py-1 rounded font-bold animate-pulse">TODAY!</span>}
+                                    {isToday && <span className="text-xs bg-yellow-500 text-black px-2 py-1 rounded font-bold animate-pulse">{t('coach.widgets.today')}</span>}
                                 </div>
                             )
                         })
                     ) : (
-                        <p className="text-xs text-gray-500 italic text-center py-2">No upcoming birthdays.</p>
+                        <p className="text-xs text-gray-500 italic text-center py-2">{t('coach.widgets.noBirthdays')}</p>
                     )}
                 </div>
             </div>
@@ -296,21 +297,21 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
             <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-4">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-white flex items-center">
-                        <span className="text-xl mr-2">🏆</span> Top Students
+                        <span className="text-xl mr-2">🏆</span> {t('coach.widgets.topStudents')}
                     </h3>
                     <div className="flex text-xs">
                         <button 
                             onClick={() => setLeaderboardMode('effort')}
                             className={`px-2 py-1 rounded-l ${leaderboardMode === 'effort' ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-400'}`}
-                        >Monthly Effort</button>
+                        >{t('coach.nav.monthlyEffort')}</button>
                         <button 
                             onClick={() => setLeaderboardMode('progress')}
                             className={`px-2 py-1 rounded-r ${leaderboardMode === 'progress' ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-400'}`}
-                        >Belt Progress</button>
+                        >{t('coach.nav.beltProgress')}</button>
                     </div>
                 </div>
                 <p className="text-xs text-gray-500 mb-2">
-                    {leaderboardMode === 'effort' ? 'Points earned this month' : 'Current stripe progress'}
+                    {leaderboardMode === 'effort' ? t('coach.widgets.pointsThisMonth') : t('coach.widgets.stripeProgress')}
                 </p>
                 <div className="space-y-3">
                     {topStudents.map((s, i) => {
@@ -331,7 +332,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                     })}
                     {topStudents.length === 0 && (
                         <p className="text-sm text-gray-500 italic">
-                            {leaderboardMode === 'effort' ? 'No activity this month.' : 'No students with points yet.'}
+                            {leaderboardMode === 'effort' ? t('coach.widgets.noActivityThisMonth') : t('coach.widgets.noStudentsWithPoints')}
                         </p>
                     )}
                 </div>
@@ -340,9 +341,9 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
             {/* Retention Radar Widget */}
             <div className="bg-gray-800/50 rounded-lg border border-red-900/30 p-4">
                 <h3 className="font-bold text-white flex items-center mb-3">
-                    <span className="text-xl mr-2">📡</span> Retention Radar
+                    <span className="text-xl mr-2">📡</span> {t('coach.widgets.retentionRadar')}
                 </h3>
-                <p className="text-xs text-gray-400 mb-3">Absent 14+ Days</p>
+                <p className="text-xs text-gray-400 mb-3">{t('coach.widgets.absent14Days')}</p>
                 <div className="space-y-2">
                      {!retentionLoaded ? (
                          <div className="flex items-center justify-center p-2 text-gray-400 text-sm">
@@ -352,15 +353,15 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                          atRiskStudents.slice(0, 3).map(s => (
                             <div key={s.id} className="flex items-center justify-between bg-red-900/20 p-2 rounded border border-red-900/50">
                                 <span className="text-sm text-red-200">{s.name}</span>
-                                <span className="text-xs bg-red-900 text-white px-1.5 py-0.5 rounded">At Risk</span>
+                                <span className="text-xs bg-red-900 text-white px-1.5 py-0.5 rounded">{t('coach.widgets.atRisk')}</span>
                             </div>
                          ))
                      ) : (
                          <div className="flex items-center justify-center p-2 text-green-400 text-sm">
-                             <span>✅ Everyone is active!</span>
+                             <span>✅ {t('coach.widgets.everyoneActive')}</span>
                          </div>
                      )}
-                     {retentionLoaded && atRiskStudents.length > 3 && <p className="text-xs text-center text-red-400">+{atRiskStudents.length - 3} more...</p>}
+                     {retentionLoaded && atRiskStudents.length > 3 && <p className="text-xs text-center text-red-400">{t('coach.widgets.moreCount', { count: atRiskStudents.length - 3 })}</p>}
                 </div>
             </div>
         </div>
@@ -766,7 +767,7 @@ const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastComm
     );
 };
 
-const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
+const LessonPlanner: React.FC<{ data: WizardData; t: (key: string, vars?: Record<string, string | number>) => string }> = ({ data, t }) => {
     const [ageGroup, setAgeGroup] = useState('Kids (7-9)');
     const [focus, setFocus] = useState('');
     const [duration, setDuration] = useState('45');
@@ -935,7 +936,7 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
                 <div className="flex items-center mb-4">
                     <span className="text-3xl mr-4">🧠</span>
                     <div>
-                        <h2 className="text-xl font-bold text-white">AI Class Planner <span className="text-xs bg-green-600 px-2 py-0.5 rounded ml-2">GPT-4o Powered</span></h2>
+                        <h2 className="text-xl font-bold text-white">{t('coach.planner.aiClassPlanner')} <span className="text-xs bg-green-600 px-2 py-0.5 rounded ml-2">GPT-4o Powered</span></h2>
                         <p className="text-gray-400 text-sm">Professional lesson plans with exact timing, Korean terminology, and age-appropriate activities.</p>
                     </div>
                 </div>
@@ -1015,6 +1016,7 @@ const LessonPlanner: React.FC<{ data: WizardData }> = ({ data }) => {
 // --- MAIN DASHBOARD COMPONENT ---
 
 export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName, onUpdateStudents, onUpdateData, onBack, userType, onGoToAdmin, clubId }) => {
+    const { t } = useTranslation(data.language);
     // Defensive: ensure data arrays exist
     const safeStudents = data.students || [];
     const safeBelts = data.belts || [];
@@ -2070,7 +2072,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             {/* Demo Mode Banner */}
             {isDemo && (
                 <div className="mb-4 bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white py-2 px-4 rounded-lg shadow-lg text-center font-bold text-sm flex items-center justify-center gap-2">
-                    <span className="text-lg">🎮</span> DEMO MODE - Sample data for demonstration purposes
+                    <span className="text-lg">🎮</span> {t('coach.status.demoMode')}
                 </div>
             )}
             
@@ -2098,7 +2100,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 </div>
                                 <div className="min-w-0">
                                     <h1 className="text-base md:text-xl font-bold text-white truncate">
-                                        {activeView === 'grading' ? `Today's Class` : activeView === 'schedule' ? `Schedule` : activeView === 'planner' ? 'Planner' : activeView === 'challenges' ? 'Challenges' : activeView === 'leaderboard' ? 'Global Shogun Rank™' : activeView === 'world-rankings' ? 'World Rankings' : 'Videos'}
+                                        {activeView === 'grading' ? t('coach.nav.todaysClass') : activeView === 'schedule' ? t('coach.nav.schedule') : activeView === 'planner' ? t('coach.nav.planner') : activeView === 'challenges' ? t('coach.nav.challenges') : activeView === 'leaderboard' ? t('coach.nav.shogunRank') : activeView === 'world-rankings' ? t('coach.nav.worldRankings') : t('coach.nav.videos')}
                                     </h1>
                                     <p className="text-xs md:text-sm text-gray-400 flex items-center gap-1 md:gap-2 truncate">
                                         <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500"></span> <span className="hidden xs:inline">Coach</span> {coachName}</span>
@@ -2115,15 +2117,15 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     title="Hands-Free Grading"
                                 >
                                     <span className="text-base md:text-lg">🎙️</span>
-                                    <span className="hidden sm:inline">{isVoiceActive ? 'LISTENING...' : 'Voice'}</span>
+                                    <span className="hidden sm:inline">{isVoiceActive ? t('coach.actions.listening') : t('coach.actions.voice')}</span>
                                 </button>
                                 {userType === 'owner' && onGoToAdmin && (
                                     <button onClick={onGoToAdmin} className="px-2 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold bg-gray-800/80 text-gray-300 border border-gray-600/50 hover:border-cyan-500/50 hover:text-cyan-400 transition-all duration-300 flex items-center gap-1 md:gap-2">
-                                        <span>⬅️</span> <span className="hidden sm:inline">Admin</span>
+                                        <span>⬅️</span> <span className="hidden sm:inline">{t('coach.actions.admin')}</span>
                                     </button>
                                 )}
                                 <button onClick={onBack} className="px-2 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 hover:border-red-400 transition-all duration-300 flex items-center gap-1 md:gap-2">
-                                    <span>🚪</span> <span className="hidden sm:inline">Logout</span>
+                                    <span>🚪</span> <span className="hidden sm:inline">{t('coach.actions.logout')}</span>
                                 </button>
                             </div>
                         </div>
@@ -2142,7 +2144,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
                                     <span className="relative text-lg">📋</span>
-                                    <span className="relative text-[10px]">Grade</span>
+                                    <span className="relative text-[10px] truncate">{t('coach.nav.grade')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('planner')}
@@ -2153,7 +2155,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
                                     <span className="relative text-lg">🧠</span>
-                                    <span className="relative text-[10px]">Plan</span>
+                                    <span className="relative text-[10px] truncate">{t('coach.nav.plan')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('schedule')}
@@ -2164,7 +2166,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
                                     <span className="relative text-lg">📅</span>
-                                    <span className="relative text-[10px]">Schedule</span>
+                                    <span className="relative text-[10px] truncate">{t('coach.nav.schedule')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('challenges')}
@@ -2175,7 +2177,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
                                     <span className="relative text-lg">🏆</span>
-                                    <span className="relative text-[10px]">Challenges</span>
+                                    <span className="relative text-[10px] truncate">{t('coach.nav.challenges')}</span>
                                 </button>
                                 {/* Row 2: Videos, Shogun, World + empty cell for balance */}
                                 <button 
@@ -2187,7 +2189,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
                                     <span className="relative text-lg">🎬</span>
-                                    <span className="relative text-[10px]">Videos</span>
+                                    <span className="relative text-[10px] truncate">{t('coach.nav.videos')}</span>
                                     {pendingVideos.length > 0 && (
                                         <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg shadow-red-500/50 z-10">
                                             {pendingVideos.length}
@@ -2203,7 +2205,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
                                     <span className="relative text-lg">🥇</span>
-                                    <span className="relative text-[10px]">Shogun</span>
+                                    <span className="relative text-[10px] truncate">{t('coach.nav.shogun')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('world-rankings')}
@@ -2214,7 +2216,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl"></span>
                                     <span className="relative text-lg">🌍</span>
-                                    <span className="relative text-[10px]">World Rankings</span>
+                                    <span className="relative text-[10px] truncate">{t('coach.nav.worldRankings')}</span>
                                 </button>
                             </div>
                             
@@ -2229,7 +2231,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
                                     <span className="relative text-lg">📋</span>
-                                    <span className="relative">Grading</span>
+                                    <span className="relative">{t('coach.nav.grading')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('planner')}
@@ -2240,7 +2242,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
                                     <span className="relative text-lg">🧠</span>
-                                    <span className="relative">Plan</span>
+                                    <span className="relative">{t('coach.nav.planner')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('schedule')}
@@ -2251,7 +2253,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
                                     <span className="relative text-lg">📅</span>
-                                    <span className="relative">Schedule</span>
+                                    <span className="relative">{t('coach.nav.schedule')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('challenges')}
@@ -2262,7 +2264,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
                                     <span className="relative text-lg">🏆</span>
-                                    <span className="relative">Challenges</span>
+                                    <span className="relative">{t('coach.nav.challenges')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('videos')}
@@ -2273,7 +2275,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
                                     <span className="relative text-lg">🎬</span>
-                                    <span className="relative">Videos</span>
+                                    <span className="relative">{t('coach.nav.videos')}</span>
                                     {pendingVideos.length > 0 && (
                                         <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg shadow-red-500/50 z-10">
                                             {pendingVideos.length}
@@ -2292,7 +2294,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
                                     <span className="relative text-lg">🥇</span>
-                                    <span className="relative">Shogun Rank</span>
+                                    <span className="relative">{t('coach.nav.shogunRank')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('world-rankings')}
@@ -2303,7 +2305,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
                                     <span className="relative text-lg">🌍</span>
-                                    <span className="relative">World</span>
+                                    <span className="relative">{t('coach.nav.worldRankings')}</span>
                                 </button>
                             </div>
                         </div>
@@ -2325,7 +2327,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         }} 
                                         className="w-full md:w-auto bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-3 md:py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
                                     >
-                                        <option value="all">📍 All Locations</option>
+                                        <option value="all">📍 {t('coach.grading.allLocations')}</option>
                                         {locations.map(loc => <option key={loc} value={loc}>📍 {loc}</option>)}
                                     </select>
                                     <select 
@@ -2334,7 +2336,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         className="w-full md:w-auto bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-3 md:py-2 px-3 font-bold focus:ring-sky-500 focus:border-sky-500"
                                         disabled={activeLocationFilter === 'all' && availableClasses.length === 0}
                                     >
-                                        <option value="all">⏰ All Classes</option>
+                                        <option value="all">⏰ {t('coach.grading.allClasses')}</option>
                                         {availableClasses.map(cls => <option key={cls} value={cls}>⏰ {cls}</option>)}
                                     </select>
                                     <select 
@@ -2343,39 +2345,39 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                         onChange={e => setActiveBeltFilter(e.target.value)} 
                                         className="md:hidden w-full bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-3 px-3 focus:ring-sky-500 focus:border-sky-500 col-span-1 sm:col-span-2"
                                     >
-                                        <option value="all">🥋 All Belts</option>
+                                        <option value="all">🥋 {t('coach.grading.allBelts')}</option>
                                         {(data.belts || []).map(belt => <option key={belt.id} value={belt.id}>🥋 {belt.name}</option>)}
                                     </select>
                                 </div>
                                 
                                 {/* Mobile Quick Actions */}
                                 <div className="md:hidden flex flex-wrap gap-2">
-                                    <button onClick={() => handleBulkScore(2)} className="flex-1 bg-green-600/80 hover:bg-green-600 text-white font-bold py-2 px-3 text-sm rounded-md">💚 All Green</button>
-                                    <button onClick={() => handleBulkScore(1)} className="flex-1 bg-yellow-500/80 hover:bg-yellow-500 text-white font-bold py-2 px-3 text-sm rounded-md">💛 All Yellow</button>
-                                    <button onClick={() => handleBulkScore(0)} className="flex-1 bg-red-500/80 hover:bg-red-500 text-white font-bold py-2 px-3 text-sm rounded-md">❤️ All Red</button>
+                                    <button onClick={() => handleBulkScore(2)} className="flex-1 bg-green-600/80 hover:bg-green-600 text-white font-bold py-2 px-3 text-sm rounded-md">💚 {t('coach.grading.allGreen')}</button>
+                                    <button onClick={() => handleBulkScore(1)} className="flex-1 bg-yellow-500/80 hover:bg-yellow-500 text-white font-bold py-2 px-3 text-sm rounded-md">💛 {t('coach.grading.allYellow')}</button>
+                                    <button onClick={() => handleBulkScore(0)} className="flex-1 bg-red-500/80 hover:bg-red-500 text-white font-bold py-2 px-3 text-sm rounded-md">❤️ {t('coach.grading.allRed')}</button>
                                 </div>
                                 
                                 {/* Desktop Filters */}
                                 <div className="hidden md:flex flex-wrap items-center gap-4">
                                      <div>
-                                        <label htmlFor="belt-filter-desktop" className="text-xs font-medium text-gray-400 mr-2">Filter by Belt:</label>
+                                        <label htmlFor="belt-filter-desktop" className="text-xs font-medium text-gray-400 mr-2">{t('coach.grading.filterByBelt')}</label>
                                         <select id="belt-filter-desktop" value={activeBeltFilter} onChange={e => setActiveBeltFilter(e.target.value)} className="bg-gray-700 border border-gray-600 rounded-md text-white text-sm py-1 px-2 focus:ring-sky-500 focus:border-sky-500">
-                                            <option value="all">All Belts</option>
+                                            <option value="all">{t('coach.grading.allBelts')}</option>
                                             {(data.belts || []).map(belt => <option key={belt.id} value={belt.id}>{belt.name}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                        <button onClick={() => handleBulkScore(2)} className="bg-green-600/80 hover:bg-green-600 text-white font-bold py-1.5 px-3 text-sm rounded-md">💚 All Greens</button>
-                                        <button onClick={() => handleBulkScore(1)} className="bg-yellow-500/80 hover:bg-yellow-500 text-white font-bold py-1.5 px-3 text-sm rounded-md">💛 All Yellows</button>
-                                        <button onClick={() => handleBulkScore(0)} className="bg-red-500/80 hover:bg-red-500 text-white font-bold py-1.5 px-3 text-sm rounded-md">❤️ All Reds</button>
-                                        <button onClick={() => handleBulkScore(null)} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-1.5 px-3 text-sm rounded-md">Reset</button>
+                                        <button onClick={() => handleBulkScore(2)} className="bg-green-600/80 hover:bg-green-600 text-white font-bold py-1.5 px-3 text-sm rounded-md">💚 {t('coach.grading.allGreens')}</button>
+                                        <button onClick={() => handleBulkScore(1)} className="bg-yellow-500/80 hover:bg-yellow-500 text-white font-bold py-1.5 px-3 text-sm rounded-md">💛 {t('coach.grading.allYellows')}</button>
+                                        <button onClick={() => handleBulkScore(0)} className="bg-red-500/80 hover:bg-red-500 text-white font-bold py-1.5 px-3 text-sm rounded-md">❤️ {t('coach.grading.allReds')}</button>
+                                        <button onClick={() => handleBulkScore(null)} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-1.5 px-3 text-sm rounded-md">{t('coach.grading.reset')}</button>
                                     </div>
                                     <button 
                                         onClick={() => setFocusMode(!focusMode)} 
                                         className={`py-1.5 px-3 text-sm rounded-md font-bold transition-all ${focusMode ? 'bg-orange-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
                                         title="Focus Mode - Simplified view for faster grading"
                                     >
-                                        {focusMode ? '🎯 Focus ON' : '🎯 Focus'}
+                                        {focusMode ? `🎯 ${t('coach.grading.focusOn')}` : `🎯 ${t('coach.grading.focus')}`}
                                     </button>
                                 </div>
                             </>
@@ -2389,7 +2391,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         <div className="md:hidden p-2 space-y-3">
                             {/* Mobile Check All Button */}
                             <div className="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg">
-                                <span className="text-sm text-gray-300 font-medium">Mark All Present</span>
+                                <span className="text-sm text-gray-300 font-medium">{t('coach.grading.markAllPresent')}</span>
                                 <input 
                                     type="checkbox" 
                                     checked={filteredStudents.length > 0 && filteredStudents.every(s => attendance[s.id])}
@@ -2409,7 +2411,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                             
                             {filteredStudents.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500 italic">
-                                    No students found for this filter.
+                                    {t('coach.grading.noStudentsFilter')}
                                 </div>
                             ) : (
                                 filteredStudents.map((student) => {
@@ -2468,7 +2470,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {data.homeworkBonus && (
                                                         <div>
-                                                            <label className="text-[10px] text-sky-300 uppercase">Homework</label>
+                                                            <label className="text-[10px] text-sky-300 uppercase">{t('coach.grading.homework')}</label>
                                                             <input 
                                                                 type="number" 
                                                                 min="0" 
@@ -2481,7 +2483,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     )}
                                                     {data.coachBonus && (
                                                         <div>
-                                                            <label className="text-[10px] text-purple-300 uppercase">Bonus</label>
+                                                            <label className="text-[10px] text-purple-300 uppercase">{t('coach.grading.bonus')}</label>
                                                             <input 
                                                                 type="number" 
                                                                 min="0" 
@@ -2573,17 +2575,17 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                             <table className="w-full text-sm text-left text-gray-300">
                                 <thead className="text-xs text-gray-400 uppercase bg-gray-700/50">
                                     <tr>
-                                        <th className="px-4 py-3">Student</th>
+                                        <th className="px-4 py-3">{t('coach.grading.student')}</th>
                                         {activeSkills.map(s => <th key={s.id} className="px-3 py-3 text-center">{s.name}</th>)}
-                                        {!focusMode && data.homeworkBonus && <th className="px-2 py-3 text-center text-sky-300">Homework</th>}
-                                        {!focusMode && data.coachBonus && <th className="px-2 py-3 text-center text-purple-400">Bonus</th>}
-                                        <th className="px-2 py-3 text-center">Total</th>
-                                        <th className="px-4 py-3 min-w-[200px]">Stripe Bar</th>
+                                        {!focusMode && data.homeworkBonus && <th className="px-2 py-3 text-center text-sky-300">{t('coach.grading.homework')}</th>}
+                                        {!focusMode && data.coachBonus && <th className="px-2 py-3 text-center text-purple-400">{t('coach.grading.bonus')}</th>}
+                                        <th className="px-2 py-3 text-center">{t('coach.grading.total')}</th>
+                                        <th className="px-4 py-3 min-w-[200px]">{t('coach.grading.stripeBar')}</th>
                                         {!focusMode && data.gradingRequirementEnabled && (
                                             <th className="px-2 py-3 text-center text-yellow-400">{data.gradingRequirementName || 'Req.'}</th>
                                         )}
-                                        <th className="px-2 py-3 text-center">Note</th>
-                                        {!focusMode && <th className="px-2 py-3 text-center">View</th>}
+                                        <th className="px-2 py-3 text-center">{t('coach.grading.note')}</th>
+                                        {!focusMode && <th className="px-2 py-3 text-center">{t('coach.grading.view')}</th>}
                                         <th className="px-4 py-3 text-center">
                                             <input 
                                                 type="checkbox" 
@@ -2608,7 +2610,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     {filteredStudents.length === 0 ? (
                                         <tr>
                                             <td colSpan={10} className="px-4 py-8 text-center text-gray-500 italic">
-                                                No students found for this filter.
+                                                {t('coach.grading.noStudentsFilter')}
                                             </td>
                                         </tr>
                                     ) : (
@@ -2720,7 +2722,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         </div>
                         </>
                     ) : activeView === 'planner' ? (
-                        <LessonPlanner data={data} />
+                        <LessonPlanner data={data} t={t} />
                     ) : activeView === 'schedule' ? (
                         // SCHEDULE VIEW
                         <div className="p-6 space-y-8">
@@ -2728,11 +2730,11 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 {/* Section 1: My Weekly Classes */}
                                 <div className="md:col-span-2 bg-gray-700/30 p-4 rounded-lg border border-gray-600/50">
                                     <h3 className="text-lg font-bold text-white mb-4 border-b border-gray-600 pb-2">
-                                        🗓️ My Weekly Classes
+                                        🗓️ {t('coach.schedule.myWeeklyClasses')}
                                     </h3>
                                     <div className="space-y-3">
                                         {(data.schedule || []).filter(s => s.instructor === coachName || coachName === data.ownerName).length === 0 && (
-                                            <p className="text-gray-400 italic text-sm">No recurring classes assigned.</p>
+                                            <p className="text-gray-400 italic text-sm">{t('coach.schedule.noRecurringClasses')}</p>
                                         )}
                                         {(data.schedule || []).filter(s => s.instructor === coachName || coachName === data.ownerName).map(cls => (
                                             <div key={cls.id} className="bg-gray-800 p-3 rounded border border-gray-700 flex justify-between items-center">
@@ -2742,7 +2744,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     <p className="text-xs text-gray-500">{cls.location} • {cls.instructor}</p>
                                                 </div>
                                                 <button className="bg-gray-700 hover:bg-gray-600 text-xs text-white px-3 py-1 rounded">
-                                                    Start
+                                                    {t('coach.schedule.start')}
                                                 </button>
                                             </div>
                                         ))}
@@ -2752,19 +2754,19 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 {/* Section 2: Private Bookings */}
                                 <div className="bg-purple-900/20 p-4 rounded-lg border border-purple-500/30">
                                     <h3 className="text-lg font-bold text-purple-200 mb-4 border-b border-purple-800/50 pb-2">
-                                        🥋 Private Lessons
+                                        🥋 {t('coach.schedule.privateLessons')}
                                     </h3>
                                     <div className="space-y-3">
                                         {(data.privateSlots || []).filter(s => s.coachName === coachName || coachName === data.ownerName).length === 0 && (
-                                            <p className="text-gray-400 italic text-sm">No private slots.</p>
+                                            <p className="text-gray-400 italic text-sm">{t('coach.schedule.noPrivateSlots')}</p>
                                         )}
                                         {(data.privateSlots || []).filter(s => s.coachName === coachName || coachName === data.ownerName).map(slot => (
                                             <div key={slot.id} className={`p-3 rounded border flex justify-between items-center ${slot.isBooked ? 'bg-green-900/30 border-green-500/50' : 'bg-gray-800 border-gray-700 opacity-60'}`}>
                                                 <div>
                                                     <p className="text-white font-bold text-sm">{new Date(slot.date).toLocaleDateString()}</p>
-                                                    <p className="text-xs text-gray-400">{slot.isBooked ? 'Booked (Check Email)' : 'Open Slot'}</p>
+                                                    <p className="text-xs text-gray-400">{slot.isBooked ? t('coach.schedule.bookedCheckEmail') : t('coach.schedule.openSlot')}</p>
                                                 </div>
-                                                {slot.isBooked && <span className="text-green-400 text-xs font-bold">CONFIRMED</span>}
+                                                {slot.isBooked && <span className="text-green-400 text-xs font-bold">{t('coach.schedule.confirmed')}</span>}
                                             </div>
                                         ))}
                                     </div>
@@ -2774,10 +2776,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                             {/* Section 3: Upcoming Events */}
                             <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-600/50">
                                 <div className="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
-                                    <h3 className="text-lg font-bold text-white">🏆 Upcoming Club Events</h3>
+                                    <h3 className="text-lg font-bold text-white">🏆 {t('coach.schedule.upcomingEvents')}</h3>
                                     {onUpdateData && (
                                         <button onClick={() => setIsAddEventOpen(true)} className="bg-green-600 hover:bg-green-500 text-white text-xs font-bold py-1 px-3 rounded">
-                                            + Add Event
+                                            {t('coach.schedule.addEvent')}
                                         </button>
                                     )}
                                 </div>
@@ -2792,7 +2794,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                             <p className="text-gray-500 text-xs mt-1">📍 {evt.location}</p>
                                         </div>
                                     ))}
-                                    {(data.events || []).length === 0 && <p className="text-gray-500 text-sm italic">No upcoming events found.</p>}
+                                    {(data.events || []).length === 0 && <p className="text-gray-500 text-sm italic">{t('coach.schedule.noUpcomingEvents')}</p>}
                                 </div>
                             </div>
                         </div>
@@ -2805,15 +2807,15 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-2xl p-4 md:p-8 border border-cyan-500/30 mb-6">
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                         <div>
-                                            <h2 className="text-xl md:text-2xl font-black text-white mb-1 md:mb-2">Custom Challenge Builder</h2>
-                                            <p className="text-sm md:text-base text-gray-400">Create unique challenges for your students to compete in Dojang Rivals</p>
+                                            <h2 className="text-xl md:text-2xl font-black text-white mb-1 md:mb-2">{t('coach.challenges.customChallengeBuilder')}</h2>
+                                            <p className="text-sm md:text-base text-gray-400">{t('coach.challenges.createChallengeDesc')}</p>
                                         </div>
                                         <button
                                             onClick={() => setShowChallengeBuilder(true)}
                                             className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold px-4 md:px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2"
                                         >
                                             <span className="text-xl">🏆</span>
-                                            Create Challenge
+                                            {t('coach.challenges.createChallenge')}
                                         </button>
                                     </div>
                                 </div>
@@ -2829,38 +2831,38 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                 <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
                                                     <div className="text-4xl mb-2">📊</div>
                                                     <div className="text-3xl font-black text-cyan-400">{activeChallenges.length}</div>
-                                                    <div className="text-gray-400 text-sm">Active Challenges</div>
+                                                    <div className="text-gray-400 text-sm">{t('coach.challenges.activeChallenges')}</div>
                                                 </div>
                                                 <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
                                                     <div className="text-4xl mb-2">🎯</div>
                                                     <div className="text-3xl font-black text-yellow-400">{weeklyChallenges.length}</div>
-                                                    <div className="text-gray-400 text-sm">Weekly Challenges</div>
+                                                    <div className="text-gray-400 text-sm">{t('coach.challenges.weeklyChallenges')}</div>
                                                 </div>
                                                 <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
                                                     <div className="text-4xl mb-2">👥</div>
                                                     <div className="text-3xl font-black text-green-400">{students.length}</div>
-                                                    <div className="text-gray-400 text-sm">Students</div>
+                                                    <div className="text-gray-400 text-sm">{t('coach.challenges.students')}</div>
                                                 </div>
                                             </div>
 
                                             {displayChallenges.length === 0 ? (
                                                 <div className="text-center py-16 bg-gray-800/50 rounded-2xl border border-gray-700">
                                                     <div className="text-7xl mb-4">🏆</div>
-                                                    <h3 className="text-2xl font-bold text-white mb-2">No Custom Challenges Yet</h3>
+                                                    <h3 className="text-2xl font-bold text-white mb-2">{t('coach.challenges.noChallengesYet')}</h3>
                                                     <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                                                        Create your first custom challenge to give your students unique ways to compete and earn XP in Dojang Rivals!
+                                                        {t('coach.challenges.noChallengesDesc')}
                                                     </p>
                                                     <button
                                                         onClick={() => setShowChallengeBuilder(true)}
                                                         className="bg-cyan-500 hover:bg-cyan-400 text-white font-bold px-8 py-3 rounded-xl transition-all"
                                                     >
-                                                        Create Your First Challenge
+                                                        {t('coach.challenges.createFirstChallenge')}
                                                     </button>
                                                 </div>
                                             ) : (
                                                 <div className="space-y-4">
                                                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                                        <span className="text-green-400">●</span> Your Custom Challenges
+                                                        <span className="text-green-400">●</span> {t('coach.challenges.yourCustomChallenges')}
                                                     </h3>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {activeChallenges.map(challenge => (
@@ -2873,7 +2875,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="font-bold text-white">{challenge.name}</span>
                                                                             {challenge.weeklyChallenge && (
-                                                                                <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded-full">Weekly</span>
+                                                                                <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded-full">{t('coach.challenges.weekly')}</span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-center gap-2 mt-1">
@@ -2891,7 +2893,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                         onClick={() => setShowChallengeBuilder(true)}
                                                         className="w-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white font-bold py-4 rounded-xl transition-all border border-dashed border-gray-600 hover:border-cyan-500"
                                                     >
-                                                        + Add More Challenges
+                                                        {t('coach.challenges.addMore')}
                                                     </button>
                                                 </div>
                                             )}
@@ -2916,7 +2918,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     ? pendingVideos.length 
                                                     : pendingVideos.filter(v => v.challenge_category === videoCategoryFilter).length}
                                             </span>
-                                            <span className="text-gray-400 text-sm">Pending</span>
+                                            <span className="text-gray-400 text-sm">{t('coach.videos.pending')}</span>
                                         </div>
                                         <div className="w-px h-6 bg-gray-600"></div>
                                         {/* Session Stats */}
@@ -2955,7 +2957,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                             }`}
                                         >
                                             <span>⚡</span>
-                                            {batchMode ? 'Exit' : 'Speed Mode'}
+                                            {batchMode ? t('coach.videos.exit') : t('coach.videos.speedMode')}
                                         </button>
                                     </div>
                                 </div>
@@ -2965,18 +2967,18 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-xl p-4 border border-cyan-500/30">
                                         <div className="flex items-center justify-between flex-wrap gap-4">
                                             <div className="flex items-center gap-4">
-                                                <div className="text-cyan-400 font-bold">Keyboard Shortcuts:</div>
+                                                <div className="text-cyan-400 font-bold">{t('coach.videos.keyboardShortcuts')}</div>
                                                 <div className="flex gap-3">
                                                     <kbd className="bg-gray-800 px-3 py-1 rounded text-green-400 font-mono text-sm border border-gray-600">SPACE</kbd>
-                                                    <span className="text-gray-400">= Approve</span>
+                                                    <span className="text-gray-400">= {t('coach.videos.approve')}</span>
                                                 </div>
                                                 <div className="flex gap-3">
                                                     <kbd className="bg-gray-800 px-3 py-1 rounded text-red-400 font-mono text-sm border border-gray-600">X</kbd>
-                                                    <span className="text-gray-400">= Reject</span>
+                                                    <span className="text-gray-400">= {t('coach.videos.reject')}</span>
                                                 </div>
                                                 <div className="flex gap-3">
                                                     <kbd className="bg-gray-800 px-3 py-1 rounded text-gray-300 font-mono text-sm border border-gray-600">← →</kbd>
-                                                    <span className="text-gray-400">= Navigate</span>
+                                                    <span className="text-gray-400">= {t('coach.videos.navigate')}</span>
                                                 </div>
                                             </div>
                                             <div className="text-gray-400 text-sm">
@@ -2990,17 +2992,17 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                 {isLoadingVideos ? (
                                     <div className="text-center py-16">
                                         <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                                        <p className="text-gray-400">Loading pending videos...</p>
+                                        <p className="text-gray-400">{t('coach.videos.loadingVideos')}</p>
                                     </div>
                                 ) : pendingVideos.length === 0 ? (
                                     <div className="text-center py-16 bg-gray-800/50 rounded-2xl border border-gray-700">
                                         <div className="text-7xl mb-4">🎬</div>
-                                        <h3 className="text-2xl font-bold text-white mb-2">No Videos to Review</h3>
+                                        <h3 className="text-2xl font-bold text-white mb-2">{t('coach.videos.noVideosToReview')}</h3>
                                         <p className="text-gray-400 max-w-md mx-auto">
-                                            When students submit video proofs for challenges, they'll appear here for your review.
+                                            {t('coach.videos.noVideosDesc')}
                                         </p>
                                         <p className="text-cyan-400 text-sm mt-4">
-                                            Verified students get instant XP - only spot-checks need review!
+                                            {t('coach.videos.verifiedStudentsXP')}
                                         </p>
                                     </div>
                                 ) : batchMode ? (
@@ -3137,14 +3139,14 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                                 disabled={isProcessingVideo}
                                                                 className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 text-lg"
                                                             >
-                                                                {isProcessingVideo ? '...' : '✅ Approve (Space)'}
+                                                                {isProcessingVideo ? '...' : `✅ ${t('coach.videos.approveSpace')}`}
                                                             </button>
                                                             <button
                                                                 onClick={() => handleBatchReject(filteredVideos[focusedVideoIndex])}
                                                                 disabled={isProcessingVideo}
                                                                 className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 text-lg"
                                                             >
-                                                                {isProcessingVideo ? '...' : '❌ Reject (X)'}
+                                                                {isProcessingVideo ? '...' : `❌ ${t('coach.videos.rejectX')}`}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -3156,7 +3158,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     /* NORMAL MODE - Standard video cards */
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                            <span className="text-orange-400">●</span> Pending Video Submissions
+                                            <span className="text-orange-400">●</span> {t('coach.videos.pendingSubmissions')}
                                             {videoCategoryFilter !== 'all' && (
                                                 <span className="text-sm font-normal text-gray-400">
                                                     ({videoCategoryFilter === 'academy' ? '📚 Academy' : videoCategoryFilter})
@@ -3352,17 +3354,17 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                     {activeView === 'grading' && (
                         <div className="p-3 md:p-4 bg-gray-800 rounded-b-lg border-t border-gray-700 flex flex-col md:flex-row gap-2 md:gap-4 md:justify-end">
                             <button onClick={handleGenerateAllFeedback} disabled={isGenerating} className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 md:py-2 px-4 text-sm rounded-md flex items-center justify-center disabled:opacity-50">
-                                {isGenerating ? <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : '✨ Generate Feedback'}
+                                {isGenerating ? <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : `✨ ${t('coach.actions.generateFeedback')}`}
                             </button>
-                            {Object.keys(parentMessages).length > 0 && <button onClick={() => setFeedbackPreviewOpen(true)} className="w-full md:w-auto bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 md:py-2 px-4 text-sm rounded-md">🧾 Preview Messages</button>}
-                            <button onClick={handleSaveAndNotify} className="w-full md:w-auto bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 md:py-2 px-6 text-sm rounded-md">Save & Notify Parents</button>
+                            {Object.keys(parentMessages).length > 0 && <button onClick={() => setFeedbackPreviewOpen(true)} className="w-full md:w-auto bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 md:py-2 px-4 text-sm rounded-md">🧾 {t('coach.actions.previewMessages')}</button>}
+                            <button onClick={handleSaveAndNotify} className="w-full md:w-auto bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 md:py-2 px-6 text-sm rounded-md">{t('coach.actions.saveNotifyParents')}</button>
                         </div>
                     )}
                 </div>
 
                 {/* SIDEBAR AREA (Keep visible) */}
                 <div className="lg:col-span-1">
-                    <InsightSidebar students={filteredStudents} belts={data.belts} clubId={clubId} />
+                    <InsightSidebar students={filteredStudents} belts={data.belts} clubId={clubId} t={t} />
                 </div>
             </div>
             

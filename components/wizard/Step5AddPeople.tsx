@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import type { WizardData, Coach, Student } from '../../types';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface Step5Props {
   data: WizardData;
@@ -50,6 +51,7 @@ const initialStudentState: Omit<Student, 'id'> = {
 
 
 export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
+    const { t } = useTranslation(data.language);
     const locations = data.branchNames && data.branchNames.length > 0 ? data.branchNames : ['Main Location'];
     
     const [newCoach, setNewCoach] = useState(() => getInitialCoachState(locations));
@@ -326,14 +328,14 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
     return (
         <div className="space-y-8">
             <div className="text-center">
-                <h1 className="text-2xl md:text-3xl font-bold text-white">Add Your People</h1>
-                <p className="text-gray-400 mt-2">Time to fill your dojang.</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-white break-words">{t('wizard.step5.title')}</h1>
+                <p className="text-gray-400 mt-2 break-words">{t('wizard.step5.title')}</p>
             </div>
 
             {/* --- COACH SECTION --- */}
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                    <span className="mr-2 text-xl">🥋</span> Coaches
+                    <span className="mr-2 text-xl">🥋</span> {t('wizard.step5.coaches')}
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -341,14 +343,14 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                         type="text" 
                         value={newCoach.name} 
                         onChange={e => setNewCoach({...newCoach, name: e.target.value})}
-                        placeholder="Coach Name"
+                        placeholder={t('wizard.step5.coachName')}
                         className="wizard-input"
                     />
                     <input 
                         type="email" 
                         value={newCoach.email} 
                         onChange={e => setNewCoach({...newCoach, email: e.target.value})}
-                        placeholder="Email Address"
+                        placeholder={t('wizard.step5.email')}
                         className="wizard-input"
                     />
                     <select 
@@ -363,7 +365,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                 {/* Class Assignment UI for Coach */}
                 {availableClassesForCoach.length > 0 && (
                      <div className="mb-4">
-                        <label className="block text-xs font-medium text-gray-400 mb-2">Assign Classes (Optional)</label>
+                        <label className="block text-xs font-medium text-gray-400 mb-2">{t('wizard.step5.assignClasses')}</label>
                         <div className="flex flex-wrap gap-2">
                             {availableClassesForCoach.map(cls => (
                                 <button
@@ -383,7 +385,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                     disabled={!newCoach.name || !newCoach.email}
                     className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors mb-6"
                 >
-                    Add Coach
+                    {t('wizard.step5.addCoach')}
                 </button>
 
                 <div className="space-y-2">
@@ -396,10 +398,10 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                     <p className="text-xs text-sky-400 mt-1">Classes: {coach.assignedClasses.join(', ')}</p>
                                 )}
                             </div>
-                            <button onClick={() => handleRemoveCoach(coach.id)} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                            <button onClick={() => handleRemoveCoach(coach.id)} className="text-red-400 hover:text-red-300 text-sm">{t('common.remove')}</button>
                         </div>
                     ))}
-                    {data.coaches.length === 0 && <p className="text-gray-500 italic text-sm">No coaches added yet.</p>}
+                    {data.coaches.length === 0 && <p className="text-gray-500 italic text-sm">{t('wizard.step5.noCoaches')}</p>}
                 </div>
             </div>
 
@@ -407,35 +409,35 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-semibold text-white flex items-center">
-                        <span className="mr-2 text-xl">👥</span> Students
+                        <span className="mr-2 text-xl">👥</span> {t('wizard.step5.students')}
                     </h3>
                     <div className="flex bg-gray-700 rounded p-1">
                         <button 
                             onClick={() => setStudentAddMode('manual')}
                             className={`px-3 py-1 rounded text-xs font-bold transition-colors ${studentAddMode === 'manual' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
-                            Manual
+                            {t('wizard.step5.manual')}
                         </button>
                         <button 
                             onClick={() => setStudentAddMode('bulk')}
                             className={`px-3 py-1 rounded text-xs font-bold transition-colors ${studentAddMode === 'bulk' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
-                            Bulk Import
+                            {t('wizard.step5.bulkImport')}
                         </button>
                     </div>
                 </div>
 
                 {studentAddMode === 'manual' ? (
                     <div className="space-y-4 mb-4">
-                        <input type="text" value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} placeholder="Full Name *" className="wizard-input" />
+                        <input type="text" value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} placeholder={t('wizard.step5.fullName') + ' *'} className="wizard-input" />
                         
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Birthday</label>
+                                <label className="block text-xs text-gray-400 mb-1">{t('wizard.step5.birthday')}</label>
                                 <input type="date" value={newStudent.birthday} onChange={e => setNewStudent({...newStudent, birthday: e.target.value})} className="wizard-input text-sm" />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Gender</label>
+                                <label className="block text-xs text-gray-400 mb-1">{t('wizard.step5.gender')}</label>
                                 <select value={newStudent.gender || ''} onChange={e => setNewStudent({...newStudent, gender: e.target.value as any})} className="wizard-input">
                                     <option value="">Select Gender</option>
                                     <option value="Male">Male</option>
@@ -448,20 +450,20 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Belt</label>
+                                <label className="block text-xs text-gray-400 mb-1">{t('wizard.step5.belt')}</label>
                                 <select value={newStudent.beltId} onChange={e => setNewStudent({...newStudent, beltId: e.target.value})} className="wizard-input">
-                                    <option value="">Select Belt... *</option>
+                                    <option value="">{t('wizard.step5.belt')}... *</option>
                                     {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Stripes</label>
+                                <label className="block text-xs text-gray-400 mb-1">{t('wizard.step5.stripes')}</label>
                                 <input type="number" min={0} max={data.stripesPerBelt || 10} value={newStudent.stripes ?? ''} onChange={e => setNewStudent({...newStudent, stripes: parseInt(e.target.value) || 0})} placeholder="0" className="wizard-input" />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1">Join Date</label>
+                            <label className="block text-xs text-gray-400 mb-1">{t('wizard.step5.joinDate')}</label>
                             <input type="date" value={newStudent.joinDate || new Date().toISOString().split('T')[0]} onChange={e => setNewStudent({...newStudent, joinDate: e.target.value})} className="wizard-input" />
                         </div>
 
@@ -477,16 +479,16 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                         </div>
 
                         <div className="border-t border-gray-600 pt-4">
-                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Parent / Guardian Info</p>
-                            <input type="text" value={newStudent.parentName || ''} onChange={e => setNewStudent({...newStudent, parentName: e.target.value})} placeholder="Parent Name" className="wizard-input mb-2" />
-                            <input type="email" value={newStudent.parentEmail || ''} onChange={e => setNewStudent({...newStudent, parentEmail: e.target.value})} placeholder="Parent Email" className="wizard-input mb-2" />
-                            <input type="tel" value={newStudent.parentPhone || ''} onChange={e => setNewStudent({...newStudent, parentPhone: e.target.value})} placeholder="Parent Phone" className="wizard-input mb-2" />
+                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">{t('wizard.step5.parentInfo')}</p>
+                            <input type="text" value={newStudent.parentName || ''} onChange={e => setNewStudent({...newStudent, parentName: e.target.value})} placeholder={t('wizard.step5.parentName')} className="wizard-input mb-2" />
+                            <input type="email" value={newStudent.parentEmail || ''} onChange={e => setNewStudent({...newStudent, parentEmail: e.target.value})} placeholder={t('wizard.step5.parentEmail')} className="wizard-input mb-2" />
+                            <input type="tel" value={newStudent.parentPhone || ''} onChange={e => setNewStudent({...newStudent, parentPhone: e.target.value})} placeholder={t('wizard.step5.parentPhone')} className="wizard-input mb-2" />
                             <p className="text-xs text-gray-400">Default password: student's first name in lowercase</p>
                         </div>
 
                         <div className="border-t border-gray-600 pt-4">
-                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Medical Information</p>
-                            <textarea value={newStudent.medicalInfo || ''} onChange={e => setNewStudent({...newStudent, medicalInfo: e.target.value})} placeholder="Allergies, conditions, or notes..." className="wizard-input text-sm h-20 resize-none" />
+                            <p className="text-xs text-gray-400 mb-2 uppercase font-bold">{t('wizard.step5.medicalInfo')}</p>
+                            <textarea value={newStudent.medicalInfo || ''} onChange={e => setNewStudent({...newStudent, medicalInfo: e.target.value})} placeholder={t('wizard.step5.medicalInfo')} className="wizard-input text-sm h-20 resize-none" />
                         </div>
 
                         <button 
@@ -494,27 +496,27 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                             disabled={!newStudent.name || !newStudent.beltId}
                             className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors"
                         >
-                            Add Student
+                            {t('wizard.step5.addStudent')}
                         </button>
                     </div>
                 ) : (
                     <div className="space-y-4 mb-4">
                         <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4 flex-wrap gap-1">
-                            <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Bulk Paste</button>
-                            <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Excel / File Upload</button>
+                            <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>{t('wizard.step5.bulkImport')}</button>
+                            <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Excel</button>
                         </div>
 
                         {studentImportMethod === 'bulk' ? (
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">{t('common.location')}</label>
                                         <select value={batchLocation} onChange={e => setBatchLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
                                             {locations.map(l => <option key={l} value={l}>{l}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">{t('wizard.step1.classes')}</label>
                                         <select value={batchClass} onChange={e => setBatchClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
                                             <option value="">Auto-assign</option>
                                             {(data.locationClasses?.[batchLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
@@ -527,11 +529,11 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                         onClick={downloadTemplate}
                                         className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
                                     >
-                                        Download Template CSV
+                                        {t('wizard.step5.downloadTemplate')}
                                     </button>
                                 </div>
                                 <textarea value={bulkStudentData} onChange={e => { setBulkStudentData(e.target.value); setParsedStudents([]); }} placeholder="Paste CSV data here..." className="w-full h-24 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
-                                <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">Paste</button>
+                                <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">{t('wizard.step5.bulkImport')}</button>
                                 {bulkError && <p className="text-red-400 text-sm">{bulkError}</p>}
                                 {parsedStudents.length > 0 && (
                                     <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
@@ -552,20 +554,20 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                     disabled={parsedStudents.length === 0} 
                                     className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded"
                                 >
-                                    Import {parsedStudents.length} Student{parsedStudents.length !== 1 ? 's' : ''}
+                                    {t('wizard.step5.confirmImport')} ({parsedStudents.length})
                                 </button>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Location</label>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">{t('common.location')}</label>
                                         <select value={batchLocation} onChange={e => setBatchLocation(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
                                             {locations.map(l => <option key={l} value={l}>{l}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-400 mb-1">Default Class</label>
+                                        <label className="block text-xs font-bold text-gray-400 mb-1">{t('wizard.step1.classes')}</label>
                                         <select value={batchClass} onChange={e => setBatchClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
                                             <option value="">Auto-assign</option>
                                             {(data.locationClasses?.[batchLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
@@ -601,13 +603,13 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                 </div>
 
                                 <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
-                                    <p className="text-xs text-gray-400 font-bold mb-1">Required Column Order:</p>
+                                    <p className="text-xs text-gray-400 font-bold mb-1">Format:</p>
                                     <p className="text-xs text-gray-500">Name, Age, Birthday, Gender, Belt, Stripes, Parent Name, Email, Phone</p>
                                     <button 
                                         onClick={downloadTemplate}
                                         className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
                                     >
-                                        Download Template
+                                        {t('wizard.step5.downloadTemplate')}
                                     </button>
                                 </div>
 
@@ -633,7 +635,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                     disabled={parsedStudents.length === 0} 
                                     className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-700 text-white font-bold py-2 rounded"
                                 >
-                                    Import {parsedStudents.length} Student{parsedStudents.length !== 1 ? 's' : ''}
+                                    {t('wizard.step5.confirmImport')} ({parsedStudents.length})
                                 </button>
                             </div>
                         )}
@@ -651,10 +653,10 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                     {student.location && ` • ${student.location}`}
                                 </p>
                             </div>
-                            <button onClick={() => handleRemoveStudent(student.id)} className="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                            <button onClick={() => handleRemoveStudent(student.id)} className="text-red-400 hover:text-red-300 text-sm">{t('common.remove')}</button>
                         </div>
                     ))}
-                    {data.students.length === 0 && <p className="text-gray-500 italic text-sm">No students added yet.</p>}
+                    {data.students.length === 0 && <p className="text-gray-500 italic text-sm">{t('wizard.step5.noStudents')}</p>}
                 </div>
             </div>
 

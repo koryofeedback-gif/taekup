@@ -717,10 +717,11 @@ async function handleLoginByName(req: VercelRequest, res: VercelResponse) {
 
 async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { fullName, clubName, websiteUrl, email, phone, cityState } = parseBody(req);
+  const { fullName, clubName, websiteUrl, email, phone, cityState, language } = parseBody(req);
   if (!email || !clubName || !fullName || !websiteUrl) {
     return res.status(400).json({ error: 'Full name, club name, website URL, and email are required' });
   }
+  const lang = ['en', 'fr', 'de'].includes(language) ? language : 'en';
 
   const client = await pool.connect();
   try {
@@ -733,16 +734,17 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
         website_url VARCHAR(500),
         phone VARCHAR(50),
         city_state VARCHAR(255),
+        language VARCHAR(10) DEFAULT 'en',
         status VARCHAR(20) DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     await client.query(
-      `INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, created_at, status)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), 'pending')
-       ON CONFLICT (email) DO UPDATE SET club_name = $2, full_name = $3, website_url = $4, phone = $5, city_state = $6, created_at = NOW(), status = 'pending'`,
-      [email.toLowerCase(), clubName, fullName, websiteUrl, phone || null, cityState || null]
+      `INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, language, created_at, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'pending')
+       ON CONFLICT (email) DO UPDATE SET club_name = $2, full_name = $3, website_url = $4, phone = $5, city_state = $6, language = $7, created_at = NOW(), status = 'pending'`,
+      [email.toLowerCase(), clubName, fullName, websiteUrl, phone || null, cityState || null, lang]
     );
     console.log(`[RequestAccess] New VIP request from ${fullName} (${email}) - ${clubName} - ${websiteUrl}`);
 
@@ -762,6 +764,7 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
               <tr><td style="padding: 8px 0; color: #9ca3af;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #22d3ee;">${email}</a></td></tr>
               <tr><td style="padding: 8px 0; color: #9ca3af;">Phone</td><td style="padding: 8px 0; color: #fff;">${phone || 'Not provided'}</td></tr>
               <tr><td style="padding: 8px 0; color: #9ca3af;">Location</td><td style="padding: 8px 0; color: #fff;">${cityState || 'Not provided'}</td></tr>
+              <tr><td style="padding: 8px 0; color: #9ca3af;">Language</td><td style="padding: 8px 0; color: #fff;">${lang === 'fr' ? 'French' : lang === 'de' ? 'German' : 'English'}</td></tr>
             </table>
             <hr style="border: 1px solid #333; margin: 20px 0;" />
             <p style="color: #6b7280; font-size: 12px;">Submitted at ${new Date().toISOString()}</p>

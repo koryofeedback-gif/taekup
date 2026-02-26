@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
 import { Sparkles, Users, Loader2 } from 'lucide-react';
 import { DEMO_MODE_KEY } from '../demoData';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface StepDemoChoiceProps {
   clubId: string;
+  language?: string;
   onChooseFresh: () => void;
   onChooseDemo: () => void;
 }
 
-export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChooseFresh, onChooseDemo }) => {
+export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, language, onChooseFresh, onChooseDemo }) => {
+  const { t } = useTranslation(language);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleLoadDemo = async () => {
-    // Validate clubId before proceeding
     if (!clubId) {
-      setError('Your account was not created properly. Please sign up again.');
+      setError(t('wizard.demoChoice.accountError'));
       return;
     }
     
@@ -32,22 +34,18 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
       const result = await response.json();
       
       if (result.success) {
-        // Clear old data first, then save fresh wizard data
         if (result.wizardData) {
           localStorage.removeItem('taekup_wizard_data');
           localStorage.removeItem('taekup_wizard_draft');
           localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
           
-          // CRITICAL: Set session keys so App.tsx recognizes user as logged in
           localStorage.setItem('taekup_user_type', 'owner');
           localStorage.setItem('taekup_user_name', result.wizardData.ownerName || 'Demo Owner');
           localStorage.setItem('taekup_club_id', clubId);
           localStorage.setItem('taekup_wizard_complete', 'true');
           
-          // Enable demo mode toggle automatically
           localStorage.setItem(DEMO_MODE_KEY, 'true');
           
-          // Force full page reload to ensure App state re-initializes with fresh data
           window.location.href = '/app/admin';
           return;
         }
@@ -57,7 +55,7 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
         setLoading(false);
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError(t('wizard.demoChoice.networkError'));
       setLoading(false);
     }
   };
@@ -65,10 +63,10 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
   return (
     <div className="text-center py-8">
       <h2 className="text-3xl font-bold text-white mb-4">
-        How would you like to start?
+        {t('wizard.demoChoice.title')}
       </h2>
-      <p className="text-gray-400 mb-12 max-w-lg mx-auto">
-        Choose to explore with sample data first, or start building your real academy right away.
+      <p className="text-gray-400 mb-12 max-w-lg mx-auto break-words">
+        {t('wizard.demoChoice.subtitle')}
       </p>
 
       <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
@@ -85,11 +83,11 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
                 <Sparkles className="w-6 h-6 text-cyan-400" />
               )}
             </div>
-            <span className="text-xs font-bold text-cyan-400 bg-cyan-500/20 px-2 py-1 rounded">RECOMMENDED</span>
+            <span className="text-xs font-bold text-cyan-400 bg-cyan-500/20 px-2 py-1 rounded">{t('wizard.demoChoice.recommended').toUpperCase()}</span>
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Load Demo Dojo</h3>
-          <p className="text-gray-400 text-sm">
-            See a fully populated academy with 18 students, active leaderboards, and revenue projections. Perfect for exploring features first.
+          <h3 className="text-xl font-bold text-white mb-2">{t('wizard.demoChoice.loadDemo')}</h3>
+          <p className="text-gray-400 text-sm break-words">
+            {t('wizard.demoChoice.loadDemoDesc')}
           </p>
         </button>
 
@@ -103,9 +101,9 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
               <Users className="w-6 h-6 text-gray-400" />
             </div>
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Start Fresh</h3>
-          <p className="text-gray-400 text-sm">
-            Configure your academy from scratch. Add your real students and customize everything to match your dojo.
+          <h3 className="text-xl font-bold text-white mb-2">{t('wizard.demoChoice.startFresh')}</h3>
+          <p className="text-gray-400 text-sm break-words">
+            {t('wizard.demoChoice.startFreshDesc')}
           </p>
         </button>
       </div>
@@ -114,8 +112,8 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, onChoose
         <p className="text-red-400 mt-6 text-sm">{error}</p>
       )}
 
-      <p className="text-gray-500 text-xs mt-8">
-        Demo data can be cleared anytime from your dashboard settings.
+      <p className="text-gray-500 text-xs mt-8 break-words">
+        {t('wizard.demoChoice.demoNote')}
       </p>
     </div>
   );

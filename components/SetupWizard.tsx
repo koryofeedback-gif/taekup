@@ -219,7 +219,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   }
 
   if (isComplete) {
-    return <SetupComplete onGoToDashboard={() => onComplete(wizardData)} />;
+    return <SetupComplete language={wizardData.language} onGoToDashboard={() => onComplete(wizardData)} />;
   }
 
   // Check impersonation again in render (in case state wasn't updated)
@@ -232,6 +232,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
           <div className="p-6 md:p-8">
             <StepDemoChoice 
               clubId={clubId}
+              language={wizardData.language}
               onChooseFresh={() => setShowDemoChoice(false)}
               onChooseDemo={() => {
                 if (onSkipToDemo) {
@@ -273,6 +274,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
           <ProgressIndicator 
             totalSteps={6} 
             currentStep={currentStep} 
+            language={wizardData.language}
             onStepClick={handleStepClick}
           />
         </div>

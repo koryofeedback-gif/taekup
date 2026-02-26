@@ -2,6 +2,7 @@
 import React, { useState, useRef } from 'react';
 import type { WizardData, Belt } from '../../types';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../../constants';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface Step2Props {
   data: WizardData;
@@ -26,6 +27,7 @@ const PresetButton: React.FC<{
 );
 
 export const Step2BeltSystem: React.FC<Step2Props> = ({ data, onUpdate }) => {
+  const { t } = useTranslation(data.language);
   const [newBeltName, setNewBeltName] = useState('');
   const [newBeltColor, setNewBeltColor] = useState('#FFFFFF');
   const draggedItem = useRef<number | null>(null);
@@ -85,31 +87,31 @@ export const Step2BeltSystem: React.FC<Step2Props> = ({ data, onUpdate }) => {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl md:text-3xl font-bold text-white">Define Your Belt Journey</h1>
-        <p className="text-gray-400 mt-2">Every martial art has its own path. Let’s define yours.</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-white break-words">{t('wizard.step2.title')}</h1>
+        <p className="text-gray-400 mt-2 break-words">{t('wizard.step2.subtitle')}</p>
       </div>
 
       <div className="space-y-4">
-        <label className="block text-sm font-medium text-gray-300">Choose a Belt System</label>
+        <label className="block text-sm font-medium text-gray-300">{t('wizard.step2.choosePreset')}</label>
         <div className="flex flex-wrap gap-2 justify-center">
-          <PresetButton label="Taekwondo (WT)" isActive={data.beltSystemType === 'wt'} onClick={() => handleSystemChange('wt')} />
-          <PresetButton label="Taekwondo (ITF)" isActive={data.beltSystemType === 'itf'} onClick={() => handleSystemChange('itf')} />
-          <PresetButton label="Karate" isActive={data.beltSystemType === 'karate'} onClick={() => handleSystemChange('karate')} />
-          <PresetButton label="BJJ" isActive={data.beltSystemType === 'bjj'} onClick={() => handleSystemChange('bjj')} />
-          <PresetButton label="Judo" isActive={data.beltSystemType === 'judo'} onClick={() => handleSystemChange('judo')} />
-          <PresetButton label="Hapkido" isActive={data.beltSystemType === 'hapkido'} onClick={() => handleSystemChange('hapkido')} />
-          <PresetButton label="Tang Soo Do" isActive={data.beltSystemType === 'tangsoodo'} onClick={() => handleSystemChange('tangsoodo')} />
-          <PresetButton label="Aikido" isActive={data.beltSystemType === 'aikido'} onClick={() => handleSystemChange('aikido')} />
-          <PresetButton label="Krav Maga" isActive={data.beltSystemType === 'kravmaga'} onClick={() => handleSystemChange('kravmaga')} />
-          <PresetButton label="Kung Fu" isActive={data.beltSystemType === 'kungfu'} onClick={() => handleSystemChange('kungfu')} />
-          <PresetButton label="Custom" isActive={data.beltSystemType === 'custom'} onClick={() => handleSystemChange('custom')} />
+          <PresetButton label={t('wizard.step2.presets.taekwondoWT')} isActive={data.beltSystemType === 'wt'} onClick={() => handleSystemChange('wt')} />
+          <PresetButton label={t('wizard.step2.presets.taekwondoITF')} isActive={data.beltSystemType === 'itf'} onClick={() => handleSystemChange('itf')} />
+          <PresetButton label={t('wizard.step2.presets.karate')} isActive={data.beltSystemType === 'karate'} onClick={() => handleSystemChange('karate')} />
+          <PresetButton label={t('wizard.step2.presets.bjj')} isActive={data.beltSystemType === 'bjj'} onClick={() => handleSystemChange('bjj')} />
+          <PresetButton label={t('wizard.step2.presets.judo')} isActive={data.beltSystemType === 'judo'} onClick={() => handleSystemChange('judo')} />
+          <PresetButton label={t('wizard.step2.presets.hapkido')} isActive={data.beltSystemType === 'hapkido'} onClick={() => handleSystemChange('hapkido')} />
+          <PresetButton label={t('wizard.step2.presets.tangSooDo')} isActive={data.beltSystemType === 'tangsoodo'} onClick={() => handleSystemChange('tangsoodo')} />
+          <PresetButton label={t('wizard.step2.presets.aikido')} isActive={data.beltSystemType === 'aikido'} onClick={() => handleSystemChange('aikido')} />
+          <PresetButton label={t('wizard.step2.presets.kravMaga')} isActive={data.beltSystemType === 'kravmaga'} onClick={() => handleSystemChange('kravmaga')} />
+          <PresetButton label={t('wizard.step2.presets.kungFu')} isActive={data.beltSystemType === 'kungfu'} onClick={() => handleSystemChange('kungfu')} />
+          <PresetButton label={t('wizard.step2.presets.custom')} isActive={data.beltSystemType === 'custom'} onClick={() => handleSystemChange('custom')} />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">Belt Sequence</label>
+        <label className="block text-sm font-medium text-gray-300 mb-2">{t('wizard.step2.beltSequence')}</label>
         <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 space-y-2 max-h-72 overflow-y-auto">
-          {data.belts.length === 0 && <p className="text-gray-500 text-center italic">No belts defined. Choose a preset or add custom belts.</p>}
+          {data.belts.length === 0 && <p className="text-gray-500 text-center italic">{t('wizard.step2.noBelts')}</p>}
           {data.belts.map((belt, index) => (
             <div
               key={belt.id}
@@ -133,18 +135,13 @@ export const Step2BeltSystem: React.FC<Step2Props> = ({ data, onUpdate }) => {
       </div>
       
       <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <p className="text-sm font-medium text-gray-300 mb-1">
-              {data.beltSystemType === 'custom' ? 'Add New Belt' : 'Add Custom Belt After Top Rank'}
-          </p>
-          <p className="text-xs text-gray-500 mb-3">
-              {data.beltSystemType === 'custom' 
-                  ? 'Build your belt system from scratch.' 
-                  : `Add extra ranks beyond ${data.belts.length > 0 ? data.belts[data.belts.length - 1]?.name : 'the top belt'}.`}
+          <p className="text-sm font-medium text-gray-300 mb-1 break-words">
+              {data.beltSystemType === 'custom' ? t('wizard.step2.addBelt') : t('wizard.step2.addCustomBelt')}
           </p>
           <div className="flex items-center space-x-2">
-              <input type="text" value={newBeltName} onChange={e => setNewBeltName(e.target.value)} placeholder="Belt Name (e.g. 1st Dan)" className="wizard-input flex-grow"/>
+              <input type="text" value={newBeltName} onChange={e => setNewBeltName(e.target.value)} placeholder={t('wizard.step2.beltName')} className="wizard-input flex-grow"/>
               <input type="color" value={newBeltColor} onChange={e => setNewBeltColor(e.target.value)} className="w-10 h-10 p-1 bg-gray-700 border border-gray-600 rounded-md cursor-pointer"/>
-              <button onClick={handleAddBelt} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">Add</button>
+              <button onClick={handleAddBelt} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">{t('common.add')}</button>
           </div>
       </div>
 

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import type { WizardData, Skill } from '../../types';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface Step3Props {
   data: WizardData;
@@ -8,6 +9,7 @@ interface Step3Props {
 }
 
 export const Step3Skills: React.FC<Step3Props> = ({ data, onUpdate }) => {
+    const { t } = useTranslation(data.language);
     const [newSkillName, setNewSkillName] = useState('');
     const activeSkillsCount = data.skills.filter(s => s.isActive).length;
 
@@ -44,24 +46,22 @@ export const Step3Skills: React.FC<Step3Props> = ({ data, onUpdate }) => {
     return (
         <div className="space-y-8">
             <div className="text-center">
-                <h1 className="text-2xl md:text-3xl font-bold text-white">Skills & Performance Metrics</h1>
-                <p className="text-gray-400 mt-2">Define the core competencies you'll evaluate during each class</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-white break-words">{t('wizard.step3.title')}</h1>
+                <p className="text-gray-400 mt-2 break-words">{t('wizard.step3.subtitle')}</p>
             </div>
 
-            {/* Research Note */}
             <div className="bg-cyan-900/30 border border-cyan-700/50 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
                     <span className="text-cyan-400 text-xl">💡</span>
                     <div>
-                        <p className="text-cyan-300 font-medium text-sm">Research-Backed Defaults</p>
-                        <p className="text-cyan-400/80 text-xs mt-1">These four skills are derived from sports psychology research on martial arts development. They represent the key pillars of student growth: physical execution, mental commitment, attentional control, and behavioral consistency. Customize as needed for your teaching philosophy.</p>
+                        <p className="text-cyan-300 font-medium text-sm">{t('wizard.step3.researchBacked')}</p>
+                        <p className="text-cyan-400/80 text-xs mt-1 break-words">{t('wizard.step3.researchDesc')}</p>
                     </div>
                 </div>
             </div>
 
-            {/* Skills List */}
             <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-300">Performance Categories</label>
+                <label className="block text-sm font-medium text-gray-300">{t('wizard.step3.performanceCategories')}</label>
                 <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 space-y-3">
                     {data.skills.map(skill => (
                         <div key={skill.id} className="flex items-center space-x-3">
@@ -86,17 +86,16 @@ export const Step3Skills: React.FC<Step3Props> = ({ data, onUpdate }) => {
                         type="text"
                         value={newSkillName}
                         onChange={e => setNewSkillName(e.target.value)}
-                        placeholder="Add Custom Skill..."
+                        placeholder={t('wizard.step3.addCustomSkill')}
                         className="wizard-input flex-1"
                         onKeyDown={(e) => e.key === 'Enter' && handleAddSkill()}
                     />
-                    <button onClick={handleAddSkill} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">Add</button>
+                    <button onClick={handleAddSkill} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">{t('common.add')}</button>
                 </div>
             </div>
 
-            {/* Scoring System */}
             <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-3">How you'll score each skill</h3>
+                <h3 className="text-lg font-semibold text-white mb-3 break-words">{t('wizard.step3.pointsPerClass')}</h3>
                 <div className="flex justify-around items-center text-center py-2">
                     <div>
                         <span className="text-3xl">💚</span>
@@ -112,7 +111,7 @@ export const Step3Skills: React.FC<Step3Props> = ({ data, onUpdate }) => {
                     </div>
                 </div>
                 <div className="mt-4 text-center bg-gray-900/50 p-3 rounded-lg">
-                     <p className="text-gray-300">Each class gives up to <strong className="text-white">{activeSkillsCount * 2}</strong> points ({activeSkillsCount} skills × 2 max).</p>
+                     <p className="text-gray-300"><strong className="text-white">{activeSkillsCount * 2}</strong> ({activeSkillsCount} × 2 max)</p>
                 </div>
             </div>
 
@@ -140,7 +139,6 @@ export const Step3Skills: React.FC<Step3Props> = ({ data, onUpdate }) => {
     );
 };
 
-// Helper components local to this file
 const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ checked, onChange }) => (
     <button
         type="button"
@@ -152,4 +150,3 @@ const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ c
         <span className={`${checked ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}/>
     </button>
 );
-

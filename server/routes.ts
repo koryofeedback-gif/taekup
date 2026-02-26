@@ -79,15 +79,16 @@ function generateChallengeUUID(challengeType: string): string {
 
 export function registerRoutes(app: Express) {
   app.post('/api/request-access', async (req: Request, res: Response) => {
-    const { fullName, clubName, websiteUrl, email, phone, cityState } = req.body;
+    const { fullName, clubName, websiteUrl, email, phone, cityState, language } = req.body;
     if (!email || !clubName || !fullName || !websiteUrl) {
       return res.status(400).json({ error: 'Full name, club name, website URL, and email are required' });
     }
+    const lang = ['en', 'fr', 'de'].includes(language) ? language : 'en';
     try {
       await db.execute(sql`
-        INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, created_at, status)
-        VALUES (${email.toLowerCase()}, ${clubName}, ${fullName}, ${websiteUrl}, ${phone || null}, ${cityState || null}, NOW(), 'pending')
-        ON CONFLICT (email) DO UPDATE SET club_name = ${clubName}, full_name = ${fullName}, website_url = ${websiteUrl}, phone = ${phone || null}, city_state = ${cityState || null}, created_at = NOW(), status = 'pending'
+        INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, language, created_at, status)
+        VALUES (${email.toLowerCase()}, ${clubName}, ${fullName}, ${websiteUrl}, ${phone || null}, ${cityState || null}, ${lang}, NOW(), 'pending')
+        ON CONFLICT (email) DO UPDATE SET club_name = ${clubName}, full_name = ${fullName}, website_url = ${websiteUrl}, phone = ${phone || null}, city_state = ${cityState || null}, language = ${lang}, created_at = NOW(), status = 'pending'
       `);
       console.log(`[RequestAccess] New VIP request from ${fullName} (${email}) - ${clubName} - ${websiteUrl}`);
 
@@ -107,6 +108,7 @@ export function registerRoutes(app: Express) {
                 <tr><td style="padding: 8px 0; color: #9ca3af;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #22d3ee;">${email}</a></td></tr>
                 <tr><td style="padding: 8px 0; color: #9ca3af;">Phone</td><td style="padding: 8px 0; color: #fff;">${phone || 'Not provided'}</td></tr>
                 <tr><td style="padding: 8px 0; color: #9ca3af;">Location</td><td style="padding: 8px 0; color: #fff;">${cityState || 'Not provided'}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Language</td><td style="padding: 8px 0; color: #fff;">${lang === 'fr' ? 'French' : lang === 'de' ? 'German' : 'English'}</td></tr>
               </table>
               <hr style="border: 1px solid #333; margin: 20px 0;" />
               <p style="color: #6b7280; font-size: 12px;">Submitted at ${new Date().toISOString()}</p>
