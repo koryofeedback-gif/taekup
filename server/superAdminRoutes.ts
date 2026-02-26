@@ -1868,36 +1868,23 @@ router.post('/access-requests/:id/approve', verifySuperAdmin, async (req: Reques
     try {
       const sgClient = await getSendGridClient();
       if (sgClient) {
+        const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
+        const LOGO_URL = 'https://www.mytaek.com/mytaek-logo.png';
         await sgClient.client.send({
           to: request.email,
-          from: { email: sgClient.fromEmail, name: 'TaekUp' },
-          subject: `Welcome to TaekUp! Your VIP Access is Ready 🥋`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #0f172a; color: #e2e8f0; border-radius: 16px;">
-              <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #22d3ee; margin: 0;">TAEK<span style="color: #fff;">UP</span></h1>
-                <p style="color: #94a3b8; font-size: 12px; letter-spacing: 2px;">VIP EARLY ACCESS</p>
-              </div>
-              <h2 style="color: #fff; margin-bottom: 20px;">Welcome, ${request.full_name}! 🎉</h2>
-              <p style="color: #cbd5e1; line-height: 1.6;">Your VIP access to TaekUp has been approved! Your club <strong style="color: #22d3ee;">${request.club_name}</strong> is now active with a 14-day free trial.</p>
-              <div style="background: #1e293b; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #334155;">
-                <h3 style="color: #22d3ee; margin: 0 0 15px 0;">🔐 Your Login Credentials</h3>
-                <table style="width: 100%;">
-                  <tr><td style="color: #94a3b8; padding: 5px 0;">Email:</td><td style="color: #fff; font-weight: bold;">${request.email}</td></tr>
-                  <tr><td style="color: #94a3b8; padding: 5px 0;">Password:</td><td style="color: #fbbf24; font-weight: bold; font-family: monospace; font-size: 16px;">${tempPassword}</td></tr>
-                </table>
-                <p style="color: #f59e0b; font-size: 13px; margin: 15px 0 0 0;">⚠️ Please change your password after first login!</p>
-              </div>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">Log In to TaekUp</a>
-              </div>
-              <div style="background: #1e293b; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                <p style="color: #94a3b8; font-size: 13px; margin: 0;">Next steps: Log in → Complete the setup wizard → Add your students → Start training! 🥋</p>
-              </div>
-            </div>
-          `,
-        });
-        console.log(`[SuperAdmin] Welcome email sent to ${request.email}`);
+          from: { email: 'hello@mytaek.com', name: 'MyTaek' },
+          templateId: MASTER_TEMPLATE_ID,
+          dynamicTemplateData: {
+            subject: 'Welcome to TaekUp! Your VIP Access is Ready 🥋',
+            title: 'Your Dojo is Live! 🥋',
+            body_content: `Hi ${request.full_name},<br><br>Congratulations! Your VIP access to TaekUp has been approved. Your club <strong>${request.club_name}</strong> is now active with a <strong>14-day free trial</strong>.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 15px 0;'>🔐 Your Login Credentials:</h3><div style='background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;'><strong>Email:</strong> ${request.email}<br><strong>Password:</strong> ${tempPassword}</div><p style='margin: 15px 0 0 0; font-size: 13px; color: #fbbf24;'>⚠️ Please change your password after first login for security!</p></div><br>Here's what to do next:<br>• Log in and complete the setup wizard<br>• Add your students and coaches<br>• Customize your belt system<br>• Set up your Stripe wallet via DojoMint™ Protocol`,
+            btn_text: 'Log In to TaekUp',
+            btn_url: 'https://www.mytaek.com/login',
+            image_url: LOGO_URL,
+            is_rtl: false,
+          },
+        } as any);
+        console.log(`[SuperAdmin] Welcome email sent to ${request.email} via master template`);
       }
     } catch (emailErr: any) {
       console.error('[SuperAdmin] Failed to send welcome email:', emailErr.message);
