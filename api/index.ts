@@ -717,20 +717,24 @@ async function handleLoginByName(req: VercelRequest, res: VercelResponse) {
 
 async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { email, clubName } = parseBody(req);
-  if (!email || !clubName) return res.status(400).json({ error: 'Email and club name are required' });
+  const { fullName, clubName, websiteUrl, email, phone } = parseBody(req);
+  if (!email || !clubName || !fullName || !websiteUrl) {
+    return res.status(400).json({ error: 'Full name, club name, website URL, and email are required' });
+  }
 
   const client = await pool.connect();
   try {
     await client.query(
-      `INSERT INTO access_requests (email, club_name, created_at) VALUES ($1, $2, NOW()) ON CONFLICT (email) DO UPDATE SET club_name = $2, created_at = NOW()`,
-      [email.toLowerCase(), clubName]
+      `INSERT INTO access_requests (email, club_name, full_name, website_url, phone, created_at, status)
+       VALUES ($1, $2, $3, $4, $5, NOW(), 'pending')
+       ON CONFLICT (email) DO UPDATE SET club_name = $2, full_name = $3, website_url = $4, phone = $5, created_at = NOW(), status = 'pending'`,
+      [email.toLowerCase(), clubName, fullName, websiteUrl, phone || null]
     );
-    console.log(`[RequestAccess] New request from ${email} for ${clubName}`);
+    console.log(`[RequestAccess] New VIP request from ${fullName} (${email}) - ${clubName} - ${websiteUrl}`);
     return res.json({ success: true });
   } catch (error: any) {
-    console.log(`[RequestAccess] Request from ${email} (table may not exist, treating as success)`);
-    return res.json({ success: true });
+    console.error(`[RequestAccess] Error:`, error.message);
+    return res.status(500).json({ error: 'Failed to submit request. Please try again.' });
   } finally {
     client.release();
   }

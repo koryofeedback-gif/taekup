@@ -78,18 +78,21 @@ function generateChallengeUUID(challengeType: string): string {
 
 export function registerRoutes(app: Express) {
   app.post('/api/request-access', async (req: Request, res: Response) => {
-    const { email, clubName } = req.body;
-    if (!email || !clubName) return res.status(400).json({ error: 'Email and club name are required' });
+    const { fullName, clubName, websiteUrl, email, phone } = req.body;
+    if (!email || !clubName || !fullName || !websiteUrl) {
+      return res.status(400).json({ error: 'Full name, club name, website URL, and email are required' });
+    }
     try {
       await db.execute(sql`
-        INSERT INTO access_requests (email, club_name, created_at) VALUES (${email.toLowerCase()}, ${clubName}, NOW())
-        ON CONFLICT (email) DO UPDATE SET club_name = ${clubName}, created_at = NOW()
+        INSERT INTO access_requests (email, club_name, full_name, website_url, phone, created_at, status)
+        VALUES (${email.toLowerCase()}, ${clubName}, ${fullName}, ${websiteUrl}, ${phone || null}, NOW(), 'pending')
+        ON CONFLICT (email) DO UPDATE SET club_name = ${clubName}, full_name = ${fullName}, website_url = ${websiteUrl}, phone = ${phone || null}, created_at = NOW(), status = 'pending'
       `);
-      console.log(`[RequestAccess] New request from ${email} for ${clubName}`);
+      console.log(`[RequestAccess] New VIP request from ${fullName} (${email}) - ${clubName} - ${websiteUrl}`);
       res.json({ success: true });
     } catch (error: any) {
-      console.log(`[RequestAccess] Request from ${email} (table may not exist, treating as success)`);
-      res.json({ success: true });
+      console.error(`[RequestAccess] Error:`, error.message);
+      res.status(500).json({ error: 'Failed to submit request. Please try again.' });
     }
   });
 
