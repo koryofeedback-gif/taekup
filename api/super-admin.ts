@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import postgres from 'postgres';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import Stripe from 'stripe';
 import sgMail from '@sendgrid/mail';
 
@@ -2329,6 +2330,133 @@ async function handleDeleteClub(req: VercelRequest, res: VercelResponse, clubId:
   }
 }
 
+async function handleAccessRequests(req: VercelRequest, res: VercelResponse) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) return res.status(401).json({ error: auth.error });
+
+  try {
+    const db = getDb();
+    const status = (req.query.status as string) || 'pending';
+
+    const requests = await db`
+      SELECT * FROM access_requests
+      WHERE status = ${status}
+      ORDER BY created_at DESC
+    `;
+
+    return res.json({ requests });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Access requests error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch access requests' });
+  }
+}
+
+async function handleApproveAccessRequest(req: VercelRequest, res: VercelResponse, requestId: string) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) return res.status(401).json({ error: auth.error });
+
+  try {
+    const db = getDb();
+
+    const rows = await db`SELECT * FROM access_requests WHERE id = ${parseInt(requestId)}`;
+    if (rows.length === 0) return res.status(404).json({ error: 'Request not found' });
+
+    const request = rows[0];
+    if (request.status === 'approved') return res.status(400).json({ error: 'Request already approved' });
+
+    const existingClub = await db`SELECT id FROM clubs WHERE owner_email = ${request.email}`;
+    if (existingClub.length > 0) {
+      return res.status(409).json({ error: 'A club with this email already exists. The request was not changed.' });
+    }
+
+    const tempPassword = crypto.randomBytes(4).toString('hex');
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 14);
+
+    const clubResult = await db`
+      INSERT INTO clubs (name, owner_email, country, trial_start, trial_end, trial_status, status, created_at)
+      VALUES (${request.club_name}, ${request.email}, 'France', NOW(), ${trialEnd}, 'active', 'active', NOW())
+      RETURNING id, name, owner_email, trial_start, trial_end
+    `;
+    const club = clubResult[0];
+
+    await db`
+      INSERT INTO users (email, password_hash, role, club_id, is_active, created_at)
+      VALUES (${request.email}, ${passwordHash}, 'owner', ${club.id}, true, NOW())
+      ON CONFLICT (email) DO UPDATE SET password_hash = ${passwordHash}, club_id = ${club.id}
+    `;
+
+    await db`
+      INSERT INTO activity_log (event_type, event_title, event_description, metadata, created_at)
+      VALUES ('club_signup', 'VIP Access Approved', ${'VIP access approved for: ' + request.club_name}, ${JSON.stringify({ clubId: club.id, email: request.email, approvedBy: auth.email })}, NOW())
+    `;
+
+    await db`UPDATE access_requests SET status = 'approved' WHERE id = ${parseInt(requestId)}`;
+
+    try {
+      const sgClient = await getUncachableSendGridClient();
+      if (sgClient) {
+        await sgClient.client.send({
+          to: request.email,
+          from: { email: sgClient.fromEmail, name: 'TaekUp' },
+          subject: `Welcome to TaekUp! Your VIP Access is Ready 🥋`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #0f172a; color: #e2e8f0; border-radius: 16px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #22d3ee; margin: 0;">TAEK<span style="color: #fff;">UP</span></h1>
+                <p style="color: #94a3b8; font-size: 12px; letter-spacing: 2px;">VIP EARLY ACCESS</p>
+              </div>
+              <h2 style="color: #fff; margin-bottom: 20px;">Welcome, ${request.full_name}! 🎉</h2>
+              <p style="color: #cbd5e1; line-height: 1.6;">Your VIP access to TaekUp has been approved! Your club <strong style="color: #22d3ee;">${request.club_name}</strong> is now active with a 14-day free trial.</p>
+              <div style="background: #1e293b; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #334155;">
+                <h3 style="color: #22d3ee; margin: 0 0 15px 0;">🔐 Your Login Credentials</h3>
+                <table style="width: 100%;">
+                  <tr><td style="color: #94a3b8; padding: 5px 0;">Email:</td><td style="color: #fff; font-weight: bold;">${request.email}</td></tr>
+                  <tr><td style="color: #94a3b8; padding: 5px 0;">Password:</td><td style="color: #fbbf24; font-weight: bold; font-family: monospace; font-size: 16px;">${tempPassword}</td></tr>
+                </table>
+                <p style="color: #f59e0b; font-size: 13px; margin: 15px 0 0 0;">⚠️ Please change your password after first login!</p>
+              </div>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">Log In to TaekUp</a>
+              </div>
+              <div style="background: #1e293b; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <p style="color: #94a3b8; font-size: 13px; margin: 0;">Next steps: Log in → Complete the setup wizard → Add your students → Start training! 🥋</p>
+              </div>
+            </div>
+          `,
+        });
+        console.log(`[SuperAdmin] Welcome email sent to ${request.email}`);
+      }
+    } catch (emailErr: any) {
+      console.error('[SuperAdmin] Failed to send welcome email:', emailErr.message);
+    }
+
+    return res.json({
+      success: true,
+      club: { id: club.id, name: club.name, email: club.owner_email },
+      tempPassword,
+    });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Approve request error:', error.message);
+    return res.status(500).json({ error: 'Failed to approve request: ' + error.message });
+  }
+}
+
+async function handleRejectAccessRequest(req: VercelRequest, res: VercelResponse, requestId: string) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) return res.status(401).json({ error: auth.error });
+
+  try {
+    const db = getDb();
+    await db`UPDATE access_requests SET status = 'rejected' WHERE id = ${parseInt(requestId)}`;
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Reject request error:', error.message);
+    return res.status(500).json({ error: 'Failed to reject request' });
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res, req);
   
@@ -2490,6 +2618,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Platform Owner toggle
     if (path === '/toggle-platform-owner' || path === '/toggle-platform-owner/' || path === 'toggle-platform-owner') {
       return handleTogglePlatformOwner(req, res);
+    }
+    
+    // Access requests management
+    if (path === '/access-requests' || path === '/access-requests/' || path === 'access-requests') {
+      return handleAccessRequests(req, res);
+    }
+    
+    if (path.match(/\/?access-requests\/(\d+)\/approve\/?$/)) {
+      const match = path.match(/access-requests\/(\d+)\/approve/);
+      if (match) return handleApproveAccessRequest(req, res, match[1]);
+    }
+    
+    if (path.match(/\/?access-requests\/(\d+)\/reject\/?$/)) {
+      const match = path.match(/access-requests\/(\d+)\/reject/);
+      if (match) return handleRejectAccessRequest(req, res, match[1]);
     }
     
     // Clubs list

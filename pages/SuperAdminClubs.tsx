@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Building2, Search, Filter, ChevronRight, Crown, LogOut,
   RefreshCw, Eye, Users, Calendar, DollarSign, Clock, 
-  Mail, Percent, X, Heart, AlertTriangle, Download, Trash2
+  Mail, Percent, X, Heart, AlertTriangle, Download, Trash2,
+  UserPlus, Check, Ban, Copy, ExternalLink, Globe
 } from 'lucide-react';
 
 interface Club {
@@ -26,6 +27,18 @@ interface Club {
   is_platform_owner?: boolean;
 }
 
+interface AccessRequest {
+  id: number;
+  email: string;
+  club_name: string;
+  full_name: string;
+  website_url: string;
+  phone: string | null;
+  city_state: string | null;
+  status: string;
+  created_at: string;
+}
+
 interface SuperAdminClubsProps {
   token: string;
   onLogout: () => void;
@@ -33,6 +46,7 @@ interface SuperAdminClubsProps {
 }
 
 type ModalType = 'extend' | 'discount' | 'email' | 'delete' | null;
+type PageTab = 'clubs' | 'access-requests';
 
 export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogout, onImpersonate }) => {
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -43,6 +57,14 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
   const [trialFilter, setTrialFilter] = useState('');
   const [showHealthScores, setShowHealthScores] = useState(false);
   const navigate = useNavigate();
+
+  const [pageTab, setPageTab] = useState<PageTab>('clubs');
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [accessRequestsLoading, setAccessRequestsLoading] = useState(false);
+  const [accessRequestFilter, setAccessRequestFilter] = useState('pending');
+  const [pendingCount, setPendingCount] = useState(0);
+  const [approveResult, setApproveResult] = useState<{ email: string; password: string } | null>(null);
+  const [actionInProgress, setActionInProgress] = useState<number | null>(null);
 
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
@@ -113,6 +135,85 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  const fetchAccessRequests = async () => {
+    setAccessRequestsLoading(true);
+    try {
+      const res = await fetch(`/api/super-admin/access-requests?status=${accessRequestFilter}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.status === 401) { onLogout(); navigate('/super-admin/login'); return; }
+      const data = await res.json();
+      setAccessRequests(data.requests || []);
+    } catch (err) {
+      console.error('Failed to fetch access requests:', err);
+    } finally {
+      setAccessRequestsLoading(false);
+    }
+  };
+
+  const fetchPendingCount = async () => {
+    try {
+      const res = await fetch('/api/super-admin/access-requests?status=pending', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setPendingCount((data.requests || []).length);
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchPendingCount();
+  }, [token]);
+
+  useEffect(() => {
+    if (pageTab === 'access-requests') fetchAccessRequests();
+  }, [pageTab, accessRequestFilter]);
+
+  const handleApproveRequest = async (id: number) => {
+    if (!confirm('Approve this request? This will create the club account and send a welcome email with login credentials.')) return;
+    setActionInProgress(id);
+    try {
+      const res = await fetch(`/api/super-admin/access-requests/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setApproveResult({ email: data.club.email, password: data.tempPassword });
+        fetchAccessRequests();
+        fetchPendingCount();
+      } else {
+        alert(data.error || 'Failed to approve');
+      }
+    } catch (err) {
+      alert('Network error');
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleRejectRequest = async (id: number) => {
+    if (!confirm('Reject this access request?')) return;
+    setActionInProgress(id);
+    try {
+      const res = await fetch(`/api/super-admin/access-requests/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchAccessRequests();
+        fetchPendingCount();
+      } else {
+        alert(data.error || 'Failed to reject');
+      }
+    } catch (err) {
+      alert('Network error');
+    } finally {
+      setActionInProgress(null);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
@@ -510,6 +611,165 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex gap-1 mb-6 bg-gray-800 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setPageTab('clubs')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${pageTab === 'clubs' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+          >
+            <Building2 className="w-4 h-4 inline mr-2" />
+            Clubs ({total})
+          </button>
+          <button
+            onClick={() => setPageTab('access-requests')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors relative ${pageTab === 'access-requests' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'}`}
+          >
+            <UserPlus className="w-4 h-4 inline mr-2" />
+            Access Requests
+            {pendingCount > 0 && (
+              <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{pendingCount}</span>
+            )}
+          </button>
+        </div>
+
+        {pageTab === 'access-requests' ? (
+          <>
+            {approveResult && (
+              <div className="bg-green-900/30 border border-green-500/40 rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-green-400 font-bold mb-1">Account Created Successfully!</h3>
+                    <p className="text-gray-300 text-sm">A welcome email has been sent. Here are the credentials:</p>
+                    <div className="mt-2 bg-gray-900 rounded-lg p-3 inline-block">
+                      <p className="text-gray-400 text-xs">Email: <span className="text-white font-mono">{approveResult.email}</span></p>
+                      <p className="text-gray-400 text-xs mt-1">Temp Password: <span className="text-yellow-400 font-mono font-bold text-sm">{approveResult.password}</span></p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(approveResult.password); }}
+                      className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300"
+                      title="Copy password"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => setApproveResult(null)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-2">
+                {['pending', 'approved', 'rejected'].map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setAccessRequestFilter(s)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
+                      accessRequestFilter === s
+                        ? s === 'pending' ? 'bg-yellow-600 text-white' : s === 'approved' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={fetchAccessRequests}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm"
+              >
+                <RefreshCw className={`w-4 h-4 ${accessRequestsLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+
+            {accessRequestsLoading ? (
+              <div className="text-center py-12 text-gray-400">Loading requests...</div>
+            ) : accessRequests.length === 0 ? (
+              <div className="bg-gray-800 rounded-xl border border-gray-700 p-12 text-center">
+                <UserPlus className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400">No {accessRequestFilter} access requests</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {accessRequests.map(req => (
+                  <div key={req.id} className="bg-gray-800 rounded-xl border border-gray-700 p-4 hover:border-gray-600 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-white font-bold text-lg">{req.club_name}</h3>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            req.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                            req.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {req.status}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-500 text-xs">Full Name</p>
+                            <p className="text-gray-300">{req.full_name}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs">Email</p>
+                            <p className="text-cyan-400">{req.email}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs">Website / Link</p>
+                            <a href={req.website_url?.startsWith('http') ? req.website_url : `https://${req.website_url}`} target="_blank" rel="noreferrer"
+                              className="text-cyan-400 hover:underline flex items-center gap-1 truncate">
+                              {req.website_url} <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                            </a>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs">Submitted</p>
+                            <p className="text-gray-300">{formatDate(req.created_at)}</p>
+                          </div>
+                          {req.phone && (
+                            <div>
+                              <p className="text-gray-500 text-xs">Phone</p>
+                              <p className="text-gray-300">{req.phone}</p>
+                            </div>
+                          )}
+                          {req.city_state && (
+                            <div>
+                              <p className="text-gray-500 text-xs">Location</p>
+                              <p className="text-gray-300 flex items-center gap-1"><Globe className="w-3 h-3" />{req.city_state}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {req.status === 'pending' && (
+                        <div className="flex gap-2 ml-4 flex-shrink-0">
+                          <button
+                            onClick={() => handleApproveRequest(req.id)}
+                            disabled={actionInProgress === req.id}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                          >
+                            <Check className="w-4 h-4" />
+                            {actionInProgress === req.id ? 'Creating...' : 'Approve'}
+                          </button>
+                          <button
+                            onClick={() => handleRejectRequest(req.id)}
+                            disabled={actionInProgress === req.id}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-red-600/30 hover:bg-red-600 text-red-400 hover:text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                          >
+                            <Ban className="w-4 h-4" />
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+        <>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">All Clubs</h2>
@@ -749,6 +1009,8 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
             </table>
           </div>
         </div>
+        </>
+        )}
       </main>
 
       {/* Extend Trial Modal */}

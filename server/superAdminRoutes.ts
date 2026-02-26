@@ -1810,5 +1810,120 @@ router.patch('/gauntlet-challenges/:id', verifySuperAdmin, async (req: Request, 
   }
 });
 
+// Access Requests Management
+router.get('/access-requests', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const status = (req.query.status as string) || 'pending';
+    const requests = await db.execute(sql`
+      SELECT * FROM access_requests
+      WHERE status = ${status}
+      ORDER BY created_at DESC
+    `);
+    res.json({ requests });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Access requests error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch access requests' });
+  }
+});
+
+router.post('/access-requests/:id/approve', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const rows = await db.execute(sql`SELECT * FROM access_requests WHERE id = ${parseInt(id)}`);
+    const request = (rows as any[])[0];
+    if (!request) return res.status(404).json({ error: 'Request not found' });
+    if (request.status === 'approved') return res.status(400).json({ error: 'Request already approved' });
+
+    const existingClub = await db.execute(sql`SELECT id FROM clubs WHERE owner_email = ${request.email}`);
+    if ((existingClub as any[]).length > 0) {
+      return res.status(409).json({ error: 'A club with this email already exists. The request was not changed.' });
+    }
+
+    const tempPassword = crypto.randomBytes(4).toString('hex');
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 14);
+
+    const clubResult = await db.execute(sql`
+      INSERT INTO clubs (name, owner_email, country, trial_start, trial_end, trial_status, status, created_at)
+      VALUES (${request.club_name}, ${request.email}, 'France', NOW(), ${trialEnd}, 'active', 'active', NOW())
+      RETURNING id, name, owner_email, trial_start, trial_end
+    `);
+    const club = (clubResult as any[])[0];
+
+    await db.execute(sql`
+      INSERT INTO users (email, password_hash, role, club_id, is_active, created_at)
+      VALUES (${request.email}, ${passwordHash}, 'owner', ${club.id}, true, NOW())
+      ON CONFLICT (email) DO UPDATE SET password_hash = ${passwordHash}, club_id = ${club.id}
+    `);
+
+    await db.execute(sql`
+      INSERT INTO activity_log (event_type, event_title, event_description, metadata, created_at)
+      VALUES ('club_signup', 'VIP Access Approved', ${'VIP access approved for: ' + request.club_name}, ${JSON.stringify({ clubId: club.id, email: request.email })}, NOW())
+    `);
+
+    await db.execute(sql`UPDATE access_requests SET status = 'approved' WHERE id = ${parseInt(id)}`);
+
+    try {
+      const sgClient = await getSendGridClient();
+      if (sgClient) {
+        await sgClient.client.send({
+          to: request.email,
+          from: { email: sgClient.fromEmail, name: 'TaekUp' },
+          subject: `Welcome to TaekUp! Your VIP Access is Ready 🥋`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #0f172a; color: #e2e8f0; border-radius: 16px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #22d3ee; margin: 0;">TAEK<span style="color: #fff;">UP</span></h1>
+                <p style="color: #94a3b8; font-size: 12px; letter-spacing: 2px;">VIP EARLY ACCESS</p>
+              </div>
+              <h2 style="color: #fff; margin-bottom: 20px;">Welcome, ${request.full_name}! 🎉</h2>
+              <p style="color: #cbd5e1; line-height: 1.6;">Your VIP access to TaekUp has been approved! Your club <strong style="color: #22d3ee;">${request.club_name}</strong> is now active with a 14-day free trial.</p>
+              <div style="background: #1e293b; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #334155;">
+                <h3 style="color: #22d3ee; margin: 0 0 15px 0;">🔐 Your Login Credentials</h3>
+                <table style="width: 100%;">
+                  <tr><td style="color: #94a3b8; padding: 5px 0;">Email:</td><td style="color: #fff; font-weight: bold;">${request.email}</td></tr>
+                  <tr><td style="color: #94a3b8; padding: 5px 0;">Password:</td><td style="color: #fbbf24; font-weight: bold; font-family: monospace; font-size: 16px;">${tempPassword}</td></tr>
+                </table>
+                <p style="color: #f59e0b; font-size: 13px; margin: 15px 0 0 0;">⚠️ Please change your password after first login!</p>
+              </div>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">Log In to TaekUp</a>
+              </div>
+              <div style="background: #1e293b; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <p style="color: #94a3b8; font-size: 13px; margin: 0;">Next steps: Log in → Complete the setup wizard → Add your students → Start training! 🥋</p>
+              </div>
+            </div>
+          `,
+        });
+        console.log(`[SuperAdmin] Welcome email sent to ${request.email}`);
+      }
+    } catch (emailErr: any) {
+      console.error('[SuperAdmin] Failed to send welcome email:', emailErr.message);
+    }
+
+    res.json({
+      success: true,
+      club: { id: club.id, name: club.name, email: club.owner_email },
+      tempPassword,
+    });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Approve request error:', error.message);
+    res.status(500).json({ error: 'Failed to approve request: ' + error.message });
+  }
+});
+
+router.post('/access-requests/:id/reject', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await db.execute(sql`UPDATE access_requests SET status = 'rejected' WHERE id = ${parseInt(id)}`);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('[SuperAdmin] Reject request error:', error.message);
+    res.status(500).json({ error: 'Failed to reject request' });
+  }
+});
+
 export { router as superAdminRouter, verifySuperAdmin };
 // Force redeploy Sun Feb 23 11:05:00 PM UTC 2026
