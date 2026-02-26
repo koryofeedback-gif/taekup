@@ -724,6 +724,20 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS access_requests (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        club_name VARCHAR(255) NOT NULL,
+        full_name VARCHAR(255),
+        website_url VARCHAR(500),
+        phone VARCHAR(50),
+        city_state VARCHAR(255),
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     await client.query(
       `INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, created_at, status)
        VALUES ($1, $2, $3, $4, $5, $6, NOW(), 'pending')
