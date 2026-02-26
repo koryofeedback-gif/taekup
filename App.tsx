@@ -12,6 +12,7 @@ import { ForgotPasswordPage } from './pages/ForgotPassword';
 import { ResetPasswordPage } from './pages/ResetPassword';
 import { LandingPage } from './pages/Landing';
 import { PricingPage } from './pages/PricingPage';
+import { RequestAccessPage } from './pages/RequestAccess';
 import { AccountLockedPage } from './pages/AccountLockedPage';
 import { SubscriptionSuccess } from './pages/SubscriptionSuccess';
 import { SuperAdminLogin } from './pages/SuperAdminLogin';
@@ -1353,6 +1354,9 @@ const AppContent: React.FC<AppContentProps> = ({
                         path="/super-admin"
                         element={<Navigate to="/super-admin/login" replace />}
                     />
+
+                    {/* Request Early Access */}
+                    <Route path="/request-access" element={<RequestAccessPage />} />
 
                     {/* Awakening Ritual redirect to main page */}
                     <Route path="/awakening" element={<Navigate to="/" replace />} />

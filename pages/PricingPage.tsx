@@ -274,7 +274,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
         <div className="mt-12 text-center">
           <p className="text-gray-400 text-sm">
-            All plans include a 14-day free trial. No credit card required to start.
+            All plans include a 14-day free trial. Request early access to get started.
           </p>
           <p className="text-gray-500 text-xs mt-2">
             Prices are in USD. Cancel anytime. Secure payments powered by Stripe.

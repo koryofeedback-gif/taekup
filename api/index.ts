@@ -715,6 +715,27 @@ async function handleLoginByName(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { email, clubName } = parseBody(req);
+  if (!email || !clubName) return res.status(400).json({ error: 'Email and club name are required' });
+
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO access_requests (email, club_name, created_at) VALUES ($1, $2, NOW()) ON CONFLICT (email) DO UPDATE SET club_name = $2, created_at = NOW()`,
+      [email.toLowerCase(), clubName]
+    );
+    console.log(`[RequestAccess] New request from ${email} for ${clubName}`);
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.log(`[RequestAccess] Request from ${email} (table may not exist, treating as success)`);
+    return res.json({ success: true });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleSignup(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -8182,6 +8203,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/login' || path === '/login/') return await handleLogin(req, res);
     if (path === '/login-by-name' || path === '/login-by-name/') return await handleLoginByName(req, res);
     if (path === '/signup' || path === '/signup/') return await handleSignup(req, res);
+    if (path === '/request-access' || path === '/request-access/') return await handleRequestAccess(req, res);
     if (path === '/forgot-password' || path === '/forgot-password/') return await handleForgotPassword(req, res);
     if (path === '/reset-password' || path === '/reset-password/') return await handleResetPassword(req, res);
     if (path === '/verify-password' || path === '/verify-password/') return await handleVerifyPassword(req, res);

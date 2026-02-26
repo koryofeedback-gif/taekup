@@ -54,10 +54,10 @@ export const MyTaekHome: React.FC<MyTaekHomeProps> = ({ onNavigate }) => {
 
                     <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
                         <Link
-                            to="/landing"
+                            to="/request-access"
                             className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(220,38,38,0.3)] text-lg text-center"
                         >
-                            Start Free Trial
+                            Request Early Access
                         </Link>
                         <button
                             onClick={() => document.getElementById('ecosystem')?.scrollIntoView({ behavior: 'smooth' })}

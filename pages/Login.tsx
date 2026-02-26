@@ -207,16 +207,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                     </Link>
                 </div>
                 
-                <div className="mt-6 pt-6 border-t border-gray-700">
-                    <p className="text-center text-gray-400 text-sm mb-4">No account yet?</p>
-                    <Link
-                        to="/landing?signup=true"
-                        className="w-full block text-center bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-white font-bold py-3 rounded-lg transition-colors"
-                    >
-                        Start Free Trial
-                    </Link>
-                    <p className="text-center text-gray-500 text-xs mt-3">14-day free trial - no credit card required</p>
-                </div>
             </div>
         </div>
     );

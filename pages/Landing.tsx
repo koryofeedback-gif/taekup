@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { SignupForm } from '../components/SignupForm';
 import { SEO } from '../components/SEO';
 import type { SignupData } from '../types';
@@ -61,10 +61,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                     {showSignup ? (
                         <>
                             <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight text-white tracking-tighter">
-                                START YOUR <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-600">14-DAY WEALTH CHALLENGE.</span>
+                                REQUEST <span className="text-transparent bg-clip-text bg-gradient-to-b from-cyan-400 to-cyan-600">EARLY ACCESS.</span>
                             </h1>
                             <p className="text-xl text-zinc-400 mb-10">
-                                No credit card required. See your first profit projection in 2 minutes.
+                                Be among the first to transform your dojo into a profit engine.
                             </p>
                             <div className="w-full max-w-md">
                                 <SignupForm onSignupSuccess={handleSignupSuccess} />
@@ -150,14 +150,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => setShowSignup(true)}
-                                className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-black py-5 px-12 rounded-full transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(6,182,212,0.4)] text-lg md:text-xl uppercase tracking-wide"
+                            <Link
+                                to="/request-access"
+                                className="inline-block bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-black py-5 px-12 rounded-full transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(6,182,212,0.4)] text-lg md:text-xl uppercase tracking-wide"
                             >
-                                Start My 14-Day Wealth Challenge
-                            </button>
+                                Request Early Access
+                            </Link>
                             <p className="mt-4 text-zinc-500 text-sm">
-                                No Credit Card Required
+                                Limited spots available
                             </p>
                         </>
                     )}
@@ -356,16 +356,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSignupSuccess }) => 
                             <span className="text-cyan-400">AND START EARNING?</span>
                         </h2>
                         <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-                            Join the revolution. Start your 14-day wealth challenge today and see how much profit you could be making.
+                            Join the revolution. Request early access today and see how much profit you could be making.
                         </p>
 
-                        <button 
-                            onClick={() => setShowSignup(true)}
-                            className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-black py-5 px-12 rounded-full shadow-[0_0_40px_rgba(6,182,212,0.4)] transform hover:scale-105 transition-all text-lg uppercase tracking-wide"
+                        <Link 
+                            to="/request-access"
+                            className="inline-block bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-black py-5 px-12 rounded-full shadow-[0_0_40px_rgba(6,182,212,0.4)] transform hover:scale-105 transition-all text-lg uppercase tracking-wide"
                         >
-                            Start My 14-Day Wealth Challenge
-                        </button>
-                        <p className="text-zinc-600 text-sm mt-4">No Credit Card Required</p>
+                            Request Early Access
+                        </Link>
+                        <p className="text-zinc-600 text-sm mt-4">Limited spots available</p>
                     </div>
                 </div>
             </div>

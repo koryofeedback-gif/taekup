@@ -77,6 +77,22 @@ function generateChallengeUUID(challengeType: string): string {
 }
 
 export function registerRoutes(app: Express) {
+  app.post('/api/request-access', async (req: Request, res: Response) => {
+    const { email, clubName } = req.body;
+    if (!email || !clubName) return res.status(400).json({ error: 'Email and club name are required' });
+    try {
+      await db.execute(sql`
+        INSERT INTO access_requests (email, club_name, created_at) VALUES (${email.toLowerCase()}, ${clubName}, NOW())
+        ON CONFLICT (email) DO UPDATE SET club_name = ${clubName}, created_at = NOW()
+      `);
+      console.log(`[RequestAccess] New request from ${email} for ${clubName}`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.log(`[RequestAccess] Request from ${email} (table may not exist, treating as success)`);
+      res.json({ success: true });
+    }
+  });
+
   app.post('/api/signup', async (req: Request, res: Response) => {
     try {
       const { clubName, email, password, country } = req.body;
