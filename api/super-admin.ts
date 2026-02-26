@@ -542,7 +542,7 @@ async function handleRevenueAnalytics(req: VercelRequest, res: VercelResponse) {
     const mrrTrend = await db`
       WITH date_series AS (
         SELECT generate_series(
-          CURRENT_DATE - INTERVAL '${days} days',
+          CURRENT_DATE - (INTERVAL '1 day' * ${days}),
           CURRENT_DATE,
           '1 day'::interval
         )::date AS date
