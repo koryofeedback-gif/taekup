@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { Pool } from 'pg';
+import fs from 'fs';
+import path from 'path';
 import sgMail from '@sendgrid/mail';
 
 const pool = new Pool({
@@ -9,9 +11,35 @@ const pool = new Pool({
   max: 2
 });
 
-const EMAIL_TEMPLATES = {
-  PAYMENT_CONFIRMATION: 'd-50996268ba834a5b92150d29935fd2a8',
-};
+const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
+const LOGO_URL = 'https://www.mytaek.com/mytaek-logo.png';
+
+let _emailContentCache: Record<string, Record<string, any>> | null = null;
+function getEmailContentI18n(): Record<string, Record<string, any>> {
+  if (_emailContentCache) return _emailContentCache;
+  try {
+    const filePath = path.join(process.cwd(), 'server', 'utils', 'emailContent.json');
+    _emailContentCache = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    _emailContentCache = {};
+  }
+  return _emailContentCache!;
+}
+
+function normalizeLanguageCode(lang: string | undefined | null): string {
+  if (!lang) return 'en';
+  const code = lang.toLowerCase().slice(0, 2);
+  const langNameMap: Record<string, string> = { english: 'en', french: 'fr', german: 'de', spanish: 'es', farsi: 'fa', persian: 'fa' };
+  return langNameMap[lang.toLowerCase()] || (['en', 'fr', 'de', 'es', 'fa'].includes(code) ? code : 'en');
+}
+
+function replacePlaceholders(text: string, data: Record<string, any>): string {
+  let result = text;
+  Object.entries(data).forEach(([key, value]) => {
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), String(value || ''));
+  });
+  return result;
+}
 
 async function sendPaymentConfirmationEmail(
   to: string, 
@@ -21,7 +49,8 @@ async function sendPaymentConfirmationEmail(
     planName: string;
     amount: string;
     billingPeriod: string;
-  }
+  },
+  language?: string
 ) {
   if (!process.env.SENDGRID_API_KEY) {
     console.log('[Webhook] SendGrid API key not configured, skipping email');
@@ -30,28 +59,39 @@ async function sendPaymentConfirmationEmail(
   
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    const lang = normalizeLanguageCode(language);
     
-    const msg = {
-      to,
-      from: {
-        email: 'noreply@mytaek.com',
-        name: 'TaekUp'
-      },
-      templateId: EMAIL_TEMPLATES.PAYMENT_CONFIRMATION,
-      dynamicTemplateData: {
-        ...data,
-        ctaUrl: 'https://mytaek.com/wizard',
-        manageSubscriptionUrl: 'https://mytaek.com/app/admin?tab=billing',
-        unsubscribeUrl: 'https://mytaek.com/email-preferences',
-        privacyUrl: 'https://mytaek.com/privacy',
-        dashboardUrl: 'https://mytaek.com/dashboard',
-        loginUrl: 'https://mytaek.com/login',
-        helpUrl: 'https://mytaek.com/help',
-      },
-      subject: `Payment Confirmed - Let's Set Up Your Club!`
-    };
+    let subject = `Payment Confirmed - Let's Set Up Your Club!`;
+    let title = 'Payment Successful';
+    let body = `Hi ${data.ownerName},<br><br>Thanks for your payment of <strong>${data.amount}</strong> for <strong>${data.planName}</strong> (${data.billingPeriod}).<br><br>Your club <strong>${data.clubName}</strong> is ready to go!`;
+    let btnText = 'Go to Dashboard';
 
-    await sgMail.send(msg);
+    const i18nData = getEmailContentI18n();
+    const translated = i18nData['payment_receipt']?.[lang];
+    if (translated) {
+      const placeholders = { name: data.ownerName, amount: data.amount, planName: data.planName, billingPeriod: data.billingPeriod, clubName: data.clubName, nextBillingDate: '', invoiceNumber: '' };
+      subject = replacePlaceholders(translated.subject, placeholders);
+      title = replacePlaceholders(translated.title, placeholders);
+      body = replacePlaceholders(translated.body, placeholders);
+      btnText = translated.btn_text || btnText;
+    }
+    
+    await sgMail.send({
+      to,
+      from: { email: 'billing@mytaek.com', name: 'MyTaek' },
+      subject,
+      templateId: MASTER_TEMPLATE_ID,
+      dynamicTemplateData: {
+        subject,
+        title,
+        body_content: body,
+        btn_text: btnText,
+        btn_url: 'https://mytaek.com/app/admin?tab=billing',
+        is_rtl: lang === 'fa',
+        image_url: LOGO_URL,
+      },
+    });
+    console.log(`[Webhook] Payment email sent to ${to} in ${lang}`);
     return { success: true };
   } catch (error: any) {
     console.error('[Webhook] SendGrid error:', error?.response?.body || error.message);
@@ -72,7 +112,7 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
     }
 
     const clubResult = await client.query(
-      'SELECT id, name, owner_email, owner_name FROM clubs WHERE owner_email = $1 LIMIT 1',
+      'SELECT id, name, owner_email, owner_name, wizard_data FROM clubs WHERE owner_email = $1 LIMIT 1',
       [customerEmail]
     );
     
@@ -115,13 +155,14 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
           }
         }
 
+        const clubLang = normalizeLanguageCode(club.wizard_data?.language);
         const result = await sendPaymentConfirmationEmail(customerEmail, {
           ownerName: club.owner_name || 'Club Owner',
           clubName: club.name,
           planName,
           amount,
           billingPeriod
-        });
+        }, clubLang);
         
         if (result.success) {
           console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
@@ -205,7 +246,7 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
     
     if (customerEmail) {
       const clubResult = await client.query(
-        'SELECT id, name, owner_email, owner_name FROM clubs WHERE owner_email = $1 LIMIT 1',
+        'SELECT id, name, owner_email, owner_name, wizard_data FROM clubs WHERE owner_email = $1 LIMIT 1',
         [customerEmail]
       );
       club = clubResult.rows[0];
@@ -238,13 +279,14 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
         (invoice.lines.data[0].period.end - invoice.lines.data[0].period.start > 60 * 60 * 24 * 35 ? 'Annual' : 'Monthly') 
         : 'Monthly';
       
+      const invoiceLang = normalizeLanguageCode(club.wizard_data?.language);
       const result = await sendPaymentConfirmationEmail(customerEmail, {
         ownerName: club.owner_name || 'Club Owner',
         clubName: club.name,
         planName: planName,
         amount: '$' + (amount / 100).toFixed(2),
         billingPeriod: billingPeriod
-      });
+      }, invoiceLang);
 
       if (result.success) {
         console.log('[Webhook] Payment confirmation email sent to:', customerEmail);

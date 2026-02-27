@@ -3,6 +3,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import Stripe from 'stripe';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -363,6 +365,50 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
 
 const LOGO_URL = 'https://www.mytaek.com/mytaek-logo.png';
 
+const EMAIL_TYPE_TO_I18N_KEY: Record<string, string> = {
+  WELCOME: 'welcome_club', PARENT_WELCOME: 'welcome_parent', COACH_INVITE: 'coach_invite',
+  RESET_PASSWORD: 'password_reset', PASSWORD_CHANGED: 'password_changed',
+  PAYMENT_RECEIPT: 'payment_receipt', PAYMENT_FAILED: 'payment_failed',
+  PREMIUM_UNLOCKED: 'premium_unlocked', VIDEO_APPROVED: 'video_approved',
+  VIDEO_RETRY: 'video_retry', VIDEO_SUBMITTED: 'video_submitted',
+  TRIAL_ENDING: 'trial_ending', TRIAL_EXPIRED: 'trial_expired',
+  BELT_PROMOTION: 'belt_promotion', WEEKLY_PROGRESS: 'weekly_progress',
+  NEW_STUDENT_ADDED: 'new_student_added', MONTHLY_REVENUE_REPORT: 'monthly_revenue_report',
+  CLASS_FEEDBACK: 'class_feedback', ATTENDANCE_ALERT: 'attendance_alert',
+  BIRTHDAY_WISH: 'birthday_wish', PAYOUT_NOTIFICATION: 'payout_notification',
+  SUBSCRIPTION_CANCELLED: 'subscription_cancelled', WIN_BACK: 'win_back',
+  CHURN_RISK: 'churn_risk', DAY_3_CHECKIN: 'day_3_checkin', DAY_7_MID_TRIAL: 'day_7_mid_trial',
+};
+
+let _emailContentCache: Record<string, Record<string, any>> | null = null;
+function getEmailContentI18n(): Record<string, Record<string, any>> {
+  if (_emailContentCache) return _emailContentCache;
+  try {
+    const filePath = path.join(process.cwd(), 'server', 'utils', 'emailContent.json');
+    _emailContentCache = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    _emailContentCache = {};
+  }
+  return _emailContentCache!;
+}
+
+function normalizeLanguageCode(lang: string | undefined | null): string {
+  if (!lang) return 'en';
+  const code = lang.toLowerCase().slice(0, 2);
+  const langNameMap: Record<string, string> = { english: 'en', french: 'fr', german: 'de', spanish: 'es', farsi: 'fa', persian: 'fa' };
+  return langNameMap[lang.toLowerCase()] || (['en', 'fr', 'de', 'es', 'fa'].includes(code) ? code : 'en');
+}
+
+async function getClubLanguage(client: any, clubId: string): Promise<string> {
+  try {
+    const result = await client.query('SELECT wizard_data FROM clubs WHERE id = $1::uuid LIMIT 1', [clubId]);
+    if (result.rows.length > 0 && result.rows[0].wizard_data) {
+      return normalizeLanguageCode(result.rows[0].wizard_data.language);
+    }
+  } catch {}
+  return 'en';
+}
+
 function replacePlaceholders(text: string, data: Record<string, any>): string {
   let result = text;
   Object.entries(data).forEach(([key, value]) => {
@@ -371,22 +417,34 @@ function replacePlaceholders(text: string, data: Record<string, any>): string {
   return result;
 }
 
-async function sendTemplateEmail(to: string, emailType: keyof typeof EMAIL_CONTENT, dynamicData: Record<string, any>): Promise<boolean> {
+async function sendTemplateEmail(to: string, emailType: keyof typeof EMAIL_CONTENT, dynamicData: Record<string, any>, language?: string): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
     console.log('[SendGrid] No API key configured, skipping email');
     return false;
   }
   
-  const content = EMAIL_CONTENT[emailType];
-  if (!content) {
+  const lang = normalizeLanguageCode(language);
+  const fallbackContent = EMAIL_CONTENT[emailType];
+  if (!fallbackContent) {
     console.error(`[SendGrid] Unknown email type: ${emailType}`);
     return false;
+  }
+  
+  let content = fallbackContent;
+  if (lang !== 'en') {
+    const i18nKey = EMAIL_TYPE_TO_I18N_KEY[emailType];
+    if (i18nKey) {
+      const i18nData = getEmailContentI18n();
+      const translated = i18nData[i18nKey]?.[lang];
+      if (translated) {
+        content = { ...fallbackContent, subject: translated.subject, title: translated.title, body: translated.body, btn_text: translated.btn_text || fallbackContent.btn_text, btn_url: translated.btn_url || fallbackContent.btn_url };
+      }
+    }
   }
   
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     
-    // Replace placeholders in all fields
     const subject = replacePlaceholders(content.subject, dynamicData);
     const title = replacePlaceholders(content.title, dynamicData);
     const body = replacePlaceholders(content.body, dynamicData);
@@ -403,11 +461,11 @@ async function sendTemplateEmail(to: string, emailType: keyof typeof EMAIL_CONTE
         body_content: body,
         btn_text: content.btn_text,
         btn_url: btnUrl || content.btn_url,
-        is_rtl: dynamicData.is_rtl || false,
+        is_rtl: lang === 'fa',
         image_url: LOGO_URL,
       },
     });
-    console.log(`[SendGrid] Email sent to ${to} with master template (${emailType})`);
+    console.log(`[SendGrid] Email sent to ${to} in ${lang} with master template (${emailType})`);
     return true;
   } catch (error: any) {
     console.error('[SendGrid] Failed to send email:', error?.response?.body?.errors || error.message);
@@ -795,7 +853,7 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
 async function handleSignup(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
-  const { clubName, email, password, country } = parseBody(req);
+  const { clubName, email, password, country, language: signupLanguage } = parseBody(req);
   if (!clubName || !email || !password) return res.status(400).json({ error: 'Club name, email, and password are required' });
 
   const client = await pool.connect();
@@ -828,7 +886,7 @@ async function handleSignup(req: VercelRequest, res: VercelResponse) {
     const emailSent = await sendTemplateEmail(email, 'WELCOME', {
       ownerName: clubName,
       clubName: clubName,
-    });
+    }, signupLanguage);
     await logAutomatedEmail(client, 'welcome', email, 'WELCOME', emailSent ? 'sent' : 'failed', club.id);
 
     return res.status(201).json({ success: true, club: { id: club.id, name: club.name, email: club.owner_email, trialStart: club.trial_start, trialEnd: club.trial_end } });
@@ -852,7 +910,7 @@ async function handleForgotPassword(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    const userResult = await client.query('SELECT id, email, name FROM users WHERE email = $1 AND is_active = true LIMIT 1', [email]);
+    const userResult = await client.query('SELECT id, email, name, club_id FROM users WHERE email = $1 AND is_active = true LIMIT 1', [email]);
     if (userResult.rows.length === 0) return res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
     
     const user = userResult.rows[0];
@@ -860,11 +918,12 @@ async function handleForgotPassword(req: VercelRequest, res: VercelResponse) {
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await client.query('UPDATE users SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3', [resetToken, expiresAt, user.id]);
 
+    const userLang = user.club_id ? await getClubLanguage(client, user.club_id) : 'en';
     await sendTemplateEmail(user.email, 'RESET_PASSWORD', {
       name: user.name || 'User',
       resetToken: resetToken,
       resetUrl: `https://www.mytaek.com/reset-password?token=${resetToken}`,
-    });
+    }, userLang);
 
     return res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
   } finally { client.release(); }
@@ -2101,12 +2160,13 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     }
 
     if (parentEmail) {
+      const clubLang = await getClubLanguage(client, clubId);
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
         parentName: parentName || 'Parent',
         parentEmail: parentEmail,
         studentName: name,
         clubName: club.name,
-      });
+      }, clubLang);
       await logAutomatedEmail(client, 'parent_welcome', parentEmail, 'PARENT_WELCOME', parentSent ? 'sent' : 'failed', clubId);
       console.log(`[AddStudent] Parent welcome email ${parentSent ? 'sent' : 'failed'} to:`, parentEmail);
     }
@@ -2715,13 +2775,14 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
       );
     }
 
+    const coachLang = await getClubLanguage(client, clubId);
     const coachSent = await sendTemplateEmail(email, 'COACH_INVITE', {
       name: name,
       clubName: club.name,
       coachEmail: email,
       tempPassword: tempPassword,
       ownerName: club.name,
-    });
+    }, coachLang);
     await logAutomatedEmail(client, 'coach_invite', email, 'COACH_INVITE', coachSent ? 'sent' : 'failed', clubId);
     console.log(`[InviteCoach] Coach invite email ${coachSent ? 'sent' : 'failed'} to:`, email);
 
@@ -2888,12 +2949,13 @@ async function handleLinkParent(req: VercelRequest, res: VercelResponse, student
     );
 
     if (!hadParentBefore) {
+      const linkLang = await getClubLanguage(client, student.club_id);
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
         parentName: parentName || 'Parent',
         parentEmail: parentEmail,
         studentName: student.name,
         clubName: student.club_name,
-      });
+      }, linkLang);
       await logAutomatedEmail(client, 'parent_welcome', parentEmail, 'PARENT_WELCOME', parentSent ? 'sent' : 'failed', student.club_id);
       console.log(`[LinkParent] Parent welcome email ${parentSent ? 'sent' : 'failed'} to:`, parentEmail);
     }
@@ -3557,10 +3619,9 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
         console.log(`[TrustTier] Skipping trust tier update (columns may not exist): ${tierError.message}`);
       }
       
-      // Send parent notification email about rejection
       try {
         const parentResult = await client.query(
-          `SELECT p.email, p.name as parent_name, s.name as student_name 
+          `SELECT p.email, p.name as parent_name, s.name as student_name, s.club_id
            FROM parents p
            JOIN students s ON s.parent_id = p.id
            WHERE s.id = $1::uuid`,
@@ -3569,18 +3630,17 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
         
         if (parentResult.rows.length > 0 && parentResult.rows[0].email) {
           const parent = parentResult.rows[0];
-          const challengeName = video.challenge_name || 'Challenge';
-          const coachFeedback = coachNotes || 'Please review the submission requirements and try again.';
+          const videoLang = parent.club_id ? await getClubLanguage(client, parent.club_id) : 'en';
           
           await sendTemplateEmail(
             parent.email,
-            'd-video-rejection-notification',
+            'VIDEO_RETRY',
             {
-              parent_name: parent.parent_name || 'Parent',
-              student_name: parent.student_name || 'Your child',
-              challenge_name: challengeName,
-              coach_feedback: coachFeedback
-            }
+              childName: parent.student_name || 'Your child',
+              coachName: 'Coach',
+              feedback: coachNotes || 'Please review the submission requirements and try again.'
+            },
+            videoLang
           );
           console.log(`[Email] Sent rejection notification to parent ${parent.email} for student ${video.student_id}`);
         }
