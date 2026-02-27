@@ -153,26 +153,26 @@ export const COUNTRIES = [
 ];
 
 export const LANGUAGES = [
-    "English", "Spanish", "French", "German", "Portuguese", "Italian", "Dutch", "Russian", "Chinese (Simplified)", "Japanese", "Korean", "Arabic", "Persian", "Turkish", "Hindi"
+    "English", "French", "German"
 ];
 
 // Heuristic map to suggest language based on country
 export const COUNTRY_LANGUAGE_MAP: Record<string, string> = {
     "United States": "English", "United Kingdom": "English", "Australia": "English", "Canada": "English",
-    "Spain": "Spanish", "Mexico": "Spanish", "Argentina": "Spanish", "Colombia": "Spanish",
+    "Spain": "English", "Mexico": "English", "Argentina": "English", "Colombia": "English",
     "France": "French", "Belgium": "French", "Senegal": "French",
     "Germany": "German", "Austria": "German", "Switzerland": "German",
-    "Brazil": "Portuguese", "Portugal": "Portuguese",
-    "Italy": "Italian",
-    "Netherlands": "Dutch",
-    "Russia": "Russian", "Ukraine": "Russian",
-    "China": "Chinese (Simplified)",
-    "Japan": "Japanese",
-    "South Korea": "Korean",
-    "Saudi Arabia": "Arabic", "United Arab Emirates": "Arabic", "Egypt": "Arabic", "Qatar": "Arabic",
-    "Iran": "Persian",
-    "Turkey": "Turkish",
-    "India": "Hindi"
+    "Brazil": "English", "Portugal": "English",
+    "Italy": "English",
+    "Netherlands": "English",
+    "Russia": "English", "Ukraine": "English",
+    "China": "English",
+    "Japan": "English",
+    "South Korea": "English",
+    "Saudi Arabia": "English", "United Arab Emirates": "English", "Egypt": "English", "Qatar": "English",
+    "Iran": "English",
+    "Turkey": "English",
+    "India": "English"
 };
 
 // --- BELT SYSTEM CONSTANTS ---
