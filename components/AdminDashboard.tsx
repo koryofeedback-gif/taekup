@@ -4,7 +4,6 @@ import * as XLSX from 'xlsx';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
-import { DEMO_MODE_KEY, isDemoModeEnabled, DEMO_STUDENTS, DEMO_COACHES, DEMO_SCHEDULE, DEMO_STATS, DEMO_LEADERBOARD, DEMO_RECENT_ACTIVITY, DEMO_CURRICULUM } from './demoData';
 import { CSVImport, ImportedStudent } from './CSVImport';
 import { StripeConnectModal } from './StripeConnectModal';
 import { useTranslation } from '../i18n/useTranslation';
@@ -386,8 +385,8 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                 <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-4 md:p-6 shadow-2xl">
                     <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <div>
-                            <h3 className="text-lg md:text-xl font-bold text-white flex items-center"><span className="mr-2">🏦</span> {data.isDemo ? 'SenseiVault™ Estimator' : 'SenseiVault™ Live Projection'}</h3>
-                            <p className="text-gray-400 text-xs md:text-sm">{data.isDemo ? 'See how DojoMint™ protocol turns student engagement into net profit.' : 'Monitor your active DojoMint™ revenue against your platform fees.'}</p>
+                            <h3 className="text-lg md:text-xl font-bold text-white flex items-center"><span className="mr-2">🏦</span> SenseiVault™ Live Projection</h3>
+                            <p className="text-gray-400 text-xs md:text-sm">Monitor your active DojoMint™ revenue against your platform fees.</p>
                         </div>
                         <div className="bg-gray-900 px-4 py-2 rounded-lg border border-gray-700 self-start">
                             <span className="text-xs text-gray-500 uppercase block">Your Plan</span>
@@ -408,7 +407,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                         <div>
                             <label className="block text-xs md:text-sm text-gray-300 mb-4">
-                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> {data.isDemo ? 'Active Warriors unlock their SenseiVault™ Access...' : 'students become Active Legacy Activations...'}
+                                If <span className="text-sky-300 font-bold text-lg">{adoptionRate}%</span> of your <span className="text-white font-semibold">{simulatedStudents}</span> students become Active Legacy Activations...
                             </label>
                             <input 
                                 type="range" 
@@ -448,7 +447,7 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-400">{data.isDemo ? 'Your DojoMint™ Income:' : 'Your DojoMint™ Revenue:'}</span>
+                                    <span className="text-gray-400">Your DojoMint™ Revenue:</span>
                                     <span className="text-green-400 font-semibold">+${revenue.clubRevenue.toFixed(2)}</span>
                                 </div>
                             </div>
@@ -457,11 +456,6 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
                                 <p className={`text-4xl font-extrabold ${revenue.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                     {revenue.profit >= 0 ? '+' : '-'}${Math.abs(revenue.profit).toFixed(2)} {revenue.profit > 0 && '🚀'}
                                 </p>
-                                {data.isDemo && (
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        (Paid via Performance Royalty)
-                                    </p>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -548,10 +542,6 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     });
 
     const handleDelete = async (id: string) => {
-        if (isDemoModeEnabled()) {
-            alert(t('common.demoModeActive'));
-            return;
-        }
         if(confirm(t('common.areYouSure'))) {
             try {
                 const response = await fetch(`/api/students/${id}`, {
@@ -804,10 +794,6 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
     const [deleting, setDeleting] = useState<string | null>(null);
 
     const handleDelete = async (id: string) => {
-        if (isDemoModeEnabled()) {
-            alert(t('common.demoModeActive'));
-            return;
-        }
         if(!confirm(t('admin.staff.removeCoachConfirm'))) return;
         
         setDeleting(id);
@@ -2320,11 +2306,6 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const confirmUniversalAccessToggle = async () => {
         setShowUniversalAccessModal(false);
         
-        if (data.isDemo) {
-            onUpdateData({ clubSponsoredPremium: !data.clubSponsoredPremium });
-            return;
-        }
-        
         const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
         if (!effectiveClubId) {
             alert(t('admin.billing.noStripeCustomer'));
@@ -2360,15 +2341,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     };
     const totalBill = currentTier.price + bulkCost;
 
-    // Verify subscription status with Stripe on mount (skip in demo mode)
     useEffect(() => {
-        // Skip subscription verification in demo mode
-        if (data.isDemo) {
-            setVerifiedStatus({ status: 'active', label: 'Demo (Pro Plan)', color: 'bg-cyan-600 text-cyan-100', daysLeft: -1 });
-            setSubscribedPlanId('pro');
-            return;
-        }
-        
         const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
         if (effectiveClubId) {
             fetch(`/api/club/${effectiveClubId}/verify-subscription`, {
@@ -2588,27 +2561,13 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                             </div>
                             {data.clubSponsoredPremium && (
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-indigo-300">{data.isDemo ? t('admin.billing.universalAccessAddon') : t('admin.billing.dojoMintClubRate')}</span>
-                                    {data.isDemo ? (
-                                        <span className="text-amber-400 font-bold flex items-center">
-                                            <span className="mr-1">🔒</span>
-                                            {t('admin.billing.b2bRate')}
-                                        </span>
-                                    ) : (
-                                        <span className="text-indigo-300 font-bold">+${bulkCost.toFixed(2)}</span>
-                                    )}
+                                    <span className="text-indigo-300">{t('admin.billing.dojoMintClubRate')}</span>
+                                    <span className="text-indigo-300 font-bold">+${bulkCost.toFixed(2)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between items-center pt-2 border-t border-gray-600 mt-2">
                                 <span className="text-white font-bold">{t('admin.billing.totalMonthly')}</span>
-                                {data.isDemo ? (
-                                    <span className="text-lg font-bold text-amber-400 flex items-center">
-                                        <span className="mr-1">🔒</span>
-                                        {t('admin.billing.calculatedAtCheckout')}
-                                    </span>
-                                ) : (
-                                    <span className="text-xl font-extrabold text-white">${totalBill.toFixed(2)}</span>
-                                )}
+                                <span className="text-xl font-extrabold text-white">${totalBill.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
@@ -2647,28 +2606,16 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     </button>
                 </div>
 
-                {/* DojoMint Monetization Card - Different UI for Demo vs Real */}
-                {data.isDemo ? (
-                    /* DEMO MODE - Same layout as Real Mode but with LOCKED fee */
-                    <DemoMarginCalculatorCard 
-                        totalStudents={totalStudents}
-                        clubSponsoredPremium={data.clubSponsoredPremium}
-                        onToggle={handleUniversalAccessToggle}
-                    />
-                ) : (
-                    /* REAL MODE - Margin Calculator Style UI */
-                    <MarginCalculatorCard 
-                        totalStudents={totalStudents}
-                        clubSponsoredPremium={data.clubSponsoredPremium}
-                        onToggle={handleUniversalAccessToggle}
-                        loading={toggleLoading}
-                    />
-                )}
+                <MarginCalculatorCard 
+                    totalStudents={totalStudents}
+                    clubSponsoredPremium={data.clubSponsoredPremium}
+                    onToggle={handleUniversalAccessToggle}
+                    loading={toggleLoading}
+                />
             </div>
 
             {/* Stripe Connect - Revenue Share Section */}
-            {!data.isDemo && (
-                <div className="mt-8 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 p-6 rounded-xl border border-purple-500/30">
+            <div className="mt-8 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 p-6 rounded-xl border border-purple-500/30">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center">
                             <span className="text-3xl mr-3">💰</span>
@@ -2723,52 +2670,10 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         </p>
                     </div>
                 </div>
-            )}
 
             {/* Club Wallet / External Profit Tracker - Conditional based on mode */}
             <div className="mt-8">
-                {data.isDemo ? (
-                    /* DEMO MODE - External Profit Tracker (Universal Access model) */
-                    <div className="bg-gradient-to-b from-green-900/20 to-gray-800 p-6 rounded-xl border border-green-600/30">
-                        <div className="flex items-center mb-4">
-                            <span className="text-3xl mr-2">📊</span>
-                            <div>
-                                <h3 className="font-bold text-white text-lg">{t('admin.billing.externalProfitTracker.title')}</h3>
-                                <p className="text-sm text-gray-400">{t('admin.billing.externalProfitTracker.tuitionProjection')}</p>
-                            </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div className="bg-gray-900 p-3 rounded-lg text-center border border-gray-700">
-                                <p className="text-[10px] text-gray-500 uppercase mb-1">{t('admin.billing.externalProfitTracker.totalTuition')}</p>
-                                <p className="text-lg font-bold text-amber-400 flex items-center justify-center">
-                                    <span className="mr-1 text-sm">🔒</span>
-                                </p>
-                            </div>
-                            
-                            <div className="bg-gray-900 p-3 rounded-lg text-center border border-gray-700">
-                                <p className="text-[10px] text-gray-500 uppercase mb-1">{t('admin.billing.externalProfitTracker.platformFees')}</p>
-                                <p className="text-lg font-bold text-amber-400 flex items-center justify-center">
-                                    <span className="mr-1 text-sm">🔒</span>
-                                </p>
-                            </div>
-                            
-                            <div className="bg-gray-900 p-3 rounded-lg text-center border border-gray-700">
-                                <p className="text-[10px] text-gray-500 uppercase mb-1">{t('admin.billing.externalProfitTracker.netProfit')}</p>
-                                <p className="text-lg font-bold text-amber-400 flex items-center justify-center">
-                                    <span className="mr-1 text-sm">🔒</span>
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div className="bg-green-900/30 p-4 rounded-lg border border-green-500/30">
-                            <p className="text-sm text-gray-300 flex items-start">
-                                <span className="text-green-400 mr-2 mt-0.5">✅</span>
-                                <span>{t('admin.billing.externalProfitTracker.profitCollectedDirectly')}</span>
-                            </p>
-                        </div>
-                    </div>
-                ) : data.clubSponsoredPremium ? (
+                {data.clubSponsoredPremium ? (
                     /* REAL MODE + UNIVERSAL ACCESS ACTIVE - External Profit Tracker (No bank needed) */
                     <div className="bg-gradient-to-b from-green-900/20 to-gray-800 p-6 rounded-xl border border-green-600/30">
                         <div className="flex items-center mb-4">
@@ -2825,27 +2730,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const { t } = useTranslation(data?.language);
     const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'staff' | 'schedule' | 'creator' | 'settings' | 'billing'>('overview');
     
-    // Demo Mode - use static demo data when enabled (no database operations)
-    const isDemo = isDemoModeEnabled();
-    const effectiveData: WizardData = useMemo(() => {
-        if (!isDemo) return data;
-        return {
-            ...data,
-            students: DEMO_STUDENTS,
-            coaches: DEMO_COACHES,
-            schedule: DEMO_SCHEDULE,
-            curriculum: DEMO_CURRICULUM,
-        };
-    }, [isDemo, data]);
-    
-    // Demo-safe update handler - blocks mutations in demo mode
-    const handleDemoSafeUpdate = (updates: Partial<WizardData>) => {
-        if (isDemo) {
-            alert('Demo mode is active. Turn off demo mode to make changes.');
-            return;
-        }
-        onUpdateData(updates);
-    };
     
     // Modal State
     const [modalType, setModalType] = useState<string | null>(null);
@@ -3044,11 +2928,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     };
 
     const handleCSVImport = async (importedStudents: ImportedStudent[]) => {
-        if (isDemo) {
-            alert('Demo mode is active. Turn off demo mode to make changes.');
-            setShowCSVImport(false);
-            return;
-        }
 
         setIsImporting(true);
         const studentsWithDbIds: Student[] = [];
@@ -3123,10 +3002,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     };
 
     const confirmBulkImport = async () => {
-        if (isDemo) {
-            alert('Demo mode is active. Turn off demo mode to make changes.');
-            return;
-        }
         const validStudents = parsedBulkStudents.filter(s => s.beltId !== 'INVALID_BELT');
         
         setIsImporting(true);
@@ -3221,10 +3096,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     };
 
     const handleAddStudent = async () => {
-        if (isDemo) {
-            alert('Demo mode is active. Turn off demo mode to make changes.');
-            return;
-        }
         const totalStudents = data.students.length;
         const currentTier = PRICING_TIERS.find(t => totalStudents < t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
         
@@ -3344,10 +3215,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     };
 
     const handleAddCoach = async () => {
-        if (isDemo) {
-            alert('Demo mode is active. Turn off demo mode to make changes.');
-            return;
-        }
         if(!tempCoach.name || !tempCoach.email) return;
         
         console.log('[AdminDashboard] handleAddCoach called with clubId:', clubId);
@@ -3516,16 +3383,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 
 
                 <div className="p-4 md:p-12 max-w-7xl mx-auto">
-                    {data.isDemo && (
-                        <div className="mb-4 bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white py-2 px-4 rounded-lg shadow-lg text-center font-bold text-sm flex items-center justify-center gap-2">
-                            <span className="text-lg">🎮</span> DEMO MODE - Sample data for demonstration purposes
-                        </div>
-                    )}
-                    {activeTab === 'overview' && <OverviewTab data={effectiveData} onNavigate={onNavigate} onOpenModal={setModalType} onNavigateTab={setActiveTab} />}
-                    {activeTab === 'students' && <StudentsTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { if (isDemo) { alert('Demo mode is active. Turn off demo mode to edit.'); return; } setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
-                    {activeTab === 'staff' && <StaffTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} onOpenModal={setModalType} onEditCoach={(c) => { if (isDemo) { alert('Demo mode is active. Turn off demo mode to edit.'); return; } setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
-                    {activeTab === 'schedule' && <ScheduleTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} onOpenModal={setModalType} />}
-                    {activeTab === 'creator' && <CreatorHubTab data={effectiveData} onUpdateData={handleDemoSafeUpdate} clubId={clubId} />}
+                    {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} onNavigateTab={setActiveTab} />}
+                    {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
+                    {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
+                    {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
+                    {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                 </div>
@@ -4009,10 +3871,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         </div>
                         <button 
                             onClick={async () => {
-                                if (isDemo) {
-                                    alert('Demo mode is active. Turn off demo mode to make changes.');
-                                    return;
-                                }
                                 if (!editingStudentId) return;
                                 try {
                                     // Get belt name from beltId for API
@@ -4133,10 +3991,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         </div>
                         <button 
                             onClick={async () => {
-                                if (isDemo) {
-                                    alert('Demo mode is active. Turn off demo mode to make changes.');
-                                    return;
-                                }
                                 if (!editingCoachId) return;
                                 try {
                                     const response = await fetch(`/api/coaches/${editingCoachId}`, {

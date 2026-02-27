@@ -1543,11 +1543,15 @@ export const fr = {
       aiBlackBelt: "Date ceinture noire IA",
       aiTraining: "Conseils IA",
       leaderboard: "Classement",
+      previewFeedback: "Alex a montré une grande concentration aujourd'hui ! Continuez le bon travail sur la nouvelle forme.",
+      today: "Aujourd'hui",
+      coachAI: "Coach IA",
     },
   },
 
   requestAccess: {
     vipEarlyAccess: "Accès anticipé VIP",
+    optional: "facultatif",
     title: "Demander l'accès à TaekUp",
     subtitle: "Rejoignez le groupe exclusif de dojos qui transforment leur activité avec TaekUp.",
     fullName: "Nom complet",

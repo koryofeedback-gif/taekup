@@ -182,7 +182,7 @@ export const RequestAccessPage: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                                            {t('requestAccess.cityState')} <span className="text-zinc-600">({t('requestAccess.phoneLabel').includes('optional') ? '' : 'optional'})</span>
+                                            {t('requestAccess.cityState')} <span className="text-zinc-600">({t('requestAccess.optional')})</span>
                                         </label>
                                         <input
                                             type="text"
@@ -212,7 +212,7 @@ export const RequestAccessPage: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                                            {t('requestAccess.phoneLabel')} <span className="text-zinc-600">(optional)</span>
+                                            {t('requestAccess.phoneLabel')} <span className="text-zinc-600">({t('requestAccess.optional')})</span>
                                         </label>
                                         <input
                                             type="tel"

@@ -209,10 +209,10 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
                             <span className="mr-1">💬</span> {t('wizard.step6.senseiIntel')}
                         </h3>
                         <div className="bg-gray-800 p-3 rounded-xl border-l-2 shadow-sm relative" style={{ borderLeftColor: data.primaryColor }}>
-                            <p className="text-gray-300 text-[11px] italic mb-2">"Alex showed great focus today! Keep up the good work on the new form."</p>
+                            <p className="text-gray-300 text-[11px] italic mb-2">"{t('wizard.step6.previewFeedback')}"</p>
                             <div className="flex justify-between items-center text-[9px] text-gray-500">
-                                <span>Today</span>
-                                <span className="font-medium" style={{ color: data.primaryColor }}>✨ Coach AI</span>
+                                <span>{t('wizard.step6.today')}</span>
+                                <span className="font-medium" style={{ color: data.primaryColor }}>✨ {t('wizard.step6.coachAI')}</span>
                             </div>
                         </div>
                     </div>

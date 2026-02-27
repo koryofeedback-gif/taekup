@@ -111,7 +111,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                 console.log('[Login] Wizard not completed, clearing localStorage and redirecting to wizard');
                 localStorage.removeItem('taekup_wizard_data');
                 localStorage.removeItem('taekup_wizard_complete');
-                localStorage.removeItem('taekup_demo_mode');
             }
             
             // Determine target URL

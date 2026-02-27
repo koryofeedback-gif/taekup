@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Sparkles, Users, Loader2 } from 'lucide-react';
-import { DEMO_MODE_KEY } from '../demoData';
 import { useTranslation } from '../../i18n/useTranslation';
 
 interface StepDemoChoiceProps {
@@ -44,14 +43,12 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, language
           localStorage.setItem('taekup_club_id', clubId);
           localStorage.setItem('taekup_wizard_complete', 'true');
           
-          localStorage.setItem(DEMO_MODE_KEY, 'true');
-          
           window.location.href = '/app/admin';
           return;
         }
         onChooseDemo();
       } else {
-        setError(result.message || 'Failed to load demo data');
+        setError(result.message || t('wizard.demoChoice.networkError'));
         setLoading(false);
       }
     } catch (err) {

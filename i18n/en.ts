@@ -1543,11 +1543,15 @@ export const en = {
       aiBlackBelt: "AI black belt date",
       aiTraining: "AI training intel",
       leaderboard: "Leaderboard",
+      previewFeedback: "Alex showed great focus today! Keep up the good work on the new form.",
+      today: "Today",
+      coachAI: "Coach AI",
     },
   },
 
   requestAccess: {
     vipEarlyAccess: "VIP Early Access",
+    optional: "optional",
     title: "Request Access to TaekUp",
     subtitle: "Join the waitlist and be among the first to experience the future of martial arts management",
     fullName: "Full Name",

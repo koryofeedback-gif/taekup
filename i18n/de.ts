@@ -1543,11 +1543,15 @@ export const de = {
       aiBlackBelt: "KI-Schwarzgurt-Datum",
       aiTraining: "KI-Trainingstipps",
       leaderboard: "Rangliste",
+      previewFeedback: "Alex hat heute großartige Konzentration gezeigt! Mach weiter so mit der neuen Form.",
+      today: "Heute",
+      coachAI: "Coach KI",
     },
   },
 
   requestAccess: {
     vipEarlyAccess: "VIP-Frühzugang",
+    optional: "optional",
     title: "Zugang zu TaekUp beantragen",
     subtitle: "Treten Sie der exklusiven Gruppe von Dojos bei, die ihr Geschäft mit TaekUp transformieren.",
     fullName: "Vollständiger Name",

@@ -19,7 +19,6 @@ import { SuperAdminLogin } from './pages/SuperAdminLogin';
 import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute, SuperAdminPaymentsRoute, SuperAdminAnalyticsRoute, SuperAdminTrainingRoute } from './components/SuperAdminRoutes';
 import { TrialBanner } from './components/TrialBanner';
 import { ImpersonationBanner, isImpersonating } from './components/ImpersonationBanner';
-import { DEMO_MODE_KEY, isDemoModeEnabled } from './components/demoData';
 import { TermsPage, PrivacyPage, ContactPage, SupportPage } from './components/LegalPages';
 import {
     getOnboardingMessage,
@@ -938,25 +937,6 @@ const App: React.FC = () => {
     );
 
     const handleLogout = useCallback(async () => {
-        // Check if we were in demo mode before clearing
-        const wasInDemoMode = localStorage.getItem(DEMO_MODE_KEY) === 'true';
-        const clubId = localStorage.getItem('taekup_club_id');
-        
-        // If logging out from demo mode, clear demo data on backend
-        // This resets wizard_completed so user sees the demo/real choice on next login
-        if (wasInDemoMode && clubId) {
-            try {
-                await fetch('/api/demo/clear', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ clubId })
-                });
-                console.log('[Logout] Cleared demo data from backend');
-            } catch (err) {
-                console.error('[Logout] Failed to clear demo data:', err);
-            }
-        }
-        
         // Clear React state
         setLoggedInUserType(null);
         setLoggedInUserName(null);
@@ -986,10 +966,7 @@ const App: React.FC = () => {
         sessionStorage.removeItem('impersonation_user_name');
         sessionStorage.removeItem('impersonation_club_id');
         
-        // Clear demo mode flag on logout
-        localStorage.removeItem(DEMO_MODE_KEY);
-        
-        console.log('[Logout] Cleared all session data including demo mode');
+        console.log('[Logout] Cleared all session data');
         
         // Redirect to login page
         window.location.href = '/login';
