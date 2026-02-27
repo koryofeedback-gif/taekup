@@ -115,7 +115,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <InputField id="clubName" label={t('wizard.step1.clubName')} value={data.clubName} onChange={e => onUpdate({ clubName: e.target.value })} />
-        <InputField id="ownerName" label={t('wizard.step1.ownerName')} value={data.ownerName} onChange={e => onUpdate({ ownerName: e.target.value })} placeholder="e.g., Master Hamed"/>
+        <InputField id="ownerName" label={t('wizard.step1.ownerName')} value={data.ownerName} onChange={e => onUpdate({ ownerName: e.target.value })} placeholder={t('wizard.step1.ownerPlaceholder')}/>
         
         <div>
           <label htmlFor="country" className="block text-sm font-medium text-gray-300">{t('wizard.step1.country')}</label>
@@ -146,7 +146,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                 )}
               </div>
               <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold py-2 px-4 rounded-md transition-colors">
-                {t('common.uploading').replace('...', '')}
+                {t('wizard.step1.upload')}
               </button>
               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
           </div>
@@ -173,7 +173,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                                   value={branchName} 
                                   onChange={(e) => handleBranchNameChange(index, e.target.value)}
                                   className="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white font-bold w-full focus:ring-2 focus:ring-sky-500 outline-none"
-                                  placeholder="e.g. Downtown Dojang"
+                                  placeholder={t('wizard.step1.locationPlaceholder')}
                               />
                           </div>
                           <div>
@@ -183,7 +183,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                                   value={data.branchAddresses?.[index] || ''} 
                                   onChange={(e) => handleBranchAddressChange(index, e.target.value)}
                                   className="bg-gray-700/50 border border-gray-600 rounded px-3 py-2 text-white text-sm w-full focus:ring-2 focus:ring-sky-500 outline-none"
-                                  placeholder="e.g. 123 Main St, City"
+                                  placeholder={t('wizard.step1.addressPlaceholder')}
                               />
                           </div>
                       </div>
@@ -236,7 +236,7 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
               ) : (
-                <><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 2a1 1 0 00-1 1v1.111A4.011 4.011 0 003 7.5a4.5 4.5 0 006.874 4.126l.001.001.001.001a4.5 4.5 0 004.25 0l.001-.001.001-.001A4.5 4.5 0 0017 7.5a4.011 4.011 0 00-1-2.389V3a1 1 0 00-1-1H5zm8.5 6a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM5 6.5A2.5 2.5 0 105 4a2.5 2.5 0 000 2.5zM12 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" clipRule="evenodd" /></svg> Suggest</>
+                <><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 2a1 1 0 00-1 1v1.111A4.011 4.011 0 003 7.5a4.5 4.5 0 006.874 4.126l.001.001.001.001a4.5 4.5 0 004.25 0l.001-.001.001-.001A4.5 4.5 0 0017 7.5a4.011 4.011 0 00-1-2.389V3a1 1 0 00-1-1H5zm8.5 6a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM5 6.5A2.5 2.5 0 105 4a2.5 2.5 0 000 2.5zM12 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" clipRule="evenodd" /></svg> {t('wizard.step1.suggest')}</>
               )}
             </button>
         </div>

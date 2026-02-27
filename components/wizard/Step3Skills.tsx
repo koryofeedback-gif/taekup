@@ -99,19 +99,19 @@ export const Step3Skills: React.FC<Step3Props> = ({ data, onUpdate }) => {
                 <div className="flex justify-around items-center text-center py-2">
                     <div>
                         <span className="text-3xl">💚</span>
-                        <p className="text-sm text-gray-300 mt-1">2 Points</p>
+                        <p className="text-sm text-gray-300 mt-1">{t('wizard.step3.points2')}</p>
                     </div>
                     <div>
                         <span className="text-3xl">💛</span>
-                        <p className="text-sm text-gray-300 mt-1">1 Point</p>
+                        <p className="text-sm text-gray-300 mt-1">{t('wizard.step3.points1')}</p>
                     </div>
                     <div>
                         <span className="text-3xl">❤️</span>
-                        <p className="text-sm text-gray-300 mt-1">0 Points</p>
+                        <p className="text-sm text-gray-300 mt-1">{t('wizard.step3.points0')}</p>
                     </div>
                 </div>
                 <div className="mt-4 text-center bg-gray-900/50 p-3 rounded-lg">
-                     <p className="text-gray-300"><strong className="text-white">{activeSkillsCount * 2}</strong> ({activeSkillsCount} × 2 max)</p>
+                     <p className="text-gray-300"><strong className="text-white">{activeSkillsCount * 2}</strong> ({t('wizard.step3.maxPerClass', { count: String(activeSkillsCount) })})</p>
                 </div>
             </div>
 

@@ -220,7 +220,7 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
       
       <div className="text-center bg-gray-900/50 p-4 rounded-lg border border-gray-700">
         <p className="text-lg text-gray-300 break-words">
-          {data.stripesPerBelt} {t('wizard.step4.stripesPerBelt')} {data.gradingRequirementEnabled ? `+ ${data.gradingRequirementName || t('wizard.step4.requirementName')} ` : ''}= New Belt
+          {data.stripesPerBelt} {t('wizard.step4.stripesPerBelt')} {data.gradingRequirementEnabled ? `+ ${data.gradingRequirementName || t('wizard.step4.requirementName')} ` : ''}{t('wizard.step4.newBelt')}
         </p>
       </div>
 

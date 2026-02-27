@@ -1807,14 +1807,18 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         onUpdateData({ curriculum: [...curriculum, item] });
         setNewVideo({ title: '', url: '', beltId: 'all', tags: [], tagsInput: '', contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium', maxPerWeek: null });
         
-        // Sync to database if publishing immediately
-        if (clubId && finalStatus === 'live') {
+        if (clubId) {
             try {
-                await fetch('/api/content/sync', {
+                const syncResp = await fetch('/api/content/sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ clubId, content: item })
                 });
+                const syncResult = await syncResp.json();
+                if (syncResult.contentId) {
+                    const updatedCurriculum = [...curriculum, { ...item, id: syncResult.contentId }];
+                    onUpdateData({ curriculum: updatedCurriculum });
+                }
             } catch (err) {
                 console.error('Failed to sync content:', err);
             }

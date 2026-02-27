@@ -61,7 +61,7 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
                <div>
                 <label className="block text-sm font-medium text-gray-300 break-words">{t('wizard.step6.background')}</label>
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-1 w-full bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold py-2 px-4 rounded-md transition-colors">
-                    {t('common.uploading').replace('...', '')}
+                    {t('wizard.step1.upload')}
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
               </div>
@@ -115,11 +115,11 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
 
                             <div className="grid grid-cols-2 gap-2 mb-3">
                                 <div className="bg-gray-800/50 rounded-xl p-2 border border-gray-700/50">
-                                    <p className="text-[9px] text-gray-400 uppercase tracking-wider">Attendance</p>
+                                    <p className="text-[9px] text-gray-400 uppercase tracking-wider">{t('wizard.step6.attendance')}</p>
                                     <p className="text-base font-bold text-white">12 <span className="text-[9px] font-normal text-gray-500">{t('common.classes')}</span></p>
                                 </div>
                                 <div className="bg-gray-800/50 rounded-xl p-2 border border-gray-700/50">
-                                    <p className="text-[9px] text-gray-400 uppercase tracking-wider">Total HonorXP</p>
+                                    <p className="text-[9px] text-gray-400 uppercase tracking-wider">{t('wizard.step6.totalHonorXP')}</p>
                                     <p className="text-base font-bold text-cyan-400">1,250</p>
                                 </div>
                             </div>
@@ -169,17 +169,17 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
                         <div className="bg-gradient-to-br from-slate-800/90 to-slate-900 border border-slate-600/40 p-3 rounded-xl">
                             <div className="text-xl mb-1">🏅</div>
                             <h4 className="font-bold text-white text-[11px]">{t('wizard.step6.legacyCard')}</h4>
-                            <p className="text-[8px] text-gray-400 mt-0.5">Digital student card</p>
+                            <p className="text-[8px] text-gray-400 mt-0.5">{t('wizard.step6.digitalCard')}</p>
                         </div>
                         <div className="bg-gradient-to-br from-red-900/70 to-red-950 border border-red-700/40 p-3 rounded-xl">
                             <div className="text-xl mb-1">⚔️</div>
                             <h4 className="font-bold text-white text-[11px]">{t('wizard.step6.battleArena')}</h4>
-                            <p className="text-[8px] text-gray-400 mt-0.5">Challenges & quests</p>
+                            <p className="text-[8px] text-gray-400 mt-0.5">{t('wizard.step6.challenges')}</p>
                         </div>
                         <div className="bg-gradient-to-br from-cyan-900/70 to-cyan-950 border border-cyan-700/40 p-3 rounded-xl">
                             <div className="text-xl mb-1">📅</div>
                             <h4 className="font-bold text-white text-[11px]">{t('wizard.step6.trainingOps')}</h4>
-                            <p className="text-[8px] text-gray-400 mt-0.5">Book classes</p>
+                            <p className="text-[8px] text-gray-400 mt-0.5">{t('wizard.step6.bookClasses')}</p>
                         </div>
                         <div className="bg-gradient-to-br from-purple-800/90 via-indigo-800/90 to-cyan-800/90 border border-purple-500/60 p-3 rounded-xl relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10"></div>
@@ -189,18 +189,18 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
                             <div className="relative z-10">
                                 <div className="text-xl mb-1">🔮</div>
                                 <h4 className="font-bold text-white text-[11px]">{t('wizard.step6.chronosBelt')}</h4>
-                                <p className="text-[8px] text-cyan-300 mt-0.5">AI black belt date</p>
+                                <p className="text-[8px] text-cyan-300 mt-0.5">{t('wizard.step6.aiBlackBelt')}</p>
                             </div>
                         </div>
                         <div className="bg-gradient-to-br from-violet-900/70 to-violet-950 border border-violet-700/40 p-3 rounded-xl">
                             <div className="text-xl mb-1">🧠</div>
                             <h4 className="font-bold text-white text-[11px]">{t('wizard.step6.senseiMind')}</h4>
-                            <p className="text-[8px] text-gray-400 mt-0.5">AI training intel</p>
+                            <p className="text-[8px] text-gray-400 mt-0.5">{t('wizard.step6.aiTraining')}</p>
                         </div>
                         <div className="bg-gradient-to-br from-amber-900/70 to-amber-950 border border-amber-700/40 p-3 rounded-xl">
                             <div className="text-xl mb-1">🏆</div>
                             <h4 className="font-bold text-white text-[11px]">{t('wizard.step6.arenaRanks')}</h4>
-                            <p className="text-[8px] text-gray-400 mt-0.5">Leaderboard</p>
+                            <p className="text-[8px] text-gray-400 mt-0.5">{t('wizard.step6.leaderboard')}</p>
                         </div>
                     </div>
 

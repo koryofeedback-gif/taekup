@@ -439,11 +439,11 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                             <div>
                                 <label className="block text-xs text-gray-400 mb-1">{t('wizard.step5.gender')}</label>
                                 <select value={newStudent.gender || ''} onChange={e => setNewStudent({...newStudent, gender: e.target.value as any})} className="wizard-input">
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                    <option value="Prefer not to say">Prefer not to say</option>
+                                    <option value="">{t('common.selectGender')}</option>
+                                    <option value="Male">{t('common.male')}</option>
+                                    <option value="Female">{t('common.female')}</option>
+                                    <option value="Other">{t('common.other')}</option>
+                                    <option value="Prefer not to say">{t('common.preferNotToSay')}</option>
                                 </select>
                             </div>
                         </div>
@@ -473,7 +473,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                 {locations.map(l => <option key={l} value={l}>{l}</option>)}
                             </select>
                             <select value={newStudent.assignedClass} onChange={e => setNewStudent({...newStudent, assignedClass: e.target.value})} className="wizard-input">
-                                <option value="">Select Class...</option>
+                                <option value="">{t('wizard.step5.selectClass')}</option>
                                 {availableClassesForStudent.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                         </div>
