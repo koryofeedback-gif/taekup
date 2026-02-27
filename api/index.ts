@@ -1872,13 +1872,15 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
   
   const artType = beltSystemToArtType[wizardData.beltSystemType] || 'Taekwondo';
 
+  const { curriculum, ...wizardDataWithoutCurriculum } = wizardData;
+
   const client = await pool.connect();
   try {
     await client.query(
       `UPDATE clubs 
        SET wizard_data = $1::jsonb, art_type = $3, updated_at = NOW()
        WHERE id = $2::uuid`,
-      [JSON.stringify(wizardData), clubId, artType]
+      [JSON.stringify(wizardDataWithoutCurriculum), clubId, artType]
     );
 
     // Try to update onboarding_progress (may not exist on all databases)

@@ -297,9 +297,11 @@ export function registerRoutes(app: Express) {
       
       const artType = beltSystemToArtType[wizardData.beltSystemType] || 'Taekwondo';
 
+      const { curriculum, ...wizardDataWithoutCurriculum } = wizardData;
+
       await db.execute(sql`
         UPDATE clubs 
-        SET wizard_data = ${JSON.stringify(wizardData)}::jsonb,
+        SET wizard_data = ${JSON.stringify(wizardDataWithoutCurriculum)}::jsonb,
             art_type = ${artType},
             updated_at = NOW()
         WHERE id = ${clubId}::uuid
