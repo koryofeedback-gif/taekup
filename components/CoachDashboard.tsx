@@ -717,24 +717,24 @@ const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastComm
                 {/* Command Guide */}
                 <div className="bg-gray-800/80 rounded-xl p-4 mb-4 text-left border border-gray-700">
                     <h4 className="text-sm font-bold text-cyan-400 uppercase mb-3 text-center">Voice Command Structure</h4>
-                    <div className="grid grid-cols-3 gap-2 text-center mb-3">
-                        <div className="bg-gray-700/50 rounded-lg p-2">
-                            <p className="text-xs text-gray-400 uppercase">Student</p>
-                            <p className="text-white font-bold">{exampleStudent}</p>
+                    
+                    <div className="space-y-3 mb-3">
+                        <div className="bg-gray-700/30 rounded-lg p-3">
+                            <p className="text-xs text-cyan-400 font-bold uppercase mb-1">Single Skill</p>
+                            <p className="text-cyan-300 font-mono text-sm text-center">"{exampleStudent} {exampleSkill} green"</p>
                         </div>
-                        <div className="bg-gray-700/50 rounded-lg p-2">
-                            <p className="text-xs text-gray-400 uppercase">Skill</p>
-                            <p className="text-white font-bold">{exampleSkill}</p>
+                        <div className="bg-gray-700/30 rounded-lg p-3">
+                            <p className="text-xs text-cyan-400 font-bold uppercase mb-1">Bulk — Mixed Colors</p>
+                            <p className="text-cyan-300 font-mono text-sm text-center">"{exampleStudent} 3 green 1 yellow"</p>
+                            <p className="text-gray-500 text-xs text-center mt-1">Assigns in skill order: first 3 get 💚, last 1 gets 💛</p>
                         </div>
-                        <div className="bg-gray-700/50 rounded-lg p-2">
-                            <p className="text-xs text-gray-400 uppercase">Score</p>
-                            <p className="text-white font-bold">Green</p>
+                        <div className="bg-gray-700/30 rounded-lg p-3">
+                            <p className="text-xs text-cyan-400 font-bold uppercase mb-1">Bulk — All Same</p>
+                            <p className="text-cyan-300 font-mono text-sm text-center">"{exampleStudent} all green"</p>
+                            <p className="text-gray-500 text-xs text-center mt-1">Sets all {skills.length} skills to 💚</p>
                         </div>
                     </div>
-                    <div className="text-center mb-3">
-                        <p className="text-gray-400 text-xs mb-1">Example:</p>
-                        <p className="text-cyan-300 font-mono text-sm">"{exampleStudent} {exampleSkill} green"</p>
-                    </div>
+
                     <div className="grid grid-cols-3 gap-2 text-xs">
                         <div className="text-center">
                             <span className="text-green-400 font-bold">💚 Green</span>
@@ -1223,6 +1223,13 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         }
     };
 
+    const parseColorScore = (word: string): number => {
+        if (["green", "good", "point", "yes", "great", "excellent"].includes(word)) return 2;
+        if (["yellow", "okay", "half", "average", "so"].includes(word)) return 1;
+        if (["red", "bad", "no", "miss", "fail"].includes(word)) return 0;
+        return -1;
+    };
+
     const processVoiceCommand = (cmd: string) => {
         const lowerCmd = cmd.toLowerCase().trim();
         if (lowerCmd.includes("stop") || lowerCmd.includes("exit") || lowerCmd.includes("quit")) {
@@ -1238,23 +1245,70 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         const currentSkills = activeSkillsRef.current;
 
         const targetStudent = currentStudents.find(s => lowerCmd.includes(s.name.toLowerCase()));
+        if (!targetStudent) {
+            setLastVoiceCommand(`Heard "${cmd}" — no student name matched`);
+            setTimeout(() => setLastVoiceCommand(null), 4000);
+            return;
+        }
 
-        let targetSkill = currentSkills.find(s => lowerCmd.includes(s.name.toLowerCase()));
+        const allGreenMatch = lowerCmd.match(/\ball\s+(green|good|yes|great|excellent|yellow|okay|half|average|red|bad|no|miss|fail)\b/);
+        if (allGreenMatch) {
+            const score = parseColorScore(allGreenMatch[1]);
+            if (score !== -1) {
+                currentSkills.forEach(skill => handleScoreChange(targetStudent.id, skill.id, score));
+                const emoji = score === 2 ? '💚' : score === 1 ? '💛' : '❤️';
+                setLastVoiceCommand(`${targetStudent.name}: ALL ${currentSkills.length} skills = ${emoji}`);
+                setTimeout(() => setLastVoiceCommand(null), 3000);
+                return;
+            }
+        }
 
+        const bulkPattern = /(\d+)\s*(green|good|yes|great|excellent|yellow|okay|half|average|red|bad|no|miss|fail)/g;
+        const bulkMatches = [...lowerCmd.matchAll(bulkPattern)];
+        if (bulkMatches.length > 0) {
+            const assignments: { count: number; score: number }[] = [];
+            for (const match of bulkMatches) {
+                const count = parseInt(match[1]);
+                const score = parseColorScore(match[2]);
+                if (count > 0 && score !== -1) {
+                    assignments.push({ count, score });
+                }
+            }
+            const totalRequested = assignments.reduce((sum, a) => sum + a.count, 0);
+            if (totalRequested > currentSkills.length) {
+                setLastVoiceCommand(`${targetStudent.name}: ${totalRequested} scores but only ${currentSkills.length} skills`);
+                setTimeout(() => setLastVoiceCommand(null), 4000);
+                return;
+            }
+            if (totalRequested > 0) {
+                let skillIndex = 0;
+                const resultParts: string[] = [];
+                for (const { count, score } of assignments) {
+                    const emoji = score === 2 ? '💚' : score === 1 ? '💛' : '❤️';
+                    for (let i = 0; i < count && skillIndex < currentSkills.length; i++) {
+                        handleScoreChange(targetStudent.id, currentSkills[skillIndex].id, score);
+                        skillIndex++;
+                    }
+                    resultParts.push(`${count}${emoji}`);
+                }
+                setLastVoiceCommand(`${targetStudent.name}: ${resultParts.join(' ')}`);
+                setTimeout(() => setLastVoiceCommand(null), 3000);
+                return;
+            }
+        }
+
+        const targetSkill = currentSkills.find(s => lowerCmd.includes(s.name.toLowerCase()));
         let score = -1;
         if (lowerCmd.includes("green") || lowerCmd.includes("good") || lowerCmd.includes("point") || lowerCmd.includes("yes") || lowerCmd.includes("great") || lowerCmd.includes("excellent")) score = 2;
         else if (lowerCmd.includes("yellow") || lowerCmd.includes("okay") || lowerCmd.includes("half") || lowerCmd.includes("average") || lowerCmd.includes("so so")) score = 1;
         else if (lowerCmd.includes("red") || lowerCmd.includes("bad") || lowerCmd.includes("no") || lowerCmd.includes("miss") || lowerCmd.includes("fail")) score = 0;
 
-        if (targetStudent && targetSkill && score !== -1) {
+        if (targetSkill && score !== -1) {
             handleScoreChange(targetStudent.id, targetSkill.id, score);
             setLastVoiceCommand(`${targetStudent.name}: ${targetSkill.name} = ${score === 2 ? '💚' : score === 1 ? '💛' : '❤️'}`);
             setTimeout(() => setLastVoiceCommand(null), 3000);
-        } else if (targetStudent && score !== -1 && !targetSkill) {
+        } else if (score !== -1 && !targetSkill) {
             setLastVoiceCommand(`Heard "${cmd}" — student found but no skill matched`);
-            setTimeout(() => setLastVoiceCommand(null), 4000);
-        } else if (!targetStudent) {
-            setLastVoiceCommand(`Heard "${cmd}" — no student name matched`);
             setTimeout(() => setLastVoiceCommand(null), 4000);
         }
     };
