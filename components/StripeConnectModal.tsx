@@ -77,6 +77,7 @@ export const StripeConnectModal: React.FC<StripeConnectModalProps> = ({
               year: parseInt(dobYear),
             },
           },
+          tos_shown_and_accepted: true,
         } as any);
       } else {
         accountTokenResult = await stripe.createToken('account', {
@@ -91,6 +92,7 @@ export const StripeConnectModal: React.FC<StripeConnectModalProps> = ({
             },
             tax_id: companyTaxId || undefined,
           },
+          tos_shown_and_accepted: true,
         } as any);
       }
 
