@@ -94,24 +94,30 @@ export function registerRoutes(app: Express) {
 
       try {
         sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+        const emailLabels: Record<string, Record<string, string>> = {
+          en: { subject: 'New VIP Access Request', heading: 'New VIP Access Request', fullName: 'Full Name', clubName: 'Club Name', website: 'Website / Link', email: 'Email', phone: 'Phone', location: 'Location', language: 'Language', notProvided: 'Not provided', submittedAt: 'Submitted at', langName: 'English' },
+          fr: { subject: 'Nouvelle demande d\'accès VIP', heading: 'Nouvelle demande d\'accès VIP', fullName: 'Nom complet', clubName: 'Nom du club', website: 'Site web / Lien', email: 'E-mail', phone: 'Téléphone', location: 'Localisation', language: 'Langue', notProvided: 'Non fourni', submittedAt: 'Soumis le', langName: 'Français' },
+          de: { subject: 'Neue VIP-Zugangsanfrage', heading: 'Neue VIP-Zugangsanfrage', fullName: 'Vollständiger Name', clubName: 'Vereinsname', website: 'Website / Link', email: 'E-Mail', phone: 'Telefon', location: 'Standort', language: 'Sprache', notProvided: 'Nicht angegeben', submittedAt: 'Eingereicht am', langName: 'Deutsch' },
+        };
+        const labels = emailLabels[lang] || emailLabels.en;
         await sgMail.send({
           to: 'hello@mytaek.com',
           from: { email: 'hello@mytaek.com', name: 'TaekUp Platform' },
-          subject: `New VIP Access Request: ${clubName}`,
+          subject: `${labels.subject}: ${clubName}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #e0e0e0; border-radius: 12px;">
-              <h2 style="color: #22d3ee; margin-bottom: 20px;">New VIP Access Request</h2>
+              <h2 style="color: #22d3ee; margin-bottom: 20px;">${labels.heading}</h2>
               <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px 0; color: #9ca3af; width: 140px;">Full Name</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${fullName}</td></tr>
-                <tr><td style="padding: 8px 0; color: #9ca3af;">Club Name</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${clubName}</td></tr>
-                <tr><td style="padding: 8px 0; color: #9ca3af;">Website / Link</td><td style="padding: 8px 0;"><a href="${websiteUrl}" style="color: #22d3ee;">${websiteUrl}</a></td></tr>
-                <tr><td style="padding: 8px 0; color: #9ca3af;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #22d3ee;">${email}</a></td></tr>
-                <tr><td style="padding: 8px 0; color: #9ca3af;">Phone</td><td style="padding: 8px 0; color: #fff;">${phone || 'Not provided'}</td></tr>
-                <tr><td style="padding: 8px 0; color: #9ca3af;">Location</td><td style="padding: 8px 0; color: #fff;">${cityState || 'Not provided'}</td></tr>
-                <tr><td style="padding: 8px 0; color: #9ca3af;">Language</td><td style="padding: 8px 0; color: #fff;">${lang === 'fr' ? 'French' : lang === 'de' ? 'German' : 'English'}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af; width: 140px;">${labels.fullName}</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${fullName}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">${labels.clubName}</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${clubName}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">${labels.website}</td><td style="padding: 8px 0;"><a href="${websiteUrl}" style="color: #22d3ee;">${websiteUrl}</a></td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">${labels.email}</td><td style="padding: 8px 0;"><a href="mailto:${email}" style="color: #22d3ee;">${email}</a></td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">${labels.phone}</td><td style="padding: 8px 0; color: #fff;">${phone || labels.notProvided}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">${labels.location}</td><td style="padding: 8px 0; color: #fff;">${cityState || labels.notProvided}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">${labels.language}</td><td style="padding: 8px 0; color: #fff;">${labels.langName}</td></tr>
               </table>
               <hr style="border: 1px solid #333; margin: 20px 0;" />
-              <p style="color: #6b7280; font-size: 12px;">Submitted at ${new Date().toISOString()}</p>
+              <p style="color: #6b7280; font-size: 12px;">${labels.submittedAt} ${new Date().toISOString()}</p>
             </div>
           `,
         });
