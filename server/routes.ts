@@ -1338,11 +1338,6 @@ export function registerRoutes(app: Express) {
           return res.status(400).json({ error: 'Account token is required for PSD2 compliance. Please fill out the connection form.' });
         }
 
-        const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
-          || (req.headers['x-real-ip'] as string)
-          || req.ip
-          || '0.0.0.0';
-
         const createParams: any = {
           type: 'express',
           country: country || 'FR',
@@ -1356,10 +1351,6 @@ export function registerRoutes(app: Express) {
             name: ownerClubName || 'Martial Arts Club',
             product_description: 'Martial arts training and education',
             mcc: '7941',
-          },
-          tos_acceptance: {
-            date: Math.floor(Date.now() / 1000),
-            ip: clientIp,
           },
           metadata: { club_id: clubId, club_name: ownerClubName || '' },
         };
