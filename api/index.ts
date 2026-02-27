@@ -739,6 +739,7 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await client.query(`ALTER TABLE access_requests ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'en'`);
 
     await client.query(
       `INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, language, created_at, status)
