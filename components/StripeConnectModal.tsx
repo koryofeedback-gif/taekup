@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { stripeAPI } from '../services/apiClient';
+import React, { useState } from 'react';
 
 interface StripeConnectModalProps {
   clubId: string;
@@ -19,22 +17,7 @@ export const StripeConnectModal: React.FC<StripeConnectModalProps> = ({
   const [step, setStep] = useState<'form' | 'processing'>('form');
   const [error, setError] = useState('');
   const [businessType, setBusinessType] = useState<BusinessType>('individual');
-
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState(ownerEmail);
-  const [line1, setLine1] = useState('');
-  const [city, setCity] = useState('');
-  const [postalCode, setPostalCode] = useState('');
   const [country, setCountry] = useState('FR');
-  const [dobDay, setDobDay] = useState('');
-  const [dobMonth, setDobMonth] = useState('');
-  const [dobYear, setDobYear] = useState('');
-
-  const [companyName, setCompanyName] = useState(clubName);
-  const [companyTaxId, setCompanyTaxId] = useState('');
-
-  const [tosAccepted, setTosAccepted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,76 +25,13 @@ export const StripeConnectModal: React.FC<StripeConnectModalProps> = ({
     setStep('processing');
 
     try {
-      const publishableKey = await stripeAPI.getPublishableKey();
-      if (!publishableKey) {
-        setError('Payment system not configured. Please contact support.');
-        setStep('form');
-        return;
-      }
-
-      const stripe = await loadStripe(publishableKey);
-      if (!stripe) {
-        setError('Failed to load payment system. Please try again.');
-        setStep('form');
-        return;
-      }
-
-      let accountTokenResult;
-
-      if (businessType === 'individual') {
-        accountTokenResult = await stripe.createToken('account', {
-          business_type: 'individual',
-          individual: {
-            first_name: firstName,
-            last_name: lastName,
-            email: email,
-            address: {
-              line1: line1,
-              city: city,
-              postal_code: postalCode,
-              country: country,
-            },
-            dob: {
-              day: parseInt(dobDay),
-              month: parseInt(dobMonth),
-              year: parseInt(dobYear),
-            },
-          },
-          tos_shown_and_accepted: true,
-        } as any);
-      } else {
-        accountTokenResult = await stripe.createToken('account', {
-          business_type: 'company',
-          company: {
-            name: companyName,
-            address: {
-              line1: line1,
-              city: city,
-              postal_code: postalCode,
-              country: country,
-            },
-            tax_id: companyTaxId || undefined,
-          },
-          tos_shown_and_accepted: true,
-        } as any);
-      }
-
-      if (accountTokenResult.error) {
-        setError(accountTokenResult.error.message || 'Failed to create account token');
-        setStep('form');
-        return;
-      }
-
-      const accountToken = accountTokenResult.token!.id;
-
       const response = await fetch('/api/stripe/connect/onboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clubId,
-          email,
+          email: ownerEmail,
           clubName,
-          accountToken,
           businessType,
           country,
         })
@@ -130,15 +50,6 @@ export const StripeConnectModal: React.FC<StripeConnectModalProps> = ({
       setError(err.message || 'An unexpected error occurred. Please try again.');
       setStep('form');
     }
-  };
-
-  const isFormValid = () => {
-    if (!tosAccepted) return false;
-    if (!line1 || !city || !postalCode || !country) return false;
-    if (businessType === 'individual') {
-      return firstName && lastName && email && dobDay && dobMonth && dobYear;
-    }
-    return companyName && email;
   };
 
   return (
@@ -163,7 +74,7 @@ export const StripeConnectModal: React.FC<StripeConnectModalProps> = ({
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
               </svg>
               <p className="text-gray-300">Setting up your account...</p>
-              <p className="text-sm text-gray-500 mt-2">This may take a few seconds</p>
+              <p className="text-sm text-gray-500 mt-2">You'll be redirected to Stripe to complete verification</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -201,138 +112,6 @@ export const StripeConnectModal: React.FC<StripeConnectModalProps> = ({
                 </div>
               </div>
 
-              {businessType === 'individual' ? (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1">First Name *</label>
-                      <input
-                        type="text"
-                        value={firstName}
-                        onChange={e => setFirstName(e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1">Last Name *</label>
-                      <input
-                        type="text"
-                        value={lastName}
-                        onChange={e => setLastName(e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-1">Date of Birth *</label>
-                    <div className="grid grid-cols-3 gap-3">
-                      <input
-                        type="number"
-                        placeholder="Day"
-                        min="1"
-                        max="31"
-                        value={dobDay}
-                        onChange={e => setDobDay(e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                        required
-                      />
-                      <input
-                        type="number"
-                        placeholder="Month"
-                        min="1"
-                        max="12"
-                        value={dobMonth}
-                        onChange={e => setDobMonth(e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                        required
-                      />
-                      <input
-                        type="number"
-                        placeholder="Year"
-                        min="1940"
-                        max="2008"
-                        value={dobYear}
-                        onChange={e => setDobYear(e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-1">Company Name *</label>
-                    <input
-                      type="text"
-                      value={companyName}
-                      onChange={e => setCompanyName(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-1">Tax ID (SIRET/SIREN)</label>
-                    <input
-                      type="text"
-                      value={companyTaxId}
-                      onChange={e => setCompanyTaxId(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                      placeholder="Optional"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label className="text-sm text-gray-400 block mb-1">Email *</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-400 block mb-1">Address *</label>
-                <input
-                  type="text"
-                  value={line1}
-                  onChange={e => setLine1(e.target.value)}
-                  placeholder="Street address"
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm text-gray-400 block mb-1">City *</label>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={e => setCity(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 block mb-1">Postal Code *</label>
-                  <input
-                    type="text"
-                    value={postalCode}
-                    onChange={e => setPostalCode(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="text-sm text-gray-400 block mb-1">Country *</label>
                 <select
@@ -357,33 +136,15 @@ export const StripeConnectModal: React.FC<StripeConnectModalProps> = ({
                 </select>
               </div>
 
-              <div className="flex items-start gap-3 bg-gray-700/50 p-3 rounded-lg">
-                <input
-                  type="checkbox"
-                  checked={tosAccepted}
-                  onChange={e => setTosAccepted(e.target.checked)}
-                  className="mt-1 accent-purple-500"
-                  id="tos-checkbox"
-                />
-                <label htmlFor="tos-checkbox" className="text-sm text-gray-300">
-                  I agree to the{' '}
-                  <a href="https://stripe.com/connect-account/legal" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline">
-                    Stripe Connected Account Agreement
-                  </a>
-                  {' '}and authorize TaekUp to facilitate payments to my account.
-                </label>
-              </div>
-
               <div className="bg-blue-900/20 border border-blue-500/20 p-3 rounded-lg">
                 <p className="text-xs text-blue-300">
-                  <span className="font-bold">🔒 Secure & PSD2 Compliant:</span> Your information is sent directly to Stripe and never stored on our servers. After this step, Stripe may ask for additional verification documents.
+                  <span className="font-bold">🔒 Secure & PSD2 Compliant:</span> You'll be redirected to Stripe's secure platform to enter your personal details, verify your identity, and connect your bank account. No sensitive data is stored on our servers.
                 </p>
               </div>
 
               <button
                 type="submit"
-                disabled={!isFormValid()}
-                className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
               >
                 Continue to Stripe Verification
               </button>

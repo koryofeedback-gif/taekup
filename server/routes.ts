@@ -1334,15 +1334,10 @@ export function registerRoutes(app: Express) {
       let accountId = club?.stripe_connect_account_id;
 
       if (!accountId) {
-        if (!accountToken) {
-          return res.status(400).json({ error: 'Account token is required for PSD2 compliance. Please fill out the connection form.' });
-        }
-
         const createParams: any = {
           type: 'express',
           country: country || 'FR',
           email: ownerEmail,
-          account_token: accountToken,
           capabilities: {
             card_payments: { requested: true },
             transfers: { requested: true },
@@ -1355,7 +1350,7 @@ export function registerRoutes(app: Express) {
           metadata: { club_id: clubId, club_name: ownerClubName || '' },
         };
 
-        console.log(`[Stripe Connect] Creating Express account with account token (PSD2 compliant) for club ${clubId}, country: ${country || 'FR'}`);
+        console.log(`[Stripe Connect] Creating Express account for club ${clubId}, country: ${country || 'FR'}`);
 
         const account = await stripe.accounts.create(createParams);
         accountId = account.id;
