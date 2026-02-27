@@ -1764,12 +1764,25 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       assignedClasses: c.assigned_classes || []
     }));
 
-    const curriculumResult = await client.query(
-      `SELECT id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description,
-              requires_video, video_access, max_per_week
-       FROM curriculum_content WHERE club_id = $1::uuid ORDER BY created_at DESC`,
-      [clubId]
-    );
+    let curriculumResult: any = { rows: [] };
+    try {
+      curriculumResult = await client.query(
+        `SELECT id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description,
+                requires_video, video_access, max_per_week
+         FROM curriculum_content WHERE club_id = $1::uuid ORDER BY created_at DESC`,
+        [clubId]
+      );
+    } catch (colErr: any) {
+      if (colErr.code === '42703') {
+        curriculumResult = await client.query(
+          `SELECT id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description
+           FROM curriculum_content WHERE club_id = $1::uuid ORDER BY created_at DESC`,
+          [clubId]
+        );
+      } else {
+        throw colErr;
+      }
+    }
     const dbCurriculum = curriculumResult.rows.map((c: any) => ({
       id: c.id,
       title: c.title,
@@ -8076,32 +8089,60 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
     }
 
     if (existingId) {
-      // Update existing content
-      await client.query(`
-        UPDATE curriculum_content 
-        SET title = $1, url = $2, belt_id = $3, 
-            content_type = $4, status = $5,
-            pricing_type = $6, xp_reward = $7,
-            description = $8, requires_video = $9,
-            video_access = $10, max_per_week = $11,
-            updated_at = NOW()
-        WHERE id = $12::uuid
-      `, [title, url, beltId || 'all', contentType || 'video', status || 'draft',
-          pricingType || 'free', xpReward || 10, description || null,
-          requiresVideo || false, videoAccess || 'premium', maxPerWeek || null, existingId]);
+      try {
+        await client.query(`
+          UPDATE curriculum_content 
+          SET title = $1, url = $2, belt_id = $3, 
+              content_type = $4, status = $5,
+              pricing_type = $6, xp_reward = $7,
+              description = $8, requires_video = $9,
+              video_access = $10, max_per_week = $11,
+              updated_at = NOW()
+          WHERE id = $12::uuid
+        `, [title, url, beltId || 'all', contentType || 'video', status || 'draft',
+            pricingType || 'free', xpReward || 10, description || null,
+            requiresVideo || false, videoAccess || 'premium', maxPerWeek || null, existingId]);
+      } catch (colErr: any) {
+        if (colErr.code === '42703') {
+          await client.query(`
+            UPDATE curriculum_content 
+            SET title = $1, url = $2, belt_id = $3, 
+                content_type = $4, status = $5,
+                pricing_type = $6, xp_reward = $7,
+                description = $8, updated_at = NOW()
+            WHERE id = $9::uuid
+          `, [title, url, beltId || 'all', contentType || 'video', status || 'draft',
+              pricingType || 'free', xpReward || 10, description || null, existingId]);
+        } else {
+          throw colErr;
+        }
+      }
       
       console.log('[Content Sync] Updated:', existingId);
       return res.json({ success: true, action: 'updated', contentId: existingId });
     }
 
-    // Insert new content (let DB generate UUID)
-    const result = await client.query(`
-      INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, requires_video, video_access, max_per_week, created_at, updated_at)
-      VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
-      RETURNING id
-    `, [clubId, title, url, beltId || 'all', contentType || 'video', status || 'draft',
-        pricingType || 'free', xpReward || 10, description || null,
-        requiresVideo || false, videoAccess || 'premium', maxPerWeek || null]);
+    let result: any;
+    try {
+      result = await client.query(`
+        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, requires_video, video_access, max_per_week, created_at, updated_at)
+        VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+        RETURNING id
+      `, [clubId, title, url, beltId || 'all', contentType || 'video', status || 'draft',
+          pricingType || 'free', xpReward || 10, description || null,
+          requiresVideo || false, videoAccess || 'premium', maxPerWeek || null]);
+    } catch (colErr: any) {
+      if (colErr.code === '42703') {
+        result = await client.query(`
+          INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, created_at, updated_at)
+          VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+          RETURNING id
+        `, [clubId, title, url, beltId || 'all', contentType || 'video', status || 'draft',
+            pricingType || 'free', xpReward || 10, description || null]);
+      } else {
+        throw colErr;
+      }
+    }
     
     const newId = result.rows[0]?.id;
     console.log('[Content Sync] Created:', newId);
