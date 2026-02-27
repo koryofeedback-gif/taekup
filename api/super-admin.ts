@@ -2399,21 +2399,27 @@ async function handleApproveAccessRequest(req: VercelRequest, res: VercelRespons
       if (sgClient) {
         const MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'd-4dcfd1bfcaca4eb2a8af8085810c10c2';
         const LOGO_URL = 'https://www.mytaek.com/mytaek-logo.png';
+        const welcomeI18n: Record<string, { subject: string; title: string; greeting: string; congrats: string; trialNote: string; credTitle: string; emailLabel: string; passwordLabel: string; changePassword: string; nextSteps: string; step1: string; step2: string; step3: string; step4: string; btnText: string }> = {
+          en: { subject: 'Welcome to TaekUp! Your VIP Access is Ready 🥋', title: 'Your Dojo is Live! 🥋', greeting: 'Hi', congrats: 'Congratulations! Your VIP access to TaekUp has been approved. Your club', trialNote: 'is now active with a <strong>14-day free trial</strong>.', credTitle: '🔐 Your Login Credentials:', emailLabel: 'Email:', passwordLabel: 'Password:', changePassword: '⚠️ Please change your password after first login for security!', nextSteps: "Here's what to do next:", step1: 'Log in and complete the setup wizard', step2: 'Add your students and coaches', step3: 'Customize your belt system', step4: 'Set up your Stripe wallet via DojoMint™ Protocol', btnText: 'Log In to TaekUp' },
+          fr: { subject: 'Bienvenue sur TaekUp ! Votre accès VIP est prêt 🥋', title: 'Votre Dojo est en ligne ! 🥋', greeting: 'Bonjour', congrats: 'Félicitations ! Votre accès VIP à TaekUp a été approuvé. Votre club', trialNote: 'est maintenant actif avec un <strong>essai gratuit de 14 jours</strong>.', credTitle: '🔐 Vos identifiants de connexion :', emailLabel: 'E-mail :', passwordLabel: 'Mot de passe :', changePassword: '⚠️ Veuillez changer votre mot de passe après la première connexion pour plus de sécurité !', nextSteps: 'Voici les prochaines étapes :', step1: 'Connectez-vous et complétez l\'assistant de configuration', step2: 'Ajoutez vos élèves et coachs', step3: 'Personnalisez votre système de ceintures', step4: 'Configurez votre portefeuille Stripe via DojoMint™ Protocol', btnText: 'Se connecter à TaekUp' },
+          de: { subject: 'Willkommen bei TaekUp! Ihr VIP-Zugang ist bereit 🥋', title: 'Ihr Dojo ist live! 🥋', greeting: 'Hallo', congrats: 'Herzlichen Glückwunsch! Ihr VIP-Zugang zu TaekUp wurde genehmigt. Ihr Verein', trialNote: 'ist jetzt aktiv mit einer <strong>14-tägigen kostenlosen Testphase</strong>.', credTitle: '🔐 Ihre Anmeldedaten:', emailLabel: 'E-Mail:', passwordLabel: 'Passwort:', changePassword: '⚠️ Bitte ändern Sie Ihr Passwort nach der ersten Anmeldung aus Sicherheitsgründen!', nextSteps: 'Die nächsten Schritte:', step1: 'Melden Sie sich an und schließen Sie den Einrichtungsassistenten ab', step2: 'Fügen Sie Ihre Schüler und Trainer hinzu', step3: 'Passen Sie Ihr Gürtelsystem an', step4: 'Richten Sie Ihr Stripe-Wallet über DojoMint™ Protocol ein', btnText: 'Bei TaekUp anmelden' },
+        };
+        const wl = welcomeI18n[request.language || 'en'] || welcomeI18n.en;
         await sgClient.client.send({
           to: request.email,
           from: { email: 'hello@mytaek.com', name: 'MyTaek' },
           templateId: MASTER_TEMPLATE_ID,
           dynamicTemplateData: {
-            subject: 'Welcome to TaekUp! Your VIP Access is Ready 🥋',
-            title: 'Your Dojo is Live! 🥋',
-            body_content: `Hi ${request.full_name},<br><br>Congratulations! Your VIP access to TaekUp has been approved. Your club <strong>${request.club_name}</strong> is now active with a <strong>14-day free trial</strong>.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 15px 0;'>🔐 Your Login Credentials:</h3><div style='background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;'><strong>Email:</strong> ${request.email}<br><strong>Password:</strong> ${tempPassword}</div><p style='margin: 15px 0 0 0; font-size: 13px; color: #fbbf24;'>⚠️ Please change your password after first login for security!</p></div><br>Here's what to do next:<br>• Log in and complete the setup wizard<br>• Add your students and coaches<br>• Customize your belt system<br>• Set up your Stripe wallet via DojoMint™ Protocol`,
-            btn_text: 'Log In to TaekUp',
+            subject: wl.subject,
+            title: wl.title,
+            body_content: `${wl.greeting} ${request.full_name},<br><br>${wl.congrats} <strong>${request.club_name}</strong> ${wl.trialNote}<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 15px 0;'>${wl.credTitle}</h3><div style='background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;'><strong>${wl.emailLabel}</strong> ${request.email}<br><strong>${wl.passwordLabel}</strong> ${tempPassword}</div><p style='margin: 15px 0 0 0; font-size: 13px; color: #fbbf24;'>${wl.changePassword}</p></div><br>${wl.nextSteps}<br>• ${wl.step1}<br>• ${wl.step2}<br>• ${wl.step3}<br>• ${wl.step4}`,
+            btn_text: wl.btnText,
             btn_url: 'https://www.mytaek.com/login',
             image_url: LOGO_URL,
             is_rtl: false,
           },
         } as any);
-        console.log(`[SuperAdmin] Welcome email sent to ${request.email} via master template`);
+        console.log(`[SuperAdmin] Welcome email sent to ${request.email} in ${request.language || 'en'} via master template`);
       }
     } catch (emailErr: any) {
       console.error('[SuperAdmin] Failed to send welcome email:', emailErr.message);
