@@ -40,7 +40,8 @@ The platform features distinct themes for its dual brands: MyTaek uses a red the
 - **Database**: PostgreSQL hosted on Neon.
 - **Payment Processing**: Stripe for subscriptions, webhooks, and customer portals.
 - **Email Service**: SendGrid.
-- **Security**: Backend-only API key storage, bcrypt for password hashing, session-based authentication, Super Admin isolation with audit logging, Stripe webhook signature verification.
+- **Security**: Backend-only API key storage, bcrypt for password hashing, session-based authentication, Super Admin isolation with audit logging, Stripe webhook signature verification. CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy headers applied via `vercel.json` (production) and Express middleware in `server/index.ts` (dev).
+- **Caching**: Hashed `/assets/` files cached 1 year immutable; other static assets cached 1 day; `index.html` never cached; API responses set to no-store. `Vary: Accept-Encoding` on all responses. Configured in `vercel.json` and `server/index.ts`.
 
 ## External Dependencies
 - **Database**: PostgreSQL (Neon)

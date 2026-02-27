@@ -30,6 +30,36 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=(self)');
+  res.setHeader('Vary', 'Accept-Encoding');
+
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  } else {
+    res.setHeader('Content-Security-Policy', [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://flagcdn.com https://*.mytaek.com",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.mytaek.com https://api.stripe.com https://api.openai.com https://generativelanguage.googleapis.com ws: wss:",
+      "frame-src 'self' https://*.stripe.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self' https://*.stripe.com",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests",
+    ].join('; '));
+  }
+
+  next();
+});
+
 // Super Admin GET-based authentication (workaround for POST blocking)
 // Using unique paths to avoid edge caching
 app.get('/api/sa-init', (req, res) => {
@@ -274,7 +304,18 @@ registerRoutes(app);
 const isProduction = process.env.NODE_ENV === 'production';
 if (isProduction) {
   const distPath = path.join(__dirname, '..', 'dist');
-  app.use(express.static(distPath));
+  app.use('/assets', express.static(path.join(distPath, 'assets'), {
+    maxAge: '1y',
+    immutable: true,
+  }));
+  app.use(express.static(distPath, {
+    maxAge: '1d',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    },
+  }));
 
   // SPA fallback - serve index.html for all non-API routes
   app.use((req, res, next) => {
