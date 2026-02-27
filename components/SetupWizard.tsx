@@ -27,7 +27,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   // Skip demo choice during impersonation mode (Super Admin "View As")
   const isImpersonating = !!sessionStorage.getItem('impersonationToken');
   console.log('[SetupWizard] isImpersonating:', isImpersonating, 'token:', sessionStorage.getItem('impersonationToken'));
-  const [showDemoChoice, setShowDemoChoice] = useState(!isImpersonating);
+  const [showDemoChoice, setShowDemoChoice] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [clubError, setClubError] = useState('');
 
@@ -198,9 +198,6 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
-    } else if (currentStep === 1 && clubId) {
-      // Go back to demo choice screen from step 1
-      setShowDemoChoice(true);
     }
   };
 
