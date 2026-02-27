@@ -92,6 +92,8 @@ export function registerRoutes(app: Express) {
       `);
       console.log(`[RequestAccess] New VIP request from ${fullName} (${email}) - ${clubName} - ${websiteUrl}`);
 
+      res.json({ success: true });
+
       try {
         sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
         const emailLabels: Record<string, Record<string, string>> = {
@@ -100,7 +102,7 @@ export function registerRoutes(app: Express) {
           de: { subject: 'Neue VIP-Zugangsanfrage', heading: 'Neue VIP-Zugangsanfrage', fullName: 'Vollständiger Name', clubName: 'Vereinsname', website: 'Website / Link', email: 'E-Mail', phone: 'Telefon', location: 'Standort', language: 'Sprache', notProvided: 'Nicht angegeben', submittedAt: 'Eingereicht am', langName: 'Deutsch' },
         };
         const labels = emailLabels[lang] || emailLabels.en;
-        await sgMail.send({
+        sgMail.send({
           to: 'hello@mytaek.com',
           from: { email: 'hello@mytaek.com', name: 'TaekUp Platform' },
           subject: `${labels.subject}: ${clubName}`,
@@ -120,13 +122,14 @@ export function registerRoutes(app: Express) {
               <p style="color: #6b7280; font-size: 12px;">${labels.submittedAt} ${new Date().toISOString()}</p>
             </div>
           `,
+        }).then(() => {
+          console.log(`[RequestAccess] Admin notification sent to hello@mytaek.com`);
+        }).catch((emailErr: any) => {
+          console.error(`[RequestAccess] Failed to send admin notification:`, emailErr.message);
         });
-        console.log(`[RequestAccess] Admin notification sent to hello@mytaek.com`);
       } catch (emailErr: any) {
-        console.error(`[RequestAccess] Failed to send admin notification:`, emailErr.message);
+        console.error(`[RequestAccess] Failed to prepare admin notification:`, emailErr.message);
       }
-
-      res.json({ success: true });
     } catch (error: any) {
       console.error(`[RequestAccess] Error:`, error.message);
       res.status(500).json({ error: 'Failed to submit request. Please try again.' });
