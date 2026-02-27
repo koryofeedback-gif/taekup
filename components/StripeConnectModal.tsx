@@ -4,6 +4,7 @@ interface StripeConnectModalProps {
   clubId: string;
   ownerEmail: string;
   clubName: string;
+  clubCountry?: string;
   onClose: () => void;
   onSuccess: (url: string) => void;
   t: (key: string) => string;
@@ -11,13 +12,22 @@ interface StripeConnectModalProps {
 
 type BusinessType = 'individual' | 'company';
 
+const STRIPE_SUPPORTED_COUNTRIES = [
+  'FR', 'DE', 'ES', 'IT', 'NL', 'BE', 'AT', 'PT', 'IE', 'GB', 'US', 'CA', 'AU', 'KR',
+  'CH', 'SE', 'NO', 'DK', 'FI', 'PL', 'CZ', 'HU', 'RO', 'BG', 'HR', 'SK', 'SI', 'GR',
+  'CY', 'MT', 'LU', 'LV', 'LT', 'EE', 'NZ', 'JP', 'SG', 'HK', 'MX', 'BR',
+];
+
 export const StripeConnectModal: React.FC<StripeConnectModalProps> = ({
-  clubId, ownerEmail, clubName, onClose, onSuccess, t
+  clubId, ownerEmail, clubName, clubCountry, onClose, onSuccess, t
 }) => {
   const [step, setStep] = useState<'form' | 'processing'>('form');
   const [error, setError] = useState('');
   const [businessType, setBusinessType] = useState<BusinessType>('individual');
-  const [country, setCountry] = useState('FR');
+  const [country, setCountry] = useState(() => {
+    if (clubCountry && STRIPE_SUPPORTED_COUNTRIES.includes(clubCountry)) return clubCountry;
+    return 'US';
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

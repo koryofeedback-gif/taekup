@@ -1338,7 +1338,7 @@ export function registerRoutes(app: Express) {
       if (!accountId) {
         const createParams: any = {
           type: 'express',
-          country: country || 'FR',
+          country: country || 'US',
           email: ownerEmail,
           capabilities: {
             card_payments: { requested: true },

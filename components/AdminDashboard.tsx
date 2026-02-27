@@ -2447,6 +2447,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     clubId={clubId || localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId') || ''}
                     ownerEmail={localStorage.getItem('taekup_user_email') || data.ownerEmail || ''}
                     clubName={data.clubName || ''}
+                    clubCountry={data.country || ''}
                     onClose={() => setShowStripeConnectModal(false)}
                     onSuccess={(url) => {
                         setShowStripeConnectModal(false);

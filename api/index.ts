@@ -1182,7 +1182,7 @@ async function handleStripeConnectOnboard(req: VercelRequest, res: VercelRespons
     if (!accountId) {
       const createParams: any = {
         type: 'express',
-        country: country || 'FR',
+        country: country || 'US',
         email: email,
         capabilities: {
           card_payments: { requested: true },
