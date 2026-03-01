@@ -691,7 +691,7 @@ const AddEventModal: React.FC<{ onClose: () => void, onAdd: (event: CalendarEven
     )
 }
 
-const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastCommand: string | null, students: Student[], skills: {id: string, name: string}[], t: (key: string, vars?: Record<string, string | number>) => string }> = ({ transcript, isActive, lastCommand, students, skills, t }) => {
+const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastCommand: string | null, students: Student[], skills: {id: string, name: string}[] }> = ({ transcript, isActive, lastCommand, students, skills }) => {
     if (!isActive) return null;
     
     const exampleStudent = "Alex";
@@ -2136,7 +2136,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 </div>
             )}
             
-            <SenseiVoiceHUD transcript={voiceTranscript} isActive={isVoiceActive} lastCommand={lastVoiceCommand} students={students} skills={activeSkills} t={t} />
+            <SenseiVoiceHUD transcript={voiceTranscript} isActive={isVoiceActive} lastCommand={lastVoiceCommand} students={students} skills={activeSkills} />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 
