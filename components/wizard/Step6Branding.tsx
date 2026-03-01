@@ -86,7 +86,7 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
                         {logoPreview ? (
                             <img src={logoPreview} className="w-7 h-7 rounded-full object-cover border border-white/20" alt="logo" />
                         ) : (
-                            <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center text-[10px] font-bold">Logo</div>
+                            <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center text-[10px] font-bold">{t('wizard.step6.logo')}</div>
                         )}
                     </div>
                     <div className="text-[10px] text-gray-400 border border-gray-700 rounded px-2 py-0.5">{data.language || 'English'}</div>
@@ -104,7 +104,7 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
                                     🥋
                                 </div>
                                 <div>
-                                    <h2 className="text-base font-bold text-white">Hi, Alex!</h2>
+                                    <h2 className="text-base font-bold text-white">{t('wizard.step6.previewGreeting')}</h2>
                                     <div className="flex items-center text-[11px] text-gray-400 mt-0.5">
                                         <div className="w-2.5 h-2.5 rounded-full mr-1.5 shadow-sm" style={{ backgroundColor: data.belts[0]?.color1 || 'white' }}></div>
                                         {data.belts[0]?.name || 'White Belt'}
@@ -129,10 +129,10 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
                                     <span className="text-sm mr-1.5">🌍</span>
                                     <div>
                                         <p className="text-[10px] text-cyan-300 font-bold">{t('wizard.step6.globalRank')} #42</p>
-                                        <p className="text-[8px] text-gray-400">180 Global HonorXP</p>
+                                        <p className="text-[8px] text-gray-400">{t('wizard.step6.previewGlobalHonorXP').replace('{xp}', '180')}</p>
                                     </div>
                                 </div>
-                                <span className="text-cyan-400 text-[10px]">View &gt;</span>
+                                <span className="text-cyan-400 text-[10px]">{t('wizard.step6.previewView')}</span>
                             </div>
 
                             <div className="mb-2">
@@ -147,8 +147,8 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
 
                             <div>
                                 <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                                    <span>Stripes</span>
-                                    <span>2 of {data.stripesPerBelt}</span>
+                                    <span>{t('wizard.step6.previewStripes')}</span>
+                                    <span>{t('wizard.step6.previewStripesOf').replace('{current}', '2').replace('{total}', String(data.stripesPerBelt))}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     {Array.from({ length: data.stripesPerBelt }).map((_, i) => {
@@ -222,23 +222,23 @@ export const Step6Branding: React.FC<Step6Props> = ({ data, onUpdate }) => {
                 <div className="absolute bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 h-14 flex justify-around items-center z-20">
                     <div className="flex flex-col items-center" style={{ color: data.primaryColor }}>
                         <span className="text-base">🏠</span>
-                        <span className="text-[8px] mt-0.5 font-medium">HQ</span>
+                        <span className="text-[8px] mt-0.5 font-medium">{t('wizard.step6.navHQ')}</span>
                     </div>
                     <div className="flex flex-col items-center text-gray-500">
                         <span className="text-base">⚔️</span>
-                        <span className="text-[8px] mt-0.5">Arena</span>
+                        <span className="text-[8px] mt-0.5">{t('wizard.step6.navArena')}</span>
                     </div>
                     <div className="flex flex-col items-center text-gray-500">
                         <span className="text-base">💬</span>
-                        <span className="text-[8px] mt-0.5">Feedback</span>
+                        <span className="text-[8px] mt-0.5">{t('wizard.step6.navFeedback')}</span>
                     </div>
                     <div className="flex flex-col items-center text-gray-500">
                         <span className="text-base">🔮</span>
-                        <span className="text-[8px] mt-0.5">Chronos</span>
+                        <span className="text-[8px] mt-0.5">{t('wizard.step6.navChronos')}</span>
                     </div>
                     <div className="flex flex-col items-center text-gray-500">
                         <span className="text-base">🧠</span>
-                        <span className="text-[8px] mt-0.5">Sensei</span>
+                        <span className="text-[8px] mt-0.5">{t('wizard.step6.navSensei')}</span>
                     </div>
                 </div>
 

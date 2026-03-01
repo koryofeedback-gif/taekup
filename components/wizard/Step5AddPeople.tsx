@@ -200,7 +200,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
         });
 
         setParsedStudents(newStudents);
-        setBulkError(newStudents.length === 0 ? 'No valid data found' : '');
+        setBulkError(newStudents.length === 0 ? t('wizard.step5.noValidData') : '');
     };
 
     const parseExcelStudents = (rows: string[][]) => {
@@ -260,7 +260,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
         }
 
         setParsedStudents(newStudents);
-        setBulkError(newStudents.length === 0 ? 'No valid student data found. Check column order.' : '');
+        setBulkError(newStudents.length === 0 ? t('wizard.step5.noValidStudentData') : '');
     };
 
     const handleExcelUpload = (file: File) => {
@@ -288,7 +288,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                 }
             };
             reader.onerror = () => {
-                setBulkError('Failed to read file. Please try again.');
+                setBulkError(t('wizard.step5.failedToRead'));
             };
             reader.readAsArrayBuffer(file);
         } else {
@@ -299,7 +299,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                 parseBulkStudents(text);
             };
             reader.onerror = () => {
-                setBulkError('Failed to read file. Please try again.');
+                setBulkError(t('wizard.step5.failedToRead'));
             };
             reader.readAsText(file);
         }
@@ -395,7 +395,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                 <p className="font-bold text-white">{coach.name}</p>
                                 <p className="text-xs text-gray-400">{coach.email}</p>
                                 {coach.assignedClasses && coach.assignedClasses.length > 0 && (
-                                    <p className="text-xs text-sky-400 mt-1">Classes: {coach.assignedClasses.join(', ')}</p>
+                                    <p className="text-xs text-sky-400 mt-1">{t('wizard.step5.classesLabel')} {coach.assignedClasses.join(', ')}</p>
                                 )}
                             </div>
                             <button onClick={() => handleRemoveCoach(coach.id)} className="text-red-400 hover:text-red-300 text-sm">{t('common.remove')}</button>
@@ -483,7 +483,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                             <input type="text" value={newStudent.parentName || ''} onChange={e => setNewStudent({...newStudent, parentName: e.target.value})} placeholder={t('wizard.step5.parentName')} className="wizard-input mb-2" />
                             <input type="email" value={newStudent.parentEmail || ''} onChange={e => setNewStudent({...newStudent, parentEmail: e.target.value})} placeholder={t('wizard.step5.parentEmail')} className="wizard-input mb-2" />
                             <input type="tel" value={newStudent.parentPhone || ''} onChange={e => setNewStudent({...newStudent, parentPhone: e.target.value})} placeholder={t('wizard.step5.parentPhone')} className="wizard-input mb-2" />
-                            <p className="text-xs text-gray-400">Default password: student's first name in lowercase</p>
+                            <p className="text-xs text-gray-400">{t('wizard.step5.defaultPasswordHint')}</p>
                         </div>
 
                         <div className="border-t border-gray-600 pt-4">
@@ -503,7 +503,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                     <div className="space-y-4 mb-4">
                         <div className="flex bg-gray-700/50 rounded p-1 w-fit mb-4 flex-wrap gap-1">
                             <button onClick={() => setStudentImportMethod('bulk')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'bulk' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>{t('wizard.step5.bulkImport')}</button>
-                            <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>Excel</button>
+                            <button onClick={() => setStudentImportMethod('excel')} className={`px-4 py-1.5 rounded text-sm font-medium ${studentImportMethod === 'excel' ? 'bg-green-500 text-white' : 'text-gray-400'}`}>{t('wizard.step5.excel')}</button>
                         </div>
 
                         {studentImportMethod === 'bulk' ? (
@@ -518,13 +518,13 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                     <div>
                                         <label className="block text-xs font-bold text-gray-400 mb-1">{t('wizard.step1.classes')}</label>
                                         <select value={batchClass} onChange={e => setBatchClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                                            <option value="">Auto-assign</option>
+                                            <option value="">{t('wizard.step5.autoAssign')}</option>
                                             {(data.locationClasses?.[batchLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
                                 </div>
                                 <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
-                                    <p className="text-xs text-gray-400"><span className="font-bold">Format:</span> Name, Age, Birthday, Gender, Belt, Stripes, Parent Name, Email, Phone</p>
+                                    <p className="text-xs text-gray-400"><span className="font-bold">{t('wizard.step5.formatLabel')}</span> {t('wizard.step5.formatDesc')}</p>
                                     <button 
                                         onClick={downloadTemplate}
                                         className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
@@ -532,18 +532,18 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                         {t('wizard.step5.downloadTemplate')}
                                     </button>
                                 </div>
-                                <textarea value={bulkStudentData} onChange={e => { setBulkStudentData(e.target.value); setParsedStudents([]); }} placeholder="Paste CSV data here..." className="w-full h-24 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
+                                <textarea value={bulkStudentData} onChange={e => { setBulkStudentData(e.target.value); setParsedStudents([]); }} placeholder={t('wizard.step5.pasteCSV')} className="w-full h-24 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm font-mono" />
                                 <button onClick={() => parseBulkStudents(bulkStudentData)} disabled={!bulkStudentData.trim()} className="w-full bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 text-white font-bold py-2 rounded">{t('wizard.step5.bulkImport')}</button>
                                 {bulkError && <p className="text-red-400 text-sm">{bulkError}</p>}
                                 {parsedStudents.length > 0 && (
                                     <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
-                                        <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedStudents.length}):</p>
+                                        <p className="text-xs text-gray-400 mb-2 font-bold">{t('wizard.step5.previewCount').replace('{count}', String(parsedStudents.length))}</p>
                                         {parsedStudents.map((s, i) => (
                                             <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 grid grid-cols-3 gap-1">
                                                 <span className="truncate">{s.name}</span>
                                                 <span className="text-gray-500 truncate">{data.belts.find(b => b.id === s.beltId)?.name || '?'}</span>
                                                 <span className={`truncate text-right ${s.parentEmail ? 'text-green-400' : 'text-yellow-500'}`}>
-                                                    {s.parentEmail || 'No email'}
+                                                    {s.parentEmail || t('wizard.step5.noEmail')}
                                                 </span>
                                             </div>
                                         ))}
@@ -569,7 +569,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                     <div>
                                         <label className="block text-xs font-bold text-gray-400 mb-1">{t('wizard.step1.classes')}</label>
                                         <select value={batchClass} onChange={e => setBatchClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                                            <option value="">Auto-assign</option>
+                                            <option value="">{t('wizard.step5.autoAssign')}</option>
                                             {(data.locationClasses?.[batchLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
@@ -596,15 +596,15 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                     >
                                         <div className="text-4xl mb-2">📊</div>
                                         <p className="text-white font-medium mb-1">
-                                            {uploadedFileName || 'Click or drag file to upload'}
+                                            {uploadedFileName || t('wizard.step5.clickOrDragUpload')}
                                         </p>
-                                        <p className="text-xs text-gray-500">Supports .xlsx, .xls, .csv</p>
+                                        <p className="text-xs text-gray-500">{t('wizard.step5.supportsFormats')}</p>
                                     </div>
                                 </div>
 
                                 <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
-                                    <p className="text-xs text-gray-400 font-bold mb-1">Format:</p>
-                                    <p className="text-xs text-gray-500">Name, Age, Birthday, Gender, Belt, Stripes, Parent Name, Email, Phone</p>
+                                    <p className="text-xs text-gray-400 font-bold mb-1">{t('wizard.step5.formatLabel')}</p>
+                                    <p className="text-xs text-gray-500">{t('wizard.step5.formatDesc')}</p>
                                     <button 
                                         onClick={downloadTemplate}
                                         className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline"
@@ -617,13 +617,13 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                 
                                 {parsedStudents.length > 0 && (
                                     <div className="max-h-48 overflow-y-auto border border-gray-700 rounded p-2">
-                                        <p className="text-xs text-gray-400 mb-2 font-bold">Preview ({parsedStudents.length} students):</p>
+                                        <p className="text-xs text-gray-400 mb-2 font-bold">{t('wizard.step5.previewStudentsCount').replace('{count}', String(parsedStudents.length))}</p>
                                         {parsedStudents.map((s, i) => (
                                             <div key={i} className="text-xs text-gray-300 py-1 border-t border-gray-800 grid grid-cols-3 gap-1">
                                                 <span className="truncate">{s.name}</span>
-                                                <span className="text-gray-500 truncate">{data.belts.find(b => b.id === s.beltId)?.name || 'White Belt'}</span>
+                                                <span className="text-gray-500 truncate">{data.belts.find(b => b.id === s.beltId)?.name || '?'}</span>
                                                 <span className={`truncate text-right ${s.parentEmail ? 'text-green-400' : 'text-yellow-500'}`}>
-                                                    {s.parentEmail || 'No email'}
+                                                    {s.parentEmail || t('wizard.step5.noEmail')}
                                                 </span>
                                             </div>
                                         ))}
@@ -649,7 +649,7 @@ export const Step5AddPeople: React.FC<Step5Props> = ({ data, onUpdate }) => {
                                 <p className="font-bold text-white">{student.name} {student.age && <span className="text-xs font-normal text-gray-400">({student.age}y)</span>}</p>
                                 <p className="text-xs text-gray-400">
                                     {data.belts.find(b => b.id === student.beltId)?.name} 
-                                    {student.stripes > 0 && ` • ${student.stripes} stripes`}
+                                    {student.stripes > 0 && ` • ${student.stripes} ${t('wizard.step5.stripesCount')}`}
                                     {student.location && ` • ${student.location}`}
                                 </p>
                             </div>

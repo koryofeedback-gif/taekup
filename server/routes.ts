@@ -5520,7 +5520,7 @@ export function registerRoutes(app: Express) {
   async function hasHomeDojoPremium(studentId: string): Promise<boolean> {
     try {
       const result = await db.execute(sql`
-        SELECT s.premium_status, c.parent_premium_enabled 
+        SELECT s.premium_status, s.premium_gifted, c.parent_premium_enabled 
         FROM students s 
         LEFT JOIN clubs c ON s.club_id = c.id 
         WHERE s.id = ${studentId}::uuid
@@ -5529,7 +5529,8 @@ export function registerRoutes(app: Express) {
       if (!student) return false;
       const hasPremiumStatus = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid';
       const hasParentPremium = student.parent_premium_enabled === true;
-      return hasPremiumStatus || hasParentPremium;
+      const isGifted = student.premium_gifted === true;
+      return hasPremiumStatus || hasParentPremium || isGifted;
     } catch {
       return false;
     }

@@ -4946,7 +4946,7 @@ const HOME_DOJO_PREMIUM_CAP = 21; // 7 habits × 3 XP
 async function hasHomeDojoPremium(client: any, studentId: string): Promise<boolean> {
   try {
     const result = await client.query(
-      `SELECT s.premium_status
+      `SELECT s.premium_status, s.premium_gifted
        FROM students s 
        WHERE s.id = $1::uuid`,
       [studentId]
@@ -4954,8 +4954,8 @@ async function hasHomeDojoPremium(client: any, studentId: string): Promise<boole
     const student = result.rows[0];
     if (!student) return false;
     
-    const isPremium = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid';
-    console.log(`[HomeDojo] Premium check for ${studentId}: status=${student.premium_status} => ${isPremium}`);
+    const isPremium = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid' || student.premium_gifted === true;
+    console.log(`[HomeDojo] Premium check for ${studentId}: status=${student.premium_status}, gifted=${student.premium_gifted} => ${isPremium}`);
     
     return isPremium;
   } catch (e) {
@@ -5876,7 +5876,7 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
       }
 
       const student = studentResult.rows[0];
-      const hasPremium = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid';
+      const hasPremium = student.premium_status === 'club_sponsored' || student.premium_status === 'parent_paid' || student.premium_gifted === true;
 
       if (!hasPremium) {
         return res.status(403).json({

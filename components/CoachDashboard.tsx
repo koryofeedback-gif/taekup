@@ -369,6 +369,7 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
 }
 
 const CertificateModal: React.FC<{ student: Student; newBelt: string; data: WizardData; onClose: () => void }> = ({ student, newBelt, data, onClose }) => {
+    const { t } = useTranslation(data.language);
     const [certId] = useState(`CERT-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`);
     const [showSharePreview, setShowSharePreview] = useState(false);
     
@@ -403,18 +404,18 @@ const CertificateModal: React.FC<{ student: Student; newBelt: string; data: Wiza
                         <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-yellow-600 m-2"></div>
 
                         <div className="mb-6">
-                             <h1 className="text-4xl font-serif font-bold text-gray-800 uppercase tracking-wider mb-2">Certificate</h1>
-                             <h2 className="text-xl font-serif text-yellow-700 uppercase tracking-widest">of Promotion</h2>
+                             <h1 className="text-4xl font-serif font-bold text-gray-800 uppercase tracking-wider mb-2">{t('coach.certificate.certificate')}</h1>
+                             <h2 className="text-xl font-serif text-yellow-700 uppercase tracking-widest">{t('coach.certificate.ofPromotion')}</h2>
                              <p className="text-sm text-gray-500 mt-2 font-bold uppercase tracking-wide text-blue-900">{disciplineName}</p>
                         </div>
 
-                        <p className="text-gray-600 italic mb-4">This certifies that</p>
+                        <p className="text-gray-600 italic mb-4">{t('coach.certificate.certifies')}</p>
                         
                         <h3 className="text-3xl font-bold text-blue-900 mb-4 font-serif border-b-2 border-gray-300 inline-block pb-2 px-8 min-w-[300px]">
                             {student.name}
                         </h3>
 
-                        <p className="text-gray-600 italic mb-4">has successfully demonstrated the skills and spirit required for the rank of</p>
+                        <p className="text-gray-600 italic mb-4">{t('coach.certificate.skillsAndSpirit')}</p>
 
                         <h3 className="text-4xl font-bold text-red-700 mb-8 uppercase font-serif">
                             {newBelt}
@@ -423,20 +424,19 @@ const CertificateModal: React.FC<{ student: Student; newBelt: string; data: Wiza
                         <div className="flex justify-between items-end px-12 mt-8 mb-6">
                             <div className="text-center">
                                 <p className="text-sm font-bold border-t border-gray-400 pt-2 px-4 min-w-[150px]">{new Date().toLocaleDateString()}</p>
-                                <p className="text-xs text-gray-500 uppercase">Date</p>
+                                <p className="text-xs text-gray-500 uppercase">{t('coach.certificate.date')}</p>
                             </div>
                             <div className="w-24 h-24 relative flex items-center justify-center mx-4">
                                 <div className="absolute inset-0 bg-yellow-500 rounded-full opacity-20"></div>
                                 <div className="w-20 h-20 border-2 border-yellow-600 rounded-full flex items-center justify-center p-1">
                                     <div className="w-full h-full border border-dashed border-yellow-600 rounded-full flex items-center justify-center flex-col">
-                                         <span className="text-[10px] font-bold text-yellow-800 uppercase">Official</span>
-                                         <span className="text-xs font-bold text-yellow-800 uppercase">Rank</span>
+                                         <span className="text-[10px] font-bold text-yellow-800 uppercase">{t('coach.certificate.officialRank')}</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="text-center">
-                                <p className="text-xl font-script text-blue-900 mb-1 font-serif min-w-[150px]">{data.ownerName || 'Master Instructor'}</p>
-                                <p className="text-xs text-gray-500 uppercase border-t border-gray-400 pt-1">Instructor Signature</p>
+                                <p className="text-xl font-script text-blue-900 mb-1 font-serif min-w-[150px]">{data.ownerName || t('coach.certificate.masterInstructor')}</p>
+                                <p className="text-xs text-gray-500 uppercase border-t border-gray-400 pt-1">{t('coach.certificate.instructorSignature')}</p>
                             </div>
                         </div>
                         
@@ -444,7 +444,7 @@ const CertificateModal: React.FC<{ student: Student; newBelt: string; data: Wiza
                         <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between items-end text-xs text-gray-400 font-mono">
                              <div className="text-left">
                                  <p>ID: <span className="text-gray-600 font-bold">{certId}</span></p>
-                                 <p>Verify at: www.taekup.com/verify</p>
+                                 <p>{t('coach.certificate.verifyAt')} www.taekup.com/verify</p>
                              </div>
                              <div className="text-right">
                                  <p className="font-bold text-gray-600">{data.clubName}</p>
@@ -753,7 +753,7 @@ const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastComm
 
                 <div className="flex justify-between text-xs text-gray-500 uppercase font-mono">
                     <span>🎤 Chrome Only</span>
-                    <span>Say "Stop" to exit</span>
+                    <span>{t('coach.voice.sayStopToExit')}</span>
                 </div>
 
                 {/* Last Success */}
@@ -1209,7 +1209,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
     const toggleVoiceMode = () => {
         if (!recognitionRef.current) {
-            alert("Voice recognition is not supported in this browser. Try Chrome.");
+            alert(t('coach.voice.notSupported'));
             return;
         }
         if (isVoiceActiveRef.current) {
@@ -1236,7 +1236,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             isVoiceActiveRef.current = false;
             setIsVoiceActive(false);
             if (recognitionRef.current) recognitionRef.current.stop();
-            setLastVoiceCommand("Voice mode stopped");
+            setLastVoiceCommand(t('coach.voice.stopped'));
             setTimeout(() => setLastVoiceCommand(null), 3000);
             return;
         }

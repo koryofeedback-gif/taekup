@@ -102,6 +102,7 @@ export const students = pgTable('students', {
   worldRank: integer('world_rank'),
   previousWorldRank: integer('previous_world_rank'),
   premiumStatus: premiumStatusEnum('premium_status').default('none'),
+  premiumGifted: boolean('premium_gifted').default(false),
   premiumStartedAt: timestamp('premium_started_at', { withTimezone: true }),
   premiumCanceledAt: timestamp('premium_canceled_at', { withTimezone: true }),
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),

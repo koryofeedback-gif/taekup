@@ -503,6 +503,7 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
         s.parent_name,
         s.parent_phone,
         s.premium_status,
+        COALESCE(s.premium_gifted, false) as premium_gifted,
         s.last_class_at,
         s.total_points,
         s.belt,
