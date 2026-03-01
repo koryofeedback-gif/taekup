@@ -494,28 +494,55 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
     const db = getDb();
     const limit = Number(req.query.limit) || 50;
     const offset = Number(req.query.offset) || 0;
+
+    await db`ALTER TABLE students ADD COLUMN IF NOT EXISTS premium_gifted BOOLEAN DEFAULT FALSE`.catch(() => {});
     
-    const parents = await db`
-      SELECT 
-        s.id,
-        s.name as student_name,
-        s.parent_email,
-        s.parent_name,
-        s.parent_phone,
-        s.premium_status,
-        COALESCE(s.premium_gifted, false) as premium_gifted,
-        s.last_class_at,
-        s.total_points,
-        s.belt,
-        c.name as club_name,
-        c.id as club_id,
-        EXTRACT(DAY FROM NOW() - s.last_class_at) as days_since_last_class
-      FROM students s
-      JOIN clubs c ON s.club_id = c.id
-      WHERE s.parent_email IS NOT NULL
-      ORDER BY s.last_class_at DESC NULLS LAST 
-      LIMIT ${limit} OFFSET ${offset}
-    `;
+    let parents;
+    try {
+      parents = await db`
+        SELECT 
+          s.id,
+          s.name as student_name,
+          s.parent_email,
+          s.parent_name,
+          s.parent_phone,
+          s.premium_status,
+          COALESCE(s.premium_gifted, false) as premium_gifted,
+          s.last_class_at,
+          s.total_points,
+          s.belt,
+          c.name as club_name,
+          c.id as club_id,
+          EXTRACT(DAY FROM NOW() - s.last_class_at) as days_since_last_class
+        FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE s.parent_email IS NOT NULL
+        ORDER BY s.last_class_at DESC NULLS LAST 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+    } catch {
+      parents = await db`
+        SELECT 
+          s.id,
+          s.name as student_name,
+          s.parent_email,
+          s.parent_name,
+          s.parent_phone,
+          s.premium_status,
+          false as premium_gifted,
+          s.last_class_at,
+          s.total_points,
+          s.belt,
+          c.name as club_name,
+          c.id as club_id,
+          EXTRACT(DAY FROM NOW() - s.last_class_at) as days_since_last_class
+        FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE s.parent_email IS NOT NULL
+        ORDER BY s.last_class_at DESC NULLS LAST 
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+    }
     
     return res.json({
       parents,

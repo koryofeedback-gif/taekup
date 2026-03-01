@@ -4945,12 +4945,22 @@ const HOME_DOJO_PREMIUM_CAP = 21; // 7 habits × 3 XP
 
 async function hasHomeDojoPremium(client: any, studentId: string): Promise<boolean> {
   try {
-    const result = await client.query(
-      `SELECT s.premium_status, s.premium_gifted
-       FROM students s 
-       WHERE s.id = $1::uuid`,
-      [studentId]
-    );
+    let result;
+    try {
+      result = await client.query(
+        `SELECT s.premium_status, COALESCE(s.premium_gifted, false) as premium_gifted
+         FROM students s 
+         WHERE s.id = $1::uuid`,
+        [studentId]
+      );
+    } catch {
+      result = await client.query(
+        `SELECT s.premium_status, false as premium_gifted
+         FROM students s 
+         WHERE s.id = $1::uuid`,
+        [studentId]
+      );
+    }
     const student = result.rows[0];
     if (!student) return false;
     
@@ -5864,12 +5874,22 @@ async function handleChallengeSubmit(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      const studentResult = await client.query(
-        `SELECT s.id, s.club_id, s.premium_status
-         FROM students s
-         WHERE s.id = $1::uuid`,
-        [studentId]
-      );
+      let studentResult;
+      try {
+        studentResult = await client.query(
+          `SELECT s.id, s.club_id, s.premium_status, COALESCE(s.premium_gifted, false) as premium_gifted
+           FROM students s
+           WHERE s.id = $1::uuid`,
+          [studentId]
+        );
+      } catch {
+        studentResult = await client.query(
+          `SELECT s.id, s.club_id, s.premium_status, false as premium_gifted
+           FROM students s
+           WHERE s.id = $1::uuid`,
+          [studentId]
+        );
+      }
 
       if (studentResult.rows.length === 0) {
         return res.status(404).json({ error: 'Student not found' });
