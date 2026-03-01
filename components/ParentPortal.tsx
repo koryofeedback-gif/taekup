@@ -5831,7 +5831,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 </div>
                                                 
                                                 {/* Global Leaderboard - Premium Only */}
-                                                {isPremium ? (
+                                                {hasPremiumAccess ? (
                                                     <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
                                                         <p className="text-white text-sm font-bold mb-3 flex items-center gap-2">
                                                             🏆 {t('parent.rivals.globalLeaderboard.top10Worldwide')}
@@ -5913,7 +5913,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     )}
                                                 </div>
                                                 
-                                                {isPremium && (
+                                                {hasPremiumAccess && (
                                                     <button
                                                         onClick={() => setShowGlobalLeaderboard(!showGlobalLeaderboard)}
                                                         className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all text-sm"
@@ -5922,7 +5922,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     </button>
                                                 )}
                                                 
-                                                {showGlobalLeaderboard && isPremium && worldRankData.topPlayers.length > 0 && (
+                                                {showGlobalLeaderboard && hasPremiumAccess && worldRankData.topPlayers.length > 0 && (
                                                     <div className="space-y-2 mt-3">
                                                         <p className="text-gray-400 text-xs font-bold">{t('parent.rivals.globalLeaderboard.top10Worldwide')}</p>
                                                         {worldRankData.topPlayers.map((player, index) => (
