@@ -528,6 +528,33 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// Toggle Gift Premium for a student
+async function handleToggleGiftPremium(req: VercelRequest, res: VercelResponse, studentId: string) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: auth.error });
+  }
+  
+  try {
+    const db = getDb();
+    const result = await db`
+      UPDATE students 
+      SET premium_gifted = NOT COALESCE(premium_gifted, false)
+      WHERE id = ${studentId}
+      RETURNING id, premium_gifted
+    `;
+    
+    if (!result.length) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    return res.json({ success: true, premium_gifted: result[0].premium_gifted });
+  } catch (error: any) {
+    console.error('Toggle gift premium error:', error);
+    return res.status(500).json({ error: 'Failed to toggle gift premium' });
+  }
+}
+
 // Revenue Analytics - MRR trends, churn rate, conversion rate
 async function handleRevenueAnalytics(req: VercelRequest, res: VercelResponse) {
   const auth = await verifySuperAdminToken(req);
@@ -2507,6 +2534,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     if (path === '/parents' || path === '/parents/' || path === 'parents') {
       return handleParents(req, res);
+    }
+    
+    if (path.match(/\/?parents\/(\d+)\/toggle-gift-premium\/?$/)) {
+      const match = path.match(/parents\/(\d+)\/toggle-gift-premium/);
+      if (match && req.method === 'POST') return handleToggleGiftPremium(req, res, match[1]);
     }
     
     if (path === '/impersonate' || path === '/impersonate/' || path === 'impersonate') {

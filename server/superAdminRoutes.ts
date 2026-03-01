@@ -363,6 +363,7 @@ router.get('/parents', verifySuperAdmin, async (req: Request, res: Response) => 
         s.parent_name,
         s.parent_phone,
         s.premium_status,
+        COALESCE(s.premium_gifted, false) as premium_gifted,
         s.last_class_at,
         s.total_points,
         s.belt,
@@ -396,6 +397,27 @@ router.get('/parents', verifySuperAdmin, async (req: Request, res: Response) => 
   } catch (error: any) {
     console.error('Parents list error:', error);
     res.status(500).json({ error: 'Failed to fetch parents' });
+  }
+});
+
+router.post('/parents/:studentId/toggle-gift-premium', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { studentId } = req.params;
+    const result = await db.execute(sql`
+      UPDATE students 
+      SET premium_gifted = NOT COALESCE(premium_gifted, false)
+      WHERE id = ${studentId}
+      RETURNING id, premium_gifted
+    `);
+    
+    if (!result.length) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    res.json({ success: true, premium_gifted: result[0].premium_gifted });
+  } catch (error: any) {
+    console.error('Toggle gift premium error:', error);
+    res.status(500).json({ error: 'Failed to toggle gift premium' });
   }
 });
 

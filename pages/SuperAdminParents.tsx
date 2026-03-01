@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, Search, Crown, LogOut, RefreshCw, 
-  AlertTriangle, Star, Clock
+  AlertTriangle, Star, Clock, Gift
 } from 'lucide-react';
 
 interface Parent {
@@ -12,6 +12,7 @@ interface Parent {
   parent_name: string;
   parent_phone: string;
   premium_status: 'none' | 'club_sponsored' | 'parent_paid';
+  premium_gifted: boolean;
   last_class_at: string;
   total_points: number;
   belt: string;
@@ -93,8 +94,40 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
     });
   };
 
-  const getPremiumBadge = (status: string) => {
-    switch (status) {
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const toggleGiftPremium = async (parent: Parent) => {
+    setTogglingId(parent.id);
+    try {
+      const response = await fetch(`/api/super-admin/parents/${parent.id}/toggle-gift-premium`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.status === 401) {
+        onLogout();
+        navigate('/super-admin/login');
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setParents(prev => prev.map(p => 
+          p.id === parent.id ? { ...p, premium_gifted: data.premium_gifted } : p
+        ));
+      }
+    } catch (err) {
+      console.error('Failed to toggle gift premium:', err);
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const getPremiumBadge = (parent: Parent) => {
+    if (parent.premium_gifted) {
+      return <span className="px-2 py-1 bg-purple-600/20 text-purple-400 text-xs rounded-full flex items-center gap-1"><Gift className="w-3 h-3" />Gifted</span>;
+    }
+    switch (parent.premium_status) {
       case 'parent_paid':
         return <span className="px-2 py-1 bg-green-600/20 text-green-400 text-xs rounded-full">Premium</span>;
       case 'club_sponsored':
@@ -203,19 +236,20 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Status</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Belt / XP</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Last Class</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
                       <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
                       Loading...
                     </td>
                   </tr>
                 ) : parents.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
                       No parents found
                     </td>
                   </tr>
@@ -240,7 +274,7 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
                         </Link>
                       </td>
                       <td className="px-4 py-4">
-                        {getPremiumBadge(parent.premium_status)}
+                        {getPremiumBadge(parent)}
                       </td>
                       <td className="px-4 py-4">
                         <div>
@@ -264,6 +298,20 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
                             </p>
                           )}
                         </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <button
+                          onClick={() => toggleGiftPremium(parent)}
+                          disabled={togglingId === parent.id}
+                          title={parent.premium_gifted ? 'Remove gifted premium' : 'Gift free premium'}
+                          className={`p-2 rounded-lg border transition-colors ${
+                            parent.premium_gifted
+                              ? 'bg-purple-600/20 border-purple-500 text-purple-400 hover:bg-purple-600/30'
+                              : 'bg-gray-700 border-gray-600 text-gray-400 hover:bg-gray-600 hover:text-purple-400'
+                          } ${togglingId === parent.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <Gift className={`w-4 h-4 ${togglingId === parent.id ? 'animate-pulse' : ''}`} />
+                        </button>
                       </td>
                     </tr>
                   ))
