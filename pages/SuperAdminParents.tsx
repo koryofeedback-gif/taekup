@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, Search, Crown, LogOut, RefreshCw, 
-  AlertTriangle, Star, Clock, Gift
+  AlertTriangle, Star, Clock, Gift, CheckCircle, XCircle
 } from 'lucide-react';
 
 interface Parent {
@@ -95,6 +95,12 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
   };
 
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({ message: '', type: 'success', visible: false });
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type, visible: true });
+    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
+  };
 
   const toggleGiftPremium = async (parent: Parent) => {
     setTogglingId(parent.id);
@@ -115,9 +121,18 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
         setParents(prev => prev.map(p => 
           p.id === parent.id ? { ...p, premium_gifted: data.premium_gifted } : p
         ));
+        showToast(
+          data.premium_gifted 
+            ? `Premium gifted to ${parent.student_name}` 
+            : `Premium removed from ${parent.student_name}`,
+          'success'
+        );
+      } else {
+        showToast('Failed to update premium status', 'error');
       }
     } catch (err) {
       console.error('Failed to toggle gift premium:', err);
+      showToast('Failed to update premium status', 'error');
     } finally {
       setTogglingId(null);
     }
@@ -139,6 +154,14 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
 
   return (
     <div className="min-h-screen bg-gray-900">
+      {toast.visible && (
+        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+          toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+        } text-white`}>
+          {toast.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+          <span className="font-medium">{toast.message}</span>
+        </div>
+      )}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
