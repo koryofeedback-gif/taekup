@@ -256,7 +256,7 @@ const SENDER_EMAILS: Record<SenderType, { email: string; name: string }> = {
     name: 'TaekUp'
   },
   noreply: {
-    email: 'noreply@mytaek.com',
+    email: 'hello@mytaek.com',
     name: 'TaekUp'
   },
   billing: {

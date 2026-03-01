@@ -161,7 +161,7 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
     body: `Hi {{name}},<br><br>We received a request to reset your password. Click the button below to set a new one.<br><br>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.`,
     btn_text: 'Reset Password',
     btn_url: '{{resetUrl}}',
-    from: 'noreply@mytaek.com'
+    from: 'hello@mytaek.com'
   },
   // Password changed
   PASSWORD_CHANGED: {
@@ -170,7 +170,7 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
     body: `Hi {{name}},<br><br>Your TaekUp password was successfully changed.<br><br>If you didn't make this change, please contact support immediately at support@mytaek.com.`,
     btn_text: 'Go to Dashboard',
     btn_url: `${BASE_URL}/login`,
-    from: 'noreply@mytaek.com'
+    from: 'hello@mytaek.com'
   },
   // Payment receipt
   PAYMENT_RECEIPT: {
