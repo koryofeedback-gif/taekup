@@ -2563,8 +2563,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleParents(req, res);
     }
     
-    if (path.match(/\/?parents\/(\d+)\/toggle-gift-premium\/?$/)) {
-      const match = path.match(/parents\/(\d+)\/toggle-gift-premium/);
+    if (path.match(/\/?parents\/([a-f0-9-]+)\/toggle-gift-premium\/?$/)) {
+      const match = path.match(/parents\/([a-f0-9-]+)\/toggle-gift-premium/);
       if (match && req.method === 'POST') return handleToggleGiftPremium(req, res, match[1]);
     }
     
