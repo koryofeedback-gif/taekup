@@ -27,7 +27,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   // Skip demo choice during impersonation mode (Super Admin "View As")
   const isImpersonating = !!sessionStorage.getItem('impersonationToken');
   console.log('[SetupWizard] isImpersonating:', isImpersonating, 'token:', sessionStorage.getItem('impersonationToken'));
-  const [showDemoChoice, setShowDemoChoice] = useState(false);
+  const hasExistingDraft = !!localStorage.getItem(STORAGE_KEY);
+  const hasCompletedWizard = localStorage.getItem('taekup_wizard_complete') === 'true';
+  const [showDemoChoice, setShowDemoChoice] = useState(!isImpersonating && !hasExistingDraft && !hasCompletedWizard);
   const [formKey, setFormKey] = useState(0);
   const [clubError, setClubError] = useState('');
 
