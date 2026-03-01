@@ -226,7 +226,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 
                 // Always fetch top 10 for premium users (even if their club opted out)
                 let topPlayers: Array<{id: string; name: string; global_xp: number; club_name: string; sport: string; country: string}> = [];
-                if (isPremium) {
+                if (isPremium || data.clubSponsoredPremium || serverConfirmedPremium) {
                     try {
                         const topResponse = await fetch(`/api/world-rankings?limit=10`);
                         const topResult = await topResponse.json();
@@ -261,7 +261,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         fetchWorldRankings();
         const interval = setInterval(fetchWorldRankings, 60000); // Refresh every minute
         return () => clearInterval(interval);
-    }, [student.id, isPremium, data.isDemo]);
+    }, [student.id, isPremium, data.isDemo, data.clubSponsoredPremium, serverConfirmedPremium]);
     
     // Fetch Student Stats for Insights tab
     useEffect(() => {
