@@ -5819,40 +5819,94 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             
                                             {!worldRankLoading && worldRankData.myRank !== null ? (
                                             (() => {
-                                                const countryToFlag = (country: string): string => {
-                                                    if (!country) return '🌍';
-                                                    const c = country.toLowerCase().trim();
-                                                    const isoMap: Record<string, string> = {
-                                                        'af':'🇦🇫','al':'🇦🇱','dz':'🇩🇿','ar':'🇦🇷','am':'🇦🇲','au':'🇦🇺','at':'🇦🇹','az':'🇦🇿',
-                                                        'bd':'🇧🇩','be':'🇧🇪','br':'🇧🇷','bg':'🇧🇬','ca':'🇨🇦','cl':'🇨🇱','cn':'🇨🇳','co':'🇨🇴',
-                                                        'hr':'🇭🇷','cz':'🇨🇿','dk':'🇩🇰','eg':'🇪🇬','ee':'🇪🇪','fi':'🇫🇮','fr':'🇫🇷','ge':'🇬🇪',
-                                                        'de':'🇩🇪','gr':'🇬🇷','hu':'🇭🇺','is':'🇮🇸','in':'🇮🇳','id':'🇮🇩','ir':'🇮🇷','iq':'🇮🇶',
-                                                        'ie':'🇮🇪','il':'🇮🇱','it':'🇮🇹','jp':'🇯🇵','jo':'🇯🇴','kz':'🇰🇿','ke':'🇰🇪','kr':'🇰🇷',
-                                                        'kw':'🇰🇼','lb':'🇱🇧','lu':'🇱🇺','my':'🇲🇾','mx':'🇲🇽','ma':'🇲🇦','nl':'🇳🇱','nz':'🇳🇿',
-                                                        'ng':'🇳🇬','no':'🇳🇴','pk':'🇵🇰','pe':'🇵🇪','ph':'🇵🇭','pl':'🇵🇱','pt':'🇵🇹','qa':'🇶🇦',
-                                                        'ro':'🇷🇴','ru':'🇷🇺','sa':'🇸🇦','rs':'🇷🇸','sg':'🇸🇬','sk':'🇸🇰','si':'🇸🇮','za':'🇿🇦',
-                                                        'es':'🇪🇸','se':'🇸🇪','ch':'🇨🇭','sy':'🇸🇾','tw':'🇹🇼','th':'🇹🇭','tn':'🇹🇳','tr':'🇹🇷',
-                                                        'ua':'🇺🇦','ae':'🇦🇪','gb':'🇬🇧','us':'🇺🇸','uy':'🇺🇾','vn':'🇻🇳','ye':'🇾🇪',
-                                                    };
-                                                    const nameMap: Record<string, string> = {
-                                                        'france':'🇫🇷','germany':'🇩🇪','united states':'🇺🇸','usa':'🇺🇸',
-                                                        'united kingdom':'🇬🇧','uk':'🇬🇧','england':'🇬🇧','spain':'🇪🇸','italy':'🇮🇹','brazil':'🇧🇷',
-                                                        'canada':'🇨🇦','australia':'🇦🇺','japan':'🇯🇵','south korea':'🇰🇷','korea':'🇰🇷',
-                                                        'china':'🇨🇳','india':'🇮🇳','mexico':'🇲🇽','netherlands':'🇳🇱','belgium':'🇧🇪',
-                                                        'sweden':'🇸🇪','norway':'🇳🇴','denmark':'🇩🇰','finland':'🇫🇮','portugal':'🇵🇹',
-                                                        'ireland':'🇮🇪','switzerland':'🇨🇭','austria':'🇦🇹','poland':'🇵🇱','russia':'🇷🇺',
-                                                        'turkey':'🇹🇷','türkiye':'🇹🇷','iran':'🇮🇷','iraq':'🇮🇶','egypt':'🇪🇬','south africa':'🇿🇦',
-                                                        'argentina':'🇦🇷','colombia':'🇨🇴','chile':'🇨🇱','peru':'🇵🇪','new zealand':'🇳🇿',
-                                                        'thailand':'🇹🇭','philippines':'🇵🇭','indonesia':'🇮🇩','malaysia':'🇲🇾','singapore':'🇸🇬',
-                                                        'vietnam':'🇻🇳','pakistan':'🇵🇰','bangladesh':'🇧🇩','nigeria':'🇳🇬','kenya':'🇰🇪',
-                                                        'morocco':'🇲🇦','algeria':'🇩🇿','tunisia':'🇹🇳','uae':'🇦🇪','united arab emirates':'🇦🇪',
-                                                        'saudi arabia':'🇸🇦','israel':'🇮🇱','greece':'🇬🇷','czech republic':'🇨🇿','czechia':'🇨🇿',
-                                                        'romania':'🇷🇴','hungary':'🇭🇺','ukraine':'🇺🇦','croatia':'🇭🇷','serbia':'🇷🇸',
-                                                        'luxembourg':'🇱🇺','scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','afghanistan':'🇦🇫','jordan':'🇯🇴','lebanon':'🇱🇧',
-                                                        'kuwait':'🇰🇼','qatar':'🇶🇦','syria':'🇸🇾','yemen':'🇾🇪','georgia':'🇬🇪',
-                                                        'armenia':'🇦🇲','azerbaijan':'🇦🇿','kazakhstan':'🇰🇿','taiwan':'🇹🇼','uruguay':'🇺🇾',
-                                                    };
-                                                    return isoMap[c] || nameMap[c] || '🌍';
+                                                const COUNTRY_CODES: Record<string, string> = {
+                                                    'US': 'us', 'USA': 'us', 'United States': 'us',
+                                                    'UK': 'gb', 'GB': 'gb', 'United Kingdom': 'gb', 'England': 'gb',
+                                                    'France': 'fr', 'FR': 'fr',
+                                                    'Germany': 'de', 'DE': 'de',
+                                                    'Iran': 'ir', 'IR': 'ir',
+                                                    'Iraq': 'iq', 'IQ': 'iq',
+                                                    'Spain': 'es', 'ES': 'es',
+                                                    'Italy': 'it', 'IT': 'it',
+                                                    'Brazil': 'br', 'BR': 'br',
+                                                    'Canada': 'ca', 'CA': 'ca',
+                                                    'Australia': 'au', 'AU': 'au',
+                                                    'Japan': 'jp', 'JP': 'jp',
+                                                    'South Korea': 'kr', 'Korea': 'kr', 'KR': 'kr',
+                                                    'China': 'cn', 'CN': 'cn',
+                                                    'India': 'in', 'IN': 'in',
+                                                    'Mexico': 'mx', 'MX': 'mx',
+                                                    'Netherlands': 'nl', 'NL': 'nl',
+                                                    'Belgium': 'be', 'BE': 'be',
+                                                    'Sweden': 'se', 'SE': 'se',
+                                                    'Norway': 'no', 'NO': 'no',
+                                                    'Denmark': 'dk', 'DK': 'dk',
+                                                    'Finland': 'fi', 'FI': 'fi',
+                                                    'Poland': 'pl', 'PL': 'pl',
+                                                    'Austria': 'at', 'AT': 'at',
+                                                    'Switzerland': 'ch', 'CH': 'ch',
+                                                    'Portugal': 'pt', 'PT': 'pt',
+                                                    'Greece': 'gr', 'GR': 'gr',
+                                                    'Turkey': 'tr', 'Türkiye': 'tr', 'TR': 'tr',
+                                                    'Russia': 'ru', 'RU': 'ru',
+                                                    'Argentina': 'ar', 'AR': 'ar',
+                                                    'Colombia': 'co', 'CO': 'co',
+                                                    'Chile': 'cl', 'CL': 'cl',
+                                                    'Peru': 'pe', 'PE': 'pe',
+                                                    'Egypt': 'eg', 'EG': 'eg',
+                                                    'South Africa': 'za', 'ZA': 'za',
+                                                    'Morocco': 'ma', 'MA': 'ma',
+                                                    'Nigeria': 'ng', 'NG': 'ng',
+                                                    'Saudi Arabia': 'sa', 'SA': 'sa',
+                                                    'UAE': 'ae', 'AE': 'ae', 'United Arab Emirates': 'ae',
+                                                    'Israel': 'il', 'IL': 'il',
+                                                    'Thailand': 'th', 'TH': 'th',
+                                                    'Vietnam': 'vn', 'VN': 'vn',
+                                                    'Philippines': 'ph', 'PH': 'ph',
+                                                    'Indonesia': 'id', 'ID': 'id',
+                                                    'Malaysia': 'my', 'MY': 'my',
+                                                    'Singapore': 'sg', 'SG': 'sg',
+                                                    'New Zealand': 'nz', 'NZ': 'nz',
+                                                    'Ireland': 'ie', 'IE': 'ie',
+                                                    'Czech Republic': 'cz', 'Czechia': 'cz', 'CZ': 'cz',
+                                                    'Romania': 'ro', 'RO': 'ro',
+                                                    'Hungary': 'hu', 'HU': 'hu',
+                                                    'Ukraine': 'ua', 'UA': 'ua',
+                                                    'Pakistan': 'pk', 'PK': 'pk',
+                                                    'Bangladesh': 'bd', 'BD': 'bd',
+                                                    'Taiwan': 'tw', 'TW': 'tw',
+                                                    'Hong Kong': 'hk', 'HK': 'hk',
+                                                    'Kenya': 'ke', 'KE': 'ke',
+                                                    'Afghanistan': 'af', 'AF': 'af',
+                                                    'Jordan': 'jo', 'JO': 'jo',
+                                                    'Lebanon': 'lb', 'LB': 'lb',
+                                                    'Kuwait': 'kw', 'KW': 'kw',
+                                                    'Qatar': 'qa', 'QA': 'qa',
+                                                    'Algeria': 'dz', 'DZ': 'dz',
+                                                    'Tunisia': 'tn', 'TN': 'tn',
+                                                    'Croatia': 'hr', 'HR': 'hr',
+                                                    'Serbia': 'rs', 'RS': 'rs',
+                                                    'Luxembourg': 'lu', 'LU': 'lu',
+                                                };
+                                                const getCountryCode = (country: string): string => {
+                                                    if (!country) return '';
+                                                    const trimmed = country.trim();
+                                                    return COUNTRY_CODES[trimmed] || COUNTRY_CODES[trimmed.toUpperCase()] || trimmed.toLowerCase().substring(0, 2);
+                                                };
+                                                const CountryFlagImg = ({ country, size = 16 }: { country: string; size?: number }) => {
+                                                    const code = getCountryCode(country);
+                                                    if (!code) return <span>🌍</span>;
+                                                    return (
+                                                        <img 
+                                                            src={`https://flagcdn.com/w40/${code}.png`}
+                                                            srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
+                                                            width={size}
+                                                            height={Math.round(size * 0.75)}
+                                                            alt={country}
+                                                            className="inline-block rounded shadow-sm"
+                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                        />
+                                                    );
                                                 };
                                                 const percentile = worldRankData.totalStudents > 0 
                                                     ? Math.max(1, Math.round((worldRankData.myRank / worldRankData.totalStudents) * 100)) 
@@ -5920,8 +5974,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                     return (
                                                                         <div key={p.id} className="flex flex-col items-center" style={{width: '30%'}}>
                                                                             <span className="text-2xl mb-1">{medals[podiumIdx]}</span>
-                                                                            <p className={`text-xs font-bold truncate w-full text-center ${isMe ? 'text-cyan-400' : 'text-white'}`}>
-                                                                                {countryToFlag(p.country)} {p.name}{isMe ? ' ✦' : ''}
+                                                                            <p className={`text-xs font-bold truncate w-full text-center ${isMe ? 'text-cyan-400' : 'text-white'} flex items-center justify-center gap-1`}>
+                                                                                <CountryFlagImg country={p.country} size={14} /> {p.name}{isMe ? ' ✦' : ''}
                                                                             </p>
                                                                             <p className="text-[9px] text-gray-500 truncate w-full text-center">{p.club_name}</p>
                                                                             <div className={`${podiumHeight} w-full mt-1 bg-gradient-to-t ${podiumColors[podiumIdx]} rounded-t-lg border border-b-0 flex items-end justify-center pb-2`}>
@@ -5951,8 +6005,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                         {index + 4}
                                                                                     </div>
                                                                                     <div>
-                                                                                        <p className={`font-bold text-sm ${isMe ? 'text-cyan-400' : 'text-white'}`}>
-                                                                                            {countryToFlag(player.country)} {player.name} {isMe && t('parent.rivals.globalLeaderboard.you')}
+                                                                                        <p className={`font-bold text-sm ${isMe ? 'text-cyan-400' : 'text-white'} flex items-center gap-1`}>
+                                                                                            <CountryFlagImg country={player.country} size={14} /> {player.name} {isMe && t('parent.rivals.globalLeaderboard.you')}
                                                                                         </p>
                                                                                         <p className="text-[10px] text-gray-500">{player.club_name}</p>
                                                                                     </div>
@@ -6070,13 +6124,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         {index + 1}
                                                                     </div>
                                                                     <div>
-                                                                        <p className="font-bold text-xs text-white">
+                                                                        <p className="font-bold text-xs text-white flex items-center gap-1">
                                                                             {(() => {
-                                                                                if (!player.country) return '🌍';
-                                                                                const c = player.country.toLowerCase().trim();
-                                                                                const iso: Record<string, string> = {'af':'🇦🇫','al':'🇦🇱','dz':'🇩🇿','ar':'🇦🇷','au':'🇦🇺','at':'🇦🇹','bd':'🇧🇩','be':'🇧🇪','br':'🇧🇷','ca':'🇨🇦','cl':'🇨🇱','cn':'🇨🇳','co':'🇨🇴','hr':'🇭🇷','cz':'🇨🇿','dk':'🇩🇰','eg':'🇪🇬','fi':'🇫🇮','fr':'🇫🇷','de':'🇩🇪','gr':'🇬🇷','hu':'🇭🇺','in':'🇮🇳','id':'🇮🇩','ir':'🇮🇷','iq':'🇮🇶','ie':'🇮🇪','il':'🇮🇱','it':'🇮🇹','jp':'🇯🇵','jo':'🇯🇴','ke':'🇰🇪','kr':'🇰🇷','kw':'🇰🇼','lb':'🇱🇧','lu':'🇱🇺','my':'🇲🇾','mx':'🇲🇽','ma':'🇲🇦','nl':'🇳🇱','nz':'🇳🇿','ng':'🇳🇬','no':'🇳🇴','pk':'🇵🇰','pe':'🇵🇪','ph':'🇵🇭','pl':'🇵🇱','pt':'🇵🇹','qa':'🇶🇦','ro':'🇷🇴','ru':'🇷🇺','sa':'🇸🇦','rs':'🇷🇸','sg':'🇸🇬','za':'🇿🇦','es':'🇪🇸','se':'🇸🇪','ch':'🇨🇭','th':'🇹🇭','tn':'🇹🇳','tr':'🇹🇷','ua':'🇺🇦','ae':'🇦🇪','gb':'🇬🇧','us':'🇺🇸','vn':'🇻🇳'};
-                                                                                const nm: Record<string, string> = {'france':'🇫🇷','germany':'🇩🇪','united states':'🇺🇸','usa':'🇺🇸','united kingdom':'🇬🇧','uk':'🇬🇧','england':'🇬🇧','spain':'🇪🇸','italy':'🇮🇹','brazil':'🇧🇷','canada':'🇨🇦','australia':'🇦🇺','japan':'🇯🇵','south korea':'🇰🇷','korea':'🇰🇷','china':'🇨🇳','india':'🇮🇳','iran':'🇮🇷','turkey':'🇹🇷','türkiye':'🇹🇷','mexico':'🇲🇽','netherlands':'🇳🇱','belgium':'🇧🇪','sweden':'🇸🇪','norway':'🇳🇴','denmark':'🇩🇰','portugal':'🇵🇹','ireland':'🇮🇪','switzerland':'🇨🇭','austria':'🇦🇹','poland':'🇵🇱','russia':'🇷🇺','iraq':'🇮🇶','egypt':'🇪🇬','south africa':'🇿🇦','argentina':'🇦🇷','new zealand':'🇳🇿','thailand':'🇹🇭','morocco':'🇲🇦','uae':'🇦🇪','united arab emirates':'🇦🇪','saudi arabia':'🇸🇦','nigeria':'🇳🇬'};
-                                                                                return iso[c] || nm[c] || '🌍';
+                                                                                if (!player.country) return <span>🌍</span>;
+                                                                                const trimmed = player.country.trim();
+                                                                                const codes: Record<string, string> = {'US':'us','USA':'us','United States':'us','UK':'gb','GB':'gb','United Kingdom':'gb','France':'fr','FR':'fr','Germany':'de','DE':'de','Iran':'ir','IR':'ir','Iraq':'iq','IQ':'iq','Spain':'es','Italy':'it','Brazil':'br','Canada':'ca','Australia':'au','Japan':'jp','South Korea':'kr','Korea':'kr','China':'cn','India':'in','Mexico':'mx','Netherlands':'nl','Belgium':'be','Sweden':'se','Norway':'no','Denmark':'dk','Finland':'fi','Poland':'pl','Austria':'at','Switzerland':'ch','Portugal':'pt','Greece':'gr','Turkey':'tr','Russia':'ru','Argentina':'ar','Egypt':'eg','South Africa':'za','Morocco':'ma','Nigeria':'ng','Saudi Arabia':'sa','UAE':'ae','Israel':'il','Thailand':'th','Vietnam':'vn','Philippines':'ph','Indonesia':'id','Malaysia':'my','Singapore':'sg','New Zealand':'nz','Ireland':'ie','Romania':'ro','Hungary':'hu','Ukraine':'ua','Pakistan':'pk','Bangladesh':'bd','Taiwan':'tw'};
+                                                                                const code = codes[trimmed] || codes[trimmed.toUpperCase()] || trimmed.toLowerCase().substring(0, 2);
+                                                                                return <img src={`https://flagcdn.com/w40/${code}.png`} srcSet={`https://flagcdn.com/w80/${code}.png 2x`} width={14} height={10} alt={player.country} className="inline-block rounded shadow-sm" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
                                                                             })()} {player.name}
                                                                         </p>
                                                                         <p className="text-[10px] text-gray-500">{player.club_name}</p>
