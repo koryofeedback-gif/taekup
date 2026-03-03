@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, Search, Crown, LogOut, RefreshCw, 
-  AlertTriangle, Star, Clock, Gift, CheckCircle, XCircle
+  AlertTriangle, Star, Clock, Gift, CheckCircle, XCircle, ExternalLink
 } from 'lucide-react';
 
 interface Parent {
@@ -18,6 +18,7 @@ interface Parent {
   belt: string;
   club_name: string;
   club_id: string;
+  club_website: string | null;
   days_since_last_class: number;
 }
 
@@ -289,12 +290,24 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <Link
-                          to={`/super-admin/clubs/${parent.club_id}`}
-                          className="text-purple-400 hover:underline"
-                        >
-                          {parent.club_name}
-                        </Link>
+                        {parent.club_website ? (
+                          <a
+                            href={parent.club_website.startsWith('http') ? parent.club_website : `https://${parent.club_website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-400 hover:underline inline-flex items-center gap-1"
+                          >
+                            {parent.club_name}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <Link
+                            to={`/super-admin/clubs/${parent.club_id}`}
+                            className="text-purple-400 hover:underline"
+                          >
+                            {parent.club_name}
+                          </Link>
+                        )}
                       </td>
                       <td className="px-4 py-4">
                         {getPremiumBadge(parent)}

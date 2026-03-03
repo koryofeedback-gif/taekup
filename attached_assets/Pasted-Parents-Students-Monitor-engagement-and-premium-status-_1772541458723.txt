@@ -1,0 +1,449 @@
+Parents & Students
+Monitor engagement and premium status
+
+Refresh
+Search by parent/student name or email...
+Premium Only
+At Risk (14+ days)
+Student	Parent	Club	Status	Belt / XP	Last Class	Actions
+Alex
+
+Alex daddy
+
+mytaekstudent2@ruutukf.com
+
+Koryo club	
+Gifted
+wt-7
+
+148 XP
+
+Mar 1, 2026
+
+1 days ago
+
+
+kazem
+
+kazem dad
+
+mytaeknewstudent@lnovic.com
+
+cowclub	Free	
+hkd-3
+
+216 XP
+
+Feb 25, 2026
+
+5 days ago
+
+
+ali ahmad
+
+ali dady
+
+mytaekstudent@bwmyga.com
+
+kit club	Free	
+bjj-2
+
+184 XP
+
+Feb 25, 2026
+
+5 days ago
+
+
+gol
+
+gol dad
+
+mytaekstudent@wnbaldwy.com
+
+dog club	Free	
+Green
+
+232 XP
+
+Feb 24, 2026
+
+6 days ago
+
+
+gol
+
+gol dad
+
+mytaekstudent@wnbaldwy.com
+
+dog club	Free	
+k-4
+
+232 XP
+
+Feb 24, 2026
+
+6 days ago
+
+
+John Smith
+
+Jane Smith
+
+mytaekstudent2@mrotzis.com
+
+cat club	Free	
+wt-1
+
+20 XP
+
+Feb 24, 2026
+
+7 days ago
+
+
+ali reza
+
+ali reza dad
+
+mytaekstudent1@mrotzis.com
+
+cat club	Free	
+wt-3
+
+148 XP
+
+Feb 24, 2026
+
+7 days ago
+
+
+hami
+
+hami dad
+
+mytaekstudent3@yzcalo.com
+
+tiger club	Free	
+wt-7
+
+222 XP
+
+Feb 23, 2026
+
+8 days ago
+
+
+Ahvaz
+
+nas nas
+
+mytaekstudent002@bltiwd.com
+
+big bag	Premium	
+wt-4
+
+120 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Sari
+
+shit shit
+
+mytaekstudent07@bltiwd.com
+
+big bag	Premium	
+wt-6
+
+210 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Eilam
+
+ter ter
+
+mytaekstudent08@bltiwd.com
+
+big bag	Free	
+wt-2
+
+176 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Sistan
+
+shash
+
+mytaekstudent05@bltiwd.com
+
+big bag	Premium	
+wt-9
+
+272 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Rasht
+
+miss you
+
+mytaekstudent06@bltiwd.com
+
+big bag	Premium	
+wt-2
+
+381 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Marvdasht
+
+ali
+
+adminmytaek26@bltiwd.com
+
+big bag	Free	
+wt-5
+
+217 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Kerman
+
+nam nam
+
+mytaekstudent09@bltiwd.com
+
+big bag	Premium	
+wt-8
+
+168 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+shiraz
+
+hi
+
+mytaekstudent2@bltiwd.com
+
+big bag	Premium	
+wt-5
+
+272 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Tabriz
+
+kiss
+
+mytaekstudent04@bltiwd.com
+
+big bag	Premium	
+wt-6
+
+228 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+yazd
+
+bye
+
+mytaekstudent1@bltiwd.com
+
+big bag	Premium	
+wt-3
+
+317 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Gorgan
+
+shir shir
+
+mytaekstudent001@bltiwd.com
+
+big bag	Premium	
+wt-9
+
+104 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+eslamabad
+
+george
+
+adminmytaek25@bltiwd.com
+
+big bag	Free	
+wt-9
+
+257 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Mashhad
+
+boos
+
+mytaekstudent02@bltiwd.com
+
+big bag	Premium	
+wt-8
+
+232 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+Hamedan
+
+hos hos
+
+mytaekstudent003@bltiwd.com
+
+big bag	Premium	
+wt-10
+
+96 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+tehran
+
+ki
+
+mytaekstudent3@bltiwd.com
+
+big bag	Premium	
+wt-7
+
+274 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+ghom
+
+no
+
+mytaekstudent01@bltiwd.com
+
+big bag	Premium	
+wt-7
+
+295 XP
+
+Feb 17, 2026
+
+14 days ago
+
+
+fara
+
+-
+
+student2@ozsaip.com
+
+afarin club	Free	
+wt-4
+
+0 XP
+
+Never
+
+
+Karin
+
+karin dad
+
+mytaekparent2@bwmyga.com
+
+tiger club	Free	
+wt-3
+
+44 XP
+
+Never
+
+
+lili
+
+-
+
+student@cmhvzylmfc.com
+
+afarin club	Free	
+wt-4
+
+0 XP
+
+Never
+
+
+kamyar
+
+kamyar dad
+
+mytaekparent1@xkxkud.com
+
+tiger club	Free	
+wt-5
+
+58 XP
+
+Never
+
+

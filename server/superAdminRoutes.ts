@@ -369,9 +369,11 @@ router.get('/parents', verifySuperAdmin, async (req: Request, res: Response) => 
         s.belt,
         c.name as club_name,
         c.id as club_id,
+        ar.website_url as club_website,
         EXTRACT(DAY FROM NOW() - s.last_class_at) as days_since_last_class
       FROM students s
       JOIN clubs c ON s.club_id = c.id
+      LEFT JOIN access_requests ar ON LOWER(ar.club_name) = LOWER(c.name) AND ar.status = 'approved'
       WHERE s.parent_email IS NOT NULL
     `;
     
