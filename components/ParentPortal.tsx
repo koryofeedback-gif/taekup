@@ -2802,7 +2802,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 {/* Global Shogun League Preview - only show if they have a rank */}
                 {worldRankData.myRank && worldRankData.myGlobalXP > 0 && (
                     <div 
-                        onClick={() => setActiveTab('rivals')}
+                        onClick={() => { setActiveTab('rivals'); setRivalsView('leaderboard'); setLeaderboardMode('world'); }}
                         className="mt-3 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-xl p-3 border border-cyan-500/30 flex items-center justify-between cursor-pointer hover:border-cyan-400/50 transition-colors"
                     >
                         <div className="flex items-center">
