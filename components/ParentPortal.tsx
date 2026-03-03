@@ -2799,7 +2799,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                 </div>
                 
-                {/* Global Shogun League Preview - only show if they have global XP */}
+                {/* Global Shogun League Preview - only show if they have a rank */}
                 {worldRankData.myRank && worldRankData.myGlobalXP > 0 && (
                     <div 
                         onClick={() => setActiveTab('rivals')}
@@ -2809,7 +2809,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             <span className="text-xl mr-2">🌍</span>
                             <div>
                                 <p className="text-xs text-cyan-300 font-bold">{t('parent.home.globalShogunRank', { rank: worldRankData.myRank })}</p>
-                                <p className="text-[10px] text-gray-400">{t('parent.home.globalHonorXP', { xp: worldRankData.myGlobalXP })}</p>
+                                <p className="text-[10px] text-gray-400">{t('parent.rivals.globalLeaderboard.warriorsWorldwide', { count: worldRankData.totalStudents.toLocaleString() })}</p>
                             </div>
                         </div>
                         <span className="text-cyan-400 text-xs">{t('parent.home.viewArrow')}</span>
@@ -5824,10 +5824,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <p className="text-gray-400 text-xs mb-2">🌍 {t('parent.rivals.globalLeaderboard.yourGlobalRank')}</p>
                                                     <p className="text-5xl font-black bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">#{worldRankData.myRank}</p>
                                                     <p className="text-gray-500 text-sm mt-1">{t('parent.rivals.globalLeaderboard.warriorsWorldwide', { count: worldRankData.totalStudents.toLocaleString() })}</p>
-                                                    <div className="mt-3 inline-block bg-purple-900/50 px-4 py-2 rounded-full border border-purple-500/30">
-                                                        <span className="text-purple-400 font-bold">{worldRankData.myGlobalXP.toLocaleString()}</span>
-                                                        <span className="text-gray-400 text-sm ml-1">{t('parent.rivals.globalLeaderboard.globalHonorXP')}</span>
-                                                    </div>
                                                 </div>
                                                 
                                                 {/* Global Leaderboard - Premium Only */}
@@ -5835,11 +5831,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                     <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
                                                         <p className="text-white text-sm font-bold mb-3 flex items-center gap-2">
                                                             🏆 {t('parent.rivals.globalLeaderboard.top10Worldwide')}
-                                                            {worldRankData.topPlayers.length > 0 && worldRankData.topPlayers[0] && (
-                                                                <span className="text-yellow-400 text-[10px]">
-                                                                    ({(worldRankData.topPlayers[0].global_xp - worldRankData.myGlobalXP).toLocaleString()} pts to #1)
-                                                                </span>
-                                                            )}
                                                         </p>
                                                         <div className="space-y-2">
                                                             {worldRankData.topPlayers.map((player, index) => (
@@ -5867,7 +5858,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                             <p className="text-[10px] text-gray-500">{player.club_name}</p>
                                                                         </div>
                                                                     </div>
-                                                                    <p className="font-bold text-cyan-400 text-sm">{player.global_xp.toLocaleString()}</p>
+                                                                    <p className="font-bold text-cyan-400 text-sm">#{index + 1}</p>
                                                                 </div>
                                                             ))}
                                                         </div>
