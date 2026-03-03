@@ -5819,6 +5819,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                             
                                             {!worldRankLoading && worldRankData.myRank !== null ? (
                                             (() => {
+                                                const countryToFlag = (country: string): string => {
+                                                    const map: Record<string, string> = {
+                                                        'france': '🇫🇷', 'germany': '🇩🇪', 'united states': '🇺🇸', 'usa': '🇺🇸', 'us': '🇺🇸',
+                                                        'united kingdom': '🇬🇧', 'uk': '🇬🇧', 'spain': '🇪🇸', 'italy': '🇮🇹', 'brazil': '🇧🇷',
+                                                        'canada': '🇨🇦', 'australia': '🇦🇺', 'japan': '🇯🇵', 'south korea': '🇰🇷', 'korea': '🇰🇷',
+                                                        'china': '🇨🇳', 'india': '🇮🇳', 'mexico': '🇲🇽', 'netherlands': '🇳🇱', 'belgium': '🇧🇪',
+                                                        'sweden': '🇸🇪', 'norway': '🇳🇴', 'denmark': '🇩🇰', 'finland': '🇫🇮', 'portugal': '🇵🇹',
+                                                        'ireland': '🇮🇪', 'switzerland': '🇨🇭', 'austria': '🇦🇹', 'poland': '🇵🇱', 'russia': '🇷🇺',
+                                                        'turkey': '🇹🇷', 'iran': '🇮🇷', 'iraq': '🇮🇶', 'egypt': '🇪🇬', 'south africa': '🇿🇦',
+                                                        'argentina': '🇦🇷', 'colombia': '🇨🇴', 'chile': '🇨🇱', 'peru': '🇵🇪', 'new zealand': '🇳🇿',
+                                                        'thailand': '🇹🇭', 'philippines': '🇵🇭', 'indonesia': '🇮🇩', 'malaysia': '🇲🇾', 'singapore': '🇸🇬',
+                                                        'vietnam': '🇻🇳', 'pakistan': '🇵🇰', 'bangladesh': '🇧🇩', 'nigeria': '🇳🇬', 'kenya': '🇰🇪',
+                                                        'morocco': '🇲🇦', 'algeria': '🇩🇿', 'tunisia': '🇹🇳', 'uae': '🇦🇪', 'saudi arabia': '🇸🇦',
+                                                        'israel': '🇮🇱', 'greece': '🇬🇷', 'czech republic': '🇨🇿', 'romania': '🇷🇴', 'hungary': '🇭🇺',
+                                                        'ukraine': '🇺🇦', 'croatia': '🇭🇷', 'serbia': '🇷🇸', 'luxembourg': '🇱🇺', 'scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+                                                    };
+                                                    if (!country) return '🌍';
+                                                    return map[country.toLowerCase().trim()] || '🌍';
+                                                };
                                                 const percentile = worldRankData.totalStudents > 0 
                                                     ? Math.max(1, Math.round((worldRankData.myRank / worldRankData.totalStudents) * 100)) 
                                                     : 100;
@@ -5886,7 +5905,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         <div key={p.id} className="flex flex-col items-center" style={{width: '30%'}}>
                                                                             <span className="text-2xl mb-1">{medals[podiumIdx]}</span>
                                                                             <p className={`text-xs font-bold truncate w-full text-center ${isMe ? 'text-cyan-400' : 'text-white'}`}>
-                                                                                {p.name}{isMe ? ' ✦' : ''}
+                                                                                {countryToFlag(p.country)} {p.name}{isMe ? ' ✦' : ''}
                                                                             </p>
                                                                             <p className="text-[9px] text-gray-500 truncate w-full text-center">{p.club_name}</p>
                                                                             <div className={`${podiumHeight} w-full mt-1 bg-gradient-to-t ${podiumColors[podiumIdx]} rounded-t-lg border border-b-0 flex items-end justify-center pb-2`}>
@@ -5917,7 +5936,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                     </div>
                                                                                     <div>
                                                                                         <p className={`font-bold text-sm ${isMe ? 'text-cyan-400' : 'text-white'}`}>
-                                                                                            {player.name} {isMe && t('parent.rivals.globalLeaderboard.you')}
+                                                                                            {countryToFlag(player.country)} {player.name} {isMe && t('parent.rivals.globalLeaderboard.you')}
                                                                                         </p>
                                                                                         <p className="text-[10px] text-gray-500">{player.club_name}</p>
                                                                                     </div>
@@ -6035,8 +6054,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                         {index + 1}
                                                                     </div>
                                                                     <div>
-                                                                        <p className="font-bold text-xs text-white">{player.name}</p>
-                                                                        <p className="text-[10px] text-gray-500">{player.club_name} • {player.country || t('parent.rivals.globalLeaderboard.unknown')}</p>
+                                                                        <p className="font-bold text-xs text-white">
+                                                                            {(() => {
+                                                                                const fm: Record<string, string> = {'france':'🇫🇷','germany':'🇩🇪','united states':'🇺🇸','usa':'🇺🇸','united kingdom':'🇬🇧','uk':'🇬🇧','spain':'🇪🇸','italy':'🇮🇹','brazil':'🇧🇷','canada':'🇨🇦','australia':'🇦🇺','japan':'🇯🇵','south korea':'🇰🇷','korea':'🇰🇷','china':'🇨🇳','india':'🇮🇳','iran':'🇮🇷','turkey':'🇹🇷','mexico':'🇲🇽','netherlands':'🇳🇱','belgium':'🇧🇪','sweden':'🇸🇪','norway':'🇳🇴','denmark':'🇩🇰','portugal':'🇵🇹','ireland':'🇮🇪','switzerland':'🇨🇭','austria':'🇦🇹','poland':'🇵🇱','argentina':'🇦🇷','new zealand':'🇳🇿','thailand':'🇹🇭','morocco':'🇲🇦','uae':'🇦🇪','saudi arabia':'🇸🇦','egypt':'🇪🇬','south africa':'🇿🇦','nigeria':'🇳🇬'};
+                                                                                return (player.country ? fm[player.country.toLowerCase().trim()] : null) || '🌍';
+                                                                            })()} {player.name}
+                                                                        </p>
+                                                                        <p className="text-[10px] text-gray-500">{player.club_name}</p>
                                                                     </div>
                                                                 </div>
                                                                 <p className="font-bold text-cyan-400 text-xs">#{index + 1}</p>
