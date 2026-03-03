@@ -513,11 +513,10 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
           s.belt,
           c.name as club_name,
           c.id as club_id,
-          ar.website_url as club_website,
+          (SELECT ar.website_url FROM access_requests ar WHERE LOWER(ar.club_name) = LOWER(c.name) AND ar.status = 'approved' ORDER BY ar.created_at DESC LIMIT 1) as club_website,
           EXTRACT(DAY FROM NOW() - s.last_class_at) as days_since_last_class
         FROM students s
         JOIN clubs c ON s.club_id = c.id
-        LEFT JOIN access_requests ar ON LOWER(ar.club_name) = LOWER(c.name) AND ar.status = 'approved'
         WHERE s.parent_email IS NOT NULL
         ORDER BY s.last_class_at DESC NULLS LAST 
         LIMIT ${limit} OFFSET ${offset}
@@ -537,11 +536,10 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
           s.belt,
           c.name as club_name,
           c.id as club_id,
-          ar.website_url as club_website,
+          (SELECT ar.website_url FROM access_requests ar WHERE LOWER(ar.club_name) = LOWER(c.name) AND ar.status = 'approved' ORDER BY ar.created_at DESC LIMIT 1) as club_website,
           EXTRACT(DAY FROM NOW() - s.last_class_at) as days_since_last_class
         FROM students s
         JOIN clubs c ON s.club_id = c.id
-        LEFT JOIN access_requests ar ON LOWER(ar.club_name) = LOWER(c.name) AND ar.status = 'approved'
         WHERE s.parent_email IS NOT NULL
         ORDER BY s.last_class_at DESC NULLS LAST 
         LIMIT ${limit} OFFSET ${offset}
