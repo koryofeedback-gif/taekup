@@ -756,7 +756,7 @@ const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastComm
 
                 <div className="flex justify-between text-xs text-gray-500 uppercase font-mono">
                     <span>🎤 Chrome Only</span>
-                    <span>{t('coach.voice.sayStopToExit')}</span>
+                    <span>Say "STOP" to exit</span>
                 </div>
 
                 {/* Last Success */}
