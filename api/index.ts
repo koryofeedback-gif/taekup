@@ -2473,43 +2473,6 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
         continue;
       }
 
-      // Build the scores table HTML dynamically based on club's skills
-      let scoresTableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
-      scoresTableHtml += '<tr style="background-color: #f3f4f6;">';
-      
-      // Add skill headers (escaped for security)
-      const skillsArray = skills || [];
-      for (const skill of skillsArray) {
-        scoresTableHtml += `<th style="border: 1px solid #ddd; padding: 8px; text-align: center;">${escapeHtml(skill.name)}</th>`;
-      }
-      if (homeworkEnabled) {
-        scoresTableHtml += '<th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Homework</th>';
-      }
-      if (bonusEnabled) {
-        scoresTableHtml += '<th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Bonus</th>';
-      }
-      scoresTableHtml += '<th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #0ea5e9; color: white;">Total</th>';
-      scoresTableHtml += '</tr>';
-      
-      // Add score values row
-      scoresTableHtml += '<tr>';
-      for (const skill of skillsArray) {
-        const score = scores?.[skill.id];
-        const scoreLabel = score === 2 ? '🟢' : score === 1 ? '🟡' : score === 0 ? '🔴' : '—';
-        scoresTableHtml += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 18px;">${scoreLabel}</td>`;
-      }
-      if (homeworkEnabled) {
-        const safeHomework = parseInt(homework) || 0;
-        scoresTableHtml += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">+${safeHomework}</td>`;
-      }
-      if (bonusEnabled) {
-        const safeBonus = parseInt(bonus) || 0;
-        scoresTableHtml += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">+${safeBonus}</td>`;
-      }
-      const safeTotalPoints = parseInt(totalPoints) || 0;
-      scoresTableHtml += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold; background-color: #0ea5e9; color: white;">${safeTotalPoints}</td>`;
-      scoresTableHtml += '</tr></table>';
-
       // Send email directly using SendGrid
       try {
         const safeParentName = escapeHtml(name.split(' ')[0]) + "'s Parent";
@@ -2518,81 +2481,30 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
         const safeClassName = escapeHtml(className || 'Training Session');
         const safeClassDate = escapeHtml(classDate || new Date().toLocaleDateString());
         const safeCoachName = escapeHtml(coachName || 'Coach');
-        const safeCoachNote = escapeHtml(coachNote || '');
-        const safeStripeProgress = escapeHtml(stripeProgress || '0/64 pts');
+        const safeTotalPoints = parseInt(totalPoints) || 0;
         
-        const coachNoteSection = safeCoachNote 
-          ? `<div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0;"><strong>💬 Coach's Note:</strong><br><em>"${safeCoachNote}"</em></div>` 
-          : '';
+        const skillsArray = skills || [];
+        const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
+        const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
+        const redCount = skillsArray.filter((s: any) => scores?.[s.id] === 0).length;
+        const totalSkills = skillsArray.length;
 
-        // "What's waiting" section matching welcome email (cyan gradient)
-        const whatsWaitingSection = `
-          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
-            <tr>
-              <td style="background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); border-radius: 12px; padding: 20px; color: white;">
-                <p style="margin: 0 0 12px 0; font-weight: 600; font-size: 16px;">🌟 What's waiting for ${safeStudentName}:</p>
-                <table width="100%" cellpadding="0" cellspacing="0">
-                  <tr><td style="padding: 4px 0; font-size: 14px;">Track progress & earn <strong>HonorXP™</strong></td></tr>
-                  <tr><td style="padding: 4px 0; font-size: 14px;">Unlock awesome <strong>Legacy Cards™</strong></td></tr>
-                  <tr><td style="padding: 4px 0; font-size: 14px;">Climb the <strong>Global Shogun Rank™</strong></td></tr>
-                  <tr><td style="padding: 4px 0; font-size: 14px;">Complete fun challenges in the Arena</td></tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        `;
-
-        // Premium feature teasers matching welcome email style
-        const premiumTeaserSection = `
-          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
-            <tr>
-              <td style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 20px;">
-                <p style="margin: 0 0 16px 0; font-weight: 600; color: #92400e; font-size: 15px;">✨ Unlock Premium for $4.99/month:</p>
-                <table width="100%" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
-                      🔒 <strong>ChronosBelt™ Predictor</strong> - <span style="color: #92400e;">AI predicts your child's black belt date</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
-                      🔒 <strong>Legacy Cards™</strong> - <span style="color: #92400e;">Digital collectible cards for achievements</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
-                      🔒 <strong>2x HonorXP™</strong> - <span style="color: #92400e;">Double points with video proof submissions</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
-                      🔒 <strong>AI Training Insights</strong> - <span style="color: #92400e;">Personalized feedback from TaekBot</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #78350f; font-size: 14px;">
-                      🔒 <strong>Home Dojo™ Habits</strong> - <span style="color: #92400e;">Daily practice tracking for discipline</span>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        `;
+        const summaryEmojis = `${'🟢'.repeat(greenCount)}${'🟡'.repeat(yellowCount)}${'🔴'.repeat(redCount)}`;
 
         const emailBody = `
           Hi ${safeParentName},<br><br>
-          Great news! <strong>${safeStudentName}</strong> attended class at <strong>${safeClubName}</strong> today!<br><br>
-          <strong>Class:</strong> ${safeClassName}<br>
-          <strong>Date:</strong> ${safeClassDate}<br>
-          <strong>Coach:</strong> ${safeCoachName}<br><br>
-          <strong>Performance Scores:</strong><br>
-          ${scoresTableHtml}<br>
-          <strong>Total Points Earned:</strong> ${safeTotalPoints} pts<br>
-          <strong>Stripe Progress:</strong> ${safeStripeProgress}
-          ${coachNoteSection}
-          ${whatsWaitingSection}
-          ${premiumTeaserSection}
+          Great news! <strong>${safeStudentName}</strong> just finished class at <strong>${safeClubName}</strong>.<br><br>
+
+          <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;">
+            <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">${safeClassName} — ${safeClassDate}</p>
+            <p style="margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;">${summaryEmojis}</p>
+            <p style="margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;">${greenCount} of ${totalSkills} skills rated excellent</p>
+            <p style="margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;">+${safeTotalPoints} HonorXP™</p>
+          </div>
+
+          <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;">
+            Log in to see full scores, coach notes, stripe progress, and more.
+          </p>
         `;
 
         if (process.env.SENDGRID_API_KEY) {
@@ -2620,7 +2532,7 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
           <!-- Title -->
           <tr>
             <td style="padding: 32px 32px 16px 32px;">
-              <h1 style="margin: 0; color: #111827; font-size: 26px; font-weight: 600;">${safeStudentName}'s Class Feedback 🥋</h1>
+              <h1 style="margin: 0; color: #111827; font-size: 26px; font-weight: 600;">${safeStudentName} just trained! 🥋</h1>
             </td>
           </tr>
           <!-- Body Content -->
@@ -2632,7 +2544,7 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
           <!-- Button -->
           <tr>
             <td style="padding: 8px 32px 40px 32px;">
-              <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);">View Full Report</a>
+              <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);">See Full Details in Dashboard</a>
             </td>
           </tr>
           <!-- Footer -->
@@ -2660,7 +2572,7 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
           await sgMail.send({
             to: parentEmail,
             from: { email: 'updates@mytaek.com', name: 'TaekUp' },
-            subject: `⭐ ${safeStudentName}'s Class Report - ${safeClassDate}`,
+            subject: `🥋 ${safeStudentName} just trained — see how it went!`,
             html: brandedHtml
           });
           sentCount++;
@@ -2684,6 +2596,131 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
   } catch (error: any) {
     console.error('[ClassFeedback] Error:', error.message);
     return res.status(500).json({ error: 'Failed to send class feedback emails' });
+  }
+}
+
+async function handleSendPromotionEmail(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { parentEmail, studentName, clubName, type, newBelt, stripeCount, totalStripes } = parseBody(req);
+
+  if (!parentEmail || !studentName || !type) {
+    return res.status(400).json({ error: 'parentEmail, studentName, and type are required' });
+  }
+
+  try {
+    if (!process.env.SENDGRID_API_KEY) {
+      return res.status(500).json({ error: 'SendGrid not configured' });
+    }
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    const safeStudentName = escapeHtml(studentName);
+    const safeClubName = escapeHtml(clubName || 'Your Dojo');
+    const safeBelt = escapeHtml(newBelt || '');
+    const safeStripeCount = parseInt(stripeCount) || 0;
+    const safeTotalStripes = parseInt(totalStripes) || 4;
+
+    let subject = '';
+    let title = '';
+    let emailBody = '';
+
+    if (type === 'belt') {
+      subject = `🎉 ${safeStudentName} earned a new belt!`;
+      title = `${safeStudentName} has been promoted! 🥋`;
+      emailBody = `
+        <p style="font-size: 15px; color: #374151;">Amazing news!</p>
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 32px; margin: 20px 0; text-align: center;">
+          <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">New Belt Achievement</p>
+          <p style="margin: 0; font-size: 36px;">🥋</p>
+          <p style="margin: 12px 0 0 0; color: #ffffff; font-size: 24px; font-weight: 700;">${safeBelt}</p>
+          <p style="margin: 8px 0 0 0; color: #0ea5e9; font-size: 14px;">at ${safeClubName}</p>
+        </div>
+        <p style="font-size: 15px; color: #374151;">Hard work pays off! Log in to see the updated belt, progress history, and what's next on their journey.</p>
+      `;
+    } else if (type === 'stripe') {
+      subject = `⭐ ${safeStudentName} earned a new stripe!`;
+      title = `${safeStudentName} leveled up! ⭐`;
+      emailBody = `
+        <p style="font-size: 15px; color: #374151;">Great progress!</p>
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 32px; margin: 20px 0; text-align: center;">
+          <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Stripe Achievement</p>
+          <p style="margin: 0; font-size: 28px; letter-spacing: 8px;">${'⭐'.repeat(safeStripeCount)}</p>
+          <p style="margin: 12px 0 0 0; color: #ffffff; font-size: 18px; font-weight: 600;">Stripe ${safeStripeCount} of ${safeTotalStripes}</p>
+          <p style="margin: 8px 0 0 0; color: #0ea5e9; font-size: 14px;">${safeBelt} belt at ${safeClubName}</p>
+        </div>
+        <p style="font-size: 15px; color: #374151;">${safeStudentName} is making steady progress toward the next belt! Log in to see the full journey.</p>
+      `;
+    } else {
+      return res.status(400).json({ error: 'type must be "belt" or "stripe"' });
+    }
+
+    const brandedHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%); padding: 40px 30px; text-align: center;">
+              <img src="https://www.mytaek.com/mytaek-logo.png" alt="MyTaek" width="120" style="display: inline-block; max-width: 120px;" />
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 32px 32px 16px 32px;">
+              <h1 style="margin: 0; color: #111827; font-size: 26px; font-weight: 600;">${title}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 32px 24px 32px; color: #374151; font-size: 15px; line-height: 1.7;">
+              ${emailBody}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 32px 40px 32px;">
+              <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);">View in Dashboard</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f9fafb; padding: 28px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 12px 0; color: #4b5563; font-size: 14px;"><strong>TaekUp™</strong> is a product of <strong>MyTaek™</strong> Inc.</p>
+              <p style="margin: 0 0 12px 0; color: #9ca3af; font-size: 11px; line-height: 1.5;">HonorXP™ | Legacy Cards™ | Global Shogun Rank™ | DojoMint™ Protocol | ChronosBelt™ Predictor</p>
+              <p style="margin: 0 0 16px 0; color: #9ca3af; font-size: 11px;">&copy; ${new Date().getFullYear()} MyTaek™ Inc. All rights reserved.</p>
+              <p style="margin: 0;">
+                <a href="https://www.mytaek.com/unsubscribe" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Unsubscribe</a>
+                <span style="color: #d1d5db;"> | </span>
+                <a href="https://www.mytaek.com/privacy" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Privacy Policy</a>
+                <span style="color: #d1d5db;"> | </span>
+                <a href="https://www.mytaek.com" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Visit MyTaek</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    await sgMail.send({
+      to: parentEmail,
+      from: { email: 'updates@mytaek.com', name: 'TaekUp' },
+      subject,
+      html: brandedHtml
+    });
+
+    console.log(`[PromotionEmail] ${type} email sent to ${parentEmail} for ${studentName}`);
+    return res.json({ success: true, type, sent: true });
+  } catch (error: any) {
+    console.error('[PromotionEmail] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to send promotion email' });
   }
 }
 
@@ -8540,6 +8577,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/students/first' || path === '/students/first/') return await handleGetFirstStudent(req, res);
     if (path === '/invite-coach' || path === '/invite-coach/') return await handleInviteCoach(req, res);
     if (path === '/send-class-feedback' || path === '/send-class-feedback/') return await handleSendClassFeedback(req, res);
+    if (path === '/send-promotion-email' || path === '/send-promotion-email/') return await handleSendPromotionEmail(req, res);
     
     // Coach update/delete by ID
     const coachIdMatch = path.match(/^\/coaches\/([^/]+)\/?$/);

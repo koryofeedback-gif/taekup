@@ -1757,6 +1757,20 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.post('/api/send-promotion-email', async (req: Request, res: Response) => {
+    try {
+      const { parentEmail, studentName, clubName, type, newBelt, stripeCount, totalStripes } = req.body;
+      if (!parentEmail || !studentName || !type) {
+        return res.status(400).json({ error: 'parentEmail, studentName, and type are required' });
+      }
+      console.log(`[PromotionEmail-Dev] ${type} email for ${studentName} to ${parentEmail} (dev - not sent)`);
+      return res.json({ success: true, type, sent: false, dev: true });
+    } catch (error: any) {
+      console.error('[PromotionEmail-Dev] Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post('/api/test-email', async (req: Request, res: Response) => {
     try {
       const { emailType, to } = req.body;

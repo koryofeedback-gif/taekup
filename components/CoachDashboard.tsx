@@ -1704,6 +1704,45 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         } else {
             setConfirmation({ show: true, message: `${updatedCount} students updated. ${data.isDemo ? '(Demo mode - no emails sent)' : 'Parents notified.'} ${earnedStripes} new stripes earned!` });
         }
+
+        if (!data.isDemo && earnedStripes > 0) {
+            const stripeStudents = updatedStudents.filter(s => {
+                if (!attendance[s.id] || !s.parentEmail) return false;
+                const before = students.find(orig => orig.id === s.id);
+                const pointsRequired = getPointsRequired(s.beltId);
+                const stripesBefore = Math.floor((before?.totalPoints || 0) / pointsRequired);
+                const stripesAfter = Math.floor((s.totalPoints || 0) / pointsRequired);
+                return stripesAfter > stripesBefore;
+            });
+
+            for (const s of stripeStudents) {
+                const pointsRequired = getPointsRequired(s.beltId);
+                const newStripeCount = Math.floor((s.totalPoints || 0) / pointsRequired);
+                const beltName = data.belts?.find(b => b.id === s.beltId)?.name || s.beltId || 'Current';
+                try {
+                    const resp = await fetch('/api/send-promotion-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            parentEmail: s.parentEmail,
+                            studentName: s.name,
+                            clubName: data.clubName,
+                            type: 'stripe',
+                            newBelt: beltName,
+                            stripeCount: newStripeCount,
+                            totalStripes: 4
+                        })
+                    });
+                    if (resp.ok) {
+                        console.log('[StripeEmail] Sent for', s.name, '- stripe', newStripeCount);
+                    } else {
+                        console.error('[StripeEmail] Server error for', s.name, await resp.text());
+                    }
+                } catch (e) {
+                    console.error('[StripeEmail] Failed for', s.name, e);
+                }
+            }
+        }
         setTimeout(() => setConfirmation({ show: false, message: '' }), 5000);
     };
 
@@ -1755,6 +1794,29 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             
             // Open Certificate Modal
             setCertificateData({ show: true, student: updatedStudent, newBelt: nextBelt.name });
+
+            if (student.parentEmail && !data.isDemo) {
+                try {
+                    const resp = await fetch('/api/send-promotion-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            parentEmail: student.parentEmail,
+                            studentName: student.name,
+                            clubName: data.clubName,
+                            type: 'belt',
+                            newBelt: nextBelt.name
+                        })
+                    });
+                    if (resp.ok) {
+                        console.log('[BeltEmail] Sent for', student.name, '- promoted to', nextBelt.name);
+                    } else {
+                        console.error('[BeltEmail] Server error for', student.name, await resp.text());
+                    }
+                } catch (e) {
+                    console.error('[BeltEmail] Failed for', student.name, e);
+                }
+            }
         }
     };
     
