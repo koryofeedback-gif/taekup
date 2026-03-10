@@ -1208,7 +1208,7 @@ export const fr = {
       endClass: "Terminer le cours",
       logout: "Déconnexion",
       admin: "Admin",
-      voice: "Voix",
+      voice: "Sensei Voice",
       listening: "ÉCOUTE...",
       previewMessages: "Aperçu des messages",
       reviewVideo: "Examiner la vidéo",
