@@ -483,6 +483,13 @@ export function registerRoutes(app: Express) {
         return res.status(404).json({ error: 'Club not found' });
       }
 
+      // Auto-sync club name if wizard_data.clubName differs from clubs.name
+      const wizardClubName = club.wizard_data?.clubName;
+      if (wizardClubName && wizardClubName !== club.name) {
+        await db.execute(sql`UPDATE clubs SET name = ${wizardClubName}, updated_at = NOW() WHERE id = ${clubId}::uuid`);
+        club.name = wizardClubName;
+      }
+
       const studentsResult = await db.execute(sql`
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
                total_points, total_xp, stripes, join_date, created_at,

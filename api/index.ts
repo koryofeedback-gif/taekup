@@ -1679,6 +1679,13 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       return res.status(404).json({ error: 'Club not found' });
     }
 
+    // Auto-sync club name if wizard_data.clubName differs from clubs.name
+    const wizardClubName = club.wizard_data?.clubName;
+    if (wizardClubName && wizardClubName !== club.name) {
+      await client.query(`UPDATE clubs SET name = $1, updated_at = NOW() WHERE id = $2::uuid`, [wizardClubName, clubId]);
+      club.name = wizardClubName;
+    }
+
     // Ensure mytaek_id column exists
     await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS mytaek_id VARCHAR(20)`);
     
