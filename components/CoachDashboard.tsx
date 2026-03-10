@@ -728,8 +728,8 @@ const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastComm
                         </div>
                         <div className="bg-gray-700/30 rounded-lg p-3">
                             <p className="text-xs text-cyan-400 font-bold uppercase mb-1">Bulk — Mixed Colors</p>
-                            <p className="text-cyan-300 font-mono text-sm text-center">"{exampleStudent} 3 green 1 yellow"</p>
-                            <p className="text-gray-500 text-xs text-center mt-1">Assigns in skill order: first 3 get 💚, last 1 gets 💛</p>
+                            <p className="text-cyan-300 font-mono text-sm text-center">"{exampleStudent} three green one yellow"</p>
+                            <p className="text-gray-500 text-xs text-center mt-1">Say numbers as words (three, two, one). Assigns in skill order.</p>
                         </div>
                         <div className="bg-gray-700/30 rounded-lg p-3">
                             <p className="text-xs text-cyan-400 font-bold uppercase mb-1">Bulk — All Same</p>
@@ -754,9 +754,12 @@ const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastComm
                     </div>
                 </div>
 
+                <div className="bg-amber-900/30 border border-amber-500/30 rounded-lg p-2 mb-2">
+                    <p className="text-amber-400 text-xs font-bold text-center">⚠️ Works only in Google Chrome browser</p>
+                </div>
                 <div className="flex justify-between text-xs text-gray-500 uppercase font-mono">
                     <span>🎤 Chrome Only</span>
-                    <span>Say "STOP" to exit</span>
+                    <span>Say "STOP" to exit or tap ✕</span>
                 </div>
 
                 {/* Last Success */}
@@ -1304,7 +1307,14 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             return;
         }
 
-        const allGreenMatch = lowerCmd.match(/\ball\s+(green|good|yes|great|excellent|yellow|okay|half|average|red|bad|no|miss|fail)\b/);
+        const wordToNum: Record<string, string> = {
+            'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+            'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10',
+            'to': '2', 'too': '2', 'for': '4', 'tree': '3', 'free': '3', 'won': '1'
+        };
+        const normalizedCmd = lowerCmd.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|to|too|for|tree|free|won)\b/g, (m) => wordToNum[m] || m);
+
+        const allGreenMatch = normalizedCmd.match(/\ball\s+(green|good|yes|great|excellent|yellow|okay|half|average|red|bad|no|miss|fail)\b/);
         if (allGreenMatch) {
             const score = parseColorScore(allGreenMatch[1]);
             if (score !== -1) {
@@ -1317,7 +1327,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         }
 
         const bulkPattern = /(\d+)\s*(green|good|yes|great|excellent|yellow|okay|half|average|red|bad|no|miss|fail)/g;
-        const bulkMatches = [...lowerCmd.matchAll(bulkPattern)];
+        const bulkMatches = [...normalizedCmd.matchAll(bulkPattern)];
         if (bulkMatches.length > 0) {
             const assignments: { count: number; score: number }[] = [];
             for (const match of bulkMatches) {
