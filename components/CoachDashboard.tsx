@@ -691,15 +691,17 @@ const AddEventModal: React.FC<{ onClose: () => void, onAdd: (event: CalendarEven
     )
 }
 
-const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastCommand: string | null, students: Student[], skills: {id: string, name: string}[] }> = ({ transcript, isActive, lastCommand, students, skills }) => {
+const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastCommand: string | null, students: Student[], skills: {id: string, name: string}[], onClose?: () => void }> = ({ transcript, isActive, lastCommand, students, skills, onClose }) => {
     if (!isActive) return null;
     
     const exampleStudent = "Alex";
     const exampleSkill = skills[0]?.name || "Kicks";
     
     return (
-        <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center pointer-events-none">
-            <div className="bg-gray-900/90 p-8 rounded-3xl border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.5)] text-center max-w-2xl w-full relative overflow-hidden">
+        <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center" onClick={onClose}>
+            <div className="bg-gray-900/90 p-8 rounded-3xl border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.5)] text-center max-w-2xl w-full relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                {/* Close Button */}
+                <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/40 flex items-center justify-center text-lg font-bold z-10 pointer-events-auto">✕</button>
                 {/* Animated Wave */}
                 <div className="absolute top-0 left-0 right-0 h-2 bg-cyan-500 animate-pulse"></div>
                 
@@ -1215,11 +1217,16 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
         if (isVoiceActiveRef.current) {
             isVoiceActiveRef.current = false;
             setIsVoiceActive(false);
-            recognitionRef.current.stop();
+            try { recognitionRef.current.stop(); } catch (e) {}
         } else {
-            isVoiceActiveRef.current = true;
-            setIsVoiceActive(true);
-            recognitionRef.current.start();
+            try {
+                recognitionRef.current.start();
+                isVoiceActiveRef.current = true;
+                setIsVoiceActive(true);
+            } catch (e) {
+                console.error('Voice start error:', e);
+                alert(t('coach.voice.notSupported'));
+            }
         }
     };
 
@@ -2136,7 +2143,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 </div>
             )}
             
-            <SenseiVoiceHUD transcript={voiceTranscript} isActive={isVoiceActive} lastCommand={lastVoiceCommand} students={students} skills={activeSkills} />
+            <SenseiVoiceHUD transcript={voiceTranscript} isActive={isVoiceActive} lastCommand={lastVoiceCommand} students={students} skills={activeSkills} onClose={toggleVoiceMode} />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 
