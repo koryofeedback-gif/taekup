@@ -1189,13 +1189,19 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                 recognition.onresult = (event: any) => {
                     try {
-                        const transcript = Array.from(event.results)
-                            .map((result: any) => result[0].transcript)
-                            .join('');
-                        setVoiceTranscript(transcript);
-
-                        if (event.results[0].isFinal) {
-                            processVoiceCommand(transcript);
+                        let interimTranscript = '';
+                        let finalTranscript = '';
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const result = event.results[i];
+                            if (result.isFinal) {
+                                finalTranscript += result[0].transcript;
+                            } else {
+                                interimTranscript += result[0].transcript;
+                            }
+                        }
+                        setVoiceTranscript(interimTranscript || finalTranscript);
+                        if (finalTranscript) {
+                            processVoiceCommand(finalTranscript);
                             setVoiceTranscript('');
                         }
                     } catch (e) {
@@ -1205,8 +1211,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
                 recognition.onerror = (event: any) => {
                     console.error('Voice error', event.error);
-                    isVoiceActiveRef.current = false;
-                    setIsVoiceActive(false);
+                    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                        isVoiceActiveRef.current = false;
+                        setIsVoiceActive(false);
+                    }
                 };
                 
                 recognition.onend = () => {
