@@ -2275,60 +2275,60 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                             </div>
                             
                             {/* Desktop Horizontal Layout */}
-                            <div className="hidden sm:flex items-center gap-3">
+                            <div className="hidden sm:flex items-center gap-1.5 md:gap-2 flex-wrap">
                                 <button 
                                     onClick={() => setActiveView('grading')}
-                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
+                                    className={`group relative px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 overflow-hidden whitespace-nowrap
                                         ${activeView === 'grading' 
                                             ? 'bg-gradient-to-b from-sky-400 via-sky-500 to-sky-700 text-white shadow-lg shadow-sky-500/40 border-t border-sky-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-lg">📋</span>
+                                    <span className="relative text-base md:text-lg">📋</span>
                                     <span className="relative">{t('coach.nav.grading')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('planner')}
-                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
+                                    className={`group relative px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 overflow-hidden whitespace-nowrap
                                         ${activeView === 'planner' 
                                             ? 'bg-gradient-to-b from-purple-400 via-purple-500 to-purple-700 text-white shadow-lg shadow-purple-500/40 border-t border-purple-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-lg">🧠</span>
+                                    <span className="relative text-base md:text-lg">🧠</span>
                                     <span className="relative">{t('coach.nav.planner')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('schedule')}
-                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
+                                    className={`group relative px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 overflow-hidden whitespace-nowrap
                                         ${activeView === 'schedule' 
                                             ? 'bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/40 border-t border-emerald-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-lg">📅</span>
+                                    <span className="relative text-base md:text-lg">📅</span>
                                     <span className="relative">{t('coach.nav.schedule')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('challenges')}
-                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
+                                    className={`group relative px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 overflow-hidden whitespace-nowrap
                                         ${activeView === 'challenges' 
                                             ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-700 text-white shadow-lg shadow-amber-500/40 border-t border-amber-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-lg">🏆</span>
+                                    <span className="relative text-base md:text-lg">🏆</span>
                                     <span className="relative">{t('coach.nav.challenges')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('videos')}
-                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
+                                    className={`group relative px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 overflow-hidden whitespace-nowrap
                                         ${activeView === 'videos' 
                                             ? 'bg-gradient-to-b from-rose-400 via-rose-500 to-rose-700 text-white shadow-lg shadow-rose-500/40 border-t border-rose-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-lg">🎬</span>
+                                    <span className="relative text-base md:text-lg">🎬</span>
                                     <span className="relative">{t('coach.nav.videos')}</span>
                                     {pendingVideos.length > 0 && (
                                         <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg shadow-red-500/50 z-10">
@@ -2337,28 +2337,28 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                     )}
                                 </button>
                                 
-                                <div className="w-px h-8 bg-gradient-to-b from-transparent via-gray-600 to-transparent mx-1"></div>
+                                <div className="w-px h-6 bg-gradient-to-b from-transparent via-gray-600 to-transparent"></div>
                                 
                                 <button 
                                     onClick={() => setActiveView('leaderboard')}
-                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
+                                    className={`group relative px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 overflow-hidden whitespace-nowrap
                                         ${activeView === 'leaderboard' 
                                             ? 'bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 text-gray-900 shadow-lg shadow-yellow-500/40 border-t border-yellow-200/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-lg">🥇</span>
+                                    <span className="relative text-base md:text-lg">🥇</span>
                                     <span className="relative">{t('coach.nav.shogunRank')}</span>
                                 </button>
                                 <button 
                                     onClick={() => setActiveView('world-rankings')}
-                                    className={`group relative px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 overflow-hidden
+                                    className={`group relative px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 overflow-hidden whitespace-nowrap
                                         ${activeView === 'world-rankings' 
                                             ? 'bg-gradient-to-b from-cyan-400 via-blue-500 to-purple-600 text-white shadow-lg shadow-cyan-500/40 border-t border-cyan-300/50' 
                                             : 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 text-gray-300 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 border-t border-gray-500/30 shadow-md'}`}
                                 >
                                     <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></span>
-                                    <span className="relative text-lg">🌍</span>
+                                    <span className="relative text-base md:text-lg">🌍</span>
                                     <span className="relative">{t('coach.nav.worldRankings')}</span>
                                 </button>
                             </div>
