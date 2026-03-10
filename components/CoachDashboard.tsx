@@ -1260,8 +1260,44 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
         const currentStudents = studentsRef.current;
         const currentSkills = activeSkillsRef.current;
+        const words = lowerCmd.split(/\s+/);
 
-        const targetStudent = currentStudents.find(s => lowerCmd.includes(s.name.toLowerCase()));
+        const findStudent = (text: string): typeof currentStudents[0] | undefined => {
+            const t = text.toLowerCase();
+            let match = currentStudents.find(s => t.includes(s.name.toLowerCase()));
+            if (match) return match;
+            match = currentStudents.find(s => {
+                const firstName = s.name.split(' ')[0].toLowerCase();
+                return firstName.length >= 2 && t.includes(firstName);
+            });
+            if (match) return match;
+            for (const s of currentStudents) {
+                const nameParts = s.name.toLowerCase().split(' ');
+                for (const part of nameParts) {
+                    if (part.length >= 3 && words.some(w => w.length >= 3 && (w.includes(part) || part.includes(w) || levenshtein(w, part) <= 1))) {
+                        return s;
+                    }
+                }
+            }
+            return undefined;
+        };
+
+        const levenshtein = (a: string, b: string): number => {
+            if (a.length === 0) return b.length;
+            if (b.length === 0) return a.length;
+            const matrix: number[][] = [];
+            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    const cost = b[i - 1] === a[j - 1] ? 0 : 1;
+                    matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
+                }
+            }
+            return matrix[b.length][a.length];
+        };
+
+        const targetStudent = findStudent(lowerCmd);
         if (!targetStudent) {
             setLastVoiceCommand(`Heard "${cmd}" — no student name matched`);
             setTimeout(() => setLastVoiceCommand(null), 4000);
@@ -1314,7 +1350,22 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             }
         }
 
-        const targetSkill = currentSkills.find(s => lowerCmd.includes(s.name.toLowerCase()));
+        const findSkill = (text: string): typeof currentSkills[0] | undefined => {
+            const t = text.toLowerCase();
+            let match = currentSkills.find(s => t.includes(s.name.toLowerCase()));
+            if (match) return match;
+            for (const s of currentSkills) {
+                const skillWords = s.name.toLowerCase().split(/\s+/);
+                for (const sw of skillWords) {
+                    if (sw.length >= 3 && words.some(w => w.length >= 3 && (w === sw || levenshtein(w, sw) <= 1))) {
+                        return s;
+                    }
+                }
+            }
+            return undefined;
+        };
+
+        const targetSkill = findSkill(lowerCmd);
         let score = -1;
         if (lowerCmd.includes("green") || lowerCmd.includes("good") || lowerCmd.includes("point") || lowerCmd.includes("yes") || lowerCmd.includes("great") || lowerCmd.includes("excellent")) score = 2;
         else if (lowerCmd.includes("yellow") || lowerCmd.includes("okay") || lowerCmd.includes("half") || lowerCmd.includes("average") || lowerCmd.includes("so so")) score = 1;
@@ -1325,7 +1376,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             setLastVoiceCommand(`${targetStudent.name}: ${targetSkill.name} = ${score === 2 ? '💚' : score === 1 ? '💛' : '❤️'}`);
             setTimeout(() => setLastVoiceCommand(null), 3000);
         } else if (score !== -1 && !targetSkill) {
-            setLastVoiceCommand(`Heard "${cmd}" — student found but no skill matched`);
+            setLastVoiceCommand(`${targetStudent.name} found — no skill matched in "${cmd}"`);
+            setTimeout(() => setLastVoiceCommand(null), 4000);
+        } else {
+            setLastVoiceCommand(`${targetStudent.name} found — no color/score heard in "${cmd}"`);
             setTimeout(() => setLastVoiceCommand(null), 4000);
         }
     };
