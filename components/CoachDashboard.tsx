@@ -691,11 +691,12 @@ const AddEventModal: React.FC<{ onClose: () => void, onAdd: (event: CalendarEven
     )
 }
 
-const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastCommand: string | null, students: Student[], skills: {id: string, name: string}[], onClose?: () => void }> = ({ transcript, isActive, lastCommand, students, skills, onClose }) => {
+const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastCommand: string | null, students: Student[], skills: {id: string, name: string}[], onClose?: () => void }> = ({ transcript, isActive, lastCommand, students, skills = [], onClose }) => {
     if (!isActive) return null;
     
+    const safeSkills = skills || [];
     const exampleStudent = "Alex";
-    const exampleSkill = skills[0]?.name || "Kicks";
+    const exampleSkill = safeSkills[0]?.name || "Kicks";
     
     return (
         <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center" onClick={onClose}>
@@ -733,7 +734,7 @@ const SenseiVoiceHUD: React.FC<{ transcript: string, isActive: boolean, lastComm
                         <div className="bg-gray-700/30 rounded-lg p-3">
                             <p className="text-xs text-cyan-400 font-bold uppercase mb-1">Bulk — All Same</p>
                             <p className="text-cyan-300 font-mono text-sm text-center">"{exampleStudent} all green"</p>
-                            <p className="text-gray-500 text-xs text-center mt-1">Sets all {skills.length} skills to 💚</p>
+                            <p className="text-gray-500 text-xs text-center mt-1">Sets all {safeSkills.length} skills to 💚</p>
                         </div>
                     </div>
 
@@ -1175,37 +1176,46 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     activeSkillsRef.current = activeSkills;
 
     useEffect(() => {
-        if ('webkitSpeechRecognition' in window && !recognitionRef.current) {
-            const recognition = new window.webkitSpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
+        try {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            if (SpeechRecognition && !recognitionRef.current) {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'en-US';
 
-            recognition.onresult = (event: any) => {
-                const transcript = Array.from(event.results)
-                    .map((result: any) => result[0].transcript)
-                    .join('');
-                setVoiceTranscript(transcript);
+                recognition.onresult = (event: any) => {
+                    try {
+                        const transcript = Array.from(event.results)
+                            .map((result: any) => result[0].transcript)
+                            .join('');
+                        setVoiceTranscript(transcript);
 
-                if (event.results[0].isFinal) {
-                    processVoiceCommand(transcript);
-                    setVoiceTranscript('');
-                }
-            };
+                        if (event.results[0].isFinal) {
+                            processVoiceCommand(transcript);
+                            setVoiceTranscript('');
+                        }
+                    } catch (e) {
+                        console.error('Voice result error:', e);
+                    }
+                };
 
-            recognition.onerror = (event: any) => {
-                console.error('Voice error', event.error);
-                isVoiceActiveRef.current = false;
-                setIsVoiceActive(false);
-            };
-            
-            recognition.onend = () => {
-                if (isVoiceActiveRef.current) {
-                    try { recognition.start(); } catch (e) {}
-                }
-            };
+                recognition.onerror = (event: any) => {
+                    console.error('Voice error', event.error);
+                    isVoiceActiveRef.current = false;
+                    setIsVoiceActive(false);
+                };
+                
+                recognition.onend = () => {
+                    if (isVoiceActiveRef.current) {
+                        try { recognition.start(); } catch (e) {}
+                    }
+                };
 
-            recognitionRef.current = recognition;
+                recognitionRef.current = recognition;
+            }
+        } catch (e) {
+            console.error('Speech recognition init failed:', e);
         }
     }, []);
 
