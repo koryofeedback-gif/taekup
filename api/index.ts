@@ -684,10 +684,17 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Auto-sync club name: wizard_data.clubName is the source of truth
+    let displayClubName = user.club_name;
+    if (user.wizard_data?.clubName && user.wizard_data.clubName !== user.club_name) {
+      await client.query(`UPDATE clubs SET name = $1, updated_at = NOW() WHERE id = $2::uuid`, [user.wizard_data.clubName, user.club_id]);
+      displayClubName = user.wizard_data.clubName;
+    }
+
     return res.json({
       success: true,
-      user: { id: user.id, email: user.email, name: user.name || user.club_name, role: user.role,
-              clubId: user.club_id, clubName: user.club_name, clubStatus: user.club_status,
+      user: { id: user.id, email: user.email, name: user.name || displayClubName, role: user.role,
+              clubId: user.club_id, clubName: displayClubName, clubStatus: user.club_status,
               trialStatus: user.trial_status, trialEnd: user.trial_end, wizardCompleted,
               studentId: studentId, isPlatformOwner: user.is_platform_owner === true },
       wizardData: user.wizard_data || null

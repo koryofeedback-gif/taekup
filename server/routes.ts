@@ -1205,22 +1205,28 @@ export function registerRoutes(app: Express) {
         VALUES ('user_login', 'User Login', ${'User logged in: ' + user.email}, ${user.club_id}::uuid, ${JSON.stringify({ email: user.email, role: user.role })}::jsonb, NOW())
       `);
 
+      // Auto-sync club name: wizard_data.clubName is the source of truth
+      let displayClubName = user.club_name;
+      if (wizardData?.clubName && wizardData.clubName !== user.club_name) {
+        await db.execute(sql`UPDATE clubs SET name = ${wizardData.clubName}, updated_at = NOW() WHERE id = ${user.club_id}::uuid`);
+        displayClubName = wizardData.clubName;
+      }
+
       return res.json({
         success: true,
         user: {
           id: user.id,
           email: user.email,
-          name: user.name || user.club_name,
+          name: user.name || displayClubName,
           role: user.role,
           clubId: user.club_id,
-          clubName: user.club_name,
+          clubName: displayClubName,
           clubStatus: user.club_status,
           trialStatus: user.trial_status,
           trialEnd: user.trial_end,
           wizardCompleted,
           studentId
         },
-        // Only return wizardData if wizard is completed - prevents frontend from caching demo data after logout
         wizardData: wizardCompleted ? wizardData : null
       });
 
