@@ -299,13 +299,25 @@ export function registerRoutes(app: Express) {
 
       const { curriculum, ...wizardDataWithoutCurriculum } = wizardData;
 
-      await db.execute(sql`
-        UPDATE clubs 
-        SET wizard_data = ${JSON.stringify(wizardDataWithoutCurriculum)}::jsonb,
-            art_type = ${artType},
-            updated_at = NOW()
-        WHERE id = ${clubId}::uuid
-      `);
+      const clubName = wizardData.clubName;
+      if (clubName) {
+        await db.execute(sql`
+          UPDATE clubs 
+          SET wizard_data = ${JSON.stringify(wizardDataWithoutCurriculum)}::jsonb,
+              art_type = ${artType},
+              name = ${clubName},
+              updated_at = NOW()
+          WHERE id = ${clubId}::uuid
+        `);
+      } else {
+        await db.execute(sql`
+          UPDATE clubs 
+          SET wizard_data = ${JSON.stringify(wizardDataWithoutCurriculum)}::jsonb,
+              art_type = ${artType},
+              updated_at = NOW()
+          WHERE id = ${clubId}::uuid
+        `);
+      }
 
       // Try to update onboarding_progress (may not exist on all databases)
       try {

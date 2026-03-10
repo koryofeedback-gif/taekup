@@ -1889,12 +1889,22 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    await client.query(
-      `UPDATE clubs 
-       SET wizard_data = $1::jsonb, art_type = $3, updated_at = NOW()
-       WHERE id = $2::uuid`,
-      [JSON.stringify(wizardDataWithoutCurriculum), clubId, artType]
-    );
+    const clubName = wizardData.clubName;
+    if (clubName) {
+      await client.query(
+        `UPDATE clubs 
+         SET wizard_data = $1::jsonb, art_type = $3, name = $4, updated_at = NOW()
+         WHERE id = $2::uuid`,
+        [JSON.stringify(wizardDataWithoutCurriculum), clubId, artType, clubName]
+      );
+    } else {
+      await client.query(
+        `UPDATE clubs 
+         SET wizard_data = $1::jsonb, art_type = $3, updated_at = NOW()
+         WHERE id = $2::uuid`,
+        [JSON.stringify(wizardDataWithoutCurriculum), clubId, artType]
+      );
+    }
 
     // Try to update onboarding_progress (may not exist on all databases)
     try {
