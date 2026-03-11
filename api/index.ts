@@ -264,11 +264,20 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   },
   // Belt promotion
   BELT_PROMOTION: {
-    subject: 'Congratulations! {{childName}} just Leveled Up!',
-    title: 'Belt Promotion!',
-    body: `Amazing news!<br><br><strong>{{childName}}</strong> has been promoted to <strong>{{newBelt}}</strong>!<br><br>Hard work pays off. This achievement has been recorded in their Legacy Cards™ collection.<br><br>Keep up the great work, champion!`,
-    btn_text: 'View Achievement',
-    btn_url: `${BASE_URL}/app/parent`,
+    subject: '🎉 {{childName}} earned a new belt!',
+    title: '{{childName}} has been promoted! 🥋',
+    body: `Amazing news!<br><br><strong>{{childName}}</strong> has been promoted to <strong>{{newBelt}}</strong>!<br><br>Hard work pays off. Log in to see the updated belt, progress history, and what's next on their journey.`,
+    btn_text: 'View in Dashboard',
+    btn_url: `${BASE_URL}/login`,
+    from: 'updates@mytaek.com'
+  },
+  // Stripe earned
+  STRIPE_EARNED: {
+    subject: '⭐ {{childName}} earned a new stripe!',
+    title: '{{childName}} leveled up! ⭐',
+    body: `Great progress!<br><br><strong>{{childName}}</strong> just earned <strong>Stripe {{stripeCount}} of {{totalStripes}}</strong> on their <strong>{{currentBelt}}</strong> belt at <strong>{{clubName}}</strong>.<br><br>Steady progress toward the next belt! Log in to see the full journey.`,
+    btn_text: 'View in Dashboard',
+    btn_url: `${BASE_URL}/login`,
     from: 'updates@mytaek.com'
   },
   // Weekly progress
@@ -300,12 +309,12 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   },
   // Class feedback
   CLASS_FEEDBACK: {
-    subject: 'Class Feedback for {{childName}}',
-    title: 'Today\'s Class Update',
-    body: `Hi {{parentName}},<br><br>Here's feedback from {{childName}}'s class today:<br><br><em>"{{feedback}}"</em><br><br>Coach: <strong>{{coachName}}</strong><br>Class: {{className}}<br><br>Keep up the great training!`,
-    btn_text: 'View Details',
-    btn_url: `${BASE_URL}/app/parent`,
-    from: 'support@mytaek.com'
+    subject: '🥋 {{childName}} just trained — see how it went!',
+    title: '{{childName}} just trained! 🥋',
+    body: `Hi {{parentName}},<br><br><strong>{{childName}}</strong> just finished class at <strong>{{clubName}}</strong>.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;'>{{className}} — {{classDate}}</p><p style='margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;'>{{summaryEmojis}}</p><p style='margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;'>{{greenCount}} of {{totalSkills}} skills rated excellent</p><p style='margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;'>+{{totalPoints}} HonorXP™</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Log in to see full scores, coach notes, stripe progress, and more.</p>`,
+    btn_text: 'See Full Details in Dashboard',
+    btn_url: `${BASE_URL}/login`,
+    from: 'updates@mytaek.com'
   },
   // Attendance alert
   ATTENDANCE_ALERT: {
@@ -372,7 +381,7 @@ const EMAIL_TYPE_TO_I18N_KEY: Record<string, string> = {
   PREMIUM_UNLOCKED: 'premium_unlocked', VIDEO_APPROVED: 'video_approved',
   VIDEO_RETRY: 'video_retry', VIDEO_SUBMITTED: 'video_submitted',
   TRIAL_ENDING: 'trial_ending', TRIAL_EXPIRED: 'trial_expired',
-  BELT_PROMOTION: 'belt_promotion', WEEKLY_PROGRESS: 'weekly_progress',
+  BELT_PROMOTION: 'belt_promotion', STRIPE_EARNED: 'stripe_earned', WEEKLY_PROGRESS: 'weekly_progress',
   NEW_STUDENT_ADDED: 'new_student_added', MONTHLY_REVENUE_REPORT: 'monthly_revenue_report',
   CLASS_FEEDBACK: 'class_feedback', ATTENDANCE_ALERT: 'attendance_alert',
   BIRTHDAY_WISH: 'birthday_wish', PAYOUT_NOTIFICATION: 'payout_notification',
@@ -2464,7 +2473,10 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
   let sentCount = 0;
   let failedCount = 0;
 
+  const client = await pool.connect();
   try {
+    const lang = clubId ? await getClubLanguage(client, clubId) : 'en';
+
     for (const student of students) {
       const { id, name, parentEmail, scores, homework, bonus, totalPoints, stripeProgress, coachNote } = student;
       
@@ -2473,114 +2485,36 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
         continue;
       }
 
-      // Send email directly using SendGrid
       try {
-        const safeParentName = escapeHtml(name.split(' ')[0]) + "'s Parent";
-        const safeStudentName = escapeHtml(name);
-        const safeClubName = escapeHtml(clubName || 'Your Dojo');
-        const safeClassName = escapeHtml(className || 'Training Session');
-        const safeClassDate = escapeHtml(classDate || new Date().toLocaleDateString());
-        const safeCoachName = escapeHtml(coachName || 'Coach');
-        const safeTotalPoints = parseInt(totalPoints) || 0;
-        
         const skillsArray = skills || [];
         const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
         const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
         const redCount = skillsArray.filter((s: any) => scores?.[s.id] === 0).length;
         const totalSkills = skillsArray.length;
-
         const summaryEmojis = `${'🟢'.repeat(greenCount)}${'🟡'.repeat(yellowCount)}${'🔴'.repeat(redCount)}`;
+        const safeTotalPoints = parseInt(totalPoints) || 0;
 
-        const emailBody = `
-          Hi ${safeParentName},<br><br>
-          Great news! <strong>${safeStudentName}</strong> just finished class at <strong>${safeClubName}</strong>.<br><br>
+        const sent = await sendTemplateEmail(parentEmail, 'CLASS_FEEDBACK', {
+          parentName: name.split(' ')[0] + "'s Parent",
+          childName: name,
+          clubName: clubName || 'Your Dojo',
+          className: className || 'Training Session',
+          classDate: classDate || new Date().toLocaleDateString(),
+          coachName: coachName || 'Coach',
+          summaryEmojis,
+          greenCount: String(greenCount),
+          totalSkills: String(totalSkills),
+          totalPoints: String(safeTotalPoints),
+          baseUrl: BASE_URL
+        }, lang);
 
-          <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;">
-            <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">${safeClassName} — ${safeClassDate}</p>
-            <p style="margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;">${summaryEmojis}</p>
-            <p style="margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;">${greenCount} of ${totalSkills} skills rated excellent</p>
-            <p style="margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;">+${safeTotalPoints} HonorXP™</p>
-          </div>
-
-          <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;">
-            Log in to see full scores, coach notes, stripe progress, and more.
-          </p>
-        `;
-
-        if (process.env.SENDGRID_API_KEY) {
-          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-          
-          // Use branded HTML matching MyTaek master template style exactly
-          const brandedHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-          <!-- Header with Logo Image -->
-          <tr>
-            <td style="background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%); padding: 40px 30px; text-align: center;">
-              <img src="https://www.mytaek.com/mytaek-logo.png" alt="MyTaek" width="120" style="display: inline-block; max-width: 120px;" />
-            </td>
-          </tr>
-          <!-- Title -->
-          <tr>
-            <td style="padding: 32px 32px 16px 32px;">
-              <h1 style="margin: 0; color: #111827; font-size: 26px; font-weight: 600;">${safeStudentName} just trained! 🥋</h1>
-            </td>
-          </tr>
-          <!-- Body Content -->
-          <tr>
-            <td style="padding: 0 32px 24px 32px; color: #374151; font-size: 15px; line-height: 1.7;">
-              ${emailBody}
-            </td>
-          </tr>
-          <!-- Button -->
-          <tr>
-            <td style="padding: 8px 32px 40px 32px;">
-              <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);">See Full Details in Dashboard</a>
-            </td>
-          </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f9fafb; padding: 28px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 12px 0; color: #4b5563; font-size: 14px;"><strong>TaekUp™</strong> is a product of <strong>MyTaek™</strong> Inc.</p>
-              <p style="margin: 0 0 12px 0; color: #9ca3af; font-size: 11px; line-height: 1.5;">HonorXP™ | Legacy Cards™ | Global Shogun Rank™ | DojoMint™ Protocol | ChronosBelt™ Predictor</p>
-              <p style="margin: 0 0 16px 0; color: #9ca3af; font-size: 11px;">&copy; ${new Date().getFullYear()} MyTaek™ Inc. All rights reserved.</p>
-              <p style="margin: 0;">
-                <a href="https://www.mytaek.com/unsubscribe" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Unsubscribe</a>
-                <span style="color: #d1d5db;"> | </span>
-                <a href="https://www.mytaek.com/privacy" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Privacy Policy</a>
-                <span style="color: #d1d5db;"> | </span>
-                <a href="https://www.mytaek.com" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Visit MyTaek</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-
-          await sgMail.send({
-            to: parentEmail,
-            from: { email: 'updates@mytaek.com', name: 'TaekUp' },
-            subject: `🥋 ${safeStudentName} just trained — see how it went!`,
-            html: brandedHtml
-          });
+        if (sent) {
           sentCount++;
-          console.log('[ClassFeedback] Email sent to:', parentEmail, 'for student:', name);
+          console.log(`[ClassFeedback] Email sent to ${parentEmail} for ${name} (${lang})`);
         } else {
-          console.error('[ClassFeedback] SendGrid API key not configured');
           failedCount++;
         }
+        await logAutomatedEmail(client, 'class_feedback', parentEmail, 'CLASS_FEEDBACK', sent ? 'sent' : 'failed', clubId);
       } catch (emailError: any) {
         failedCount++;
         console.error('[ClassFeedback] Failed to send email to:', parentEmail, emailError.message);
@@ -2596,6 +2530,8 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
   } catch (error: any) {
     console.error('[ClassFeedback] Error:', error.message);
     return res.status(500).json({ error: 'Failed to send class feedback emails' });
+  } finally {
+    client.release();
   }
 }
 
@@ -2604,123 +2540,48 @@ async function handleSendPromotionEmail(req: VercelRequest, res: VercelResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { parentEmail, studentName, clubName, type, newBelt, stripeCount, totalStripes } = parseBody(req);
+  const { parentEmail, studentName, clubName, clubId, type, newBelt, stripeCount, totalStripes } = parseBody(req);
 
   if (!parentEmail || !studentName || !type) {
     return res.status(400).json({ error: 'parentEmail, studentName, and type are required' });
   }
 
+  const client = await pool.connect();
   try {
-    if (!process.env.SENDGRID_API_KEY) {
-      return res.status(500).json({ error: 'SendGrid not configured' });
-    }
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-    const safeStudentName = escapeHtml(studentName);
-    const safeClubName = escapeHtml(clubName || 'Your Dojo');
-    const safeBelt = escapeHtml(newBelt || '');
-    const safeStripeCount = parseInt(stripeCount) || 0;
-    const safeTotalStripes = parseInt(totalStripes) || 4;
-
-    let subject = '';
-    let title = '';
-    let emailBody = '';
+    const lang = clubId ? await getClubLanguage(client, clubId) : 'en';
 
     if (type === 'belt') {
-      subject = `🎉 ${safeStudentName} earned a new belt!`;
-      title = `${safeStudentName} has been promoted! 🥋`;
-      emailBody = `
-        <p style="font-size: 15px; color: #374151;">Amazing news!</p>
-        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 32px; margin: 20px 0; text-align: center;">
-          <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">New Belt Achievement</p>
-          <p style="margin: 0; font-size: 36px;">🥋</p>
-          <p style="margin: 12px 0 0 0; color: #ffffff; font-size: 24px; font-weight: 700;">${safeBelt}</p>
-          <p style="margin: 8px 0 0 0; color: #0ea5e9; font-size: 14px;">at ${safeClubName}</p>
-        </div>
-        <p style="font-size: 15px; color: #374151;">Hard work pays off! Log in to see the updated belt, progress history, and what's next on their journey.</p>
-      `;
+      const sent = await sendTemplateEmail(parentEmail, 'BELT_PROMOTION', {
+        childName: studentName,
+        newBelt: newBelt || '',
+        clubName: clubName || 'Your Dojo',
+        baseUrl: BASE_URL
+      }, lang);
+
+      if (clubId) await logAutomatedEmail(client, 'belt_promotion', parentEmail, 'BELT_PROMOTION', sent ? 'sent' : 'failed', clubId);
+      console.log(`[PromotionEmail] Belt email ${sent ? 'sent' : 'failed'} to ${parentEmail} for ${studentName} (${lang})`);
+      return res.json({ success: true, type: 'belt', sent });
     } else if (type === 'stripe') {
-      subject = `⭐ ${safeStudentName} earned a new stripe!`;
-      title = `${safeStudentName} leveled up! ⭐`;
-      emailBody = `
-        <p style="font-size: 15px; color: #374151;">Great progress!</p>
-        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 32px; margin: 20px 0; text-align: center;">
-          <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Stripe Achievement</p>
-          <p style="margin: 0; font-size: 28px; letter-spacing: 8px;">${'⭐'.repeat(safeStripeCount)}</p>
-          <p style="margin: 12px 0 0 0; color: #ffffff; font-size: 18px; font-weight: 600;">Stripe ${safeStripeCount} of ${safeTotalStripes}</p>
-          <p style="margin: 8px 0 0 0; color: #0ea5e9; font-size: 14px;">${safeBelt} belt at ${safeClubName}</p>
-        </div>
-        <p style="font-size: 15px; color: #374151;">${safeStudentName} is making steady progress toward the next belt! Log in to see the full journey.</p>
-      `;
+      const sent = await sendTemplateEmail(parentEmail, 'STRIPE_EARNED', {
+        childName: studentName,
+        stripeCount: stripeCount || '1',
+        totalStripes: totalStripes || '4',
+        currentBelt: newBelt || '',
+        clubName: clubName || 'Your Dojo',
+        baseUrl: BASE_URL
+      }, lang);
+
+      if (clubId) await logAutomatedEmail(client, 'stripe_earned', parentEmail, 'STRIPE_EARNED', sent ? 'sent' : 'failed', clubId);
+      console.log(`[PromotionEmail] Stripe email ${sent ? 'sent' : 'failed'} to ${parentEmail} for ${studentName} (${lang})`);
+      return res.json({ success: true, type: 'stripe', sent });
     } else {
       return res.status(400).json({ error: 'type must be "belt" or "stripe"' });
     }
-
-    const brandedHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-          <tr>
-            <td style="background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%); padding: 40px 30px; text-align: center;">
-              <img src="https://www.mytaek.com/mytaek-logo.png" alt="MyTaek" width="120" style="display: inline-block; max-width: 120px;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 32px 32px 16px 32px;">
-              <h1 style="margin: 0; color: #111827; font-size: 26px; font-weight: 600;">${title}</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 0 32px 24px 32px; color: #374151; font-size: 15px; line-height: 1.7;">
-              ${emailBody}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 32px 40px 32px;">
-              <a href="https://www.mytaek.com/login" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);">View in Dashboard</a>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color: #f9fafb; padding: 28px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 12px 0; color: #4b5563; font-size: 14px;"><strong>TaekUp™</strong> is a product of <strong>MyTaek™</strong> Inc.</p>
-              <p style="margin: 0 0 12px 0; color: #9ca3af; font-size: 11px; line-height: 1.5;">HonorXP™ | Legacy Cards™ | Global Shogun Rank™ | DojoMint™ Protocol | ChronosBelt™ Predictor</p>
-              <p style="margin: 0 0 16px 0; color: #9ca3af; font-size: 11px;">&copy; ${new Date().getFullYear()} MyTaek™ Inc. All rights reserved.</p>
-              <p style="margin: 0;">
-                <a href="https://www.mytaek.com/unsubscribe" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Unsubscribe</a>
-                <span style="color: #d1d5db;"> | </span>
-                <a href="https://www.mytaek.com/privacy" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Privacy Policy</a>
-                <span style="color: #d1d5db;"> | </span>
-                <a href="https://www.mytaek.com" style="color: #6b7280; font-size: 12px; text-decoration: underline;">Visit MyTaek</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-
-    await sgMail.send({
-      to: parentEmail,
-      from: { email: 'updates@mytaek.com', name: 'TaekUp' },
-      subject,
-      html: brandedHtml
-    });
-
-    console.log(`[PromotionEmail] ${type} email sent to ${parentEmail} for ${studentName}`);
-    return res.json({ success: true, type, sent: true });
   } catch (error: any) {
     console.error('[PromotionEmail] Error:', error.message);
     return res.status(500).json({ error: 'Failed to send promotion email' });
+  } finally {
+    client.release();
   }
 }
 

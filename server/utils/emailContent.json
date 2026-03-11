@@ -334,38 +334,75 @@
   },
   "belt_promotion": {
     "en": {
-      "subject": "Congratulations! {{childName}} just Leveled Up! 🎉",
-      "title": "Belt Promotion!",
-      "body": "Amazing news!<br><br><strong>{{childName}}</strong> has been promoted to <strong>{{newBelt}}</strong>!<br><br>Hard work pays off. This achievement has been recorded in their Legacy Cards™ collection.<br><br>Keep up the great work, champion!",
-      "btn_text": "View Achievement",
+      "subject": "🎉 {{childName}} earned a new belt!",
+      "title": "{{childName}} has been promoted! 🥋",
+      "body": "Amazing news!<br><br><strong>{{childName}}</strong> has been promoted to <strong>{{newBelt}}</strong>!<br><br>Hard work pays off. Log in to see the updated belt, progress history, and what's next on their journey.",
+      "btn_text": "View in Dashboard",
       "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
-      "subject": "Félicitations! {{childName}} vient de monter de niveau! 🎉",
-      "title": "Promotion de Ceinture!",
-      "body": "Nouvelles incroyables!<br><br><strong>{{childName}}</strong> a été promu à <strong>{{newBelt}}</strong>!<br><br>Le travail acharné paie. Cette réalisation a été enregistrée dans sa collection Legacy Cards™.<br><br>Continue comme ça, champion!",
-      "btn_text": "Voir la Réalisation",
+      "subject": "🎉 {{childName}} a obtenu une nouvelle ceinture!",
+      "title": "{{childName}} a été promu! 🥋",
+      "body": "Nouvelles incroyables!<br><br><strong>{{childName}}</strong> a été promu à <strong>{{newBelt}}</strong>!<br><br>Le travail acharné paie. Connectez-vous pour voir la ceinture mise à jour, l'historique de progression et la suite du parcours.",
+      "btn_text": "Voir dans le Tableau de Bord",
       "btn_url": "{{baseUrl}}/login"
     },
     "de": {
-      "subject": "Herzlichen Glückwunsch! {{childName}} ist aufgestiegen! 🎉",
-      "title": "Gürtel-Beförderung!",
-      "body": "Tolle Neuigkeiten!<br><br><strong>{{childName}}</strong> wurde zum <strong>{{newBelt}}</strong> befördert!<br><br>Harte Arbeit zahlt sich aus. Diese Leistung wurde in der Legacy Cards™ Sammlung aufgezeichnet.<br><br>Weiter so, Champion!",
-      "btn_text": "Erfolg ansehen",
+      "subject": "🎉 {{childName}} hat einen neuen Gürtel verdient!",
+      "title": "{{childName}} wurde befördert! 🥋",
+      "body": "Tolle Neuigkeiten!<br><br><strong>{{childName}}</strong> wurde zum <strong>{{newBelt}}</strong> befördert!<br><br>Harte Arbeit zahlt sich aus. Melden Sie sich an, um den aktualisierten Gürtel, den Fortschrittsverlauf und die nächsten Schritte zu sehen.",
+      "btn_text": "Im Dashboard ansehen",
       "btn_url": "{{baseUrl}}/login"
     },
     "es": {
-      "subject": "¡Felicidades! ¡{{childName}} subió de nivel! 🎉",
-      "title": "¡Promoción de Cinturón!",
-      "body": "¡Noticias increíbles!<br><br><strong>{{childName}}</strong> ha sido promovido a <strong>{{newBelt}}</strong>!<br><br>El trabajo duro vale la pena. Este logro ha sido registrado en su colección Legacy Cards™.<br><br>¡Sigue así, campeón!",
-      "btn_text": "Ver Logro",
+      "subject": "🎉 ¡{{childName}} obtuvo un nuevo cinturón!",
+      "title": "¡{{childName}} ha sido promovido! 🥋",
+      "body": "¡Noticias increíbles!<br><br><strong>{{childName}}</strong> ha sido promovido a <strong>{{newBelt}}</strong>!<br><br>El trabajo duro vale la pena. Inicia sesión para ver el cinturón actualizado, el historial de progreso y los próximos pasos.",
+      "btn_text": "Ver en el Panel",
       "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
-      "subject": "تبریک! {{childName}} ارتقا یافت! 🎉",
-      "title": "ارتقای کمربند!",
-      "body": "خبر فوق‌العاده!<br><br><strong>{{childName}}</strong> به <strong>{{newBelt}}</strong> ارتقا یافت!<br><br>تلاش سخت نتیجه می‌دهد. این دستاورد در مجموعه Legacy Cards™ او ثبت شده است.<br><br>به کار عالی‌ات ادامه بده، قهرمان!",
-      "btn_text": "مشاهده دستاورد",
+      "subject": "🎉 {{childName}} کمربند جدید گرفت!",
+      "title": "{{childName}} ارتقا یافت! 🥋",
+      "body": "خبر فوق‌العاده!<br><br><strong>{{childName}}</strong> به <strong>{{newBelt}}</strong> ارتقا یافت!<br><br>تلاش سخت نتیجه می‌دهد. وارد شوید تا کمربند به‌روز شده، تاریخچه پیشرفت و مراحل بعدی را ببینید.",
+      "btn_text": "مشاهده در داشبورد",
+      "btn_url": "{{baseUrl}}/login"
+    }
+  },
+  "stripe_earned": {
+    "en": {
+      "subject": "⭐ {{childName}} earned a new stripe!",
+      "title": "{{childName}} leveled up! ⭐",
+      "body": "Great progress!<br><br><strong>{{childName}}</strong> just earned <strong>Stripe {{stripeCount}} of {{totalStripes}}</strong> on their <strong>{{currentBelt}}</strong> belt at <strong>{{clubName}}</strong>.<br><br>Steady progress toward the next belt! Log in to see the full journey.",
+      "btn_text": "View in Dashboard",
+      "btn_url": "{{baseUrl}}/login"
+    },
+    "fr": {
+      "subject": "⭐ {{childName}} a gagné un nouveau stripe!",
+      "title": "{{childName}} a progressé! ⭐",
+      "body": "Beau progrès!<br><br><strong>{{childName}}</strong> vient de gagner le <strong>Stripe {{stripeCount}} sur {{totalStripes}}</strong> sur sa ceinture <strong>{{currentBelt}}</strong> à <strong>{{clubName}}</strong>.<br><br>Progression constante vers la prochaine ceinture! Connectez-vous pour voir le parcours complet.",
+      "btn_text": "Voir dans le Tableau de Bord",
+      "btn_url": "{{baseUrl}}/login"
+    },
+    "de": {
+      "subject": "⭐ {{childName}} hat einen neuen Streifen verdient!",
+      "title": "{{childName}} ist aufgestiegen! ⭐",
+      "body": "Toller Fortschritt!<br><br><strong>{{childName}}</strong> hat gerade <strong>Streifen {{stripeCount}} von {{totalStripes}}</strong> auf dem <strong>{{currentBelt}}</strong> Gürtel bei <strong>{{clubName}}</strong> verdient.<br><br>Stetiger Fortschritt zum nächsten Gürtel! Melden Sie sich an, um die gesamte Reise zu sehen.",
+      "btn_text": "Im Dashboard ansehen",
+      "btn_url": "{{baseUrl}}/login"
+    },
+    "es": {
+      "subject": "⭐ ¡{{childName}} ganó un nuevo stripe!",
+      "title": "¡{{childName}} subió de nivel! ⭐",
+      "body": "¡Gran progreso!<br><br><strong>{{childName}}</strong> acaba de ganar el <strong>Stripe {{stripeCount}} de {{totalStripes}}</strong> en su cinturón <strong>{{currentBelt}}</strong> en <strong>{{clubName}}</strong>.<br><br>¡Progreso constante hacia el próximo cinturón! Inicia sesión para ver el viaje completo.",
+      "btn_text": "Ver en el Panel",
+      "btn_url": "{{baseUrl}}/login"
+    },
+    "fa": {
+      "subject": "⭐ {{childName}} نوار جدید گرفت!",
+      "title": "{{childName}} ارتقا یافت! ⭐",
+      "body": "پیشرفت عالی!<br><br><strong>{{childName}}</strong> نوار <strong>{{stripeCount}} از {{totalStripes}}</strong> را در کمربند <strong>{{currentBelt}}</strong> در <strong>{{clubName}}</strong> کسب کرد.<br><br>پیشرفت مداوم به سمت کمربند بعدی! وارد شوید تا مسیر کامل را ببینید.",
+      "btn_text": "مشاهده در داشبورد",
       "btn_url": "{{baseUrl}}/login"
     }
   },
@@ -704,38 +741,38 @@
   },
   "class_feedback": {
     "en": {
-      "subject": "⭐ {{studentName}}'s Class Report - {{classDate}}",
-      "title": "Class Feedback",
-      "body": "Hi {{parentName}},<br><br><strong>{{studentName}}</strong> attended class at <strong>{{clubName}}</strong> today!<br><br><strong>Class:</strong> {{className}}<br><strong>Date:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><strong>Performance Scores:</strong><br>{{scoresTable}}<br><br><strong>Total Points Earned:</strong> {{totalPoints}} pts<br><strong>Stripe Progress:</strong> {{stripeProgress}}{{coachNoteSection}}",
-      "btn_text": "View Full Report",
+      "subject": "🥋 {{childName}} just trained — see how it went!",
+      "title": "{{childName}} just trained! 🥋",
+      "body": "Hi {{parentName}},<br><br><strong>{{childName}}</strong> just finished class at <strong>{{clubName}}</strong>.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;'>{{className}} — {{classDate}}</p><p style='margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;'>{{summaryEmojis}}</p><p style='margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;'>{{greenCount}} of {{totalSkills}} skills rated excellent</p><p style='margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;'>+{{totalPoints}} HonorXP™</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Log in to see full scores, coach notes, stripe progress, and more.</p>",
+      "btn_text": "See Full Details in Dashboard",
       "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
-      "subject": "⭐ Rapport de Cours de {{studentName}} - {{classDate}}",
-      "title": "Feedback de Cours",
-      "body": "Bonjour {{parentName}},<br><br><strong>{{studentName}}</strong> a assisté au cours à <strong>{{clubName}}</strong> aujourd'hui!<br><br><strong>Cours:</strong> {{className}}<br><strong>Date:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><strong>Scores de Performance:</strong><br>{{scoresTable}}<br><br><strong>Points Gagnés:</strong> {{totalPoints}} pts<br><strong>Progression Stripe:</strong> {{stripeProgress}}{{coachNoteSection}}",
-      "btn_text": "Voir le Rapport Complet",
+      "subject": "🥋 {{childName}} vient de s'entraîner — voyez comment ça s'est passé!",
+      "title": "{{childName}} vient de s'entraîner! 🥋",
+      "body": "Bonjour {{parentName}},<br><br><strong>{{childName}}</strong> vient de terminer le cours à <strong>{{clubName}}</strong>.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;'>{{className}} — {{classDate}}</p><p style='margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;'>{{summaryEmojis}}</p><p style='margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;'>{{greenCount}} sur {{totalSkills}} compétences excellentes</p><p style='margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;'>+{{totalPoints}} HonorXP™</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Connectez-vous pour voir les scores détaillés, notes du coach, et plus.</p>",
+      "btn_text": "Voir les Détails dans le Tableau de Bord",
       "btn_url": "{{baseUrl}}/login"
     },
     "de": {
-      "subject": "⭐ {{studentName}}s Kursbericht - {{classDate}}",
-      "title": "Kursfeedback",
-      "body": "Hallo {{parentName}},<br><br><strong>{{studentName}}</strong> hat heute am Kurs bei <strong>{{clubName}}</strong> teilgenommen!<br><br><strong>Kurs:</strong> {{className}}<br><strong>Datum:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><strong>Leistungsbewertungen:</strong><br>{{scoresTable}}<br><br><strong>Gesammelte Punkte:</strong> {{totalPoints}} Pkt<br><strong>Stripe-Fortschritt:</strong> {{stripeProgress}}{{coachNoteSection}}",
-      "btn_text": "Vollständigen Bericht ansehen",
+      "subject": "🥋 {{childName}} hat gerade trainiert — sehen Sie, wie es lief!",
+      "title": "{{childName}} hat gerade trainiert! 🥋",
+      "body": "Hallo {{parentName}},<br><br><strong>{{childName}}</strong> hat gerade den Kurs bei <strong>{{clubName}}</strong> beendet.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;'>{{className}} — {{classDate}}</p><p style='margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;'>{{summaryEmojis}}</p><p style='margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;'>{{greenCount}} von {{totalSkills}} Fähigkeiten ausgezeichnet</p><p style='margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;'>+{{totalPoints}} HonorXP™</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Melden Sie sich an, um alle Bewertungen, Coach-Notizen und mehr zu sehen.</p>",
+      "btn_text": "Alle Details im Dashboard",
       "btn_url": "{{baseUrl}}/login"
     },
     "es": {
-      "subject": "⭐ Reporte de Clase de {{studentName}} - {{classDate}}",
-      "title": "Feedback de Clase",
-      "body": "Hola {{parentName}},<br><br>¡<strong>{{studentName}}</strong> asistió a clase en <strong>{{clubName}}</strong> hoy!<br><br><strong>Clase:</strong> {{className}}<br><strong>Fecha:</strong> {{classDate}}<br><strong>Coach:</strong> {{coachName}}<br><br><strong>Puntuaciones de Rendimiento:</strong><br>{{scoresTable}}<br><br><strong>Puntos Ganados:</strong> {{totalPoints}} pts<br><strong>Progreso de Stripe:</strong> {{stripeProgress}}{{coachNoteSection}}",
-      "btn_text": "Ver Informe Completo",
+      "subject": "🥋 {{childName}} acaba de entrenar — ¡mira cómo le fue!",
+      "title": "¡{{childName}} acaba de entrenar! 🥋",
+      "body": "Hola {{parentName}},<br><br><strong>{{childName}}</strong> acaba de terminar clase en <strong>{{clubName}}</strong>.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;'>{{className}} — {{classDate}}</p><p style='margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;'>{{summaryEmojis}}</p><p style='margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;'>{{greenCount}} de {{totalSkills}} habilidades excelentes</p><p style='margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;'>+{{totalPoints}} HonorXP™</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Inicia sesión para ver puntuaciones completas, notas del coach y más.</p>",
+      "btn_text": "Ver Detalles en el Panel",
       "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
-      "subject": "⭐ گزارش کلاس {{studentName}} - {{classDate}}",
-      "title": "بازخورد کلاس",
-      "body": "سلام {{parentName}},<br><br><strong>{{studentName}}</strong> امروز در کلاس <strong>{{clubName}}</strong> شرکت کرد!<br><br><strong>کلاس:</strong> {{className}}<br><strong>تاریخ:</strong> {{classDate}}<br><strong>مربی:</strong> {{coachName}}<br><br><strong>امتیازات عملکرد:</strong><br>{{scoresTable}}<br><br><strong>امتیاز کسب شده:</strong> {{totalPoints}} امتیاز<br><strong>پیشرفت نوار:</strong> {{stripeProgress}}{{coachNoteSection}}",
-      "btn_text": "مشاهده گزارش کامل",
+      "subject": "🥋 {{childName}} تازه تمرین کرد — ببینید چطور بود!",
+      "title": "{{childName}} تازه تمرین کرد! 🥋",
+      "body": "سلام {{parentName}},<br><br><strong>{{childName}}</strong> کلاس خود را در <strong>{{clubName}}</strong> به پایان رساند.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;'>{{className}} — {{classDate}}</p><p style='margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;'>{{summaryEmojis}}</p><p style='margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;'>{{greenCount}} از {{totalSkills}} مهارت عالی</p><p style='margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;'>+{{totalPoints}} HonorXP™</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>وارد شوید تا نمرات کامل، یادداشت‌های مربی و موارد بیشتر را ببینید.</p>",
+      "btn_text": "مشاهده جزئیات در داشبورد",
       "btn_url": "{{baseUrl}}/login"
     }
   },
