@@ -1782,7 +1782,7 @@ export function registerRoutes(app: Express) {
       const skillsArray = skills || [];
       for (const student of students) {
         try {
-          const { id: studentId, name, scores, homework, bonus, totalPoints, stripeProgress, coachNote } = student;
+          const { id: studentId, name, scores, homework, bonus, totalPoints, sessionXp, stripeProgress, coachNote } = student;
           if (!studentId) continue;
           const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
           const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
@@ -1790,8 +1790,8 @@ export function registerRoutes(app: Express) {
           const totalSkillCount = skillsArray.length;
           const skillNames = skillsArray.map((s: any) => ({ id: s.id, name: s.name }));
           await db.execute(sql`
-            INSERT INTO grading_sessions (club_id, student_id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress)
-            VALUES (${clubId}::uuid, ${studentId}::uuid, ${className || 'Training Session'}, ${classDate || new Date().toLocaleDateString()}, ${coachName || 'Coach'}, ${JSON.stringify(scores || {})}::jsonb, ${JSON.stringify(skillNames)}::jsonb, ${parseInt(homework) || 0}, ${parseInt(bonus) || 0}, ${parseInt(totalPoints) || 0}, ${greenCount}, ${yellowCount}, ${redCount}, ${totalSkillCount}, ${coachNote || null}, ${stripeProgress || null})
+            INSERT INTO grading_sessions (club_id, student_id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, session_xp, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress)
+            VALUES (${clubId}::uuid, ${studentId}::uuid, ${className || 'Training Session'}, ${classDate || new Date().toLocaleDateString()}, ${coachName || 'Coach'}, ${JSON.stringify(scores || {})}::jsonb, ${JSON.stringify(skillNames)}::jsonb, ${parseInt(homework) || 0}, ${parseInt(bonus) || 0}, ${parseInt(totalPoints) || 0}, ${parseInt(sessionXp) || 0}, ${greenCount}, ${yellowCount}, ${redCount}, ${totalSkillCount}, ${coachNote || null}, ${stripeProgress || null})
           `);
           console.log(`[GradingSession-Dev] Saved for ${name}`);
         } catch (gsErr: any) {

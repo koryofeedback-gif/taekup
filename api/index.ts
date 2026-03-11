@@ -2482,7 +2482,7 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
 
     for (const student of students) {
       try {
-        const { id: studentId, name, scores, homework, bonus, totalPoints, stripeProgress, coachNote } = student;
+        const { id: studentId, name, scores, homework, bonus, totalPoints, sessionXp, stripeProgress, coachNote } = student;
         if (!studentId) continue;
         const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
         const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
@@ -2490,9 +2490,9 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
         const totalSkillCount = skillsArray.length;
         const skillNames = skillsArray.map((s: any) => ({ id: s.id, name: s.name }));
         await client.query(
-          `INSERT INTO grading_sessions (club_id, student_id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress)
-           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-          [clubId, studentId, className || 'Training Session', classDate || new Date().toLocaleDateString(), coachName || 'Coach', JSON.stringify(scores || {}), JSON.stringify(skillNames), parseInt(homework) || 0, parseInt(bonus) || 0, parseInt(totalPoints) || 0, greenCount, yellowCount, redCount, totalSkillCount, coachNote || null, stripeProgress || null]
+          `INSERT INTO grading_sessions (club_id, student_id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, session_xp, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+          [clubId, studentId, className || 'Training Session', classDate || new Date().toLocaleDateString(), coachName || 'Coach', JSON.stringify(scores || {}), JSON.stringify(skillNames), parseInt(homework) || 0, parseInt(bonus) || 0, parseInt(totalPoints) || 0, parseInt(sessionXp) || 0, greenCount, yellowCount, redCount, totalSkillCount, coachNote || null, stripeProgress || null]
         );
         console.log(`[GradingSession] Saved for ${name}`);
       } catch (gsErr: any) {
@@ -8125,7 +8125,7 @@ async function handleGetGradingSessions(req: VercelRequest, res: VercelResponse,
   const client = await pool.connect();
   try {
     const result = await client.query(
-      `SELECT id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress, created_at
+      `SELECT id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, session_xp, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress, created_at
        FROM grading_sessions WHERE student_id = $1::uuid ORDER BY created_at DESC LIMIT 50`,
       [studentId]
     );
@@ -8142,6 +8142,7 @@ async function handleGetGradingSessions(req: VercelRequest, res: VercelResponse,
         homeworkPoints: r.homework_points,
         bonusPoints: r.bonus_points,
         totalPoints: r.total_points,
+        sessionXp: r.session_xp || 0,
         greenCount: r.green_count,
         yellowCount: r.yellow_count,
         redCount: r.red_count,

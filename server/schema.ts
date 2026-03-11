@@ -163,6 +163,7 @@ export const gradingSessions = pgTable('grading_sessions', {
   totalSkills: integer('total_skills').default(0),
   coachNote: text('coach_note'),
   stripeProgress: varchar('stripe_progress', { length: 100 }),
+  sessionXp: integer('session_xp').default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 

@@ -1671,6 +1671,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             const currentStripes = Math.floor(postSessionTotal / pointsRequired);
             const progressInStripe = postSessionTotal % pointsRequired;
             
+            const sessionXp = (student as any).sessionXp || 0;
             return {
                 id: student.id,
                 name: student.name,
@@ -1679,6 +1680,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 homework: studentHomework,
                 bonus: studentBonus,
                 totalPoints: sessionTotal,
+                sessionXp,
                 stripeProgress: `${progressInStripe}/${pointsRequired} pts (Stripe ${currentStripes + 1})`,
                 coachNote: capturedNotes[student.id] || ''
             };
