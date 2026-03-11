@@ -1,0 +1,32 @@
+{
+  "name": "TaekUp by MyTaek",
+  "short_name": "TaekUp",
+  "description": "Your martial arts club in your pocket. Track progress, feedback, and rankings.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#06b6d4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/taekup-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/taekup-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/taekup-logo.png",
+      "sizes": "813x813",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "education", "sports"],
+  "lang": "en"
+}
