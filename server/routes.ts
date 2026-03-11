@@ -2074,6 +2074,40 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.get('/api/students/:id/grading-sessions', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await db.execute(sql`
+        SELECT id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress, created_at
+        FROM grading_sessions WHERE student_id = ${id}::uuid ORDER BY created_at DESC LIMIT 50
+      `);
+      res.json({
+        success: true,
+        sessions: (result as any[]).map((r: any) => ({
+          id: r.id,
+          className: r.class_name,
+          classDate: r.class_date,
+          coachName: r.coach_name,
+          scores: r.scores,
+          skills: r.skills,
+          homeworkPoints: r.homework_points,
+          bonusPoints: r.bonus_points,
+          totalPoints: r.total_points,
+          greenCount: r.green_count,
+          yellowCount: r.yellow_count,
+          redCount: r.red_count,
+          totalSkills: r.total_skills,
+          coachNote: r.coach_note,
+          stripeProgress: r.stripe_progress,
+          createdAt: r.created_at
+        }))
+      });
+    } catch (error: any) {
+      console.error('[GradingSessions] Error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch grading sessions' });
+    }
+  });
+
   // GET /api/students/:id/stats - Comprehensive stats for Insights tab
   app.get('/api/students/:id/stats', async (req: Request, res: Response) => {
     try {

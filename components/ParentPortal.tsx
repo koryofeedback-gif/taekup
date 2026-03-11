@@ -6940,6 +6940,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     // Feedback filter state
     const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
     const [feedbackTypeFilter, setFeedbackTypeFilter] = useState<'all' | 'academy' | 'arena'>('all');
+    const [feedbackSubTab, setFeedbackSubTab] = useState<'sessions' | 'videos'>('sessions');
+    const [gradingSessions, setGradingSessions] = useState<any[]>([]);
+    const [gradingSessionsLoading, setGradingSessionsLoading] = useState(false);
     
     // Track seen feedback for notification badge
     const [seenFeedbackIds, setSeenFeedbackIds] = useState<Set<string>>(() => {
@@ -6969,6 +6972,104 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             }
         }
     }, [activeTab, myVideos, student.id]);
+
+    const [gradingSessionsStudentId, setGradingSessionsStudentId] = useState('');
+    useEffect(() => {
+        if (activeTab === 'feedback' && feedbackSubTab === 'sessions' && (gradingSessions.length === 0 || gradingSessionsStudentId !== student.id) && !gradingSessionsLoading) {
+            setGradingSessionsLoading(true);
+            setGradingSessionsStudentId(student.id);
+            fetch(`/api/students/${student.id}/grading-sessions`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) setGradingSessions(data.sessions || []);
+                })
+                .catch(err => console.error('[GradingSessions] Fetch error:', err))
+                .finally(() => setGradingSessionsLoading(false));
+        }
+    }, [activeTab, feedbackSubTab, student.id]);
+
+    const renderGradingSessionCard = (session: any) => {
+        const skills = session.skills || [];
+        const scores = session.scores || {};
+        return (
+            <div key={session.id} className="bg-gray-800/80 rounded-xl border border-gray-700 overflow-hidden">
+                <div className="bg-gradient-to-r from-cyan-900/50 to-indigo-900/50 px-4 py-3 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-bold text-white">{session.className}</p>
+                        <p className="text-[11px] text-gray-400">{session.classDate} • {session.coachName}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-lg font-black text-cyan-400">+{session.totalPoints}</p>
+                        <p className="text-[10px] text-cyan-500 font-bold">HonorXP™</p>
+                    </div>
+                </div>
+
+                <div className="px-4 py-3">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-1">
+                            <span className="text-lg">🟢</span>
+                            <span className="text-xs font-bold text-green-400">{session.greenCount}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <span className="text-lg">🟡</span>
+                            <span className="text-xs font-bold text-yellow-400">{session.yellowCount}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <span className="text-lg">🔴</span>
+                            <span className="text-xs font-bold text-red-400">{session.redCount}</span>
+                        </div>
+                        <span className="text-[11px] text-gray-500 ml-auto">{session.greenCount + session.yellowCount + session.redCount}/{session.totalSkills} {t('parent.feedback.skillsBreakdown').toLowerCase()}</span>
+                    </div>
+
+                    {skills.length > 0 && (
+                        <div className="space-y-1.5 mb-3">
+                            {skills.map((skill: any) => {
+                                const score = scores[skill.id];
+                                const color = score === 2 ? 'green' : score === 1 ? 'yellow' : score === 0 ? 'red' : 'gray';
+                                const label = score === 2 ? t('parent.feedback.excellent') : score === 1 ? t('parent.feedback.good') : score === 0 ? t('parent.feedback.needsWork') : '-';
+                                return (
+                                    <div key={skill.id} className="flex items-center justify-between py-1 px-2 rounded-lg bg-gray-900/50">
+                                        <span className="text-xs text-gray-300">{skill.name}</span>
+                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                            color === 'green' ? 'bg-green-900/50 text-green-400' :
+                                            color === 'yellow' ? 'bg-yellow-900/50 text-yellow-400' :
+                                            color === 'red' ? 'bg-red-900/50 text-red-400' :
+                                            'bg-gray-800 text-gray-500'
+                                        }`}>{label}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2 text-[11px]">
+                        {session.homeworkPoints > 0 && (
+                            <span className="bg-blue-900/30 text-blue-400 px-2 py-1 rounded-lg font-bold">
+                                📝 {t('parent.feedback.homeworkBonus')}: +{session.homeworkPoints}
+                            </span>
+                        )}
+                        {session.bonusPoints > 0 && (
+                            <span className="bg-purple-900/30 text-purple-400 px-2 py-1 rounded-lg font-bold">
+                                ⭐ {t('parent.feedback.coachBonus')}: +{session.bonusPoints}
+                            </span>
+                        )}
+                        {session.stripeProgress && (
+                            <span className="bg-amber-900/30 text-amber-400 px-2 py-1 rounded-lg font-bold">
+                                🎖️ {t('parent.feedback.stripeProgressLabel')}: {session.stripeProgress}
+                            </span>
+                        )}
+                    </div>
+
+                    {session.coachNote && (
+                        <div className="mt-3 p-3 rounded-lg bg-indigo-900/20 border border-indigo-700/50">
+                            <p className="text-[11px] text-gray-400 mb-1">💬 {t('parent.feedback.coachNotes')}</p>
+                            <p className="text-sm text-indigo-300">{session.coachNote}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
 
     const renderFeedback = () => {
         // Combine all video submissions
@@ -7083,84 +7184,122 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <div className="absolute right-0 top-0 text-6xl opacity-20 -mr-4 -mt-2">💬</div>
                         <h3 className="font-bold text-white text-lg relative z-10">{t('parent.feedback.feedbackCenter')}</h3>
                         <p className="text-sm text-indigo-100 relative z-10 mt-1">
-                            {t('parent.feedback.allSubmissions')}
+                            {feedbackSubTab === 'sessions' ? t('parent.feedback.fullGradingHistory') : t('parent.feedback.allSubmissions')}
                         </p>
                     </div>
 
-                    {/* Stats Summary */}
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 text-center">
-                            <p className="text-2xl font-black text-yellow-400">
-                                {allSubmissions.filter(v => v.status === 'pending').length}
-                            </p>
-                            <p className="text-[10px] text-yellow-500 font-bold uppercase">{t('parent.feedback.pendingTab')}</p>
-                        </div>
-                        <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-3 text-center">
-                            <p className="text-2xl font-black text-green-400">
-                                {allSubmissions.filter(v => v.status === 'approved').length}
-                            </p>
-                            <p className="text-[10px] text-green-500 font-bold uppercase">{t('parent.feedback.approvedTab')}</p>
-                        </div>
-                        <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3 text-center">
-                            <p className="text-2xl font-black text-red-400">
-                                {allSubmissions.filter(v => v.status === 'rejected').length}
-                            </p>
-                            <p className="text-[10px] text-red-500 font-bold uppercase">{t('parent.feedback.revisionTab')}</p>
-                        </div>
+                    {/* Sub-tabs: Sessions | Videos */}
+                    <div className="flex gap-1 bg-gray-800 rounded-xl p-1">
+                        <button
+                            onClick={() => setFeedbackSubTab('sessions')}
+                            className={`flex-1 px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                                feedbackSubTab === 'sessions' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            {t('parent.feedback.trainingSessionsTab')}
+                        </button>
+                        <button
+                            onClick={() => setFeedbackSubTab('videos')}
+                            className={`flex-1 px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                                feedbackSubTab === 'videos' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            💬 Videos
+                        </button>
                     </div>
 
-                    {/* Filters */}
-                    <div className="flex flex-wrap gap-2">
-                        {/* Status Filter */}
-                        <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
-                            {(['all', 'pending', 'approved', 'rejected'] as const).map(status => (
-                                <button
-                                    key={status}
-                                    onClick={() => setFeedbackFilter(status)}
-                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                                        feedbackFilter === status
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'text-gray-400 hover:text-white'
-                                    }`}
-                                >
-                                    {status === 'all' ? 'All' : status === 'pending' ? '⏳' : status === 'approved' ? '✅' : '❌'}
-                                </button>
-                            ))}
-                        </div>
-                        
-                        {/* Type Filter */}
-                        <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
-                            {(['all', 'academy', 'arena'] as const).map(type => (
-                                <button
-                                    key={type}
-                                    onClick={() => setFeedbackTypeFilter(type)}
-                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                                        feedbackTypeFilter === type
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'text-gray-400 hover:text-white'
-                                    }`}
-                                >
-                                    {type === 'all' ? 'All' : type === 'academy' ? '📚' : '⚔️'}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Submissions List */}
-                    {filteredSubmissions.length === 0 ? (
-                        <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700">
-                            <span className="text-5xl mb-4 block">📭</span>
-                            <p className="text-gray-400 font-bold">{t('parent.feedback.noSubmissionsYet')}</p>
-                            <p className="text-gray-500 text-sm mt-1">
-                                {t('parent.feedback.submitVideosToSee')}
-                            </p>
-                        </div>
+                    {feedbackSubTab === 'sessions' ? (
+                        <>
+                            {gradingSessionsLoading ? (
+                                <div className="text-center py-12">
+                                    <div className="animate-spin text-4xl mb-3">⏳</div>
+                                    <p className="text-gray-400 text-sm">{t('parent.feedback.loadingHistory')}</p>
+                                </div>
+                            ) : gradingSessions.length === 0 ? (
+                                <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700">
+                                    <span className="text-5xl mb-4 block">📋</span>
+                                    <p className="text-gray-400 font-bold">{t('parent.feedback.noSessionsYet')}</p>
+                                    <p className="text-gray-500 text-sm mt-1">{t('parent.feedback.attendClassToSee')}</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {gradingSessions.map(renderGradingSessionCard)}
+                                </div>
+                            )}
+                        </>
                     ) : (
-                        <div className="space-y-4">
-                            {renderSection('Today', todaySubmissions)}
-                            {renderSection('This Week', thisWeekSubmissions)}
-                            {renderSection('Earlier', olderSubmissions)}
-                        </div>
+                        <>
+                            {/* Video Stats Summary */}
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 text-center">
+                                    <p className="text-2xl font-black text-yellow-400">
+                                        {allSubmissions.filter(v => v.status === 'pending').length}
+                                    </p>
+                                    <p className="text-[10px] text-yellow-500 font-bold uppercase">{t('parent.feedback.pendingTab')}</p>
+                                </div>
+                                <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-3 text-center">
+                                    <p className="text-2xl font-black text-green-400">
+                                        {allSubmissions.filter(v => v.status === 'approved').length}
+                                    </p>
+                                    <p className="text-[10px] text-green-500 font-bold uppercase">{t('parent.feedback.approvedTab')}</p>
+                                </div>
+                                <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3 text-center">
+                                    <p className="text-2xl font-black text-red-400">
+                                        {allSubmissions.filter(v => v.status === 'rejected').length}
+                                    </p>
+                                    <p className="text-[10px] text-red-500 font-bold uppercase">{t('parent.feedback.revisionTab')}</p>
+                                </div>
+                            </div>
+
+                            {/* Video Filters */}
+                            <div className="flex flex-wrap gap-2">
+                                <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
+                                    {(['all', 'pending', 'approved', 'rejected'] as const).map(status => (
+                                        <button
+                                            key={status}
+                                            onClick={() => setFeedbackFilter(status)}
+                                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                                feedbackFilter === status
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'text-gray-400 hover:text-white'
+                                            }`}
+                                        >
+                                            {status === 'all' ? 'All' : status === 'pending' ? '⏳' : status === 'approved' ? '✅' : '❌'}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
+                                    {(['all', 'academy', 'arena'] as const).map(type => (
+                                        <button
+                                            key={type}
+                                            onClick={() => setFeedbackTypeFilter(type)}
+                                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                                feedbackTypeFilter === type
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'text-gray-400 hover:text-white'
+                                            }`}
+                                        >
+                                            {type === 'all' ? 'All' : type === 'academy' ? '📚' : '⚔️'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Video Submissions List */}
+                            {filteredSubmissions.length === 0 ? (
+                                <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700">
+                                    <span className="text-5xl mb-4 block">📭</span>
+                                    <p className="text-gray-400 font-bold">{t('parent.feedback.noSubmissionsYet')}</p>
+                                    <p className="text-gray-500 text-sm mt-1">{t('parent.feedback.submitVideosToSee')}</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {renderSection('Today', todaySubmissions)}
+                                    {renderSection('This Week', thisWeekSubmissions)}
+                                    {renderSection('Earlier', olderSubmissions)}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

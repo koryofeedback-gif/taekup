@@ -741,38 +741,38 @@
   },
   "class_feedback": {
     "en": {
-      "subject": "🥋 {{childName}} just trained — see how it went!",
+      "subject": "🥋 {{childName}} just trained!",
       "title": "Training Session Complete! 🥋",
-      "body": "Hi {{parentName}},<br><br>Class just finished at <strong>{{clubName}}</strong>!<br><br>{{summaryEmojis}}<p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Log in to see full scores, coach notes, stripe progress, and more.</p>",
-      "btn_text": "See Full Details in Dashboard",
+      "body": "Hi {{parentName}},<br><br><strong>{{childName}}</strong> just finished training at <strong>{{clubName}}</strong> today.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0; color: #0ea5e9; font-size: 18px; font-weight: 600;'>📋 Full session report is ready</p><p style='margin: 12px 0 0 0; color: #94a3b8; font-size: 14px;'>Scores, coach notes, HonorXP™ earned & stripe progress</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Open the dashboard to see the complete breakdown.</p>",
+      "btn_text": "View Training Report",
       "btn_url": "{{baseUrl}}/login"
     },
     "fr": {
-      "subject": "🥋 {{childName}} vient de s'entraîner — voyez comment ça s'est passé!",
-      "title": "Séance d'entraînement terminée! 🥋",
-      "body": "Bonjour {{parentName}},<br><br>Le cours vient de se terminer à <strong>{{clubName}}</strong>!<br><br>{{summaryEmojis}}<p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Connectez-vous pour voir les scores détaillés, notes du coach, et plus.</p>",
-      "btn_text": "Voir les Détails dans le Tableau de Bord",
+      "subject": "🥋 {{childName}} vient de s'entraîner!",
+      "title": "Séance terminée! 🥋",
+      "body": "Bonjour {{parentName}},<br><br><strong>{{childName}}</strong> vient de terminer l'entraînement à <strong>{{clubName}}</strong> aujourd'hui.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0; color: #0ea5e9; font-size: 18px; font-weight: 600;'>📋 Le rapport complet est prêt</p><p style='margin: 12px 0 0 0; color: #94a3b8; font-size: 14px;'>Notes, évaluations, HonorXP™ gagnés et progression</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Ouvrez le tableau de bord pour voir le détail complet.</p>",
+      "btn_text": "Voir le Rapport",
       "btn_url": "{{baseUrl}}/login"
     },
     "de": {
-      "subject": "🥋 {{childName}} hat gerade trainiert — sehen Sie, wie es lief!",
+      "subject": "🥋 {{childName}} hat gerade trainiert!",
       "title": "Trainingssitzung abgeschlossen! 🥋",
-      "body": "Hallo {{parentName}},<br><br>Der Kurs bei <strong>{{clubName}}</strong> ist gerade zu Ende!<br><br>{{summaryEmojis}}<p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Melden Sie sich an, um alle Bewertungen, Coach-Notizen und mehr zu sehen.</p>",
-      "btn_text": "Alle Details im Dashboard",
+      "body": "Hallo {{parentName}},<br><br><strong>{{childName}}</strong> hat heute das Training bei <strong>{{clubName}}</strong> beendet.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0; color: #0ea5e9; font-size: 18px; font-weight: 600;'>📋 Der vollständige Bericht ist bereit</p><p style='margin: 12px 0 0 0; color: #94a3b8; font-size: 14px;'>Bewertungen, Coach-Notizen, HonorXP™ & Fortschritt</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Öffnen Sie das Dashboard für den vollständigen Bericht.</p>",
+      "btn_text": "Trainingsbericht ansehen",
       "btn_url": "{{baseUrl}}/login"
     },
     "es": {
-      "subject": "🥋 {{childName}} acaba de entrenar — ¡mira cómo le fue!",
-      "title": "¡Sesión de entrenamiento completada! 🥋",
-      "body": "Hola {{parentName}},<br><br>¡La clase acaba de terminar en <strong>{{clubName}}</strong>!<br><br>{{summaryEmojis}}<p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Inicia sesión para ver puntuaciones completas, notas del coach y más.</p>",
-      "btn_text": "Ver Detalles en el Panel",
+      "subject": "🥋 ¡{{childName}} acaba de entrenar!",
+      "title": "¡Sesión completada! 🥋",
+      "body": "Hola {{parentName}},<br><br><strong>{{childName}}</strong> acaba de terminar el entrenamiento en <strong>{{clubName}}</strong> hoy.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0; color: #0ea5e9; font-size: 18px; font-weight: 600;'>📋 El informe completo está listo</p><p style='margin: 12px 0 0 0; color: #94a3b8; font-size: 14px;'>Notas, evaluaciones, HonorXP™ ganados y progreso</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Abre el panel para ver el desglose completo.</p>",
+      "btn_text": "Ver Informe",
       "btn_url": "{{baseUrl}}/login"
     },
     "fa": {
-      "subject": "🥋 {{childName}} تازه تمرین کرد — ببینید چطور بود!",
+      "subject": "🥋 {{childName}} تازه تمرین کرد!",
       "title": "جلسه تمرین تمام شد! 🥋",
-      "body": "سلام {{parentName}},<br><br>کلاس در <strong>{{clubName}}</strong> به پایان رسید!<br><br>{{summaryEmojis}}<p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>وارد شوید تا نمرات کامل، یادداشت‌های مربی و موارد بیشتر را ببینید.</p>",
-      "btn_text": "مشاهده جزئیات در داشبورد",
+      "body": "سلام {{parentName}},<br><br><strong>{{childName}}</strong> امروز تمرین خود را در <strong>{{clubName}}</strong> به پایان رساند.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0; color: #0ea5e9; font-size: 18px; font-weight: 600;'>📋 گزارش کامل آماده است</p><p style='margin: 12px 0 0 0; color: #94a3b8; font-size: 14px;'>نمرات، یادداشت‌های مربی، HonorXP™ و پیشرفت</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>داشبورد را باز کنید تا جزئیات کامل را ببینید.</p>",
+      "btn_text": "مشاهده گزارش",
       "btn_url": "{{baseUrl}}/login"
     }
   },

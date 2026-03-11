@@ -145,6 +145,27 @@ export const classFeedback = pgTable('class_feedback', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+export const gradingSessions = pgTable('grading_sessions', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  className: varchar('class_name', { length: 255 }),
+  classDate: varchar('class_date', { length: 50 }),
+  coachName: varchar('coach_name', { length: 255 }),
+  scores: jsonb('scores'),
+  skills: jsonb('skills'),
+  homeworkPoints: integer('homework_points').default(0),
+  bonusPoints: integer('bonus_points').default(0),
+  totalPoints: integer('total_points').default(0),
+  greenCount: integer('green_count').default(0),
+  yellowCount: integer('yellow_count').default(0),
+  redCount: integer('red_count').default(0),
+  totalSkills: integer('total_skills').default(0),
+  coachNote: text('coach_note'),
+  stripeProgress: varchar('stripe_progress', { length: 100 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 export const promotions = pgTable('promotions', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),

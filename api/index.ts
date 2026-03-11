@@ -309,10 +309,10 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   },
   // Class feedback
   CLASS_FEEDBACK: {
-    subject: '🥋 {{childName}} just trained — see how it went!',
+    subject: '🥋 {{childName}} just trained!',
     title: 'Training Session Complete! 🥋',
-    body: `Hi {{parentName}},<br><br>Class just finished at <strong>{{clubName}}</strong>!<br><br>{{summaryEmojis}}<p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Log in to see full scores, coach notes, stripe progress, and more.</p>`,
-    btn_text: 'See Full Details in Dashboard',
+    body: `Hi {{parentName}},<br><br><strong>{{childName}}</strong> just finished training at <strong>{{clubName}}</strong> today.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0; color: #0ea5e9; font-size: 18px; font-weight: 600;'>📋 Full session report is ready</p><p style='margin: 12px 0 0 0; color: #94a3b8; font-size: 14px;'>Scores, coach notes, HonorXP™ earned & stripe progress</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Open the dashboard to see the complete breakdown.</p>`,
+    btn_text: 'View Training Report',
     btn_url: `${BASE_URL}/login`,
     from: 'updates@mytaek.com'
   },
@@ -2480,6 +2480,26 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
     const lang = clubId ? await getClubLanguage(client, clubId) : 'en';
     const skillsArray = skills || [];
 
+    for (const student of students) {
+      try {
+        const { id: studentId, name, scores, homework, bonus, totalPoints, stripeProgress, coachNote } = student;
+        if (!studentId) continue;
+        const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
+        const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
+        const redCount = skillsArray.filter((s: any) => scores?.[s.id] === 0).length;
+        const totalSkillCount = skillsArray.length;
+        const skillNames = skillsArray.map((s: any) => ({ id: s.id, name: s.name }));
+        await client.query(
+          `INSERT INTO grading_sessions (club_id, student_id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+          [clubId, studentId, className || 'Training Session', classDate || new Date().toLocaleDateString(), coachName || 'Coach', JSON.stringify(scores || {}), JSON.stringify(skillNames), parseInt(homework) || 0, parseInt(bonus) || 0, parseInt(totalPoints) || 0, greenCount, yellowCount, redCount, totalSkillCount, coachNote || null, stripeProgress || null]
+        );
+        console.log(`[GradingSession] Saved for ${name}`);
+      } catch (gsErr: any) {
+        console.error('[GradingSession] Error saving:', student.name, gsErr.message);
+      }
+    }
+
     const parentGroups: Record<string, Array<typeof students[0]>> = {};
     for (const student of students) {
       if (!student.parentEmail) {
@@ -2493,32 +2513,7 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
 
     for (const [parentEmail, childStudents] of Object.entries(parentGroups)) {
       try {
-        const childBlocks: string[] = [];
-        let combinedPoints = 0;
-        const childNames: string[] = [];
-
-        for (const child of childStudents) {
-          const { name, scores, totalPoints } = child;
-          childNames.push(name);
-          const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
-          const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
-          const redCount = skillsArray.filter((s: any) => scores?.[s.id] === 0).length;
-          const totalSkills = skillsArray.length;
-          const summaryEmojis = `${'🟢'.repeat(greenCount)}${'🟡'.repeat(yellowCount)}${'🔴'.repeat(redCount)}`;
-          const safeTotalPoints = parseInt(totalPoints) || 0;
-          combinedPoints += safeTotalPoints;
-
-          childBlocks.push(
-            `<div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'>` +
-            `<p style='margin: 0 0 12px 0; color: #0ea5e9; font-size: 18px; font-weight: 700;'>${name}</p>` +
-            `<p style='margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;'>${className || 'Training Session'} — ${classDate || new Date().toLocaleDateString()}</p>` +
-            `<p style='margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;'>${summaryEmojis}</p>` +
-            `<p style='margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;'>${greenCount} / ${totalSkills}</p>` +
-            `<p style='margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;'>+${safeTotalPoints} HonorXP™</p>` +
-            `</div>`
-          );
-        }
-
+        const childNames = childStudents.map(c => c.name);
         const displayNames = childNames.length > 1 ? childNames.join(' & ') : childNames[0];
         const parentDisplayName = childNames.length > 1 ? 'Parent' : childNames[0].split(' ')[0] + "'s Parent";
 
@@ -2526,13 +2521,6 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
           parentName: parentDisplayName,
           childName: displayNames,
           clubName: clubName || 'Your Dojo',
-          className: className || 'Training Session',
-          classDate: classDate || new Date().toLocaleDateString(),
-          coachName: coachName || 'Coach',
-          summaryEmojis: childBlocks.join(''),
-          greenCount: '',
-          totalSkills: '',
-          totalPoints: String(combinedPoints),
           baseUrl: BASE_URL
         }, lang);
 
@@ -8126,6 +8114,51 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
 }
 
 // Get XP transaction history for a student
+async function handleGetGradingSessions(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!studentId || !uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid student ID format' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress, created_at
+       FROM grading_sessions WHERE student_id = $1::uuid ORDER BY created_at DESC LIMIT 50`,
+      [studentId]
+    );
+
+    return res.json({
+      success: true,
+      sessions: result.rows.map(r => ({
+        id: r.id,
+        className: r.class_name,
+        classDate: r.class_date,
+        coachName: r.coach_name,
+        scores: r.scores,
+        skills: r.skills,
+        homeworkPoints: r.homework_points,
+        bonusPoints: r.bonus_points,
+        totalPoints: r.total_points,
+        greenCount: r.green_count,
+        yellowCount: r.yellow_count,
+        redCount: r.red_count,
+        totalSkills: r.total_skills,
+        coachNote: r.coach_note,
+        stripeProgress: r.stripe_progress,
+        createdAt: r.created_at
+      }))
+    });
+  } catch (error: any) {
+    console.error('[GradingSessions] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch grading sessions' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleXpHistory(req: VercelRequest, res: VercelResponse, studentId: string) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   
@@ -8544,6 +8577,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const studentStatsMatch = path.match(/^\/students\/([^/]+)\/stats\/?$/);
     if (studentStatsMatch) return await handleStudentStats(req, res, studentStatsMatch[1]);
+
+    const gradingSessionsMatch = path.match(/^\/students\/([^/]+)\/grading-sessions\/?$/);
+    if (gradingSessionsMatch) return await handleGetGradingSessions(req, res, gradingSessionsMatch[1]);
 
     // XP History (for student progress tracking)
     const xpHistoryMatch = path.match(/^\/students\/([^/]+)\/xp-history\/?$/);
