@@ -7031,7 +7031,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         <p className="text-[11px] text-gray-400">{session.classDate} • {session.coachName}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-lg font-black text-cyan-400">+{session.totalPoints}</p>
+                        <p className="text-lg font-black text-cyan-400">+{session.totalPoints} <span className="text-sm font-bold">pts</span></p>
                         <p className="text-[10px] text-cyan-500 font-bold">HonorXP™</p>
                     </div>
                 </div>
