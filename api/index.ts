@@ -310,8 +310,8 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   // Class feedback
   CLASS_FEEDBACK: {
     subject: '🥋 {{childName}} just trained — see how it went!',
-    title: '{{childName}} just trained! 🥋',
-    body: `Hi {{parentName}},<br><br><strong>{{childName}}</strong> just finished class at <strong>{{clubName}}</strong>.<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'><p style='margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;'>{{className}} — {{classDate}}</p><p style='margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;'>{{summaryEmojis}}</p><p style='margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;'>{{greenCount}} of {{totalSkills}} skills rated excellent</p><p style='margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;'>+{{totalPoints}} HonorXP™</p></div><p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Log in to see full scores, coach notes, stripe progress, and more.</p>`,
+    title: 'Training Session Complete! 🥋',
+    body: `Hi {{parentName}},<br><br>Class just finished at <strong>{{clubName}}</strong>!<br><br>{{summaryEmojis}}<p style='color: #6b7280; font-size: 14px; text-align: center; margin: 16px 0;'>Log in to see full scores, coach notes, stripe progress, and more.</p>`,
     btn_text: 'See Full Details in Dashboard',
     btn_url: `${BASE_URL}/login`,
     from: 'updates@mytaek.com'
@@ -2478,41 +2478,67 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
   const client = await pool.connect();
   try {
     const lang = clubId ? await getClubLanguage(client, clubId) : 'en';
+    const skillsArray = skills || [];
 
+    const parentGroups: Record<string, Array<typeof students[0]>> = {};
     for (const student of students) {
-      const { id, name, parentEmail, scores, homework, bonus, totalPoints, stripeProgress, coachNote } = student;
-      
-      if (!parentEmail) {
-        console.log('[ClassFeedback] Skipping student without parent email:', name);
+      if (!student.parentEmail) {
+        console.log('[ClassFeedback] Skipping student without parent email:', student.name);
         continue;
       }
+      const key = student.parentEmail.toLowerCase();
+      if (!parentGroups[key]) parentGroups[key] = [];
+      parentGroups[key].push(student);
+    }
 
+    for (const [parentEmail, childStudents] of Object.entries(parentGroups)) {
       try {
-        const skillsArray = skills || [];
-        const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
-        const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
-        const redCount = skillsArray.filter((s: any) => scores?.[s.id] === 0).length;
-        const totalSkills = skillsArray.length;
-        const summaryEmojis = `${'🟢'.repeat(greenCount)}${'🟡'.repeat(yellowCount)}${'🔴'.repeat(redCount)}`;
-        const safeTotalPoints = parseInt(totalPoints) || 0;
+        const childBlocks: string[] = [];
+        let combinedPoints = 0;
+        const childNames: string[] = [];
+
+        for (const child of childStudents) {
+          const { name, scores, totalPoints } = child;
+          childNames.push(name);
+          const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
+          const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
+          const redCount = skillsArray.filter((s: any) => scores?.[s.id] === 0).length;
+          const totalSkills = skillsArray.length;
+          const summaryEmojis = `${'🟢'.repeat(greenCount)}${'🟡'.repeat(yellowCount)}${'🔴'.repeat(redCount)}`;
+          const safeTotalPoints = parseInt(totalPoints) || 0;
+          combinedPoints += safeTotalPoints;
+
+          childBlocks.push(
+            `<div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;'>` +
+            `<p style='margin: 0 0 12px 0; color: #0ea5e9; font-size: 18px; font-weight: 700;'>${name}</p>` +
+            `<p style='margin: 0 0 8px 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;'>${className || 'Training Session'} — ${classDate || new Date().toLocaleDateString()}</p>` +
+            `<p style='margin: 0 0 4px 0; font-size: 28px; letter-spacing: 4px;'>${summaryEmojis}</p>` +
+            `<p style='margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px;'>${greenCount} / ${totalSkills}</p>` +
+            `<p style='margin: 12px 0 0 0; color: #0ea5e9; font-size: 22px; font-weight: 700;'>+${safeTotalPoints} HonorXP™</p>` +
+            `</div>`
+          );
+        }
+
+        const displayNames = childNames.length > 1 ? childNames.join(' & ') : childNames[0];
+        const parentDisplayName = childNames.length > 1 ? 'Parent' : childNames[0].split(' ')[0] + "'s Parent";
 
         const sent = await sendTemplateEmail(parentEmail, 'CLASS_FEEDBACK', {
-          parentName: name.split(' ')[0] + "'s Parent",
-          childName: name,
+          parentName: parentDisplayName,
+          childName: displayNames,
           clubName: clubName || 'Your Dojo',
           className: className || 'Training Session',
           classDate: classDate || new Date().toLocaleDateString(),
           coachName: coachName || 'Coach',
-          summaryEmojis,
-          greenCount: String(greenCount),
-          totalSkills: String(totalSkills),
-          totalPoints: String(safeTotalPoints),
+          summaryEmojis: childBlocks.join(''),
+          greenCount: '',
+          totalSkills: '',
+          totalPoints: String(combinedPoints),
           baseUrl: BASE_URL
         }, lang);
 
         if (sent) {
           sentCount++;
-          console.log(`[ClassFeedback] Email sent to ${parentEmail} for ${name} (${lang})`);
+          console.log(`[ClassFeedback] Email sent to ${parentEmail} for ${displayNames} (${lang})`);
         } else {
           failedCount++;
         }
