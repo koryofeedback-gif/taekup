@@ -424,12 +424,13 @@ export function registerRoutes(app: Express) {
             studentId = (insertResult as any[])[0]?.id;
           }
           
-          if (parentEmail && student.parentPassword) {
+          if (parentEmail) {
+            const parentPwd = student.parentPassword || '1234';
             const existingParent = await db.execute(sql`
               SELECT id FROM users WHERE email = ${parentEmail} LIMIT 1
             `);
             
-            const parentPasswordHash = await bcrypt.hash(student.parentPassword, 10);
+            const parentPasswordHash = await bcrypt.hash(parentPwd, 10);
             
             if ((existingParent as any[]).length > 0) {
               await db.execute(sql`
@@ -2259,7 +2260,7 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/students', async (req: Request, res: Response) => {
     try {
-      const { clubId, name, parentEmail, parentName, parentPhone, belt, birthdate, totalPoints, totalXP, lifetimeXp, location, assignedClass, stripes } = req.body;
+      const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, totalPoints, totalXP, lifetimeXp, location, assignedClass, stripes } = req.body;
       
       if (!clubId || !name) {
         return res.status(400).json({ error: 'Club ID and student name are required' });
@@ -2288,6 +2289,36 @@ export function registerRoutes(app: Express) {
       `);
       
       const student = (studentResult as any[])[0];
+
+      // Create parent user account if email provided (default password: 1234)
+      if (parentEmail) {
+        try {
+          const parentPwd = parentPassword || '1234';
+          const parentPasswordHash = await bcrypt.hash(parentPwd, 10);
+          const existingParent = await db.execute(sql`
+            SELECT id FROM users WHERE email = ${parentEmail.toLowerCase()} LIMIT 1
+          `);
+          if ((existingParent as any[]).length > 0) {
+            await db.execute(sql`
+              UPDATE users SET 
+                password_hash = ${parentPasswordHash},
+                name = COALESCE(${parentName || name + "'s Parent"}, name),
+                club_id = ${clubId}::uuid,
+                role = 'parent',
+                updated_at = NOW()
+              WHERE id = ${(existingParent as any[])[0].id}::uuid
+            `);
+          } else {
+            await db.execute(sql`
+              INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
+              VALUES (${parentEmail.toLowerCase()}, ${parentPasswordHash}, ${parentName || name + "'s Parent"}, 'parent', ${clubId}::uuid, true, NOW())
+            `);
+          }
+          console.log('[AddStudent] Created parent user account:', parentEmail);
+        } catch (parentErr: any) {
+          console.error('[AddStudent] Error creating parent account:', parentErr.message);
+        }
+      }
 
       const age = birthdate ? Math.floor((Date.now() - new Date(birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
 

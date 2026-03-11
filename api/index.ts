@@ -2066,14 +2066,15 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
           studentId = insertResult.rows[0]?.id;
         }
         
-        // Create parent user account if email and password provided
-        if (parentEmail && student.parentPassword) {
+        // Create parent user account if email provided (default password: 1234)
+        if (parentEmail) {
+          const parentPwd = student.parentPassword || '1234';
           const existingParent = await client.query(
             `SELECT id FROM users WHERE email = $1 LIMIT 1`,
             [parentEmail]
           );
           
-          const parentPasswordHash = await bcrypt.hash(student.parentPassword, 10);
+          const parentPasswordHash = await bcrypt.hash(parentPwd, 10);
           
           if (existingParent.rows.length > 0) {
             await client.query(
@@ -2203,10 +2204,11 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     );
     const student = studentResult.rows[0];
 
-    // Create parent user account if email and password provided
-    if (parentEmail && parentPassword) {
+    // Create parent user account if email provided (default password: 1234)
+    if (parentEmail) {
       try {
-        const parentPasswordHash = await bcrypt.hash(parentPassword, 10);
+        const parentPwd = parentPassword || '1234';
+        const parentPasswordHash = await bcrypt.hash(parentPwd, 10);
         const existingParent = await client.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [parentEmail.toLowerCase()]);
         if (existingParent.rows.length > 0) {
           await client.query(
