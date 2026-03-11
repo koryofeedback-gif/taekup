@@ -1648,9 +1648,9 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             }
         });
 
-        // Send class feedback emails to parents
-        const studentsToNotify = updatedStudents.filter(student => 
-            attendance[student.id] && student.parentEmail
+        // Build grading data for ALL attended students (for DB storage + emails)
+        const allGradedStudents = updatedStudents.filter(student => 
+            attendance[student.id]
         ).map(student => {
             const studentScores = sessionScores[student.id] || {};
             const studentBonus = bonusPoints[student.id] || 0;
@@ -1659,7 +1659,6 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             const classPTS = calculateClassPTS(scoresArray);
             const sessionTotal = classPTS + studentBonus + studentHomework;
             const pointsRequired = getPointsRequired(student.beltId);
-            // Use post-session totalPoints (already updated in student object)
             const postSessionTotal = student.totalPoints || 0;
             const currentStripes = Math.floor(postSessionTotal / pointsRequired);
             const progressInStripe = postSessionTotal % pointsRequired;
@@ -1667,7 +1666,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             return {
                 id: student.id,
                 name: student.name,
-                parentEmail: student.parentEmail,
+                parentEmail: student.parentEmail || '',
                 scores: studentScores,
                 homework: studentHomework,
                 bonus: studentBonus,
@@ -1677,7 +1676,8 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             };
         });
 
-        if (studentsToNotify.length > 0 && !data.isDemo) {
+        // Always store grading sessions + send emails (for all students, including demo)
+        if (allGradedStudents.length > 0) {
             try {
                 const response = await fetch('/api/send-class-feedback', {
                     method: 'POST',
@@ -1688,21 +1688,22 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                         className: data.events?.[0]?.title || 'Training Session',
                         classDate: new Date().toLocaleDateString(),
                         coachName: coachName,
-                        students: studentsToNotify,
+                        students: allGradedStudents,
                         skills: activeSkills,
                         homeworkEnabled: data.homeworkBonus,
-                        bonusEnabled: data.coachBonus
+                        bonusEnabled: data.coachBonus,
+                        isDemo: data.isDemo
                     })
                 });
                 const result = await response.json();
-                console.log('[ClassFeedback] Email result:', result);
-                setConfirmation({ show: true, message: `${updatedCount} students updated. ${result.sent} parents notified. ${earnedStripes} new stripes earned!` });
+                console.log('[ClassFeedback] Result:', result);
+                setConfirmation({ show: true, message: `${updatedCount} students updated. ${data.isDemo ? '(Demo mode)' : `${result.sent || 0} parents notified.`} ${earnedStripes} new stripes earned!` });
             } catch (err) {
-                console.error('[ClassFeedback] Failed to send emails:', err);
-                setConfirmation({ show: true, message: `${updatedCount} students updated. Email notification failed. ${earnedStripes} new stripes earned!` });
+                console.error('[ClassFeedback] Failed:', err);
+                setConfirmation({ show: true, message: `${updatedCount} students updated. ${earnedStripes} new stripes earned!` });
             }
         } else {
-            setConfirmation({ show: true, message: `${updatedCount} students updated. ${data.isDemo ? '(Demo mode - no emails sent)' : 'Parents notified.'} ${earnedStripes} new stripes earned!` });
+            setConfirmation({ show: true, message: `${updatedCount} students updated. ${earnedStripes} new stripes earned!` });
         }
 
         setTimeout(() => setConfirmation({ show: false, message: '' }), 5000);
