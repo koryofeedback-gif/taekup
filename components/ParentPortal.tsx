@@ -6951,11 +6951,34 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             return saved ? new Set(JSON.parse(saved)) : new Set();
         } catch { return new Set(); }
     });
+
+    const [seenSessionIds, setSeenSessionIds] = useState<Set<string>>(() => {
+        try {
+            const saved = localStorage.getItem(`seen-sessions-${student.id}`);
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch { return new Set(); }
+    });
+
+    const [unseenSessionCount, setUnseenSessionCount] = useState(0);
+
+    useEffect(() => {
+        fetch(`/api/students/${student.id}/grading-sessions`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.sessions) {
+                    const newIds = data.sessions.filter((s: any) => !seenSessionIds.has(s.id)).length;
+                    setUnseenSessionCount(newIds);
+                }
+            })
+            .catch(() => {});
+    }, [student.id]);
     
     // Count of feedback with new responses (approved/rejected that haven't been seen)
-    const unseenFeedbackCount = myVideos.filter(v => 
+    const unseenVideoCount = myVideos.filter(v => 
         (v.status === 'approved' || v.status === 'rejected') && !seenFeedbackIds.has(v.id)
     ).length;
+
+    const unseenFeedbackCount = unseenVideoCount + unseenSessionCount;
     
     // Mark all feedback as seen when visiting Feedback tab
     useEffect(() => {
@@ -6971,7 +6994,16 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 } catch {}
             }
         }
-    }, [activeTab, myVideos, student.id]);
+        if (activeTab === 'feedback' && feedbackSubTab === 'sessions' && gradingSessions.length > 0) {
+            const sessionIds = gradingSessions.map((s: any) => s.id);
+            const newSeen = new Set([...seenSessionIds, ...sessionIds]);
+            setSeenSessionIds(newSeen);
+            setUnseenSessionCount(0);
+            try {
+                localStorage.setItem(`seen-sessions-${student.id}`, JSON.stringify([...newSeen]));
+            } catch {}
+        }
+    }, [activeTab, feedbackSubTab, myVideos, gradingSessions, student.id]);
 
     const [gradingSessionsStudentId, setGradingSessionsStudentId] = useState('');
     useEffect(() => {
@@ -7192,19 +7224,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <div className="flex gap-1 bg-gray-800 rounded-xl p-1">
                         <button
                             onClick={() => setFeedbackSubTab('sessions')}
-                            className={`flex-1 px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                            className={`flex-1 px-3 py-2.5 rounded-lg text-xs font-bold transition-all relative ${
                                 feedbackSubTab === 'sessions' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
                             }`}
                         >
                             {t('parent.feedback.trainingSessionsTab')}
+                            {unseenSessionCount > 0 && feedbackSubTab !== 'sessions' && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">{unseenSessionCount}</span>
+                            )}
                         </button>
                         <button
                             onClick={() => setFeedbackSubTab('videos')}
-                            className={`flex-1 px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                            className={`flex-1 px-3 py-2.5 rounded-lg text-xs font-bold transition-all relative ${
                                 feedbackSubTab === 'videos' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
                             }`}
                         >
                             💬 Videos
+                            {unseenVideoCount > 0 && feedbackSubTab !== 'videos' && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">{unseenVideoCount}</span>
+                            )}
                         </button>
                     </div>
 
