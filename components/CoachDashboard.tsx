@@ -1705,45 +1705,6 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             setConfirmation({ show: true, message: `${updatedCount} students updated. ${data.isDemo ? '(Demo mode - no emails sent)' : 'Parents notified.'} ${earnedStripes} new stripes earned!` });
         }
 
-        if (!data.isDemo && earnedStripes > 0) {
-            const stripeStudents = updatedStudents.filter(s => {
-                if (!attendance[s.id] || !s.parentEmail) return false;
-                const before = students.find(orig => orig.id === s.id);
-                const pointsRequired = getPointsRequired(s.beltId);
-                const stripesBefore = Math.floor((before?.totalPoints || 0) / pointsRequired);
-                const stripesAfter = Math.floor((s.totalPoints || 0) / pointsRequired);
-                return stripesAfter > stripesBefore;
-            });
-
-            for (const s of stripeStudents) {
-                const pointsRequired = getPointsRequired(s.beltId);
-                const newStripeCount = Math.floor((s.totalPoints || 0) / pointsRequired);
-                const beltName = data.belts?.find(b => b.id === s.beltId)?.name || s.beltId || 'Current';
-                try {
-                    const resp = await fetch('/api/send-promotion-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            parentEmail: s.parentEmail,
-                            studentName: s.name,
-                            clubName: data.clubName,
-                            clubId,
-                            type: 'stripe',
-                            newBelt: beltName,
-                            stripeCount: newStripeCount,
-                            totalStripes: 4
-                        })
-                    });
-                    if (resp.ok) {
-                        console.log('[StripeEmail] Sent for', s.name, '- stripe', newStripeCount);
-                    } else {
-                        console.error('[StripeEmail] Server error for', s.name, await resp.text());
-                    }
-                } catch (e) {
-                    console.error('[StripeEmail] Failed for', s.name, e);
-                }
-            }
-        }
         setTimeout(() => setConfirmation({ show: false, message: '' }), 5000);
     };
 
