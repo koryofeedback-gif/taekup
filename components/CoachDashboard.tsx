@@ -1594,11 +1594,19 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
         onUpdateStudents(updatedStudents);
         setStudents(updatedStudents);
+
+        // Capture grading state BEFORE reset (reset clears sessionScores, notes, etc.)
+        const capturedAttendance = { ...attendance };
+        const capturedSessionScores = JSON.parse(JSON.stringify(sessionScores));
+        const capturedBonusPoints = { ...bonusPoints };
+        const capturedHomeworkPoints = { ...homeworkPoints };
+        const capturedNotes = { ...notes };
+
         resetDashboard();
 
         // Persist grading data to database (totalPoints + lifetimeXp + sessionXp for monthly tracking)
         updatedStudents.forEach(async (student) => {
-            if (attendance[student.id]) {
+            if (capturedAttendance[student.id]) {
                 // Extract session values from the updated student object
                 const studentAny = student as any;
                 const sessionXpValue = studentAny.sessionXp || 0;
@@ -1650,11 +1658,11 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
 
         // Build grading data for ALL attended students (for DB storage + emails)
         const allGradedStudents = updatedStudents.filter(student => 
-            attendance[student.id]
+            capturedAttendance[student.id]
         ).map(student => {
-            const studentScores = sessionScores[student.id] || {};
-            const studentBonus = bonusPoints[student.id] || 0;
-            const studentHomework = homeworkPoints[student.id] || 0;
+            const studentScores = capturedSessionScores[student.id] || {};
+            const studentBonus = capturedBonusPoints[student.id] || 0;
+            const studentHomework = capturedHomeworkPoints[student.id] || 0;
             const scoresArray = Object.values(studentScores);
             const classPTS = calculateClassPTS(scoresArray);
             const sessionTotal = classPTS + studentBonus + studentHomework;
@@ -1672,7 +1680,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 bonus: studentBonus,
                 totalPoints: sessionTotal,
                 stripeProgress: `${progressInStripe}/${pointsRequired} pts (Stripe ${currentStripes + 1})`,
-                coachNote: notes[student.id] || ''
+                coachNote: capturedNotes[student.id] || ''
             };
         });
 
