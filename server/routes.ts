@@ -1772,6 +1772,41 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.post('/api/send-class-feedback', async (req: Request, res: Response) => {
+    try {
+      const { clubId, clubName, className, classDate, coachName, students, skills } = req.body;
+      if (!clubId || !students || !Array.isArray(students) || students.length === 0) {
+        return res.status(400).json({ error: 'clubId and students array are required' });
+      }
+
+      const skillsArray = skills || [];
+      for (const student of students) {
+        try {
+          const { id: studentId, name, scores, homework, bonus, totalPoints, stripeProgress, coachNote } = student;
+          if (!studentId) continue;
+          const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
+          const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
+          const redCount = skillsArray.filter((s: any) => scores?.[s.id] === 0).length;
+          const totalSkillCount = skillsArray.length;
+          const skillNames = skillsArray.map((s: any) => ({ id: s.id, name: s.name }));
+          await db.execute(sql`
+            INSERT INTO grading_sessions (club_id, student_id, class_name, class_date, coach_name, scores, skills, homework_points, bonus_points, total_points, green_count, yellow_count, red_count, total_skills, coach_note, stripe_progress)
+            VALUES (${clubId}::uuid, ${studentId}::uuid, ${className || 'Training Session'}, ${classDate || new Date().toLocaleDateString()}, ${coachName || 'Coach'}, ${JSON.stringify(scores || {})}::jsonb, ${JSON.stringify(skillNames)}::jsonb, ${parseInt(homework) || 0}, ${parseInt(bonus) || 0}, ${parseInt(totalPoints) || 0}, ${greenCount}, ${yellowCount}, ${redCount}, ${totalSkillCount}, ${coachNote || null}, ${stripeProgress || null})
+          `);
+          console.log(`[GradingSession-Dev] Saved for ${name}`);
+        } catch (gsErr: any) {
+          console.error('[GradingSession-Dev] Error saving:', student.name, gsErr.message);
+        }
+      }
+
+      console.log(`[ClassFeedback-Dev] Stored ${students.length} grading sessions (emails skipped in dev)`);
+      return res.json({ success: true, sent: 0, failed: 0, message: 'Dev mode - grading sessions stored, emails skipped' });
+    } catch (error: any) {
+      console.error('[ClassFeedback-Dev] Error:', error.message);
+      return res.status(500).json({ error: 'Failed to process class feedback' });
+    }
+  });
+
   app.post('/api/test-email', async (req: Request, res: Response) => {
     try {
       const { emailType, to } = req.body;
