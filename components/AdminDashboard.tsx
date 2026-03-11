@@ -702,7 +702,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 </select>
             </div>
             {/* Desktop Table View */}
-            <div className="hidden md:block bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            <div className="hidden lg:block bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
                 <table className="w-full text-left text-sm text-gray-300">
                     <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                         <tr>
@@ -744,7 +744,7 @@ const StudentsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
+            <div className="lg:hidden space-y-3">
                 {filtered.map(s => (
                     <div key={s.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
                         <div className="flex justify-between items-start mb-3">
@@ -825,7 +825,7 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
             />
             
             {/* Desktop Table View */}
-            <div className="hidden md:block bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            <div className="hidden lg:block bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
                 <table className="w-full text-left text-sm text-gray-300">
                     <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
                         <tr>
@@ -870,7 +870,7 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
+            <div className="lg:hidden space-y-3">
                 {/* Owner Card */}
                 <div className="bg-blue-900/20 rounded-lg border border-blue-800/50 p-4">
                     <div className="flex justify-between items-start mb-2">
@@ -2530,7 +2530,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
 
             <SectionHeader title={t('admin.billing.billingAndSubscription')} description={t('admin.billing.managePlan')} />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Current Plan Card */}
                 <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 relative overflow-hidden">
                     <div className="flex justify-between items-start mb-4">
@@ -2627,7 +2627,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                         <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
                             <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.howItWorks')}</p>
                             <ul className="text-sm text-gray-300 space-y-2">
@@ -2685,7 +2685,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                             </div>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
                                 <div className="text-sm text-gray-300 space-y-2">
                                     <div className="flex justify-between">
@@ -3383,7 +3383,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                 </div>
                 
 
-                <div className="p-4 md:p-12 max-w-7xl mx-auto">
+                <div className="p-4 md:p-6 lg:p-12 max-w-7xl mx-auto">
                     {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} onNavigateTab={setActiveTab} />}
                     {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
                     {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
