@@ -83,7 +83,7 @@ export function registerRoutes(app: Express) {
     if (!email || !clubName || !fullName || !websiteUrl) {
       return res.status(400).json({ error: 'Full name, club name, website URL, and email are required' });
     }
-    const lang = ['en', 'fr', 'de'].includes(language) ? language : 'en';
+    const lang = ['en', 'fr', 'de', 'es', 'fa'].includes(language) ? language : 'en';
     try {
       await db.execute(sql`
         INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, language, created_at, status)
@@ -100,6 +100,8 @@ export function registerRoutes(app: Express) {
           en: { subject: 'New VIP Access Request', heading: 'New VIP Access Request', fullName: 'Full Name', clubName: 'Club Name', website: 'Website / Link', email: 'Email', phone: 'Phone', location: 'Location', language: 'Language', notProvided: 'Not provided', submittedAt: 'Submitted at', langName: 'English' },
           fr: { subject: 'Nouvelle demande d\'accès VIP', heading: 'Nouvelle demande d\'accès VIP', fullName: 'Nom complet', clubName: 'Nom du club', website: 'Site web / Lien', email: 'E-mail', phone: 'Téléphone', location: 'Localisation', language: 'Langue', notProvided: 'Non fourni', submittedAt: 'Soumis le', langName: 'Français' },
           de: { subject: 'Neue VIP-Zugangsanfrage', heading: 'Neue VIP-Zugangsanfrage', fullName: 'Vollständiger Name', clubName: 'Vereinsname', website: 'Website / Link', email: 'E-Mail', phone: 'Telefon', location: 'Standort', language: 'Sprache', notProvided: 'Nicht angegeben', submittedAt: 'Eingereicht am', langName: 'Deutsch' },
+          es: { subject: 'Nueva solicitud de acceso VIP', heading: 'Nueva solicitud de acceso VIP', fullName: 'Nombre completo', clubName: 'Nombre del club', website: 'Sitio web / Enlace', email: 'Correo electrónico', phone: 'Teléfono', location: 'Ubicación', language: 'Idioma', notProvided: 'No proporcionado', submittedAt: 'Enviado el', langName: 'Español' },
+          fa: { subject: 'درخواست دسترسی VIP جدید', heading: 'درخواست دسترسی VIP جدید', fullName: 'نام کامل', clubName: 'نام باشگاه', website: 'وب‌سایت / لینک', email: 'ایمیل', phone: 'تلفن', location: 'مکان', language: 'زبان', notProvided: 'ارائه نشده', submittedAt: 'ارسال شده در', langName: 'فارسی' },
         };
         const labels = emailLabels[lang] || emailLabels.en;
         sgMail.send({
