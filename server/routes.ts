@@ -104,7 +104,7 @@ export function registerRoutes(app: Express) {
         const labels = emailLabels[lang] || emailLabels.en;
         sgMail.send({
           to: 'hello@mytaek.com',
-          from: { email: 'hello@mytaek.com', name: 'TaekUp Platform' },
+          from: { email: 'noreply@mytaek.com', name: 'TaekUp Platform' },
           subject: `${labels.subject}: ${clubName}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #e0e0e0; border-radius: 12px;">
