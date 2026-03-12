@@ -2290,6 +2290,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const currentTier = subscribedPlanId 
         ? (PRICING_TIERS.find(tier => tier.name.toLowerCase() === subscribedPlanId.toLowerCase()) || recommendedTier)
         : recommendedTier;
+    const [selectedBillingPlanKey, setSelectedBillingPlanKey] = useState<string>(recommendedTier.name.toLowerCase());
     const [connectingBank, setConnectingBank] = useState(false);
     const [showStripeConnectModal, setShowStripeConnectModal] = useState(false);
     const [verifiedStatus, setVerifiedStatus] = useState<{ status: string; label: string; color: string; daysLeft: number } | null>(null);
