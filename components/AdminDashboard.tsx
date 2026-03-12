@@ -2290,7 +2290,6 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const currentTier = subscribedPlanId 
         ? (PRICING_TIERS.find(tier => tier.name.toLowerCase() === subscribedPlanId.toLowerCase()) || recommendedTier)
         : recommendedTier;
-    const [selectedBillingPlanKey, setSelectedBillingPlanKey] = useState<string>(recommendedTier.name.toLowerCase());
     const [connectingBank, setConnectingBank] = useState(false);
     const [showStripeConnectModal, setShowStripeConnectModal] = useState(false);
     const [verifiedStatus, setVerifiedStatus] = useState<{ status: string; label: string; color: string; daysLeft: number } | null>(null);
@@ -2574,60 +2573,47 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         </div>
                     </div>
                     
-                    <button 
-                        onClick={async () => {
-                            const TIER_PRICE_IDS: Record<string, string> = {
-                                'starter':  'price_1SZoz4RhYhunDn2jDjwkY5Fx',
-                                'pro':      'price_1SZoz4RhYhunDn2jdXdbzXD4',
-                                'standard': 'price_1SZoz3RhYhunDn2j2oq4TkDl',
-                                'growth':   'price_1SZoz3RhYhunDn2jXlatF7uE',
-                                'empire':   'price_1SZoz3RhYhunDn2jKFlLP7eH',
-                            };
-                            try {
-                                const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
-                                const verifyRes = await fetch(`/api/club/${effectiveClubId}/verify-subscription`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' }
-                                });
-                                const verifyResult = await verifyRes.json();
-                                if (!verifyResult.customerId) {
-                                    const priceId = TIER_PRICE_IDS[currentTier.name.toLowerCase()] || TIER_PRICE_IDS['starter'];
-                                    const checkoutRes = await fetch('/api/checkout', {
+                    {subscriptionStatus.status === 'active' ? (
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
+                                    const verifyRes = await fetch(`/api/club/${effectiveClubId}/verify-subscription`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' }
+                                    });
+                                    const verifyResult = await verifyRes.json();
+                                    if (!verifyResult.customerId) {
+                                        alert(t('admin.billing.noStripeCustomer'));
+                                        return;
+                                    }
+                                    const res = await fetch('/api/customer-portal', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            priceId,
-                                            clubId: effectiveClubId,
-                                            email: localStorage.getItem('taekup_user_email') || data.ownerEmail || ''
-                                        })
+                                        body: JSON.stringify({ customerId: verifyResult.customerId })
                                     });
-                                    const checkoutResult = await checkoutRes.json();
-                                    if (checkoutResult.url) {
-                                        window.location.href = checkoutResult.url;
+                                    const result = await res.json();
+                                    if (result.url) {
+                                        window.location.href = result.url;
                                     } else {
-                                        alert(checkoutResult.error || t('admin.billing.failedToOpenPortal'));
+                                        alert(result.error || t('admin.billing.failedToOpenPortal'));
                                     }
-                                    return;
+                                } catch (err) {
+                                    alert(t('admin.billing.failedToOpenPortal'));
                                 }
-                                const res = await fetch('/api/customer-portal', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ customerId: verifyResult.customerId })
-                                });
-                                const result = await res.json();
-                                if (result.url) {
-                                    window.location.href = result.url;
-                                } else {
-                                    alert(result.error || t('admin.billing.failedToOpenPortal'));
-                                }
-                            } catch (err) {
-                                alert(t('admin.billing.failedToOpenPortal'));
-                            }
-                        }}
-                        className={`w-full font-bold py-2 rounded ${subscriptionStatus.status === 'active' ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-sky-600 hover:bg-sky-500 text-white'}`}
-                    >
-                        {subscriptionStatus.status === 'active' ? t('admin.billing.managePaymentMethod') : '🚀 Subscribe Now'}
-                    </button>
+                            }}
+                            className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded"
+                        >
+                            {t('admin.billing.managePaymentMethod')}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => { window.location.href = '/pricing'; }}
+                            className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded"
+                        >
+                            🚀 {t('admin.billing.viewPlansAndSubscribe') || 'View Plans & Subscribe'}
+                        </button>
+                    )}
                 </div>
 
                 <MarginCalculatorCard 
