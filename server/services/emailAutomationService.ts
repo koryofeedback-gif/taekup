@@ -369,6 +369,10 @@ async function sendDay3CheckinEmails(): Promise<void> {
     WHERE trial_status = 'active'
     AND created_at >= NOW() - INTERVAL '4 days'
     AND created_at <= NOW() - INTERVAL '3 days'
+    AND (is_platform_owner IS NULL OR is_platform_owner = false)
+    AND owner_email NOT LIKE '%@bltiwd.com'
+    AND owner_email NOT LIKE '%@example.com'
+    AND owner_email NOT LIKE '%@test.com'
     AND id NOT IN (
       SELECT club_id FROM automated_email_logs 
       WHERE trigger_type = 'day_3_checkin' AND status = 'sent' AND club_id IS NOT NULL
@@ -402,6 +406,10 @@ async function sendDay7MidTrialEmails(): Promise<void> {
     WHERE trial_status = 'active'
     AND created_at >= NOW() - INTERVAL '8 days'
     AND created_at <= NOW() - INTERVAL '7 days'
+    AND (is_platform_owner IS NULL OR is_platform_owner = false)
+    AND owner_email NOT LIKE '%@bltiwd.com'
+    AND owner_email NOT LIKE '%@example.com'
+    AND owner_email NOT LIKE '%@test.com'
     AND id NOT IN (
       SELECT club_id FROM automated_email_logs 
       WHERE trigger_type = 'day_7_mid_trial' AND status = 'sent' AND club_id IS NOT NULL
@@ -436,6 +444,10 @@ async function sendTrialEndingSoonEmails(): Promise<void> {
     AND trial_end IS NOT NULL
     AND trial_end > NOW()
     AND trial_end <= NOW() + INTERVAL '3 days'
+    AND (is_platform_owner IS NULL OR is_platform_owner = false)
+    AND owner_email NOT LIKE '%@bltiwd.com'
+    AND owner_email NOT LIKE '%@example.com'
+    AND owner_email NOT LIKE '%@test.com'
     AND id NOT IN (
       SELECT club_id FROM automated_email_logs 
       WHERE trigger_type = 'trial_ending_soon' AND status = 'sent' AND club_id IS NOT NULL
@@ -474,6 +486,10 @@ async function sendTrialExpiredEmails(): Promise<void> {
     AND trial_end IS NOT NULL
     AND trial_end < NOW()
     AND trial_end > NOW() - INTERVAL '1 day'
+    AND (is_platform_owner IS NULL OR is_platform_owner = false)
+    AND owner_email NOT LIKE '%@bltiwd.com'
+    AND owner_email NOT LIKE '%@example.com'
+    AND owner_email NOT LIKE '%@test.com'
     AND id NOT IN (
       SELECT club_id FROM automated_email_logs 
       WHERE trigger_type = 'trial_expired' AND status = 'sent' AND club_id IS NOT NULL
@@ -588,6 +604,10 @@ async function sendChurnRiskEmails(): Promise<void> {
     FROM clubs
     WHERE (status = 'active' OR trial_status = 'active')
     AND updated_at < NOW() - INTERVAL '14 days'
+    AND (is_platform_owner IS NULL OR is_platform_owner = false)
+    AND owner_email NOT LIKE '%@bltiwd.com'
+    AND owner_email NOT LIKE '%@example.com'
+    AND owner_email NOT LIKE '%@test.com'
     AND id NOT IN (
       SELECT club_id FROM automated_email_logs 
       WHERE trigger_type = 'churn_risk' 
