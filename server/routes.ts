@@ -1675,7 +1675,7 @@ export function registerRoutes(app: Express) {
       }
 
       const { STRIPE_PRICE_IDS } = await import('./stripeConfig.js');
-      const priceId = STRIPE_PRICE_IDS.parentPremium.monthly;
+      const priceId = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || STRIPE_PRICE_IDS.parentPremium.monthly;
 
       const baseUrl = process.env.APP_URL || (() => {
         const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0];

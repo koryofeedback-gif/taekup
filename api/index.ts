@@ -1083,7 +1083,7 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
   const stripe = getStripeClient();
   if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
 
-  const PARENT_PREMIUM_PRICE_ID = 'price_1Sp5BPRhYhunDn2j6Yz8dSxD';
+  const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || 'price_1Sp5BPRhYhunDn2j6Yz8dSxD';
   
   const host = req.headers.host || 'mytaek.com';
   const protocol = req.headers['x-forwarded-proto'] || 'https';
