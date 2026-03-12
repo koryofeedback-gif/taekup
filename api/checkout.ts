@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { Pool } from 'pg';
 
 function getStripeClient(): Stripe | null {
-  const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
+  const secretKey = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
   if (!secretKey) return null;
   return new Stripe(secretKey);
 }

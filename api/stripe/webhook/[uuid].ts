@@ -390,7 +390,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing stripe-signature' });
   }
 
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
+  const stripeSecretKey = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   
   if (!stripeSecretKey) {

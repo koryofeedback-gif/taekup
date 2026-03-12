@@ -495,7 +495,7 @@ async function logAutomatedEmail(client: any, triggerType: string, recipient: st
 }
 
 function getStripeClient(): Stripe | null {
-  const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
+  const secretKey = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
   if (!secretKey) return null;
   return new Stripe(secretKey);
 }
@@ -1370,7 +1370,7 @@ async function handleProductsWithPrices(req: VercelRequest, res: VercelResponse)
 
 async function handleStripePublishableKey(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-  const key = process.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY || process.env.SANDBOX_STRIPE_PUBLISHABLE_KEY;
+  const key = process.env.SANDBOX_STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY;
   if (!key) return res.status(500).json({ error: 'Stripe publishable key not configured' });
   return res.json({ publishableKey: key });
 }
