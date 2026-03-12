@@ -1015,6 +1015,7 @@ export const fr = {
       totalMonthly: "Total mensuel",
       calculatedAtCheckout: "Calculé au paiement",
       managePaymentMethod: "Gérer le mode de paiement",
+      viewPlansAndSubscribe: "Voir les plans & s'abonner",
       failedToOpenPortal: "Impossible d'ouvrir le portail de facturation",
       noStripeCustomer: "Aucun client Stripe trouvé. Veuillez d'abord vous abonner.",
       demoPlan: "Démo (Forfait Pro)",

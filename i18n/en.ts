@@ -1015,6 +1015,7 @@ export const en = {
       totalMonthly: "Total Monthly",
       calculatedAtCheckout: "Calculated at Checkout",
       managePaymentMethod: "Manage Payment Method",
+      viewPlansAndSubscribe: "View Plans & Subscribe",
       failedToOpenPortal: "Failed to open billing portal",
       noStripeCustomer: "No Stripe customer found. Please subscribe first.",
       demoPlan: "Demo (Pro Plan)",

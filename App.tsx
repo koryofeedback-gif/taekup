@@ -1148,6 +1148,7 @@ const AppContent: React.FC<AppContentProps> = ({
                                 <PricingPage
                                     students={[]}
                                     onSelectPlan={() => navigate('/login')}
+                                    onBack={() => navigate(-1 as any)}
                                 />
                             </>
                         }

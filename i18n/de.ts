@@ -1015,6 +1015,7 @@ export const de = {
       totalMonthly: "Monatliche Gesamtsumme",
       calculatedAtCheckout: "Wird bei der Bezahlung berechnet",
       managePaymentMethod: "Zahlungsmethode verwalten",
+      viewPlansAndSubscribe: "Pläne ansehen & abonnieren",
       failedToOpenPortal: "Abrechnungsportal konnte nicht geöffnet werden",
       noStripeCustomer: "Kein Stripe-Kunde gefunden. Bitte abonnieren Sie zuerst.",
       demoPlan: "Demo (Pro-Plan)",
