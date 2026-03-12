@@ -2616,12 +2616,14 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     )}
                 </div>
 
-                <MarginCalculatorCard 
-                    totalStudents={totalStudents}
-                    clubSponsoredPremium={data.clubSponsoredPremium}
-                    onToggle={handleUniversalAccessToggle}
-                    loading={toggleLoading}
-                />
+                {subscriptionStatus.status === 'active' && (
+                    <MarginCalculatorCard 
+                        totalStudents={totalStudents}
+                        clubSponsoredPremium={data.clubSponsoredPremium}
+                        onToggle={handleUniversalAccessToggle}
+                        loading={toggleLoading}
+                    />
+                )}
             </div>
 
             {/* Stripe Connect - Revenue Share Section */}
