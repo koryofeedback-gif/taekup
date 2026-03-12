@@ -4,6 +4,11 @@ import emailService, { EMAIL_TEMPLATES } from './emailService';
 
 const MASTER_TEMPLATE = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'master_template';
 
+async function clubExists(clubId: string): Promise<boolean> {
+  const result = await db.execute(sql`SELECT id FROM clubs WHERE id = ${clubId} LIMIT 1`);
+  return (result as any[]).length > 0;
+}
+
 type AutomatedEmailTrigger = 
   | 'welcome'
   | 'day_3_checkin'
@@ -380,6 +385,7 @@ async function sendDay3CheckinEmails(): Promise<void> {
   `);
   
   for (const club of clubs as any[]) {
+    if (!(await clubExists(club.id))) { console.log(`[EmailAutomation] Skipping day3 - club deleted: ${club.id}`); continue; }
     const clubLanguage = (club?.wizard_data as any)?.language || 'English';
     const result = await emailService.sendDay3CheckinEmail(club.owner_email, {
       ownerName: club.owner_name || 'there',
@@ -417,6 +423,7 @@ async function sendDay7MidTrialEmails(): Promise<void> {
   `);
   
   for (const club of clubs as any[]) {
+    if (!(await clubExists(club.id))) { console.log(`[EmailAutomation] Skipping day7 - club deleted: ${club.id}`); continue; }
     const clubLanguage = (club?.wizard_data as any)?.language || 'English';
     const result = await emailService.sendDay7MidTrialEmail(club.owner_email, {
       ownerName: club.owner_name || 'there',
@@ -455,6 +462,7 @@ async function sendTrialEndingSoonEmails(): Promise<void> {
   `);
   
   for (const club of clubs as any[]) {
+    if (!(await clubExists(club.id))) { console.log(`[EmailAutomation] Skipping trial-ending - club deleted: ${club.id}`); continue; }
     const daysLeft = Math.ceil((new Date(club.trial_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     const clubLanguage = (club?.wizard_data as any)?.language || 'English';
     
@@ -497,6 +505,7 @@ async function sendTrialExpiredEmails(): Promise<void> {
   `);
   
   for (const club of clubs as any[]) {
+    if (!(await clubExists(club.id))) { console.log(`[EmailAutomation] Skipping trial-expired - club deleted: ${club.id}`); continue; }
     const clubLanguage = (club?.wizard_data as any)?.language || 'English';
     const result = await emailService.sendTrialExpiredEmail(club.owner_email, {
       ownerName: club.owner_name || 'there',
@@ -618,6 +627,7 @@ async function sendChurnRiskEmails(): Promise<void> {
   `);
   
   for (const club of clubs as any[]) {
+    if (!(await clubExists(club.id))) { console.log(`[EmailAutomation] Skipping churn-risk - club deleted: ${club.id}`); continue; }
     const result = await sendChurnRiskEmailDirect(
       club.id,
       club.owner_email,
@@ -648,6 +658,7 @@ async function sendWinBackEmails(): Promise<void> {
   `);
   
   for (const club of clubs as any[]) {
+    if (!(await clubExists(club.id))) { console.log(`[EmailAutomation] Skipping win-back - club deleted: ${club.id}`); continue; }
     const result = await sendWinBackEmailDirect(
       club.id,
       club.owner_email,
