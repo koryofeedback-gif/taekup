@@ -3,6 +3,23 @@ import { SUBSCRIPTION_PLANS, formatPrice, getRequiredPlan } from '../services/su
 import { stripeAPI } from '../services/apiClient';
 import type { SubscriptionPlan, SubscriptionPlanId, Student } from '../types';
 
+const FALLBACK_PRICE_IDS = {
+  monthly: {
+    starter: 'price_1SZoz4RhYhunDn2jDjwkY5Fx',
+    pro: 'price_1SZoz4RhYhunDn2jdXdbzXD4',
+    standard: 'price_1SZoz3RhYhunDn2j2oq4TkDl',
+    growth: 'price_1SZoz3RhYhunDn2jXlatF7uE',
+    empire: 'price_1SZoz3RhYhunDn2jKFlLP7eH',
+  },
+  yearly: {
+    starter: 'price_1Sp56uRhYhunDn2j9WtffKIG',
+    pro: 'price_1Sp57iRhYhunDn2jIkLf4Gcn',
+    standard: 'price_1Sp58RRhYhunDn2jShy6IXdw',
+    growth: 'price_1Sp59JRhYhunDn2jjEGgqK2k',
+    empire: 'price_1Sp59xRhYhunDn2jIzARKLiS',
+  },
+};
+
 interface PricingPageProps {
   students: Student[];
   currentPlanId?: SubscriptionPlanId | null;
@@ -30,7 +47,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   email
 }) => {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
-  const [stripePrices, setStripePrices] = useState<StripePricesWithPeriod>({ monthly: {}, yearly: {} });
+  const [stripePrices, setStripePrices] = useState<StripePricesWithPeriod>(FALLBACK_PRICE_IDS);
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,9 +84,12 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         }
         
         console.log('Loaded Stripe prices:', { monthly: monthlyMap, yearly: yearlyMap });
-        setStripePrices({ monthly: monthlyMap, yearly: yearlyMap });
+        setStripePrices({
+          monthly: { ...FALLBACK_PRICE_IDS.monthly, ...monthlyMap },
+          yearly: { ...FALLBACK_PRICE_IDS.yearly, ...yearlyMap },
+        });
       } catch (err) {
-        console.warn('Could not load Stripe prices, using demo mode:', err);
+        console.warn('Could not load Stripe prices, using hardcoded fallback IDs:', err);
       }
     };
 
