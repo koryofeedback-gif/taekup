@@ -2575,6 +2575,13 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     
                     <button 
                         onClick={async () => {
+                            const TIER_PRICE_IDS: Record<string, string> = {
+                                'starter':  'price_1SZoz4RhYhunDn2jDjwkY5Fx',
+                                'pro':      'price_1SZoz4RhYhunDn2jdXdbzXD4',
+                                'standard': 'price_1SZoz3RhYhunDn2j2oq4TkDl',
+                                'growth':   'price_1SZoz3RhYhunDn2jXlatF7uE',
+                                'empire':   'price_1SZoz3RhYhunDn2jKFlLP7eH',
+                            };
                             try {
                                 const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
                                 const verifyRes = await fetch(`/api/club/${effectiveClubId}/verify-subscription`, {
@@ -2583,7 +2590,22 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                 });
                                 const verifyResult = await verifyRes.json();
                                 if (!verifyResult.customerId) {
-                                    alert(t('admin.billing.noStripeCustomer'));
+                                    const priceId = TIER_PRICE_IDS[currentTier.name.toLowerCase()] || TIER_PRICE_IDS['starter'];
+                                    const checkoutRes = await fetch('/api/checkout', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            priceId,
+                                            clubId: effectiveClubId,
+                                            email: localStorage.getItem('taekup_user_email') || data.ownerEmail || ''
+                                        })
+                                    });
+                                    const checkoutResult = await checkoutRes.json();
+                                    if (checkoutResult.url) {
+                                        window.location.href = checkoutResult.url;
+                                    } else {
+                                        alert(checkoutResult.error || t('admin.billing.failedToOpenPortal'));
+                                    }
                                     return;
                                 }
                                 const res = await fetch('/api/customer-portal', {
@@ -2601,9 +2623,9 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                 alert(t('admin.billing.failedToOpenPortal'));
                             }
                         }}
-                        className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded"
+                        className={`w-full font-bold py-2 rounded ${subscriptionStatus.status === 'active' ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-sky-600 hover:bg-sky-500 text-white'}`}
                     >
-                        {t('admin.billing.managePaymentMethod')}
+                        {subscriptionStatus.status === 'active' ? t('admin.billing.managePaymentMethod') : '🚀 Subscribe Now'}
                     </button>
                 </div>
 
