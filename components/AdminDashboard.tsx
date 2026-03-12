@@ -2683,8 +2683,8 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     </div>
                 </div>
 
-            {/* Club Wallet / External Profit Tracker - Conditional based on mode */}
-            <div className="mt-8">
+            {/* Club Wallet / External Profit Tracker - Only for active subscribers */}
+            {subscriptionStatus.status === 'active' && <div className="mt-8">
                 {data.clubSponsoredPremium ? (
                     /* REAL MODE + UNIVERSAL ACCESS ACTIVE - External Profit Tracker (No bank needed) */
                     <div className="bg-gradient-to-b from-green-900/20 to-gray-800 p-6 rounded-xl border border-green-600/30">
@@ -2731,7 +2731,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         </div>
                     </div>
                 )}
-            </div>
+            </div>}
         </div>
     )
 }
