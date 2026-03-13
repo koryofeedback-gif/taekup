@@ -278,18 +278,47 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
       const billingPeriod = invoice.lines?.data?.[0]?.period ? 
         (invoice.lines.data[0].period.end - invoice.lines.data[0].period.start > 60 * 60 * 24 * 35 ? 'Annual' : 'Monthly') 
         : 'Monthly';
+      const amountFormatted = '$' + (amount / 100).toFixed(2);
       
       const invoiceLang = normalizeLanguageCode(club.wizard_data?.language);
       const result = await sendPaymentConfirmationEmail(customerEmail, {
         ownerName: club.owner_name || 'Club Owner',
         clubName: club.name,
         planName: planName,
-        amount: '$' + (amount / 100).toFixed(2),
+        amount: amountFormatted,
         billingPeriod: billingPeriod
       }, invoiceLang);
 
       if (result.success) {
         console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
+      }
+
+      // Notify platform admin
+      try {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+        await sgMail.send({
+          to: 'billing@mytaek.com',
+          from: { email: 'noreply@mytaek.com', name: 'TaekUp Platform' },
+          subject: `💳 New Payment: ${amountFormatted} from ${club.name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #e0e0e0; border-radius: 12px;">
+              <h2 style="color: #22d3ee; margin-bottom: 20px;">💳 New Payment Received</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px 0; color: #9ca3af; width: 140px;">Club</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${club.name}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Email</td><td style="padding: 8px 0;"><a href="mailto:${customerEmail}" style="color: #22d3ee;">${customerEmail}</a></td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Plan</td><td style="padding: 8px 0; color: #fff;">${planName}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Amount</td><td style="padding: 8px 0; color: #4ade80; font-weight: bold; font-size: 18px;">${amountFormatted}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Billing</td><td style="padding: 8px 0; color: #fff;">${billingPeriod}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Invoice</td><td style="padding: 8px 0; color: #fff;">${invoice.id}</td></tr>
+              </table>
+              <hr style="border: 1px solid #333; margin: 20px 0;" />
+              <p style="color: #6b7280; font-size: 12px;">Received at ${new Date().toISOString()}</p>
+            </div>
+          `,
+        });
+        console.log('[Webhook] Admin payment notification sent to billing@mytaek.com');
+      } catch (adminEmailErr: any) {
+        console.error('[Webhook] Failed to send admin notification:', adminEmailErr.message);
       }
     }
 
@@ -390,8 +419,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing stripe-signature' });
   }
 
+  const isTestMode = !!process.env.SANDBOX_STRIPE_KEY;
   const stripeSecretKey = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = isTestMode
+    ? (process.env.SANDBOX_STRIPE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET)
+    : process.env.STRIPE_WEBHOOK_SECRET;
   
   if (!stripeSecretKey) {
     console.error('[Webhook] STRIPE_SECRET_KEY not configured');
