@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, Search, Crown, LogOut, RefreshCw, 
-  AlertTriangle, Star, Clock, Gift, CheckCircle, XCircle, ExternalLink
+  AlertTriangle, Star, Clock, Gift, CheckCircle, XCircle, ExternalLink, ShieldOff
 } from 'lucide-react';
 
 interface Parent {
@@ -96,6 +96,7 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
   };
 
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({ message: '', type: 'success', visible: false });
 
   const showToast = (message: string, type: 'success' | 'error') => {
@@ -136,6 +137,32 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
       showToast('Failed to update premium status', 'error');
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const revokePremium = async (parent: Parent) => {
+    if (!window.confirm(`Remove premium access from ${parent.student_name}? This sets their status back to Free.`)) return;
+    setRevokingId(parent.id);
+    try {
+      const response = await fetch(`/api/super-admin/parents/${parent.id}/revoke-premium`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.status === 401) { onLogout(); navigate('/super-admin/login'); return; }
+      const data = await response.json();
+      if (data.success) {
+        setParents(prev => prev.map(p =>
+          p.id === parent.id ? { ...p, premium_status: 'none', premium_gifted: false } : p
+        ));
+        showToast(`${parent.student_name} reverted to Free`, 'success');
+      } else {
+        showToast('Failed to revoke premium', 'error');
+      }
+    } catch (err) {
+      console.error('Revoke premium error:', err);
+      showToast('Failed to revoke premium', 'error');
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -336,18 +363,30 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <button
-                          onClick={() => toggleGiftPremium(parent)}
-                          disabled={togglingId === parent.id}
-                          title={parent.premium_gifted ? 'Remove gifted premium' : 'Gift free premium'}
-                          className={`p-2 rounded-lg border transition-colors ${
-                            parent.premium_gifted
-                              ? 'bg-purple-600/20 border-purple-500 text-purple-400 hover:bg-purple-600/30'
-                              : 'bg-gray-700 border-gray-600 text-gray-400 hover:bg-gray-600 hover:text-purple-400'
-                          } ${togglingId === parent.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <Gift className={`w-4 h-4 ${togglingId === parent.id ? 'animate-pulse' : ''}`} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleGiftPremium(parent)}
+                            disabled={togglingId === parent.id}
+                            title={parent.premium_gifted ? 'Remove gifted premium' : 'Gift free premium'}
+                            className={`p-2 rounded-lg border transition-colors ${
+                              parent.premium_gifted
+                                ? 'bg-purple-600/20 border-purple-500 text-purple-400 hover:bg-purple-600/30'
+                                : 'bg-gray-700 border-gray-600 text-gray-400 hover:bg-gray-600 hover:text-purple-400'
+                            } ${togglingId === parent.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <Gift className={`w-4 h-4 ${togglingId === parent.id ? 'animate-pulse' : ''}`} />
+                          </button>
+                          {(parent.premium_status !== 'none' || parent.premium_gifted) && (
+                            <button
+                              onClick={() => revokePremium(parent)}
+                              disabled={revokingId === parent.id}
+                              title="Revoke premium — reset to Free"
+                              className={`p-2 rounded-lg border bg-gray-700 border-gray-600 text-gray-400 hover:bg-red-900/40 hover:border-red-500 hover:text-red-400 transition-colors ${revokingId === parent.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <ShieldOff className={`w-4 h-4 ${revokingId === parent.id ? 'animate-pulse' : ''}`} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))

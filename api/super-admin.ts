@@ -497,40 +497,6 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
 
     await db`ALTER TABLE students ADD COLUMN IF NOT EXISTS premium_gifted BOOLEAN DEFAULT FALSE`.catch(() => {});
 
-    // Auto-sync: cross-reference Stripe checkout sessions and fix any missing parent_paid records
-    if (stripe) {
-      try {
-        let hasMore = true;
-        let startingAfter: string | undefined;
-        while (hasMore) {
-          const params: Stripe.Checkout.SessionListParams = {
-            limit: 100,
-            ...(startingAfter ? { starting_after: startingAfter } : {}),
-          };
-          const sessions = await stripe.checkout.sessions.list(params);
-          for (const session of sessions.data) {
-            if (session.payment_status !== 'paid' || session.metadata?.type !== 'parent_premium') continue;
-            const studentId = session.metadata?.student_id;
-            if (!studentId) continue;
-            await db`
-              UPDATE students
-              SET premium_status = 'parent_paid',
-                  premium_started_at = COALESCE(premium_started_at, to_timestamp(${session.created}))
-              WHERE id = ${studentId}
-                AND COALESCE(premium_status, 'none') != 'parent_paid'
-            `.catch(() => {});
-          }
-          hasMore = sessions.has_more;
-          if (hasMore && sessions.data.length > 0) {
-            startingAfter = sessions.data[sessions.data.length - 1].id;
-          }
-        }
-      } catch (stripeErr) {
-        // Non-fatal: continue with DB data even if Stripe sync fails
-        console.log('Auto Stripe sync skipped:', stripeErr);
-      }
-    }
-    
     let parents;
     try {
       parents = await db`
@@ -615,6 +581,27 @@ async function handleToggleGiftPremium(req: VercelRequest, res: VercelResponse, 
   } catch (error: any) {
     console.error('Toggle gift premium error:', error);
     return res.status(500).json({ error: 'Failed to toggle gift premium' });
+  }
+}
+
+// Revoke premium status — reset to 'none'
+async function handleRevokePremium(req: VercelRequest, res: VercelResponse, studentId: string) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) return res.status(401).json({ error: auth.error });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  try {
+    const db = getDb();
+    const result = await db`
+      UPDATE students
+      SET premium_status = 'none', premium_started_at = NULL, premium_gifted = FALSE
+      WHERE id = ${studentId}
+      RETURNING id, premium_status
+    `;
+    if (!result.length) return res.status(404).json({ error: 'Student not found' });
+    return res.json({ success: true, premium_status: result[0].premium_status });
+  } catch (error: any) {
+    console.error('Revoke premium error:', error);
+    return res.status(500).json({ error: 'Failed to revoke premium' });
   }
 }
 
@@ -2672,9 +2659,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (match && req.method === 'POST') return handleToggleGiftPremium(req, res, match[1]);
     }
 
-    if (path.match(/\/?parents\/([a-f0-9-]+)\/mark-as-paid\/?$/)) {
-      const match = path.match(/parents\/([a-f0-9-]+)\/mark-as-paid/);
-      if (match && req.method === 'POST') return handleMarkAsPaid(req, res, match[1]);
+    if (path.match(/\/?parents\/([a-f0-9-]+)\/revoke-premium\/?$/)) {
+      const match = path.match(/parents\/([a-f0-9-]+)\/revoke-premium/);
+      if (match && req.method === 'POST') return handleRevokePremium(req, res, match[1]);
     }
     
     if (path === '/impersonate' || path === '/impersonate/' || path === 'impersonate') {

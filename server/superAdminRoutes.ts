@@ -359,34 +359,6 @@ router.get('/parents', verifySuperAdmin, async (req: Request, res: Response) => 
   try {
     const { premium_only, at_risk, search, limit = 50, offset = 0 } = req.query;
 
-    // Auto-sync: cross-reference Stripe checkout sessions and fix any missing parent_paid records
-    if (stripe) {
-      try {
-        let hasMore = true;
-        let startingAfter: string | undefined;
-        while (hasMore) {
-          const params: any = { limit: 100, ...(startingAfter ? { starting_after: startingAfter } : {}) };
-          const sessions = await stripe.checkout.sessions.list(params);
-          for (const session of sessions.data) {
-            if (session.payment_status !== 'paid' || session.metadata?.type !== 'parent_premium') continue;
-            const studentId = session.metadata?.student_id;
-            if (!studentId) continue;
-            await db.execute(sql`
-              UPDATE students
-              SET premium_status = 'parent_paid',
-                  premium_started_at = COALESCE(premium_started_at, to_timestamp(${session.created}))
-              WHERE id = ${studentId}
-                AND COALESCE(premium_status, 'none') != 'parent_paid'
-            `).catch(() => {});
-          }
-          hasMore = sessions.has_more;
-          if (hasMore && sessions.data.length > 0) startingAfter = sessions.data[sessions.data.length - 1].id;
-        }
-      } catch (stripeErr) {
-        console.log('Auto Stripe sync skipped:', stripeErr);
-      }
-    }
-
     let query = sql`
       SELECT 
         s.id,
@@ -454,22 +426,20 @@ router.post('/parents/:studentId/toggle-gift-premium', verifySuperAdmin, async (
   }
 });
 
-router.post('/parents/:studentId/mark-as-paid', verifySuperAdmin, async (req: Request, res: Response) => {
+router.post('/parents/:studentId/revoke-premium', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
     const result = await db.execute(sql`
-      UPDATE students 
-      SET premium_status = 'parent_paid', premium_started_at = COALESCE(premium_started_at, NOW())
+      UPDATE students
+      SET premium_status = 'none', premium_started_at = NULL, premium_gifted = FALSE
       WHERE id = ${studentId}
       RETURNING id, premium_status
     `);
-    if (!result.length) {
-      return res.status(404).json({ error: 'Student not found' });
-    }
+    if (!result.length) return res.status(404).json({ error: 'Student not found' });
     res.json({ success: true, premium_status: result[0].premium_status });
   } catch (error: any) {
-    console.error('Mark as paid error:', error);
-    res.status(500).json({ error: 'Failed to mark as paid' });
+    console.error('Revoke premium error:', error);
+    res.status(500).json({ error: 'Failed to revoke premium' });
   }
 });
 
