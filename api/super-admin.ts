@@ -584,29 +584,69 @@ async function handleToggleGiftPremium(req: VercelRequest, res: VercelResponse, 
   }
 }
 
-// Mark student as parent_paid (retroactive fix for pre-webhook payments)
-async function handleMarkAsPaid(req: VercelRequest, res: VercelResponse, studentId: string) {
+// Sync premium status from real Stripe payment records
+async function handleSyncStripePayments(req: VercelRequest, res: VercelResponse) {
   const auth = await verifySuperAdminToken(req);
-  if (!auth.valid) {
-    return res.status(401).json({ error: auth.error });
-  }
+  if (!auth.valid) return res.status(401).json({ error: auth.error });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
 
   try {
     const db = getDb();
-    const result = await db`
-      UPDATE students 
-      SET premium_status = 'parent_paid', premium_started_at = COALESCE(premium_started_at, NOW())
-      WHERE id = ${studentId}
-      RETURNING id, premium_status
-    `;
-    if (!result.length) {
-      return res.status(404).json({ error: 'Student not found' });
+    const updated: string[] = [];
+    const skipped: string[] = [];
+
+    // Page through all checkout sessions looking for parent_premium
+    let hasMore = true;
+    let startingAfter: string | undefined;
+
+    while (hasMore) {
+      const params: Stripe.Checkout.SessionListParams = {
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      };
+      const sessions = await stripe.checkout.sessions.list(params);
+
+      for (const session of sessions.data) {
+        if (
+          session.payment_status !== 'paid' ||
+          session.metadata?.type !== 'parent_premium'
+        ) continue;
+
+        const studentId = session.metadata?.student_id;
+        if (!studentId) continue;
+
+        const result = await db`
+          UPDATE students
+          SET premium_status = 'parent_paid',
+              premium_started_at = COALESCE(premium_started_at, to_timestamp(${session.created}))
+          WHERE id = ${studentId}
+            AND COALESCE(premium_status, 'none') != 'parent_paid'
+          RETURNING id, name
+        `;
+
+        if (result.length) {
+          updated.push(`${result[0].name} (${studentId})`);
+        } else {
+          skipped.push(studentId);
+        }
+      }
+
+      hasMore = sessions.has_more;
+      if (hasMore && sessions.data.length > 0) {
+        startingAfter = sessions.data[sessions.data.length - 1].id;
+      }
     }
-    return res.json({ success: true, premium_status: result[0].premium_status });
+
+    return res.json({
+      success: true,
+      updated_count: updated.length,
+      updated,
+      already_correct: skipped.length,
+    });
   } catch (error: any) {
-    console.error('Mark as paid error:', error);
-    return res.status(500).json({ error: 'Failed to mark as paid' });
+    console.error('Stripe sync error:', error);
+    return res.status(500).json({ error: 'Failed to sync from Stripe' });
   }
 }
 
