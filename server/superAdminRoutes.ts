@@ -5,6 +5,10 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
 import { EMAIL_TEMPLATES as DYNAMIC_TEMPLATES } from './services/emailService';
+import Stripe from 'stripe';
+
+const STRIPE_KEY = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
+const stripe = STRIPE_KEY ? new Stripe(STRIPE_KEY, { apiVersion: '2024-06-20' as any }) : null;
 
 // SendGrid client getter - tries Replit connector first, then env var
 async function getSendGridClient() {
@@ -354,7 +358,35 @@ router.delete('/clubs/:id', verifySuperAdmin, async (req: Request, res: Response
 router.get('/parents', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
     const { premium_only, at_risk, search, limit = 50, offset = 0 } = req.query;
-    
+
+    // Auto-sync: cross-reference Stripe checkout sessions and fix any missing parent_paid records
+    if (stripe) {
+      try {
+        let hasMore = true;
+        let startingAfter: string | undefined;
+        while (hasMore) {
+          const params: any = { limit: 100, ...(startingAfter ? { starting_after: startingAfter } : {}) };
+          const sessions = await stripe.checkout.sessions.list(params);
+          for (const session of sessions.data) {
+            if (session.payment_status !== 'paid' || session.metadata?.type !== 'parent_premium') continue;
+            const studentId = session.metadata?.student_id;
+            if (!studentId) continue;
+            await db.execute(sql`
+              UPDATE students
+              SET premium_status = 'parent_paid',
+                  premium_started_at = COALESCE(premium_started_at, to_timestamp(${session.created}))
+              WHERE id = ${studentId}
+                AND COALESCE(premium_status, 'none') != 'parent_paid'
+            `).catch(() => {});
+          }
+          hasMore = sessions.has_more;
+          if (hasMore && sessions.data.length > 0) startingAfter = sessions.data[sessions.data.length - 1].id;
+        }
+      } catch (stripeErr) {
+        console.log('Auto Stripe sync skipped:', stripeErr);
+      }
+    }
+
     let query = sql`
       SELECT 
         s.id,

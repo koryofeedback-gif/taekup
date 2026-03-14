@@ -496,6 +496,40 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
     const offset = Number(req.query.offset) || 0;
 
     await db`ALTER TABLE students ADD COLUMN IF NOT EXISTS premium_gifted BOOLEAN DEFAULT FALSE`.catch(() => {});
+
+    // Auto-sync: cross-reference Stripe checkout sessions and fix any missing parent_paid records
+    if (stripe) {
+      try {
+        let hasMore = true;
+        let startingAfter: string | undefined;
+        while (hasMore) {
+          const params: Stripe.Checkout.SessionListParams = {
+            limit: 100,
+            ...(startingAfter ? { starting_after: startingAfter } : {}),
+          };
+          const sessions = await stripe.checkout.sessions.list(params);
+          for (const session of sessions.data) {
+            if (session.payment_status !== 'paid' || session.metadata?.type !== 'parent_premium') continue;
+            const studentId = session.metadata?.student_id;
+            if (!studentId) continue;
+            await db`
+              UPDATE students
+              SET premium_status = 'parent_paid',
+                  premium_started_at = COALESCE(premium_started_at, to_timestamp(${session.created}))
+              WHERE id = ${studentId}
+                AND COALESCE(premium_status, 'none') != 'parent_paid'
+            `.catch(() => {});
+          }
+          hasMore = sessions.has_more;
+          if (hasMore && sessions.data.length > 0) {
+            startingAfter = sessions.data[sessions.data.length - 1].id;
+          }
+        }
+      } catch (stripeErr) {
+        // Non-fatal: continue with DB data even if Stripe sync fails
+        console.log('Auto Stripe sync skipped:', stripeErr);
+      }
+    }
     
     let parents;
     try {
