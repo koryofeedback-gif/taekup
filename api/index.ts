@@ -1127,8 +1127,8 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
     payment_method_types: ['card'],
     line_items: [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }],
     mode: 'subscription',
-    success_url: `${baseUrl}/app/parent?premium=success&student_id=${studentId}`,
-    cancel_url: `${baseUrl}/app/parent?premium=cancelled`,
+    success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,
+    cancel_url: `${baseUrl}/app/parent/${studentId}?premium=cancelled`,
     metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
     subscription_data: {
       metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },

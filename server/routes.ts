@@ -1736,8 +1736,8 @@ export function registerRoutes(app: Express) {
           quantity: 1,
         }],
         mode: 'subscription',
-        success_url: `${baseUrl}/app/parent?premium=success&student_id=${studentId}`,
-        cancel_url: `${baseUrl}/app/parent?premium=cancelled`,
+        success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,
+        cancel_url: `${baseUrl}/app/parent/${studentId}?premium=cancelled`,
         metadata: {
           studentId,
           clubId: clubId || '',
