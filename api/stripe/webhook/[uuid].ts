@@ -118,7 +118,103 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
     
     const club = clubResult.rows[0];
     
-    if (club) {
+    if (session.metadata?.type === 'parent_premium') {
+      const studentId = session.metadata.studentId;
+      const clubId = session.metadata.clubId;
+      console.log('[Webhook] Parent premium checkout completed for student:', studentId);
+
+      if (studentId) {
+        await client.query(
+          `UPDATE students SET premium_status = 'parent_paid', premium_started_at = NOW() WHERE id = $1::uuid`,
+          [studentId]
+        );
+        console.log('[Webhook] Student premium_status updated to parent_paid:', studentId);
+
+        let studentName = 'Student';
+        let clubName = 'Club';
+        let clubLang = 'en';
+        try {
+          const studentResult = await client.query(
+            `SELECT s.name, s.club_id, c.name as club_name, c.wizard_data
+             FROM students s JOIN clubs c ON s.club_id = c.id
+             WHERE s.id = $1::uuid LIMIT 1`,
+            [studentId]
+          );
+          if (studentResult.rows[0]) {
+            studentName = studentResult.rows[0].name;
+            clubName = studentResult.rows[0].club_name;
+            clubLang = normalizeLanguageCode(studentResult.rows[0].wizard_data?.language);
+          }
+        } catch (lookupErr: any) {
+          console.error('[Webhook] Student lookup error:', lookupErr.message);
+        }
+
+        const amount = session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : '$4.99';
+
+        if (process.env.SENDGRID_API_KEY && customerEmail) {
+          try {
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+            const parentName = session.customer_details?.name || customerEmail.split('@')[0];
+
+            await sgMail.send({
+              to: customerEmail,
+              from: { email: 'billing@mytaek.com', name: 'MyTaek' },
+              subject: `TaekUp Premium is now active for ${studentName}!`,
+              templateId: MASTER_TEMPLATE_ID,
+              dynamicTemplateData: {
+                subject: `TaekUp Premium is now active for ${studentName}!`,
+                title: 'Premium Activated',
+                body_content: `Hi ${parentName},<br><br>Thank you for your payment of <strong>${amount}/month</strong>. TaekUp Premium is now active for <strong>${studentName}</strong> at <strong>${clubName}</strong>!<br><br>Premium features unlocked:<br>• Global Shogun Rank™<br>• AI Belt Predictions (ChronosBelt™)<br>• Custom Home Habits (7 daily)<br>• Video Proof 2x HonorXP™ Multiplier<br>• Digital Trophy Case<br><br>Enjoy the full experience!`,
+                btn_text: 'Open Parent Portal',
+                btn_url: `https://mytaek.com/app/parent/${studentId}`,
+                is_rtl: clubLang === 'fa',
+                image_url: LOGO_URL,
+              },
+            });
+            console.log('[Webhook] Parent premium confirmation email sent to:', customerEmail);
+          } catch (emailErr: any) {
+            console.error('[Webhook] Parent premium email error:', emailErr.message);
+          }
+
+          try {
+            await sgMail.send({
+              to: 'billing@mytaek.com',
+              from: { email: 'noreply@mytaek.com', name: 'TaekUp Platform' },
+              subject: `🌟 Parent Premium: ${amount} from ${customerEmail}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #e0e0e0; border-radius: 12px;">
+                  <h2 style="color: #f59e0b; margin-bottom: 20px;">🌟 New Parent Premium Subscription</h2>
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr><td style="padding: 8px 0; color: #9ca3af; width: 140px;">Parent Email</td><td style="padding: 8px 0;"><a href="mailto:${customerEmail}" style="color: #22d3ee;">${customerEmail}</a></td></tr>
+                    <tr><td style="padding: 8px 0; color: #9ca3af;">Student</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${studentName}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #9ca3af;">Club</td><td style="padding: 8px 0; color: #fff;">${clubName}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #9ca3af;">Amount</td><td style="padding: 8px 0; color: #4ade80; font-weight: bold; font-size: 18px;">${amount}/mo</td></tr>
+                    <tr><td style="padding: 8px 0; color: #9ca3af;">Session</td><td style="padding: 8px 0; color: #fff;">${session.id}</td></tr>
+                  </table>
+                  <hr style="border: 1px solid #333; margin: 20px 0;" />
+                  <p style="color: #6b7280; font-size: 12px;">Received at ${new Date().toISOString()}</p>
+                </div>
+              `,
+            });
+            console.log('[Webhook] Admin notification sent for parent premium');
+          } catch (adminErr: any) {
+            console.error('[Webhook] Admin parent premium notification error:', adminErr.message);
+          }
+        }
+
+        await client.query(
+          `INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [
+            'parent_premium_activated',
+            'Parent Premium Activated',
+            `Parent premium activated for ${studentName} (${customerEmail})`,
+            clubId || null,
+            JSON.stringify({ sessionId: session.id, studentId, email: customerEmail, amount })
+          ]
+        );
+      }
+    } else if (club) {
       console.log('[Webhook] Found club for payment confirmation:', club.name);
       
       const alreadySent = await client.query(
@@ -243,8 +339,27 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
     
     let clubId = null;
     let club = null;
+    let isParentPremium = false;
     
-    if (customerEmail) {
+    const subscriptionMeta = invoice.subscription_details?.metadata || invoice.lines?.data?.[0]?.metadata || {};
+    if (subscriptionMeta.type === 'parent_premium') {
+      isParentPremium = true;
+      const studentId = subscriptionMeta.studentId;
+      if (studentId) {
+        try {
+          const studentResult = await client.query(
+            'SELECT club_id FROM students WHERE id = $1::uuid LIMIT 1',
+            [studentId]
+          );
+          clubId = studentResult.rows[0]?.club_id || null;
+        } catch (e: any) {
+          console.log('[Webhook] Parent premium student lookup error:', e.message);
+        }
+      }
+      console.log('[Webhook] Parent premium payment detected, studentId:', studentId, 'clubId:', clubId);
+    }
+    
+    if (!isParentPremium && customerEmail) {
       const clubResult = await client.query(
         'SELECT id, name, owner_email, owner_name, wizard_data FROM clubs WHERE owner_email = $1 LIMIT 1',
         [customerEmail]

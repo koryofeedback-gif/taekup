@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory, RivalsStats, HolidayScheduleType, CurriculumItem } from '../types';
 import { calculateClassXP } from '../services/gamificationService';
 import { HOLIDAY_PRESETS } from '../types';
@@ -93,6 +94,8 @@ const getBelt = (beltId: string, belts: Belt[]) => belts.find(b => b.id === belt
 export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack, onUpdateStudent }) => {
     const [language, setLanguage] = useState(data.language || 'English');
     const { t, lang } = useTranslation(language);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [premiumJustActivated, setPremiumJustActivated] = useState(false);
 
     const getLocalizedDesc = (item: any) => {
         if (lang === 'fr' && item?.description_fr) return item.description_fr;
@@ -161,6 +164,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             });
         } catch (err) {
             console.error('[Cleanup] Failed to clear localStorage:', err);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (searchParams.get('premium') === 'success') {
+            console.log('[Premium] Detected premium=success redirect, unlocking features');
+            setIsPremium(true);
+            setServerConfirmedPremium(true);
+            setPremiumJustActivated(true);
+            if (student.id) {
+                fetch('/api/students/upgrade-premium', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentId: student.id })
+                }).catch(err => console.error('[Premium] Upgrade API error:', err));
+            }
+            setSearchParams({}, { replace: true });
+            const timer = setTimeout(() => setPremiumJustActivated(false), 6000);
+            return () => clearTimeout(timer);
         }
     }, []);
     
@@ -7359,6 +7381,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     setRivalsView('inbox');
                 }}
             />
+
+            {premiumJustActivated && (
+                <div className="bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 text-white text-sm font-bold py-3 px-4 sticky top-0 z-50 shadow-lg flex items-center justify-center space-x-2 animate-pulse">
+                    <span className="text-lg">🏆</span>
+                    <span>TaekUp Premium is now active! All features unlocked.</span>
+                    <button onClick={() => setPremiumJustActivated(false)} className="ml-3 text-white/80 hover:text-white text-xs">✕</button>
+                </div>
+            )}
 
             {/* Demo Mode Banner */}
             {data.isDemo && (
