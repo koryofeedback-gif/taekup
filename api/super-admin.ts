@@ -584,6 +584,32 @@ async function handleToggleGiftPremium(req: VercelRequest, res: VercelResponse, 
   }
 }
 
+// Mark student as parent_paid (retroactive fix for pre-webhook payments)
+async function handleMarkAsPaid(req: VercelRequest, res: VercelResponse, studentId: string) {
+  const auth = await verifySuperAdminToken(req);
+  if (!auth.valid) {
+    return res.status(401).json({ error: auth.error });
+  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  try {
+    const db = getDb();
+    const result = await db`
+      UPDATE students 
+      SET premium_status = 'parent_paid', premium_started_at = COALESCE(premium_started_at, NOW())
+      WHERE id = ${studentId}
+      RETURNING id, premium_status
+    `;
+    if (!result.length) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    return res.json({ success: true, premium_status: result[0].premium_status });
+  } catch (error: any) {
+    console.error('Mark as paid error:', error);
+    return res.status(500).json({ error: 'Failed to mark as paid' });
+  }
+}
+
 // Revenue Analytics - MRR trends, churn rate, conversion rate
 async function handleRevenueAnalytics(req: VercelRequest, res: VercelResponse) {
   const auth = await verifySuperAdminToken(req);
@@ -2570,6 +2596,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path.match(/\/?parents\/([a-f0-9-]+)\/toggle-gift-premium\/?$/)) {
       const match = path.match(/parents\/([a-f0-9-]+)\/toggle-gift-premium/);
       if (match && req.method === 'POST') return handleToggleGiftPremium(req, res, match[1]);
+    }
+
+    if (path.match(/\/?parents\/([a-f0-9-]+)\/mark-as-paid\/?$/)) {
+      const match = path.match(/parents\/([a-f0-9-]+)\/mark-as-paid/);
+      if (match && req.method === 'POST') return handleMarkAsPaid(req, res, match[1]);
     }
     
     if (path === '/impersonate' || path === '/impersonate/' || path === 'impersonate') {

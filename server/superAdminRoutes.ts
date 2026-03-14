@@ -422,6 +422,25 @@ router.post('/parents/:studentId/toggle-gift-premium', verifySuperAdmin, async (
   }
 });
 
+router.post('/parents/:studentId/mark-as-paid', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { studentId } = req.params;
+    const result = await db.execute(sql`
+      UPDATE students 
+      SET premium_status = 'parent_paid', premium_started_at = COALESCE(premium_started_at, NOW())
+      WHERE id = ${studentId}
+      RETURNING id, premium_status
+    `);
+    if (!result.length) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    res.json({ success: true, premium_status: result[0].premium_status });
+  } catch (error: any) {
+    console.error('Mark as paid error:', error);
+    res.status(500).json({ error: 'Failed to mark as paid' });
+  }
+});
+
 router.get('/payments', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
     const { status, limit = 50, offset = 0 } = req.query;
