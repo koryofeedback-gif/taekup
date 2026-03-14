@@ -185,7 +185,8 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #e0e0e0; border-radius: 12px;">
                   <h2 style="color: #f59e0b; margin-bottom: 20px;">🌟 New Parent Premium Subscription</h2>
                   <table style="width: 100%; border-collapse: collapse;">
-                    <tr><td style="padding: 8px 0; color: #9ca3af; width: 140px;">Parent Email</td><td style="padding: 8px 0;"><a href="mailto:${customerEmail}" style="color: #22d3ee;">${customerEmail}</a></td></tr>
+                    <tr><td style="padding: 8px 0; color: #9ca3af; width: 140px;">Parent</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${parentName}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #9ca3af;">Parent Email</td><td style="padding: 8px 0;"><a href="mailto:${customerEmail}" style="color: #22d3ee;">${customerEmail}</a></td></tr>
                     <tr><td style="padding: 8px 0; color: #9ca3af;">Student</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${studentName}</td></tr>
                     <tr><td style="padding: 8px 0; color: #9ca3af;">Club</td><td style="padding: 8px 0; color: #fff;">${clubName}</td></tr>
                     <tr><td style="padding: 8px 0; color: #9ca3af;">Amount</td><td style="padding: 8px 0; color: #4ade80; font-weight: bold; font-size: 18px;">${amount}/mo</td></tr>
