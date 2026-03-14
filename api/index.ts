@@ -2010,65 +2010,66 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Ensure unique index exists for student deduplication (deduplicate first if needed)
+    try {
+      await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_students_club_name_email ON students (club_id, name, COALESCE(parent_email, ''))`);
+    } catch (indexErr: any) {
+      if (indexErr.message?.includes('duplicate key') || indexErr.code === '23505') {
+        console.log('[Wizard] Deduplicating existing students before creating index...');
+        await client.query(`
+          DELETE FROM students WHERE id IN (
+            SELECT id FROM (
+              SELECT id, ROW_NUMBER() OVER (PARTITION BY club_id, name, COALESCE(parent_email, '') ORDER BY created_at ASC, id ASC) as rn
+              FROM students
+            ) ranked WHERE rn > 1
+          )
+        `);
+        await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_students_club_name_email ON students (club_id, name, COALESCE(parent_email, ''))`);
+        console.log('[Wizard] Deduplication complete, unique index created');
+      }
+    }
+
+    // Use transaction with advisory lock to prevent parallel wizard saves from creating duplicate students
+    await client.query('BEGIN');
+    await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [clubId]);
+
     // Create user accounts for parents and save students
     const students = wizardData.students || [];
     for (const student of students) {
       try {
         const parentEmail = student.parentEmail?.toLowerCase().trim() || null;
+        const joinDateValue = student.joinDate ? new Date(student.joinDate).toISOString() : new Date().toISOString();
+        const birthdateValue = student.birthday ? student.birthday + 'T00:00:00Z' : null;
         
-        // Check if student exists
-        const existingStudent = await client.query(
-          `SELECT id FROM students WHERE club_id = $1::uuid AND name = $2 AND (parent_email = $3 OR (parent_email IS NULL AND $3 IS NULL)) LIMIT 1`,
-          [clubId, student.name, parentEmail]
+        const upsertResult = await client.query(
+          `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, location, assigned_class, join_date, created_at)
+           VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9, $10, $11::timestamptz, NOW())
+           ON CONFLICT (club_id, name, COALESCE(parent_email, ''))
+           DO UPDATE SET
+             parent_name = COALESCE(EXCLUDED.parent_name, students.parent_name),
+             parent_phone = COALESCE(EXCLUDED.parent_phone, students.parent_phone),
+             belt = COALESCE(EXCLUDED.belt, students.belt),
+             birthdate = COALESCE(EXCLUDED.birthdate, students.birthdate),
+             total_points = COALESCE(EXCLUDED.total_points, students.total_points),
+             location = COALESCE(EXCLUDED.location, students.location),
+             assigned_class = COALESCE(EXCLUDED.assigned_class, students.assigned_class),
+             updated_at = NOW()
+           RETURNING id`,
+          [
+            clubId, 
+            student.name, 
+            parentEmail,
+            student.parentName || null,
+            student.parentPhone || null,
+            student.beltId || 'white',
+            birthdateValue,
+            student.totalPoints || 0,
+            student.location || null,
+            student.assignedClass || null,
+            joinDateValue
+          ]
         );
-        
-        let studentId;
-        if (existingStudent.rows.length > 0) {
-          studentId = existingStudent.rows[0].id;
-          await client.query(
-            `UPDATE students SET 
-               parent_name = COALESCE($1, parent_name),
-               parent_phone = COALESCE($2, parent_phone),
-               belt = COALESCE($3, belt),
-               birthdate = COALESCE($4::timestamptz, birthdate),
-               total_points = COALESCE($5, total_points),
-               location = COALESCE($6, location),
-               assigned_class = COALESCE($7, assigned_class),
-               updated_at = NOW()
-             WHERE id = $8::uuid`,
-            [
-              student.parentName || null,
-              student.parentPhone || null,
-              student.beltId || 'white',
-              student.birthday ? student.birthday + 'T00:00:00Z' : null,
-              student.totalPoints || 0,
-              student.location || null,
-              student.assignedClass || null,
-              studentId
-            ]
-          );
-        } else {
-          const joinDateValue = student.joinDate ? new Date(student.joinDate).toISOString() : new Date().toISOString();
-          const insertResult = await client.query(
-            `INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, location, assigned_class, join_date, created_at)
-             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9, $10, $11::timestamptz, NOW())
-             RETURNING id`,
-            [
-              clubId, 
-              student.name, 
-              parentEmail,
-              student.parentName || null,
-              student.parentPhone || null,
-              student.beltId || 'white',
-              student.birthday ? student.birthday + 'T00:00:00Z' : null,
-              student.totalPoints || 0,
-              student.location || null,
-              student.assignedClass || null,
-              joinDateValue
-            ]
-          );
-          studentId = insertResult.rows[0]?.id;
-        }
+        let studentId = upsertResult.rows[0]?.id;
         
         // Create parent user account if email provided (default password: 1234)
         if (parentEmail) {
@@ -2105,9 +2106,12 @@ async function handleSaveWizardData(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    await client.query('COMMIT');
+
     console.log('[Wizard] Saved wizard data for club:', clubId, `(${coaches.length} coaches, ${students.length} students)`);
     return res.json({ success: true });
   } catch (error: any) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('[Wizard] Save error:', error);
     return res.status(500).json({ error: 'Failed to save wizard data' });
   } finally {

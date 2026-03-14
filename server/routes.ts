@@ -389,73 +389,83 @@ export function registerRoutes(app: Express) {
         }
       }
 
-      // Create user accounts for parents and save students
-      const students = wizardData.students || [];
-      for (const student of students) {
-        try {
-          const parentEmail = student.parentEmail?.toLowerCase().trim() || null;
-          
-          const existingStudent = await db.execute(sql`
-            SELECT id FROM students WHERE club_id = ${clubId}::uuid AND name = ${student.name} LIMIT 1
+      // Ensure unique index exists for student deduplication
+      try {
+        await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_students_club_name_email ON students (club_id, name, COALESCE(parent_email, ''))`);
+      } catch (indexErr: any) {
+        if (indexErr.message?.includes('duplicate key') || indexErr.code === '23505') {
+          console.log('[Wizard] Deduplicating existing students before creating index...');
+          await db.execute(sql`
+            DELETE FROM students WHERE id IN (
+              SELECT id FROM (
+                SELECT id, ROW_NUMBER() OVER (PARTITION BY club_id, name, COALESCE(parent_email, '') ORDER BY created_at ASC, id ASC) as rn
+                FROM students
+              ) ranked WHERE rn > 1
+            )
           `);
-          
-          let studentId;
-          if ((existingStudent as any[]).length > 0) {
-            studentId = (existingStudent as any[])[0].id;
-            const birthdateValue = student.birthday ? student.birthday + 'T00:00:00Z' : null;
-            await db.execute(sql`
-              UPDATE students SET 
-                parent_email = ${parentEmail},
-                parent_name = ${student.parentName || null},
-                parent_phone = ${student.parentPhone || null},
-                belt = ${student.beltId || 'white'},
-                birthdate = ${birthdateValue}::timestamptz,
-                total_points = ${student.totalPoints || 0},
-                total_xp = ${student.lifetimeXp || 0},
-                updated_at = NOW()
-              WHERE id = ${studentId}::uuid
-            `);
-          } else {
-            const birthdateValue = student.birthday ? student.birthday + 'T00:00:00Z' : null;
-            const joinDateValue = student.joinDate ? new Date(student.joinDate).toISOString() : new Date().toISOString();
-            const insertResult = await db.execute(sql`
-              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, total_xp, join_date, created_at)
-              VALUES (${clubId}::uuid, ${student.name}, ${parentEmail}, ${student.parentName || null}, ${student.parentPhone || null}, ${student.beltId || 'white'}, ${birthdateValue}::timestamptz, ${student.totalPoints || 0}, ${student.lifetimeXp || 0}, ${joinDateValue}::timestamptz, NOW())
-              RETURNING id
-            `);
-            studentId = (insertResult as any[])[0]?.id;
-          }
-          
-          if (parentEmail) {
-            const parentPwd = student.parentPassword || '1234';
-            const existingParent = await db.execute(sql`
-              SELECT id FROM users WHERE email = ${parentEmail} LIMIT 1
-            `);
-            
-            const parentPasswordHash = await bcrypt.hash(parentPwd, 10);
-            
-            if ((existingParent as any[]).length > 0) {
-              await db.execute(sql`
-                UPDATE users SET 
-                  password_hash = ${parentPasswordHash},
-                  name = COALESCE(${student.parentName || student.name + "'s Parent"}, name),
-                  club_id = ${clubId}::uuid,
-                  role = 'parent',
-                  updated_at = NOW()
-                WHERE id = ${(existingParent as any[])[0].id}::uuid
-              `);
-            } else {
-              await db.execute(sql`
-                INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
-                VALUES (${parentEmail}, ${parentPasswordHash}, ${student.parentName || student.name + "'s Parent"}, 'parent', ${clubId}::uuid, true, NOW())
-              `);
-            }
-            console.log('[Wizard] Created user account for parent:', parentEmail);
-          }
-        } catch (studentErr: any) {
-          console.error('[Wizard] Error saving student:', student.name, studentErr.message);
+          await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_students_club_name_email ON students (club_id, name, COALESCE(parent_email, ''))`);
+          console.log('[Wizard] Deduplication complete, unique index created');
         }
       }
+
+      // Use transaction with advisory lock to prevent parallel wizard saves from creating duplicate students
+      const students = wizardData.students || [];
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${clubId}))`);
+
+        for (const student of students) {
+          try {
+            const parentEmail = student.parentEmail?.toLowerCase().trim() || null;
+            const birthdateValue = student.birthday ? student.birthday + 'T00:00:00Z' : null;
+            const joinDateValue = student.joinDate ? new Date(student.joinDate).toISOString() : new Date().toISOString();
+            
+            const upsertResult = await tx.execute(sql`
+              INSERT INTO students (club_id, name, parent_email, parent_name, parent_phone, belt, birthdate, total_points, total_xp, join_date, created_at)
+              VALUES (${clubId}::uuid, ${student.name}, ${parentEmail}, ${student.parentName || null}, ${student.parentPhone || null}, ${student.beltId || 'white'}, ${birthdateValue}::timestamptz, ${student.totalPoints || 0}, ${student.lifetimeXp || 0}, ${joinDateValue}::timestamptz, NOW())
+              ON CONFLICT (club_id, name, COALESCE(parent_email, ''))
+              DO UPDATE SET
+                parent_name = COALESCE(EXCLUDED.parent_name, students.parent_name),
+                parent_phone = COALESCE(EXCLUDED.parent_phone, students.parent_phone),
+                belt = COALESCE(EXCLUDED.belt, students.belt),
+                birthdate = COALESCE(EXCLUDED.birthdate, students.birthdate),
+                total_points = COALESCE(EXCLUDED.total_points, students.total_points),
+                total_xp = COALESCE(EXCLUDED.total_xp, students.total_xp),
+                updated_at = NOW()
+              RETURNING id
+            `);
+            let studentId = (upsertResult as any[])[0]?.id;
+            
+            if (parentEmail) {
+              const parentPwd = student.parentPassword || '1234';
+              const existingParent = await tx.execute(sql`
+                SELECT id FROM users WHERE email = ${parentEmail} LIMIT 1
+              `);
+              
+              const parentPasswordHash = await bcrypt.hash(parentPwd, 10);
+              
+              if ((existingParent as any[]).length > 0) {
+                await tx.execute(sql`
+                  UPDATE users SET 
+                    password_hash = ${parentPasswordHash},
+                    name = COALESCE(${student.parentName || student.name + "'s Parent"}, name),
+                    club_id = ${clubId}::uuid,
+                    role = 'parent',
+                    updated_at = NOW()
+                  WHERE id = ${(existingParent as any[])[0].id}::uuid
+                `);
+              } else {
+                await tx.execute(sql`
+                  INSERT INTO users (email, password_hash, name, role, club_id, is_active, created_at)
+                  VALUES (${parentEmail}, ${parentPasswordHash}, ${student.parentName || student.name + "'s Parent"}, 'parent', ${clubId}::uuid, true, NOW())
+                `);
+              }
+              console.log('[Wizard] Created user account for parent:', parentEmail);
+            }
+          } catch (studentErr: any) {
+            console.error('[Wizard] Error saving student:', student.name, studentErr.message);
+          }
+        }
+      });
 
       console.log('[Wizard] Saved wizard data for club:', clubId, `(${coaches.length} coaches, ${students.length} students)`);
       return res.json({ success: true });
