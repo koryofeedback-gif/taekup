@@ -817,37 +817,27 @@
     "en": {
       "subject": "🎂 Happy Birthday, {{studentName}}!",
       "title": "Happy Birthday!",
-      "body": "Dear {{studentName}},<br><br>Everyone at <strong>{{clubName}}</strong> wishes you a very Happy Birthday! 🎉<br><br>May this year bring you closer to your martial arts goals. Keep training hard, and never stop believing in yourself!<br><br>See you on the mat, champion!",
-      "btn_text": "Celebrate at the Dojo",
-      "btn_url": "{{baseUrl}}/login"
+      "body": "Dear {{studentName}},<br><br>Everyone at <strong>{{clubName}}</strong> wishes you a very Happy Birthday! 🎉<br><br>May this year bring you closer to your martial arts goals. Keep training hard, and never stop believing in yourself!<br><br>See you on the mat, champion!"
     },
     "fr": {
       "subject": "🎂 Joyeux Anniversaire, {{studentName}}!",
       "title": "Joyeux Anniversaire!",
-      "body": "Cher(e) {{studentName}},<br><br>Toute l'équipe de <strong>{{clubName}}</strong> te souhaite un très Joyeux Anniversaire! 🎉<br><br>Que cette année te rapproche de tes objectifs en arts martiaux. Continue à t'entraîner dur et ne cesse jamais de croire en toi!<br><br>À bientôt sur le tatami, champion!",
-      "btn_text": "Célébrer au Dojo",
-      "btn_url": "{{baseUrl}}/login"
+      "body": "Cher(e) {{studentName}},<br><br>Toute l'équipe de <strong>{{clubName}}</strong> te souhaite un très Joyeux Anniversaire! 🎉<br><br>Que cette année te rapproche de tes objectifs en arts martiaux. Continue à t'entraîner dur et ne cesse jamais de croire en toi!<br><br>À bientôt sur le tatami, champion!"
     },
     "de": {
       "subject": "🎂 Alles Gute zum Geburtstag, {{studentName}}!",
       "title": "Alles Gute zum Geburtstag!",
-      "body": "Liebe(r) {{studentName}},<br><br>Alle bei <strong>{{clubName}}</strong> wünschen dir einen wunderschönen Geburtstag! 🎉<br><br>Möge dieses Jahr dich deinen Kampfkunstzielen näherbringen. Trainiere weiter hart und glaube immer an dich selbst!<br><br>Wir sehen uns auf der Matte, Champion!",
-      "btn_text": "Im Dojo feiern",
-      "btn_url": "{{baseUrl}}/login"
+      "body": "Liebe(r) {{studentName}},<br><br>Alle bei <strong>{{clubName}}</strong> wünschen dir einen wunderschönen Geburtstag! 🎉<br><br>Möge dieses Jahr dich deinen Kampfkunstzielen näherbringen. Trainiere weiter hart und glaube immer an dich selbst!<br><br>Wir sehen uns auf der Matte, Champion!"
     },
     "es": {
       "subject": "🎂 ¡Feliz Cumpleaños, {{studentName}}!",
       "title": "¡Feliz Cumpleaños!",
-      "body": "Querido(a) {{studentName}},<br><br>¡Todos en <strong>{{clubName}}</strong> te desean un muy Feliz Cumpleaños! 🎉<br><br>Que este año te acerque más a tus metas en artes marciales. ¡Sigue entrenando duro y nunca dejes de creer en ti mismo!<br><br>¡Nos vemos en el tatami, campeón!",
-      "btn_text": "Celebrar en el Dojo",
-      "btn_url": "{{baseUrl}}/login"
+      "body": "Querido(a) {{studentName}},<br><br>¡Todos en <strong>{{clubName}}</strong> te desean un muy Feliz Cumpleaños! 🎉<br><br>Que este año te acerque más a tus metas en artes marciales. ¡Sigue entrenando duro y nunca dejes de creer en ti mismo!<br><br>¡Nos vemos en el tatami, campeón!"
     },
     "fa": {
       "subject": "🎂 تولدت مبارک، {{studentName}}!",
       "title": "تولدت مبارک!",
-      "body": "{{studentName}} عزیز،<br><br>همه در <strong>{{clubName}}</strong> تولدت را تبریک می‌گویند! 🎉<br><br>امیدواریم این سال تو را به اهداف هنرهای رزمی‌ات نزدیک‌تر کند. به تمرین سخت ادامه بده و هرگز ایمانت به خودت را از دست نده!<br><br>در تاتامی می‌بینیمت، قهرمان!",
-      "btn_text": "جشن در دوجو",
-      "btn_url": "{{baseUrl}}/login"
+      "body": "{{studentName}} عزیز،<br><br>همه در <strong>{{clubName}}</strong> تولدت را تبریک می‌گویند! 🎉<br><br>امیدواریم این سال تو را به اهداف هنرهای رزمی‌ات نزدیک‌تر کند. به تمرین سخت ادامه بده و هرگز ایمانت به خودت را از دست نده!<br><br>در تاتامی می‌بینیمت، قهرمان!"
     }
   },
   "win_back": {

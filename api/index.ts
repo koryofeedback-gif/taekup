@@ -330,8 +330,6 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
     subject: 'Happy Birthday, {{childName}}!',
     title: 'Happy Birthday, Champion!',
     body: `Happy Birthday <strong>{{childName}}</strong>!<br><br>Everyone at <strong>{{clubName}}</strong> wishes you an amazing birthday!<br><br>Here's to another year of growth, achievements, and martial arts excellence!<br><br>Keep training and reaching for the stars!`,
-    btn_text: 'Celebrate with Us',
-    btn_url: `${BASE_URL}/app/parent`,
     from: 'hello@mytaek.com'
   },
   // Payout notification
