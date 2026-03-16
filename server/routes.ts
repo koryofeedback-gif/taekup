@@ -2911,7 +2911,48 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Delete coach (soft delete)
+  // Delete student and revoke parent portal access
+  app.delete('/api/students/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const check = await db.execute(sql`SELECT id, name, parent_email, club_id FROM students WHERE id = ${id}::uuid`);
+      if (!(check as any[]).length) return res.status(404).json({ error: 'Student not found' });
+      const student = (check as any[])[0];
+
+      await db.execute(sql`DELETE FROM habit_logs WHERE student_id = ${id}::uuid`);
+      await db.execute(sql`DELETE FROM challenge_submissions WHERE student_id = ${id}::uuid`);
+      await db.execute(sql`DELETE FROM class_feedback WHERE student_id = ${id}::uuid`);
+      await db.execute(sql`DELETE FROM promotions WHERE student_id = ${id}::uuid`);
+      try { await db.execute(sql`DELETE FROM challenge_videos WHERE student_id = ${id}::uuid`); } catch (e) { /* may not exist */ }
+      try { await db.execute(sql`DELETE FROM family_challenge_completions WHERE student_id = ${id}::uuid`); } catch (e) { /* may not exist */ }
+      try { await db.execute(sql`DELETE FROM daily_challenge_completions WHERE student_id = ${id}::uuid`); } catch (e) { /* may not exist */ }
+      try { await db.execute(sql`DELETE FROM family_logs WHERE student_id = ${id}::uuid`); } catch (e) { /* may not exist */ }
+      try { await db.execute(sql`DELETE FROM custom_habits WHERE student_id = ${id}::uuid`); } catch (e) { /* may not exist */ }
+
+      await db.execute(sql`DELETE FROM students WHERE id = ${id}::uuid`);
+
+      if (student.parent_email) {
+        const parentEmail = student.parent_email.toLowerCase().trim();
+        const remaining = await db.execute(sql`
+          SELECT id FROM students WHERE LOWER(parent_email) = ${parentEmail} AND club_id = ${student.club_id}::uuid LIMIT 1
+        `);
+        if (!(remaining as any[]).length) {
+          await db.execute(sql`
+            UPDATE users SET is_active = false, updated_at = NOW()
+            WHERE LOWER(email) = ${parentEmail} AND role = 'parent'
+          `);
+          console.log(`[StudentDelete] Deactivated parent user account: ${parentEmail}`);
+        }
+      }
+
+      console.log(`[StudentDelete] Deleted student ${id}: ${student.name}`);
+      res.json({ success: true, deleted: id });
+    } catch (error: any) {
+      console.error('[StudentDelete] Error:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.delete('/api/coaches/:id', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;

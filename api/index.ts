@@ -2216,10 +2216,10 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
       try {
         const parentPwd = parentPassword || '1234';
         const parentPasswordHash = await bcrypt.hash(parentPwd, 10);
-        const existingParent = await client.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [parentEmail.toLowerCase()]);
+        const existingParent = await client.query('SELECT id, is_active FROM users WHERE LOWER(email) = $1 LIMIT 1', [parentEmail.toLowerCase()]);
         if (existingParent.rows.length > 0) {
           await client.query(
-            `UPDATE users SET password_hash = $1, name = $2, club_id = $3::uuid, role = 'parent', updated_at = NOW() WHERE id = $4::uuid`,
+            `UPDATE users SET password_hash = $1, name = $2, club_id = $3::uuid, role = 'parent', is_active = true, updated_at = NOW() WHERE id = $4::uuid`,
             [parentPasswordHash, parentName || name + "'s Parent", clubId, existingParent.rows[0].id]
           );
         } else {
@@ -2278,11 +2278,12 @@ async function handleStudentDelete(req: VercelRequest, res: VercelResponse, stud
   
   const client = await pool.connect();
   try {
-    // Check student exists
-    const check = await client.query('SELECT id, name FROM students WHERE id = $1::uuid', [studentId]);
+    // Fetch student with parent email and club_id before deleting
+    const check = await client.query('SELECT id, name, parent_email, club_id FROM students WHERE id = $1::uuid', [studentId]);
     if (check.rows.length === 0) {
       return res.status(404).json({ error: 'Student not found' });
     }
+    const { name: studentName, parent_email: parentEmail, club_id: clubId } = check.rows[0];
     
     // Delete related records first (in order to avoid foreign key constraints)
     await client.query('DELETE FROM habit_logs WHERE student_id = $1::uuid', [studentId]);
@@ -2298,8 +2299,23 @@ async function handleStudentDelete(req: VercelRequest, res: VercelResponse, stud
     
     // Now delete the student
     await client.query('DELETE FROM students WHERE id = $1::uuid', [studentId]);
+
+    // Revoke parent portal access: deactivate the parent user if they have no remaining students in this club
+    if (parentEmail) {
+      const remaining = await client.query(
+        `SELECT id FROM students WHERE LOWER(parent_email) = $1 AND club_id = $2::uuid LIMIT 1`,
+        [parentEmail.toLowerCase().trim(), clubId]
+      );
+      if (remaining.rows.length === 0) {
+        await client.query(
+          `UPDATE users SET is_active = false, updated_at = NOW() WHERE LOWER(email) = $1 AND role = 'parent'`,
+          [parentEmail.toLowerCase().trim()]
+        );
+        console.log(`[StudentDelete] Deactivated parent user account: ${parentEmail}`);
+      }
+    }
     
-    console.log(`[StudentDelete] Deleted student ${studentId}: ${check.rows[0].name}`);
+    console.log(`[StudentDelete] Deleted student ${studentId}: ${studentName}`);
     return res.status(200).json({ success: true, deleted: studentId });
   } catch (error: any) {
     console.error('[StudentDelete] Error:', error);
@@ -2962,6 +2978,12 @@ async function handleLinkParent(req: VercelRequest, res: VercelResponse, student
        SET parent_email = $1, parent_name = $2, parent_phone = $3, updated_at = NOW()
        WHERE id = $4::uuid`,
       [parentEmail, parentName || null, parentPhone || null, studentId]
+    );
+
+    // Reactivate parent user account if it was previously deactivated
+    await client.query(
+      `UPDATE users SET is_active = true, updated_at = NOW() WHERE LOWER(email) = $1 AND role = 'parent'`,
+      [parentEmail.toLowerCase().trim()]
     );
 
     if (!hadParentBefore) {
