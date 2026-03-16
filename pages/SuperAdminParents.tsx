@@ -285,7 +285,7 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Parent</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Club</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Status</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Belt / XP</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Belt / Pts</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Last Class</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Actions</th>
                 </tr>
