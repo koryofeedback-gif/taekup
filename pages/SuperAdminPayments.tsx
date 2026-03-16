@@ -5,19 +5,6 @@ import {
   CheckCircle, XCircle, Clock, AlertTriangle, DollarSign
 } from 'lucide-react';
 
-interface Payment {
-  id: string;
-  club_name: string;
-  owner_email: string;
-  amount: number;
-  currency: string;
-  status: string;
-  paid_at: string;
-  created_at: string;
-  stripe_invoice_id: string;
-  stripe_payment_intent_id: string;
-}
-
 interface StripeCharge {
   id: string;
   amount: number;
@@ -37,10 +24,8 @@ interface SuperAdminPaymentsProps {
 }
 
 export const SuperAdminPayments: React.FC<SuperAdminPaymentsProps> = ({ token, onLogout }) => {
-  const [payments, setPayments] = useState<Payment[]>([]);
   const [stripeCharges, setStripeCharges] = useState<StripeCharge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'database' | 'stripe'>('database');
   const navigate = useNavigate();
 
   const fetchPayments = async () => {
@@ -57,7 +42,6 @@ export const SuperAdminPayments: React.FC<SuperAdminPaymentsProps> = ({ token, o
       }
 
       const data = await response.json();
-      setPayments(data.payments || []);
       setStripeCharges(data.stripeCharges || []);
     } catch (err) {
       console.error('Failed to fetch payments:', err);
@@ -170,7 +154,7 @@ export const SuperAdminPayments: React.FC<SuperAdminPaymentsProps> = ({ token, o
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">Payment History</h2>
-            <p className="text-gray-400">All transactions and Stripe charges</p>
+            <p className="text-gray-400">All Stripe charges</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -190,165 +174,74 @@ export const SuperAdminPayments: React.FC<SuperAdminPaymentsProps> = ({ token, o
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab('database')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'database'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-white'
-            }`}
-          >
-            Database Payments ({payments.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('stripe')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'stripe'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-white'
-            }`}
-          >
-            Stripe Charges ({stripeCharges.length})
-          </button>
+        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-700/50">
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Customer</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Amount</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Status</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Date</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Charge ID</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                      <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                      Loading...
+                    </td>
+                  </tr>
+                ) : stripeCharges.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                      No Stripe charges found
+                    </td>
+                  </tr>
+                ) : (
+                  stripeCharges.map((charge) => (
+                    <tr key={charge.id} className="hover:bg-gray-700/30">
+                      <td className="px-4 py-4">
+                        <div>
+                          <p className="text-sm text-white">{charge.description || 'Subscription'}</p>
+                          <p className="text-sm text-gray-400">{charge.customerEmail || 'Unknown'}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-1 text-white font-medium">
+                          <DollarSign className="w-4 h-4 text-green-400" />
+                          {charge.amount.toFixed(2)} {charge.currency?.toUpperCase()}
+                        </div>
+                        {charge.refunded && (
+                          <span className="text-xs text-red-400">Refunded</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(charge.status, charge.paid)}
+                          <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(charge.status, charge.paid)}`}>
+                            {charge.paid ? 'Paid' : charge.status}
+                          </span>
+                        </div>
+                        {charge.failureMessage && (
+                          <p className="text-xs text-red-400 mt-1">{charge.failureMessage}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-gray-400 text-sm">
+                        {formatDate(charge.createdAt)}
+                      </td>
+                      <td className="px-4 py-4 text-gray-500 text-xs font-mono">
+                        {charge.id.slice(0, 20)}...
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-
-        {activeTab === 'database' && (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-700/50">
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Club</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Amount</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Status</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Date</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Invoice ID</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : payments.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                        No payments found
-                      </td>
-                    </tr>
-                  ) : (
-                    payments.map((payment) => (
-                      <tr key={payment.id} className="hover:bg-gray-700/30">
-                        <td className="px-4 py-4">
-                          <div>
-                            <p className="font-medium text-white">{payment.club_name || 'Unknown'}</p>
-                            <p className="text-sm text-gray-400">{payment.owner_email}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-1 text-white font-medium">
-                            <DollarSign className="w-4 h-4 text-green-400" />
-                            {payment.amount.toFixed(2)} {payment.currency?.toUpperCase()}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(payment.status)}
-                            <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(payment.status)}`}>
-                              {payment.status}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-gray-400 text-sm">
-                          {formatDate(payment.paid_at || payment.created_at)}
-                        </td>
-                        <td className="px-4 py-4 text-gray-500 text-xs font-mono">
-                          {payment.stripe_invoice_id?.slice(0, 20) || '-'}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'stripe' && (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-700/50">
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Customer</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Amount</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Status</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Date</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Charge ID</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : stripeCharges.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                        No Stripe charges found
-                      </td>
-                    </tr>
-                  ) : (
-                    stripeCharges.map((charge) => (
-                      <tr key={charge.id} className="hover:bg-gray-700/30">
-                        <td className="px-4 py-4">
-                          <div>
-                            <p className="text-sm text-white">{charge.description || 'Subscription'}</p>
-                            <p className="text-sm text-gray-400">{charge.customerEmail || 'Unknown'}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-1 text-white font-medium">
-                            <DollarSign className="w-4 h-4 text-green-400" />
-                            {charge.amount.toFixed(2)} {charge.currency?.toUpperCase()}
-                          </div>
-                          {charge.refunded && (
-                            <span className="text-xs text-red-400">Refunded</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(charge.status, charge.paid)}
-                            <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(charge.status, charge.paid)}`}>
-                              {charge.paid ? 'Paid' : charge.status}
-                            </span>
-                          </div>
-                          {charge.failureMessage && (
-                            <p className="text-xs text-red-400 mt-1">{charge.failureMessage}</p>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 text-gray-400 text-sm">
-                          {formatDate(charge.createdAt)}
-                        </td>
-                        <td className="px-4 py-4 text-gray-500 text-xs font-mono">
-                          {charge.id.slice(0, 20)}...
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

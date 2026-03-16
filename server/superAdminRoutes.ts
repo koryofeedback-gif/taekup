@@ -445,27 +445,8 @@ router.post('/parents/:studentId/revoke-premium', verifySuperAdmin, async (req: 
 
 router.get('/payments', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
-    const { status, limit = 50, offset = 0 } = req.query;
+    const { limit = 50 } = req.query;
     
-    let query = sql`
-      SELECT 
-        p.*,
-        c.name as club_name,
-        c.owner_email
-      FROM payments p
-      JOIN clubs c ON p.club_id = c.id
-      WHERE 1=1
-    `;
-    
-    if (status) {
-      query = sql`${query} AND p.status = ${status}`;
-    }
-    
-    query = sql`${query} ORDER BY p.created_at DESC LIMIT ${Number(limit)} OFFSET ${Number(offset)}`;
-    
-    const payments = await db.execute(query);
-    
-    // Fetch Stripe charges directly from Stripe API
     let stripeCharges: any[] = [];
     try {
       const { getUncachableStripeClient } = await import('./stripeClient');
@@ -475,44 +456,25 @@ router.get('/payments', verifySuperAdmin, async (req: Request, res: Response) =>
         limit: Number(limit),
       });
       
-      // Map charges to include club info
-      stripeCharges = await Promise.all(charges.data.map(async (charge) => {
-        let clubName = 'Unknown';
-        let clubId = null;
-        
-        // Try to find club by customer email or metadata
-        if (charge.billing_details?.email) {
-          const clubResult = await db.execute(
-            sql`SELECT id, name FROM clubs WHERE owner_email = ${charge.billing_details.email} LIMIT 1`
-          );
-          if ((clubResult as any[]).length > 0) {
-            clubName = (clubResult as any[])[0].name;
-            clubId = (clubResult as any[])[0].id;
-          }
-        }
-        
-        return {
-          id: charge.id,
-          amount: charge.amount,
-          currency: charge.currency,
-          status: charge.status,
-          created: charge.created,
-          description: charge.description,
-          receipt_url: charge.receipt_url,
-          club_name: clubName,
-          club_id: clubId,
-          billing_email: charge.billing_details?.email,
-        };
+      stripeCharges = charges.data.map((charge) => ({
+        id: charge.id,
+        amount: charge.amount / 100,
+        currency: charge.currency,
+        status: charge.status,
+        paid: charge.paid,
+        refunded: charge.refunded,
+        description: charge.description,
+        customerEmail: charge.billing_details?.email || null,
+        createdAt: new Date(charge.created * 1000).toISOString(),
+        failureMessage: charge.failure_message || null,
       }));
     } catch (stripeError: any) {
       console.error('Failed to fetch Stripe charges:', stripeError.message);
     }
     
     res.json({
-      payments,
       stripeCharges,
       limit: Number(limit),
-      offset: Number(offset)
     });
   } catch (error: any) {
     console.error('Payments list error:', error);
