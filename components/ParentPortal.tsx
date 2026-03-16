@@ -4664,15 +4664,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                                                     </span>
                                                                                 )}
                                                                                 {challenge.demo_video_url && (
-                                                                                    <a 
-                                                                                        href={challenge.demo_video_url}
-                                                                                        target="_blank"
-                                                                                        rel="noopener noreferrer"
-                                                                                        onClick={(e) => e.stopPropagation()}
-                                                                                        className="text-[10px] bg-cyan-900/50 text-cyan-400 px-2 py-0.5 rounded font-bold hover:bg-cyan-800/50 transition-colors"
-                                                                                    >
-                                                                                        {t('parent.rivals.family.watchDemo')}
-                                                                                    </a>
+                                                                                    <span className="text-[10px] bg-cyan-900/50 text-cyan-400 px-2 py-0.5 rounded font-bold">
+                                                                                        📺 Demo
+                                                                                    </span>
                                                                                 )}
                                                                             </div>
                                                                         </div>
@@ -4696,6 +4690,27 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             {/* Submission Form (inline when selected) */}
                                                             {isSelected && !isCompleted && (
                                                                 <div className="mt-3 p-4 bg-gray-800/80 rounded-xl border border-orange-500/30">
+                                                                    {challenge.demo_video_url && (
+                                                                        <div className="mb-4 p-3 bg-cyan-900/30 rounded-xl border border-cyan-500/30">
+                                                                            <div className="flex items-center justify-between">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-xl">📺</span>
+                                                                                    <div>
+                                                                                        <p className="text-cyan-300 text-sm font-bold">{t('parent.gauntlet.watchDemoFirst') || 'Watch the demo first'}</p>
+                                                                                        <p className="text-gray-400 text-xs">{t('parent.gauntlet.learnProperTechnique') || 'Learn proper technique'}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <a
+                                                                                    href={challenge.demo_video_url}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                                                                                >
+                                                                                    {t('parent.gauntlet.watch') || 'Watch'}
+                                                                                </a>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                     <div className="mb-3">
                                                                         <label className="text-gray-400 text-xs mb-1 block">Your Score</label>
                                                                         <input
