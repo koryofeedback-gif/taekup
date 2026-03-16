@@ -1209,6 +1209,9 @@ export const en = {
       moreCount: "+{count} more...",
       today: "TODAY!",
       turning: "Turning",
+      sendBirthdayEmail: "Send 🎂 Email",
+      birthdayEmailSent: "Email sent!",
+      unknownAge: "?",
     },
     actions: {
       saveNotifyParents: "Save & Notify Parents",

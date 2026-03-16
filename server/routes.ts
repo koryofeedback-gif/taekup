@@ -2996,6 +2996,34 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Send birthday wish email to parent
+  app.post('/api/students/:id/birthday-email', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const studentResult = await db.execute(sql`
+        SELECT s.name, s.parent_email, c.name as club_name, c.wizard_data as club_wizard_data
+        FROM students s
+        JOIN clubs c ON s.club_id = c.id
+        WHERE s.id = ${id}::uuid
+        LIMIT 1
+      `);
+      const student = (studentResult as any[])[0];
+      if (!student) return res.status(404).json({ error: 'Student not found' });
+      if (!student.parent_email) return res.status(400).json({ error: 'No parent email on file' });
+      const language = student.club_wizard_data?.language || 'en';
+      const sent = await emailService.sendBirthdayWishEmail(student.parent_email, {
+        studentName: student.name,
+        clubName: student.club_name,
+        language,
+      });
+      console.log(`[Birthday] Email ${sent ? 'sent' : 'failed'} to ${student.parent_email} for ${student.name}`);
+      res.json({ success: sent });
+    } catch (error: any) {
+      console.error('[Birthday Email] Error:', error.message);
+      res.status(500).json({ error: 'Failed to send birthday email' });
+    }
+  });
+
   // Sync curriculum content to database (called when publishing)
   app.post('/api/content/sync', async (req: Request, res: Response) => {
     try {

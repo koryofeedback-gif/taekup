@@ -103,6 +103,8 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
     const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
     const [cachedLeaderboard, setCachedLeaderboard] = useState<Array<{id: string, name: string, monthlyPTS: number}>>([]);
     const [retentionData, setRetentionData] = useState<Record<string, string | null> | null>(null);
+    const [birthdayEmailSentIds, setBirthdayEmailSentIds] = useState<Set<string>>(new Set());
+    const [birthdayEmailSending, setBirthdayEmailSending] = useState<string | null>(null);
 
     const studentDataFingerprint = useMemo(() => {
         return students.reduce((sum, s) => sum + (s.totalPoints || 0) + (s.totalXP || 0), 0) + '-' + students.length;
@@ -271,19 +273,54 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                             const today = new Date();
                             const bdate = new Date(s.birthday);
                             const isToday = bdate.getDate() === today.getDate() && bdate.getMonth() === today.getMonth();
-                            const newAge = today.getFullYear() - bdate.getFullYear();
+                            const birthYear = bdate.getFullYear();
+                            const ageRaw = today.getFullYear() - birthYear;
+                            // Show "?" if no real birth year was stored (year is current year or future = no year of birth entered)
+                            const ageDisplay = (ageRaw <= 0 || birthYear >= today.getFullYear()) ? t('coach.widgets.unknownAge') : String(ageRaw);
+                            const emailAlreadySent = birthdayEmailSentIds.has(s.id);
+                            const isSending = birthdayEmailSending === s.id;
                             
+                            const handleSendBirthdayEmail = async () => {
+                                if (!s.parentEmail || emailAlreadySent || isSending) return;
+                                setBirthdayEmailSending(s.id);
+                                try {
+                                    await fetch(`/api/students/${s.id}/birthday-email`, { method: 'POST' });
+                                    setBirthdayEmailSentIds(prev => new Set([...prev, s.id]));
+                                } catch (e) {
+                                    console.error('[Birthday] Failed to send email', e);
+                                } finally {
+                                    setBirthdayEmailSending(null);
+                                }
+                            };
+
                             return (
-                                <div key={s.id} className={`flex items-center justify-between p-2 rounded border ${isToday ? 'bg-yellow-900/40 border-yellow-500' : 'bg-gray-800 border-gray-700'}`}>
-                                    <div>
-                                        <p className={`text-sm font-bold ${isToday ? 'text-yellow-400' : 'text-white'}`}>
-                                            {s.name}
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            {isToday ? t('coach.widgets.turning') : new Date(s.birthday).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})} • {newAge}
-                                        </p>
+                                <div key={s.id} className={`p-2 rounded border ${isToday ? 'bg-yellow-900/40 border-yellow-500' : 'bg-gray-800 border-gray-700'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className={`text-sm font-bold ${isToday ? 'text-yellow-400' : 'text-white'}`}>
+                                                {s.name}
+                                            </p>
+                                            <p className="text-xs text-gray-400">
+                                                {isToday ? t('coach.widgets.turning') : new Date(s.birthday).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})} • {ageDisplay}
+                                            </p>
+                                        </div>
+                                        {isToday && <span className="text-xs bg-yellow-500 text-black px-2 py-1 rounded font-bold animate-pulse">{t('coach.widgets.today')}</span>}
                                     </div>
-                                    {isToday && <span className="text-xs bg-yellow-500 text-black px-2 py-1 rounded font-bold animate-pulse">{t('coach.widgets.today')}</span>}
+                                    {isToday && s.parentEmail && (
+                                        <button
+                                            onClick={handleSendBirthdayEmail}
+                                            disabled={emailAlreadySent || isSending}
+                                            className={`mt-2 w-full text-xs py-1.5 px-2 rounded font-bold transition-all ${
+                                                emailAlreadySent 
+                                                    ? 'bg-green-800 text-green-300 cursor-default'
+                                                    : isSending
+                                                    ? 'bg-gray-700 text-gray-400 cursor-wait'
+                                                    : 'bg-yellow-600 hover:bg-yellow-500 text-black'
+                                            }`}
+                                        >
+                                            {emailAlreadySent ? t('coach.widgets.birthdayEmailSent') : isSending ? '...' : t('coach.widgets.sendBirthdayEmail')}
+                                        </button>
+                                    )}
                                 </div>
                             )
                         })

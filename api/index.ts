@@ -2957,6 +2957,37 @@ async function handleLinkParent(req: VercelRequest, res: VercelResponse, student
   }
 }
 
+// Send birthday wish email to a student's parent
+async function handleBirthdayEmail(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT s.name, s.parent_email, c.name as club_name, c.wizard_data as club_wizard_data
+       FROM students s
+       JOIN clubs c ON s.club_id = c.id
+       WHERE s.id = $1::uuid
+       LIMIT 1`,
+      [studentId]
+    );
+    const student = result.rows[0];
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    if (!student.parent_email) return res.status(400).json({ error: 'No parent email on file' });
+    const language = student.club_wizard_data?.language || 'en';
+    const sent = await sendTemplateEmail(student.parent_email, 'BIRTHDAY_WISH', {
+      childName: student.name,
+      clubName: student.club_name,
+    }, language);
+    console.log(`[Birthday] Email ${sent ? 'sent' : 'failed'} to ${student.parent_email} for ${student.name}`);
+    return res.json({ success: sent });
+  } catch (error: any) {
+    console.error('[Birthday Email] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to send birthday email' });
+  } finally {
+    client.release();
+  }
+}
+
 // S3 client for video uploads
 function getS3Client(): S3Client | null {
   if (!process.env.IDRIVE_E2_ACCESS_KEY || !process.env.IDRIVE_E2_SECRET_KEY || !process.env.IDRIVE_E2_ENDPOINT) {
@@ -8540,6 +8571,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const linkParentMatch = path.match(/^\/students\/([^/]+)\/link-parent\/?$/);
     if (linkParentMatch) return await handleLinkParent(req, res, linkParentMatch[1]);
+
+    const birthdayEmailMatch = path.match(/^\/students\/([^/]+)\/birthday-email\/?$/);
+    if (birthdayEmailMatch) return await handleBirthdayEmail(req, res, birthdayEmailMatch[1]);
     
     const syncRivalsMatch = path.match(/^\/students\/([^/]+)\/sync-rivals\/?$/);
     if (syncRivalsMatch) return await handleSyncRivals(req, res, syncRivalsMatch[1]);
