@@ -2263,10 +2263,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             
             <SenseiVoiceHUD transcript={voiceTranscript} isActive={isVoiceActive} lastCommand={lastVoiceCommand} students={students} skills={activeSkills} onClose={toggleVoiceMode} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-w-0">
                 
                 {/* MAIN TABLE AREA */}
-                <div className="lg:col-span-3 bg-gray-800/50 rounded-lg border border-gray-700 shadow-2xl">
+                <div className="lg:col-span-3 min-w-0 overflow-hidden bg-gray-800/50 rounded-lg border border-gray-700 shadow-2xl">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-t-xl border-b border-gray-700/50 overflow-hidden">
                         {/* Top Bar - Title & Actions (Mobile Optimized) */}
