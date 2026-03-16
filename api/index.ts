@@ -19,6 +19,46 @@ const pool = new Pool({
 });
 
 // =====================================================
+// STARTUP MIGRATIONS — run once per cold start
+// All ADD COLUMN IF NOT EXISTS statements consolidated here
+// so they never slow down individual API requests.
+// =====================================================
+let _schemaReady = false;
+async function ensureSchema() {
+  if (_schemaReady) return;
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false;
+      ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_data TEXT;
+      ALTER TABLE clubs ADD COLUMN IF NOT EXISTS has_demo_data BOOLEAN DEFAULT false;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS gender VARCHAR(30);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS medical_info TEXT;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS mytaek_id VARCHAR(20);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS location VARCHAR(255);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS assigned_class VARCHAR(255);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS profile_image_url VARCHAR(500);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS lifetime_xp INTEGER DEFAULT 0;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS global_xp INTEGER DEFAULT 0;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS premium_status TEXT DEFAULT 'none';
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS premium_started_at TIMESTAMPTZ;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS previous_rank INTEGER DEFAULT NULL;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS rank_snapshot_date DATE DEFAULT NULL;
+      ALTER TABLE access_requests ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'en';
+      ALTER TABLE attendance_events ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false;
+    `);
+    _schemaReady = true;
+    console.log('[Schema] Startup migrations applied');
+  } catch (e: any) {
+    console.warn('[Schema] Migration warning (non-fatal):', e.message);
+    _schemaReady = true;
+  } finally {
+    client.release();
+  }
+}
+
+// =====================================================
 // SECURITY: Rate Limiting (in-memory, resets on cold start)
 // =====================================================
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
@@ -617,9 +657,6 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    // Ensure is_platform_owner column exists
-    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
-    
     const userResult = await client.query(
       `SELECT u.id, u.email, u.password_hash, u.role, u.name, u.club_id, u.is_active,
               c.name as club_name, c.status as club_status, c.trial_status, c.trial_end, c.wizard_data,
@@ -650,44 +687,25 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    await client.query(
+    // Log login event async — don't block the response
+    client.query(
       `INSERT INTO activity_log (event_type, event_title, event_description, club_id, metadata, created_at)
        VALUES ('user_login', 'User Login', $1, $2, $3, NOW())`,
       ['User logged in: ' + user.email, user.club_id, JSON.stringify({ email: user.email, role: user.role })]
-    );
+    ).catch(() => {});
 
-    // CRITICAL: For parent users, look up their student by parent_email
+    // CRITICAL: For parent users, look up their student by parent_email (single query: student + XP)
     let studentId = null;
     if (user.role === 'parent') {
-      // Try exact email match first
       let studentResult = await client.query(
-        `SELECT id FROM students WHERE LOWER(parent_email) = $1 AND club_id = $2::uuid LIMIT 1`,
+        `SELECT id, COALESCE(total_xp, 0) as total_xp FROM students WHERE LOWER(parent_email) = $1 AND club_id = $2::uuid LIMIT 1`,
         [user.email.toLowerCase().trim(), user.club_id]
       );
       if (studentResult.rows.length > 0) {
         studentId = studentResult.rows[0].id;
-        console.log('[Login] Found student for parent:', user.email, '-> studentId:', studentId);
+        console.log('[Login] Found student for parent:', user.email, '-> studentId:', studentId, 'xp:', studentResult.rows[0].total_xp);
       } else {
-        // Fallback: Get any student from this club (for legacy parents without linked students)
-        studentResult = await client.query(
-          `SELECT id FROM students WHERE club_id = $1::uuid ORDER BY created_at DESC LIMIT 1`,
-          [user.club_id]
-        );
-        if (studentResult.rows.length > 0) {
-          studentId = studentResult.rows[0].id;
-          console.log('[Login] Fallback: Using first club student for parent:', user.email, '-> studentId:', studentId);
-        } else {
-          console.log('[Login] No student found for parent email:', user.email);
-        }
-      }
-      
-      // Read current total_xp (single source of truth - do NOT recalculate)
-      if (studentId) {
-        const xpResult = await client.query(
-          `SELECT COALESCE(total_xp, 0) as total_xp FROM students WHERE id = $1::uuid`,
-          [studentId]
-        );
-        console.log('[Login] Student XP:', studentId, '-> total_xp:', xpResult.rows[0]?.total_xp || 0);
+        console.log('[Login] No student found for parent email:', user.email);
       }
     }
 
@@ -811,8 +829,6 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    await client.query(`ALTER TABLE access_requests ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'en'`);
-
     await client.query(
       `INSERT INTO access_requests (email, club_name, full_name, website_url, phone, city_state, language, created_at, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'pending')
@@ -1376,9 +1392,6 @@ async function handleStripePublishableKey(req: VercelRequest, res: VercelRespons
 async function handleVerifySubscription(req: VercelRequest, res: VercelResponse, clubId: string) {
   const client = await pool.connect();
   try {
-    // Ensure is_platform_owner column exists
-    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
-    
     const clubResult = await client.query(
       `SELECT id, owner_email, trial_status, trial_start, trial_end, COALESCE(is_platform_owner, false) as is_platform_owner FROM clubs WHERE id = $1::uuid`,
       [clubId]
@@ -1681,7 +1694,6 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
 
   const client = await pool.connect();
   try {
-    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_data TEXT`);
     const clubResult = await client.query(
       `SELECT id, name, owner_email, owner_name, country, city, art_type, 
               wizard_data, trial_start, trial_end, trial_status, status,
@@ -1702,9 +1714,6 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       club.name = wizardClubName;
     }
 
-    // Ensure mytaek_id column exists
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS mytaek_id VARCHAR(20)`);
-    
     // Generate MyTaek IDs for students that don't have one
     const studentsWithoutId = await client.query(
       `SELECT id FROM students WHERE club_id = $1::uuid AND (mytaek_id IS NULL OR mytaek_id = '')`,
@@ -1874,7 +1883,6 @@ async function handleSaveLogo(req: VercelRequest, res: VercelResponse) {
   if (!clubId) return res.status(400).json({ error: 'Club ID is required' });
   const client = await pool.connect();
   try {
-    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_data TEXT`);
     await client.query(`UPDATE clubs SET logo_data = $1 WHERE id = $2::uuid`, [logo || null, clubId]);
     return res.json({ success: true });
   } catch (error: any) {
@@ -2196,11 +2204,6 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     for (let i = 0; i < 6; i++) mytaekCode += chars[Math.floor(Math.random() * chars.length)];
     const mytaekId = `MTK-${year}-${mytaekCode}`;
 
-    // Ensure new columns exist
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS gender VARCHAR(30)`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS medical_info TEXT`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS mytaek_id VARCHAR(20)`);
-
     const joinDateValue = joinDate ? new Date(joinDate).toISOString() : new Date().toISOString();
 
     const studentResult = await client.query(
@@ -2334,11 +2337,6 @@ async function handleStudentUpdate(req: VercelRequest, res: VercelResponse, stud
   
   const client = await pool.connect();
   try {
-    // Auto-migrate: add columns if they don't exist
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS location VARCHAR(255)`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS assigned_class VARCHAR(255)`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS profile_image_url VARCHAR(500)`);
-    
     // Verify student exists
     const studentCheck = await client.query('SELECT id, club_id FROM students WHERE id = $1::uuid', [studentId]);
     if (studentCheck.rows.length === 0) {
@@ -4091,10 +4089,6 @@ async function handleDbSetup(req: VercelRequest, res: VercelResponse) {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_cs_student ON challenge_submissions(student_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_cs_challenge ON challenge_submissions(challenge_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_cs_answer ON challenge_submissions(answer)`);
-    
-    // Add location and assigned_class columns to students table
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS location VARCHAR(255)`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS assigned_class VARCHAR(255)`);
     
     // Create daily_challenges table if missing
     await client.query(`
@@ -6244,13 +6238,6 @@ async function handleWorldRankings(req: VercelRequest, res: VercelResponse) {
   const client = await pool.connect();
   try {
     if (category === 'students') {
-      // Ensure previous_rank and rank_snapshot_date columns exist
-      try {
-        await client.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS previous_rank INTEGER DEFAULT NULL');
-        await client.query('ALTER TABLE students ADD COLUMN IF NOT EXISTS rank_snapshot_date DATE DEFAULT NULL');
-      } catch (e) {
-        // Columns likely already exist, ignore error
-      }
 
       // IMPORTANT: Exclude demo students from real rankings
       let query = `
@@ -7187,9 +7174,6 @@ async function handleGetClubTransfers(req: VercelRequest, res: VercelResponse, c
 
   const client = await pool.connect();
   try {
-    // Ensure mytaek_id column exists on students table
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS mytaek_id VARCHAR(20)`);
-    
     // Ensure transfer table exists
     await client.query(`
       CREATE TABLE IF NOT EXISTS student_transfers (
@@ -7329,16 +7313,6 @@ async function handleDemoLoad(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    // Ensure required columns exist (for production migration)
-    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS has_demo_data BOOLEAN DEFAULT false`);
-    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS lifetime_xp INTEGER DEFAULT 0`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS global_xp INTEGER DEFAULT 0`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS premium_status TEXT DEFAULT 'none'`);
-    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS premium_started_at TIMESTAMPTZ`);
-    await client.query(`ALTER TABLE attendance_events ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false`);
-    
     const clubResult = await client.query('SELECT id, has_demo_data FROM clubs WHERE id = $1::uuid', [clubId]);
     if (clubResult.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Club not found' });
@@ -7584,9 +7558,6 @@ async function handleDemoClear(req: VercelRequest, res: VercelResponse) {
 
   const client = await pool.connect();
   try {
-    // Ensure has_demo_data column exists (for production migration)
-    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS has_demo_data BOOLEAN DEFAULT false`);
-    
     const clubResult = await client.query('SELECT id, has_demo_data FROM clubs WHERE id = $1::uuid', [clubId]);
     if (clubResult.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Club not found' });
@@ -7725,7 +7696,6 @@ async function handleTogglePlatformOwner(req: VercelRequest, res: VercelResponse
   
   const client = await pool.connect();
   try {
-    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
     await client.query(
       'UPDATE clubs SET is_platform_owner = $1 WHERE id = $2::uuid',
       [isPlatformOwner === true, clubId]
@@ -7753,8 +7723,6 @@ async function handleSuperAdminClubs(req: VercelRequest, res: VercelResponse) {
   
   const client = await pool.connect();
   try {
-    await client.query(`ALTER TABLE clubs ADD COLUMN IF NOT EXISTS is_platform_owner BOOLEAN DEFAULT false`);
-    
     let query = `
       SELECT 
         c.id, c.name, c.owner_email, c.owner_name, c.trial_status, c.status,
@@ -8482,6 +8450,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res, req);
   setSecurityHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Run schema migrations once per cold start (no-op on warm instances)
+  await ensureSchema();
 
   const url = req.url || '';
   const path = url.split('?')[0].replace(/^\/api/, '');
