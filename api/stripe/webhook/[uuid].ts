@@ -536,17 +536,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing stripe-signature' });
   }
 
-  // Webhook must always use live production keys — SANDBOX_STRIPE_KEY is for admin tools only
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  
-  if (!stripeSecretKey) {
-    console.error('[Webhook] STRIPE_SECRET_KEY not configured');
+  const liveSecret = process.env.STRIPE_SECRET_KEY;
+  const sandboxSecret = process.env.SANDBOX_STRIPE_KEY;
+  const liveWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const sandboxWebhookSecret = process.env.SANDBOX_STRIPE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!liveSecret && !sandboxSecret) {
+    console.error('[Webhook] No Stripe key configured');
     return res.status(500).json({ error: 'Stripe not configured' });
   }
 
-  const stripe = new Stripe(stripeSecretKey);
-  
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
@@ -554,21 +553,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const rawBody = Buffer.concat(chunks);
 
   let event: Stripe.Event;
-  
-  try {
-    if (!webhookSecret) {
-      console.error('[Webhook] STRIPE_WEBHOOK_SECRET not configured - rejecting request');
-      return res.status(500).json({ error: 'Webhook secret not configured' });
-    }
-    event = stripe.webhooks.constructEvent(
-      rawBody,
-      signature as string,
-      webhookSecret
-    );
-  } catch (err: any) {
-    console.error('[Webhook] Signature verification failed:', err.message);
+  let isTestEvent = false;
+
+  // Try live webhook secret first, then sandbox — so both live and test events work
+  const stripeForVerify = new Stripe(liveSecret || sandboxSecret!);
+  let verified = false;
+
+  if (liveWebhookSecret) {
+    try {
+      event = stripeForVerify.webhooks.constructEvent(rawBody, signature as string, liveWebhookSecret);
+      verified = true;
+      isTestEvent = false;
+    } catch { /* try sandbox next */ }
+  }
+
+  if (!verified && sandboxWebhookSecret) {
+    try {
+      event = stripeForVerify.webhooks.constructEvent(rawBody, signature as string, sandboxWebhookSecret);
+      verified = true;
+      isTestEvent = true;
+    } catch { /* both failed */ }
+  }
+
+  if (!verified) {
+    console.error('[Webhook] Signature verification failed with all available secrets');
     return res.status(400).json({ error: 'Webhook signature verification failed' });
   }
+
+  // Use the matching Stripe client for API calls
+  const stripeSecretKey = isTestEvent ? (sandboxSecret || liveSecret!) : (liveSecret || sandboxSecret!);
+  const stripe = new Stripe(stripeSecretKey);
+  console.log(`[Webhook] Verified as ${isTestEvent ? 'TEST' : 'LIVE'} event`);
 
   console.log('[Webhook] Received event:', event.type);
 
