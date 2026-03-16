@@ -1407,59 +1407,49 @@ router.get('/cohorts', verifySuperAdmin, async (req: Request, res: Response) => 
 // Onboarding Progress - track wizard completion funnel
 router.get('/onboarding', verifySuperAdmin, async (req: Request, res: Response) => {
   try {
-    // Get funnel data
+    // Funnel derived from wizard_data JSONB (per-step columns are never written by the wizard)
     const funnel = await db.execute(sql`
-      SELECT 
+      SELECT
         COUNT(*) as total_started,
-        COUNT(*) FILTER (WHERE step1_club_info = true) as step1_completed,
-        COUNT(*) FILTER (WHERE step2_belt_system = true) as step2_completed,
-        COUNT(*) FILTER (WHERE step3_skills = true) as step3_completed,
-        COUNT(*) FILTER (WHERE step4_scoring = true) as step4_completed,
-        COUNT(*) FILTER (WHERE step5_people = true) as step5_completed,
-        COUNT(*) FILTER (WHERE step6_branding = true) as step6_completed,
-        COUNT(*) FILTER (WHERE wizard_completed = true) as wizard_completed,
-        AVG(total_time_spent_seconds) as avg_time_seconds
-      FROM onboarding_progress
+        COUNT(*) FILTER (WHERE wizard_data ? 'clubName') as step1_completed,
+        COUNT(*) FILTER (WHERE wizard_data ? 'belts' OR wizard_data ? 'martialArt') as step2_completed,
+        COUNT(*) FILTER (WHERE wizard_data ? 'skills') as step3_completed,
+        COUNT(*) FILTER (WHERE wizard_data ? 'pointsPerStripe') as step4_completed,
+        COUNT(*) FILTER (WHERE wizard_data ? 'coaches') as step5_completed,
+        COUNT(*) FILTER (WHERE wizard_data ? 'worldRankings' OR wizard_data ? 'worldRankingsEnabled') as step6_completed,
+        COUNT(*) FILTER (WHERE op.wizard_completed = true) as wizard_completed,
+        AVG(op.total_time_spent_seconds) FILTER (WHERE op.total_time_spent_seconds > 0) as avg_time_seconds
+      FROM clubs c
+      LEFT JOIN onboarding_progress op ON op.club_id = c.id
+      WHERE c.wizard_data IS NOT NULL
+        AND c.wizard_data != '{}'::jsonb
+        AND COALESCE(c.is_platform_owner, false) IS NOT TRUE
     `);
 
-    // Get clubs stuck at each step
-    const stuckClubs = await db.execute(sql`
-      SELECT 
-        op.last_active_step,
-        COUNT(*) as count,
-        c.name as example_club,
-        c.owner_email as example_email
-      FROM onboarding_progress op
-      JOIN clubs c ON c.id = op.club_id
-      WHERE op.wizard_completed = false
-      GROUP BY op.last_active_step, c.name, c.owner_email
-      ORDER BY op.last_active_step
-    `);
-
-    // Get recent incomplete onboardings
+    // Clubs that started the wizard but never completed it
     const incomplete = await db.execute(sql`
-      SELECT 
-        c.id,
-        c.name,
-        c.owner_email,
-        c.created_at,
-        op.last_active_step,
-        op.step1_club_info,
-        op.step2_belt_system,
-        op.step3_skills,
-        op.step4_scoring,
-        op.step5_people,
-        op.step6_branding
-      FROM onboarding_progress op
-      JOIN clubs c ON c.id = op.club_id
-      WHERE op.wizard_completed = false
+      SELECT
+        c.id, c.name, c.owner_email, c.created_at,
+        CASE
+          WHEN NOT (wizard_data ? 'clubName') THEN 1
+          WHEN NOT (wizard_data ? 'belts' OR wizard_data ? 'martialArt') THEN 2
+          WHEN NOT (wizard_data ? 'skills') THEN 3
+          WHEN NOT (wizard_data ? 'pointsPerStripe') THEN 4
+          WHEN NOT (wizard_data ? 'coaches') THEN 5
+          ELSE 6
+        END as last_active_step
+      FROM clubs c
+      LEFT JOIN onboarding_progress op ON op.club_id = c.id
+      WHERE (op.wizard_completed IS NULL OR op.wizard_completed = false)
+        AND c.wizard_data IS NOT NULL
+        AND c.wizard_data != '{}'::jsonb
+        AND COALESCE(c.is_platform_owner, false) IS NOT TRUE
       ORDER BY c.created_at DESC
-      LIMIT 20
+      LIMIT 50
     `);
 
     res.json({ 
       funnel: (funnel as any[])[0] || {},
-      stuckClubs,
       incomplete
     });
   } catch (error: any) {
@@ -1548,7 +1538,27 @@ router.get('/churn-reasons', verifySuperAdmin, async (req: Request, res: Respons
       ORDER BY month
     `);
 
-    res.json({ breakdown, recent, trend });
+    // If no explicit churn feedback, fall back to churned clubs from clubs table
+    let recentFinal = recent as any[];
+    if (!recentFinal.length) {
+      recentFinal = (await db.execute(sql`
+        SELECT
+          c.id as club_id,
+          c.name as club_name,
+          c.owner_email,
+          'no_response' as category,
+          NULL as additional_feedback,
+          NULL as rating,
+          NULL as would_recommend,
+          c.updated_at as created_at
+        FROM clubs c
+        WHERE c.status IN ('churned', 'canceled', 'inactive')
+        ORDER BY c.updated_at DESC
+        LIMIT 20
+      `)) as any[];
+    }
+
+    res.json({ breakdown, recent: recentFinal, trend });
   } catch (error: any) {
     console.error('Churn reasons error:', error);
     res.status(500).json({ error: 'Failed to fetch churn reasons' });

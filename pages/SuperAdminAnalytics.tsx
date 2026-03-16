@@ -233,7 +233,8 @@ export default function SuperAdminAnalytics() {
     'not_enough_time': 'Not Enough Time',
     'technical_issues': 'Technical Issues',
     'poor_support': 'Poor Support',
-    'other': 'Other'
+    'other': 'Other',
+    'no_response': 'No Feedback Given'
   };
 
   const stepLabels = ['Club Info', 'Belt System', 'Skills', 'Scoring', 'People', 'Branding'];
