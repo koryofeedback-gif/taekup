@@ -78,7 +78,7 @@ async function sendPaymentConfirmationEmail(
     
     await sgMail.send({
       to,
-      from: { email: 'billing@mytaek.com', name: 'MyTaek' },
+      from: { email: 'hello@mytaek.com', name: 'MyTaek' },
       subject,
       templateId: MASTER_TEMPLATE_ID,
       dynamicTemplateData: {
@@ -159,7 +159,7 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
 
             await sgMail.send({
               to: customerEmail,
-              from: { email: 'billing@mytaek.com', name: 'MyTaek' },
+              from: { email: 'hello@mytaek.com', name: 'MyTaek' },
               subject: `TaekUp Premium is now active for ${studentName}!`,
               templateId: MASTER_TEMPLATE_ID,
               dynamicTemplateData: {
