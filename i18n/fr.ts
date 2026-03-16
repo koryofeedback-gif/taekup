@@ -110,7 +110,7 @@ export const fr = {
       senseiMind: "Esprit Sensei",
       aiTrainingIntel: "Intelligence IA d'entraînement",
       arenaRanks: "Classements de l'Arène",
-      leaderboardAndRankings: "Classement & Rangliste",
+      leaderboardAndRankings: "Classement & Classements",
 
       senseiIntel: "Intel Sensei",
       noActiveMissions: "Aucune mission active pour le moment. Continuez à vous entraîner !",
@@ -571,7 +571,7 @@ export const fr = {
       exitPreview: "✕ Quitter",
       trainingSessionsTab: "📋 Séances",
       trainingReports: "Rapports d'entraînement",
-      fullGradingHistory: "Détails complets de chaque séance d'entraînement",
+      fullGradingHistory: "Détail complet des évaluations de chaque séance",
       noSessionsYet: "Aucune séance d'entraînement",
       attendClassToSee: "Participez aux cours pour voir les rapports ici",
       excellent: "Excellent",
@@ -581,7 +581,7 @@ export const fr = {
       coachNotes: "Notes du coach",
       homeworkBonus: "Devoirs",
       coachBonus: "Bonus coach",
-      stripeProgressLabel: "Progression stripe",
+      stripeProgressLabel: "Progression des barrettes",
     },
 
     settings: {
