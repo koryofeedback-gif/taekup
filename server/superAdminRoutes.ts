@@ -797,14 +797,28 @@ router.get('/revenue', verifySuperAdmin, async (req: Request, res: Response) => 
     const mrr = activeCount * 49; // Average subscription price
 
     const last30Days = await db.execute(sql`
-      SELECT 
-        DATE(created_at) as date,
-        COUNT(*) FILTER (WHERE status = 'active') as active_count,
-        COUNT(*) FILTER (WHERE trial_status = 'active') as trial_count
-      FROM clubs
-      WHERE created_at >= NOW() - INTERVAL '30 days'
-      GROUP BY DATE(created_at)
-      ORDER BY date
+      WITH date_series AS (
+        SELECT generate_series(
+          CURRENT_DATE - INTERVAL '30 days',
+          CURRENT_DATE,
+          '1 day'::interval
+        )::date AS date
+      ),
+      daily_revenue AS (
+        SELECT
+          DATE(COALESCE(paid_at, created_at)) AS pay_date,
+          COALESCE(SUM(amount), 0) AS daily_total
+        FROM payments
+        WHERE status IN ('succeeded', 'paid')
+          AND COALESCE(paid_at, created_at) >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY DATE(COALESCE(paid_at, created_at))
+      )
+      SELECT
+        ds.date,
+        COALESCE(dr.daily_total, 0) AS mrr
+      FROM date_series ds
+      LEFT JOIN daily_revenue dr ON dr.pay_date = ds.date
+      ORDER BY ds.date
     `);
 
     const conversionResult = await db.execute(sql`
@@ -832,11 +846,19 @@ router.get('/revenue', verifySuperAdmin, async (req: Request, res: Response) => 
 
     res.json({
       mrr,
-      mrrTrend: last30Days,
+      currentMrr: mrr,
+      mrrTrend: (last30Days as any[]).map((r: any) => ({
+        date: r.date,
+        mrr: Number(r.mrr || 0) / 100,
+      })),
       conversionRate: totalTrials > 0 ? Math.round((converted / totalTrials) * 100) : 0,
       churnRate: totalActive > 0 ? Math.round((churned / totalActive) * 100) : 0,
       totalConverted: converted,
-      totalChurned: churned
+      totalChurned: churned,
+      convertedTrials: converted,
+      totalTrials,
+      newMrr: 0,
+      churnedMrr: 0,
     });
   } catch (error: any) {
     console.error('Revenue analytics error:', error);

@@ -683,35 +683,46 @@ async function handleRevenueAnalytics(req: VercelRequest, res: VercelResponse) {
     const period = (req.query.period as string) || '30'; // days
     const days = parseInt(period) || 30;
     
-    // MRR trend over time (daily for last N days)
+    // MRR trend: daily revenue from payments table over last N days
     const mrrTrend = await db`
       WITH date_series AS (
         SELECT generate_series(
-          CURRENT_DATE - (INTERVAL '1 day' * ${days}),
+          CURRENT_DATE - (${days} || ' days')::interval,
           CURRENT_DATE,
           '1 day'::interval
         )::date AS date
       ),
-      daily_mrr AS (
-        SELECT 
-          ds.date,
-          COALESCE(SUM(
-            CASE WHEN s.status = 'active' AND s.created_at <= ds.date + INTERVAL '1 day' 
-            AND (s.canceled_at IS NULL OR s.canceled_at > ds.date)
-            THEN s.monthly_amount ELSE 0 END
-          ), 0) as mrr
-        FROM date_series ds
-        LEFT JOIN subscriptions s ON TRUE
-        GROUP BY ds.date
-        ORDER BY ds.date
+      daily_revenue AS (
+        SELECT
+          DATE(COALESCE(paid_at, created_at)) AS pay_date,
+          COALESCE(SUM(amount), 0) AS daily_total
+        FROM payments
+        WHERE status IN ('succeeded', 'paid')
+          AND COALESCE(paid_at, created_at) >= CURRENT_DATE - (${days} || ' days')::interval
+        GROUP BY DATE(COALESCE(paid_at, created_at))
       )
-      SELECT date, mrr::integer FROM daily_mrr
+      SELECT
+        ds.date,
+        COALESCE(dr.daily_total, 0)::integer AS mrr
+      FROM date_series ds
+      LEFT JOIN daily_revenue dr ON dr.pay_date = ds.date
+      ORDER BY ds.date
     `;
-    
-    // Current MRR
+
+    // Current MRR: sum from active clubs by tier price
     const currentMrrResult = await db`
-      SELECT COALESCE(SUM(monthly_amount), 0) as mrr 
-      FROM subscriptions WHERE status = 'active'
+      SELECT COALESCE(SUM(
+        CASE tier
+          WHEN 'starter'  THEN 4900
+          WHEN 'pro'      THEN 7900
+          WHEN 'standard' THEN 9900
+          WHEN 'growth'   THEN 14900
+          WHEN 'empire'   THEN 19900
+          ELSE 4900
+        END
+      ), 0) AS mrr
+      FROM clubs
+      WHERE status = 'active' AND is_platform_owner IS NOT TRUE
     `;
     
     // Churn rate (last 30 days)
@@ -752,20 +763,29 @@ async function handleRevenueAnalytics(req: VercelRequest, res: VercelResponse) {
         (SELECT cnt FROM converted) as converted_trials
     `;
     
-    // New MRR this month
+    // New MRR this month: revenue from payments collected this calendar month
     const newMrrResult = await db`
-      SELECT COALESCE(SUM(monthly_amount), 0) as new_mrr 
-      FROM subscriptions 
-      WHERE status = 'active' 
-      AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
+      SELECT COALESCE(SUM(amount), 0) AS new_mrr
+      FROM payments
+      WHERE status IN ('succeeded', 'paid')
+        AND COALESCE(paid_at, created_at) >= DATE_TRUNC('month', CURRENT_DATE)
     `;
-    
-    // Churned MRR this month
+
+    // Churned MRR this month: clubs that went inactive this month × their tier price
     const churnedMrrResult = await db`
-      SELECT COALESCE(SUM(monthly_amount), 0) as churned_mrr 
-      FROM subscriptions 
-      WHERE status = 'canceled' 
-      AND canceled_at >= DATE_TRUNC('month', CURRENT_DATE)
+      SELECT COALESCE(SUM(
+        CASE tier
+          WHEN 'starter'  THEN 4900
+          WHEN 'pro'      THEN 7900
+          WHEN 'standard' THEN 9900
+          WHEN 'growth'   THEN 14900
+          WHEN 'empire'   THEN 19900
+          ELSE 4900
+        END
+      ), 0) AS churned_mrr
+      FROM clubs
+      WHERE status IN ('churned', 'canceled', 'inactive')
+        AND updated_at >= DATE_TRUNC('month', CURRENT_DATE)
     `;
     
     return res.json({

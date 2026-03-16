@@ -191,17 +191,33 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ token,
   };
 
   const MRRChart = () => {
-    if (!revenue?.mrrTrend?.length) return null;
-    
-    const validTrend = revenue.mrrTrend.filter(d => d && typeof d.mrr === 'number');
-    if (!validTrend.length) return null;
-    
-    const maxMrr = Math.max(...validTrend.map(d => d.mrr || 0), 1);
+    if (!revenue?.mrrTrend?.length) {
+      return (
+        <div className="h-32 flex items-center justify-center text-gray-500 text-sm">
+          No revenue data yet
+        </div>
+      );
+    }
+
+    const validTrend = revenue.mrrTrend.map(d => ({
+      ...d,
+      mrr: typeof d.mrr === 'number' ? d.mrr : Number(d.mrr) || 0,
+    }));
+    const hasAnyRevenue = validTrend.some(d => d.mrr > 0);
+    const maxMrr = Math.max(...validTrend.map(d => d.mrr), 1);
     const chartHeight = 120;
-    
+
+    if (!hasAnyRevenue) {
+      return (
+        <div className="h-32 flex items-center justify-center text-gray-500 text-sm">
+          No payments recorded in the last 30 days
+        </div>
+      );
+    }
+
     return (
       <div className="relative h-32">
-        <div className="absolute inset-0 flex items-end justify-between gap-1">
+        <div className="absolute inset-0 flex items-end justify-between gap-0.5">
           {validTrend.slice(-30).map((point, i) => {
             const mrrValue = point.mrr || 0;
             const height = (mrrValue / maxMrr) * chartHeight;
@@ -209,7 +225,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ token,
               <div
                 key={i}
                 className="flex-1 bg-gradient-to-t from-cyan-600 to-cyan-400 rounded-t opacity-80 hover:opacity-100 transition-opacity"
-                style={{ height: `${Math.max(height, 2)}px` }}
+                style={{ height: `${Math.max(height, mrrValue > 0 ? 4 : 1)}px` }}
                 title={`$${mrrValue.toFixed(2)} on ${point.date || 'N/A'}`}
               />
             );
@@ -371,7 +387,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ token,
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-cyan-400" />
-              MRR Trend (Last 30 Days)
+              Daily Revenue (Last 30 Days)
             </h3>
           </div>
           <MRRChart />
