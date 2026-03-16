@@ -152,9 +152,10 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
         const amount = session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : '$4.99';
 
         if (process.env.SENDGRID_API_KEY && customerEmail) {
+          const parentName = session.customer_details?.name || customerEmail.split('@')[0];
+
           try {
             sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-            const parentName = session.customer_details?.name || customerEmail.split('@')[0];
 
             await sgMail.send({
               to: customerEmail,
@@ -535,11 +536,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing stripe-signature' });
   }
 
-  const isTestMode = !!process.env.SANDBOX_STRIPE_KEY;
-  const stripeSecretKey = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = isTestMode
-    ? (process.env.SANDBOX_STRIPE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET)
-    : process.env.STRIPE_WEBHOOK_SECRET;
+  // Webhook must always use live production keys — SANDBOX_STRIPE_KEY is for admin tools only
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   
   if (!stripeSecretKey) {
     console.error('[Webhook] STRIPE_SECRET_KEY not configured');
