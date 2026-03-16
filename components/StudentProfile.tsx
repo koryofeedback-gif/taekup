@@ -82,6 +82,8 @@ const EditInput: React.FC<{ label: string; value: string | number; onChange: (va
 const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; onUpdate?: (s: Student) => void }> = ({ student, belts, rules, onUpdate }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Student>(student);
+    const [photoUploading, setPhotoUploading] = useState(false);
+    const [photoError, setPhotoError] = useState<string | null>(null);
     const belt = getBelt(student.beltId, belts);
     const displayAge = student.age || calculateAge(student.birthday) || 'N/A';
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,8 +92,20 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
         setFormData(student);
     }, [student]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (onUpdate) {
+            // Persist photo URL to DB when saving
+            if (student.id && formData.photo !== student.photo) {
+                try {
+                    await fetch(`/api/students/${student.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ profileImageUrl: formData.photo || null }),
+                    });
+                } catch (err) {
+                    console.error('[StudentProfile] Failed to save photo URL:', err);
+                }
+            }
             onUpdate(formData);
             setIsEditing(false);
         }
@@ -99,17 +113,59 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
 
     const handleCancel = () => {
         setFormData(student);
+        setPhotoError(null);
         setIsEditing(false);
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
+        if (!file) return;
+
+        const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+        if (file.size > MAX_SIZE) {
+            setPhotoError('Image is too large. Maximum size is 2MB.');
+            return;
+        }
+
+        setPhotoError(null);
+        setPhotoUploading(true);
+
+        try {
+            // Get presigned S3 upload URL
+            const urlRes = await fetch(`/api/students/${student.id}/photo-upload-url`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: file.name, contentType: file.type, fileSize: file.size }),
+            });
+
+            if (!urlRes.ok) {
+                throw new Error('Failed to get upload URL');
+            }
+
+            const { uploadUrl, publicUrl } = await urlRes.json();
+
+            // Upload directly to S3
+            const uploadRes = await fetch(uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': file.type },
+            });
+
+            if (!uploadRes.ok) {
+                throw new Error('Upload failed');
+            }
+
+            setFormData(prev => ({ ...prev, photo: publicUrl }));
+        } catch (err: any) {
+            // Fallback: show local preview (not permanent but better than nothing)
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFormData({ ...formData, photo: reader.result as string });
+                setFormData(prev => ({ ...prev, photo: reader.result as string }));
             };
             reader.readAsDataURL(file);
+            setPhotoError('Could not upload to cloud. Photo is temporary until storage is configured.');
+        } finally {
+            setPhotoUploading(false);
         }
     };
 
@@ -161,22 +217,33 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
                     {isEditing && (
                         <>
                             <button 
-                                onClick={() => fileInputRef.current?.click()}
-                                className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer backdrop-blur-sm"
-                                title="Change Photo"
+                                onClick={() => !photoUploading && fileInputRef.current?.click()}
+                                disabled={photoUploading}
+                                className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer backdrop-blur-sm disabled:cursor-not-allowed"
+                                title="Change Photo (max 2MB)"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Upload</span>
+                                {photoUploading ? (
+                                    <svg className="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                    </svg>
+                                ) : (
+                                    <>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-wider">Upload</span>
+                                        <span className="text-[9px] text-gray-300 mt-0.5">Max 2MB</span>
+                                    </>
+                                )}
                             </button>
                             <input 
                                 type="file" 
                                 ref={fileInputRef} 
                                 onChange={handleFileChange} 
                                 className="hidden" 
-                                accept="image/*" 
+                                accept="image/jpeg,image/png,image/webp,image/gif" 
                             />
                         </>
                     )}
@@ -189,6 +256,10 @@ const BasicInfo: React.FC<{ student: Student; belts: Belt[]; rules: WizardData; 
                         </div>
                     )}
                 </div>
+
+                {photoError && (
+                    <p className="text-red-400 text-xs mb-2">{photoError}</p>
+                )}
 
                 {!isEditing ? (
                     <h2 className="text-xl font-bold text-white">{student.name}</h2>

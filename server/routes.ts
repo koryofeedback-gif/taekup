@@ -507,7 +507,7 @@ export function registerRoutes(app: Express) {
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
                total_points, total_xp, stripes, join_date, created_at,
                location, assigned_class, global_xp, is_demo, premium_status,
-               trust_tier, video_approval_streak, last_class_at
+               trust_tier, video_approval_streak, last_class_at, profile_image_url
         FROM students WHERE club_id = ${clubId}::uuid
       `);
 
@@ -631,7 +631,8 @@ export function registerRoutes(app: Express) {
           trustTier: s.trust_tier || saved.trustTier || 'unverified',
           videoApprovalStreak: s.video_approval_streak || saved.videoApprovalStreak || 0,
           homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] },
-          lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null
+          lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null,
+          photo: s.profile_image_url || null
         };
       });
 
@@ -1103,7 +1104,7 @@ export function registerRoutes(app: Express) {
             SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
                    total_points, total_xp, stripes, join_date, created_at,
                    location, assigned_class, global_xp, is_demo, premium_status,
-                   trust_tier, video_approval_streak, last_class_at
+                   trust_tier, video_approval_streak, last_class_at, profile_image_url
             FROM students WHERE club_id = ${user.club_id}::uuid
           `);
           
@@ -1151,7 +1152,8 @@ export function registerRoutes(app: Express) {
               trustTier: s.trust_tier || saved.trustTier || 'unverified',
               videoApprovalStreak: s.video_approval_streak || saved.videoApprovalStreak || 0,
               homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] },
-              lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null
+              lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null,
+              photo: s.profile_image_url || null
             };
           });
           
@@ -3021,6 +3023,59 @@ export function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error('[Birthday Email] Error:', error.message);
       res.status(500).json({ error: 'Failed to send birthday email' });
+    }
+  });
+
+  // Student photo upload presigned URL
+  app.post('/api/students/:id/photo-upload-url', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { filename, contentType, fileSize } = req.body;
+
+      const MAX_PHOTO_SIZE = 2 * 1024 * 1024;
+      if (fileSize && fileSize > MAX_PHOTO_SIZE) {
+        return res.status(400).json({ error: 'Image too large. Maximum size is 2MB.' });
+      }
+
+      const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+      const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
+      const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
+      const endpoint = process.env.IDRIVE_E2_ENDPOINT;
+      if (!bucketName || !endpoint || !process.env.IDRIVE_E2_ACCESS_KEY) {
+        return res.status(500).json({ error: 'Storage not configured' });
+      }
+      const s3 = new S3Client({
+        endpoint: `https://${endpoint}`,
+        region: 'us-east-1',
+        credentials: { accessKeyId: process.env.IDRIVE_E2_ACCESS_KEY, secretAccessKey: process.env.IDRIVE_E2_SECRET_KEY || '' },
+        forcePathStyle: true,
+      });
+      const ext = (filename || 'photo.jpg').split('.').pop()?.toLowerCase() || 'jpg';
+      const key = `student-photos/${id}/${Date.now()}.${ext}`;
+      const command = new PutObjectCommand({ Bucket: bucketName, Key: key, ContentType: contentType || 'image/jpeg' });
+      const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
+      const publicUrl = `https://${bucketName}.${endpoint}/${key}`;
+      res.json({ uploadUrl, key, publicUrl });
+    } catch (error: any) {
+      console.error('[PhotoUpload] Error:', error.message);
+      res.status(500).json({ error: 'Failed to generate upload URL' });
+    }
+  });
+
+  // Student profile image save
+  app.patch('/api/students/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { profileImageUrl } = req.body;
+      if (profileImageUrl === undefined) return res.status(400).json({ error: 'No fields to update' });
+      await db.execute(sql`
+        UPDATE students SET profile_image_url = ${profileImageUrl || null}, updated_at = NOW()
+        WHERE id = ${id}::uuid
+      `);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[StudentUpdate] Error:', error.message);
+      res.status(500).json({ error: error.message });
     }
   });
 

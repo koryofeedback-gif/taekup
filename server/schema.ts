@@ -114,6 +114,7 @@ export const students = pgTable('students', {
   videoRejectionCount: integer('video_rejection_count').default(0), // Total rejected videos (for demotion)
   lastSpotCheckAt: timestamp('last_spot_check_at', { withTimezone: true }), // Last random spot-check
   isDemo: boolean('is_demo').default(false), // Demo data flag for cleanup
+  profileImageUrl: varchar('profile_image_url', { length: 500 }), // Permanent S3-hosted photo URL
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

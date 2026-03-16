@@ -1723,7 +1723,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
     const studentsResult = await client.query(
       `SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
               total_points, total_xp, stripes, location, assigned_class, join_date, created_at, mytaek_id,
-              premium_status
+              premium_status, profile_image_url
        FROM students WHERE club_id = $1::uuid`,
       [clubId]
     );
@@ -1776,6 +1776,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       assignedClass: s.assigned_class || '',
       mytaekId: s.mytaek_id || '',
       premiumStatus: s.premium_status || 'none',
+      photo: s.profile_image_url || null,
       attendanceCount: attendanceMap.get(s.id) || 0,
       performanceHistory: [],
       homeDojo: { character: [], chores: [], school: [], health: [] }
@@ -2313,13 +2314,14 @@ async function handleStudentUpdate(req: VercelRequest, res: VercelResponse, stud
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
-  const { name, belt, stripes, location, assignedClass, parentName, parentEmail } = parseBody(req);
+  const { name, belt, stripes, location, assignedClass, parentName, parentEmail, profileImageUrl } = parseBody(req);
   
   const client = await pool.connect();
   try {
     // Auto-migrate: add columns if they don't exist
     await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS location VARCHAR(255)`);
     await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS assigned_class VARCHAR(255)`);
+    await client.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS profile_image_url VARCHAR(500)`);
     
     // Verify student exists
     const studentCheck = await client.query('SELECT id, club_id FROM students WHERE id = $1::uuid', [studentId]);
@@ -2360,6 +2362,10 @@ async function handleStudentUpdate(req: VercelRequest, res: VercelResponse, stud
       updates.push(`parent_email = $${paramIndex++}`);
       values.push(parentEmail);
     }
+    if (profileImageUrl !== undefined) {
+      updates.push(`profile_image_url = $${paramIndex++}`);
+      values.push(profileImageUrl || null);
+    }
     
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
@@ -2370,17 +2376,50 @@ async function handleStudentUpdate(req: VercelRequest, res: VercelResponse, stud
     
     const result = await client.query(
       `UPDATE students SET ${updates.join(', ')} WHERE id = $${paramIndex}::uuid 
-       RETURNING id, name, belt, stripes, location, assigned_class, parent_name, parent_email`,
+       RETURNING id, name, belt, stripes, location, assigned_class, parent_name, parent_email, profile_image_url`,
       values
     );
     
     console.log(`[StudentUpdate] Updated student ${studentId}:`, result.rows[0]);
-    return res.status(200).json({ success: true, student: result.rows[0] });
+    return res.status(200).json({ success: true, student: { ...result.rows[0], photo: result.rows[0].profile_image_url || null } });
   } catch (error: any) {
     console.error('[StudentUpdate] Error:', error);
     return res.status(500).json({ error: error.message });
   } finally {
     client.release();
+  }
+}
+
+async function handleStudentPhotoUpload(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { filename, contentType, fileSize } = parseBody(req);
+
+  const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
+  if (fileSize && fileSize > MAX_PHOTO_SIZE) {
+    return res.status(400).json({ error: 'Image too large. Maximum size is 2MB.' });
+  }
+
+  const s3Client = getS3Client();
+  const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
+  if (!s3Client || !bucketName) {
+    return res.status(500).json({ error: 'Storage not configured' });
+  }
+
+  try {
+    const ext = (filename || 'photo.jpg').split('.').pop()?.toLowerCase() || 'jpg';
+    const key = `student-photos/${studentId}/${Date.now()}.${ext}`;
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      ContentType: contentType || 'image/jpeg',
+    });
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+    const publicUrl = `https://${bucketName}.${process.env.IDRIVE_E2_ENDPOINT}/${key}`;
+    return res.json({ uploadUrl, key, publicUrl });
+  } catch (error: any) {
+    console.error('[PhotoUpload] Presigned URL error:', error.message);
+    return res.status(500).json({ error: 'Failed to generate upload URL' });
   }
 }
 
@@ -8572,6 +8611,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const birthdayEmailMatch = path.match(/^\/students\/([^/]+)\/birthday-email\/?$/);
     if (birthdayEmailMatch) return await handleBirthdayEmail(req, res, birthdayEmailMatch[1]);
+
+    const photoUploadMatch = path.match(/^\/students\/([^/]+)\/photo-upload-url\/?$/);
+    if (photoUploadMatch) return await handleStudentPhotoUpload(req, res, photoUploadMatch[1]);
     
     const syncRivalsMatch = path.match(/^\/students\/([^/]+)\/sync-rivals\/?$/);
     if (syncRivalsMatch) return await handleSyncRivals(req, res, syncRivalsMatch[1]);
