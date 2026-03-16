@@ -442,7 +442,7 @@ export const de = {
       legacyCollection: "LEGACY",
 
       noContentYet: "Noch keine Inhalte verfügbar",
-      checkArenaRanks: "Dein Trainer hat noch keine Inhalte hinzugefügt. Geh zur Arena, um deine Rangliste zu sehen und anzutreten!",
+      checkArenaRanks: "Ihr Trainer hat noch keine Inhalte hinzugefügt. Gehen Sie zur Arena, um Ihre Rangliste zu sehen und anzutreten!",
       goToArenaRanks: "Zur Arena-Rangliste",
       askInstructor: "Fragen? Fragen Sie Ihren Trainer beim nächsten Unterricht!",
 
@@ -581,7 +581,7 @@ export const de = {
       coachNotes: "Coach-Notizen",
       homeworkBonus: "Hausaufgaben",
       coachBonus: "Coach-Bonus",
-      stripeProgressLabel: "Stripe-Fortschritt",
+      stripeProgressLabel: "Streifen-Fortschritt",
     },
 
     settings: {
@@ -597,7 +597,7 @@ export const de = {
       familyChallenge: "Familien-Herausforderung",
       coachBonus: "Trainer-Bonus",
       mysteryChallenge: "Rätsel-Herausforderung",
-      gauntlet: "Krieger-Spießrutenlauf",
+      gauntlet: "Krieger-Herausforderung",
     },
 
     quiz: {
