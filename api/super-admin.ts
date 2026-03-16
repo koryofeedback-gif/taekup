@@ -1838,7 +1838,13 @@ async function handleOnboardingFunnel(req: VercelRequest, res: VercelResponse) {
         COUNT(*) FILTER (WHERE wizard_data ? 'pointsPerStripe') as step4_completed,
         COUNT(*) FILTER (WHERE wizard_data ? 'coaches') as step5_completed,
         COUNT(*) FILTER (WHERE wizard_data ? 'worldRankings' OR wizard_data ? 'worldRankingsEnabled') as step6_completed,
-        COUNT(*) FILTER (WHERE op.wizard_completed = true) as wizard_completed,
+        COUNT(*) FILTER (WHERE
+          (wizard_data ? 'clubName') AND
+          (wizard_data ? 'belts' OR wizard_data ? 'martialArt') AND
+          (wizard_data ? 'skills') AND
+          (wizard_data ? 'pointsPerStripe') AND
+          (wizard_data ? 'coaches')
+        ) as wizard_completed,
         AVG(op.total_time_spent_seconds) FILTER (WHERE op.total_time_spent_seconds > 0) as avg_time_seconds
       FROM clubs c
       LEFT JOIN onboarding_progress op ON op.club_id = c.id
@@ -1847,7 +1853,7 @@ async function handleOnboardingFunnel(req: VercelRequest, res: VercelResponse) {
         AND COALESCE(c.is_platform_owner, false) IS NOT TRUE
     `;
 
-    // Get incomplete onboarding list — clubs that started but never finished
+    // Clubs genuinely missing one or more required steps
     const incomplete = await db`
       SELECT
         c.id, c.name, c.owner_email, c.created_at,
@@ -1860,11 +1866,16 @@ async function handleOnboardingFunnel(req: VercelRequest, res: VercelResponse) {
           ELSE 6
         END as last_active_step
       FROM clubs c
-      LEFT JOIN onboarding_progress op ON op.club_id = c.id
-      WHERE (op.wizard_completed IS NULL OR op.wizard_completed = false)
-        AND c.wizard_data IS NOT NULL
+      WHERE c.wizard_data IS NOT NULL
         AND c.wizard_data != '{}'::jsonb
         AND COALESCE(c.is_platform_owner, false) IS NOT TRUE
+        AND NOT (
+          (wizard_data ? 'clubName') AND
+          (wizard_data ? 'belts' OR wizard_data ? 'martialArt') AND
+          (wizard_data ? 'skills') AND
+          (wizard_data ? 'pointsPerStripe') AND
+          (wizard_data ? 'coaches')
+        )
       ORDER BY c.created_at DESC
       LIMIT 50
     `;
