@@ -443,7 +443,7 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
       
       const invoiceLang = normalizeLanguageCode(club.wizard_data?.language);
       const result = await sendPaymentConfirmationEmail(customerEmail, {
-        ownerName: club.owner_name || 'Club Owner',
+        ownerName: club.owner_name || (club.wizard_data as any)?.ownerName || club.name,
         clubName: club.name,
         planName: planName,
         amount: amountFormatted,

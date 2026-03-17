@@ -216,10 +216,10 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   PAYMENT_RECEIPT: {
     subject: 'Receipt for your TaekUp subscription',
     title: 'Payment Successful',
-    body: `Hi {{name}},<br><br>Thanks for your payment of <strong>{{amount}}</strong>.<br><br>Your subscription is active until <strong>{{nextBillingDate}}</strong>.<br><br>Invoice #: {{invoiceNumber}}`,
+    body: `Hi {{name}},<br><br>Thanks for your payment of <strong>{{amount}}</strong>. Your <strong>{{planName}}</strong> subscription is now active for <strong>{{clubName}}</strong>.<br><br>Invoice #: {{invoiceNumber}}`,
     btn_text: 'View Invoice',
     btn_url: '{{invoiceUrl}}',
-    from: 'billing@mytaek.com'
+    from: 'hello@mytaek.com'
   },
   // Payment failed
   PAYMENT_FAILED: {

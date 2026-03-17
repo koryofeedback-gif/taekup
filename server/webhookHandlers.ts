@@ -73,7 +73,7 @@ export class WebhookHandlers {
         
         if ((alreadySent as any[]).length === 0) {
           const result = await emailService.sendWelcomeEmail(customerEmail, {
-            ownerName: club.owner_name || 'Club Owner',
+            ownerName: club.owner_name || (club.wizard_data as any)?.ownerName || club.name,
             clubName: club.name,
             language: clubLanguage
           });
@@ -154,7 +154,7 @@ export class WebhookHandlers {
         
         if ((alreadySent as any[]).length === 0) {
           const result = await emailService.sendWelcomeEmail(customerEmail, {
-            ownerName: club.owner_name || 'Club Owner',
+            ownerName: club.owner_name || (club.wizard_data as any)?.ownerName || club.name,
             clubName: club.name,
             language: clubLanguage
           });
@@ -244,7 +244,7 @@ export class WebhookHandlers {
         const paymentClubLanguage = (club?.wizard_data as any)?.language || 'English';
         
         const result = await emailService.sendPaymentConfirmationEmail(customerEmail, {
-          ownerName: club.owner_name || 'Club Owner',
+          ownerName: club.owner_name || (club.wizard_data as any)?.ownerName || club.name,
           clubName: club.name,
           planName: planName,
           amount: '$' + (amount / 100).toFixed(2),
