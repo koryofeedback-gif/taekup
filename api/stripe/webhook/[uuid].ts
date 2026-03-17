@@ -372,9 +372,19 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
       return;
     }
 
+    // Retrieve full invoice from Stripe to guarantee hosted_invoice_url and number are populated
+    let fullInvoice = invoice;
+    try {
+      fullInvoice = await stripe.invoices.retrieve(invoice.id);
+      console.log('[Webhook] Full invoice retrieved, hosted_invoice_url:', !!(fullInvoice as any).hosted_invoice_url);
+    } catch (invFetchErr: any) {
+      console.log('[Webhook] Could not retrieve full invoice, using event invoice:', invFetchErr.message);
+    }
+
     const customerEmail = (customer as any).email;
-    const amount = invoice.amount_paid || 0;
-    const currency = invoice.currency || 'usd';
+    const customerName = (customer as any).name || null;
+    const amount = fullInvoice.amount_paid || invoice.amount_paid || 0;
+    const currency = fullInvoice.currency || invoice.currency || 'usd';
     
     let clubId = null;
     let club = null;
@@ -435,22 +445,28 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
     console.log('[Webhook] Payment saved to database:', invoice.id, 'Amount:', amount);
 
     if (club && customerEmail) {
-      const planName = invoice.lines?.data?.[0]?.description || 'TaekUp Plan';
-      const billingPeriod = invoice.lines?.data?.[0]?.period ? 
-        (invoice.lines.data[0].period.end - invoice.lines.data[0].period.start > 60 * 60 * 24 * 35 ? 'Annual' : 'Monthly') 
+      const invoiceLines = (fullInvoice as any).lines?.data || invoice.lines?.data || [];
+      const planName = invoiceLines[0]?.description || 'TaekUp Plan';
+      const billingPeriod = invoiceLines[0]?.period
+        ? (invoiceLines[0].period.end - invoiceLines[0].period.start > 60 * 60 * 24 * 35 ? 'Annual' : 'Monthly')
         : 'Monthly';
       const amountFormatted = '$' + (amount / 100).toFixed(2);
       
       const invoiceLang = normalizeLanguageCode(club.wizard_data?.language);
+      const resolvedOwnerName = club.owner_name && club.owner_name !== 'Owner'
+        ? club.owner_name
+        : (club.wizard_data as any)?.ownerName || customerName || club.name;
+
       const result = await sendPaymentConfirmationEmail(customerEmail, {
-        ownerName: club.owner_name || (club.wizard_data as any)?.ownerName || club.name,
+        ownerName: resolvedOwnerName,
         clubName: club.name,
         planName: planName,
         amount: amountFormatted,
         billingPeriod: billingPeriod,
-        invoiceUrl: invoice.hosted_invoice_url || undefined,
-        invoiceNumber: invoice.number || undefined,
+        invoiceUrl: (fullInvoice as any).hosted_invoice_url || (invoice as any).hosted_invoice_url || undefined,
+        invoiceNumber: (fullInvoice as any).number || (invoice as any).number || undefined,
       }, invoiceLang);
+      console.log('[Webhook] ownerName resolved as:', resolvedOwnerName, '| invoiceUrl:', !!(fullInvoice as any).hosted_invoice_url);
 
       if (result.success) {
         console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
@@ -488,8 +504,8 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
     } else if (isParentPremium && customerEmail && process.env.SENDGRID_API_KEY) {
       // Parent premium renewal — send confirmation to parent with invoice link
       const amountFormatted = '$' + (amount / 100).toFixed(2);
-      const invoiceUrl = invoice.hosted_invoice_url || undefined;
-      const invoiceNumber = invoice.number || undefined;
+      const invoiceUrl = (fullInvoice as any).hosted_invoice_url || (invoice as any).hosted_invoice_url || undefined;
+      const invoiceNumber = (fullInvoice as any).number || (invoice as any).number || undefined;
       const parentName = (customer as any).name || customerEmail.split('@')[0];
 
       try {
