@@ -201,32 +201,78 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
 
         const amount = session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : '$4.99';
 
+        // Fetch invoice URL from the session's invoice
+        let parentInvoiceUrl: string | undefined;
+        let parentInvoiceNumber: string | undefined;
+        if (session.invoice) {
+          try {
+            const inv = await stripe.invoices.retrieve(session.invoice as string);
+            parentInvoiceUrl = (inv as any).hosted_invoice_url || undefined;
+            parentInvoiceNumber = (inv as any).number || undefined;
+          } catch (invErr: any) {
+            console.log('[Webhook] Could not fetch parent premium invoice:', invErr.message);
+          }
+        }
+
         if (process.env.SENDGRID_API_KEY && customerEmail) {
           const parentName = session.customer_details?.name || customerEmail.split('@')[0];
+          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+          // Email to parent — raw HTML (reliable, no template dependency)
           try {
-            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+            const invoiceBtn = parentInvoiceUrl
+              ? `<a href="${parentInvoiceUrl}" style="background:#1e293b;color:#22d3ee;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;border:1px solid #22d3ee">View Invoice</a>`
+              : '';
+            const invoiceRow = parentInvoiceNumber
+              ? `<tr><td style="padding:8px 14px;color:#94a3b8;width:130px">Invoice #</td><td style="padding:8px 14px;color:#fff">${parentInvoiceNumber}</td></tr>`
+              : '';
+            const invoiceNote = parentInvoiceUrl
+              ? `<p style="text-align:center;margin-top:12px;font-size:13px;color:#64748b">You can also <a href="${parentInvoiceUrl}" style="color:#22d3ee;text-decoration:underline">view your invoice</a> or download the PDF from that page.</p>`
+              : '';
 
             await sgMail.send({
               to: customerEmail,
               from: { email: 'hello@mytaek.com', name: 'MyTaek' },
               subject: `TaekUp Premium is now active for ${studentName}!`,
-              templateId: MASTER_TEMPLATE_ID,
-              dynamicTemplateData: {
-                subject: `TaekUp Premium is now active for ${studentName}!`,
-                title: 'Premium Activated',
-                body_content: `Hi ${parentName},<br><br>Thank you for your payment of <strong>${amount}/month</strong>. TaekUp Premium is now active for <strong>${studentName}</strong> at <strong>${clubName}</strong>!<br><br>Premium features unlocked:<br>• Global Shogun Rank™<br>• AI Belt Predictions (ChronosBelt™)<br>• Custom Home Habits (7 daily)<br>• Video Proof 2x HonorXP™ Multiplier<br>• Digital Trophy Case<br><br>Enjoy the full experience!`,
-                btn_text: 'Open Parent Portal',
-                btn_url: `https://mytaek.com/app/parent/${studentId}`,
-                is_rtl: clubLang === 'fa',
-                image_url: LOGO_URL,
-              },
+              html: `
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#0f172a;color:#e2e8f0;border-radius:12px">
+                  <div style="text-align:center;margin-bottom:24px">
+                    <img src="${LOGO_URL}" alt="MyTaek" style="height:48px" />
+                  </div>
+                  <h2 style="color:#f59e0b;margin-bottom:8px;font-size:22px">⭐ Premium Activated!</h2>
+                  <p style="margin-bottom:16px">Hi ${parentName},</p>
+                  <p style="margin-bottom:20px;line-height:1.6">Thank you for your payment of <strong style="color:#4ade80">${amount}/month</strong>. TaekUp Premium is now active for <strong>${studentName}</strong> at <strong>${clubName}</strong>!</p>
+                  <div style="background:#1e293b;border-radius:8px;padding:16px;margin-bottom:20px">
+                    <p style="margin:0 0 8px;font-weight:bold;color:#f59e0b">Premium features unlocked:</p>
+                    <ul style="margin:0;padding-left:20px;line-height:2;color:#e2e8f0">
+                      <li>Global Shogun Rank™</li>
+                      <li>AI Belt Predictions (ChronosBelt™)</li>
+                      <li>Custom Home Habits (7 daily)</li>
+                      <li>Video Proof 2x HonorXP™ Multiplier</li>
+                      <li>Digital Trophy Case</li>
+                    </ul>
+                  </div>
+                  <div style="text-align:center;margin:24px 0;display:flex;justify-content:center;flex-wrap:wrap;gap:12px">
+                    <a href="https://mytaek.com/app/parent/${studentId}" style="background:#d97706;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">Open Parent Portal</a>${invoiceBtn}
+                  </div>
+                  <table style="width:100%;border-collapse:collapse;margin-top:20px;background:#1e293b;border-radius:8px;overflow:hidden">
+                    <tr><td style="padding:8px 14px;color:#94a3b8;width:130px">Student</td><td style="padding:8px 14px;color:#fff;font-weight:bold">${studentName}</td></tr>
+                    <tr style="background:#0f172a"><td style="padding:8px 14px;color:#94a3b8">Club</td><td style="padding:8px 14px;color:#fff">${clubName}</td></tr>
+                    <tr><td style="padding:8px 14px;color:#94a3b8">Amount</td><td style="padding:8px 14px;color:#4ade80;font-weight:bold">${amount}/mo</td></tr>
+                    ${invoiceRow}
+                  </table>
+                  ${invoiceNote}
+                  <hr style="border:1px solid #1e293b;margin:24px 0" />
+                  <p style="color:#475569;font-size:12px;text-align:center">TaekUp — The Martial Arts Management Platform</p>
+                </div>
+              `,
             });
             console.log('[Webhook] Parent premium confirmation email sent to:', customerEmail);
           } catch (emailErr: any) {
             console.error('[Webhook] Parent premium email error:', emailErr.message);
           }
 
+          // Notify admin
           try {
             await sgMail.send({
               to: 'billing@mytaek.com',
@@ -241,6 +287,7 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
                     <tr><td style="padding: 8px 0; color: #9ca3af;">Student</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${studentName}</td></tr>
                     <tr><td style="padding: 8px 0; color: #9ca3af;">Club</td><td style="padding: 8px 0; color: #fff;">${clubName}</td></tr>
                     <tr><td style="padding: 8px 0; color: #9ca3af;">Amount</td><td style="padding: 8px 0; color: #4ade80; font-weight: bold; font-size: 18px;">${amount}/mo</td></tr>
+                    <tr><td style="padding: 8px 0; color: #9ca3af;">Invoice #</td><td style="padding: 8px 0; color: #fff;">${parentInvoiceNumber || 'N/A'}</td></tr>
                     <tr><td style="padding: 8px 0; color: #9ca3af;">Session</td><td style="padding: 8px 0; color: #fff;">${session.id}</td></tr>
                   </table>
                   <hr style="border: 1px solid #333; margin: 20px 0;" />
@@ -332,23 +379,30 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
     let clubId = null;
     let club = null;
     let isParentPremium = false;
+    let parentStudentId: string | null = null;
+    let parentStudentName = 'Student';
+    let parentClubName = 'Club';
     
     const subscriptionMeta = invoice.subscription_details?.metadata || invoice.lines?.data?.[0]?.metadata || {};
     if (subscriptionMeta.type === 'parent_premium') {
       isParentPremium = true;
-      const studentId = subscriptionMeta.studentId;
-      if (studentId) {
+      parentStudentId = subscriptionMeta.studentId || null;
+      if (parentStudentId) {
         try {
           const studentResult = await client.query(
-            'SELECT club_id FROM students WHERE id = $1::uuid LIMIT 1',
-            [studentId]
+            `SELECT s.club_id, s.name as student_name, c.name as club_name
+             FROM students s JOIN clubs c ON s.club_id = c.id
+             WHERE s.id = $1::uuid LIMIT 1`,
+            [parentStudentId]
           );
           clubId = studentResult.rows[0]?.club_id || null;
+          parentStudentName = studentResult.rows[0]?.student_name || 'Student';
+          parentClubName = studentResult.rows[0]?.club_name || 'Club';
         } catch (e: any) {
           console.log('[Webhook] Parent premium student lookup error:', e.message);
         }
       }
-      console.log('[Webhook] Parent premium payment detected, studentId:', studentId, 'clubId:', clubId);
+      console.log('[Webhook] Parent premium payment detected, studentId:', parentStudentId, 'clubId:', clubId);
     }
     
     if (!isParentPremium && customerEmail) {
@@ -430,6 +484,84 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
         console.log('[Webhook] Admin payment notification sent to billing@mytaek.com');
       } catch (adminEmailErr: any) {
         console.error('[Webhook] Failed to send admin notification:', adminEmailErr.message);
+      }
+    } else if (isParentPremium && customerEmail && process.env.SENDGRID_API_KEY) {
+      // Parent premium renewal — send confirmation to parent with invoice link
+      const amountFormatted = '$' + (amount / 100).toFixed(2);
+      const invoiceUrl = invoice.hosted_invoice_url || undefined;
+      const invoiceNumber = invoice.number || undefined;
+      const parentName = (customer as any).name || customerEmail.split('@')[0];
+
+      try {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+        const invoiceBtn = invoiceUrl
+          ? `<a href="${invoiceUrl}" style="background:#1e293b;color:#22d3ee;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;border:1px solid #22d3ee">View Invoice</a>`
+          : '';
+        const invoiceRow = invoiceNumber
+          ? `<tr><td style="padding:8px 14px;color:#94a3b8;width:130px">Invoice #</td><td style="padding:8px 14px;color:#fff">${invoiceNumber}</td></tr>`
+          : '';
+        const invoiceNote = invoiceUrl
+          ? `<p style="text-align:center;margin-top:12px;font-size:13px;color:#64748b">You can also <a href="${invoiceUrl}" style="color:#22d3ee;text-decoration:underline">view your invoice</a> or download the PDF from that page.</p>`
+          : '';
+
+        await sgMail.send({
+          to: customerEmail,
+          from: { email: 'hello@mytaek.com', name: 'MyTaek' },
+          subject: `TaekUp Premium renewed for ${parentStudentName}`,
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#0f172a;color:#e2e8f0;border-radius:12px">
+              <div style="text-align:center;margin-bottom:24px">
+                <img src="${LOGO_URL}" alt="MyTaek" style="height:48px" />
+              </div>
+              <h2 style="color:#f59e0b;margin-bottom:8px;font-size:22px">⭐ Premium Renewed</h2>
+              <p style="margin-bottom:16px">Hi ${parentName},</p>
+              <p style="margin-bottom:20px;line-height:1.6">Your TaekUp Premium subscription for <strong>${parentStudentName}</strong> at <strong>${parentClubName}</strong> has been renewed. Your card was charged <strong style="color:#4ade80">${amountFormatted}</strong>.</p>
+              <div style="text-align:center;margin:24px 0;display:flex;justify-content:center;flex-wrap:wrap;gap:12px">
+                <a href="https://mytaek.com/app/parent/${parentStudentId}" style="background:#d97706;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">Open Parent Portal</a>${invoiceBtn}
+              </div>
+              <table style="width:100%;border-collapse:collapse;margin-top:20px;background:#1e293b;border-radius:8px;overflow:hidden">
+                <tr><td style="padding:8px 14px;color:#94a3b8;width:130px">Student</td><td style="padding:8px 14px;color:#fff;font-weight:bold">${parentStudentName}</td></tr>
+                <tr style="background:#0f172a"><td style="padding:8px 14px;color:#94a3b8">Club</td><td style="padding:8px 14px;color:#fff">${parentClubName}</td></tr>
+                <tr><td style="padding:8px 14px;color:#94a3b8">Amount</td><td style="padding:8px 14px;color:#4ade80;font-weight:bold">${amountFormatted}/mo</td></tr>
+                ${invoiceRow}
+              </table>
+              ${invoiceNote}
+              <hr style="border:1px solid #1e293b;margin:24px 0" />
+              <p style="color:#475569;font-size:12px;text-align:center">TaekUp — The Martial Arts Management Platform</p>
+            </div>
+          `,
+        });
+        console.log('[Webhook] Parent premium renewal email sent to:', customerEmail);
+      } catch (parentRenewalErr: any) {
+        console.error('[Webhook] Parent premium renewal email FAILED:', customerEmail, parentRenewalErr.message);
+      }
+
+      // Notify admin of renewal
+      try {
+        await sgMail.send({
+          to: 'billing@mytaek.com',
+          from: { email: 'noreply@mytaek.com', name: 'TaekUp Platform' },
+          subject: `🔄 Parent Premium Renewal: ${amountFormatted} from ${customerEmail}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #e0e0e0; border-radius: 12px;">
+              <h2 style="color: #f59e0b; margin-bottom: 20px;">🔄 Parent Premium Renewed</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px 0; color: #9ca3af; width: 140px;">Parent</td><td style="padding: 8px 0; color: #fff; font-weight: bold;">${parentName}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Email</td><td style="padding: 8px 0;"><a href="mailto:${customerEmail}" style="color: #22d3ee;">${customerEmail}</a></td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Student</td><td style="padding: 8px 0; color: #fff;">${parentStudentName}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Club</td><td style="padding: 8px 0; color: #fff;">${parentClubName}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Amount</td><td style="padding: 8px 0; color: #4ade80; font-weight: bold; font-size: 18px;">${amountFormatted}/mo</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Invoice #</td><td style="padding: 8px 0; color: #fff;">${invoiceNumber || 'N/A'}</td></tr>
+                <tr><td style="padding: 8px 0; color: #9ca3af;">Invoice ID</td><td style="padding: 8px 0; color: #fff;">${invoice.id}</td></tr>
+              </table>
+              <hr style="border: 1px solid #333; margin: 20px 0;" />
+              <p style="color: #6b7280; font-size: 12px;">Received at ${new Date().toISOString()}</p>
+            </div>
+          `,
+        });
+        console.log('[Webhook] Admin renewal notification sent for parent premium');
+      } catch (adminRenewalErr: any) {
+        console.error('[Webhook] Admin parent premium renewal notification error:', adminRenewalErr.message);
       }
     }
 
