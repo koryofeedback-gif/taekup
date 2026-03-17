@@ -1242,6 +1242,7 @@ const AppContent: React.FC<AppContentProps> = ({
                                 signupData={signupData}
                                 onWizardDataUpdate={onWizardDataUpdate}
                                 onViewStudentPortal={onViewStudentPortal}
+                                onShowPricing={onShowPricing}
                             />
                         }
                     />
@@ -1520,6 +1521,7 @@ interface AdminRouteGuardProps {
     signupData: SignupData | null;
     onWizardDataUpdate: (updates: Partial<WizardData>) => void;
     onViewStudentPortal: (studentId: string) => void;
+    onShowPricing: () => void;
 }
 
 const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
@@ -1529,6 +1531,7 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
     signupData,
     onWizardDataUpdate,
     onViewStudentPortal,
+    onShowPricing,
 }) => {
     // Check if in impersonation mode (Super Admin "View As")
     const isImpersonatingSession = !!sessionStorage.getItem('impersonationToken');
