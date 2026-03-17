@@ -1,0 +1,87 @@
+Failed to load resource: the server responded with a status of 500 ()Understand this error
+index-CxSF2R7T.js:53 [fetchAPI] Error 500: {"error":"Creating a Checkout session in testmode without an existing customer is not supported while using Accounts V2. Please use a Sandbox, rather than testmode, for testing Checkout: https://docs.stripe.com/sandboxes."}
+vi @ index-CxSF2R7T.js:53Understand this error
+index-CxSF2R7T.js:53 [fetchAPI] Request to /checkout failed: Error: API error: 500
+    at vi (index-CxSF2R7T.js:53:9575)
+    at async Object.createCheckoutSession (index-CxSF2R7T.js:53:10461)
+    at async j (index-CxSF2R7T.js:517:50163)
+vi @ index-CxSF2R7T.js:53Understand this error
+index-CxSF2R7T.js:517 [PricingPage] Checkout error: Error: API error: 500
+    at vi (index-CxSF2R7T.js:53:9575)
+    at async Object.createCheckoutSession (index-CxSF2R7T.js:53:10461)
+    at async j (index-CxSF2R7T.js:517:50163)
+j @ index-CxSF2R7T.js:517Understand this error
+index-CxSF2R7T.js:517 [PricingPage] Selecting plan: Pro, billing: monthly, priceId: price_1SZoz4RhYhunDn2jdXdbzXD4
+index-CxSF2R7T.js:517 [PricingPage] Available prices: {starter: 'price_1TA7yvRhYhunDn2jDlfkATuu', pro: 'price_1SZoz4RhYhunDn2jdXdbzXD4', standard: 'price_1SZoz3RhYhunDn2j2oq4TkDl', growth: 'price_1SZoz3RhYhunDn2jXlatF7uE', empire: 'price_1SZoz3RhYhunDn2jKFlLP7eH', …}
+index-CxSF2R7T.js:517 [PricingPage] Creating checkout session with priceId: price_1SZoz4RhYhunDn2jdXdbzXD4
+index-CxSF2R7T.js:53  POST https://www.mytaek.com/api/checkout 500 (Internal Server Error)
+vi @ index-CxSF2R7T.js:53
+createCheckoutSession @ index-CxSF2R7T.js:53
+j @ index-CxSF2R7T.js:517
+onClick @ index-CxSF2R7T.js:517
+I2 @ index-CxSF2R7T.js:37
+L2 @ index-CxSF2R7T.js:37
+M2 @ index-CxSF2R7T.js:37
+tg @ index-CxSF2R7T.js:37
+Av @ index-CxSF2R7T.js:37
+(anonymous) @ index-CxSF2R7T.js:37
+Lx @ index-CxSF2R7T.js:40
+Zb @ index-CxSF2R7T.js:37
+Ku @ index-CxSF2R7T.js:37
+dx @ index-CxSF2R7T.js:37
+Z2 @ index-CxSF2R7T.js:37Understand this error
+index-CxSF2R7T.js:53 [fetchAPI] Error 500: {"error":"No such price: 'price_1SZoz4RhYhunDn2jdXdbzXD4'; a similar object exists in live mode, but a test mode key was used to make this request."}
+vi @ index-CxSF2R7T.js:53
+await in vi
+createCheckoutSession @ index-CxSF2R7T.js:53
+j @ index-CxSF2R7T.js:517
+onClick @ index-CxSF2R7T.js:517
+I2 @ index-CxSF2R7T.js:37
+L2 @ index-CxSF2R7T.js:37
+M2 @ index-CxSF2R7T.js:37
+tg @ index-CxSF2R7T.js:37
+Av @ index-CxSF2R7T.js:37
+(anonymous) @ index-CxSF2R7T.js:37
+Lx @ index-CxSF2R7T.js:40
+Zb @ index-CxSF2R7T.js:37
+Ku @ index-CxSF2R7T.js:37
+dx @ index-CxSF2R7T.js:37
+Z2 @ index-CxSF2R7T.js:37Understand this error
+index-CxSF2R7T.js:53 [fetchAPI] Request to /checkout failed: Error: API error: 500
+    at vi (index-CxSF2R7T.js:53:9575)
+    at async Object.createCheckoutSession (index-CxSF2R7T.js:53:10461)
+    at async j (index-CxSF2R7T.js:517:50163)
+vi @ index-CxSF2R7T.js:53
+await in vi
+createCheckoutSession @ index-CxSF2R7T.js:53
+j @ index-CxSF2R7T.js:517
+onClick @ index-CxSF2R7T.js:517
+I2 @ index-CxSF2R7T.js:37
+L2 @ index-CxSF2R7T.js:37
+M2 @ index-CxSF2R7T.js:37
+tg @ index-CxSF2R7T.js:37
+Av @ index-CxSF2R7T.js:37
+(anonymous) @ index-CxSF2R7T.js:37
+Lx @ index-CxSF2R7T.js:40
+Zb @ index-CxSF2R7T.js:37
+Ku @ index-CxSF2R7T.js:37
+dx @ index-CxSF2R7T.js:37
+Z2 @ index-CxSF2R7T.js:37Understand this error
+index-CxSF2R7T.js:517 [PricingPage] Checkout error: Error: API error: 500
+    at vi (index-CxSF2R7T.js:53:9575)
+    at async Object.createCheckoutSession (index-CxSF2R7T.js:53:10461)
+    at async j (index-CxSF2R7T.js:517:50163)
+j @ index-CxSF2R7T.js:517
+await in j
+onClick @ index-CxSF2R7T.js:517
+I2 @ index-CxSF2R7T.js:37
+L2 @ index-CxSF2R7T.js:37
+M2 @ index-CxSF2R7T.js:37
+tg @ index-CxSF2R7T.js:37
+Av @ index-CxSF2R7T.js:37
+(anonymous) @ index-CxSF2R7T.js:37
+Lx @ index-CxSF2R7T.js:40
+Zb @ index-CxSF2R7T.js:37
+Ku @ index-CxSF2R7T.js:37
+dx @ index-CxSF2R7T.js:37
+Z2 @ index-CxSF2R7T.js:37Understand this error
