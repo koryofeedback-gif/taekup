@@ -1459,7 +1459,9 @@ export function registerRoutes(app: Express) {
 
   app.get('/api/products-with-prices', async (req: Request, res: Response) => {
     try {
-      const rows = await storage.listProductsWithPrices();
+      const { isTestMode } = await import('./stripeConfig.js');
+      const testMode = isTestMode();
+      const rows = testMode ? [] : await storage.listProductsWithPrices();
 
       if (rows && (rows as any[]).length > 0) {
         const productsMap = new Map();
@@ -1488,7 +1490,7 @@ export function registerRoutes(app: Express) {
         res.json({ data: Array.from(productsMap.values()) });
       } else {
         const now = Date.now();
-        if (cachedProducts && (now - cacheTimestamp) < CACHE_TTL_MS) {
+        if (!testMode && cachedProducts && (now - cacheTimestamp) < CACHE_TTL_MS) {
           res.json({ data: cachedProducts });
           return;
         }
@@ -1686,8 +1688,10 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'studentId and parentEmail are required' });
       }
 
-      const { STRIPE_PRICE_IDS } = await import('./stripeConfig.js');
-      const priceId = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || STRIPE_PRICE_IDS.parentPremium.monthly;
+      const { STRIPE_PRICE_IDS, STRIPE_PRICE_IDS_SANDBOX, isTestMode } = await import('./stripeConfig.js');
+      const testMode = isTestMode();
+      const priceId = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID ||
+        (testMode ? STRIPE_PRICE_IDS_SANDBOX.parentPremium.monthly : STRIPE_PRICE_IDS.parentPremium.monthly);
 
       const baseUrl = process.env.APP_URL || (() => {
         const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0];

@@ -1097,7 +1097,10 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
   const stripe = getStripeClient();
   if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
 
-  const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || 'price_1Sp5BPRhYhunDn2j6Yz8dSxD';
+  const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY || '';
+  const isTestMode = stripeKey.startsWith('sk_test_');
+  const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID ||
+    (isTestMode ? 'price_1TA8t1RhYhunDn2ju2KZirk9' : 'price_1Sp5BPRhYhunDn2j6Yz8dSxD');
   
   const host = req.headers.host || 'mytaek.com';
   const protocol = req.headers['x-forwarded-proto'] || 'https';
