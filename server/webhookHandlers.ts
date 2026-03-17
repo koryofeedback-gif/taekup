@@ -254,6 +254,8 @@ export class WebhookHandlers {
 
         if (result.success) {
           console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
+        } else {
+          console.error('[Webhook] Payment confirmation email FAILED for owner:', customerEmail, result.error);
         }
       }
 

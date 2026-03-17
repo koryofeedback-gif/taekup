@@ -60,41 +60,74 @@ async function sendPaymentConfirmationEmail(
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     const lang = normalizeLanguageCode(language);
-    
-    let subject = `Payment Confirmed - Let's Set Up Your Club!`;
-    let title = 'Payment Successful';
-    let body = `Hi ${data.ownerName},<br><br>Thanks for your payment of <strong>${data.amount}</strong> for <strong>${data.planName}</strong> (${data.billingPeriod}).<br><br>Your club <strong>${data.clubName}</strong> is ready to go!`;
-    let btnText = 'Go to Dashboard';
 
-    const i18nData = getEmailContentI18n();
-    const translated = i18nData['payment_receipt']?.[lang];
-    if (translated) {
-      const placeholders = { name: data.ownerName, amount: data.amount, planName: data.planName, billingPeriod: data.billingPeriod, clubName: data.clubName, nextBillingDate: '', invoiceNumber: '' };
-      subject = replacePlaceholders(translated.subject, placeholders);
-      title = replacePlaceholders(translated.title, placeholders);
-      body = replacePlaceholders(translated.body, placeholders);
-      btnText = translated.btn_text || btnText;
-    }
-    
+    const subjectMap: Record<string, string> = {
+      en: `Payment Confirmed – ${data.planName} Plan`,
+      fr: `Paiement confirmé – Forfait ${data.planName}`,
+      de: `Zahlung bestätigt – Tarif ${data.planName}`,
+      es: `Pago confirmado – Plan ${data.planName}`,
+      fa: `پرداخت تأیید شد – طرح ${data.planName}`,
+    };
+    const subject = subjectMap[lang] || subjectMap.en;
+
+    const greetingMap: Record<string, string> = {
+      en: `Hi ${data.ownerName},`,
+      fr: `Bonjour ${data.ownerName},`,
+      de: `Hallo ${data.ownerName},`,
+      es: `Hola ${data.ownerName},`,
+      fa: `سلام ${data.ownerName}،`,
+    };
+    const greeting = greetingMap[lang] || greetingMap.en;
+
+    const bodyMap: Record<string, string> = {
+      en: `Thank you for your payment of <strong style="color:#4ade80">${data.amount}</strong>. Your <strong>${data.planName}</strong> subscription (${data.billingPeriod}) is now active for <strong>${data.clubName}</strong>.`,
+      fr: `Merci pour votre paiement de <strong style="color:#4ade80">${data.amount}</strong>. Votre abonnement <strong>${data.planName}</strong> (${data.billingPeriod}) est maintenant actif pour <strong>${data.clubName}</strong>.`,
+      de: `Vielen Dank für Ihre Zahlung von <strong style="color:#4ade80">${data.amount}</strong>. Ihr <strong>${data.planName}</strong>-Abonnement (${data.billingPeriod}) ist jetzt für <strong>${data.clubName}</strong> aktiv.`,
+      es: `Gracias por tu pago de <strong style="color:#4ade80">${data.amount}</strong>. Tu suscripción <strong>${data.planName}</strong> (${data.billingPeriod}) ya está activa para <strong>${data.clubName}</strong>.`,
+      fa: `با تشکر از پرداخت <strong style="color:#4ade80">${data.amount}</strong> شما. اشتراک <strong>${data.planName}</strong> (${data.billingPeriod}) برای <strong>${data.clubName}</strong> فعال شد.`,
+    };
+    const bodyText = bodyMap[lang] || bodyMap.en;
+
+    const btnMap: Record<string, string> = {
+      en: 'Go to Dashboard', fr: 'Aller au tableau de bord', de: 'Zum Dashboard', es: 'Ir al Panel', fa: 'رفتن به داشبورد',
+    };
+    const btnText = btnMap[lang] || btnMap.en;
+
+    const isRtl = lang === 'fa';
+    const dir = isRtl ? 'rtl' : 'ltr';
+
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#0f172a;color:#e2e8f0;border-radius:12px;direction:${dir}">
+        <div style="text-align:center;margin-bottom:24px">
+          <img src="${LOGO_URL}" alt="MyTaek" style="height:48px" />
+        </div>
+        <h2 style="color:#22d3ee;margin-bottom:8px;font-size:22px">✅ ${lang === 'fr' ? 'Paiement confirmé' : lang === 'de' ? 'Zahlung bestätigt' : lang === 'es' ? 'Pago confirmado' : lang === 'fa' ? 'پرداخت تأیید شد' : 'Payment Confirmed'}</h2>
+        <p style="margin-bottom:16px">${greeting}</p>
+        <p style="margin-bottom:20px;line-height:1.6">${bodyText}</p>
+        <div style="text-align:center;margin:28px 0">
+          <a href="https://mytaek.com/app/admin?tab=billing" style="background:#0891b2;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px">${btnText}</a>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-top:20px;background:#1e293b;border-radius:8px;overflow:hidden">
+          <tr><td style="padding:10px 14px;color:#94a3b8;width:130px">Club</td><td style="padding:10px 14px;color:#fff;font-weight:bold">${data.clubName}</td></tr>
+          <tr style="background:#0f172a"><td style="padding:10px 14px;color:#94a3b8">Plan</td><td style="padding:10px 14px;color:#fff">${data.planName}</td></tr>
+          <tr><td style="padding:10px 14px;color:#94a3b8">Billing</td><td style="padding:10px 14px;color:#fff">${data.billingPeriod}</td></tr>
+          <tr style="background:#0f172a"><td style="padding:10px 14px;color:#94a3b8">Amount</td><td style="padding:10px 14px;color:#4ade80;font-weight:bold">${data.amount}</td></tr>
+        </table>
+        <hr style="border:1px solid #1e293b;margin:24px 0" />
+        <p style="color:#475569;font-size:12px;text-align:center">TaekUp — The Martial Arts Management Platform</p>
+      </div>
+    `;
+
     await sgMail.send({
       to,
       from: { email: 'hello@mytaek.com', name: 'MyTaek' },
       subject,
-      templateId: MASTER_TEMPLATE_ID,
-      dynamicTemplateData: {
-        subject,
-        title,
-        body_content: body,
-        btn_text: btnText,
-        btn_url: 'https://mytaek.com/app/admin?tab=billing',
-        is_rtl: lang === 'fa',
-        image_url: LOGO_URL,
-      },
+      html,
     });
-    console.log(`[Webhook] Payment email sent to ${to} in ${lang}`);
+    console.log(`[Webhook] Payment confirmation email sent to ${to} (lang: ${lang})`);
     return { success: true };
   } catch (error: any) {
-    console.error('[Webhook] SendGrid error:', error?.response?.body || error.message);
+    console.error('[Webhook] sendPaymentConfirmationEmail error:', error?.response?.body || error.message);
     return { success: false, error: error.message };
   }
 }
@@ -264,18 +297,13 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
         
         if (result.success) {
           console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
-          
           await client.query(
             `INSERT INTO email_log (club_id, recipient, email_type, subject, status, sent_at)
              VALUES ($1, $2, $3, $4, $5, NOW())`,
             [club.id, customerEmail, 'payment_confirmation', 'Payment Confirmed', 'sent']
           );
         } else {
-          await client.query(
-            `INSERT INTO email_log (club_id, recipient, email_type, subject, status, error)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [club.id, customerEmail, 'payment_confirmation', 'Payment Confirmed', 'failed', result.error || 'Unknown error']
-          );
+          console.error('[Webhook] Payment confirmation email failed for:', customerEmail, result.error);
         }
       }
     }
@@ -408,6 +436,8 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
 
       if (result.success) {
         console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
+      } else {
+        console.error('[Webhook] Payment confirmation email FAILED for owner:', customerEmail, result.error);
       }
 
       // Notify platform admin
