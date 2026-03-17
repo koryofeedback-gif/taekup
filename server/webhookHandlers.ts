@@ -249,7 +249,9 @@ export class WebhookHandlers {
           planName: planName,
           amount: '$' + (amount / 100).toFixed(2),
           billingPeriod: billingPeriod,
-          language: paymentClubLanguage
+          language: paymentClubLanguage,
+          invoiceUrl: (invoice as any).hosted_invoice_url || undefined,
+          invoiceNumber: (invoice as any).number || undefined,
         });
 
         if (result.success) {

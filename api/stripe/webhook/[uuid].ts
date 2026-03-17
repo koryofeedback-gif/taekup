@@ -49,6 +49,8 @@ async function sendPaymentConfirmationEmail(
     planName: string;
     amount: string;
     billingPeriod: string;
+    invoiceUrl?: string;
+    invoiceNumber?: string;
   },
   language?: string
 ) {
@@ -96,6 +98,19 @@ async function sendPaymentConfirmationEmail(
     const isRtl = lang === 'fa';
     const dir = isRtl ? 'rtl' : 'ltr';
 
+    const invoiceLabelMap: Record<string, string> = {
+      en: 'View Invoice', fr: 'Voir la facture', de: 'Rechnung ansehen', es: 'Ver factura', fa: 'مشاهده فاکتور',
+    };
+    const invoiceLabel = invoiceLabelMap[lang] || invoiceLabelMap.en;
+
+    const invoiceRow = data.invoiceNumber
+      ? `<tr><td style="padding:10px 14px;color:#94a3b8;width:130px">Invoice #</td><td style="padding:10px 14px;color:#fff">${data.invoiceNumber}</td></tr>`
+      : '';
+
+    const invoiceBtn = data.invoiceUrl
+      ? `<a href="${data.invoiceUrl}" style="background:#1e293b;color:#22d3ee;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;border:1px solid #22d3ee;margin-${isRtl ? 'right' : 'left'}:12px">${invoiceLabel}</a>`
+      : '';
+
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#0f172a;color:#e2e8f0;border-radius:12px;direction:${dir}">
         <div style="text-align:center;margin-bottom:24px">
@@ -104,15 +119,17 @@ async function sendPaymentConfirmationEmail(
         <h2 style="color:#22d3ee;margin-bottom:8px;font-size:22px">✅ ${lang === 'fr' ? 'Paiement confirmé' : lang === 'de' ? 'Zahlung bestätigt' : lang === 'es' ? 'Pago confirmado' : lang === 'fa' ? 'پرداخت تأیید شد' : 'Payment Confirmed'}</h2>
         <p style="margin-bottom:16px">${greeting}</p>
         <p style="margin-bottom:20px;line-height:1.6">${bodyText}</p>
-        <div style="text-align:center;margin:28px 0">
-          <a href="https://mytaek.com/app/admin?tab=billing" style="background:#0891b2;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px">${btnText}</a>
+        <div style="text-align:center;margin:28px 0;display:flex;justify-content:center;flex-wrap:wrap;gap:12px">
+          <a href="https://mytaek.com/app/admin?tab=billing" style="background:#0891b2;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px">${btnText}</a>${invoiceBtn}
         </div>
         <table style="width:100%;border-collapse:collapse;margin-top:20px;background:#1e293b;border-radius:8px;overflow:hidden">
           <tr><td style="padding:10px 14px;color:#94a3b8;width:130px">Club</td><td style="padding:10px 14px;color:#fff;font-weight:bold">${data.clubName}</td></tr>
           <tr style="background:#0f172a"><td style="padding:10px 14px;color:#94a3b8">Plan</td><td style="padding:10px 14px;color:#fff">${data.planName}</td></tr>
           <tr><td style="padding:10px 14px;color:#94a3b8">Billing</td><td style="padding:10px 14px;color:#fff">${data.billingPeriod}</td></tr>
           <tr style="background:#0f172a"><td style="padding:10px 14px;color:#94a3b8">Amount</td><td style="padding:10px 14px;color:#4ade80;font-weight:bold">${data.amount}</td></tr>
+          ${invoiceRow}
         </table>
+        ${data.invoiceUrl ? `<p style="text-align:center;margin-top:16px;font-size:13px;color:#64748b">You can also <a href="${data.invoiceUrl}" style="color:#22d3ee;text-decoration:underline">${invoiceLabel.toLowerCase()}</a> or download the PDF from that page.</p>` : ''}
         <hr style="border:1px solid #1e293b;margin:24px 0" />
         <p style="color:#475569;font-size:12px;text-align:center">TaekUp — The Martial Arts Management Platform</p>
       </div>
@@ -250,62 +267,7 @@ async function handleCheckoutCompleted(session: any, stripe: Stripe) {
         );
       }
     } else if (club) {
-      console.log('[Webhook] Found club for payment confirmation:', club.name);
-      
-      const alreadySent = await client.query(
-        'SELECT id FROM email_log WHERE club_id = $1 AND email_type = $2 LIMIT 1',
-        [club.id, 'payment_confirmation']
-      );
-      
-      if (alreadySent.rows.length === 0) {
-        let planName = 'TaekUp Plan';
-        let amount = '';
-        let billingPeriod = 'monthly';
-        
-        if (session.line_items?.data?.[0]) {
-          const item = session.line_items.data[0];
-          planName = item.description || planName;
-          amount = `$${(item.amount_total / 100).toFixed(2)}`;
-        } else if (session.amount_total) {
-          amount = `$${(session.amount_total / 100).toFixed(2)}`;
-        }
-        
-        if (session.subscription) {
-          try {
-            const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-            if (subscription.items?.data?.[0]?.price) {
-              const price = subscription.items.data[0].price;
-              billingPeriod = price.recurring?.interval === 'year' ? 'yearly' : 'monthly';
-              if (price.product) {
-                const product = await stripe.products.retrieve(price.product as string);
-                planName = product.name || planName;
-              }
-            }
-          } catch (err) {
-            console.log('[Webhook] Could not fetch subscription details');
-          }
-        }
-
-        const clubLang = normalizeLanguageCode(club.wizard_data?.language);
-        const result = await sendPaymentConfirmationEmail(customerEmail, {
-          ownerName: club.owner_name || 'Club Owner',
-          clubName: club.name,
-          planName,
-          amount,
-          billingPeriod
-        }, clubLang);
-        
-        if (result.success) {
-          console.log('[Webhook] Payment confirmation email sent to:', customerEmail);
-          await client.query(
-            `INSERT INTO email_log (club_id, recipient, email_type, subject, status, sent_at)
-             VALUES ($1, $2, $3, $4, $5, NOW())`,
-            [club.id, customerEmail, 'payment_confirmation', 'Payment Confirmed', 'sent']
-          );
-        } else {
-          console.error('[Webhook] Payment confirmation email failed for:', customerEmail, result.error);
-        }
-      }
+      console.log('[Webhook] Club checkout completed for:', club.name, '— payment confirmation email will be sent by invoice.payment_succeeded handler');
     }
     
     await client.query(
@@ -431,7 +393,9 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
         clubName: club.name,
         planName: planName,
         amount: amountFormatted,
-        billingPeriod: billingPeriod
+        billingPeriod: billingPeriod,
+        invoiceUrl: invoice.hosted_invoice_url || undefined,
+        invoiceNumber: invoice.number || undefined,
       }, invoiceLang);
 
       if (result.success) {
