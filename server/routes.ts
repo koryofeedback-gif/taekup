@@ -1346,6 +1346,45 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.get('/api/stripe/mode', async (req: Request, res: Response) => {
+    const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY || '';
+    const testMode = secretKey.startsWith('sk_test_');
+    const prices = testMode
+      ? {
+          monthly: {
+            starter: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+            pro: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+            standard: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+            growth: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+            empire: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+          },
+          yearly: {
+            starter: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+            pro: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+            standard: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+            growth: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+            empire: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+          },
+        }
+      : {
+          monthly: {
+            starter: 'price_1SZoz4RhYhunDn2jDjwkY5Fx',
+            pro: 'price_1SZoz4RhYhunDn2jdXdbzXD4',
+            standard: 'price_1SZoz3RhYhunDn2j2oq4TkDl',
+            growth: 'price_1SZoz3RhYhunDn2jXlatF7uE',
+            empire: 'price_1SZoz3RhYhunDn2jKFlLP7eH',
+          },
+          yearly: {
+            starter: 'price_1Sp56uRhYhunDn2j9WtffKIG',
+            pro: 'price_1Sp57iRhYhunDn2jIkLf4Gcn',
+            standard: 'price_1Sp58RRhYhunDn2jShy6IXdw',
+            growth: 'price_1Sp59JRhYhunDn2jjEGgqK2k',
+            empire: 'price_1Sp59xRhYhunDn2jIzARKLiS',
+          },
+        };
+    res.json({ testMode, prices });
+  });
+
   const stripeConnectOnboardHandler = async (req: Request, res: Response) => {
     try {
       const { clubId, email, clubName, accountToken, businessType, country } = req.body;

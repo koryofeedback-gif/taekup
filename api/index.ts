@@ -1392,6 +1392,46 @@ async function handleStripePublishableKey(req: VercelRequest, res: VercelRespons
   return res.json({ publishableKey: key });
 }
 
+async function handleStripeMode(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY || '';
+  const testMode = secretKey.startsWith('sk_test_');
+  const prices = testMode
+    ? {
+        monthly: {
+          starter: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+          pro: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+          standard: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+          growth: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+          empire: 'price_1TA7yvRhYhunDn2jDlfkATuu',
+        },
+        yearly: {
+          starter: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+          pro: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+          standard: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+          growth: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+          empire: 'price_1TA8rrRhYhunDn2j8dW08QEG',
+        },
+      }
+    : {
+        monthly: {
+          starter: 'price_1SZoz4RhYhunDn2jDjwkY5Fx',
+          pro: 'price_1SZoz4RhYhunDn2jdXdbzXD4',
+          standard: 'price_1SZoz3RhYhunDn2j2oq4TkDl',
+          growth: 'price_1SZoz3RhYhunDn2jXlatF7uE',
+          empire: 'price_1SZoz3RhYhunDn2jKFlLP7eH',
+        },
+        yearly: {
+          starter: 'price_1Sp56uRhYhunDn2j9WtffKIG',
+          pro: 'price_1Sp57iRhYhunDn2jIkLf4Gcn',
+          standard: 'price_1Sp58RRhYhunDn2jShy6IXdw',
+          growth: 'price_1Sp59JRhYhunDn2jjEGgqK2k',
+          empire: 'price_1Sp59xRhYhunDn2jIzARKLiS',
+        },
+      };
+  return res.json({ testMode, prices });
+}
+
 async function handleVerifySubscription(req: VercelRequest, res: VercelResponse, clubId: string) {
   const client = await pool.connect();
   try {
@@ -8474,6 +8514,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/customer-portal' || path === '/customer-portal/') return await handleCustomerPortal(req, res);
     if (path === '/products-with-prices' || path === '/products-with-prices/') return await handleProductsWithPrices(req, res);
     if (path === '/stripe/publishable-key' || path === '/stripe/publishable-key/') return await handleStripePublishableKey(req, res);
+    if (path === '/stripe/mode' || path === '/stripe/mode/') return await handleStripeMode(req, res);
     if (path === '/stripe/connect/onboard' || path === '/stripe/connect/onboard/') return await handleStripeConnectOnboard(req, res);
     if (path === '/stripe/connect/status' || path === '/stripe/connect/status/') return await handleStripeConnectStatus(req, res);
     if (path === '/stripe/connect/callback' || path === '/stripe/connect/callback/') return await handleStripeConnectCallback(req, res);
