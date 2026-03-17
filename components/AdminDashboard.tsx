@@ -15,6 +15,7 @@ interface AdminDashboardProps {
   onUpdateData: (data: Partial<WizardData>) => void;
   onNavigate: (view: 'coach-dashboard' | 'admin-dashboard' | 'parent-portal' | 'dojang-tv') => void;
   onViewStudentPortal?: (studentId: string) => void;
+  onShowPricing?: () => void;
 }
 
 // --- PRICING CONSTANTS ---
@@ -2271,7 +2272,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     );
 }
 
-const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
+const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string, onShowPricing?: () => void }> = ({ data, onUpdateData, clubId, onShowPricing }) => {
     const { t } = useTranslation(data.language);
     const totalStudents = data.students.length;
     const recommendedTier = PRICING_TIERS.find(tier => totalStudents <= tier.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
@@ -2608,7 +2609,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         </button>
                     ) : (
                         <button
-                            onClick={() => { window.location.href = '/pricing'; }}
+                            onClick={() => onShowPricing ? onShowPricing() : (window.location.href = '/pricing')}
                             className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded"
                         >
                             🚀 {t('admin.billing.viewPlansAndSubscribe') || 'View Plans & Subscribe'}
@@ -2738,7 +2739,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
 
 // --- MAIN COMPONENT ---
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, onBack, onUpdateData, onNavigate, onViewStudentPortal }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, onBack, onUpdateData, onNavigate, onViewStudentPortal, onShowPricing }) => {
     const { t } = useTranslation(data?.language);
     const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'staff' | 'schedule' | 'creator' | 'settings' | 'billing'>('overview');
     
@@ -3401,7 +3402,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
                     {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
-                    {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
+                    {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} clubId={clubId} onShowPricing={onShowPricing} />}
                 </div>
             </div>
 

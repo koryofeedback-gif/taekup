@@ -1595,6 +1595,7 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
                 clubId={signupData?.clubId}
                 onUpdateData={onWizardDataUpdate}
                 onViewStudentPortal={onViewStudentPortal}
+                onShowPricing={onShowPricing}
             />
         );
     }
@@ -1635,6 +1636,7 @@ interface AdminDashboardWrapperProps {
     clubId?: string;
     onUpdateData: (updates: Partial<WizardData>) => void;
     onViewStudentPortal: (studentId: string) => void;
+    onShowPricing: () => void;
 }
 
 const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
@@ -1642,6 +1644,7 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
     clubId,
     onUpdateData,
     onViewStudentPortal,
+    onShowPricing,
 }) => {
     const navigate = useNavigate();
     
@@ -1704,6 +1707,7 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({
                 onUpdateData={onUpdateData}
                 onNavigate={handleNavigate}
                 onViewStudentPortal={handleViewStudentPortalWithNav}
+                onShowPricing={onShowPricing}
             />
         </>
     );
