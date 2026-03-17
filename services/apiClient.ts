@@ -81,11 +81,6 @@ export const stripeAPI = {
     return result.data;
   },
 
-  async getStripeMode() {
-    const result = await fetchAPI('/stripe/mode');
-    return result as { testMode: boolean; prices: { monthly: Record<string, string>; yearly: Record<string, string> } };
-  },
-
   async createCheckoutSession(priceId: string, metadata?: { clubId?: string; email?: string }) {
     const result = await fetchAPI('/checkout', {
       method: 'POST',

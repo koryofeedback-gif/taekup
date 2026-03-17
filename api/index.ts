@@ -533,7 +533,7 @@ async function logAutomatedEmail(client: any, triggerType: string, recipient: st
 }
 
 function getStripeClient(): Stripe | null {
-  const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
+  const secretKey = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
   if (!secretKey) return null;
   return new Stripe(secretKey);
 }
@@ -1097,10 +1097,7 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
   const stripe = getStripeClient();
   if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
 
-  const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY || '';
-  const isTestMode = stripeKey.startsWith('sk_test_');
-  const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID ||
-    (isTestMode ? 'price_1TA8t1RhYhunDn2ju2KZirk9' : 'price_1Sp5BPRhYhunDn2j6Yz8dSxD');
+  const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || 'price_1Sp5BPRhYhunDn2j6Yz8dSxD';
   
   const host = req.headers.host || 'mytaek.com';
   const protocol = req.headers['x-forwarded-proto'] || 'https';
@@ -1387,49 +1384,9 @@ async function handleProductsWithPrices(req: VercelRequest, res: VercelResponse)
 
 async function handleStripePublishableKey(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-  const key = process.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY || process.env.SANDBOX_STRIPE_PUBLISHABLE_KEY;
+  const key = process.env.SANDBOX_STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY;
   if (!key) return res.status(500).json({ error: 'Stripe publishable key not configured' });
   return res.json({ publishableKey: key });
-}
-
-async function handleStripeMode(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-  const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY || '';
-  const testMode = secretKey.startsWith('sk_test_');
-  const prices = testMode
-    ? {
-        monthly: {
-          starter: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-          pro: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-          standard: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-          growth: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-          empire: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-        },
-        yearly: {
-          starter: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-          pro: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-          standard: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-          growth: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-          empire: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-        },
-      }
-    : {
-        monthly: {
-          starter: 'price_1SZoz4RhYhunDn2jDjwkY5Fx',
-          pro: 'price_1SZoz4RhYhunDn2jdXdbzXD4',
-          standard: 'price_1SZoz3RhYhunDn2j2oq4TkDl',
-          growth: 'price_1SZoz3RhYhunDn2jXlatF7uE',
-          empire: 'price_1SZoz3RhYhunDn2jKFlLP7eH',
-        },
-        yearly: {
-          starter: 'price_1Sp56uRhYhunDn2j9WtffKIG',
-          pro: 'price_1Sp57iRhYhunDn2jIkLf4Gcn',
-          standard: 'price_1Sp58RRhYhunDn2jShy6IXdw',
-          growth: 'price_1Sp59JRhYhunDn2jjEGgqK2k',
-          empire: 'price_1Sp59xRhYhunDn2jIzARKLiS',
-        },
-      };
-  return res.json({ testMode, prices });
 }
 
 async function handleVerifySubscription(req: VercelRequest, res: VercelResponse, clubId: string) {
@@ -8514,7 +8471,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/customer-portal' || path === '/customer-portal/') return await handleCustomerPortal(req, res);
     if (path === '/products-with-prices' || path === '/products-with-prices/') return await handleProductsWithPrices(req, res);
     if (path === '/stripe/publishable-key' || path === '/stripe/publishable-key/') return await handleStripePublishableKey(req, res);
-    if (path === '/stripe/mode' || path === '/stripe/mode/') return await handleStripeMode(req, res);
     if (path === '/stripe/connect/onboard' || path === '/stripe/connect/onboard/') return await handleStripeConnectOnboard(req, res);
     if (path === '/stripe/connect/status' || path === '/stripe/connect/status/') return await handleStripeConnectStatus(req, res);
     if (path === '/stripe/connect/callback' || path === '/stripe/connect/callback/') return await handleStripeConnectCallback(req, res);

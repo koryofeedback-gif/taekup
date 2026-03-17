@@ -46,29 +46,8 @@ export const STRIPE_PRICE_IDS = {
   }
 };
 
-export const STRIPE_PRICE_IDS_SANDBOX = {
-  plans: {
-    starter: {
-      monthly: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-      yearly: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-    }
-  },
-  parentPremium: {
-    monthly: 'price_1TA8t1RhYhunDn2ju2KZirk9',
-  }
-};
-
-export function isTestMode(): boolean {
-  const key = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY || '';
-  return key.startsWith('sk_test_');
-}
-
 export function getPlanByPriceId(priceId: string): { planId: string; interval: 'monthly' | 'yearly' } | null {
   for (const [planId, plan] of Object.entries(STRIPE_PRICE_IDS.plans)) {
-    if (plan.monthly === priceId) return { planId, interval: 'monthly' };
-    if (plan.yearly === priceId) return { planId, interval: 'yearly' };
-  }
-  for (const [planId, plan] of Object.entries(STRIPE_PRICE_IDS_SANDBOX.plans)) {
     if (plan.monthly === priceId) return { planId, interval: 'monthly' };
     if (plan.yearly === priceId) return { planId, interval: 'yearly' };
   }
@@ -80,6 +59,5 @@ export function isUniversalAccessPrice(priceId: string): boolean {
 }
 
 export function isParentPremiumPrice(priceId: string): boolean {
-  return priceId === STRIPE_PRICE_IDS.parentPremium.monthly ||
-    priceId === STRIPE_PRICE_IDS_SANDBOX.parentPremium.monthly;
+  return priceId === STRIPE_PRICE_IDS.parentPremium.monthly;
 }

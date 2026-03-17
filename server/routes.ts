@@ -1346,45 +1346,6 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.get('/api/stripe/mode', async (req: Request, res: Response) => {
-    const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY || '';
-    const testMode = secretKey.startsWith('sk_test_');
-    const prices = testMode
-      ? {
-          monthly: {
-            starter: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-            pro: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-            standard: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-            growth: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-            empire: 'price_1TA7yvRhYhunDn2jDlfkATuu',
-          },
-          yearly: {
-            starter: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-            pro: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-            standard: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-            growth: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-            empire: 'price_1TA8rrRhYhunDn2j8dW08QEG',
-          },
-        }
-      : {
-          monthly: {
-            starter: 'price_1SZoz4RhYhunDn2jDjwkY5Fx',
-            pro: 'price_1SZoz4RhYhunDn2jdXdbzXD4',
-            standard: 'price_1SZoz3RhYhunDn2j2oq4TkDl',
-            growth: 'price_1SZoz3RhYhunDn2jXlatF7uE',
-            empire: 'price_1SZoz3RhYhunDn2jKFlLP7eH',
-          },
-          yearly: {
-            starter: 'price_1Sp56uRhYhunDn2j9WtffKIG',
-            pro: 'price_1Sp57iRhYhunDn2jIkLf4Gcn',
-            standard: 'price_1Sp58RRhYhunDn2jShy6IXdw',
-            growth: 'price_1Sp59JRhYhunDn2jjEGgqK2k',
-            empire: 'price_1Sp59xRhYhunDn2jIzARKLiS',
-          },
-        };
-    res.json({ testMode, prices });
-  });
-
   const stripeConnectOnboardHandler = async (req: Request, res: Response) => {
     try {
       const { clubId, email, clubName, accountToken, businessType, country } = req.body;
@@ -1498,9 +1459,7 @@ export function registerRoutes(app: Express) {
 
   app.get('/api/products-with-prices', async (req: Request, res: Response) => {
     try {
-      const { isTestMode } = await import('./stripeConfig.js');
-      const testMode = isTestMode();
-      const rows = testMode ? [] : await storage.listProductsWithPrices();
+      const rows = await storage.listProductsWithPrices();
 
       if (rows && (rows as any[]).length > 0) {
         const productsMap = new Map();
@@ -1529,7 +1488,7 @@ export function registerRoutes(app: Express) {
         res.json({ data: Array.from(productsMap.values()) });
       } else {
         const now = Date.now();
-        if (!testMode && cachedProducts && (now - cacheTimestamp) < CACHE_TTL_MS) {
+        if (cachedProducts && (now - cacheTimestamp) < CACHE_TTL_MS) {
           res.json({ data: cachedProducts });
           return;
         }
@@ -1727,10 +1686,8 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'studentId and parentEmail are required' });
       }
 
-      const { STRIPE_PRICE_IDS, STRIPE_PRICE_IDS_SANDBOX, isTestMode } = await import('./stripeConfig.js');
-      const testMode = isTestMode();
-      const priceId = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID ||
-        (testMode ? STRIPE_PRICE_IDS_SANDBOX.parentPremium.monthly : STRIPE_PRICE_IDS.parentPremium.monthly);
+      const { STRIPE_PRICE_IDS } = await import('./stripeConfig.js');
+      const priceId = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || STRIPE_PRICE_IDS.parentPremium.monthly;
 
       const baseUrl = process.env.APP_URL || (() => {
         const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0];

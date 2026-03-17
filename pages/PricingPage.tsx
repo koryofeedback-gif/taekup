@@ -57,37 +57,39 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   useEffect(() => {
     const loadStripePrices = async () => {
       try {
-        const mode = await stripeAPI.getStripeMode();
-        console.log('Loaded Stripe prices:', mode.prices);
-        setStripePrices(mode.prices);
-      } catch (err) {
-        console.warn('Could not load Stripe mode, falling back to product listing:', err);
-        try {
-          const products = await stripeAPI.getProductsWithPrices();
-          const monthlyMap: StripePriceMap = {};
-          const yearlyMap: StripePriceMap = {};
-          for (const product of products) {
-            const metadata = product.metadata || {};
-            const planId = (metadata.planId || metadata.tier || product.name || '').toLowerCase().trim();
-            if (planId && product.prices && product.prices.length > 0) {
-              for (const price of product.prices) {
-                if (price.recurring?.interval === 'year' || price.metadata?.billing_period === 'yearly') {
-                  yearlyMap[planId] = price.id;
-                } else if (price.recurring?.interval === 'month' || price.metadata?.billing_period === 'monthly') {
-                  monthlyMap[planId] = price.id;
-                } else if (!monthlyMap[planId]) {
-                  monthlyMap[planId] = price.id;
-                }
+        const products = await stripeAPI.getProductsWithPrices();
+        const monthlyMap: StripePriceMap = {};
+        const yearlyMap: StripePriceMap = {};
+        
+        for (const product of products) {
+          const metadata = product.metadata || {};
+          const planId = (
+            metadata.planId || 
+            metadata.tier || 
+            product.name || 
+            ''
+          ).toLowerCase().trim();
+          
+          if (planId && product.prices && product.prices.length > 0) {
+            for (const price of product.prices) {
+              if (price.recurring?.interval === 'year' || price.metadata?.billing_period === 'yearly') {
+                yearlyMap[planId] = price.id;
+              } else if (price.recurring?.interval === 'month' || price.metadata?.billing_period === 'monthly') {
+                monthlyMap[planId] = price.id;
+              } else if (!monthlyMap[planId]) {
+                monthlyMap[planId] = price.id;
               }
             }
           }
-          setStripePrices({
-            monthly: { ...FALLBACK_PRICE_IDS.monthly, ...monthlyMap },
-            yearly: { ...FALLBACK_PRICE_IDS.yearly, ...yearlyMap },
-          });
-        } catch (err2) {
-          console.warn('Could not load Stripe prices, using hardcoded fallback IDs:', err2);
         }
+        
+        console.log('Loaded Stripe prices:', { monthly: monthlyMap, yearly: yearlyMap });
+        setStripePrices({
+          monthly: { ...FALLBACK_PRICE_IDS.monthly, ...monthlyMap },
+          yearly: { ...FALLBACK_PRICE_IDS.yearly, ...yearlyMap },
+        });
+      } catch (err) {
+        console.warn('Could not load Stripe prices, using hardcoded fallback IDs:', err);
       }
     };
 
