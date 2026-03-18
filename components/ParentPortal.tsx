@@ -667,7 +667,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         
         setPremiumCheckoutLoading(true);
         try {
-            const parentEmail = data.email || data.students?.[0]?.parentEmail || '';
+            const parentEmail = localStorage.getItem('taekup_user_email') || data.students?.[0]?.parentEmail || '';
             const res = await fetch('/api/parent-premium/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
