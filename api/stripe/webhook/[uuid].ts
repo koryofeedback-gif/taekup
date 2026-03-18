@@ -511,55 +511,13 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
         console.log('[Webhook] Parent premium first payment — skipping renewal email (handled by checkout handler)');
         // Still log to activity but skip emails
       } else {
-      // Parent premium renewal — send confirmation to parent with invoice link
+      // Monthly renewal — notify admin only (no email to parent by design)
       const amountFormatted = '$' + (amount / 100).toFixed(2);
       const invoiceUrl = (fullInvoice as any).hosted_invoice_url || (invoice as any).hosted_invoice_url || undefined;
       const invoiceNumber = (fullInvoice as any).number || (invoice as any).number || undefined;
       const parentName = (customer as any).name || customerEmail.split('@')[0];
-
-      try {
-        sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
-        const invoiceBtn = invoiceUrl
-          ? `<a href="${invoiceUrl}" style="background:#1e293b;color:#22d3ee;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;border:1px solid #22d3ee">View Invoice</a>`
-          : '';
-        const invoiceRow = invoiceNumber
-          ? `<tr><td style="padding:8px 14px;color:#94a3b8;width:130px">Invoice #</td><td style="padding:8px 14px;color:#fff">${invoiceNumber}</td></tr>`
-          : '';
-        const invoiceNote = invoiceUrl
-          ? `<p style="text-align:center;margin-top:12px;font-size:13px;color:#64748b">You can also <a href="${invoiceUrl}" style="color:#22d3ee;text-decoration:underline">view your invoice</a> or download the PDF from that page.</p>`
-          : '';
-
-        await sgMail.send({
-          to: customerEmail,
-          from: { email: 'hello@mytaek.com', name: 'MyTaek' },
-          subject: `TaekUp Premium renewed for ${parentStudentName}`,
-          html: `
-            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#0f172a;color:#e2e8f0;border-radius:12px">
-              <div style="text-align:center;margin-bottom:24px">
-                <img src="${LOGO_URL}" alt="MyTaek" style="height:48px" />
-              </div>
-              <h2 style="color:#f59e0b;margin-bottom:8px;font-size:22px">⭐ Premium Renewed</h2>
-              <p style="margin-bottom:16px">Hi ${parentName},</p>
-              <p style="margin-bottom:20px;line-height:1.6">Your TaekUp Premium subscription for <strong>${parentStudentName}</strong> at <strong>${parentClubName}</strong> has been renewed. Your card was charged <strong style="color:#4ade80">${amountFormatted}</strong>.</p>
-              <div style="text-align:center;margin:24px 0;display:flex;justify-content:center;flex-wrap:wrap;gap:12px">
-                <a href="https://mytaek.com/app/parent/${parentStudentId}" style="background:#d97706;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">Open Parent Portal</a>${invoiceBtn}
-              </div>
-              <table style="width:100%;border-collapse:collapse;margin-top:20px;background:#1e293b;border-radius:8px;overflow:hidden">
-                <tr><td style="padding:8px 14px;color:#94a3b8;width:130px">Student</td><td style="padding:8px 14px;color:#fff;font-weight:bold">${parentStudentName}</td></tr>
-                <tr style="background:#0f172a"><td style="padding:8px 14px;color:#94a3b8">Club</td><td style="padding:8px 14px;color:#fff">${parentClubName}</td></tr>
-                <tr><td style="padding:8px 14px;color:#94a3b8">Amount</td><td style="padding:8px 14px;color:#4ade80;font-weight:bold">${amountFormatted}/mo</td></tr>
-                ${invoiceRow}
-              </table>
-              ${invoiceNote}
-              <hr style="border:1px solid #1e293b;margin:24px 0" />
-              <p style="color:#475569;font-size:12px;text-align:center">TaekUp — The Martial Arts Management Platform</p>
-            </div>
-          `,
-        });
-        console.log('[Webhook] Parent premium renewal email sent to:', customerEmail);
-      } catch (parentRenewalErr: any) {
-        console.error('[Webhook] Parent premium renewal email FAILED:', customerEmail, parentRenewalErr.message);
-      }
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+      console.log('[Webhook] Parent premium renewal — notifying admin only (no parent email by design)');
 
       // Notify admin of renewal
       try {
