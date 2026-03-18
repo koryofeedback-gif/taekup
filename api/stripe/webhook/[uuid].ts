@@ -502,6 +502,15 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
         console.error('[Webhook] Failed to send admin notification:', adminEmailErr.message);
       }
     } else if (isParentPremium && customerEmail && process.env.SENDGRID_API_KEY) {
+      // Only send renewal email for actual recurring payments, NOT the first payment.
+      // The first payment is handled by handleCheckoutCompleted ("Premium Activated").
+      // Stripe sets billing_reason = 'subscription_create' on first invoice,
+      // 'subscription_cycle' on every subsequent renewal.
+      const billingReason = (fullInvoice as any).billing_reason || (invoice as any).billing_reason || '';
+      if (billingReason === 'subscription_create') {
+        console.log('[Webhook] Parent premium first payment — skipping renewal email (handled by checkout handler)');
+        // Still log to activity but skip emails
+      } else {
       // Parent premium renewal — send confirmation to parent with invoice link
       const amountFormatted = '$' + (amount / 100).toFixed(2);
       const invoiceUrl = (fullInvoice as any).hosted_invoice_url || (invoice as any).hosted_invoice_url || undefined;
@@ -579,6 +588,7 @@ async function handlePaymentSucceeded(invoice: any, stripe: Stripe) {
       } catch (adminRenewalErr: any) {
         console.error('[Webhook] Admin parent premium renewal notification error:', adminRenewalErr.message);
       }
+      } // end else (subscription_cycle renewals only)
     }
 
     await client.query(
