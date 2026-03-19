@@ -1520,7 +1520,7 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
 
 // DojoMint Universal Access - per-student billing ($1.99/student/month)
 // HYBRID BILLING: Creates a SEPARATE monthly subscription for UA, works with yearly base plans
-const UNIVERSAL_ACCESS_PRICE_ID = process.env.UNIVERSAL_ACCESS_PRICE_ID || 'price_1Sp5trRhYhunDn2jrTOtUvyR';
+const UNIVERSAL_ACCESS_PRICE_ID = process.env.UNIVERSAL_ACCESS_PRICE_ID || 'price_1TCiA0RhYhunDn2jksE9lwwn';
 
 async function handleUniversalAccessToggle(req: VercelRequest, res: VercelResponse, clubId: string) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
