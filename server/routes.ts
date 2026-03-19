@@ -854,8 +854,8 @@ export function registerRoutes(app: Express) {
       }
       const customerId = customers.data[0].id;
       
-      // Use the specific metered UA price ID
-      const UA_PRICE_ID = 'price_1Sp5trRhYhunDn2jrTOtUvyR';
+      // Test-mode price (sandbox). Production uses price_1Sp5trRhYhunDn2jrTOtUvyR (live).
+      const UA_PRICE_ID = process.env.UA_PRICE_ID || 'price_1TCiA0RhYhunDn2jksE9lwwn';
       
       // Find existing UA subscription (separate from base plan) - only active ones
       const allSubs = await stripe.subscriptions.list({ customer: customerId, limit: 10 });
