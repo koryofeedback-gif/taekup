@@ -281,7 +281,7 @@ async function handleOverview(req: VercelRequest, res: VercelResponse) {
       db`SELECT COUNT(*) as count FROM clubs WHERE status = 'active' AND trial_status = 'converted'`,
       db`SELECT COUNT(*) as count FROM clubs WHERE status = 'churned'`,
       db`SELECT COUNT(*) as count FROM students`,
-      db`SELECT COUNT(*) as count FROM students WHERE premium_status != 'none'`,
+      db`SELECT COUNT(*) as count FROM students s LEFT JOIN clubs c ON s.club_id = c.id WHERE s.premium_status != 'none' OR c.parent_premium_enabled = true`,
       db`SELECT * FROM clubs ORDER BY created_at DESC LIMIT 5`,
       db`
         SELECT * FROM clubs 
@@ -508,6 +508,7 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
           s.parent_phone,
           s.premium_status,
           COALESCE(s.premium_gifted, false) as premium_gifted,
+          COALESCE(c.parent_premium_enabled, false) as club_universal_access,
           s.last_class_at,
           s.total_points,
           s.belt,
@@ -531,6 +532,7 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
           s.parent_phone,
           s.premium_status,
           false as premium_gifted,
+          COALESCE(c.parent_premium_enabled, false) as club_universal_access,
           s.last_class_at,
           s.total_points,
           s.belt,

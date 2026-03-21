@@ -13,6 +13,7 @@ interface Parent {
   parent_phone: string;
   premium_status: 'none' | 'club_sponsored' | 'parent_paid';
   premium_gifted: boolean;
+  club_universal_access: boolean;
   last_class_at: string;
   total_points: number;
   belt: string;
@@ -169,6 +170,9 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
   const getPremiumBadge = (parent: Parent) => {
     if (parent.premium_gifted) {
       return <span className="px-2 py-1 bg-purple-600/20 text-purple-400 text-xs rounded-full flex items-center gap-1"><Gift className="w-3 h-3" />Gifted</span>;
+    }
+    if (parent.club_universal_access) {
+      return <span className="px-2 py-1 bg-cyan-600/20 text-cyan-400 text-xs rounded-full">Universal Access</span>;
     }
     switch (parent.premium_status) {
       case 'parent_paid':
