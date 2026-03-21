@@ -1609,6 +1609,29 @@ async function handleUniversalAccessToggle(req: VercelRequest, res: VercelRespon
           console.log(`[UniversalAccess] Updated quantity to ${quantity} for club ${clubId}`);
         }
       } else {
+        // Ensure the customer has a default payment method before creating subscription
+        const customer = await stripe.customers.retrieve(customerId) as any;
+        const hasPaymentMethod = customer.invoice_settings?.default_payment_method ||
+                                 customer.default_source;
+        if (!hasPaymentMethod) {
+          // Detect test mode by checking the key prefix
+          const secretKey = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY || '';
+          const isTestMode = secretKey.startsWith('sk_test_');
+          if (isTestMode) {
+            // Attach a test payment method so Universal Access can be tested
+            const pm = await stripe.paymentMethods.create({ type: 'card', card: { token: 'tok_visa' } });
+            await stripe.paymentMethods.attach(pm.id, { customer: customerId });
+            await stripe.customers.update(customerId, {
+              invoice_settings: { default_payment_method: pm.id }
+            });
+            console.log('[UniversalAccess] Test mode: attached test Visa card to customer');
+          } else {
+            return res.status(400).json({
+              error: 'No payment method on file. Please add a payment method to your account before enabling Universal Access.'
+            });
+          }
+        }
+
         // Create new monthly subscription for Universal Access
         uaSubscription = await stripe.subscriptions.create({
           customer: customerId,
