@@ -1520,7 +1520,7 @@ async function handleVerifySubscription(req: VercelRequest, res: VercelResponse,
 
 // DojoMint Universal Access - per-student billing ($1.99/student/month)
 // HYBRID BILLING: Creates a SEPARATE monthly subscription for UA, works with yearly base plans
-const UNIVERSAL_ACCESS_PRICE_ID = process.env.UNIVERSAL_ACCESS_PRICE_ID || 'price_1TCiA0RhYhunDn2jksE9lwwn';
+const UNIVERSAL_ACCESS_PRICE_ID = process.env.UNIVERSAL_ACCESS_PRICE_ID || '';
 
 async function handleUniversalAccessToggle(req: VercelRequest, res: VercelResponse, clubId: string) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -1546,35 +1546,43 @@ async function handleUniversalAccessToggle(req: VercelRequest, res: VercelRespon
     }
     const customerId = customers.data[0].id;
     
-    // Find Universal Access price - must be pre-configured in Stripe
+    // Find Universal Access price — search first, auto-create if missing
     let universalAccessPriceId = UNIVERSAL_ACCESS_PRICE_ID;
     
-    // If no price ID configured, try to find it by metadata, nickname, or product name
+    // Search existing prices by metadata, nickname, or product name
     if (!universalAccessPriceId) {
       const prices = await stripe.prices.list({ active: true, limit: 100, expand: ['data.product'] });
       const uaPrice = prices.data.find(p => {
         if (p.unit_amount !== 199 || p.recurring?.interval !== 'month') return false;
-        // Match by price metadata
         if (p.metadata?.type === 'universal_access') return true;
-        // Match by price nickname
         if (p.nickname === 'Universal Access') return true;
-        // Match by product name
         const productName = typeof p.product === 'object' ? (p.product as any).name : '';
         if (productName.toLowerCase().includes('universal access')) return true;
         return false;
       });
       if (uaPrice) {
         universalAccessPriceId = uaPrice.id;
-        console.log('[UniversalAccess] Found existing price by metadata/product:', universalAccessPriceId);
+        console.log('[UniversalAccess] Found existing price:', universalAccessPriceId);
       }
     }
-    
+
+    // Auto-create the product + price in whichever Stripe mode is active (test or live)
     if (!universalAccessPriceId) {
-      console.error('[UniversalAccess] UNIVERSAL_ACCESS_PRICE_ID not configured');
-      return res.status(500).json({ 
-        error: 'Universal Access price not configured',
-        instructions: 'Create a $1.99/month price in Stripe Dashboard with metadata.type=universal_access'
+      console.log('[UniversalAccess] No price found — auto-creating Universal Access product and price');
+      const product = await stripe.products.create({
+        name: 'Universal Access',
+        metadata: { type: 'universal_access' }
       });
+      const newPrice = await stripe.prices.create({
+        product: product.id,
+        unit_amount: 199,
+        currency: 'usd',
+        recurring: { interval: 'month' },
+        nickname: 'Universal Access',
+        metadata: { type: 'universal_access' }
+      });
+      universalAccessPriceId = newPrice.id;
+      console.log('[UniversalAccess] Auto-created price:', universalAccessPriceId, 'for product:', product.id);
     }
     
     // Find existing UA subscription (separate from base plan) - only active ones
