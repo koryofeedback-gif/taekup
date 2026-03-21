@@ -898,20 +898,12 @@ export function registerRoutes(app: Express) {
             timestamp: Math.floor(Date.now() / 1000)
           });
         }
-        // Mark club as having Universal Access enabled
-        await db.execute(sql`
-          UPDATE clubs SET parent_premium_enabled = true WHERE id = ${clubId}::uuid
-        `);
         return res.json({ success: true, enabled: true, quantity, subscriptionId: uaSubscription.id });
       } else {
         // Cancel UA subscription if it exists
         if (uaSubscription) {
           await stripe.subscriptions.cancel(uaSubscription.id);
         }
-        // Remove Universal Access flag from club
-        await db.execute(sql`
-          UPDATE clubs SET parent_premium_enabled = false WHERE id = ${clubId}::uuid
-        `);
         return res.json({ success: true, enabled: false });
       }
     } catch (error: any) {

@@ -1641,13 +1641,6 @@ async function handleUniversalAccessToggle(req: VercelRequest, res: VercelRespon
         console.log(`[UniversalAccess] Created separate UA subscription with quantity ${quantity} for club ${clubId}`);
       }
       
-      // Mark club as having Universal Access enabled so all students get premium
-      await client.query(
-        `UPDATE clubs SET parent_premium_enabled = true WHERE id = $1::uuid`,
-        [clubId]
-      );
-      console.log(`[UniversalAccess] Set parent_premium_enabled=true for club ${clubId}`);
-
       return res.json({ success: true, enabled: true, quantity, subscriptionId: uaSubscription.id, message: 'Universal Access enabled' });
     } else {
       // Disable - cancel UA subscription
@@ -1655,14 +1648,7 @@ async function handleUniversalAccessToggle(req: VercelRequest, res: VercelRespon
         await stripe.subscriptions.cancel(uaSubscription.id, { prorate: true });
         console.log(`[UniversalAccess] Cancelled UA subscription for club ${clubId}`);
       }
-
-      // Remove Universal Access flag from club
-      await client.query(
-        `UPDATE clubs SET parent_premium_enabled = false WHERE id = $1::uuid`,
-        [clubId]
-      );
-      console.log(`[UniversalAccess] Set parent_premium_enabled=false for club ${clubId}`);
-
+      
       return res.json({ success: true, enabled: false, message: 'Universal Access disabled' });
     }
   } catch (error: any) {
