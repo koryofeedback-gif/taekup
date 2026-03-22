@@ -1146,12 +1146,12 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
     metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
     subscription_data: {
       metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
-      // Add transfer on each subscription payment
-      // Fixed amount = 70% of NET ($4.99 - $0.30 fee = $4.69 * 0.70 = $3.28)
+      // 70/30 split: club earns 70%, platform keeps 30%
+      // application_fee_percent is the correct Stripe param for subscription revenue share
       ...(stripeConnectAccountId && {
+        application_fee_percent: 30,
         transfer_data: {
           destination: stripeConnectAccountId,
-          amount: 328, // Fixed $3.28 (70% of net after fees)
         }
       })
     }
