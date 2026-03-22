@@ -2297,14 +2297,35 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const [toggleLoading, setToggleLoading] = useState(false);
     const [stripeConnectStatus, setStripeConnectStatus] = useState<{ connected: boolean; isComplete?: boolean; payoutsEnabled?: boolean; accountId?: string } | null>(null);
 
+    const [backfillLoading, setBackfillLoading] = useState(false);
+    const [backfillResult, setBackfillResult] = useState<{ updated: number; skipped: number } | null>(null);
+
+    const runBackfill = async (effectiveClubId: string) => {
+        setBackfillLoading(true);
+        try {
+            const r = await fetch('/api/stripe/connect/backfill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId: effectiveClubId }),
+            });
+            const d = await r.json();
+            if (d.success) setBackfillResult({ updated: d.updated, skipped: d.skipped });
+        } catch {}
+        setBackfillLoading(false);
+    };
+
     useEffect(() => {
         const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
         if (!effectiveClubId) return;
         fetch(`/api/stripe/connect/status?clubId=${effectiveClubId}`)
             .then(r => r.json())
-            .then(data => setStripeConnectStatus(data))
+            .then(statusData => {
+                setStripeConnectStatus(statusData);
+                // Auto-backfill existing subscriptions when club is connected
+                if (statusData.connected) runBackfill(effectiveClubId);
+            })
             .catch(() => {});
-        // Also clear the ?stripe_connect=success from URL if present
+        // Clear the ?stripe_connect=success from URL if present
         if (window.location.search.includes('stripe_connect=success')) {
             window.history.replaceState({}, '', window.location.pathname);
         }
@@ -2668,22 +2689,41 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                 <>
                                     <div>
                                         <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.connectYourBank')}</p>
-                                        <div className="flex items-center gap-2 mb-3">
+                                        <div className="flex items-center gap-2 mb-2">
                                             <span className="text-2xl">✅</span>
                                             <div>
                                                 <p className="text-sm font-bold text-green-400">Bank Connected</p>
                                                 <p className="text-xs text-gray-400">
-                                                    {stripeConnectStatus.payoutsEnabled ? 'Payouts enabled — transfers go directly to your bank' : 'Connected — finishing verification with Stripe'}
+                                                    {stripeConnectStatus.payoutsEnabled ? 'Payouts enabled — 70% of each $4.99 goes to your bank' : 'Connected — finishing verification with Stripe'}
                                                 </p>
                                             </div>
                                         </div>
+                                        {backfillLoading && (
+                                            <p className="text-xs text-yellow-400 mb-2">⏳ Linking existing subscriptions…</p>
+                                        )}
+                                        {!backfillLoading && backfillResult && (
+                                            <p className="text-xs text-green-300 mb-2">
+                                                {backfillResult.updated > 0
+                                                    ? `✅ ${backfillResult.updated} existing subscription${backfillResult.updated > 1 ? 's' : ''} now linked — 70% share active`
+                                                    : '✅ All subscriptions already linked'}
+                                            </p>
+                                        )}
                                     </div>
-                                    <button
-                                        onClick={handleConnectBank}
-                                        className="w-full bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
-                                    >
-                                        <span className="mr-2">⚙️</span> Manage Bank Account
-                                    </button>
+                                    <div className="flex gap-2 mt-2">
+                                        <button
+                                            onClick={handleConnectBank}
+                                            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center"
+                                        >
+                                            <span className="mr-1">⚙️</span> Manage
+                                        </button>
+                                        <button
+                                            onClick={() => { const id = clubId || localStorage.getItem('taekup_club_id'); if (id) runBackfill(id); }}
+                                            disabled={backfillLoading}
+                                            className="flex-1 bg-indigo-700 hover:bg-indigo-600 disabled:bg-gray-600 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center"
+                                        >
+                                            <span className="mr-1">🔄</span> Sync
+                                        </button>
+                                    </div>
                                 </>
                             ) : (
                                 <>

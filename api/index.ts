@@ -1296,6 +1296,69 @@ async function handleStripeConnectStatus(req: VercelRequest, res: VercelResponse
   }
 }
 
+async function handleStripeConnectBackfill(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { clubId } = req.body || {};
+  if (!clubId) return res.status(400).json({ error: 'clubId is required' });
+
+  const stripe = getStripeClient();
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT stripe_connect_account_id FROM clubs WHERE id = $1::uuid`,
+      [clubId]
+    );
+    const accountId = result.rows[0]?.stripe_connect_account_id;
+    if (!accountId) return res.status(400).json({ error: 'Club has no connected Stripe account' });
+
+    // Search Stripe for active parent_premium subscriptions for this club
+    const searchResult = await stripe.subscriptions.search({
+      query: `metadata['clubId']:'${clubId}' AND metadata['type']:'parent_premium' AND status:'active'`,
+      limit: 100,
+    });
+
+    const updated: string[] = [];
+    const skipped: string[] = [];
+    const errors: string[] = [];
+
+    for (const sub of searchResult.data) {
+      // Skip if already has correct transfer_data set to this account
+      const alreadyLinked = (sub as any).transfer_data?.destination === accountId;
+      if (alreadyLinked) {
+        skipped.push(sub.id);
+        continue;
+      }
+      try {
+        await stripe.subscriptions.update(sub.id, {
+          application_fee_percent: 30,
+          transfer_data: { destination: accountId },
+        } as any);
+        updated.push(sub.id);
+        console.log(`[Stripe Connect Backfill] Updated subscription ${sub.id} for club ${clubId} → account ${accountId}`);
+      } catch (updateErr: any) {
+        console.error(`[Stripe Connect Backfill] Failed to update ${sub.id}:`, updateErr.message);
+        errors.push(`${sub.id}: ${updateErr.message}`);
+      }
+    }
+
+    return res.json({
+      success: true,
+      total: searchResult.data.length,
+      updated: updated.length,
+      skipped: skipped.length,
+      errors,
+      updatedIds: updated,
+    });
+  } catch (error: any) {
+    console.error('[Stripe Connect Backfill] Error:', error);
+    return res.status(500).json({ error: error.message || 'Backfill failed' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleStripeConnectCallback(req: VercelRequest, res: VercelResponse) {
   // OAuth callback handler for Stripe Connect (required for French platforms)
   const { code, state, error, error_description } = req.query;
@@ -8504,6 +8567,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/stripe/publishable-key' || path === '/stripe/publishable-key/') return await handleStripePublishableKey(req, res);
     if (path === '/stripe/connect/onboard' || path === '/stripe/connect/onboard/') return await handleStripeConnectOnboard(req, res);
     if (path === '/stripe/connect/status' || path === '/stripe/connect/status/') return await handleStripeConnectStatus(req, res);
+    if (path === '/stripe/connect/backfill' || path === '/stripe/connect/backfill/') return await handleStripeConnectBackfill(req, res);
     if (path === '/stripe/connect/callback' || path === '/stripe/connect/callback/') return await handleStripeConnectCallback(req, res);
     if (path === '/ai/taekbot' || path === '/ai/taekbot/') return await handleTaekBot(req, res);
     if (path === '/ai/class-plan' || path === '/ai/class-plan/') return await handleClassPlan(req, res);

@@ -1446,6 +1446,52 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Backfill revenue share (application_fee_percent) for existing parent premium subscriptions
+  app.post('/api/stripe/connect/backfill', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.body || {};
+      if (!clubId) return res.status(400).json({ error: 'clubId is required' });
+
+      const clubResult = await db.execute(sql`
+        SELECT stripe_connect_account_id FROM clubs WHERE id = ${clubId}
+      `);
+      const club = (clubResult as any[])[0];
+      if (!club?.stripe_connect_account_id) return res.status(400).json({ error: 'Club has no connected Stripe account' });
+
+      const accountId = club.stripe_connect_account_id;
+      const stripe = await getUncachableStripeClient();
+
+      const searchResult = await stripe.subscriptions.search({
+        query: `metadata['clubId']:'${clubId}' AND metadata['type']:'parent_premium' AND status:'active'`,
+        limit: 100,
+      });
+
+      const updated: string[] = [];
+      const skipped: string[] = [];
+      const errors: string[] = [];
+
+      for (const sub of searchResult.data) {
+        const alreadyLinked = (sub as any).transfer_data?.destination === accountId;
+        if (alreadyLinked) { skipped.push(sub.id); continue; }
+        try {
+          await stripe.subscriptions.update(sub.id, {
+            application_fee_percent: 30,
+            transfer_data: { destination: accountId },
+          } as any);
+          updated.push(sub.id);
+          console.log(`[Stripe Connect Backfill] Updated ${sub.id} for club ${clubId}`);
+        } catch (e: any) {
+          errors.push(`${sub.id}: ${e.message}`);
+        }
+      }
+
+      res.json({ success: true, total: searchResult.data.length, updated: updated.length, skipped: skipped.length, errors, updatedIds: updated });
+    } catch (error: any) {
+      console.error('[Stripe Connect Backfill]', error);
+      res.status(500).json({ error: error.message || 'Backfill failed' });
+    }
+  });
+
   app.get('/api/products', async (req: Request, res: Response) => {
     try {
       const products = await storage.listProducts();
