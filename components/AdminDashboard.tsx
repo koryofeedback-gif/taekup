@@ -2295,6 +2295,20 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     const [showStripeConnectModal, setShowStripeConnectModal] = useState(false);
     const [verifiedStatus, setVerifiedStatus] = useState<{ status: string; label: string; color: string; daysLeft: number } | null>(null);
     const [toggleLoading, setToggleLoading] = useState(false);
+    const [stripeConnectStatus, setStripeConnectStatus] = useState<{ connected: boolean; isComplete?: boolean; payoutsEnabled?: boolean; accountId?: string } | null>(null);
+
+    useEffect(() => {
+        const effectiveClubId = clubId || localStorage.getItem('taekup_club_id');
+        if (!effectiveClubId) return;
+        fetch(`/api/stripe/connect/status?clubId=${effectiveClubId}`)
+            .then(r => r.json())
+            .then(data => setStripeConnectStatus(data))
+            .catch(() => {});
+        // Also clear the ?stripe_connect=success from URL if present
+        if (window.location.search.includes('stripe_connect=success')) {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, [clubId]);
     
     const bulkCost = data.clubSponsoredPremium ? (totalStudents * 1.99) : 0;
     
@@ -2650,30 +2664,55 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                         </div>
                         
                         <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 flex flex-col justify-between">
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.connectYourBank')}</p>
-                                <p className="text-sm text-gray-300 mb-4">{t('admin.billing.revenueShare.connectBankDesc')}</p>
-                            </div>
-                            <button
-                                onClick={handleConnectBank}
-                                disabled={connectingBank}
-                                className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
-                            >
-                                {connectingBank ? (
-                                    <>
-                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                        </svg>
-                                        {t('common.loading')}
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="mr-2">🔗</span>
-                                        {t('admin.billing.revenueShare.connectStripeAccount')}
-                                    </>
-                                )}
-                            </button>
+                            {stripeConnectStatus?.connected ? (
+                                <>
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.connectYourBank')}</p>
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <span className="text-2xl">✅</span>
+                                            <div>
+                                                <p className="text-sm font-bold text-green-400">Bank Connected</p>
+                                                <p className="text-xs text-gray-400">
+                                                    {stripeConnectStatus.payoutsEnabled ? 'Payouts enabled — transfers go directly to your bank' : 'Connected — finishing verification with Stripe'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleConnectBank}
+                                        className="w-full bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
+                                    >
+                                        <span className="mr-2">⚙️</span> Manage Bank Account
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.connectYourBank')}</p>
+                                        <p className="text-sm text-gray-300 mb-4">{t('admin.billing.revenueShare.connectBankDesc')}</p>
+                                    </div>
+                                    <button
+                                        onClick={handleConnectBank}
+                                        disabled={connectingBank}
+                                        className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+                                    >
+                                        {connectingBank ? (
+                                            <>
+                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                                </svg>
+                                                {t('common.loading')}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="mr-2">🔗</span>
+                                                {t('admin.billing.revenueShare.connectStripeAccount')}
+                                            </>
+                                        )}
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                     
