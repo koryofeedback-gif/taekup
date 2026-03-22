@@ -1117,29 +1117,52 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
     customerId = newCustomer.id;
   }
 
-  // Revenue Split: 70% of NET to Club, 30% + fees to Platform
-  // Gross: $4.99 (499 cents), Est. Fee: $0.30 (30 cents), Net: 469 cents
-  // Club share: 469 * 0.70 = 328 cents ($3.28)
+  // EU countries — charge in EUR to avoid Stripe FX conversion fee
+  const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
+
   let stripeConnectAccountId: string | null = null;
+  let clubCountry: string | null = null;
   if (clubId) {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        `SELECT stripe_connect_account_id FROM clubs WHERE id = $1::uuid`,
+        `SELECT stripe_connect_account_id, wizard_data->>'country' as country FROM clubs WHERE id = $1::uuid`,
         [clubId]
       );
-      if (result.rows.length > 0 && result.rows[0].stripe_connect_account_id) {
-        stripeConnectAccountId = result.rows[0].stripe_connect_account_id;
+      if (result.rows.length > 0) {
+        stripeConnectAccountId = result.rows[0].stripe_connect_account_id || null;
+        clubCountry = result.rows[0].country || null;
       }
     } finally {
       client.release();
     }
   }
 
+  const isEU = EU_COUNTRIES.has((clubCountry || '').toUpperCase());
+  const currency = isEU ? 'eur' : 'usd';
+
+  // Build line_items: EUR clubs use price_data (same product, EUR currency) to avoid FX fee;
+  // USD clubs use the existing price ID directly.
+  let lineItems: any[];
+  if (isEU) {
+    const existingPrice = await stripe.prices.retrieve(PARENT_PREMIUM_PRICE_ID);
+    lineItems = [{
+      price_data: {
+        currency: 'eur',
+        product: existingPrice.product as string,
+        unit_amount: 499, // €4.99
+        recurring: { interval: 'month' },
+      },
+      quantity: 1,
+    }];
+  } else {
+    lineItems = [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }];
+  }
+
   const sessionConfig: any = {
     customer: customerId,
     payment_method_types: ['card'],
-    line_items: [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }],
+    line_items: lineItems,
     mode: 'subscription',
     success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,
     cancel_url: `${baseUrl}/app/parent/${studentId}?premium=cancelled`,
@@ -1159,7 +1182,7 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
 
   const session = await stripe.checkout.sessions.create(sessionConfig);
 
-  console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}, club transfer: ${stripeConnectAccountId ? 'yes (70%)' : 'no connected account'}`);
+  console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}, currency: ${currency.toUpperCase()}, club: ${clubCountry || 'unknown'}, transfer: ${stripeConnectAccountId ? 'yes (34.3% fee)' : 'no connected account'}`);
   return res.json({ url: session.url });
 }
 

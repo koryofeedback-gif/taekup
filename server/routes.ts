@@ -1760,30 +1760,46 @@ export function registerRoutes(app: Express) {
         customerId = newCustomer.id;
       }
 
-      // Revenue Split: 70% of NET to Club, 30% + fees to Platform
-      // Gross: $4.99 (499 cents), Est. Fee: $0.30 (30 cents), Net: 469 cents
-      // Club share: 469 * 0.70 = 328 cents ($3.28)
-      const CLUB_SHARE_CENTS = 328;
+      // EU countries — charge in EUR to avoid Stripe FX conversion fee
+      const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
 
-      // Get club's Stripe Connect account
+      // Get club's Stripe Connect account AND country from wizard_data
       let stripeConnectAccountId: string | null = null;
+      let clubCountry: string | null = null;
       if (clubId) {
         const clubResult = await db.execute(
-          sql`SELECT stripe_connect_account_id FROM clubs WHERE id = ${clubId}::uuid`
+          sql`SELECT stripe_connect_account_id, wizard_data->>'country' as country FROM clubs WHERE id = ${clubId}::uuid`
         );
         const club = (clubResult as any[])[0];
-        if (club?.stripe_connect_account_id) {
-          stripeConnectAccountId = club.stripe_connect_account_id;
+        if (club) {
+          stripeConnectAccountId = club.stripe_connect_account_id || null;
+          clubCountry = club.country || null;
         }
+      }
+
+      const isEU = EU_COUNTRIES.has((clubCountry || '').toUpperCase());
+
+      // Build line_items: EUR clubs use price_data (same product, EUR) to avoid FX fee
+      let lineItems: any[];
+      if (isEU) {
+        const existingPrice = await stripe.prices.retrieve(priceId);
+        lineItems = [{
+          price_data: {
+            currency: 'eur',
+            product: existingPrice.product as string,
+            unit_amount: 499, // €4.99
+            recurring: { interval: 'month' },
+          },
+          quantity: 1,
+        }];
+      } else {
+        lineItems = [{ price: priceId, quantity: 1 }];
       }
 
       const sessionConfig: any = {
         customer: customerId,
         payment_method_types: ['card'],
-        line_items: [{
-          price: priceId,
-          quantity: 1,
-        }],
+        line_items: lineItems,
         mode: 'subscription',
         success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,
         cancel_url: `${baseUrl}/app/parent/${studentId}?premium=cancelled`,
