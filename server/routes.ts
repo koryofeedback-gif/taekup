@@ -1470,16 +1470,18 @@ export function registerRoutes(app: Express) {
       const skipped: string[] = [];
       const errors: string[] = [];
 
+      const TARGET_FEE = 34.3;
       for (const sub of searchResult.data) {
-        const alreadyLinked = (sub as any).transfer_data?.destination === accountId;
-        if (alreadyLinked) { skipped.push(sub.id); continue; }
+        const correctDest = (sub as any).transfer_data?.destination === accountId;
+        const correctFee = Math.abs(((sub as any).application_fee_percent || 0) - TARGET_FEE) < 0.01;
+        if (correctDest && correctFee) { skipped.push(sub.id); continue; }
         try {
           await stripe.subscriptions.update(sub.id, {
-            application_fee_percent: 30,
+            application_fee_percent: TARGET_FEE, // 30% platform + 70% of Stripe micropayment fee (5%+$0.05) shared proportionally
             transfer_data: { destination: accountId },
           } as any);
           updated.push(sub.id);
-          console.log(`[Stripe Connect Backfill] Updated ${sub.id} for club ${clubId}`);
+          console.log(`[Stripe Connect Backfill] Updated ${sub.id} → fee=${TARGET_FEE}% account=${accountId}`);
         } catch (e: any) {
           errors.push(`${sub.id}: ${e.message}`);
         }
@@ -1799,7 +1801,7 @@ export function registerRoutes(app: Express) {
           // 70/30 split: club earns 70%, platform keeps 30%
           // application_fee_percent is the correct Stripe param for subscription revenue share
           ...(stripeConnectAccountId && {
-            application_fee_percent: 30,
+            application_fee_percent: 34.3, // 30% platform + 70% of Stripe micropayment fee (5%+$0.05) shared proportionally
             transfer_data: {
               destination: stripeConnectAccountId,
             }
