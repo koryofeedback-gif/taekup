@@ -286,11 +286,14 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
     const { t } = useTranslation(data.language);
     const totalStudents = data.students.length;
     
-    // Revenue Simulator State - Premium is $4.99, club owner gets 70%, TaekUp gets 30%
+    // Revenue Simulator State
+    // Stripe micropayment rate: 5% + $0.05 = ~$0.30 on $4.99
+    // Fee split: club pays 70% of Stripe fee ($0.21), MyTaek pays 30% ($0.09)
+    // application_fee_percent = 34.3% → club nets $3.28, MyTaek nets $1.41
     const PREMIUM_PRICE = 4.99;
-    const CLUB_SHARE = 0.70;
-    const TAEKUP_FEE = parseFloat((PREMIUM_PRICE * 0.30).toFixed(2)); // $1.50
-    const CLUB_COMMISSION = parseFloat((PREMIUM_PRICE * CLUB_SHARE).toFixed(2)); // $3.49
+    const STRIPE_FEE = parseFloat((PREMIUM_PRICE * 0.05 + 0.05).toFixed(2)); // ~$0.30
+    const TAEKUP_FEE = parseFloat((PREMIUM_PRICE * 0.343 - STRIPE_FEE * 0.30).toFixed(2)); // ~$1.41 net
+    const CLUB_COMMISSION = parseFloat((PREMIUM_PRICE - PREMIUM_PRICE * 0.343).toFixed(2)); // ~$3.28 net
     
     // Plan selection for simulator - use saved plan or default to first plan (Starter)
     const [selectedPlanIndex, setSelectedPlanIndex] = useState<number>(
@@ -310,8 +313,8 @@ const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void,
     const revenue = useMemo(() => {
         const subscribers = Math.round(simulatedStudents * (adoptionRate / 100));
         const totalRevenue = subscribers * PREMIUM_PRICE; // Total collected from parents
-        const taekupCut = subscribers * TAEKUP_FEE; // TaekUp's 30% share
-        const clubRevenue = subscribers * CLUB_COMMISSION; // Club's 70% share
+        const taekupCut = subscribers * TAEKUP_FEE; // MyTaek net (~$1.41 after paying Stripe fee)
+        const clubRevenue = subscribers * CLUB_COMMISSION; // Club net (~$3.28 after 34.3% app fee)
         const profit = clubRevenue - selectedTier.price; // Net after plan cost
         return { 
             subscribers, 
@@ -2694,7 +2697,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                             <div>
                                                 <p className="text-sm font-bold text-green-400">Bank Connected</p>
                                                 <p className="text-xs text-gray-400">
-                                                    {stripeConnectStatus.payoutsEnabled ? 'Payouts enabled — 70% of each $4.99 goes to your bank' : 'Connected — finishing verification with Stripe'}
+                                                    {stripeConnectStatus.payoutsEnabled ? 'Payouts enabled — $3.28 of each $4.99 goes to your bank' : 'Connected — finishing verification with Stripe'}
                                                 </p>
                                             </div>
                                         </div>
