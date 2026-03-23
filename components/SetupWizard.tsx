@@ -77,7 +77,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
     homeworkBonus: false,
     coachBonus: false,
     pointsPerStripe: 64,
-    useCustomPointsPerBelt: false,
+    useCustomPointsPerBelt: true,
     pointsPerBelt: {},
     useColorCodedStripes: false,
     stripeColors: ['#000000', '#000000', '#000000', '#000000'],

@@ -1536,92 +1536,46 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             </div>
                         </div>
                         
-                        {/* Stripe Progress Rule */}
+                        {/* Stripe Progress Rule — Per Belt */}
                         <div className="bg-gray-700/30 p-4 rounded-md border border-gray-700">
-                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+                            <div className="flex items-center justify-between mb-3">
                                 <label className="block text-sm font-medium text-gray-300">{t('admin.settings.rules.stripeProgressRule')}</label>
-                                <div className="flex space-x-4 text-sm mt-2 sm:mt-0">
-                                    <label className="flex items-center cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="pointsRuleAdmin" 
-                                            checked={!data.useCustomPointsPerBelt} 
-                                            onChange={() => onUpdateData({ useCustomPointsPerBelt: false })}
-                                            className="form-radio text-sky-500 h-4 w-4"
-                                        />
-                                        <span className="ml-2 text-white">{t('admin.settings.rules.simpleRule')}</span>
-                                    </label>
-                                    <label className="flex items-center cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="pointsRuleAdmin" 
-                                            checked={data.useCustomPointsPerBelt} 
-                                            onChange={() => {
-                                                if (!data.useCustomPointsPerBelt && Object.keys(data.pointsPerBelt || {}).length === 0) {
-                                                    const initialMap: Record<string, number> = {};
-                                                    let currentPoints = data.pointsPerStripe || 64;
-                                                    data.belts.forEach((belt) => {
-                                                        initialMap[belt.id] = currentPoints;
-                                                        currentPoints += 16;
-                                                    });
-                                                    onUpdateData({ useCustomPointsPerBelt: true, pointsPerBelt: initialMap });
-                                                } else {
-                                                    onUpdateData({ useCustomPointsPerBelt: true });
-                                                }
-                                            }}
-                                            className="form-radio text-sky-500 h-4 w-4"
-                                        />
-                                        <span className="ml-2 text-white">{t('admin.settings.rules.advancedRule')}</span>
-                                    </label>
-                                </div>
+                                <span className="text-xs bg-sky-900/50 text-sky-300 px-2 py-1 rounded border border-sky-700/40">Per Belt</span>
                             </div>
-
-                            {!data.useCustomPointsPerBelt ? (
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-1">{t('admin.settings.rules.pointsPerStripe')}</label>
-                                    <input 
-                                        type="number" 
-                                        min="1"
-                                        value={data.pointsPerStripe} 
-                                        onChange={e => onUpdateData({ pointsPerStripe: parseInt(e.target.value, 10) || 64 })} 
-                                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-2">{t('admin.settings.rules.standardSetting')}</p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left text-gray-300">
-                                        <thead className="text-xs text-gray-400 uppercase bg-gray-700">
-                                            <tr>
-                                                <th className="px-4 py-2">{t('admin.students.belt')}</th>
-                                                <th className="px-4 py-2">{t('admin.settings.rules.pointsPerStripe')}</th>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left text-gray-300">
+                                    <thead className="text-xs text-gray-400 uppercase bg-gray-700">
+                                        <tr>
+                                            <th className="px-4 py-2">{t('admin.students.belt')}</th>
+                                            <th className="px-4 py-2">{t('admin.settings.rules.pointsPerStripe')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {data.belts.map(belt => (
+                                            <tr key={belt.id} className="border-b border-gray-700 bg-gray-800">
+                                                <td className="px-4 py-2 flex items-center">
+                                                    <div className="w-4 h-4 rounded-sm mr-2" style={{ background: belt.color2 ? `linear-gradient(to right, ${belt.color1} 50%, ${belt.color2} 50%)` : belt.color1, border: belt.color1 === '#FFFFFF' ? '1px solid #666' : 'none' }}></div>
+                                                    {belt.name}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <input 
+                                                        type="number"
+                                                        value={data.pointsPerBelt?.[belt.id] ?? 64}
+                                                        onChange={e => {
+                                                            const newMap = { ...(data.pointsPerBelt || {}), [belt.id]: parseInt(e.target.value) || 0 };
+                                                            onUpdateData({ useCustomPointsPerBelt: true, pointsPerBelt: newMap });
+                                                        }}
+                                                        className="w-24 bg-gray-900 border border-gray-600 rounded p-1 text-center text-white focus:ring-sky-500"
+                                                    />
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {data.belts.map(belt => (
-                                                <tr key={belt.id} className="border-b border-gray-700 bg-gray-800">
-                                                    <td className="px-4 py-2 flex items-center">
-                                                        <div className="w-4 h-4 rounded-sm mr-2" style={{ background: belt.color2 ? `linear-gradient(to right, ${belt.color1} 50%, ${belt.color2} 50%)` : belt.color1, border: belt.color1 === '#FFFFFF' ? '1px solid #666' : 'none' }}></div>
-                                                        {belt.name}
-                                                    </td>
-                                                    <td className="px-4 py-2">
-                                                        <input 
-                                                            type="number"
-                                                            value={data.pointsPerBelt?.[belt.id] || data.pointsPerStripe}
-                                                            onChange={e => {
-                                                                const newMap = { ...(data.pointsPerBelt || {}), [belt.id]: parseInt(e.target.value) || 0 };
-                                                                onUpdateData({ pointsPerBelt: newMap });
-                                                            }}
-                                                            className="w-24 bg-gray-900 border border-gray-600 rounded p-1 text-center text-white focus:ring-sky-500"
-                                                        />
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                    <p className="text-xs text-gray-500 mt-2">{t('admin.settings.rules.adjustDifficulty')}</p>
-                                </div>
-                            )}
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <p className="text-xs text-sky-400 mt-3">
+                                    💡 Default is <strong>64 HonorXP™</strong> per stripe — adjust each belt independently to match its difficulty.
+                                </p>
+                            </div>
                         </div>
                     </div>
 

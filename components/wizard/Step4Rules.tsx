@@ -23,17 +23,16 @@ interface Step4Props {
 export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
   const { t } = useTranslation(data.language);
 
+  // Always use per-belt points (advanced mode). Initialize all belts to 64 if not set.
   useEffect(() => {
-      if (data.useCustomPointsPerBelt && Object.keys(data.pointsPerBelt).length === 0) {
+      if (!data.useCustomPointsPerBelt || Object.keys(data.pointsPerBelt || {}).length === 0) {
           const initialMap: Record<string, number> = {};
-          let currentPoints = data.pointsPerStripe || 64;
           data.belts.forEach((belt) => {
-              initialMap[belt.id] = currentPoints;
-              currentPoints += 16;
+              initialMap[belt.id] = data.pointsPerBelt?.[belt.id] || 64;
           });
-          onUpdate({ pointsPerBelt: initialMap });
+          onUpdate({ useCustomPointsPerBelt: true, pointsPerBelt: initialMap });
       }
-  }, [data.useCustomPointsPerBelt, data.belts]);
+  }, [data.belts]);
 
   const handlePointsPerBeltChange = (beltId: string, val: number) => {
       const newMap = { ...data.pointsPerBelt, [beltId]: val };
@@ -62,78 +61,45 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
               className="mt-1 wizard-input" 
             />
           </div>
-           <div className="md:col-span-2 bg-gray-700/30 p-4 rounded-md border border-gray-700">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
-                    <label className="block text-sm font-medium text-gray-300 break-words">{t('wizard.step4.stripeRule')}</label>
-                    <div className="flex space-x-4 text-sm mt-2 sm:mt-0">
-                        <label className="flex items-center cursor-pointer">
-                            <input 
-                                type="radio" 
-                                name="pointsRule" 
-                                checked={!data.useCustomPointsPerBelt} 
-                                onChange={() => onUpdate({ useCustomPointsPerBelt: false })}
-                                className="form-radio text-sky-500 h-4 w-4"
-                            />
-                            <span className="ml-2 text-white">{t('wizard.step4.simple')}</span>
-                        </label>
-                        <label className="flex items-center cursor-pointer">
-                            <input 
-                                type="radio" 
-                                name="pointsRule" 
-                                checked={data.useCustomPointsPerBelt} 
-                                onChange={() => onUpdate({ useCustomPointsPerBelt: true })}
-                                className="form-radio text-sky-500 h-4 w-4"
-                            />
-                            <span className="ml-2 text-white">{t('wizard.step4.advanced')}</span>
-                        </label>
-                    </div>
-                </div>
 
-                {!data.useCustomPointsPerBelt ? (
-                    <div>
-                        <label htmlFor="pointsPerStripe" className="block text-sm font-medium text-gray-300 break-words">{t('wizard.step4.pointsPerStripe')}</label>
+          <div className="md:col-span-2 bg-gray-700/30 p-4 rounded-md border border-gray-700">
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-gray-300 break-words">{t('wizard.step4.stripeRule')}</label>
+              <span className="text-xs bg-sky-900/50 text-sky-300 px-2 py-1 rounded border border-sky-700/40">Per Belt</span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-300">
+                <thead className="text-xs text-gray-400 uppercase bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-2">{t('wizard.step5.belt')}</th>
+                    <th className="px-4 py-2">{t('wizard.step4.pointsPerStripe')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.belts.map(belt => (
+                    <tr key={belt.id} className="border-b border-gray-700 bg-gray-800">
+                      <td className="px-4 py-2 flex items-center">
+                        <div className="w-4 h-4 rounded-sm mr-2" style={{ background: belt.color2 ? `linear-gradient(to right, ${belt.color1} 50%, ${belt.color2} 50%)` : belt.color1, border: belt.color1 === '#FFFFFF' ? '1px solid #666' : 'none' }}></div>
+                        {belt.name}
+                      </td>
+                      <td className="px-4 py-2">
                         <input 
-                          id="pointsPerStripe" 
-                          type="number" 
-                          min="1" 
-                          value={data.pointsPerStripe} 
-                          onChange={e => onUpdate({ pointsPerStripe: parseInt(e.target.value, 10) || 1 })} 
-                          className="mt-1 wizard-input" 
+                          type="number"
+                          value={data.pointsPerBelt?.[belt.id] ?? 64}
+                          onChange={e => handlePointsPerBeltChange(belt.id, parseInt(e.target.value) || 0)}
+                          className="w-24 bg-gray-900 border border-gray-600 rounded p-1 text-center text-white focus:ring-sky-500"
                         />
-                        <p className="text-xs text-gray-400 mt-2 break-words">{t('wizard.step4.simpleDesc')}</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left text-gray-300">
-                            <thead className="text-xs text-gray-400 uppercase bg-gray-700">
-                                <tr>
-                                    <th className="px-4 py-2">{t('wizard.step5.belt')}</th>
-                                    <th className="px-4 py-2">{t('wizard.step4.pointsPerStripe')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.belts.map(belt => (
-                                    <tr key={belt.id} className="border-b border-gray-700 bg-gray-800">
-                                        <td className="px-4 py-2 flex items-center">
-                                             <div className="w-4 h-4 rounded-sm mr-2" style={{ background: belt.color2 ? `linear-gradient(to right, ${belt.color1} 50%, ${belt.color2} 50%)` : belt.color1, border: belt.color1 === '#FFFFFF' ? '1px solid #666' : 'none' }}></div>
-                                            {belt.name}
-                                        </td>
-                                        <td className="px-4 py-2">
-                                            <input 
-                                                type="number"
-                                                value={data.pointsPerBelt[belt.id] || data.pointsPerStripe}
-                                                onChange={e => handlePointsPerBeltChange(belt.id, parseInt(e.target.value) || 0)}
-                                                className="w-24 bg-gray-900 border border-gray-600 rounded p-1 text-center text-white focus:ring-sky-500"
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                         <p className="text-xs text-gray-400 mt-2 break-words">{t('wizard.step4.advancedDesc')}</p>
-                    </div>
-                )}
-           </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-xs text-sky-400 mt-3">
+                💡 Default is <strong>64 HonorXP™</strong> per stripe for every belt — adjust each belt independently to match its difficulty.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -224,20 +190,19 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
         </p>
       </div>
 
-
       <style>{`
         .wizard-input {
-            background-color: #374151; /* bg-gray-700 */
-            border: 1px solid #4B5563; /* border-gray-600 */
-            border-radius: 0.375rem; /* rounded-md */
+            background-color: #374151;
+            border: 1px solid #4B5563;
+            border-radius: 0.375rem;
             padding: 0.5rem 0.75rem;
             color: white;
             width: 100%;
         }
         .wizard-input:focus {
             outline: none;
-            border-color: #3B82F6; /* focus:border-sky-500 */
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-sky-500 */
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
         }
       `}</style>
     </div>
