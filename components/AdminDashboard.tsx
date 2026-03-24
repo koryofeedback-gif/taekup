@@ -1572,9 +1572,7 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                         ))}
                                     </tbody>
                                 </table>
-                                <p className="text-xs text-sky-400 mt-3">
-                                    💡 Default is <strong>64 HonorXP™</strong> per stripe — adjust each belt independently to match its difficulty.
-                                </p>
+                                <p className="text-xs text-sky-400 mt-3">💡 {t('admin.settings.rules.perBeltHint')}</p>
                             </div>
                         </div>
                     </div>

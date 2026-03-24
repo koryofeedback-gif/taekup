@@ -977,6 +977,7 @@ export const de = {
         pointsPerStripe: "Punkte pro Streifen",
         standardSetting: "Standardeinstellung für die meisten Vereine.",
         adjustDifficulty: "Schwierigkeit anpassen, wenn Schüler fortschreiten.",
+        perBeltHint: "Standard: 64 HonorXP™ pro Streifen — passen Sie jede Gürtelfarbe unabhängig an die jeweilige Schwierigkeit an.",
 
         colorCodedStripes: "Farbcodierte Streifen",
         colorCodedStripesDesc: "Visuelle Akzente für den Streifenfortschritt.",
@@ -1499,6 +1500,7 @@ export const de = {
       pointsPerStripe: "Punkte pro Streifen",
       simpleDesc: "Jeder Schüler benötigt die gleiche Punktzahl pro Streifen, unabhängig vom Gürtellevel.",
       advancedDesc: "Höhere Gürtel erfordern mehr Punkte pro Streifen, wodurch Beförderungen schrittweise schwieriger werden.",
+      perBeltHint: "Standard: 64 HonorXP™ pro Streifen — passen Sie jede Gürtelfarbe unabhängig an die jeweilige Schwierigkeit an.",
       visualMotivation: "Visuelle Motivation",
       colorStripes: "Farbcodierte Streifen verwenden",
       bonusPoints: "Bonuspunkte",

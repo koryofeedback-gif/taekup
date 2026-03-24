@@ -977,6 +977,7 @@ export const en = {
         pointsPerStripe: "Points per Stripe",
         standardSetting: "Standard setting for most clubs.",
         adjustDifficulty: "Adjust difficulty as students advance.",
+        perBeltHint: "Default is 64 HonorXP™ per stripe — adjust each belt independently to match its difficulty.",
 
         colorCodedStripes: "Color-Coded Stripes",
         colorCodedStripesDesc: "Add visual flair to stripe progression.",
@@ -1499,6 +1500,7 @@ export const en = {
       pointsPerStripe: "Points Per Stripe",
       simpleDesc: "Every student needs the same number of points per stripe, regardless of belt level.",
       advancedDesc: "Higher belts require more points per stripe, making promotions progressively harder.",
+      perBeltHint: "Default is 64 HonorXP™ per stripe — adjust each belt independently to match its difficulty.",
       visualMotivation: "Visual Motivation",
       colorStripes: "Use Color-Coded Stripes",
       bonusPoints: "Bonus Points",

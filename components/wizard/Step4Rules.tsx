@@ -95,9 +95,7 @@ export const Step4Rules: React.FC<Step4Props> = ({ data, onUpdate }) => {
                   ))}
                 </tbody>
               </table>
-              <p className="text-xs text-sky-400 mt-3">
-                💡 Default is <strong>64 HonorXP™</strong> per stripe for every belt — adjust each belt independently to match its difficulty.
-              </p>
+              <p className="text-xs text-sky-400 mt-3">💡 {t('wizard.step4.perBeltHint')}</p>
             </div>
           </div>
         </div>

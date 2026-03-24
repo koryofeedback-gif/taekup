@@ -977,6 +977,7 @@ export const fr = {
         pointsPerStripe: "Points par barrette",
         standardSetting: "Réglage standard pour la plupart des clubs.",
         adjustDifficulty: "Ajustez la difficulté à mesure que les élèves progressent.",
+        perBeltHint: "Par défaut : 64 HonorXP™ par barrette — ajustez chaque ceinture indépendamment selon sa difficulté.",
 
         colorCodedStripes: "Barrettes colorées",
         colorCodedStripesDesc: "Ajoutez du style visuel à la progression des barrettes.",
@@ -1499,6 +1500,7 @@ export const fr = {
       pointsPerStripe: "Points par barrette",
       simpleDesc: "Chaque élève a besoin du même nombre de points par barrette, quel que soit son niveau.",
       advancedDesc: "Les ceintures supérieures nécessitent plus de points par barrette, rendant les promotions progressivement plus difficiles.",
+      perBeltHint: "Par défaut : 64 HonorXP™ par barrette — ajustez chaque ceinture indépendamment selon sa difficulté.",
       visualMotivation: "Motivation visuelle",
       colorStripes: "Utiliser des barrettes colorées",
       bonusPoints: "Points bonus",
