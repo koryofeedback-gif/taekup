@@ -285,7 +285,7 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Parent</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Club</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Status</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Belt / Pts</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Belt / HonorXP™</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Last Class</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-300">Actions</th>
                 </tr>
@@ -342,7 +342,7 @@ export const SuperAdminParents: React.FC<SuperAdminParentsProps> = ({ token, onL
                       <td className="px-4 py-4">
                         <div>
                           <p className="text-white">{parent.belt || 'White'}</p>
-                          <p className="text-sm text-cyan-400">{parent.total_points || 0} XP</p>
+                          <p className="text-sm text-cyan-400">{parent.total_points || 0} HonorXP™</p>
                         </div>
                       </td>
                       <td className="px-4 py-4">
