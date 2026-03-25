@@ -12,7 +12,7 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 export const TermsPage: React.FC = () => (
     <PageWrapper>
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-8">Terms of Service</h1>
-        <p className="text-gray-400 mb-4"><strong>Last Updated:</strong> January 2026</p>
+        <p className="text-gray-400 mb-4"><strong>Last Updated:</strong> March 2026</p>
         <p className="text-gray-400 mb-8"><strong>Operator:</strong> MyTaek Inc. (France)</p>
         
         <p className="text-gray-300 mb-8">
@@ -45,10 +45,34 @@ export const TermsPage: React.FC = () => (
             <li><strong>Refunds:</strong> SaaS fees are non-refundable. Student subscription refunds are handled at the discretion of the Club Owner.</li>
         </ul>
 
-        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">4. User-Generated Content (Videos)</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">4. User-Generated Content &amp; Uploader Responsibility</h2>
+
+        <p className="text-gray-300 mb-4">
+            MyTaek Inc. is the creator and operator of the TaekUp platform — a <strong>technology service provider only</strong>. 
+            We do not produce, direct, supervise, or endorse any content uploaded by users (including videos, images, notes, or documents). 
+            All content uploaded through the platform is the sole responsibility of the individual or club that uploaded it.
+        </p>
+
+        <h3 className="text-lg font-bold text-white mt-6 mb-3">4a. Club Owners &amp; Coaches</h3>
         <ul className="list-disc list-inside text-gray-300 mb-4 space-y-2 ml-4">
-            <li><strong>Ownership:</strong> Parents/Students retain ownership of their training videos.</li>
-            <li><strong>License:</strong> By uploading, you grant MyTaek Inc. a worldwide, royalty-free license to host, encode, and process these videos for the purpose of providing the Service (e.g., for Coach review).</li>
+            <li><strong>Full Legal Responsibility:</strong> Club Owners and Coaches who upload or approve any video, image, document, or other content through the TaekUp platform are <strong>solely and fully responsible</strong> for that content. This includes compliance with all applicable local, national, and international laws.</li>
+            <li><strong>Consent Obligation:</strong> Before uploading any content featuring a student (especially a minor), the uploader must have obtained valid written consent from the student's parent or legal guardian. It is the Club Owner's responsibility to obtain and retain these consents.</li>
+            <li><strong>Prohibited Content:</strong> You must not upload content that is illegal, defamatory, harassing, obscene, or that infringes on third-party intellectual property rights. Any content involving minors must be strictly limited to legitimate, appropriate martial arts training.</li>
+            <li><strong>Compliance with Local Law:</strong> If your club operates in a jurisdiction with specific regulations regarding the filming or publication of minors (such as French law on children's image rights — <em>droit à l'image</em>), you are fully responsible for complying with those rules. MyTaek Inc. bears no responsibility for your compliance failures.</li>
+        </ul>
+
+        <h3 className="text-lg font-bold text-white mt-6 mb-3">4b. Parents &amp; Students</h3>
+        <ul className="list-disc list-inside text-gray-300 mb-4 space-y-2 ml-4">
+            <li><strong>Ownership:</strong> Parents and Students retain ownership of training videos they submit through the platform.</li>
+            <li><strong>License:</strong> By uploading, you grant MyTaek Inc. a worldwide, royalty-free, non-exclusive license to host, encode, store, and process your videos solely for the purpose of delivering the Service (e.g., for Coach review and feedback). This license ends when the content is deleted or the account is closed.</li>
+        </ul>
+
+        <h3 className="text-lg font-bold text-white mt-6 mb-3">4c. MyTaek Inc. — No Liability for User Content</h3>
+        <ul className="list-disc list-inside text-gray-300 mb-4 space-y-2 ml-4">
+            <li><strong>Platform Only:</strong> MyTaek Inc. acts as a passive hosting conduit. We do not review, verify, or take responsibility for the accuracy, legality, appropriateness, or quality of any user-uploaded content.</li>
+            <li><strong>No Endorsement:</strong> The presence of any content on the platform does not imply MyTaek Inc.'s approval or endorsement of that content.</li>
+            <li><strong>Right to Remove:</strong> We reserve the right — but not the obligation — to remove or disable access to any content that we reasonably believe violates these Terms, applicable law, or the safety of minors, without prior notice.</li>
+            <li><strong>Indemnification:</strong> You agree to indemnify, defend, and hold harmless MyTaek Inc. and its officers, directors, and employees from any claim, liability, damage, or expense (including legal fees) arising from content you upload or from your violation of these Terms.</li>
         </ul>
 
         <h2 className="text-xl md:text-2xl font-bold text-white mt-10 mb-4">5. Physical Safety Disclaimer</h2>
