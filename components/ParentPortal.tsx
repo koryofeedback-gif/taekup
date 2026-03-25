@@ -7222,12 +7222,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     </div>
                 )}
                 
-                {video.status === 'approved' && (
+                {video.status === 'approved' && video.voteCount > 0 && (
                     <div className="mt-2 flex items-center gap-2">
-                        <span className="text-xs text-yellow-400 font-bold">+{video.score || 10} HonorXP™</span>
-                        {video.voteCount > 0 && (
-                            <span className="text-xs text-gray-500">• {video.voteCount} votes</span>
-                        )}
+                        <span className="text-xs text-gray-500">{video.voteCount} votes</span>
                     </div>
                 )}
             </div>
