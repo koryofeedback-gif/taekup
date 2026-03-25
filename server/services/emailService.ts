@@ -595,6 +595,27 @@ export async function sendBeltPromotionEmail(
   });
 }
 
+export async function sendStripeEarnedEmail(
+  to: string,
+  data: {
+    studentName: string;
+    stripeCount: number | string;
+    totalStripes: number | string;
+    currentBelt: string;
+    clubName: string;
+    language?: string;
+  }
+): Promise<EmailResult> {
+  return sendNotification('stripe_earned', { email: to, language: data.language }, {
+    childName: data.studentName,
+    stripeCount: String(data.stripeCount),
+    totalStripes: String(data.totalStripes),
+    currentBelt: data.currentBelt,
+    clubName: data.clubName,
+    baseUrl: 'https://www.mytaek.com',
+  });
+}
+
 export async function sendAttendanceAlertEmail(
   to: string,
   data: { 
@@ -709,6 +730,7 @@ export default {
   sendParentWelcomeEmail,
   sendClassFeedbackEmail,
   sendBeltPromotionEmail,
+  sendStripeEarnedEmail,
   sendAttendanceAlertEmail,
   sendBirthdayWishEmail,
   sendWinBackEmail,

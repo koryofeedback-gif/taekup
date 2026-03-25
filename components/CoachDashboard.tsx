@@ -1564,6 +1564,7 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
     const handleSaveAndNotify = async () => {
         let updatedCount = 0;
         let earnedStripes = 0;
+        const stripeEarners: Array<{ name: string; parentEmail: string; stripeCount: number; totalStripes: number; beltName: string }> = [];
 
         const updatedStudents = students.map(student => {
             if (!attendance[student.id]) return student;
@@ -1597,6 +1598,19 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
             
             updatedCount++;
             earnedStripes += (stripesAfter - stripesBefore);
+
+            if (stripesAfter > stripesBefore && student.parentEmail && !data.isDemo) {
+                const belt = data.belts?.find((b: any) => b.id === student.beltId);
+                const stripesPerBelt = data.stripesPerBelt || 4;
+                const currentStripeOnBelt = stripesAfter % stripesPerBelt || stripesPerBelt;
+                stripeEarners.push({
+                    name: student.name,
+                    parentEmail: student.parentEmail,
+                    stripeCount: currentStripeOnBelt,
+                    totalStripes: stripesPerBelt,
+                    beltName: belt?.name || (student as any).belt || 'Current Belt',
+                });
+            }
             
             const newPerformanceRecord: PerformanceRecord = {
                 date: new Date().toISOString(),
@@ -1721,6 +1735,33 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                 stripeProgress: `${progressInStripe}/${pointsRequired} pts (Stripe ${currentStripes + 1})`,
                 coachNote: capturedNotes[student.id] || ''
             };
+        });
+
+        // Send stripe earned emails for each student who earned a new stripe
+        stripeEarners.forEach(async (earner) => {
+            try {
+                const resp = await fetch('/api/send-promotion-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        parentEmail: earner.parentEmail,
+                        studentName: earner.name,
+                        clubName: data.clubName,
+                        clubId,
+                        type: 'stripe',
+                        newBelt: earner.beltName,
+                        stripeCount: earner.stripeCount,
+                        totalStripes: earner.totalStripes,
+                    })
+                });
+                if (resp.ok) {
+                    console.log('[StripeEmail] Sent for', earner.name, '- Stripe', earner.stripeCount, 'of', earner.totalStripes);
+                } else {
+                    console.error('[StripeEmail] Server error for', earner.name, await resp.text());
+                }
+            } catch (e) {
+                console.error('[StripeEmail] Failed for', earner.name, e);
+            }
         });
 
         // Always store grading sessions + send emails (for all students, including demo)

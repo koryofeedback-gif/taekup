@@ -1837,14 +1837,56 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/send-promotion-email', async (req: Request, res: Response) => {
     try {
-      const { parentEmail, studentName, clubName, type, newBelt, stripeCount, totalStripes } = req.body;
+      const { parentEmail, studentName, clubName, clubId, type, newBelt, stripeCount, totalStripes } = req.body;
       if (!parentEmail || !studentName || !type) {
         return res.status(400).json({ error: 'parentEmail, studentName, and type are required' });
       }
-      console.log(`[PromotionEmail-Dev] ${type} email for ${studentName} to ${parentEmail} (dev - not sent)`);
-      return res.json({ success: true, type, sent: false, dev: true });
+
+      // Detect club language
+      let lang = 'en';
+      if (clubId) {
+        try {
+          const clubResult = await db.execute(sql`SELECT wizard_data FROM clubs WHERE id = ${clubId}::uuid LIMIT 1`);
+          const wizardData = (clubResult as any[])[0]?.wizard_data;
+          const langRaw = (typeof wizardData === 'string' ? JSON.parse(wizardData) : wizardData)?.language || 'English';
+          if (langRaw.toLowerCase().startsWith('fr')) lang = 'fr';
+          else if (langRaw.toLowerCase().startsWith('de')) lang = 'de';
+          else if (langRaw.toLowerCase().startsWith('es')) lang = 'es';
+          else if (langRaw.toLowerCase().startsWith('fa') || langRaw.toLowerCase().startsWith('per')) lang = 'fa';
+          else lang = 'en';
+        } catch { /* fallback to en */ }
+      }
+
+      if (type === 'belt') {
+        const result = await emailService.sendBeltPromotionEmail(parentEmail, {
+          studentName,
+          beltColor: newBelt || '',
+          clubName: clubName || 'Your Dojo',
+          promotionDate: new Date().toLocaleDateString(),
+          totalXp: '',
+          classesAttended: 0,
+          monthsTrained: 0,
+          promotionId: '',
+          language: lang,
+        });
+        console.log(`[PromotionEmail] Belt email ${result.success ? 'sent' : 'failed'} to ${parentEmail} for ${studentName} (${lang})`);
+        return res.json({ success: true, type: 'belt', sent: result.success });
+      } else if (type === 'stripe') {
+        const result = await emailService.sendStripeEarnedEmail(parentEmail, {
+          studentName,
+          stripeCount: stripeCount || 1,
+          totalStripes: totalStripes || 4,
+          currentBelt: newBelt || '',
+          clubName: clubName || 'Your Dojo',
+          language: lang,
+        });
+        console.log(`[PromotionEmail] Stripe email ${result.success ? 'sent' : 'failed'} to ${parentEmail} for ${studentName} (${lang})`);
+        return res.json({ success: true, type: 'stripe', sent: result.success });
+      } else {
+        return res.status(400).json({ error: 'type must be "belt" or "stripe"' });
+      }
     } catch (error: any) {
-      console.error('[PromotionEmail-Dev] Error:', error);
+      console.error('[PromotionEmail] Error:', error);
       return res.status(500).json({ error: error.message });
     }
   });
