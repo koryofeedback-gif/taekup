@@ -1696,7 +1696,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         tags: [] as string[],
         tagsInput: '', // Raw input value for tags field
         contentType: 'video' as 'video' | 'document',
-        status: 'draft' as 'draft' | 'live',
+        status: 'live' as 'draft' | 'live',
         pricingType: 'free' as 'free' | 'premium',
         xpReward: 10,
         description: '',
@@ -1747,7 +1747,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             maxPerWeek: newVideo.maxPerWeek || undefined
         };
         onUpdateData({ curriculum: [...curriculum, item] });
-        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], tagsInput: '', contentType: 'video', status: 'draft', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium', maxPerWeek: null });
+        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], tagsInput: '', contentType: 'video', status: 'live', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium', maxPerWeek: null });
         
         if (clubId) {
             try {
@@ -1813,16 +1813,16 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         );
         onUpdateData({ curriculum: updated });
         
-        // Sync to database when publishing
-        if (clubId && newStatus === 'live') {
+        // Sync to database whenever status changes
+        if (clubId) {
             try {
-                console.log('[CreatorHub] Syncing content to database:', { clubId, content: content.title });
+                console.log('[CreatorHub] Syncing content to database:', { clubId, title: content.title, newStatus });
                 const response = await fetch('/api/content/sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         clubId,
-                        content: { ...content, status: 'live' }
+                        content: { ...content, status: newStatus }
                     })
                 });
                 const result = await response.json();
@@ -1830,8 +1830,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             } catch (err) {
                 console.error('[CreatorHub] Failed to sync content:', err);
             }
-        } else {
-            console.log('[CreatorHub] Not syncing:', { clubId, newStatus });
         }
     };
 
