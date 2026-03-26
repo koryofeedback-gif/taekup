@@ -285,6 +285,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         return () => clearInterval(interval);
     }, [student.id, isPremium, data.isDemo, data.clubSponsoredPremium, serverConfirmedPremium]);
     
+    // Fetch completed Creator Hub content IDs on mount — prevents re-completion after refresh
+    useEffect(() => {
+        if (data.isDemo) return;
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!student.id || !uuidRegex.test(student.id)) return;
+
+        fetch(`/api/students/${student.id}/completed-content`)
+            .then(r => r.ok ? r.json() : null)
+            .then(result => {
+                if (result?.completedContentIds?.length > 0 && onUpdateStudent) {
+                    const current = student.completedContentIds || [];
+                    const merged = Array.from(new Set([...current, ...result.completedContentIds]));
+                    if (merged.length > current.length) {
+                        onUpdateStudent({ ...student, completedContentIds: merged });
+                    }
+                }
+            })
+            .catch(err => console.warn('[CompletedContent] Failed to fetch:', err));
+    }, [student.id]);
+
     // Fetch Student Stats for Insights tab
     useEffect(() => {
         // Demo mode - use demo stats

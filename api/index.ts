@@ -6860,6 +6860,13 @@ async function handleStudentStats(req: VercelRequest, res: VercelResponse, stude
       GROUP BY COALESCE(challenge_category, 'General')
     `, [studentId]);
 
+    // 5a. Completed content IDs from Creator Hub (to prevent double-completion on refresh)
+    const completedContentResult = await client.query(`
+      SELECT content_id::text
+      FROM content_views
+      WHERE student_id = $1::uuid AND completed = true
+    `, [studentId]);
+
     // 5. Video approval stats for Discipline metric
     const videoStatsResult = await client.query(`
       SELECT 
@@ -6964,6 +6971,8 @@ async function handleStudentStats(req: VercelRequest, res: VercelResponse, stude
       }
     };
 
+    const completedContentIds = completedContentResult.rows.map(r => r.content_id);
+
     return res.json({
       attendanceDates,
       xpTrend,
@@ -6975,11 +6984,36 @@ async function handleStudentStats(req: VercelRequest, res: VercelResponse, stude
         xpEarned: parseInt(c.xp_earned || '0')
       })),
       totalSubmissions,
-      approvalRate
+      approvalRate,
+      completedContentIds
     });
   } catch (error: any) {
     console.error('[Student Stats] Error:', error.message);
     return res.status(500).json({ error: 'Failed to fetch student stats' });
+  } finally {
+    client.release();
+  }
+}
+
+// GET /api/students/:id/completed-content - Returns completed Creator Hub content IDs
+async function handleStudentCompletedContent(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!studentId || !uuidRegex.test(studentId)) {
+    return res.status(400).json({ error: 'Invalid student ID format' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT content_id::text FROM content_views WHERE student_id = $1::uuid AND completed = true`,
+      [studentId]
+    );
+    return res.json({ completedContentIds: result.rows.map(r => r.content_id) });
+  } catch (error: any) {
+    console.error('[CompletedContent] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch completed content' });
   } finally {
     client.release();
   }
@@ -8487,11 +8521,6 @@ async function handleContentView(req: VercelRequest, res: VercelResponse) {
         // Award XP to student — persist to database so it survives refresh
         if (validStudentId && xpAwarded > 0) {
           await applyXpDelta(client, validStudentId, xpAwarded, 'content_completion');
-          await client.query(
-            `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-             VALUES ($1::uuid, $2, 'EARN', 'content_completion', NOW())`,
-            [validStudentId, xpAwarded]
-          );
           const globalXp = Math.max(1, Math.floor(xpAwarded / 10));
           await client.query(
             `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid`,
@@ -8524,11 +8553,6 @@ async function handleContentView(req: VercelRequest, res: VercelResponse) {
     // Award XP to student — persist to database so it survives refresh
     if (completed && validStudentId && xpAwarded > 0) {
       await applyXpDelta(client, validStudentId, xpAwarded, 'content_completion');
-      await client.query(
-        `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-         VALUES ($1::uuid, $2, 'EARN', 'content_completion', NOW())`,
-        [validStudentId, xpAwarded]
-      );
       const globalXp = Math.max(1, Math.floor(xpAwarded / 10));
       await client.query(
         `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid`,
@@ -8805,6 +8829,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const studentStatsMatch = path.match(/^\/students\/([^/]+)\/stats\/?$/);
     if (studentStatsMatch) return await handleStudentStats(req, res, studentStatsMatch[1]);
+
+    const studentCompletedContentMatch = path.match(/^\/students\/([^/]+)\/completed-content\/?$/);
+    if (studentCompletedContentMatch) return await handleStudentCompletedContent(req, res, studentCompletedContentMatch[1]);
 
     const gradingSessionsMatch = path.match(/^\/students\/([^/]+)\/grading-sessions\/?$/);
     if (gradingSessionsMatch) return await handleGetGradingSessions(req, res, gradingSessionsMatch[1]);

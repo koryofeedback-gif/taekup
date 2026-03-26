@@ -2446,6 +2446,24 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // GET /api/students/:id/completed-content - Returns completed Creator Hub content IDs
+  app.get('/api/students/:id/completed-content', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!id || !uuidRegex.test(id)) {
+        return res.status(400).json({ error: 'Invalid student ID format' });
+      }
+      const result = await db.execute(
+        sql`SELECT content_id::text FROM content_views WHERE student_id = ${id}::uuid AND completed = true`
+      );
+      res.json({ completedContentIds: result.rows.map((r: any) => r.content_id) });
+    } catch (error: any) {
+      console.error('[CompletedContent] Error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch completed content' });
+    }
+  });
+
   app.post('/api/students', async (req: Request, res: Response) => {
     try {
       const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, totalPoints, totalXP, lifetimeXp, location, assignedClass, stripes } = req.body;
