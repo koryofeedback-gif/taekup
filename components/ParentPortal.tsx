@@ -1870,6 +1870,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         let allCoachNotes: string[] = [];
         let weakSkills: string[] = [];
         let strongSkills: string[] = [];
+        let latestSessionWeakSkills: string[] = []; // ALL weak skills from the most recent session
+        let latestSessionStrongSkills: string[] = []; // ALL strong skills from the most recent session
         let totalSessionsFound = 0;
         let hasSkillScores = false;
         let progressDeltaLines: string[] = []; // week-over-week skill changes
@@ -1900,6 +1902,11 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             skillLines.push(`${skillName} ${label} (${v}/2)`);
                             if (v < lowV) { lowV = v; lowN = skillName; }
                             if (v > highV) { highV = v; highN = skillName; }
+                            // For the latest session, collect ALL skills by level
+                            if (i === 0) {
+                                if (v < 2) latestSessionWeakSkills.push(`${skillName} (${v}/2)`);
+                                if (v === 2) latestSessionStrongSkills.push(skillName);
+                            }
                         });
                     }
                     if (lowN && !weakSkills.includes(lowN)) weakSkills.push(lowN);
@@ -2070,12 +2077,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const lines = [
             `STUDENT: ${firstName} | SPORT: ${martialArt}`,
             `BELT PROGRESS: ${stripeInfo}${nextBelt ? ` → next: ${nextBelt} Belt` : ''}`,
-            `ATTENDANCE: ${last7Days} class(es) last 7 days | ${last30Days} last 30 days | ${totalAttendance} total since joining`,
+            `ATTENDANCE THIS WEEK: ${last7Days} class(es) | THIS MONTH: ${last30Days} | ALL TIME TOTAL: ${totalAttendance} classes since joining`,
             ``,
             `SESSION GRADE: ${sessionGrade}`,
             `SESSION BREAKDOWN: ${sessionLines[0] || 'No grading data'}`,
-            `WEAKEST SKILL THIS SESSION: ${weakestSkill || 'N/A'}`,
-            `STRONGEST SKILL THIS SESSION: ${strongestSkill || 'N/A'}`,
+            `ALL SKILLS NEEDING WORK THIS SESSION (do not ignore any): ${latestSessionWeakSkills.length > 0 ? latestSessionWeakSkills.join(' | ') : 'N/A'}`,
+            `SKILLS AT FULL SCORE THIS SESSION: ${latestSessionStrongSkills.length > 0 ? latestSessionStrongSkills.join(', ') : 'None'}`,
+            `PRIORITY FOCUS (lowest scorer): ${weakestSkill || 'N/A'}`,
             `TREND vs PREVIOUS SESSION: ${trendLabel}`,
         ];
         if (improvedSkills.length > 0) lines.push(`SKILLS IMPROVED vs last session: ${improvedSkills.join(', ')}`);

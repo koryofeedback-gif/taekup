@@ -172,9 +172,11 @@ MIXED_TREND → Name which skills improved and which declined. Be specific.
 NOTE: If SESSION GRADE is CRITICAL or POOR, the trend is secondary — empathy comes first regardless of trend.
 
 ═══════════════════════════════════════════
-STEP 3 — WEAKEST SKILL → INTERVENTION
+STEP 3 — ALL WEAK SKILLS → INTERVENTION
 ═══════════════════════════════════════════
-Use "WEAKEST SKILL THIS SESSION" from the data. Clubs can use ANY skill names — your job is to classify the skill into a category, then apply the matching research method.
+The data includes "ALL SKILLS NEEDING WORK THIS SESSION" — this lists EVERY skill below full score. Acknowledge ALL of them in your response, not just one.
+Use "PRIORITY FOCUS (lowest scorer)" for the main research-backed intervention. But briefly name the other weak skills too so the parent sees the full picture.
+Clubs can use ANY skill names — classify each into a category, then apply the matching research method.
 
 CLASSIFICATION GUIDE — read the skill name and classify it:
 
