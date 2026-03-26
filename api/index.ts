@@ -8484,7 +8484,7 @@ async function handleContentView(req: VercelRequest, res: VercelResponse) {
           [contentId]
         );
 
-        // Award XP to student — persist to database so it survives refresh
+        // Award XP to student — persist to database so it survives refresh (local XP only)
         if (validStudentId && xpAwarded > 0) {
           await applyXpDelta(client, validStudentId, xpAwarded, 'content_completion');
           await client.query(
@@ -8492,12 +8492,7 @@ async function handleContentView(req: VercelRequest, res: VercelResponse) {
              VALUES ($1::uuid, $2, 'EARN', 'content_completion', NOW())`,
             [validStudentId, xpAwarded]
           );
-          const globalXp = Math.max(1, Math.floor(xpAwarded / 10));
-          await client.query(
-            `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid`,
-            [globalXp, validStudentId]
-          );
-          console.log(`[Content] XP awarded (update): ${xpAwarded} local, ${globalXp} global for student ${validStudentId}`);
+          console.log(`[Content] XP awarded (update): ${xpAwarded} local for student ${validStudentId}`);
         }
       }
       return res.json({ success: true, action: 'updated' });
@@ -8521,7 +8516,7 @@ async function handleContentView(req: VercelRequest, res: VercelResponse) {
       [contentId]
     );
 
-    // Award XP to student — persist to database so it survives refresh
+    // Award XP to student — persist to database so it survives refresh (local XP only)
     if (completed && validStudentId && xpAwarded > 0) {
       await applyXpDelta(client, validStudentId, xpAwarded, 'content_completion');
       await client.query(
@@ -8529,12 +8524,7 @@ async function handleContentView(req: VercelRequest, res: VercelResponse) {
          VALUES ($1::uuid, $2, 'EARN', 'content_completion', NOW())`,
         [validStudentId, xpAwarded]
       );
-      const globalXp = Math.max(1, Math.floor(xpAwarded / 10));
-      await client.query(
-        `UPDATE students SET global_xp = COALESCE(global_xp, 0) + $1 WHERE id = $2::uuid`,
-        [globalXp, validStudentId]
-      );
-      console.log(`[Content] XP awarded (new): ${xpAwarded} local, ${globalXp} global for student ${validStudentId}`);
+      console.log(`[Content] XP awarded (new): ${xpAwarded} local for student ${validStudentId}`);
     }
 
     return res.json({ success: true, action: 'created' });

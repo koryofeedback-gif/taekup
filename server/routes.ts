@@ -3354,23 +3354,17 @@ export function registerRoutes(app: Express) {
             WHERE id = ${contentId}::uuid
           `);
           
-          // Award XP to student's total_xp (single source of truth)
+          // Award local XP to student (Creator Hub = local only, no global XP)
           if (validStudentId && xpAwarded > 0) {
             await awardXP(validStudentId, xpAwarded, 'content', { contentId });
             
-            // Insert into xp_transactions for persistence (like Daily Mystery)
+            // Insert into xp_transactions for persistence
             await db.execute(sql`
               INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
               VALUES (${validStudentId}::uuid, ${xpAwarded}, 'EARN', 'content_completion', NOW())
             `);
             
-            // Award Global XP for World Rankings (1 point per 10 local XP)
-            const globalXp = Math.max(1, Math.floor(xpAwarded / 10));
-            await db.execute(sql`
-              UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalXp} WHERE id = ${validStudentId}::uuid
-            `);
-            
-            console.log(`[Content] XP awarded: ${xpAwarded} local, ${globalXp} global for student ${validStudentId}`);
+            console.log(`[Content] XP awarded: ${xpAwarded} local for student ${validStudentId}`);
           }
         }
         return res.json({ success: true, action: 'updated' });
@@ -3397,23 +3391,17 @@ export function registerRoutes(app: Express) {
         WHERE id = ${contentId}::uuid
       `);
 
-      // Award XP to student's total_xp if completing (single source of truth)
+      // Award local XP to student (Creator Hub = local only, no global XP)
       if (completed && validStudentId && xpAwarded > 0) {
         await awardXP(validStudentId, xpAwarded, 'content', { contentId });
         
-        // Insert into xp_transactions for persistence (like Daily Mystery)
+        // Insert into xp_transactions for persistence
         await db.execute(sql`
           INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
           VALUES (${validStudentId}::uuid, ${xpAwarded}, 'EARN', 'content_completion', NOW())
         `);
         
-        // Award Global XP for World Rankings (1 point per 10 local XP)
-        const globalXp = Math.max(1, Math.floor(xpAwarded / 10));
-        await db.execute(sql`
-          UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${globalXp} WHERE id = ${validStudentId}::uuid
-        `);
-        
-        console.log(`[Content] XP awarded: ${xpAwarded} local, ${globalXp} global for student ${validStudentId}`);
+        console.log(`[Content] XP awarded: ${xpAwarded} local for student ${validStudentId}`);
       }
 
       res.json({ success: true, action: 'created' });
