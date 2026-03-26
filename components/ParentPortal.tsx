@@ -1957,6 +1957,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         if (challengesThisWeek > 0) lines.push(`Challenge videos submitted this week: ${challengesThisWeek} (${approvedThisWeek} approved by coach)`);
         if (allCoachNotes.length > 0) lines.push(`Coach notes from recent sessions:\n${allCoachNotes.map(n => `  - "${n}"`).join('\n')}`);
 
+        // Gate: require at least one grading session with skill scores — otherwise advice would be generic guesswork
+        if (sessionLines.length === 0) {
+            const noDataMessages: Record<string, string> = {
+                English: `No grading data yet for ${firstName}. Once your coach completes a grading session with skill scores, the AI Sensei can generate specific, research-backed insights tailored to ${firstName}'s actual performance. Ask your coach to record grades after the next class.`,
+                French: `Aucune donnée de classement disponible pour ${firstName} pour le moment. Une fois que votre entraîneur aura complété une session de classement avec les scores de compétences, le Sensei IA pourra générer des conseils spécifiques basés sur les performances réelles de ${firstName}. Demandez à votre entraîneur d'enregistrer les notes après le prochain cours.`,
+                German: `Noch keine Bewertungsdaten für ${firstName} verfügbar. Sobald Ihr Trainer eine Bewertungssitzung mit Skill-Bewertungen abgeschlossen hat, kann der KI-Sensei spezifische, forschungsbasierte Erkenntnisse generieren, die auf ${firstName}s tatsächliche Leistung zugeschnitten sind. Bitten Sie Ihren Trainer, nach der nächsten Stunde Noten einzutragen.`,
+            };
+            setParentingAdvice(noDataMessages[language] || noDataMessages['English']);
+            setIsGeneratingAdvice(false);
+            return;
+        }
+
         const richContext = lines.join('\n');
         const advice = await generateParentingAdvice(firstName, richContext, language);
         setParentingAdvice(advice);
