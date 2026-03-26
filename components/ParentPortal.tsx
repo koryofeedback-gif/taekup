@@ -1870,17 +1870,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         let allCoachNotes: string[] = [];
         let weakSkills: string[] = [];
         let strongSkills: string[] = [];
+        let totalSessionsFound = 0;
+        let hasSkillScores = false;
         try {
             const sessRes = await fetch(`/api/students/${student.id}/grading-sessions`);
             if (sessRes.ok) {
                 const sessions: any[] = await sessRes.json();
+                totalSessionsFound = sessions.length;
                 const recent = sessions.slice(0, 3);
                 recent.forEach((s, i) => {
                     const date = s.class_date ? new Date(s.class_date).toLocaleDateString() : `session ${i + 1}`;
                     const skillLines: string[] = [];
                     let lowV = 3; let highV = -1;
                     let lowN = ''; let highN = '';
-                    if (s.scores && typeof s.scores === 'object') {
+                    if (s.scores && typeof s.scores === 'object' && Object.keys(s.scores).length > 0) {
+                        hasSkillScores = true;
                         Object.entries(s.scores).forEach(([sid, val]) => {
                             const skillName = data.skills?.find((sk: any) => sk.id === sid)?.name || sid;
                             const v = typeof val === 'number' ? val : 0;
@@ -1898,7 +1902,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     if (s.coach_note) allCoachNotes.push(s.coach_note);
                 });
             }
-        } catch {}
+        } catch (e) {
+            console.error('[Sensei] grading sessions fetch error:', e);
+        }
 
         // --- 2. Attendance ---
         // Primary: attendance_events table (formal tracking by coach)
@@ -1957,16 +1963,22 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         if (challengesThisWeek > 0) lines.push(`Challenge videos submitted this week: ${challengesThisWeek} (${approvedThisWeek} approved by coach)`);
         if (allCoachNotes.length > 0) lines.push(`Coach notes from recent sessions:\n${allCoachNotes.map(n => `  - "${n}"`).join('\n')}`);
 
-        // Gate: require at least one grading session with skill scores — otherwise advice would be generic guesswork
-        if (sessionLines.length === 0) {
+        // Gate: only block if there are truly zero sessions ever recorded
+        if (totalSessionsFound === 0) {
             const noDataMessages: Record<string, string> = {
-                English: `No grading data yet for ${firstName}. Once your coach completes a grading session with skill scores, the AI Sensei can generate specific, research-backed insights tailored to ${firstName}'s actual performance. Ask your coach to record grades after the next class.`,
-                French: `Aucune donnée de classement disponible pour ${firstName} pour le moment. Une fois que votre entraîneur aura complété une session de classement avec les scores de compétences, le Sensei IA pourra générer des conseils spécifiques basés sur les performances réelles de ${firstName}. Demandez à votre entraîneur d'enregistrer les notes après le prochain cours.`,
-                German: `Noch keine Bewertungsdaten für ${firstName} verfügbar. Sobald Ihr Trainer eine Bewertungssitzung mit Skill-Bewertungen abgeschlossen hat, kann der KI-Sensei spezifische, forschungsbasierte Erkenntnisse generieren, die auf ${firstName}s tatsächliche Leistung zugeschnitten sind. Bitten Sie Ihren Trainer, nach der nächsten Stunde Noten einzutragen.`,
+                English: `No grading data yet for ${firstName}. Once your coach completes a grading session, the AI Sensei can generate specific, research-backed insights tailored to ${firstName}'s actual performance. Ask your coach to record grades after the next class.`,
+                French: `Aucune donnée de classement disponible pour ${firstName} pour le moment. Une fois que votre entraîneur aura complété une session de classement, le Sensei IA pourra générer des conseils personnalisés. Demandez à votre entraîneur d'enregistrer les notes après le prochain cours.`,
+                German: `Noch keine Bewertungsdaten für ${firstName} verfügbar. Sobald Ihr Trainer eine Bewertungssitzung abgeschlossen hat, kann der KI-Sensei spezifische Erkenntnisse generieren. Bitten Sie Ihren Trainer, nach der nächsten Stunde Noten einzutragen.`,
             };
             setParentingAdvice(noDataMessages[language] || noDataMessages['English']);
             setIsGeneratingAdvice(false);
             return;
+        }
+        // If sessions exist but no skill scores yet, flag this so the AI anchors on notes/attendance instead
+        if (!hasSkillScores && allCoachNotes.length > 0) {
+            lines.push(`Note: No individual skill scores recorded yet — base advice on coach notes and attendance only. Do NOT invent or assume weak skills.`);
+        } else if (!hasSkillScores) {
+            lines.push(`Note: Sessions recorded but no skill scores or coach notes yet — give general encouragement based on belt progress and attendance.`);
         }
 
         const richContext = lines.join('\n');

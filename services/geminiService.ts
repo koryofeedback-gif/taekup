@@ -148,7 +148,7 @@ ${performanceSummary}
 Your response must follow this exact structure (write in flowing prose, NOT bullet points):
 
 **Paragraph 1 — Data Insight (2 sentences):**
-Interpret what the grading data reveals about ${studentName}'s current developmental stage. Name the specific weak skill and explain WHY children at this stage struggle with it, citing a recognized psychological concept (e.g., attentional capacity in children under 10, self-regulation development, intrinsic vs extrinsic motivation, growth mindset, deliberate practice). Reference the coach's actual note if one exists.
+If skill scores are available: name the specific weak skill and explain WHY children at this stage struggle with it, citing a recognized psychological concept. If NO skill scores are available but a coach note exists: build your insight entirely around the coach's exact words — quote it directly and explain what it reveals about the child's development. Never invent or assume a weak skill that isn't in the data.
 
 **Paragraph 2 — Research-Backed Intervention (2 sentences):**
 Give ONE specific, named technique from child psychology or sport science that directly addresses the SPECIFIC weak skill named above. Match the method to the skill: use Deliberate Practice micro-blocks (Ericsson) for Technique, Attention Restoration + timed focus windows for Focus/Concentration, Implementation Intentions for Discipline/Consistency, Self-Determination Theory autonomy support for Effort/Motivation, Growth Mindset reframing (Dweck) for Confidence, motor chunking for Coordination. WOOP is a last resort only if nothing else fits — do not default to it. Explain HOW the parent applies it at home in concrete steps — not vague guidance.
