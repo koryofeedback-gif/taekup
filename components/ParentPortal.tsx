@@ -2000,22 +2000,90 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const challengesThisWeek = recentVideos.length;
         const approvedThisWeek = recentVideos.filter((v: any) => v.status === 'approved').length;
 
-        // --- Build rich structured prompt ---
+        // --- Pre-compute session grade and trend labels ---
+        let sessionGrade = 'NO_DATA';
+        let sessionSummary = '';
+        let trendLabel = 'FIRST_SESSION';
+        let weakestSkill = '';
+        let strongestSkill = '';
+        let improvedSkills: string[] = [];
+        let declinedSkills: string[] = [];
+        let latestAvg = 0;
+        let prevAvg = 0;
+
+        // Grade the CURRENT (latest) session
+        if (sessionLines.length > 0 && progressDeltaLines.length > 0) {
+            // Extract current session quality from progressDeltaLines
+            const alertLine = progressDeltaLines.find(l => l.includes('CURRENT SESSION'));
+            if (alertLine) {
+                const match = alertLine.match(/avg (\d+\.?\d*)/);
+                latestAvg = match ? parseFloat(match[1]) : 0;
+            }
+        }
+
+        // Recompute from raw sessions data already parsed above
+        // (weakSkills[0] = lowest scoring skill across recent sessions)
+        weakestSkill = weakSkills[0] || '';
+        strongestSkill = strongSkills[0] || '';
+
+        // Parse improved/declined from progressDeltaLines
+        progressDeltaLines.forEach(line => {
+            if (line.includes('IMPROVED vs')) {
+                const match = line.match(/IMPROVED vs previous session: (.+)/);
+                if (match) improvedSkills = match[1].split(', ').map(s => s.split(':')[0].trim());
+            }
+            if (line.includes('DECLINED vs')) {
+                const match = line.match(/DECLINED vs previous session: (.+)/);
+                if (match) declinedSkills = match[1].split(', ').map(s => s.split(':')[0].trim());
+            }
+        });
+
+        // Determine trend
+        if (progressDeltaLines.some(l => l.includes('FIRST_SESSION') || !progressDeltaLines.some(l2 => l2.includes('IMPROVED') || l2.includes('DECLINED')))) {
+            trendLabel = 'FIRST_SESSION';
+        } else if (improvedSkills.length > 0 && declinedSkills.length === 0) {
+            trendLabel = 'IMPROVING';
+        } else if (declinedSkills.length > 0 && improvedSkills.length === 0) {
+            trendLabel = 'DECLINING';
+        } else if (improvedSkills.length > 0 && declinedSkills.length > 0) {
+            trendLabel = 'MIXED_TREND';
+        } else {
+            trendLabel = 'STABLE';
+        }
+
+        // Session grade from the alert line we already computed
+        const alertLine = progressDeltaLines.find(l => l.includes('CURRENT SESSION'));
+        if (alertLine) {
+            if (alertLine.includes('ALL') && alertLine.includes('0/2')) sessionGrade = 'CRITICAL';
+            else if (alertLine.includes('Mostly struggling')) sessionGrade = 'POOR';
+            else if (alertLine.includes('Strong performance')) sessionGrade = 'EXCELLENT';
+            else sessionGrade = 'MIXED';
+        } else if (sessionLines.length > 0) {
+            sessionGrade = 'MIXED'; // Has sessions but no grade computed
+        }
+
+        // Collect coach notes and stripe from latest session
+        const latestCoachNote = allCoachNotes[0] || '';
+        const latestStripeEarned = sessionLines[0]?.includes('Stripe earned: YES') || false;
+
+        // --- Build structured labeled data for AI ---
         const lines = [
-            `Student: ${firstName} | Sport: ${martialArt}`,
-            `Belt: ${stripeInfo}${nextBelt ? ` → working toward ${nextBelt} Belt` : ''}`,
-            `Attendance: ${last7Days} class(es) in last 7 days, ${last30Days} in last 30 days, ${totalAttendance} total classes since joining`,
+            `STUDENT: ${firstName} | SPORT: ${martialArt}`,
+            `BELT PROGRESS: ${stripeInfo}${nextBelt ? ` → next: ${nextBelt} Belt` : ''}`,
+            `ATTENDANCE: ${last7Days} class(es) last 7 days | ${last30Days} last 30 days | ${totalAttendance} total since joining`,
+            ``,
+            `SESSION GRADE: ${sessionGrade}`,
+            `SESSION BREAKDOWN: ${sessionLines[0] || 'No grading data'}`,
+            `WEAKEST SKILL THIS SESSION: ${weakestSkill || 'N/A'}`,
+            `STRONGEST SKILL THIS SESSION: ${strongestSkill || 'N/A'}`,
+            `TREND vs PREVIOUS SESSION: ${trendLabel}`,
         ];
-        if (sessionLines.length > 0) {
-            lines.push(`\nRecent grading sessions (newest first):\n${sessionLines.join('\n')}`);
-        }
-        if (progressDeltaLines.length > 0) {
-            lines.push(`\nWeek-over-week skill progress (THIS IS THE MOST IMPORTANT DATA — reference it explicitly):\n${progressDeltaLines.map(l => `  ${l}`).join('\n')}`);
-        }
-        if (weakSkills.length > 0) lines.push(`Current weak areas: ${weakSkills.join(', ')}`);
-        if (strongSkills.length > 0) lines.push(`Consistent strengths: ${strongSkills.join(', ')}`);
-        if (challengesThisWeek > 0) lines.push(`Challenge videos submitted this week: ${challengesThisWeek} (${approvedThisWeek} approved by coach)`);
-        if (allCoachNotes.length > 0) lines.push(`Coach notes from recent sessions:\n${allCoachNotes.map(n => `  - "${n}"`).join('\n')}`);
+        if (improvedSkills.length > 0) lines.push(`SKILLS IMPROVED vs last session: ${improvedSkills.join(', ')}`);
+        if (declinedSkills.length > 0) lines.push(`SKILLS DECLINED vs last session: ${declinedSkills.join(', ')}`);
+        if (sessionLines.length > 1) lines.push(`PREVIOUS SESSION: ${sessionLines[1]}`);
+        lines.push(`COACH NOTE: ${latestCoachNote ? `"${latestCoachNote}"` : 'NONE'}`);
+        lines.push(`STRIPE EARNED THIS SESSION: ${latestStripeEarned ? 'YES' : 'NO'}`);
+        if (challengesThisWeek > 0) lines.push(`CHALLENGES SUBMITTED THIS WEEK: ${challengesThisWeek} (${approvedThisWeek} approved)`);
 
         // Gate: only block if there are truly zero sessions ever recorded
         if (totalSessionsFound === 0) {

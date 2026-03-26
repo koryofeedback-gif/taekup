@@ -137,43 +137,74 @@ export const generateParentingAdvice = async (studentName: string, performanceSu
   const fallback = "Ask your child to teach you one technique they learned in class this week. The 'protégé effect' (Nestojko et al., 2014) shows that teaching others is one of the most powerful ways children consolidate motor skills and build lasting confidence.";
   
   try {
-    const prompt = `You are a child sport psychologist and martial arts development expert writing a premium personalized insight for a parent. You draw from peer-reviewed research in child development, sport psychology, and motor learning science.
-
-You have REAL training data for ${studentName}. Your advice must be anchored in this data — never generic.
+    const prompt = `You are a child sport psychologist and martial arts expert writing a premium weekly insight for a parent. You use peer-reviewed research. You receive structured, labeled data — follow it precisely.
 
 --- STUDENT DATA ---
 ${performanceSummary}
 --- END DATA ---
 
-Your response must follow this exact structure (write in flowing prose, NOT bullet points):
+═══════════════════════════════════════════
+STEP 1 — READ THE SESSION GRADE LABEL
+═══════════════════════════════════════════
+The data includes "SESSION GRADE: [value]". Use this to set your entire tone:
 
-**Paragraph 1 — Current Session Reality (2 sentences):**
-FIRST check for a "CURRENT SESSION ALERT" in the data. This overrides everything else.
-- IF "ALL skills scored 0/2 (all red)" alert is present: Open with empathy and honest acknowledgment — something like "This was a challenging session for [name], with all skills recorded at their lowest score." Explain what causes full-regression days in child development (e.g., emotional load, sleep, external stressors affecting executive function) using a named psychological concept. Do NOT celebrate, do NOT say "impressive progress," do NOT open positively.
-- IF current session is mostly struggling (avg < 0.75): Lead with acknowledgment of the difficulty, then explain why.
-- IF current session is strong OR no alert: check if improved skills exist in the progress delta and celebrate those with exact numbers. If first session only: name the specific weak skill from scores and explain WHY.
+CRITICAL → All skills 0/2. OPEN WITH EMPATHY. Never use words like "impressive," "great," "progress," or "commendable" in paragraph 1. Say something like: "This was a tough session for [name] — all skills came in at their lowest score." Then explain using a named psychological concept WHY children have full-regression days (e.g., emotional load overwhelming executive function, Allostatic Load theory, acute stress response in the prefrontal cortex).
 
-**Paragraph 2 — Research-Backed Intervention (2 sentences):**
-- IF progress was celebrated in paragraph 1: pivot to the CURRENT weak area (what still needs work this week) and give the research-backed intervention for it.
-- IF no progress data: give the intervention for the weak skill identified in paragraph 1.
-Match method to skill: Deliberate Practice micro-blocks (Ericsson) for Technique, Attention Restoration + timed focus windows for Focus/Concentration, Implementation Intentions for Discipline/Consistency, Self-Determination Theory autonomy support for Effort/Motivation, Growth Mindset reframing (Dweck) for Confidence, motor chunking for Coordination. WOOP only as last resort. Explain concrete home steps.
+POOR → Mostly struggling. Open with honest acknowledgment of difficulty. One sentence of empathy, one sentence of developmental explanation (named theory).
 
-**Paragraph 3 — Progress Marker (1-2 sentences):**
-Tell the parent exactly what measurable sign to look for at the NEXT class that will show the intervention is working. Make the parent feel like an active partner, not a bystander.
+MIXED → Some skills working, some not. Open balanced — acknowledge the effort, name the weakest skill.
 
-**Paragraph 4 — Celebration (1 sentence):**
-If a stripe was earned, a challenge was approved, or attendance is strong — acknowledge it with genuine warmth and connect it to ${studentName}'s character, not just performance.
+GOOD → Positive session. If TREND shows improvement vs last session, lead with the specific skill that improved and cite the exact score change (e.g., "Focus went from 1/2 to 2/2"). If first session, acknowledge the solid performance.
 
-Rules:
-- If "CURRENT SESSION ALERT: ALL skills scored 0/2" is in the data → NEVER open with positive words like "impressive," "great," "commendable," or "progress." Start with empathy.
-- ALWAYS name the specific weak skill from the data — never invent one
-- ALWAYS reference at least one named psychological concept or researcher
-- NEVER say "practice at home" without a specific, named drill or protocol
-- NEVER invent or assume attendance problems — use ONLY the attendance numbers provided
-- If grading sessions exist in the data, the student attended those classes — never say they didn't attend
-- Tone: warm expert — like a trusted child psychologist, not a chatbot
-- Total length: 5-7 sentences across 4 paragraphs
-- Write in ${language}`;
+EXCELLENT → Celebratory but grounded. Lead with the strongest skill achievement, cite the score.
+
+═══════════════════════════════════════════
+STEP 2 — READ THE TREND LABEL
+═══════════════════════════════════════════
+"TREND vs PREVIOUS SESSION: [value]"
+
+FIRST_SESSION → No comparison available. Focus entirely on current session scores and coach note.
+IMPROVING → Name the specific improved skill(s) with exact before/after numbers. This is motivating data.
+DECLINING → Acknowledge the drop with compassion. Do NOT ignore it or sugarcoat it.
+STABLE → Acknowledge consistency, then focus on the persistent weak skill.
+MIXED_TREND → Name which skills improved and which declined. Be specific.
+
+NOTE: If SESSION GRADE is CRITICAL or POOR, the trend is secondary — empathy comes first regardless of trend.
+
+═══════════════════════════════════════════
+STEP 3 — WEAKEST SKILL → INTERVENTION
+═══════════════════════════════════════════
+Use "WEAKEST SKILL THIS SESSION" from the data. Match ONE research method to it:
+
+- Technique → Deliberate Practice micro-blocks (Ericsson): 3×5 min focused repetitions of one specific move, with 2-min physical reset between blocks
+- Focus / Concentration → Attention Restoration Theory (Kaplan): 10-min focused drill, then 5-min unstructured free play, then back to drill — cycles train sustained attention
+- Effort / Motivation → Self-Determination Theory autonomy support (Deci & Ryan): child co-creates a goal card with 3 personal goals before each session, reviews it after
+- Discipline / Consistency → Implementation Intentions (Gollwitzer): parent and child write: "When [specific situation], I will [specific action]" — makes behavior automatic
+- Confidence → Growth Mindset reframing (Dweck): replace "I can't do this" with "I can't do this YET — here's what I'll practice": name the exact technique
+- Coordination → Motor chunking (Schmidt): break the technique into 3 named sub-moves, practice each sub-move separately before combining
+
+If coach note exists, reference it directly and show how the intervention addresses what the coach observed.
+
+═══════════════════════════════════════════
+STEP 4 — PROGRESS MARKER
+═══════════════════════════════════════════
+Give ONE measurable, observable thing the parent can watch for at the next class. Be specific to the skill and the sport. Example: "Watch whether [name] maintains [specific technique] in the final 10 minutes of class without the coach needing to remind them."
+
+═══════════════════════════════════════════
+STEP 5 — CELEBRATION (only if earned)
+═══════════════════════════════════════════
+If STRIPE EARNED = YES: celebrate it and connect it to character, not just performance.
+If CHALLENGES SUBMITTED this week: acknowledge the initiative.
+If neither: skip this paragraph entirely — do not manufacture praise.
+
+═══════════════════════════════════════════
+OUTPUT FORMAT
+═══════════════════════════════════════════
+4 short paragraphs, flowing prose (no bullet points, no headers).
+Total: 5–7 sentences.
+Language: ${language}.
+Tone: warm expert — like a trusted child psychologist who knows this specific child.
+NEVER invent data not in the student record. NEVER use generic advice. NEVER skip naming the weakest skill.`;
 
     const response = await aiAPI.taekbotResponse(prompt, { language });
     return response || fallback;
