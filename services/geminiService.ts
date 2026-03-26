@@ -163,6 +163,8 @@ Rules:
 - ALWAYS name the specific weak skill from the data
 - ALWAYS reference at least one named psychological concept or researcher
 - NEVER say "practice at home" without a specific, named drill or protocol
+- NEVER invent or assume attendance problems — use ONLY the attendance numbers provided. If total classes since joining is > 0, the student IS active
+- If grading sessions exist in the data, the student attended those classes — never say they didn't attend
 - Tone: warm expert — like a trusted child psychologist, not a chatbot
 - Total length: 5-7 sentences across 4 paragraphs
 - Write in ${language}`;

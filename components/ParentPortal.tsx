@@ -1901,14 +1901,35 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         } catch {}
 
         // --- 2. Attendance ---
-        const last30Days = studentStats?.attendanceDates?.filter((d: string) => {
+        // Primary: attendance_events table (formal tracking by coach)
+        const eventLast30 = studentStats?.attendanceDates?.filter((d: string) => {
             const diff = (Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24);
             return diff <= 30;
         }).length || 0;
-        const last7Days = studentStats?.attendanceDates?.filter((d: string) => {
+        const eventLast7 = studentStats?.attendanceDates?.filter((d: string) => {
             const diff = (Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24);
             return diff <= 7;
         }).length || 0;
+        // Fallback: count grading sessions in the last 30/7 days — graded = definitely attended
+        let gradingLast30 = 0, gradingLast7 = 0;
+        try {
+            const sessRes2 = await fetch(`/api/students/${student.id}/grading-sessions`);
+            if (sessRes2.ok) {
+                const allSessions: any[] = await sessRes2.json();
+                allSessions.forEach((s: any) => {
+                    const d = s.class_date || s.graded_at || s.created_at;
+                    if (!d) return;
+                    const diff = (Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24);
+                    if (diff <= 30) gradingLast30++;
+                    if (diff <= 7) gradingLast7++;
+                });
+            }
+        } catch {}
+        // Use formal attendance if available, otherwise fall back to grading session count
+        const last30Days = eventLast30 > 0 ? eventLast30 : gradingLast30;
+        const last7Days = eventLast7 > 0 ? eventLast7 : gradingLast7;
+        // Total classes ever attended (reliable counter on student record)
+        const totalAttendance = student.attendanceCount || 0;
 
         // --- 3. Belt & stripe progress ---
         const stripesNeeded = data.stripesPerBelt || 4;
@@ -1926,7 +1947,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         const lines = [
             `Student: ${firstName} | Sport: ${martialArt}`,
             `Belt: ${stripeInfo}${nextBelt ? ` → working toward ${nextBelt} Belt` : ''}`,
-            `Attendance: ${last7Days} class(es) this week, ${last30Days} in last 30 days`,
+            `Attendance: ${last7Days} class(es) in last 7 days, ${last30Days} in last 30 days, ${totalAttendance} total classes since joining`,
         ];
         if (sessionLines.length > 0) {
             lines.push(`\nRecent grading sessions (newest first):\n${sessionLines.join('\n')}`);
