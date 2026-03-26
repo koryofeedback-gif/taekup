@@ -3242,26 +3242,64 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                             </button>
                         )
                     ) : (
-                        /* FREE: Generic Tip + Locked Premium Button */
-                        <div className="space-y-4">
-                            <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
-                                <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">💡 General Tip</p>
-                                <p className="text-sm text-gray-300 italic">
-                                    "{t('parent.insights.encourageChild')}"
+                        /* FREE: Premium Upgrade Banner */
+                        <div className="space-y-3">
+                            {/* ── Premium Sell Banner ── */}
+                            <div className="relative overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-950/60 via-yellow-950/40 to-amber-900/40 p-5">
+                                {/* Shimmer accent */}
+                                <div className="pointer-events-none absolute -top-10 -right-10 w-32 h-32 rounded-full bg-amber-400/10 blur-2xl" />
+
+                                {/* PREMIUM badge */}
+                                <div className="mb-3 inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-yellow-400 text-black text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-md shadow-amber-400/30">
+                                    ✦ PREMIUM FEATURE
+                                </div>
+
+                                {/* Headline */}
+                                <h4 className="text-white font-black text-base leading-snug mb-1">
+                                    What your coach can't tell you in 5 minutes
+                                </h4>
+                                <p className="text-amber-300/70 text-xs leading-relaxed mb-4">
+                                    AI Sensei™ reads {student.name.split(' ')[0]}'s real grading data and gives you a specific, science-backed action to take at home — updated after every class.
                                 </p>
-                            </div>
-                            <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 p-4 rounded-xl border border-indigo-500/20 text-center">
-                                <p className="text-xs text-gray-400 mb-3">
-                                    Want advice <span className="text-indigo-400 font-bold">specific to {student.name.split(' ')[0]}</span>?
-                                    <br/>
-                                    <span className="text-gray-500">{t('parent.insights.getInsightsLike')}</span>
-                                </p>
+
+                                {/* Feature bullets */}
+                                <div className="space-y-2 mb-5">
+                                    {[
+                                        `Reads ${student.name.split(' ')[0]}'s actual scores from every grading session`,
+                                        'Identifies the #1 skill to develop at home — not a guess',
+                                        'Applies real child psychology methods (Dweck, Ericsson, Deci & Ryan)',
+                                        `Tells you exactly what to watch for in ${student.name.split(' ')[0]}'s next class`,
+                                        'Adapts automatically as performance improves or declines',
+                                    ].map((item, i) => (
+                                        <div key={i} className="flex items-start gap-2">
+                                            <span className="text-amber-400 text-xs mt-0.5 shrink-0">✦</span>
+                                            <p className="text-xs text-gray-200 leading-relaxed">{item}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Price row */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-2xl font-black text-white">$4.99</span>
+                                        <span className="text-gray-400 text-xs">/month</span>
+                                    </div>
+                                    <span className="text-xs text-green-400 font-medium">✓ Cancel anytime</span>
+                                </div>
+
+                                {/* CTA */}
                                 <button
                                     onClick={() => setShowUpgradeModal(true)}
-                                    className="w-full py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/30"
+                                    className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-sm transition-all shadow-lg shadow-amber-500/30 active:scale-95"
                                 >
-                                    🔒 Unlock AI Coach
+                                    Unlock AI Sensei™ — $4.99/mo
                                 </button>
+                            </div>
+
+                            {/* Free tier generic tip — dimmed below */}
+                            <div className="bg-gray-800/30 p-3 rounded-xl border border-gray-700/40">
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">💡 Free tip</p>
+                                <p className="text-xs text-gray-500 italic">"{t('parent.insights.encourageChild')}"</p>
                             </div>
                         </div>
                     )}
