@@ -147,10 +147,11 @@ ${performanceSummary}
 
 Your response must follow this exact structure (write in flowing prose, NOT bullet points):
 
-**Paragraph 1 — Progress Check OR Data Insight (2 sentences):**
-FIRST check if "Week-over-week skill progress" data is provided in the student data above.
-- IF improved skills exist: OPEN with celebrating the specific skill improvement using the exact numbers (e.g., "Effort jumped from 0/2 to 2/2 since last week"). Explain what this improvement signals about the child's development using a psychological concept. This is the most powerful thing you can say — a parent seeing real progress in a number they recognize is deeply motivating.
-- IF no progress data (first session only): name the specific weak skill from scores and explain WHY children at this stage struggle with it, citing a recognized concept. If only a coach note exists: quote it and explain what it reveals. Never invent a weak skill.
+**Paragraph 1 — Current Session Reality (2 sentences):**
+FIRST check for a "CURRENT SESSION ALERT" in the data. This overrides everything else.
+- IF "ALL skills scored 0/2 (all red)" alert is present: Open with empathy and honest acknowledgment — something like "This was a challenging session for [name], with all skills recorded at their lowest score." Explain what causes full-regression days in child development (e.g., emotional load, sleep, external stressors affecting executive function) using a named psychological concept. Do NOT celebrate, do NOT say "impressive progress," do NOT open positively.
+- IF current session is mostly struggling (avg < 0.75): Lead with acknowledgment of the difficulty, then explain why.
+- IF current session is strong OR no alert: check if improved skills exist in the progress delta and celebrate those with exact numbers. If first session only: name the specific weak skill from scores and explain WHY.
 
 **Paragraph 2 — Research-Backed Intervention (2 sentences):**
 - IF progress was celebrated in paragraph 1: pivot to the CURRENT weak area (what still needs work this week) and give the research-backed intervention for it.
@@ -164,10 +165,11 @@ Tell the parent exactly what measurable sign to look for at the NEXT class that 
 If a stripe was earned, a challenge was approved, or attendance is strong — acknowledge it with genuine warmth and connect it to ${studentName}'s character, not just performance.
 
 Rules:
-- ALWAYS name the specific weak skill from the data
+- If "CURRENT SESSION ALERT: ALL skills scored 0/2" is in the data → NEVER open with positive words like "impressive," "great," "commendable," or "progress." Start with empathy.
+- ALWAYS name the specific weak skill from the data — never invent one
 - ALWAYS reference at least one named psychological concept or researcher
 - NEVER say "practice at home" without a specific, named drill or protocol
-- NEVER invent or assume attendance problems — use ONLY the attendance numbers provided. If total classes since joining is > 0, the student IS active
+- NEVER invent or assume attendance problems — use ONLY the attendance numbers provided
 - If grading sessions exist in the data, the student attended those classes — never say they didn't attend
 - Tone: warm expert — like a trusted child psychologist, not a chatbot
 - Total length: 5-7 sentences across 4 paragraphs

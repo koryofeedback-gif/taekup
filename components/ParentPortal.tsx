@@ -1910,6 +1910,24 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     if (coachNote) allCoachNotes.push(coachNote);
                 });
 
+                // --- Current session quality check ---
+                if (sessions.length >= 1) {
+                    const latestSession = sessions[0];
+                    const latestScores = latestSession.scores || {};
+                    const scoreVals = Object.values(latestScores).filter(v => typeof v === 'number') as number[];
+                    if (scoreVals.length > 0) {
+                        const allZero = scoreVals.every(v => v === 0);
+                        const avgScore = scoreVals.reduce((a, b) => a + b, 0) / scoreVals.length;
+                        if (allZero) {
+                            progressDeltaLines.push(`⚠️ CURRENT SESSION ALERT: ALL ${scoreVals.length} skills scored 0/2 (all red). This is the most important fact. Do NOT celebrate or lead with positive framing. Acknowledge this difficult session with empathy first.`);
+                        } else if (avgScore < 0.75) {
+                            progressDeltaLines.push(`⚠️ CURRENT SESSION: Mostly struggling — average score ${avgScore.toFixed(1)}/2. Lead with support and empathy, not celebration.`);
+                        } else if (avgScore >= 1.75) {
+                            progressDeltaLines.push(`✅ CURRENT SESSION: Strong performance — average score ${avgScore.toFixed(1)}/2. Celebrate this.`);
+                        }
+                    }
+                }
+
                 // --- Week-over-week progress comparison (latest vs previous session) ---
                 if (sessions.length >= 2) {
                     const latest = sessions[0];
@@ -1929,8 +1947,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         else if (curr < prev) declined.push(`${skillName}: ${prev}/2 → ${curr}/2 ⬇️`);
                         else stable.push(`${skillName}: ${curr}/2 (unchanged)`);
                     });
-                    if (improved.length > 0) progressDeltaLines.push(`Skills that IMPROVED since last session: ${improved.join(', ')}`);
-                    if (declined.length > 0) progressDeltaLines.push(`Skills that DECLINED since last session: ${declined.join(', ')}`);
+                    if (improved.length > 0) progressDeltaLines.push(`Skills that IMPROVED vs previous session: ${improved.join(', ')}`);
+                    if (declined.length > 0) progressDeltaLines.push(`Skills that DECLINED vs previous session: ${declined.join(', ')}`);
                     if (stable.length > 0) progressDeltaLines.push(`Skills that held steady: ${stable.join(', ')}`);
                 }
             }
