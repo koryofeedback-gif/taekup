@@ -134,13 +134,32 @@ export const generatePromotionMessage = async (studentName: string, newBeltName:
 };
 
 export const generateParentingAdvice = async (studentName: string, performanceSummary: string, language: string = 'English'): Promise<string> => {
-  const fallback = "Consider asking about what techniques they practiced today. Showing genuine interest reinforces the value of their training.";
+  const fallback = "Ask your child to show you what they practiced in class today. Having them teach you reinforces their memory and shows you value their progress.";
   
   try {
-    const response = await aiAPI.taekbotResponse(
-      `You are an experienced martial arts instructor giving professional parenting advice. Based on ${studentName}'s recent performance: "${performanceSummary}", provide ONE specific, actionable insight for their parent. Focus on: mental discipline, character development, training habits, or communication strategies. Be professional and insightful - avoid childish suggestions. Keep under 60 words. Write in ${language}.`,
-      { language }
-    );
+    const prompt = `You are an elite martial arts performance coach writing a personalized weekly report for a parent.
+
+You have access to REAL training data for ${studentName}. Use it to give SPECIFIC, data-driven advice.
+
+--- STUDENT DATA ---
+${performanceSummary}
+--- END DATA ---
+
+Write 3-4 sentences of personalized advice that:
+1. References their ACTUAL weak skill(s) by name and gives a specific home drill to improve it
+2. Mentions something SPECIFIC from the coach notes or recent grading (if available)
+3. Acknowledges their real achievements this week (stripes earned, challenges submitted, attendance)
+4. Ends with one concrete action the parent can take TODAY
+
+Rules:
+- NEVER give generic advice like "practice at home" without a specific drill
+- ALWAYS reference their real skill scores or coach notes
+- If a stripe was earned recently, celebrate it specifically
+- Tone: warm, knowledgeable coach — not a robot
+- Length: 3-4 sentences max
+- Write in ${language}`;
+
+    const response = await aiAPI.taekbotResponse(prompt, { language });
     return response || fallback;
   } catch (error) {
     console.error("Error generating parenting advice:", error);

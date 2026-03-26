@@ -1852,63 +1852,92 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const handleGenerateAdvice = async () => {
         setIsGeneratingAdvice(true);
         
-        // Demo mode - show sample advice without API call
+        // Demo mode
         if (data.isDemo) {
             setTimeout(() => {
-                const sampleAdvices = [
-                    `${student.name.split(' ')[0]} is showing great dedication! Their recent attendance is excellent. To support their journey at home, try practicing basic stances together for 5 minutes each evening. Ask them to teach you what they learned - it reinforces their memory!`,
-                    `I can see ${student.name.split(' ')[0]} is progressing well. Focus this week on encouraging them to practice their kicks with proper form rather than speed. Quality over quantity builds true skill. Consider setting up a small target at home for practice.`,
-                    `${student.name.split(' ')[0]}'s discipline is developing nicely. To boost their confidence before the next grading, practice the patterns together at home. Even 10 minutes of focused practice makes a difference. Remember to celebrate small wins!`
-                ];
-                setParentingAdvice(sampleAdvices[Math.floor(Math.random() * sampleAdvices.length)]);
+                setParentingAdvice(`Based on Kevin's last grading, his Technique scored 2/2 but Discipline dropped to 1/2. Coach noted: "Loses focus in the second half of class." At home, try short 5-minute focused drills rather than long sessions — this trains sustained attention. He also completed 2 challenges this week which shows great self-motivation!`);
                 setIsGeneratingAdvice(false);
             }, 1500);
             return;
         }
         
-        // Build comprehensive context for AI
+        const firstName = student.name.split(' ')[0];
         const beltName = currentBelt?.name || 'beginner';
-        const martialArt = (data as any).beltSystem || (data as any).martialArt || 'Taekwondo';
-        const totalXP = student.totalXP || rivalStats.xp || 0;
-        const attendanceCount = studentStats?.attendanceDates?.length || 0;
-        
-        // Get recent grading scores
-        const recentStats = student.performanceHistory?.slice(-3) || [];
-        let gradingContext = '';
-        let lowestSkill = '';
-        let highestSkill = '';
-        
-        if (recentStats.length > 0) {
-            const latest = recentStats[recentStats.length - 1];
-            let lowestVal = 3;
-            let highestVal = 0;
-            
-            const skillScores: string[] = [];
-            Object.entries(latest.scores).forEach(([skillId, score]) => {
-                const skillName = data.skills.find(s => s.id === skillId)?.name || skillId;
-                if (typeof score === 'number') {
-                    skillScores.push(`${skillName}: ${score}/2`);
-                    if (score < lowestVal) { lowestVal = score; lowestSkill = skillName; }
-                    if (score > highestVal) { highestVal = score; highestSkill = skillName; }
-                }
-            });
-            gradingContext = skillScores.join(', ');
-        }
-        
-        // Construct detailed summary
-        const summaryParts = [
-            `Sport: ${martialArt}`,
-            `Current belt: ${beltName}`,
-            `Total XP: ${totalXP}`,
-            `Classes attended (90 days): ${attendanceCount}`,
+        const martialArt = (data as any).martialArtName || (data as any).beltSystem || 'Taekwondo';
+
+        // --- 1. Fetch recent grading sessions ---
+        let sessionLines: string[] = [];
+        let allCoachNotes: string[] = [];
+        let weakSkills: string[] = [];
+        let strongSkills: string[] = [];
+        try {
+            const sessRes = await fetch(`/api/students/${student.id}/grading-sessions`);
+            if (sessRes.ok) {
+                const sessions: any[] = await sessRes.json();
+                const recent = sessions.slice(0, 3);
+                recent.forEach((s, i) => {
+                    const date = s.class_date ? new Date(s.class_date).toLocaleDateString() : `session ${i + 1}`;
+                    const skillLines: string[] = [];
+                    let lowV = 3; let highV = -1;
+                    let lowN = ''; let highN = '';
+                    if (s.scores && typeof s.scores === 'object') {
+                        Object.entries(s.scores).forEach(([sid, val]) => {
+                            const skillName = data.skills?.find((sk: any) => sk.id === sid)?.name || sid;
+                            const v = typeof val === 'number' ? val : 0;
+                            const label = v === 2 ? '✅' : v === 1 ? '⚠️' : '❌';
+                            skillLines.push(`${skillName} ${label} (${v}/2)`);
+                            if (v < lowV) { lowV = v; lowN = skillName; }
+                            if (v > highV) { highV = v; highN = skillName; }
+                        });
+                    }
+                    if (lowN && !weakSkills.includes(lowN)) weakSkills.push(lowN);
+                    if (highN && !strongSkills.includes(highN)) strongSkills.push(highN);
+                    const note = s.coach_note ? `Coach note: "${s.coach_note}"` : '';
+                    const stripeInfo = s.stripe_progress ? ` | Stripe earned: YES` : '';
+                    sessionLines.push(`  • ${date} (${s.class_name || 'Class'}): ${skillLines.join(', ')}${stripeInfo}${note ? ` — ${note}` : ''}`);
+                    if (s.coach_note) allCoachNotes.push(s.coach_note);
+                });
+            }
+        } catch {}
+
+        // --- 2. Attendance ---
+        const last30Days = studentStats?.attendanceDates?.filter((d: string) => {
+            const diff = (Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24);
+            return diff <= 30;
+        }).length || 0;
+        const last7Days = studentStats?.attendanceDates?.filter((d: string) => {
+            const diff = (Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24);
+            return diff <= 7;
+        }).length || 0;
+
+        // --- 3. Belt & stripe progress ---
+        const stripesNeeded = data.stripesPerBelt || 4;
+        const stripeInfo = `${currentBeltStripes}/${stripesNeeded} stripes on ${beltName} belt`;
+        const nextBeltIdx = data.belts ? data.belts.findIndex((b: any) => b.id === student.beltId) + 1 : -1;
+        const nextBelt = data.belts && nextBeltIdx > 0 ? data.belts[nextBeltIdx]?.name : null;
+
+        // --- 4. Challenges this week ---
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const recentVideos = myVideos?.filter((v: any) => new Date(v.submittedAt || v.created_at || 0).getTime() > weekAgo) || [];
+        const challengesThisWeek = recentVideos.length;
+        const approvedThisWeek = recentVideos.filter((v: any) => v.status === 'approved').length;
+
+        // --- Build rich structured prompt ---
+        const lines = [
+            `Student: ${firstName} | Sport: ${martialArt}`,
+            `Belt: ${stripeInfo}${nextBelt ? ` → working toward ${nextBelt} Belt` : ''}`,
+            `Attendance: ${last7Days} class(es) this week, ${last30Days} in last 30 days`,
         ];
-        if (gradingContext) summaryParts.push(`Recent grading scores: ${gradingContext}`);
-        if (lowestSkill) summaryParts.push(`Area needing work: ${lowestSkill}`);
-        if (highestSkill) summaryParts.push(`Strong area: ${highestSkill}`);
-        
-        const summary = summaryParts.join('. ');
-        
-        const advice = await generateParentingAdvice(student.name, summary, language);
+        if (sessionLines.length > 0) {
+            lines.push(`\nRecent grading sessions (newest first):\n${sessionLines.join('\n')}`);
+        }
+        if (weakSkills.length > 0) lines.push(`Recurring weak areas: ${weakSkills.join(', ')}`);
+        if (strongSkills.length > 0) lines.push(`Consistent strengths: ${strongSkills.join(', ')}`);
+        if (challengesThisWeek > 0) lines.push(`Challenge videos submitted this week: ${challengesThisWeek} (${approvedThisWeek} approved by coach)`);
+        if (allCoachNotes.length > 0) lines.push(`Coach notes from recent sessions:\n${allCoachNotes.map(n => `  - "${n}"`).join('\n')}`);
+
+        const richContext = lines.join('\n');
+        const advice = await generateParentingAdvice(firstName, richContext, language);
         setParentingAdvice(advice);
         setIsGeneratingAdvice(false);
     }
