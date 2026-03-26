@@ -2800,7 +2800,13 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         onChange={e => setLanguage(e.target.value)}
                         className="bg-gray-800 text-xs text-gray-400 border border-gray-700 rounded px-2 py-1 focus:outline-none"
                     >
-                        {['English', 'French', 'German'].map(l => <option key={l} value={l}>{l}</option>)}
+                        {[
+                            { value: 'English', label: '🇬🇧 English' },
+                            { value: 'French', label: '🇫🇷 Français' },
+                            { value: 'German', label: '🇩🇪 Deutsch' },
+                            { value: 'Spanish', label: '🇪🇸 Español' },
+                            { value: 'Persian', label: '🇮🇷 فارسی' },
+                        ].map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                     </select>
                 </div>
             </div>
