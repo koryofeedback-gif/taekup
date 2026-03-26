@@ -427,12 +427,20 @@ export const SuperAdminClubs: React.FC<SuperAdminClubsProps> = ({ token, onLogou
     if (!selectedClub) return;
     setActionLoading(true);
     try {
+      const currentToken = localStorage.getItem('superAdminToken') || token;
       const response = await fetch(`/api/super-admin/clubs/${selectedClub.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json'
         }
       });
+
+      if (response.status === 401) {
+        onLogout();
+        navigate('/super-admin/login');
+        return;
+      }
 
       const data = await response.json();
       if (data.success) {

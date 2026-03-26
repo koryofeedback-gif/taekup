@@ -150,6 +150,7 @@ async function verifySuperAdminToken(req: VercelRequest): Promise<{ valid: boole
   if (signedResult.valid) {
     return signedResult;
   }
+  console.log('[SuperAdmin] Signed token check failed:', signedResult.error, '| token length:', token.length, '| has dot:', token.includes('.'));
   
   // Fallback to database lookup for old tokens
   try {
@@ -2457,10 +2458,14 @@ async function handleGetClubs(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleDeleteClub(req: VercelRequest, res: VercelResponse, clubId: string) {
+  const authHeader = req.headers.authorization || req.headers['authorization'];
+  console.log('[DeleteClub] Auth header present:', !!authHeader, '| Club:', clubId, '| Method:', req.method);
   const auth = await verifySuperAdminToken(req);
   if (!auth.valid) {
+    console.log('[DeleteClub] Auth failed:', auth.error, '| Header prefix:', authHeader ? String(authHeader).substring(0, 14) : 'none');
     return res.status(401).json({ error: auth.error });
   }
+  console.log('[DeleteClub] Auth valid for:', auth.email);
   
   try {
     const db = getDb();
