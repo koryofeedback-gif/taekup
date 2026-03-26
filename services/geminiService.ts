@@ -134,29 +134,37 @@ export const generatePromotionMessage = async (studentName: string, newBeltName:
 };
 
 export const generateParentingAdvice = async (studentName: string, performanceSummary: string, language: string = 'English'): Promise<string> => {
-  const fallback = "Ask your child to show you what they practiced in class today. Having them teach you reinforces their memory and shows you value their progress.";
+  const fallback = "Ask your child to teach you one technique they learned in class this week. The 'protégé effect' (Nestojko et al., 2014) shows that teaching others is one of the most powerful ways children consolidate motor skills and build lasting confidence.";
   
   try {
-    const prompt = `You are an elite martial arts performance coach writing a personalized weekly report for a parent.
+    const prompt = `You are a child sport psychologist and martial arts development expert writing a premium personalized insight for a parent. You draw from peer-reviewed research in child development, sport psychology, and motor learning science.
 
-You have access to REAL training data for ${studentName}. Use it to give SPECIFIC, data-driven advice.
+You have REAL training data for ${studentName}. Your advice must be anchored in this data — never generic.
 
 --- STUDENT DATA ---
 ${performanceSummary}
 --- END DATA ---
 
-Write 3-4 sentences of personalized advice that:
-1. References their ACTUAL weak skill(s) by name and gives a specific home drill to improve it
-2. Mentions something SPECIFIC from the coach notes or recent grading (if available)
-3. Acknowledges their real achievements this week (stripes earned, challenges submitted, attendance)
-4. Ends with one concrete action the parent can take TODAY
+Your response must follow this exact structure (write in flowing prose, NOT bullet points):
+
+**Paragraph 1 — Data Insight (2 sentences):**
+Interpret what the grading data reveals about ${studentName}'s current developmental stage. Name the specific weak skill and explain WHY children at this stage struggle with it, citing a recognized psychological concept (e.g., attentional capacity in children under 10, self-regulation development, intrinsic vs extrinsic motivation, growth mindset, deliberate practice). Reference the coach's actual note if one exists.
+
+**Paragraph 2 — Research-Backed Intervention (2 sentences):**
+Give ONE specific, named technique from child psychology or sport science that directly addresses the weak skill. Examples of frameworks you may draw from: Self-Determination Theory (Deci & Ryan), Deliberate Practice (Ericsson), Growth Mindset (Dweck), Attention Restoration Theory, Positive Reinforcement cycles, the WOOP method, Implementation Intentions, Metacognitive self-talk, or motor chunking. Explain HOW the parent applies it at home in concrete steps — not vague guidance.
+
+**Paragraph 3 — Progress Marker (1-2 sentences):**
+Tell the parent exactly what measurable sign to look for at the NEXT class that will show the intervention is working. This makes the parent feel like an active partner in their child's development, not a bystander.
+
+**Paragraph 4 — Celebration (1 sentence):**
+If a stripe was earned, a challenge was approved, or attendance is strong — acknowledge it with genuine warmth and connect it to ${studentName}'s character, not just performance.
 
 Rules:
-- NEVER give generic advice like "practice at home" without a specific drill
-- ALWAYS reference their real skill scores or coach notes
-- If a stripe was earned recently, celebrate it specifically
-- Tone: warm, knowledgeable coach — not a robot
-- Length: 3-4 sentences max
+- ALWAYS name the specific weak skill from the data
+- ALWAYS reference at least one named psychological concept or researcher
+- NEVER say "practice at home" without a specific, named drill or protocol
+- Tone: warm expert — like a trusted child psychologist, not a chatbot
+- Total length: 5-7 sentences across 4 paragraphs
 - Write in ${language}`;
 
     const response = await aiAPI.taekbotResponse(prompt, { language });
