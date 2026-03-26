@@ -1875,11 +1875,18 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         try {
             const sessRes = await fetch(`/api/students/${student.id}/grading-sessions`);
             if (sessRes.ok) {
-                const sessions: any[] = await sessRes.json();
+                const raw = await sessRes.json();
+                // API returns { success, sessions: [...] } — extract the array
+                const sessions: any[] = Array.isArray(raw) ? raw : (raw.sessions || []);
                 totalSessionsFound = sessions.length;
                 const recent = sessions.slice(0, 3);
                 recent.forEach((s, i) => {
-                    const date = s.class_date ? new Date(s.class_date).toLocaleDateString() : `session ${i + 1}`;
+                    // API returns camelCase fields
+                    const rawDate = s.classDate || s.class_date;
+                    const date = rawDate ? new Date(rawDate).toLocaleDateString() : `session ${i + 1}`;
+                    const coachNote = s.coachNote || s.coach_note || '';
+                    const stripeEarned = s.stripeProgress || s.stripe_progress;
+                    const className = s.className || s.class_name || 'Class';
                     const skillLines: string[] = [];
                     let lowV = 3; let highV = -1;
                     let lowN = ''; let highN = '';
@@ -1896,10 +1903,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     }
                     if (lowN && !weakSkills.includes(lowN)) weakSkills.push(lowN);
                     if (highN && !strongSkills.includes(highN)) strongSkills.push(highN);
-                    const note = s.coach_note ? `Coach note: "${s.coach_note}"` : '';
-                    const stripeInfo = s.stripe_progress ? ` | Stripe earned: YES` : '';
-                    sessionLines.push(`  • ${date} (${s.class_name || 'Class'}): ${skillLines.join(', ')}${stripeInfo}${note ? ` — ${note}` : ''}`);
-                    if (s.coach_note) allCoachNotes.push(s.coach_note);
+                    const noteStr = coachNote ? `Coach note: "${coachNote}"` : '';
+                    const stripeStr = stripeEarned ? ` | Stripe earned: YES` : '';
+                    sessionLines.push(`  • ${date} (${className}): ${skillLines.join(', ')}${stripeStr}${noteStr ? ` — ${noteStr}` : ''}`);
+                    if (coachNote) allCoachNotes.push(coachNote);
                 });
             }
         } catch (e) {
@@ -1921,9 +1928,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         try {
             const sessRes2 = await fetch(`/api/students/${student.id}/grading-sessions`);
             if (sessRes2.ok) {
-                const allSessions: any[] = await sessRes2.json();
+                const raw2 = await sessRes2.json();
+                const allSessions: any[] = Array.isArray(raw2) ? raw2 : (raw2.sessions || []);
                 allSessions.forEach((s: any) => {
-                    const d = s.class_date || s.graded_at || s.created_at;
+                    const d = s.classDate || s.class_date || s.graded_at || s.created_at || s.createdAt;
                     if (!d) return;
                     const diff = (Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24);
                     if (diff <= 30) gradingLast30++;
