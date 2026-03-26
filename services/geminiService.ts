@@ -147,14 +147,18 @@ ${performanceSummary}
 
 Your response must follow this exact structure (write in flowing prose, NOT bullet points):
 
-**Paragraph 1 — Data Insight (2 sentences):**
-If skill scores are available: name the specific weak skill and explain WHY children at this stage struggle with it, citing a recognized psychological concept. If NO skill scores are available but a coach note exists: build your insight entirely around the coach's exact words — quote it directly and explain what it reveals about the child's development. Never invent or assume a weak skill that isn't in the data.
+**Paragraph 1 — Progress Check OR Data Insight (2 sentences):**
+FIRST check if "Week-over-week skill progress" data is provided in the student data above.
+- IF improved skills exist: OPEN with celebrating the specific skill improvement using the exact numbers (e.g., "Effort jumped from 0/2 to 2/2 since last week"). Explain what this improvement signals about the child's development using a psychological concept. This is the most powerful thing you can say — a parent seeing real progress in a number they recognize is deeply motivating.
+- IF no progress data (first session only): name the specific weak skill from scores and explain WHY children at this stage struggle with it, citing a recognized concept. If only a coach note exists: quote it and explain what it reveals. Never invent a weak skill.
 
 **Paragraph 2 — Research-Backed Intervention (2 sentences):**
-Give ONE specific, named technique from child psychology or sport science that directly addresses the SPECIFIC weak skill named above. Match the method to the skill: use Deliberate Practice micro-blocks (Ericsson) for Technique, Attention Restoration + timed focus windows for Focus/Concentration, Implementation Intentions for Discipline/Consistency, Self-Determination Theory autonomy support for Effort/Motivation, Growth Mindset reframing (Dweck) for Confidence, motor chunking for Coordination. WOOP is a last resort only if nothing else fits — do not default to it. Explain HOW the parent applies it at home in concrete steps — not vague guidance.
+- IF progress was celebrated in paragraph 1: pivot to the CURRENT weak area (what still needs work this week) and give the research-backed intervention for it.
+- IF no progress data: give the intervention for the weak skill identified in paragraph 1.
+Match method to skill: Deliberate Practice micro-blocks (Ericsson) for Technique, Attention Restoration + timed focus windows for Focus/Concentration, Implementation Intentions for Discipline/Consistency, Self-Determination Theory autonomy support for Effort/Motivation, Growth Mindset reframing (Dweck) for Confidence, motor chunking for Coordination. WOOP only as last resort. Explain concrete home steps.
 
 **Paragraph 3 — Progress Marker (1-2 sentences):**
-Tell the parent exactly what measurable sign to look for at the NEXT class that will show the intervention is working. This makes the parent feel like an active partner in their child's development, not a bystander.
+Tell the parent exactly what measurable sign to look for at the NEXT class that will show the intervention is working. Make the parent feel like an active partner, not a bystander.
 
 **Paragraph 4 — Celebration (1 sentence):**
 If a stripe was earned, a challenge was approved, or attendance is strong — acknowledge it with genuine warmth and connect it to ${studentName}'s character, not just performance.

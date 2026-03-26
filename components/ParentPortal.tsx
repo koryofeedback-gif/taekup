@@ -1872,6 +1872,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         let strongSkills: string[] = [];
         let totalSessionsFound = 0;
         let hasSkillScores = false;
+        let progressDeltaLines: string[] = []; // week-over-week skill changes
         try {
             const sessRes = await fetch(`/api/students/${student.id}/grading-sessions`);
             if (sessRes.ok) {
@@ -1908,6 +1909,30 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     sessionLines.push(`  • ${date} (${className}): ${skillLines.join(', ')}${stripeStr}${noteStr ? ` — ${noteStr}` : ''}`);
                     if (coachNote) allCoachNotes.push(coachNote);
                 });
+
+                // --- Week-over-week progress comparison (latest vs previous session) ---
+                if (sessions.length >= 2) {
+                    const latest = sessions[0];
+                    const previous = sessions[1];
+                    const latestScores = latest.scores || {};
+                    const prevScores = previous.scores || {};
+                    const allSkillIds = new Set([...Object.keys(latestScores), ...Object.keys(prevScores)]);
+                    const improved: string[] = [];
+                    const declined: string[] = [];
+                    const stable: string[] = [];
+                    allSkillIds.forEach(sid => {
+                        const curr = typeof latestScores[sid] === 'number' ? latestScores[sid] : null;
+                        const prev = typeof prevScores[sid] === 'number' ? prevScores[sid] : null;
+                        if (curr === null || prev === null) return;
+                        const skillName = data.skills?.find((sk: any) => sk.id === sid)?.name || sid;
+                        if (curr > prev) improved.push(`${skillName}: ${prev}/2 → ${curr}/2 ⬆️`);
+                        else if (curr < prev) declined.push(`${skillName}: ${prev}/2 → ${curr}/2 ⬇️`);
+                        else stable.push(`${skillName}: ${curr}/2 (unchanged)`);
+                    });
+                    if (improved.length > 0) progressDeltaLines.push(`Skills that IMPROVED since last session: ${improved.join(', ')}`);
+                    if (declined.length > 0) progressDeltaLines.push(`Skills that DECLINED since last session: ${declined.join(', ')}`);
+                    if (stable.length > 0) progressDeltaLines.push(`Skills that held steady: ${stable.join(', ')}`);
+                }
             }
         } catch (e) {
             console.error('[Sensei] grading sessions fetch error:', e);
@@ -1966,7 +1991,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
         if (sessionLines.length > 0) {
             lines.push(`\nRecent grading sessions (newest first):\n${sessionLines.join('\n')}`);
         }
-        if (weakSkills.length > 0) lines.push(`Recurring weak areas: ${weakSkills.join(', ')}`);
+        if (progressDeltaLines.length > 0) {
+            lines.push(`\nWeek-over-week skill progress (THIS IS THE MOST IMPORTANT DATA — reference it explicitly):\n${progressDeltaLines.map(l => `  ${l}`).join('\n')}`);
+        }
+        if (weakSkills.length > 0) lines.push(`Current weak areas: ${weakSkills.join(', ')}`);
         if (strongSkills.length > 0) lines.push(`Consistent strengths: ${strongSkills.join(', ')}`);
         if (challengesThisWeek > 0) lines.push(`Challenge videos submitted this week: ${challengesThisWeek} (${approvedThisWeek} approved by coach)`);
         if (allCoachNotes.length > 0) lines.push(`Coach notes from recent sessions:\n${allCoachNotes.map(n => `  - "${n}"`).join('\n')}`);
