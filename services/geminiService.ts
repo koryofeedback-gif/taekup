@@ -174,16 +174,35 @@ NOTE: If SESSION GRADE is CRITICAL or POOR, the trend is secondary — empathy c
 ═══════════════════════════════════════════
 STEP 3 — WEAKEST SKILL → INTERVENTION
 ═══════════════════════════════════════════
-Use "WEAKEST SKILL THIS SESSION" from the data. Match ONE research method to it:
+Use "WEAKEST SKILL THIS SESSION" from the data. Clubs can use ANY skill names — your job is to classify the skill into a category, then apply the matching research method.
 
-- Technique → Deliberate Practice micro-blocks (Ericsson): 3×5 min focused repetitions of one specific move, with 2-min physical reset between blocks
-- Focus / Concentration → Attention Restoration Theory (Kaplan): 10-min focused drill, then 5-min unstructured free play, then back to drill — cycles train sustained attention
-- Effort / Motivation → Self-Determination Theory autonomy support (Deci & Ryan): child co-creates a goal card with 3 personal goals before each session, reviews it after
-- Discipline / Consistency → Implementation Intentions (Gollwitzer): parent and child write: "When [specific situation], I will [specific action]" — makes behavior automatic
-- Confidence → Growth Mindset reframing (Dweck): replace "I can't do this" with "I can't do this YET — here's what I'll practice": name the exact technique
-- Coordination → Motor chunking (Schmidt): break the technique into 3 named sub-moves, practice each sub-move separately before combining
+CLASSIFICATION GUIDE — read the skill name and classify it:
 
-If coach note exists, reference it directly and show how the intervention addresses what the coach observed.
+▸ MOTOR / PHYSICAL EXECUTION skills (anything about movement quality, body, technique):
+  Includes: Technique, Kicking, Punching, Form, Pattern, Poomsae, Kata, Sparring, Power, Flexibility, Agility, Balance, Speed, Footwork, Guard, Stance, Blocks, any martial arts technique name
+  → Apply: Deliberate Practice micro-blocks (Ericsson): 3 sets of 5-min focused repetitions of ONE specific move, with a 2-min physical reset between sets. Name the actual move from the sport (e.g., "round kick," "front kick," "jab-cross").
+
+▸ ATTENTION / COGNITIVE skills (anything about mental presence, listening, alertness):
+  Includes: Focus, Concentration, Attention, Listening, Alertness, Awareness, Memory, Retention
+  → Apply: Attention Restoration Theory (Kaplan) + timed focus windows: 10-min focused drill, 5-min unstructured free play, then back to drill. The reset is essential — it replenishes directed attention capacity.
+
+▸ EFFORT / ENERGY / MOTIVATION skills (anything about trying hard, energy output, initiative):
+  Includes: Effort, Hardworking, Energy, Drive, Initiative, Motivation, Trying, Work Ethic, Commitment, Engagement
+  → Apply: Self-Determination Theory autonomy support (Deci & Ryan): child co-creates a personal goal card with 3 things they want to achieve in the next class. Parent reviews it with them after class — this builds ownership and intrinsic motivation.
+
+▸ DISCIPLINE / BEHAVIORAL skills (anything about following rules, consistency, self-control):
+  Includes: Discipline, Behavior, Respect, Obedience, Self-Control, Attitude, Listening to Coach, Following Instructions, Consistency, Etiquette, Courtesy
+  → Apply: Implementation Intentions (Gollwitzer): write together "When [specific trigger], I will [specific action]" — e.g., "When the coach claps twice, I will immediately stop and stand still." Specificity makes it automatic.
+
+▸ CONFIDENCE / EMOTIONAL skills (anything about self-belief, nervousness, emotional regulation):
+  Includes: Confidence, Self-Belief, Courage, Nervousness, Anxiety, Emotional Control, Resilience, Mindset
+  → Apply: Growth Mindset reframing (Dweck): practice "not yet" language — when the child says "I can't do [technique]," replace with "I can't do it yet — let's practice the first step." Name the exact technique they're struggling with.
+
+▸ COORDINATION / TIMING / RHYTHM skills:
+  Includes: Coordination, Timing, Rhythm, Synchronization, Reaction, Reflex, Fluidity
+  → Apply: Motor chunking (Schmidt): break the full technique into 3 named sub-moves. Practice sub-move 1 alone until smooth (5 reps), then sub-move 2, then combine 1+2, then add 3. Never practice the full sequence until each part is solid.
+
+If coach note exists, quote it directly and explain how your chosen intervention addresses exactly what the coach observed.
 
 ═══════════════════════════════════════════
 STEP 4 — PROGRESS MARKER
