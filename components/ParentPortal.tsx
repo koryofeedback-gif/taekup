@@ -7666,6 +7666,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <NavButton icon="🏠" label={t('parent.tabs.hq')} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
                     <NavButton icon="⚔️" label={t('parent.tabs.arena')} active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
                     <NavButton icon="💬" label={t('parent.tabs.feedback')} active={activeTab === 'feedback'} onClick={() => setActiveTab('feedback')} badge={unseenFeedbackCount} />
+                    <NavButton icon="📚" label={t('parent.tabs.practice')} active={activeTab === 'practice'} onClick={() => setActiveTab('practice')} />
                     <NavButton icon="🔮" label={t('parent.tabs.chronos')} active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} isPremium={!hasPremiumAccess} />
                     <NavButton icon="🧠" label={t('parent.tabs.sensei')} active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} isPremium={!hasPremiumAccess} />
                 </div>
