@@ -62,8 +62,6 @@ export const en = {
     allClasses: "All Classes",
     allBelts: "All Belts",
     demoModeActive: "Demo mode is active. Turn off demo mode to make changes.",
-    exitDemoButton: "Exit Demo & Set Up My Club",
-    exitDemoConfirm: "This will delete all demo data and take you back to the setup wizard. Continue?",
     areYouSure: "Are you sure? This cannot be undone.",
     failedToStart: "Failed to start checkout. Please try again.",
     classes: "classes",

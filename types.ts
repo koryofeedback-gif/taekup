@@ -354,5 +354,4 @@ export interface WizardData {
   selectedPlanIndex?: number;
   // Demo mode flag
   isDemo?: boolean;
-  hasDemoData?: boolean;
 }
