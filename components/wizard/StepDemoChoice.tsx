@@ -36,7 +36,7 @@ export const StepDemoChoice: React.FC<StepDemoChoiceProps> = ({ clubId, language
         if (result.wizardData) {
           localStorage.removeItem('taekup_wizard_data');
           localStorage.removeItem('taekup_wizard_draft');
-          localStorage.setItem('taekup_wizard_data', JSON.stringify(result.wizardData));
+          localStorage.setItem('taekup_wizard_data', JSON.stringify({ ...result.wizardData, hasDemoData: true }));
           
           localStorage.setItem('taekup_user_type', 'owner');
           localStorage.setItem('taekup_user_name', result.wizardData.ownerName || 'Demo Owner');
