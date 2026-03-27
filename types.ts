@@ -75,6 +75,8 @@ export interface CurriculumItem {
     requiresVideo?: boolean; // Requires video proof of technique completion
     videoAccess?: 'premium' | 'free'; // Who can submit video proof (default: premium)
     maxPerWeek?: number; // Limit completions per week (undefined = unlimited), enforces 1x/day
+    locationFilter?: string; // 'all' or a specific location/branch name
+    classFilter?: string;    // 'all' or a specific class name
 }
 
 export interface CurriculumCourse {

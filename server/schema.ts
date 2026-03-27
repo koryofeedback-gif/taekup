@@ -487,6 +487,8 @@ export const curriculumContent = pgTable('curriculum_content', {
   requiresVideo: boolean('requires_video').default(false), // Requires video proof of technique
   videoAccess: varchar('video_access', { length: 20 }).default('premium'), // 'premium' or 'free'
   maxPerWeek: integer('max_per_week'), // Limit completions per week (null = unlimited), enforces 1x/day
+  locationFilter: varchar('location_filter', { length: 255 }).default('all'), // 'all' or specific branch name
+  classFilter: varchar('class_filter', { length: 255 }).default('all'),       // 'all' or specific class name
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

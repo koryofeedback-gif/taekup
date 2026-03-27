@@ -682,7 +682,9 @@ export function registerRoutes(app: Express) {
           completionCount: c.completion_count || 0,
           authorName: c.author_name,
           publishAt: c.publish_at,
-          createdAt: c.created_at
+          createdAt: c.created_at,
+          locationFilter: c.location_filter || 'all',
+          classFilter: c.class_filter || 'all',
         };
       });
 
@@ -3253,7 +3255,7 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'Club ID and content are required' });
       }
 
-      const { id, title, url, beltId, contentType, status, pricingType, xpReward, description, requiresVideo, videoAccess, maxPerWeek, category } = content;
+      const { id, title, url, beltId, contentType, status, pricingType, xpReward, description, requiresVideo, videoAccess, maxPerWeek, category, locationFilter, classFilter } = content;
       
       // Convert comma-separated tags to JSON array for database
       const tagsArray = category ? category.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
@@ -3293,6 +3295,8 @@ export function registerRoutes(app: Express) {
               requires_video = ${requiresVideo || false},
               video_access = ${videoAccess || 'premium'},
               max_per_week = ${maxPerWeek || null},
+              location_filter = ${locationFilter || 'all'},
+              class_filter = ${classFilter || 'all'},
               updated_at = NOW()
           WHERE id = ${existingId}::uuid
         `);
@@ -3301,12 +3305,13 @@ export function registerRoutes(app: Express) {
 
       // Insert new content (let DB generate UUID)
       const result = await db.execute(sql`
-        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, tags, requires_video, video_access, max_per_week, created_at, updated_at)
+        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, tags, requires_video, video_access, max_per_week, location_filter, class_filter, created_at, updated_at)
         VALUES (
           ${clubId}::uuid, ${title}, ${url}, ${beltId || 'all'}, 
           ${contentType || 'video'}, ${status || 'draft'}, ${pricingType || 'free'}, 
           ${xpReward || 10}, ${description || null}, ${JSON.stringify(tagsArray)}::jsonb,
           ${requiresVideo || false}, ${videoAccess || 'premium'}, ${maxPerWeek || null},
+          ${locationFilter || 'all'}, ${classFilter || 'all'},
           NOW(), NOW()
         )
         RETURNING id

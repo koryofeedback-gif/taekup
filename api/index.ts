@@ -1952,6 +1952,8 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       requiresVideo: c.requires_video || false,
       videoAccess: c.video_access || 'premium',
       maxPerWeek: c.max_per_week || undefined,
+      locationFilter: c.location_filter || 'all',
+      classFilter: c.class_filter || 'all',
     }));
 
     const curriculum = dbCurriculum.length > 0 ? dbCurriculum : (savedWizardData.curriculum || []);
@@ -8235,7 +8237,7 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Invalid club ID format', clubId });
     }
 
-    const { id, title, url, beltId, contentType, status, pricingType, xpReward, description, requiresVideo, videoAccess, maxPerWeek } = content;
+    const { id, title, url, beltId, contentType, status, pricingType, xpReward, description, requiresVideo, videoAccess, maxPerWeek, locationFilter, classFilter } = content;
     
     if (!title) {
       return res.status(400).json({ error: 'Content title is required' });
@@ -8274,11 +8276,13 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
               pricing_type = $6, xp_reward = $7,
               description = $8, requires_video = $9,
               video_access = $10, max_per_week = $11,
+              location_filter = $12, class_filter = $13,
               updated_at = NOW()
-          WHERE id = $12::uuid
+          WHERE id = $14::uuid
         `, [title, url, beltId || 'all', contentType || 'video', status || 'draft',
             pricingType || 'free', xpReward || 10, description || null,
-            requiresVideo || false, videoAccess || 'premium', maxPerWeek || null, existingId]);
+            requiresVideo || false, videoAccess || 'premium', maxPerWeek || null,
+            locationFilter || 'all', classFilter || 'all', existingId]);
       } catch (colErr: any) {
         if (colErr.code === '42703') {
           await client.query(`
@@ -8302,12 +8306,13 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
     let result: any;
     try {
       result = await client.query(`
-        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, requires_video, video_access, max_per_week, created_at, updated_at)
-        VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+        INSERT INTO curriculum_content (club_id, title, url, belt_id, content_type, status, pricing_type, xp_reward, description, requires_video, video_access, max_per_week, location_filter, class_filter, created_at, updated_at)
+        VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
         RETURNING id
       `, [clubId, title, url, beltId || 'all', contentType || 'video', status || 'draft',
           pricingType || 'free', xpReward || 10, description || null,
-          requiresVideo || false, videoAccess || 'premium', maxPerWeek || null]);
+          requiresVideo || false, videoAccess || 'premium', maxPerWeek || null,
+          locationFilter || 'all', classFilter || 'all']);
     } catch (colErr: any) {
       if (colErr.code === '42703') {
         result = await client.query(`

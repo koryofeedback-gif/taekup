@@ -1703,7 +1703,9 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         publishAt: '', // Scheduled publishing date
         requiresVideo: false, // Requires video proof of technique
         videoAccess: 'premium' as 'premium' | 'free', // Who can submit video proof
-        maxPerWeek: null as number | null // Limit completions per week (null = unlimited)
+        maxPerWeek: null as number | null, // Limit completions per week (null = unlimited)
+        locationFilter: 'all', // 'all' or a specific location name
+        classFilter: 'all',    // 'all' or a specific class name
     });
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
     
@@ -1712,6 +1714,8 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     const [filterBelt, setFilterBelt] = useState('all');
     const [filterType, setFilterType] = useState<'all' | 'video' | 'document'>('all');
     const [filterAccess, setFilterAccess] = useState<'all' | 'free' | 'premium'>('all');
+    const [filterLocation, setFilterLocation] = useState('all');
+    const [filterClass, setFilterClass] = useState('all');
     
     const customTags = data.customVideoTags || [];
     const allTags = [...DEFAULT_VIDEO_TAGS, ...customTags.map(t => ({ id: t, name: t, icon: '🏷️' }))];
@@ -1744,10 +1748,12 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             publishAt: newVideo.publishAt || undefined,
             requiresVideo: newVideo.requiresVideo,
             videoAccess: newVideo.requiresVideo ? newVideo.videoAccess : undefined,
-            maxPerWeek: newVideo.maxPerWeek || undefined
+            maxPerWeek: newVideo.maxPerWeek || undefined,
+            locationFilter: newVideo.locationFilter || 'all',
+            classFilter: newVideo.classFilter || 'all',
         };
         onUpdateData({ curriculum: [...curriculum, item] });
-        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], tagsInput: '', contentType: 'video', status: 'live', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium', maxPerWeek: null });
+        setNewVideo({ title: '', url: '', beltId: 'all', tags: [], tagsInput: '', contentType: 'video', status: 'live', pricingType: 'free', xpReward: 10, description: '', publishAt: '', requiresVideo: false, videoAccess: 'premium', maxPerWeek: null, locationFilter: 'all', classFilter: 'all' });
         
         if (clubId) {
             try {
@@ -1776,7 +1782,9 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             const matchesBelt = filterBelt === 'all' || item.beltId === filterBelt;
             const matchesType = filterType === 'all' || item.contentType === filterType;
             const matchesAccess = filterAccess === 'all' || item.pricingType === filterAccess;
-            return matchesSearch && matchesBelt && matchesType && matchesAccess;
+            const matchesLocation = filterLocation === 'all' || (item.locationFilter || 'all') === filterLocation || (item.locationFilter || 'all') === 'all';
+            const matchesClass = filterClass === 'all' || (item.classFilter || 'all') === filterClass || (item.classFilter || 'all') === 'all';
+            return matchesSearch && matchesBelt && matchesType && matchesAccess && matchesLocation && matchesClass;
         });
     };
 
@@ -1836,7 +1844,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     const liveContent = filterContent(curriculum.filter(c => c.status === 'live'));
     const draftContent = filterContent(curriculum.filter(c => c.status !== 'live'));
     const scheduledContent = draftContent.filter(c => c.publishAt);
-    const hasActiveFilters = searchQuery || filterBelt !== 'all' || filterType !== 'all' || filterAccess !== 'all';
+    const hasActiveFilters = searchQuery || filterBelt !== 'all' || filterType !== 'all' || filterAccess !== 'all' || filterLocation !== 'all' || filterClass !== 'all';
 
     return (
         <div>
@@ -1883,9 +1891,33 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                         <option value="free">{t('common.free')}</option>
                                         <option value="premium">{t('common.premium')}</option>
                                     </select>
+                                    {data.branchNames && data.branchNames.length > 0 && (
+                                        <select
+                                            value={filterLocation}
+                                            onChange={e => setFilterLocation(e.target.value)}
+                                            className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                                        >
+                                            <option value="all">All Locations</option>
+                                            {data.branchNames.map(loc => (
+                                                <option key={loc} value={loc}>{loc}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    {data.classes && data.classes.length > 0 && (
+                                        <select
+                                            value={filterClass}
+                                            onChange={e => setFilterClass(e.target.value)}
+                                            className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                                        >
+                                            <option value="all">All Classes</option>
+                                            {data.classes.map(cls => (
+                                                <option key={cls} value={cls}>{cls}</option>
+                                            ))}
+                                        </select>
+                                    )}
                                     {hasActiveFilters && (
                                         <button 
-                                            onClick={() => { setSearchQuery(''); setFilterBelt('all'); setFilterType('all'); setFilterAccess('all'); }}
+                                            onClick={() => { setSearchQuery(''); setFilterBelt('all'); setFilterType('all'); setFilterAccess('all'); setFilterLocation('all'); setFilterClass('all'); }}
                                             className="px-3 py-2 bg-red-600/20 text-red-400 rounded text-sm hover:bg-red-600/30"
                                         >
                                             {t('common.clear')}
@@ -1968,6 +2000,43 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                         )}
                                     </div>
                                 </div>
+                                {(data.branchNames?.length > 0 || data.classes?.length > 0) && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {data.branchNames && data.branchNames.length > 0 && (
+                                            <div>
+                                                <label className="block text-xs text-gray-400 mb-1">Location</label>
+                                                <select
+                                                    value={newVideo.locationFilter}
+                                                    onChange={e => setNewVideo({...newVideo, locationFilter: e.target.value})}
+                                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                                >
+                                                    <option value="all">All Locations</option>
+                                                    {data.branchNames.map(loc => (
+                                                        <option key={loc} value={loc}>{loc}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                        {data.classes && data.classes.length > 0 && (
+                                            <div>
+                                                <label className="block text-xs text-gray-400 mb-1">Class</label>
+                                                <select
+                                                    value={newVideo.classFilter}
+                                                    onChange={e => setNewVideo({...newVideo, classFilter: e.target.value})}
+                                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                                >
+                                                    <option value="all">All Classes</option>
+                                                    {(newVideo.locationFilter !== 'all' && data.locationClasses?.[newVideo.locationFilter]
+                                                        ? data.locationClasses[newVideo.locationFilter]
+                                                        : data.classes
+                                                    ).map(cls => (
+                                                        <option key={cls} value={cls}>{cls}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.access')}</label>
