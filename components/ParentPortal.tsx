@@ -94,6 +94,9 @@ const getBelt = (beltId: string, belts: Belt[]) => belts.find(b => b.id === belt
 export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBack, onUpdateStudent }) => {
     const [language, setLanguage] = useState(data.language || 'English');
     const { t, lang } = useTranslation(language);
+
+    const EUROZONE_PP = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','CH']);
+    const premiumPrice = EUROZONE_PP.has((data.country || '').toUpperCase()) ? '€4.99' : '$4.99';
     const [searchParams, setSearchParams] = useSearchParams();
     const [premiumJustActivated, setPremiumJustActivated] = useState(false);
 
@@ -5264,7 +5267,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 
                                                 <div className="text-center mb-4">
                                                     <p className="text-gray-400 text-sm">{t('parent.premium.allThisForJust')}</p>
-                                                    <p className="text-3xl font-black text-white">{t('parent.premium.pricePerMonth')}</p>
+                                                    <p className="text-3xl font-black text-white">{t('parent.premium.pricePerMonth', { price: premiumPrice })}</p>
                                                 </div>
                                                 
                                                 <div className="space-y-2">
@@ -5273,7 +5276,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         disabled={premiumCheckoutLoading}
                                                         className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg disabled:opacity-50"
                                                     >
-                                                        {premiumCheckoutLoading ? t('parent.premium.loadingCheckout') : t('parent.premium.unlockPremium')}
+                                                        {premiumCheckoutLoading ? t('parent.premium.loadingCheckout') : t('parent.premium.unlockPremium', { price: premiumPrice })}
                                                     </button>
                                                     <button
                                                         onClick={() => setShowUpgradeModal(false)}
@@ -6484,7 +6487,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                 
                                                 <div className="text-center mb-4">
                                                     <p className="text-gray-400 text-sm">{t('parent.premium.allThisForJust')}</p>
-                                                    <p className="text-3xl font-black text-white">{t('parent.premium.pricePerMonth')}</p>
+                                                    <p className="text-3xl font-black text-white">{t('parent.premium.pricePerMonth', { price: premiumPrice })}</p>
                                                 </div>
                                                 
                                                 <div className="space-y-2">
@@ -6493,7 +6496,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         disabled={premiumCheckoutLoading}
                                                         className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg disabled:opacity-50"
                                                     >
-                                                        {premiumCheckoutLoading ? t('parent.premium.loadingCheckout') : t('parent.premium.unlockPremium')}
+                                                        {premiumCheckoutLoading ? t('parent.premium.loadingCheckout') : t('parent.premium.unlockPremium', { price: premiumPrice })}
                                                     </button>
                                                     <button
                                                         onClick={() => setShowUpgradeModal(false)}
@@ -7748,7 +7751,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         
                         <div className="text-center mb-4">
                             <p className="text-gray-400 text-sm">{t('parent.premium.allThisForJust')}</p>
-                            <p className="text-3xl font-black text-white">{t('parent.premium.pricePerMonth')}</p>
+                            <p className="text-3xl font-black text-white">{t('parent.premium.pricePerMonth', { price: premiumPrice })}</p>
                         </div>
                         
                         <div className="space-y-2">
@@ -7757,7 +7760,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 disabled={premiumCheckoutLoading}
                                 className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black text-lg shadow-lg disabled:opacity-50"
                             >
-                                {premiumCheckoutLoading ? t('parent.premium.loadingCheckout') : t('parent.premium.unlockPremium')}
+                                {premiumCheckoutLoading ? t('parent.premium.loadingCheckout') : t('parent.premium.unlockPremium', { price: premiumPrice })}
                             </button>
                             <button
                                 onClick={() => setShowUpgradeModal(false)}
