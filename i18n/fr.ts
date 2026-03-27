@@ -62,6 +62,8 @@ export const fr = {
     allClasses: "Tous les cours",
     allBelts: "Toutes les ceintures",
     demoModeActive: "Le mode démo est actif. Désactivez le mode démo pour effectuer des modifications.",
+    exitDemoButton: "Quitter la démo et configurer mon club",
+    exitDemoConfirm: "Toutes les données de démonstration seront supprimées et vous serez redirigé vers l'assistant de configuration. Continuer ?",
     areYouSure: "Êtes-vous sûr(e) ? Cette action est irréversible.",
     failedToStart: "Impossible de lancer le paiement. Veuillez réessayer.",
     classes: "cours",

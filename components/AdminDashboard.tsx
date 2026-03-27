@@ -2845,6 +2845,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'staff' | 'schedule' | 'creator' | 'settings' | 'billing'>('overview');
     
     
+    // Demo exit state
+    const [isExitingDemo, setIsExitingDemo] = useState(false);
+
+    const handleExitDemo = async () => {
+        if (!window.confirm(t('common.exitDemoConfirm'))) return;
+        setIsExitingDemo(true);
+        try {
+            await fetch('/api/demo/clear', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId }),
+            });
+        } catch (e) {
+            console.error('Failed to clear demo data', e);
+        }
+        // Full logout: clear all local state so next login hits the wizard fresh
+        localStorage.removeItem('taekup_wizard_data');
+        localStorage.removeItem('taekup_signup_data');
+        localStorage.removeItem('taekup_user_type');
+        localStorage.removeItem('taekup_user_name');
+        window.location.href = '/login';
+    };
+
     // Modal State
     const [modalType, setModalType] = useState<string | null>(null);
     
@@ -3447,7 +3470,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 flex">
+        <div className="min-h-screen bg-gray-900 flex flex-col">
+            {/* DEMO MODE BANNER */}
+            {data.hasDemoData && (
+                <div className="bg-amber-500 text-amber-950 px-4 py-2.5 flex items-center justify-between gap-4 z-50 flex-shrink-0">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                        <span>🎮</span>
+                        <span>{t('common.demoModeActive')}</span>
+                    </div>
+                    <button
+                        onClick={handleExitDemo}
+                        disabled={isExitingDemo}
+                        className="bg-amber-950 text-amber-100 hover:bg-amber-900 disabled:opacity-60 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+                    >
+                        {isExitingDemo ? '...' : t('common.exitDemoButton')}
+                    </button>
+                </div>
+            )}
+
+            <div className="flex flex-1 min-h-0">
             {/* SIDEBAR */}
             <div className="w-64 bg-gray-800 border-r border-gray-700 hidden md:flex flex-col">
                 <div className="p-6 border-b border-gray-700">
@@ -4220,6 +4261,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     existingBelts={data.belts}
                 />
             )}
+            </div>
         </div>
     );
 };

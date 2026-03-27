@@ -107,6 +107,14 @@ const WizardRoute: React.FC<WizardRouteProps> = ({ signupData, loggedInUserType,
                         if (initialData.clubId) {
                             localStorage.setItem('taekup_club_id', initialData.clubId);
                         }
+                        // Stamp hasDemoData so the demo banner shows immediately on load
+                        const raw = localStorage.getItem('taekup_wizard_data');
+                        if (raw) {
+                            try {
+                                const parsed = JSON.parse(raw);
+                                localStorage.setItem('taekup_wizard_data', JSON.stringify({ ...parsed, hasDemoData: true }));
+                            } catch (_) {}
+                        }
                         // Force page reload to ensure React state picks up localStorage changes
                         window.location.href = '/app/admin';
                     }}
@@ -796,7 +804,8 @@ const App: React.FC = () => {
 
                         const mergedData = {
                             ...dbResult.wizardData,
-                            worldRankingsEnabled: dbResult.club?.worldRankingsEnabled || false
+                            worldRankingsEnabled: dbResult.club?.worldRankingsEnabled || false,
+                            hasDemoData: dbResult.club?.hasDemoData || false
                         };
 
                         // Preserve local-only fields (performanceHistory, homeDojo, etc.)

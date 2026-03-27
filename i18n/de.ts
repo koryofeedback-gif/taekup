@@ -62,6 +62,8 @@ export const de = {
     allClasses: "Alle Kurse",
     allBelts: "Alle Gürtel",
     demoModeActive: "Der Demomodus ist aktiv. Deaktivieren Sie den Demomodus, um Änderungen vorzunehmen.",
+    exitDemoButton: "Demo beenden und meinen Club einrichten",
+    exitDemoConfirm: "Alle Demodaten werden gelöscht und Sie werden zum Einrichtungsassistenten weitergeleitet. Fortfahren?",
     areYouSure: "Sind Sie sicher? Dies kann nicht rückgängig gemacht werden.",
     failedToStart: "Bezahlvorgang konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
     classes: "Kurse",
