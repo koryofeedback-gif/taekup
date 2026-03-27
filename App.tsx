@@ -796,7 +796,8 @@ const App: React.FC = () => {
 
                         const mergedData = {
                             ...dbResult.wizardData,
-                            worldRankingsEnabled: dbResult.club?.worldRankingsEnabled || false
+                            worldRankingsEnabled: dbResult.club?.worldRankingsEnabled || false,
+                            hasDemoData: dbResult.club?.hasDemoData || false
                         };
 
                         // Preserve local-only fields (performanceHistory, homeDojo, etc.)

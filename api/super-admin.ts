@@ -281,8 +281,8 @@ async function handleOverview(req: VercelRequest, res: VercelResponse) {
       db`SELECT COUNT(*) as count FROM clubs WHERE trial_status = 'active'`,
       db`SELECT COUNT(*) as count FROM clubs WHERE status = 'active' AND trial_status = 'converted'`,
       db`SELECT COUNT(*) as count FROM clubs WHERE status = 'churned'`,
-      db`SELECT COUNT(*) as count FROM students`,
-      db`SELECT COUNT(*) as count FROM students WHERE premium_status != 'none'`,
+      db`SELECT COUNT(*) as count FROM students WHERE COALESCE(is_demo, false) = false`,
+      db`SELECT COUNT(*) as count FROM students WHERE premium_status != 'none' AND COALESCE(is_demo, false) = false`,
       db`SELECT * FROM clubs ORDER BY created_at DESC LIMIT 5`,
       db`
         SELECT * FROM clubs 
@@ -341,7 +341,7 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
       clubs = await db`
         SELECT 
           c.*,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
           s.status as subscription_status,
           s.plan_name,
@@ -360,7 +360,7 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
       clubs = await db`
         SELECT 
           c.*,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
           s.status as subscription_status,
           s.plan_name,
@@ -378,7 +378,7 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
       clubs = await db`
         SELECT 
           c.*,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
           s.status as subscription_status,
           s.plan_name,
@@ -395,7 +395,7 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
       clubs = await db`
         SELECT 
           c.*,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
           s.status as subscription_status,
           s.plan_name,
@@ -412,7 +412,7 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
       clubs = await db`
         SELECT 
           c.*,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
           s.status as subscription_status,
           s.plan_name,
@@ -428,7 +428,7 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
       clubs = await db`
         SELECT 
           c.*,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
           s.status as subscription_status,
           s.plan_name,
@@ -444,7 +444,7 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
       clubs = await db`
         SELECT 
           c.*,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
           s.status as subscription_status,
           s.plan_name,
@@ -460,7 +460,7 @@ async function handleClubs(req: VercelRequest, res: VercelResponse) {
       clubs = await db`
         SELECT 
           c.*,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
           s.status as subscription_status,
           s.plan_name,
@@ -965,7 +965,7 @@ async function handleHealthScores(req: VercelRequest, res: VercelResponse) {
         c.trial_end,
         c.created_at,
         (SELECT MAX(last_login_at) FROM users WHERE club_id = c.id) as last_login,
-        (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+        (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
         (SELECT COUNT(*) FROM students WHERE club_id = c.id AND created_at >= CURRENT_DATE - INTERVAL '7 days') as students_added_7d,
         (SELECT COUNT(*) FROM coaches WHERE club_id = c.id AND is_active = true) as active_coaches,
         (SELECT COUNT(*) FROM attendance_events WHERE club_id = c.id AND attended_at >= CURRENT_DATE - INTERVAL '7 days') as classes_7d,
@@ -1489,7 +1489,7 @@ async function handleExportClubs(req: VercelRequest, res: VercelResponse) {
         c.trial_start,
         c.trial_end,
         c.created_at,
-        (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+        (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
         (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count,
         s.plan_name,
         s.monthly_amount,
@@ -2427,7 +2427,7 @@ async function handleGetClubs(req: VercelRequest, res: VercelResponse) {
           COALESCE(s.subscription_status, 'none') as subscription_status,
           COALESCE(s.plan_name, 'Free') as plan_name,
           COALESCE(s.monthly_amount, 0) as monthly_amount,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count
         FROM clubs c
         LEFT JOIN subscriptions s ON s.club_id = c.id
@@ -2443,7 +2443,7 @@ async function handleGetClubs(req: VercelRequest, res: VercelResponse) {
           COALESCE(s.subscription_status, 'none') as subscription_status,
           COALESCE(s.plan_name, 'Free') as plan_name,
           COALESCE(s.monthly_amount, 0) as monthly_amount,
-          (SELECT COUNT(*) FROM students WHERE club_id = c.id) as student_count,
+          (SELECT COUNT(*) FROM students WHERE club_id = c.id AND COALESCE(is_demo, false) = false) as student_count,
           (SELECT COUNT(*) FROM coaches WHERE club_id = c.id) as coach_count
         FROM clubs c
         LEFT JOIN subscriptions s ON s.club_id = c.id

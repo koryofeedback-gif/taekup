@@ -1810,7 +1810,7 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
     const clubResult = await client.query(
       `SELECT id, name, owner_email, owner_name, country, city, art_type, 
               wizard_data, trial_start, trial_end, trial_status, status,
-              world_rankings_enabled, logo_data
+              world_rankings_enabled, logo_data, has_demo_data
        FROM clubs WHERE id = $1::uuid`,
       [clubId]
     );
@@ -1963,10 +1963,8 @@ async function handleGetClubData(req: VercelRequest, res: VercelResponse, clubId
       logo: club.logo_data || savedWizardData.logo || null,
     };
 
-    // Check if demo data exists (students with demo names or wizard_data with demo flag)
-    const hasDemoData = students.length > 0 && students.some((s: any) => 
-      ['Daniel LaRusso', 'Johnny Lawrence', 'Miguel Diaz', 'Robby Keene', 'Sam LaRusso', 'Hawk Moskowitz'].includes(s.name)
-    );
+    // Check if demo data exists using authoritative DB column
+    const hasDemoData = club.has_demo_data === true;
 
     return res.json({
       success: true,
