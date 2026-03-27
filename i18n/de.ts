@@ -1098,6 +1098,10 @@ export const de = {
       videos: "Videos",
       documents: "Dokumente",
       allAccess: "Alle Zugangsstufen",
+      allLocations: "Alle Standorte",
+      allClasses: "Alle Klassen",
+      locationLabel: "Standort",
+      classLabel: "Klasse",
       showingItems: "{shown} von {total} Einträgen angezeigt",
 
       addNewContent: "Neuen Inhalt hinzufügen",

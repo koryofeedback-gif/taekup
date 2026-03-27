@@ -1098,6 +1098,10 @@ export const fr = {
       videos: "Vidéos",
       documents: "Documents",
       allAccess: "Tous les accès",
+      allLocations: "Tous les lieux",
+      allClasses: "Toutes les classes",
+      locationLabel: "Lieu",
+      classLabel: "Classe",
       showingItems: "Affichage de {shown} sur {total} éléments",
 
       addNewContent: "Ajouter un nouveau contenu",

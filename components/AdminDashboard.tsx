@@ -1897,7 +1897,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                             onChange={e => setFilterLocation(e.target.value)}
                                             className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
                                         >
-                                            <option value="all">All Locations</option>
+                                            <option value="all">{t('admin.creatorHub.allLocations')}</option>
                                             {data.branchNames.map(loc => (
                                                 <option key={loc} value={loc}>{loc}</option>
                                             ))}
@@ -1909,7 +1909,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                             onChange={e => setFilterClass(e.target.value)}
                                             className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
                                         >
-                                            <option value="all">All Classes</option>
+                                            <option value="all">{t('admin.creatorHub.allClasses')}</option>
                                             {data.classes.map(cls => (
                                                 <option key={cls} value={cls}>{cls}</option>
                                             ))}
@@ -2004,13 +2004,13 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     <div className="grid grid-cols-2 gap-4">
                                         {data.branchNames && data.branchNames.length > 0 && (
                                             <div>
-                                                <label className="block text-xs text-gray-400 mb-1">Location</label>
+                                                <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.locationLabel')}</label>
                                                 <select
                                                     value={newVideo.locationFilter}
                                                     onChange={e => setNewVideo({...newVideo, locationFilter: e.target.value})}
                                                     className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                                 >
-                                                    <option value="all">All Locations</option>
+                                                    <option value="all">{t('admin.creatorHub.allLocations')}</option>
                                                     {data.branchNames.map(loc => (
                                                         <option key={loc} value={loc}>{loc}</option>
                                                     ))}
@@ -2019,13 +2019,13 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                         )}
                                         {data.classes && data.classes.length > 0 && (
                                             <div>
-                                                <label className="block text-xs text-gray-400 mb-1">Class</label>
+                                                <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.classLabel')}</label>
                                                 <select
                                                     value={newVideo.classFilter}
                                                     onChange={e => setNewVideo({...newVideo, classFilter: e.target.value})}
                                                     className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
                                                 >
-                                                    <option value="all">All Classes</option>
+                                                    <option value="all">{t('admin.creatorHub.allClasses')}</option>
                                                     {(newVideo.locationFilter !== 'all' && data.locationClasses?.[newVideo.locationFilter]
                                                         ? data.locationClasses[newVideo.locationFilter]
                                                         : data.classes
