@@ -17,7 +17,8 @@ export class StripeService {
     customerId?: string,
     metadata?: Record<string, string>,
     skipTrial: boolean = false,
-    prefillEmail?: string
+    prefillEmail?: string,
+    currency?: 'usd' | 'eur'
   ) {
     const stripe = await getUncachableStripeClient();
     
@@ -32,6 +33,10 @@ export class StripeService {
         metadata,
       },
     };
+
+    if (currency) {
+      sessionParams.currency = currency;
+    }
 
     // Only apply trial for new customers who haven't used one yet
     if (!skipTrial) {

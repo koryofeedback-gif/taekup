@@ -5,18 +5,18 @@ import type { SubscriptionPlan, SubscriptionPlanId, Student } from '../types';
 
 const FALLBACK_PRICE_IDS = {
   monthly: {
-    starter: 'price_1SZoz4RhYhunDn2jDjwkY5Fx',
-    pro: 'price_1SZoz4RhYhunDn2jdXdbzXD4',
-    standard: 'price_1SZoz3RhYhunDn2j2oq4TkDl',
-    growth: 'price_1SZoz3RhYhunDn2jXlatF7uE',
-    empire: 'price_1SZoz3RhYhunDn2jKFlLP7eH',
+    starter: 'price_1TFaJARhYhunDn2jY0MItsea',
+    pro: 'price_1TFaMCRhYhunDn2j8dxg6WWx',
+    standard: 'price_1TFaP1RhYhunDn2juiDeGeNi',
+    growth: 'price_1TFaR8RhYhunDn2jQvta5yKC',
+    empire: 'price_1TFaTQRhYhunDn2j9HmYbDT0',
   },
   yearly: {
-    starter: 'price_1Sp56uRhYhunDn2j9WtffKIG',
-    pro: 'price_1Sp57iRhYhunDn2jIkLf4Gcn',
-    standard: 'price_1Sp58RRhYhunDn2jShy6IXdw',
-    growth: 'price_1Sp59JRhYhunDn2jjEGgqK2k',
-    empire: 'price_1Sp59xRhYhunDn2jIzARKLiS',
+    starter: 'price_1TFaJARhYhunDn2jVbK1dHFH',
+    pro: 'price_1TFaMCRhYhunDn2jZMzupYmI',
+    standard: 'price_1TFaP1RhYhunDn2j3HEsdDj2',
+    growth: 'price_1TFaR8RhYhunDn2j5X5uYrFI',
+    empire: 'price_1TFaTQRhYhunDn2jYBnPkFoj',
   },
 };
 

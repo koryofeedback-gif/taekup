@@ -856,7 +856,7 @@ export function registerRoutes(app: Express) {
       }
       const customerId = customers.data[0].id;
       
-      const UA_PRICE_ID = process.env.UNIVERSAL_ACCESS_PRICE_ID || 'price_1TCiA0RhYhunDn2jksE9lwwn';
+      const UA_PRICE_ID = process.env.UNIVERSAL_ACCESS_PRICE_ID || 'price_1TCiA0RhYhunDn2jksE9lwwn'; // multi-currency (USD+EUR)
       
       // Find existing UA subscription (separate from base plan) - only active ones
       const allSubs = await stripe.subscriptions.list({ customer: customerId, limit: 10 });
@@ -935,8 +935,8 @@ export function registerRoutes(app: Express) {
         return res.json({ success: false, message: 'No Stripe customer' });
       }
       
-      // Use specific UA price ID for metered billing
-      const UA_PRICE_ID = 'price_1Sp5trRhYhunDn2jrTOtUvyR';
+      // Use specific UA price ID (multi-currency: USD + EUR)
+      const UA_PRICE_ID = process.env.UNIVERSAL_ACCESS_PRICE_ID || 'price_1TCiA0RhYhunDn2jksE9lwwn';
       
       // Find UA subscription by price ID
       const allSubs = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 10 });
@@ -1606,26 +1606,28 @@ export function registerRoutes(app: Express) {
       // Check if club has already used their trial
       let skipTrial = false;
       let stripeCustomerId: string | undefined;
-      
+      let clubCountryForCheckout: string | null = null;
+
       if (clubId) {
         const clubResult = await db.execute(
-          sql`SELECT trial_status, stripe_customer_id FROM clubs WHERE id = ${clubId}::uuid`
+          sql`SELECT trial_status, stripe_customer_id, wizard_data->>'country' as country FROM clubs WHERE id = ${clubId}::uuid`
         );
         const club = (clubResult as any[])[0];
         
         if (club) {
-          // Skip trial if they have ANY trial status (active, expired, or converted)
-          // This prevents getting multiple trial periods
           if (club.trial_status) {
             skipTrial = true;
             console.log(`[/api/checkout] Club ${clubId} has trial_status: ${club.trial_status}, skipping Stripe trial`);
           }
-          // Use existing Stripe customer if available
           if (club.stripe_customer_id) {
             stripeCustomerId = club.stripe_customer_id as string;
           }
+          clubCountryForCheckout = club.country || null;
         }
       }
+
+      const { getCurrencyForCountry } = await import('./stripeConfig.js');
+      const checkoutCurrency = getCurrencyForCountry(clubCountryForCheckout);
 
       // Use APP_URL for production, fallback to Replit domain or request host
       const baseUrl = process.env.APP_URL || (() => {
@@ -1654,7 +1656,7 @@ export function registerRoutes(app: Express) {
         }
       }
 
-      console.log(`[/api/checkout] Creating session with:`, { priceId, baseUrl, skipTrial, customerId: stripeCustomerId });
+      console.log(`[/api/checkout] Creating session with:`, { priceId, baseUrl, skipTrial, customerId: stripeCustomerId, currency: checkoutCurrency });
 
       const session = await stripeService.createCheckoutSession(
         priceId,
@@ -1662,7 +1664,9 @@ export function registerRoutes(app: Express) {
         `${baseUrl}/pricing?subscription=cancelled`,
         stripeCustomerId,
         { clubId: clubId || '', email: email || '' },
-        skipTrial
+        skipTrial,
+        undefined,
+        checkoutCurrency
       );
 
       console.log(`[/api/checkout] Session created:`, { sessionId: session.id, url: session.url });
@@ -1780,27 +1784,14 @@ export function registerRoutes(app: Express) {
       }
 
       const isEU = EU_COUNTRIES.has((clubCountry || '').toUpperCase());
+      const parentCurrency = isEU ? 'eur' : 'usd';
 
-      // Build line_items: EUR clubs use price_data (same product, EUR) to avoid FX fee
-      let lineItems: any[];
-      if (isEU) {
-        const existingPrice = await stripe.prices.retrieve(priceId);
-        lineItems = [{
-          price_data: {
-            currency: 'eur',
-            product: existingPrice.product as string,
-            unit_amount: 499, // €4.99
-            recurring: { interval: 'month' },
-          },
-          quantity: 1,
-        }];
-      } else {
-        lineItems = [{ price: priceId, quantity: 1 }];
-      }
+      const lineItems = [{ price: priceId, quantity: 1 }];
 
       const sessionConfig: any = {
         customer: customerId,
         payment_method_types: ['card'],
+        currency: parentCurrency,
         line_items: lineItems,
         mode: 'subscription',
         success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,

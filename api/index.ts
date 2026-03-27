@@ -1054,16 +1054,20 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
 
   // Check if user already has a trial status - skip Stripe trial if so
   let shouldSkipTrial = false;
+  let clubCountryForCheckout: string | null = null;
   if (clubId) {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        `SELECT trial_status FROM clubs WHERE id = $1::uuid`,
+        `SELECT trial_status, wizard_data->>'country' as country FROM clubs WHERE id = $1::uuid`,
         [clubId]
       );
-      if (result.rows.length > 0 && result.rows[0].trial_status) {
-        shouldSkipTrial = true;
-        console.log('[Checkout] Skipping Stripe trial for club', clubId, '- already has trial_status:', result.rows[0].trial_status);
+      if (result.rows.length > 0) {
+        if (result.rows[0].trial_status) {
+          shouldSkipTrial = true;
+          console.log('[Checkout] Skipping Stripe trial for club', clubId, '- already has trial_status:', result.rows[0].trial_status);
+        }
+        clubCountryForCheckout = result.rows[0].country || null;
       }
     } catch (e) {
       console.error('[Checkout] Error checking trial status:', e);
@@ -1072,6 +1076,9 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  const EU_CHECKOUT = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','CH']);
+  const checkoutCurrency = EU_CHECKOUT.has((clubCountryForCheckout || '').toUpperCase()) ? 'eur' : 'usd';
+
   const subscriptionData: any = { metadata: { clubId: clubId || '', email: email || '' } };
   if (!shouldSkipTrial) {
     subscriptionData.trial_period_days = 14;
@@ -1079,6 +1086,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
+    currency: checkoutCurrency,
     line_items: [{ price: priceId, quantity: 1 }],
     mode: 'subscription',
     success_url: `${baseUrl}/app/admin?subscription=success`,
@@ -1097,7 +1105,7 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
   const stripe = getStripeClient();
   if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
 
-  const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || 'price_1Sp5BPRhYhunDn2j6Yz8dSxD';
+  const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || 'price_1TFa9URhYhunDn2jbBcc5aPl';
   
   const host = req.headers.host || 'mytaek.com';
   const protocol = req.headers['x-forwarded-proto'] || 'https';
@@ -1141,27 +1149,13 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
   const isEU = EU_COUNTRIES.has((clubCountry || '').toUpperCase());
   const currency = isEU ? 'eur' : 'usd';
 
-  // Build line_items: EUR clubs use price_data (same product, EUR currency) to avoid FX fee;
-  // USD clubs use the existing price ID directly.
-  let lineItems: any[];
-  if (isEU) {
-    const existingPrice = await stripe.prices.retrieve(PARENT_PREMIUM_PRICE_ID);
-    lineItems = [{
-      price_data: {
-        currency: 'eur',
-        product: existingPrice.product as string,
-        unit_amount: 499, // €4.99
-        recurring: { interval: 'month' },
-      },
-      quantity: 1,
-    }];
-  } else {
-    lineItems = [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }];
-  }
+  // Multi-currency price — just pass currency to Stripe, same price ID works for EUR and USD
+  const lineItems = [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }];
 
   const sessionConfig: any = {
     customer: customerId,
     payment_method_types: ['card'],
+    currency,
     line_items: lineItems,
     mode: 'subscription',
     success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,

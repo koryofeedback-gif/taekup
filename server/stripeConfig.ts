@@ -1,50 +1,61 @@
 export const STRIPE_PRICE_IDS = {
   plans: {
     starter: {
-      monthly: 'price_1SZoz4RhYhunDn2jDjwkY5Fx',
-      yearly: 'price_1Sp56uRhYhunDn2j9WtffKIG',
+      monthly: 'price_1TFaJARhYhunDn2jY0MItsea',
+      yearly: 'price_1TFaJARhYhunDn2jVbK1dHFH',
       priceMonthly: 2499,
       priceYearly: 24990,
       studentLimit: 25
     },
     pro: {
-      monthly: 'price_1SZoz4RhYhunDn2jdXdbzXD4',
-      yearly: 'price_1Sp57iRhYhunDn2jIkLf4Gcn',
+      monthly: 'price_1TFaMCRhYhunDn2j8dxg6WWx',
+      yearly: 'price_1TFaMCRhYhunDn2jZMzupYmI',
       priceMonthly: 3999,
       priceYearly: 39990,
       studentLimit: 50
     },
     standard: {
-      monthly: 'price_1SZoz3RhYhunDn2j2oq4TkDl',
-      yearly: 'price_1Sp58RRhYhunDn2jShy6IXdw',
+      monthly: 'price_1TFaP1RhYhunDn2juiDeGeNi',
+      yearly: 'price_1TFaP1RhYhunDn2j3HEsdDj2',
       priceMonthly: 6900,
       priceYearly: 69000,
       studentLimit: 80
     },
     growth: {
-      monthly: 'price_1SZoz3RhYhunDn2jXlatF7uE',
-      yearly: 'price_1Sp59JRhYhunDn2jjEGgqK2k',
+      monthly: 'price_1TFaR8RhYhunDn2jQvta5yKC',
+      yearly: 'price_1TFaR8RhYhunDn2j5X5uYrFI',
       priceMonthly: 12900,
       priceYearly: 129000,
       studentLimit: 150
     },
     empire: {
-      monthly: 'price_1SZoz3RhYhunDn2jKFlLP7eH',
-      yearly: 'price_1Sp59xRhYhunDn2jIzARKLiS',
+      monthly: 'price_1TFaTQRhYhunDn2j9HmYbDT0',
+      yearly: 'price_1TFaTQRhYhunDn2jYBnPkFoj',
       priceMonthly: 19900,
       priceYearly: 199000,
       studentLimit: null
     }
   },
   parentPremium: {
-    monthly: 'price_1Sp5BPRhYhunDn2j6Yz8dSxD',
+    monthly: 'price_1TFa9URhYhunDn2jbBcc5aPl',
     priceMonthly: 499
   },
   universalAccess: {
-    metered: 'price_1Sp5trRhYhunDn2jrTOtUvyR',
+    monthly: 'price_1TCiA0RhYhunDn2jksE9lwwn',
     pricePerUnit: 199
   }
 };
+
+export const EUROZONE_COUNTRIES = new Set([
+  'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE',
+  'GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT',
+  'RO','SK','SI','ES','SE','CH'
+]);
+
+export function getCurrencyForCountry(country: string | null | undefined): 'eur' | 'usd' {
+  if (!country) return 'usd';
+  return EUROZONE_COUNTRIES.has(country.toUpperCase()) ? 'eur' : 'usd';
+}
 
 export function getPlanByPriceId(priceId: string): { planId: string; interval: 'monthly' | 'yearly' } | null {
   for (const [planId, plan] of Object.entries(STRIPE_PRICE_IDS.plans)) {
@@ -55,7 +66,7 @@ export function getPlanByPriceId(priceId: string): { planId: string; interval: '
 }
 
 export function isUniversalAccessPrice(priceId: string): boolean {
-  return priceId === STRIPE_PRICE_IDS.universalAccess.metered;
+  return priceId === STRIPE_PRICE_IDS.universalAccess.monthly;
 }
 
 export function isParentPremiumPrice(priceId: string): boolean {
