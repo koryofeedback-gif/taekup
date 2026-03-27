@@ -519,6 +519,7 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
         FROM students s
         JOIN clubs c ON s.club_id = c.id
         WHERE s.parent_email IS NOT NULL
+          AND COALESCE(s.is_demo, false) = false
         ORDER BY s.last_class_at DESC NULLS LAST 
         LIMIT ${limit} OFFSET ${offset}
       `;
@@ -542,6 +543,7 @@ async function handleParents(req: VercelRequest, res: VercelResponse) {
         FROM students s
         JOIN clubs c ON s.club_id = c.id
         WHERE s.parent_email IS NOT NULL
+          AND COALESCE(s.is_demo, false) = false
         ORDER BY s.last_class_at DESC NULLS LAST 
         LIMIT ${limit} OFFSET ${offset}
       `;

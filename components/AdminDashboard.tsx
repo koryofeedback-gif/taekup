@@ -2874,6 +2874,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [uploadedFileName, setUploadedFileName] = useState('');
     const [importStatus, setImportStatus] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
     const [isImporting, setIsImporting] = useState(false);
+    const [clearingDemo, setClearingDemo] = useState(false);
+
+    const handleClearDemo = async () => {
+        if (!clubId) return;
+        setClearingDemo(true);
+        try {
+            const res = await fetch('/api/demo/clear', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId }),
+            });
+            const result = await res.json();
+            if (result.success) {
+                localStorage.removeItem('taekup_wizard_complete');
+                localStorage.removeItem('taekup_wizard_data');
+                localStorage.removeItem('taekup_wizard_draft');
+                window.location.href = '/app/setup';
+            } else {
+                setClearingDemo(false);
+                alert('Failed to clear demo data. Please try again.');
+            }
+        } catch {
+            setClearingDemo(false);
+            alert('Network error. Please try again.');
+        }
+    };
 
     const handleExcelUpload = (file: File) => {
         console.log('[AdminDashboard] File upload started:', file.name, file.type, file.size);
@@ -3495,6 +3521,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     <button onClick={onBack} className="text-gray-400">Exit</button>
                 </div>
                 
+
+                {data.hasDemoData && (
+                    <div className="bg-amber-500/10 border-b border-amber-500/40 px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <span className="text-amber-400 text-lg">🎮</span>
+                            <div>
+                                <p className="text-amber-300 font-bold text-sm">{t('coach.status.demoMode')}</p>
+                                <p className="text-amber-400/70 text-xs">{t('common.demoModeActive')}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleClearDemo}
+                            disabled={clearingDemo}
+                            className="shrink-0 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold px-4 py-2 rounded-lg text-sm transition-colors"
+                        >
+                            {clearingDemo ? '⏳ Clearing...' : '🗑️ Clear Demo & Start Fresh'}
+                        </button>
+                    </div>
+                )}
 
                 <div className="p-4 md:p-6 lg:p-12 max-w-7xl mx-auto">
                     {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} onNavigateTab={setActiveTab} />}
