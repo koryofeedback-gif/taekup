@@ -84,8 +84,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                     if (wizardResult.success && wizardResult.wizardData) {
                         const mergedData = {
                             ...wizardResult.wizardData,
-                            worldRankingsEnabled: wizardResult.club?.worldRankingsEnabled || false,
-                            hasDemoData: wizardResult.club?.hasDemoData || false
+                            worldRankingsEnabled: wizardResult.club?.worldRankingsEnabled || false
                         };
                         localStorage.setItem('taekup_wizard_data', JSON.stringify(mergedData));
                         console.log('[Login] Saved fresh wizard data from /api/club/:id/data for', userType);
