@@ -1914,6 +1914,10 @@ router.post('/access-requests/:id/approve', verifySuperAdmin, async (req: Reques
 
     await db.execute(sql`UPDATE access_requests SET status = 'approved' WHERE id = ${parseInt(id)}`);
 
+    // Save the club's preferred language into wizard_data so the UI boots in the right language
+    const initWizardData = JSON.stringify({ language: request.language || 'en' });
+    await db.execute(sql`UPDATE clubs SET wizard_data = ${initWizardData}::jsonb WHERE id = ${club.id}::uuid`);
+
     try {
       const sgClient = await getSendGridClient();
       if (sgClient) {

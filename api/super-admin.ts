@@ -2593,6 +2593,10 @@ async function handleApproveAccessRequest(req: VercelRequest, res: VercelRespons
 
     await db`UPDATE access_requests SET status = 'approved' WHERE id = ${parseInt(requestId)}`;
 
+    // Save the club's preferred language into wizard_data so the UI boots in the right language
+    const initWizardData = JSON.stringify({ language: request.language || 'en' });
+    await db.unsafe(`UPDATE clubs SET wizard_data = $1::jsonb WHERE id = $2::uuid`, [initWizardData, club.id]);
+
     try {
       const sgClient = await getUncachableSendGridClient();
       if (sgClient) {
