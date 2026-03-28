@@ -612,6 +612,7 @@ const App: React.FC = () => {
                         email: prev?.email || userData.email || '',
                         country: prev?.country || 'US',
                         clubId: userData.clubId,
+                        language: userData.language || prev?.language,
                         trialStartDate: prev?.trialStartDate
                     };
                     localStorage.setItem('taekup_signup_data', JSON.stringify(newData));

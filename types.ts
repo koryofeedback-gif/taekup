@@ -11,6 +11,7 @@ export interface SignupData {
   password?: string;
   trialStartDate?: string;
   clubId?: string;
+  language?: string;
 }
 
 export interface Belt {

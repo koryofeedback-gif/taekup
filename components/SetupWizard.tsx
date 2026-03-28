@@ -59,7 +59,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
   const getDefaults = (): Partial<WizardData> => ({
     ownerName: '',
     city: '',
-    language: 'English',
+    language: initialData.language || 'English',
     branches: 1,
     branchNames: ['Main Location'],
     branchAddresses: [''],
@@ -115,7 +115,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
               console.error("Failed to parse saved wizard data", e);
           }
       }
-      return { ...initialData, ...defaults } as WizardData;
+      return { ...defaults, ...initialData } as WizardData;
   });
 
   const [currentStep, setCurrentStep] = useState(1);

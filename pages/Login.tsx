@@ -94,8 +94,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
                 }
             }
             
+            // Attach the VIP language from wizardData so the wizard boots in the right language
+            const userWithLanguage = { ...user, language: data.wizardData?.language || user.language };
+            
             // Also call the original handler for React state updates
-            await onLoginSuccess(userType, user.name || user.clubName, user.studentId, user);
+            await onLoginSuccess(userType, user.name || user.clubName, user.studentId, userWithLanguage);
             
             // Verify localStorage before redirect
             const savedUserType = localStorage.getItem('taekup_user_type');
