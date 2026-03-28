@@ -1828,6 +1828,37 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.post('/api/parent-premium/portal', async (req: Request, res: Response) => {
+    try {
+      const { parentEmail, studentId } = req.body;
+      if (!parentEmail) return res.status(400).json({ error: 'parentEmail is required' });
+
+      const stripe = await getUncachableStripeClient();
+
+      const emailLower = parentEmail.toLowerCase().trim();
+      const existing = await stripe.customers.list({ email: emailLower, limit: 1 });
+      if (existing.data.length === 0) {
+        return res.status(404).json({ error: 'No Stripe account found for this email. Please contact your club.' });
+      }
+      const customerId = existing.data[0].id;
+
+      const baseUrl = process.env.APP_URL || (() => {
+        const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0];
+        if (replitDomain) return `https://${replitDomain}`;
+        const host = req.headers.host || 'localhost:5000';
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        return `${protocol}://${host}`;
+      })();
+      const returnUrl = studentId ? `${baseUrl}/app/parent/${studentId}` : `${baseUrl}/app`;
+
+      const session = await stripe.billingPortal.sessions.create({ customer: customerId, return_url: returnUrl });
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error('[Parent Premium Portal] Error:', error);
+      res.status(500).json({ error: error.message || 'Failed to open billing portal' });
+    }
+  });
+
   app.post('/api/send-promotion-email', async (req: Request, res: Response) => {
     try {
       const { parentEmail, studentName, clubName, clubId, type, newBelt, stripeCount, totalStripes } = req.body;

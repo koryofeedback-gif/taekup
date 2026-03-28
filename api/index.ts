@@ -1180,6 +1180,30 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
   return res.json({ url: session.url });
 }
 
+async function handleParentPremiumPortal(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { parentEmail, studentId } = parseBody(req);
+  if (!parentEmail) return res.status(400).json({ error: 'parentEmail is required' });
+
+  const stripe = getStripeClient();
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+
+  const emailLower = parentEmail.toLowerCase().trim();
+  const existing = await stripe.customers.list({ email: emailLower, limit: 1 });
+  if (existing.data.length === 0) {
+    return res.status(404).json({ error: 'No Stripe account found for this email. Please contact your club.' });
+  }
+  const customerId = existing.data[0].id;
+
+  const host = req.headers.host || 'mytaek.com';
+  const protocol = req.headers['x-forwarded-proto'] || 'https';
+  const baseUrl = `${protocol}://${host}`;
+  const returnUrl = studentId ? `${baseUrl}/app/parent/${studentId}` : `${baseUrl}/app`;
+
+  const session = await stripe.billingPortal.sessions.create({ customer: customerId, return_url: returnUrl });
+  return res.json({ url: session.url });
+}
+
 async function handleCustomerPortal(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { customerId } = parseBody(req);
@@ -8640,6 +8664,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path === '/change-password' || path === '/change-password/') return await handleChangePassword(req, res);
     if (path === '/checkout' || path === '/checkout/') return await handleCheckout(req, res);
     if (path === '/parent-premium/checkout' || path === '/parent-premium/checkout/') return await handleParentPremiumCheckout(req, res);
+    if (path === '/parent-premium/portal' || path === '/parent-premium/portal/') return await handleParentPremiumPortal(req, res);
     if (path === '/customer-portal' || path === '/customer-portal/') return await handleCustomerPortal(req, res);
     if (path === '/products-with-prices' || path === '/products-with-prices/') return await handleProductsWithPrices(req, res);
     if (path === '/stripe/publishable-key' || path === '/stripe/publishable-key/') return await handleStripePublishableKey(req, res);

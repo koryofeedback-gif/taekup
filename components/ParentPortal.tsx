@@ -679,6 +679,34 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [soloResult, setSoloResult] = useState<{ success: boolean; message: string; xp: number } | null>(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [premiumCheckoutLoading, setPremiumCheckoutLoading] = useState(false);
+    const [manageSubLoading, setManageSubLoading] = useState(false);
+
+    const handleManageSubscription = async () => {
+        const parentEmail = localStorage.getItem('taekup_user_email') || data.students?.[0]?.parentEmail || '';
+        if (!parentEmail) {
+            alert('Could not find your email address. Please contact your club.');
+            return;
+        }
+        setManageSubLoading(true);
+        try {
+            const res = await fetch('/api/parent-premium/portal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ parentEmail, studentId: student.id })
+            });
+            const result = await res.json();
+            if (result.url) {
+                window.location.href = result.url;
+            } else {
+                throw new Error(result.error || 'Failed to open portal');
+            }
+        } catch (err: any) {
+            console.error('[Premium Portal]', err);
+            alert(err.message || 'Failed to open subscription portal. Please try again.');
+        } finally {
+            setManageSubLoading(false);
+        }
+    };
 
     const handlePremiumCheckout = async () => {
         if (data.isDemo) {
@@ -3177,6 +3205,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <p className="text-[10px] text-gray-400 mt-1">{t('parent.home.leaderboardAndRankings')}</p>
                 </div>
             </div>
+
+            {/* Manage Subscription — only for self-paid premium parents */}
+            {isPremium && student.premiumStatus === 'parent_paid' && (
+                <div className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 border border-gray-700/60 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                        <span className="text-xl">⭐</span>
+                        <div>
+                            <p className="text-sm font-semibold text-white">Premium Active</p>
+                            <p className="text-[11px] text-gray-400">Update payment or cancel anytime</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleManageSubscription}
+                        disabled={manageSubLoading}
+                        className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium px-3 py-1.5 rounded-lg border border-gray-600 transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >
+                        {manageSubLoading ? '...' : 'Manage'}
+                    </button>
+                </div>
+            )}
 
             {/* Sensei Intel Section */}
             <div className="space-y-3">
