@@ -8908,9 +8908,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const studentCompletedContentMatch = path.match(/^\/students\/([^/]+)\/completed-content\/?$/);
     if (studentCompletedContentMatch) return await handleStudentCompletedContent(req, res, studentCompletedContentMatch[1]);
 
-    const studentGradingMatch = path.match(/^\/students\/([^/]+)\/grading\/?$/);
-    if (studentGradingMatch) return await handleStudentGrading(req, res, studentGradingMatch[1]);
-
     const gradingSessionsMatch = path.match(/^\/students\/([^/]+)\/grading-sessions\/?$/);
     if (gradingSessionsMatch) return await handleGetGradingSessions(req, res, gradingSessionsMatch[1]);
 
