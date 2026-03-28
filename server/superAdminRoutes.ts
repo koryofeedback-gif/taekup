@@ -1918,6 +1918,13 @@ router.post('/access-requests/:id/approve', verifySuperAdmin, async (req: Reques
     const initWizardData = JSON.stringify({ language: request.language || 'en' });
     await db.execute(sql`UPDATE clubs SET wizard_data = ${initWizardData}::jsonb WHERE id = ${club.id}::uuid`);
 
+    // Explicitly mark wizard as NOT completed so the owner lands on the setup wizard, not the dashboard
+    await db.execute(sql`
+      INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
+      VALUES (${club.id}::uuid, false, NOW())
+      ON CONFLICT (club_id) DO UPDATE SET wizard_completed = false
+    `);
+
     try {
       const sgClient = await getSendGridClient();
       if (sgClient) {

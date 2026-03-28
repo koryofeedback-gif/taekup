@@ -2597,6 +2597,14 @@ async function handleApproveAccessRequest(req: VercelRequest, res: VercelRespons
     const initWizardData = JSON.stringify({ language: request.language || 'en' });
     await db.unsafe(`UPDATE clubs SET wizard_data = $1::jsonb WHERE id = $2::uuid`, [initWizardData, club.id]);
 
+    // Explicitly mark wizard as NOT completed so the owner lands on the setup wizard, not the dashboard
+    await db.unsafe(
+      `INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
+       VALUES ($1::uuid, false, NOW())
+       ON CONFLICT (club_id) DO UPDATE SET wizard_completed = false`,
+      [club.id]
+    );
+
     try {
       const sgClient = await getUncachableSendGridClient();
       if (sgClient) {

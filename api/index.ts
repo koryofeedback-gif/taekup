@@ -672,19 +672,21 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) return res.status(401).json({ error: 'Invalid email or password' });
 
-    // Check if wizard is completed (wizard_data exists in clubs table or onboarding_progress)
+    // Check if wizard is completed — onboarding_progress is the source of truth.
+    // wizard_data alone is NOT sufficient: VIP approval writes {"language":"en"} before
+    // the wizard is touched, so we must check the explicit wizard_completed flag first.
     let wizardCompleted = false;
-    if (user.wizard_data && Object.keys(user.wizard_data).length > 0) {
-      wizardCompleted = true;
-    } else {
-      // Fallback: check onboarding_progress table
-      const onboardingResult = await client.query(
-        `SELECT wizard_completed FROM onboarding_progress WHERE club_id = $1::uuid LIMIT 1`,
-        [user.club_id]
-      );
-      if (onboardingResult.rows.length > 0 && onboardingResult.rows[0].wizard_completed) {
-        wizardCompleted = true;
-      }
+    const onboardingResult = await client.query(
+      `SELECT wizard_completed FROM onboarding_progress WHERE club_id = $1::uuid LIMIT 1`,
+      [user.club_id]
+    );
+    if (onboardingResult.rows.length > 0) {
+      wizardCompleted = onboardingResult.rows[0].wizard_completed === true;
+    } else if (user.wizard_data) {
+      // Legacy fallback for clubs created before onboarding_progress existed:
+      // only trust wizard_data if it has real setup content, not just a language key.
+      const wd = user.wizard_data as any;
+      wizardCompleted = !!(wd.beltSystem || wd.belts?.length || wd.className || wd.coaches);
     }
 
     // Log login event async — don't block the response
