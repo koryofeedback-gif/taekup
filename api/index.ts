@@ -2661,7 +2661,8 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
     students,
     skills,
     homeworkEnabled,
-    bonusEnabled
+    bonusEnabled,
+    isDemo
   } = parseBody(req);
 
   if (!clubId || !students || !Array.isArray(students) || students.length === 0) {
@@ -2676,10 +2677,20 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
     const lang = clubId ? await getClubLanguage(client, clubId) : 'en';
     const skillsArray = skills || [];
 
+    const isDemoRequest = !!isDemo;
+
     for (const student of students) {
       try {
         const { id: studentId, name, scores, homework, bonus, totalPoints, sessionXp, stripeProgress, coachNote } = student;
         if (!studentId) continue;
+
+        // Skip DB writes entirely for demo students — grading is for preview only
+        const isDemoEmail = typeof student.parentEmail === 'string' && student.parentEmail.endsWith('@demo.taekup.com');
+        if (isDemoRequest || isDemoEmail) {
+          console.log(`[GradingSession] Skipping demo student: ${name}`);
+          continue;
+        }
+
         const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
         const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
         const redCount = skillsArray.filter((s: any) => scores?.[s.id] === 0).length;
@@ -2696,10 +2707,20 @@ async function handleSendClassFeedback(req: VercelRequest, res: VercelResponse) 
       }
     }
 
+    // Demo mode: skip all emails — return success immediately
+    if (isDemoRequest) {
+      return res.json({ success: true, sent: 0, failed: 0, message: 'Demo mode — grading preview only, no emails sent' });
+    }
+
     const parentGroups: Record<string, Array<typeof students[0]>> = {};
     for (const student of students) {
       if (!student.parentEmail) {
         console.log('[ClassFeedback] Skipping student without parent email:', student.name);
+        continue;
+      }
+      // Never send emails to demo placeholder addresses
+      if (student.parentEmail.endsWith('@demo.taekup.com')) {
+        console.log('[ClassFeedback] Skipping demo email:', student.parentEmail);
         continue;
       }
       const key = student.parentEmail.toLowerCase();
@@ -6617,6 +6638,58 @@ async function handleClubWorldRankingsToggle(req: VercelRequest, res: VercelResp
   }
 }
 
+async function handleStudentGrading(req: VercelRequest, res: VercelResponse, studentId: string) {
+  if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
+  const { totalPoints, sessionXp, sessionPts } = parseBody(req);
+
+  const client = await pool.connect();
+  try {
+    // Never persist grading changes for demo students
+    const demoCheck = await client.query(
+      `SELECT is_demo FROM students WHERE id = $1::uuid LIMIT 1`,
+      [studentId]
+    );
+    if (!demoCheck.rows.length) return res.status(404).json({ error: 'Student not found', studentId });
+    if (demoCheck.rows[0].is_demo) {
+      console.log('[Grading] Skipping demo student:', studentId);
+      return res.json({ success: true, demo: true });
+    }
+
+    const xpEarned = sessionXp || 0;
+    await client.query(`
+      UPDATE students SET
+        total_points = COALESCE($1, total_points),
+        total_xp = COALESCE(total_xp, 0) + $2,
+        last_class_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $3::uuid
+    `, [totalPoints ?? null, xpEarned, studentId]);
+
+    if (xpEarned > 0) {
+      await client.query(
+        `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+         VALUES ($1::uuid, $2, 'EARN', 'Class grading', NOW())`,
+        [studentId, xpEarned]
+      );
+    }
+    const ptsEarned = sessionPts || 0;
+    if (ptsEarned > 0) {
+      await client.query(
+        `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
+         VALUES ($1::uuid, $2, 'PTS_EARN', 'Class grading PTS', NOW())`,
+        [studentId, ptsEarned]
+      );
+    }
+    console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, '+XP:', xpEarned);
+    return res.json({ success: true });
+  } catch (err: any) {
+    console.error('[Grading] Error:', err.message);
+    return res.status(500).json({ error: 'Failed to update student grading data' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleStudentGlobalXp(req: VercelRequest, res: VercelResponse, studentId: string) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -6624,6 +6697,17 @@ async function handleStudentGlobalXp(req: VercelRequest, res: VercelResponse, st
 
   if (!studentId) {
     return res.status(400).json({ error: 'Student ID is required' });
+  }
+
+  // Skip global XP for demo students
+  const client2 = await pool.connect();
+  try {
+    const demoChk = await client2.query(`SELECT is_demo FROM students WHERE id = $1::uuid LIMIT 1`, [studentId]);
+    if (demoChk.rows[0]?.is_demo) {
+      return res.json({ success: true, globalXpAwarded: 0, demo: true, message: 'Demo student — global XP not awarded' });
+    }
+  } finally {
+    client2.release();
   }
 
   // Validate Local XP (0-110 with MyTaek 110 Protocol)
@@ -7741,8 +7825,16 @@ async function handleDemoClear(req: VercelRequest, res: VercelResponse) {
     await client.query('DELETE FROM attendance_events WHERE club_id = $1::uuid AND is_demo = true', [clubId]);
     const deleteResult = await client.query('DELETE FROM students WHERE club_id = $1::uuid AND is_demo = true', [clubId]);
     
-    // CRITICAL: Also clear wizard_data so fresh demo data can be loaded
+    // Also delete any grading sessions for demo students that were graded
+    await client.query(`
+      DELETE FROM grading_sessions
+      WHERE club_id = $1::uuid
+        AND student_id NOT IN (SELECT id FROM students WHERE club_id = $1::uuid)
+    `, [clubId]);
+
+    // Clear wizard_data (removes demo coaches too) and reset wizard so user sees setup choice again
     await client.query('UPDATE clubs SET has_demo_data = false, wizard_data = NULL WHERE id = $1::uuid', [clubId]);
+    await client.query('UPDATE onboarding_progress SET wizard_completed = false WHERE club_id = $1::uuid', [clubId]);
 
     return res.json({ success: true, message: 'Demo data cleared successfully', deletedCount: deleteResult.rowCount });
   } catch (error: any) {
@@ -8854,6 +8946,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const studentCompletedContentMatch = path.match(/^\/students\/([^/]+)\/completed-content\/?$/);
     if (studentCompletedContentMatch) return await handleStudentCompletedContent(req, res, studentCompletedContentMatch[1]);
+
+    const studentGradingMatch = path.match(/^\/students\/([^/]+)\/grading\/?$/);
+    if (studentGradingMatch) return await handleStudentGrading(req, res, studentGradingMatch[1]);
 
     const gradingSessionsMatch = path.match(/^\/students\/([^/]+)\/grading-sessions\/?$/);
     if (gradingSessionsMatch) return await handleGetGradingSessions(req, res, gradingSessionsMatch[1]);

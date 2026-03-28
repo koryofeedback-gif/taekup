@@ -1917,16 +1917,27 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/send-class-feedback', async (req: Request, res: Response) => {
     try {
-      const { clubId, clubName, className, classDate, coachName, students, skills } = req.body;
+      const { clubId, clubName, className, classDate, coachName, students, skills, isDemo } = req.body;
       if (!clubId || !students || !Array.isArray(students) || students.length === 0) {
         return res.status(400).json({ error: 'clubId and students array are required' });
       }
 
+      // Demo mode: skip all DB writes and emails
+      if (isDemo) {
+        return res.json({ success: true, sent: 0, failed: 0, message: 'Demo mode — grading preview only, no data saved' });
+      }
+
       const skillsArray = skills || [];
+      let saved = 0;
       for (const student of students) {
         try {
-          const { id: studentId, name, scores, homework, bonus, totalPoints, sessionXp, stripeProgress, coachNote } = student;
+          const { id: studentId, name, scores, homework, bonus, totalPoints, sessionXp, stripeProgress, coachNote, parentEmail } = student;
           if (!studentId) continue;
+          // Skip demo placeholder emails
+          if (typeof parentEmail === 'string' && parentEmail.endsWith('@demo.taekup.com')) {
+            console.log(`[GradingSession-Dev] Skipping demo student: ${name}`);
+            continue;
+          }
           const greenCount = skillsArray.filter((s: any) => scores?.[s.id] === 2).length;
           const yellowCount = skillsArray.filter((s: any) => scores?.[s.id] === 1).length;
           const redCount = skillsArray.filter((s: any) => scores?.[s.id] === 0).length;
@@ -1937,12 +1948,13 @@ export function registerRoutes(app: Express) {
             VALUES (${clubId}::uuid, ${studentId}::uuid, ${className || 'Training Session'}, ${classDate || new Date().toLocaleDateString()}, ${coachName || 'Coach'}, ${JSON.stringify(scores || {})}::jsonb, ${JSON.stringify(skillNames)}::jsonb, ${parseInt(homework) || 0}, ${parseInt(bonus) || 0}, ${parseInt(totalPoints) || 0}, ${parseInt(sessionXp) || 0}, ${greenCount}, ${yellowCount}, ${redCount}, ${totalSkillCount}, ${coachNote || null}, ${stripeProgress || null})
           `);
           console.log(`[GradingSession-Dev] Saved for ${name}`);
+          saved++;
         } catch (gsErr: any) {
           console.error('[GradingSession-Dev] Error saving:', student.name, gsErr.message);
         }
       }
 
-      console.log(`[ClassFeedback-Dev] Stored ${students.length} grading sessions (emails skipped in dev)`);
+      console.log(`[ClassFeedback-Dev] Stored ${saved} grading sessions (emails skipped in dev)`);
       return res.json({ success: true, sent: 0, failed: 0, message: 'Dev mode - grading sessions stored, emails skipped' });
     } catch (error: any) {
       console.error('[ClassFeedback-Dev] Error:', error.message);
@@ -2205,6 +2217,14 @@ export function registerRoutes(app: Express) {
       
       if (!id) {
         return res.status(400).json({ error: 'Student ID is required' });
+      }
+
+      // Never persist grading data for demo students
+      const demoCheck = await db.execute(sql`SELECT is_demo FROM students WHERE id = ${id}::uuid LIMIT 1`);
+      if (!(demoCheck as any[]).length) return res.status(404).json({ error: 'Student not found', studentId: id });
+      if ((demoCheck as any[])[0]?.is_demo) {
+        console.log('[Grading] Skipping demo student:', id);
+        return res.json({ success: true, demo: true });
       }
 
       // Use sessionXp to INCREMENT total_xp (single source of truth)
@@ -6846,6 +6866,13 @@ export function registerRoutes(app: Express) {
 
       if (!id) {
         return res.status(400).json({ error: 'Student ID is required' });
+      }
+
+      // Skip global XP for demo students
+      const demoCheck = await db.execute(sql`SELECT is_demo FROM students WHERE id = ${id}::uuid LIMIT 1`);
+      if ((demoCheck as any[])[0]?.is_demo) {
+        console.log('[GlobalXP] Skipping demo student:', id);
+        return res.json({ success: true, globalXpAwarded: 0, demo: true, message: 'Demo student — global XP not awarded' });
       }
 
       // Validate Local XP (0-110 with MyTaek 110 Protocol)
