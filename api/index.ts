@@ -2587,6 +2587,19 @@ async function handleStudentGrading(req: VercelRequest, res: VercelResponse, stu
 
   const client = await pool.connect();
   try {
+    // Never persist grading data for demo students
+    const demoCheck = await client.query(
+      `SELECT is_demo FROM students WHERE id = $1::uuid LIMIT 1`,
+      [studentId]
+    );
+    if (!demoCheck.rows.length) {
+      return res.status(404).json({ error: 'Student not found', studentId });
+    }
+    if (demoCheck.rows[0].is_demo) {
+      console.log('[Grading] Skipping demo student:', studentId);
+      return res.json({ success: true, demo: true });
+    }
+
     // Use sessionXp to INCREMENT total_xp (single source of truth)
     const xpEarned = sessionXp || 0;
     
@@ -6633,58 +6646,6 @@ async function handleClubWorldRankingsToggle(req: VercelRequest, res: VercelResp
   } catch (error: any) {
     console.error('[World Rankings] Toggle error:', error.message);
     return res.status(500).json({ error: 'Failed to update world rankings setting' });
-  } finally {
-    client.release();
-  }
-}
-
-async function handleStudentGrading(req: VercelRequest, res: VercelResponse, studentId: string) {
-  if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
-  const { totalPoints, sessionXp, sessionPts } = parseBody(req);
-
-  const client = await pool.connect();
-  try {
-    // Never persist grading changes for demo students
-    const demoCheck = await client.query(
-      `SELECT is_demo FROM students WHERE id = $1::uuid LIMIT 1`,
-      [studentId]
-    );
-    if (!demoCheck.rows.length) return res.status(404).json({ error: 'Student not found', studentId });
-    if (demoCheck.rows[0].is_demo) {
-      console.log('[Grading] Skipping demo student:', studentId);
-      return res.json({ success: true, demo: true });
-    }
-
-    const xpEarned = sessionXp || 0;
-    await client.query(`
-      UPDATE students SET
-        total_points = COALESCE($1, total_points),
-        total_xp = COALESCE(total_xp, 0) + $2,
-        last_class_at = NOW(),
-        updated_at = NOW()
-      WHERE id = $3::uuid
-    `, [totalPoints ?? null, xpEarned, studentId]);
-
-    if (xpEarned > 0) {
-      await client.query(
-        `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-         VALUES ($1::uuid, $2, 'EARN', 'Class grading', NOW())`,
-        [studentId, xpEarned]
-      );
-    }
-    const ptsEarned = sessionPts || 0;
-    if (ptsEarned > 0) {
-      await client.query(
-        `INSERT INTO xp_transactions (student_id, amount, type, reason, created_at)
-         VALUES ($1::uuid, $2, 'PTS_EARN', 'Class grading PTS', NOW())`,
-        [studentId, ptsEarned]
-      );
-    }
-    console.log('[Grading] Updated student:', studentId, 'totalPoints:', totalPoints, '+XP:', xpEarned);
-    return res.json({ success: true });
-  } catch (err: any) {
-    console.error('[Grading] Error:', err.message);
-    return res.status(500).json({ error: 'Failed to update student grading data' });
   } finally {
     client.release();
   }
