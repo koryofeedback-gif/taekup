@@ -34,9 +34,7 @@ export class StripeService {
       },
     };
 
-    if (currency) {
-      sessionParams.currency = currency;
-    }
+    // Note: currency is determined by the price object — do not override here
 
     // Only apply trial for new customers who haven't used one yet
     if (!skipTrial) {

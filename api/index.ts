@@ -1080,25 +1080,26 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const EU_CHECKOUT = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','CH']);
-  const checkoutCurrency = EU_CHECKOUT.has((clubCountryForCheckout || '').toUpperCase()) ? 'eur' : 'usd';
-
   const subscriptionData: any = { metadata: { clubId: clubId || '', email: email || '' } };
   if (!shouldSkipTrial) {
     subscriptionData.trial_period_days = 14;
   }
 
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    currency: checkoutCurrency,
-    line_items: [{ price: priceId, quantity: 1 }],
-    mode: 'subscription',
-    success_url: `${baseUrl}/app/admin?subscription=success`,
-    cancel_url: `${baseUrl}/app/pricing?subscription=cancelled`,
-    metadata: { clubId: clubId || '', email: email || '' },
-    subscription_data: subscriptionData,
-  });
-  return res.json({ url: session.url });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: 'subscription',
+      success_url: `${baseUrl}/app/admin?subscription=success`,
+      cancel_url: `${baseUrl}/app/pricing?subscription=cancelled`,
+      metadata: { clubId: clubId || '', email: email || '' },
+      subscription_data: subscriptionData,
+    });
+    return res.json({ url: session.url });
+  } catch (err: any) {
+    console.error('[Checkout] Stripe error:', err?.message || err);
+    return res.status(500).json({ error: err?.message || 'Failed to create checkout session' });
+  }
 }
 
 async function handleParentPremiumCheckout(req: VercelRequest, res: VercelResponse) {
@@ -1112,7 +1113,7 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
   console.log(`[Parent Premium] Checkout request — student: ${studentId}, club: ${clubId || 'none'}`);
 
   try {
-    const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || 'price_1TFa9URhYhunDn2jbBcc5aPl';
+    const PARENT_PREMIUM_PRICE_ID = 'price_1TFa9URhYhunDn2jbBcc5aPl';
     
     const host = req.headers.host || 'mytaek.com';
     const protocol = req.headers['x-forwarded-proto'] || 'https';
