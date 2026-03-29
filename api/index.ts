@@ -48,6 +48,11 @@ async function ensureSchema() {
       ALTER TABLE access_requests ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'en';
       ALTER TABLE attendance_events ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false;
     `);
+    // Ensure unique constraint on onboarding_progress.club_id so ON CONFLICT (club_id) works
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS onboarding_progress_club_id_unique
+      ON onboarding_progress (club_id)
+    `);
     _schemaReady = true;
     console.log('[Schema] Startup migrations applied');
   } catch (e: any) {

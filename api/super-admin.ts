@@ -2598,10 +2598,13 @@ async function handleApproveAccessRequest(req: VercelRequest, res: VercelRespons
     await db.unsafe(`UPDATE clubs SET wizard_data = $1::jsonb WHERE id = $2::uuid`, [initWizardData, club.id]);
 
     // Explicitly mark wizard as NOT completed so the owner lands on the setup wizard, not the dashboard
+    // Uses a CTE upsert so it works even if no unique constraint exists on club_id
     await db.unsafe(
-      `INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
-       VALUES ($1::uuid, false, NOW())
-       ON CONFLICT (club_id) DO UPDATE SET wizard_completed = false`,
+      `WITH upsert AS (
+         UPDATE onboarding_progress SET wizard_completed = false WHERE club_id = $1::uuid RETURNING club_id
+       )
+       INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
+       SELECT $1::uuid, false, NOW() WHERE NOT EXISTS (SELECT 1 FROM upsert)`,
       [club.id]
     );
 

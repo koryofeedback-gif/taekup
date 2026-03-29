@@ -353,7 +353,7 @@ export const churnReasons = pgTable('churn_reasons', {
 // Onboarding Progress - track wizard completion
 export const onboardingProgress = pgTable('onboarding_progress', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
-  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull().unique(),
   step1ClubInfo: boolean('step1_club_info').default(false),
   step1CompletedAt: timestamp('step1_completed_at', { withTimezone: true }),
   step2BeltSystem: boolean('step2_belt_system').default(false),

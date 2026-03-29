@@ -1919,10 +1919,13 @@ router.post('/access-requests/:id/approve', verifySuperAdmin, async (req: Reques
     await db.execute(sql`UPDATE clubs SET wizard_data = ${initWizardData}::jsonb WHERE id = ${club.id}::uuid`);
 
     // Explicitly mark wizard as NOT completed so the owner lands on the setup wizard, not the dashboard
+    // Uses a CTE upsert so it works even if no unique constraint exists on club_id
     await db.execute(sql`
+      WITH upsert AS (
+        UPDATE onboarding_progress SET wizard_completed = false WHERE club_id = ${club.id}::uuid RETURNING club_id
+      )
       INSERT INTO onboarding_progress (club_id, wizard_completed, created_at)
-      VALUES (${club.id}::uuid, false, NOW())
-      ON CONFLICT (club_id) DO UPDATE SET wizard_completed = false
+      SELECT ${club.id}::uuid, false, NOW() WHERE NOT EXISTS (SELECT 1 FROM upsert)
     `);
 
     try {
