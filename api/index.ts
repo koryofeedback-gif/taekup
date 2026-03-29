@@ -7789,36 +7789,35 @@ async function handleDemoClear(req: VercelRequest, res: VercelResponse) {
       return res.json({ success: false, message: 'No demo data to clear' });
     }
 
-    // Step 1: Collect demo student IDs so we can clean up all related tables
-    const demoStudentsResult = await client.query(
-      'SELECT id FROM students WHERE club_id = $1::uuid AND is_demo = true',
-      [clubId]
-    );
-    const demoIds: string[] = demoStudentsResult.rows.map((r: any) => r.id);
-
-    // Step 2: Delete all data created by users interacting with demo students
-    if (demoIds.length > 0) {
-      const relatedTables = [
-        'grading_sessions', 'xp_transactions', 'challenge_submissions', 'challenge_videos',
-        'promotions', 'habit_logs', 'gauntlet_submissions', 'gauntlet_personal_bests',
-        'class_feedback', 'family_logs', 'dojo_inventory', 'user_custom_habits',
-        'challenge_inbox', 'content_views', 'course_enrollments',
-        'automated_email_logs', 'email_log', 'student_transfers',
-      ];
-      for (const table of relatedTables) {
-        await client.query(`DELETE FROM ${table} WHERE student_id = ANY($1::uuid[])`, [demoIds]);
+    // Step 1: Delete all data linked to demo students via subquery — no UUID array params needed
+    // Tables without ON DELETE CASCADE need explicit cleanup; others are harmless to clean anyway
+    const relatedTables = [
+      'grading_sessions', 'xp_transactions', 'challenge_submissions', 'challenge_videos',
+      'promotions', 'habit_logs', 'gauntlet_submissions', 'gauntlet_personal_bests',
+      'class_feedback', 'family_logs', 'dojo_inventory', 'user_custom_habits',
+      'challenge_inbox', 'content_views', 'course_enrollments',
+      'automated_email_logs', 'email_log', 'student_transfers',
+    ];
+    for (const table of relatedTables) {
+      try {
+        await client.query(
+          `DELETE FROM ${table} WHERE student_id IN (SELECT id FROM students WHERE club_id = $1::uuid AND is_demo = true)`,
+          [clubId]
+        );
+      } catch (tableErr: any) {
+        console.warn(`[Demo Clear] Could not clean ${table}:`, tableErr.message);
       }
     }
 
-    // Step 3: Delete demo attendance events and demo students
+    // Step 2: Delete demo attendance events and demo students
     await client.query('DELETE FROM attendance_events WHERE club_id = $1::uuid AND is_demo = true', [clubId]);
     const deleteResult = await client.query('DELETE FROM students WHERE club_id = $1::uuid AND is_demo = true', [clubId]);
 
-    // Step 4: Reset club — clear wizard_data (removes demo coaches) and reset wizard so user sees setup choice again
+    // Step 3: Reset club — clear wizard_data (removes demo coaches) and reset wizard so user sees setup choice again
     await client.query('UPDATE clubs SET has_demo_data = false, wizard_data = NULL WHERE id = $1::uuid', [clubId]);
     await client.query('UPDATE onboarding_progress SET wizard_completed = false WHERE club_id = $1::uuid', [clubId]);
 
-    console.log(`[Demo Clear] Cleared ${demoIds.length} demo students and all related data for club ${clubId}`);
+    console.log(`[Demo Clear] Cleared ${deleteResult.rowCount} demo students and all related data for club ${clubId}`);
     return res.json({ success: true, message: 'Demo data cleared successfully', deletedCount: deleteResult.rowCount });
   } catch (error: any) {
     console.error('[Demo Clear] Error:', error.message);
