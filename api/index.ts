@@ -5420,7 +5420,7 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     const today = new Date().toISOString().split('T')[0];
 
     const studentResult = await client.query(
-      `SELECT COALESCE(total_xp, 0) as xp FROM students WHERE id = $1::uuid`,
+      `SELECT COALESCE(total_xp, 0) as xp, premium_status FROM students WHERE id = $1::uuid`,
       [studentId]
     );
     
@@ -5429,6 +5429,7 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     }
     
     const storedXp = studentResult.rows[0]?.xp || 0;
+    const dbPremiumStatus = studentResult.rows[0]?.premium_status || 'none';
 
     // Calculate all-time XP from transactions (same as leaderboard - source of truth)
     const allTimeResult = await client.query(
@@ -5462,7 +5463,7 @@ async function handleHabitStatus(req: VercelRequest, res: VercelResponse) {
     const isPremium = await hasHomeDojoPremium(client, studentId);
     const dailyCap = isPremium ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP;
 
-    return res.json({ completedHabits, totalXpToday, dailyXpCap: dailyCap, totalXp, lifetimeXp: totalXp, streak, isPremium });
+    return res.json({ completedHabits, totalXpToday, dailyXpCap: dailyCap, totalXp, lifetimeXp: totalXp, streak, isPremium, premiumStatus: dbPremiumStatus });
   } catch (error: any) {
     console.error('[HomeDojo] Status fetch error:', error.message);
     return res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_FREE_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });

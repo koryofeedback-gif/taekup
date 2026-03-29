@@ -108,6 +108,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [activeTab, setActiveTab] = useState<'home' | 'journey' | 'insights' | 'practice' | 'booking' | 'card' | 'rivals' | 'feedback'>('home');
     const [isPremium, setIsPremium] = useState(false); // Toggle to simulate upgrade
     const [serverConfirmedPremium, setServerConfirmedPremium] = useState(false); // Premium status from API
+    const [studentPremiumStatus, setStudentPremiumStatus] = useState<string>(student.premiumStatus || 'none'); // Live DB premium_status
     const [missionChecks, setMissionChecks] = useState<Record<string, boolean>>({});
     const [parentingAdvice, setParentingAdvice] = useState<string | null>(null);
     const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
@@ -1824,6 +1825,9 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                         setServerConfirmedPremium(true);
                         console.log('[HomeDojo] Server confirmed premium status');
                     }
+                    if (data.premiumStatus) {
+                        setStudentPremiumStatus(data.premiumStatus);
+                    }
                     
                     // Sync XP from database totalXp (single source of truth)
                     const dbXp = data.totalXp ?? data.lifetimeXp ?? 0;
@@ -3207,7 +3211,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             </div>
 
             {/* Manage Subscription — only for self-paid premium parents */}
-            {student.premiumStatus === 'parent_paid' && (
+            {studentPremiumStatus === 'parent_paid' && (
                 <div className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 border border-gray-700/60 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-3">

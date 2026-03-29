@@ -6125,11 +6125,12 @@ export function registerRoutes(app: Express) {
         SELECT habit_name, xp_awarded FROM habit_logs WHERE student_id = ${studentId}::uuid AND log_date = ${today}::date
       `);
 
-      // Also fetch student's current total_xp for sync on page load
+      // Also fetch student's current total_xp and premium_status for sync on page load
       const studentResult = await db.execute(sql`
-        SELECT total_xp FROM students WHERE id = ${studentId}::uuid
+        SELECT total_xp, premium_status FROM students WHERE id = ${studentId}::uuid
       `);
       const totalXp = (studentResult as any[])[0]?.total_xp || 0;
+      const dbPremiumStatus = (studentResult as any[])[0]?.premium_status || 'none';
 
       const completedHabits = (result as any[]).map(r => r.habit_name);
       const totalXpToday = (result as any[]).reduce((sum, r) => sum + (r.xp_awarded || 0), 0);
@@ -6142,7 +6143,7 @@ export function registerRoutes(app: Express) {
       const dailyCap = isPremium ? HOME_DOJO_PREMIUM_CAP : HOME_DOJO_FREE_CAP;
 
       // Return totalXp as single source of truth (also as lifetimeXp for backward compatibility)
-      res.json({ completedHabits, totalXpToday, dailyXpCap: dailyCap, totalXp, lifetimeXp: totalXp, streak, isPremium });
+      res.json({ completedHabits, totalXpToday, dailyXpCap: dailyCap, totalXp, lifetimeXp: totalXp, streak, isPremium, premiumStatus: dbPremiumStatus });
     } catch (error: any) {
       console.error('[HomeDojo] Status fetch error:', error.message);
       res.json({ completedHabits: [], totalXpToday: 0, dailyXpCap: HOME_DOJO_FREE_CAP, totalXp: 0, lifetimeXp: 0, streak: 0 });
