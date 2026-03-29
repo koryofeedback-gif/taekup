@@ -1,0 +1,74 @@
+2026-03-29 10:12:45.975 [info] [SuperAdmin API] URL: /api/super-admin/revenue?path=revenue QueryPath: revenue Path: /revenue Method: GET
+2026-03-29 10:12:45.975 [info] [SuperAdmin] Auth header check: {
+  hasAuth: true,
+  headerKeys: [ 'authorization' ],
+  allHeaders: [
+    'x-vercel-ja4-digest',
+    'x-real-ip',
+    'accept',
+    'x-vercel-ip-as-number',
+    'cookie',
+    'sec-ch-ua',
+    'sec-fetch-mode',
+    'sec-fetch-site',
+    'x-vercel-ip-postal-code',
+    'x-forwarded-host',
+    'priority',
+    'host',
+    'sec-ch-ua-platform',
+    'x-vercel-id',
+    'forwarded',
+    'x-forwarded-proto',
+    'access-control-allow-headers',
+    'accept-language',
+    'x-forwarded-for',
+    'x-vercel-ip-timezone',
+    'x-content-type-options',
+    'sec-ch-ua-mobile',
+    'x-vercel-ip-continent',
+    'x-vercel-proxy-signature-ts',
+    'x-vercel-ip-latitude',
+    'cache-control',
+    'x-vercel-forwarded-for',
+    'referer',
+    'x-vercel-ip-country',
+    'accept-encoding',
+    'access-control-allow-credentials',
+    'vary',
+    'user-agent',
+    'x-vercel-oidc-token',
+    'authorization',
+    'access-control-allow-methods',
+    'sec-fetch-dest',
+    'x-vercel-proxy-signature',
+    'access-control-allow-origin',
+    'x-vercel-ip-city',
+    'x-vercel-ip-longitude',
+    'x-vercel-deployment-url',
+    'x-vercel-ip-country-region',
+    'x-vercel-proxied-for',
+    'connection',
+    'x-invocation-id'
+  ]
+}
+2026-03-29 10:12:46.017 [error] Revenue analytics error: PostgresError: invalid input value for enum payment_status: "succeeded"
+    at ErrorResponse (file:///var/task/node_modules/postgres/src/connection.js:794:26)
+    at handle (file:///var/task/node_modules/postgres/src/connection.js:480:6)
+    at TLSSocket.data (file:///var/task/node_modules/postgres/src/connection.js:315:9)
+    at TLSSocket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+    at Readable.push (node:internal/streams/readable:390:5)
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:189:23)
+    at cachedError (file:///var/task/node_modules/postgres/src/query.js:170:23)
+    at new Query (file:///var/task/node_modules/postgres/src/query.js:36:24)
+    at sql (file:///var/task/node_modules/postgres/src/index.js:112:11)
+    at handleRevenueAnalytics (/vercel/path0/api/super-admin.ts:690:30) {
+  severity_local: 'ERROR',
+  severity: 'ERROR',
+  code: '22P02',
+  position: '395',
+  file: 'enum.c',
+  line: '129',
+  routine: 'enum_in'
+}
