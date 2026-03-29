@@ -310,6 +310,27 @@ export async function clearDemoData(clubId: string): Promise<{ success: boolean;
       return { success: false, message: 'No demo data to clear', deletedCount: 0 };
     }
 
+    // Step 1: Collect demo student IDs so we can clean up all related tables
+    const demoStudentRows = await db.execute(sql`
+      SELECT id FROM students WHERE club_id = ${clubId}::uuid AND is_demo = true
+    `);
+    const demoIds = (demoStudentRows as any[]).map(r => r.id);
+
+    // Step 2: Delete all data created by users interacting with demo students
+    if (demoIds.length > 0) {
+      const relatedTables = [
+        'grading_sessions', 'xp_transactions', 'challenge_submissions', 'challenge_videos',
+        'promotions', 'habit_logs', 'gauntlet_submissions', 'gauntlet_personal_bests',
+        'class_feedback', 'family_logs', 'dojo_inventory', 'user_custom_habits',
+        'challenge_inbox', 'content_views', 'course_enrollments',
+        'automated_email_logs', 'email_log', 'student_transfers',
+      ];
+      for (const table of relatedTables) {
+        await db.execute(sql.raw(`DELETE FROM ${table} WHERE student_id = ANY(ARRAY[${demoIds.map((id: string) => `'${id}'`).join(',')}]::uuid[])`));
+      }
+    }
+
+    // Step 3: Delete demo attendance events and demo students
     await db.delete(attendanceEvents)
       .where(and(eq(attendanceEvents.clubId, clubId), eq(attendanceEvents.isDemo, true)));
 
@@ -317,20 +338,20 @@ export async function clearDemoData(clubId: string): Promise<{ success: boolean;
       .where(and(eq(students.clubId, clubId), eq(students.isDemo, true)))
       .returning();
 
-    // CRITICAL: Also clear wizard_data and reset wizard_completed so user sees demo choice on next login
+    // Step 4: Reset club — clear wizard_data (removes demo coaches) and reset wizard so user sees demo choice again
     await db.execute(sql`
       UPDATE clubs 
       SET has_demo_data = false, wizard_data = NULL
       WHERE id = ${clubId}::uuid
     `);
     
-    // Reset wizard completion status so user sees the demo/real choice page again
     await db.execute(sql`
       UPDATE onboarding_progress 
       SET wizard_completed = false
       WHERE club_id = ${clubId}::uuid
     `);
 
+    console.log(`[DemoService] Cleared ${demoIds.length} demo students and all related data for club ${clubId}`);
     return { 
       success: true, 
       message: 'Demo data cleared successfully', 
