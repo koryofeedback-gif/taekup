@@ -1109,72 +1109,71 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
   const stripe = getStripeClient();
   if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
 
-  const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || 'price_1TFa9URhYhunDn2jbBcc5aPl';
-  
-  const host = req.headers.host || 'mytaek.com';
-  const protocol = req.headers['x-forwarded-proto'] || 'https';
-  const baseUrl = `${protocol}://${host}`;
-
-  // Find or create customer
-  const emailLower = parentEmail.toLowerCase().trim();
-  let customerId: string | undefined;
-  const existingCustomers = await stripe.customers.list({ email: emailLower, limit: 1 });
-  if (existingCustomers.data.length > 0) {
-    customerId = existingCustomers.data[0].id;
-  } else {
-    const newCustomer = await stripe.customers.create({
-      email: emailLower,
-      metadata: { studentId, clubId: clubId || '', type: 'parent_premium' }
-    });
-    customerId = newCustomer.id;
-  }
-
-  let stripeConnectAccountId: string | null = null;
-  let clubCountry: string | null = null;
-  if (clubId) {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        `SELECT stripe_connect_account_id, wizard_data->>'country' as country FROM clubs WHERE id = $1::uuid`,
-        [clubId]
-      );
-      if (result.rows.length > 0) {
-        stripeConnectAccountId = result.rows[0].stripe_connect_account_id || null;
-        clubCountry = result.rows[0].country || null;
-      }
-    } finally {
-      client.release();
-    }
-  }
-
-  const lineItems = [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }];
-
-  const sessionConfig: any = {
-    customer: customerId,
-    payment_method_types: ['card'],
-    line_items: lineItems,
-    mode: 'subscription',
-    success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,
-    cancel_url: `${baseUrl}/app/parent/${studentId}?premium=cancelled`,
-    metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
-    subscription_data: {
-      metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
-      ...(stripeConnectAccountId && {
-        application_fee_percent: 34.3,
-        transfer_data: {
-          destination: stripeConnectAccountId,
-        }
-      })
-    }
-  };
+  console.log(`[Parent Premium] Checkout request — student: ${studentId}, club: ${clubId || 'none'}`);
 
   try {
+    const PARENT_PREMIUM_PRICE_ID = process.env.STRIPE_PARENT_PREMIUM_PRICE_ID || 'price_1TFa9URhYhunDn2jbBcc5aPl';
+    
+    const host = req.headers.host || 'mytaek.com';
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const baseUrl = `${protocol}://${host}`;
+
+    // Find or create Stripe customer
+    const emailLower = parentEmail.toLowerCase().trim();
+    let customerId: string | undefined;
+    const existingCustomers = await stripe.customers.list({ email: emailLower, limit: 1 });
+    if (existingCustomers.data.length > 0) {
+      customerId = existingCustomers.data[0].id;
+    } else {
+      const newCustomer = await stripe.customers.create({
+        email: emailLower,
+        metadata: { studentId, clubId: clubId || '', type: 'parent_premium' }
+      });
+      customerId = newCustomer.id;
+    }
+
+    // Look up Stripe Connect account for 70/30 revenue share
+    let stripeConnectAccountId: string | null = null;
+    let clubCountry: string | null = null;
+    if (clubId) {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(
+          `SELECT stripe_connect_account_id, wizard_data->>'country' as country FROM clubs WHERE id = $1::uuid`,
+          [clubId]
+        );
+        if (result.rows.length > 0) {
+          stripeConnectAccountId = result.rows[0].stripe_connect_account_id || null;
+          clubCountry = result.rows[0].country || null;
+        }
+      } finally {
+        client.release();
+      }
+    }
+
+    const sessionConfig: any = {
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }],
+      mode: 'subscription',
+      success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,
+      cancel_url: `${baseUrl}/app/parent/${studentId}?premium=cancelled`,
+      metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
+      subscription_data: {
+        metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
+        ...(stripeConnectAccountId && {
+          application_fee_percent: 34.3,
+          transfer_data: { destination: stripeConnectAccountId }
+        })
+      }
+    };
+
     const session = await stripe.checkout.sessions.create(sessionConfig);
-    console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}, club: ${clubCountry || 'unknown'}, transfer: ${stripeConnectAccountId ? 'yes (34.3% fee)' : 'no connected account'}`);
+    console.log(`[Parent Premium] Session created: ${session.id}, price: ${PARENT_PREMIUM_PRICE_ID}, club: ${clubCountry || 'unknown'}, transfer: ${stripeConnectAccountId ? 'yes' : 'no'}`);
     return res.json({ url: session.url });
-  } catch (stripeErr: any) {
-    console.error('[Parent Premium] Stripe error:', stripeErr?.message || stripeErr);
-    return res.status(500).json({ error: stripeErr?.message || 'Failed to create checkout session' });
+  } catch (err: any) {
+    console.error('[Parent Premium] Error:', err?.message || err);
+    return res.status(500).json({ error: err?.message || 'Failed to create checkout session' });
   }
 }
 
