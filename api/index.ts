@@ -856,7 +856,7 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
         fa: { subject: 'درخواست دسترسی VIP جدید', heading: 'درخواست دسترسی VIP جدید', fullName: 'نام کامل', clubName: 'نام باشگاه', website: 'وب‌سایت / لینک', email: 'ایمیل', phone: 'تلفن', location: 'مکان', language: 'زبان', notProvided: 'ارائه نشده', submittedAt: 'ارسال شده در', langName: 'فارسی' },
       };
       const labels = emailLabels[lang] || emailLabels.en;
-      sgMail.send({
+      await sgMail.send({
         to: 'hello@mytaek.com',
         from: { email: 'noreply@mytaek.com', name: 'TaekUp Platform' },
         subject: `${labels.subject}: ${clubName}`,
@@ -876,13 +876,10 @@ async function handleRequestAccess(req: VercelRequest, res: VercelResponse) {
             <p style="color: #6b7280; font-size: 12px;">${labels.submittedAt} ${new Date().toISOString()}</p>
           </div>
         `,
-      }).then(() => {
-        console.log(`[RequestAccess] Admin notification sent to hello@mytaek.com`);
-      }).catch((emailErr: any) => {
-        console.error(`[RequestAccess] Failed to send admin notification:`, emailErr.message);
       });
+      console.log(`[RequestAccess] Admin notification sent to hello@mytaek.com`);
     } catch (emailErr: any) {
-      console.error(`[RequestAccess] Failed to prepare admin notification:`, emailErr.message);
+      console.error(`[RequestAccess] Failed to send admin notification:`, emailErr.message);
     }
 
     return;
