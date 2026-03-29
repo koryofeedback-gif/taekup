@@ -513,6 +513,7 @@ export const en = {
       customHomeHabits: "Custom Home Habits",
       videoProof2xXP: "Video Proof (2x XP)",
       digitalLegacyCard: "Digital Legacy Card™",
+      senseiAIFeedback: "Sensei AI™ Feedback for Your Child",
       fullHDVideoCurriculum: "✅ Full HD Video Curriculum",
       characterGrowthAnalytics: "✅ Character Growth Analytics",
       digitalTrophyCase: "✅ Digital Trophy Case",

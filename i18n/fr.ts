@@ -513,6 +513,7 @@ export const fr = {
       customHomeHabits: "Habitudes personnalisées à la maison",
       videoProof2xXP: "Preuve vidéo (2x XP)",
       digitalLegacyCard: "Legacy Card™ numérique",
+      senseiAIFeedback: "Retours Sensei AI™ pour votre enfant",
       fullHDVideoCurriculum: "✅ Programme vidéo HD complet",
       characterGrowthAnalytics: "✅ Analyses de développement du caractère",
       digitalTrophyCase: "✅ Vitrine de trophées numérique",

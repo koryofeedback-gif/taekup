@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SUBSCRIPTION_PLANS, formatPrice, getRequiredPlan } from '../services/subscriptionService';
 import { stripeAPI } from '../services/apiClient';
+import { isEurozoneUser, formatPriceWithCurrency } from '../utils/currency';
 import type { SubscriptionPlan, SubscriptionPlanId, Student } from '../types';
 
 const FALLBACK_PRICE_IDS = {
@@ -50,6 +51,9 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   const [stripePrices, setStripePrices] = useState<StripePricesWithPeriod>(FALLBACK_PRICE_IDS);
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const isEU = isEurozoneUser();
+  const currencySymbol = isEU ? '€' : '$';
 
   const studentCount = students.length;
   const requiredPlan = getRequiredPlan(studentCount);
@@ -237,13 +241,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 <div className="text-center mb-6">
                   {billingPeriod === 'yearly' ? (
                     <>
-                      <span className="text-3xl font-bold text-white">${(plan.price * 10).toFixed(2)}</span>
+                      <span className="text-3xl font-bold text-white">{currencySymbol}{(plan.price * 10).toFixed(2)}</span>
                       <span className="text-gray-400">/year</span>
                       <div className="text-green-400 text-sm font-semibold mt-2">Save 2 months!</div>
                     </>
                   ) : (
                     <>
-                      <span className="text-3xl font-bold text-white">{formatPrice(plan.price)}</span>
+                      <span className="text-3xl font-bold text-white">{currencySymbol}{plan.price.toFixed(2)}</span>
                       <span className="text-gray-400">/mo</span>
                     </>
                   )}

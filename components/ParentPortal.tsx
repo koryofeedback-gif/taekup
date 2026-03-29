@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { getPremiumPrice } from '../utils/currency';
 import { useSearchParams } from 'react-router-dom';
 import type { Student, WizardData, PerformanceRecord, Belt, Habit, ChallengeCategory, RivalsStats, HolidayScheduleType, CurriculumItem } from '../types';
 import { calculateClassXP } from '../services/gamificationService';
@@ -95,8 +96,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [language, setLanguage] = useState(data.language || 'English');
     const { t, lang } = useTranslation(language);
 
-    const EUROZONE_PP = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','CH']);
-    const premiumPrice = EUROZONE_PP.has((data.country || '').toUpperCase()) ? '€4.99' : '$4.99';
+    const premiumPrice = getPremiumPrice(data.country);
     const [searchParams, setSearchParams] = useSearchParams();
     const [premiumJustActivated, setPremiumJustActivated] = useState(false);
 
@@ -2990,7 +2990,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 >
                     Start 7-Day Free Trial
                 </button>
-                <p className="mt-3 text-xs text-gray-500">Then just $4.99/month. Cancel anytime.</p>
+                <p className="mt-3 text-xs text-gray-500">Then just {premiumPrice}/month. Cancel anytime.</p>
                 <button onClick={async () => {
                     setIsPremium(true);
                     setServerConfirmedPremium(true);
@@ -3352,7 +3352,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 {/* Price row */}
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-2xl font-black text-white">$4.99</span>
+                                        <span className="text-2xl font-black text-white">{premiumPrice}</span>
                                         <span className="text-gray-400 text-xs">/month</span>
                                     </div>
                                     <span className="text-xs text-green-400 font-medium">✓ Cancel anytime</span>
@@ -3363,7 +3363,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                     onClick={() => setShowUpgradeModal(true)}
                                     className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-sm transition-all shadow-lg shadow-amber-500/30 active:scale-95"
                                 >
-                                    Unlock AI Sensei™ — $4.99/mo
+                                    Unlock AI Sensei™ — {premiumPrice}/mo
                                 </button>
                             </div>
 
@@ -5310,6 +5310,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                             <span className="text-xl">🎴</span>
                                                             <span className="text-white">{t('parent.premium.digitalLegacyCard')}</span>
                                                         </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">🧠</span>
+                                                            <span className="text-white">{t('parent.premium.senseiAIFeedback')}</span>
+                                                        </li>
                                                     </ul>
                                                 </div>
                                                 
@@ -6529,6 +6533,10 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         <li className="flex items-center gap-3">
                                                             <span className="text-xl">🎴</span>
                                                             <span className="text-white">{t('parent.premium.digitalLegacyCard')}</span>
+                                                        </li>
+                                                        <li className="flex items-center gap-3">
+                                                            <span className="text-xl">🧠</span>
+                                                            <span className="text-white">{t('parent.premium.senseiAIFeedback')}</span>
                                                         </li>
                                                     </ul>
                                                 </div>
