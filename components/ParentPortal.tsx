@@ -3207,21 +3207,30 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             </div>
 
             {/* Manage Subscription — only for self-paid premium parents */}
-            {isPremium && student.premiumStatus === 'parent_paid' && (
-                <div className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 border border-gray-700/60 rounded-xl p-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <span className="text-xl">⭐</span>
-                        <div>
-                            <p className="text-sm font-semibold text-white">Premium Active</p>
-                            <p className="text-[11px] text-gray-400">Update payment or cancel anytime</p>
+            {student.premiumStatus === 'parent_paid' && (
+                <div className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 border border-gray-700/60 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                            <span className="text-xl">⭐</span>
+                            <div>
+                                <p className="text-sm font-semibold text-white">Premium Active</p>
+                                <p className="text-[11px] text-gray-400">Billed {premiumPrice}/month</p>
+                            </div>
                         </div>
+                        <button
+                            onClick={handleManageSubscription}
+                            disabled={manageSubLoading}
+                            className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium px-3 py-1.5 rounded-lg border border-gray-600 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        >
+                            {manageSubLoading ? '...' : 'Manage'}
+                        </button>
                     </div>
                     <button
                         onClick={handleManageSubscription}
                         disabled={manageSubLoading}
-                        className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium px-3 py-1.5 rounded-lg border border-gray-600 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        className="w-full text-xs text-red-400 hover:text-red-300 border border-red-800/50 hover:border-red-700 rounded-lg py-2 transition-colors disabled:opacity-50"
                     >
-                        {manageSubLoading ? '...' : 'Manage'}
+                        {manageSubLoading ? 'Opening...' : '🚫 Cancel subscription'}
                     </button>
                 </div>
             )}
