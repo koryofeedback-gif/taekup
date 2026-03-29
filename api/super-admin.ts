@@ -700,7 +700,7 @@ async function handleRevenueAnalytics(req: VercelRequest, res: VercelResponse) {
           DATE(COALESCE(paid_at, created_at)) AS pay_date,
           COALESCE(SUM(amount), 0) AS daily_total
         FROM payments
-        WHERE status IN ('succeeded', 'paid')
+        WHERE status = 'paid'
           AND COALESCE(paid_at, created_at) >= CURRENT_DATE - (${days} || ' days')::interval
         GROUP BY DATE(COALESCE(paid_at, created_at))
       )
@@ -770,7 +770,7 @@ async function handleRevenueAnalytics(req: VercelRequest, res: VercelResponse) {
     const newMrrResult = await db`
       SELECT COALESCE(SUM(amount), 0) AS new_mrr
       FROM payments
-      WHERE status IN ('succeeded', 'paid')
+      WHERE status = 'paid'
         AND COALESCE(paid_at, created_at) >= DATE_TRUNC('month', CURRENT_DATE)
     `;
 
