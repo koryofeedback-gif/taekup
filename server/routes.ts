@@ -2510,7 +2510,7 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/students', async (req: Request, res: Response) => {
     try {
-      const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, totalPoints, totalXP, lifetimeXp, location, assignedClass, stripes } = req.body;
+      const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, totalPoints, totalXP, lifetimeXp, location, assignedClass, stripes, language: reqLanguage } = req.body;
       
       if (!clubId || !name) {
         return res.status(400).json({ error: 'Club ID and student name are required' });
@@ -2526,7 +2526,8 @@ export function registerRoutes(app: Express) {
         return res.status(404).json({ error: 'Club not found' });
       }
 
-      const clubLanguage = (club?.wizard_data as any)?.language || 'English';
+      // Use language from request (wizard passes it directly) or fall back to club's saved language
+      const clubLanguage = reqLanguage || (club?.wizard_data as any)?.language || 'English';
 
       const currentYear = new Date().getFullYear();
       const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -2957,7 +2958,7 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/invite-coach', async (req: Request, res: Response) => {
     try {
-      const { clubId, name, email, location, assignedClasses } = req.body;
+      const { clubId, name, email, location, assignedClasses, language: reqLanguage } = req.body;
       
       if (!clubId || !name || !email) {
         return res.status(400).json({ error: 'Club ID, coach name, and email are required' });
@@ -2973,7 +2974,8 @@ export function registerRoutes(app: Express) {
         return res.status(404).json({ error: 'Club not found' });
       }
 
-      const clubLanguage = (club?.wizard_data as any)?.language || 'English';
+      // Use language from request (wizard passes it) or fall back to club's saved language
+      const clubLanguage = reqLanguage || (club?.wizard_data as any)?.language || 'English';
 
       const tempPassword = '1234';
       const passwordHash = await bcrypt.hash(tempPassword, 10);

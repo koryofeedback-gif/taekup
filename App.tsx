@@ -403,7 +403,8 @@ const App: React.FC = () => {
                         name: coach.name,
                         email: coach.email,
                         location: coach.location,
-                        assignedClasses: coach.assignedClasses
+                        assignedClasses: coach.assignedClasses,
+                        language: data.language  // pass wizard language so email uses chosen locale
                     })
                 }).catch(err => console.error('Failed to invite coach:', coach.email, err))
             );
@@ -429,7 +430,8 @@ const App: React.FC = () => {
                     totalPoints: student.totalPoints || 0,
                     stripes: student.stripes || 0,
                     location: student.location || null,
-                    assignedClass: student.assignedClass || null
+                    assignedClass: student.assignedClass || null,
+                    language: data.language  // pass wizard language so parent welcome email uses chosen locale
                 };
                 for (let attempt = 0; attempt < 2; attempt++) {
                     try {

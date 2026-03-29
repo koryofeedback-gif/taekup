@@ -2326,7 +2326,7 @@ async function handleWelcomeEmail(req: VercelRequest, res: VercelResponse) {
 
 async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, gender, joinDate, medicalInfo, stripes, totalPoints, totalXP, location, assignedClass } = parseBody(req);
+  const { clubId, name, parentEmail, parentName, parentPhone, parentPassword, belt, birthdate, gender, joinDate, medicalInfo, stripes, totalPoints, totalXP, location, assignedClass, language: reqLanguage } = parseBody(req);
 
   if (!clubId || !name) {
     return res.status(400).json({ error: 'Club ID and student name are required' });
@@ -2382,7 +2382,8 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     }
 
     if (parentEmail) {
-      const clubLang = await getClubLanguage(client, clubId);
+      // Use language from request (wizard passes it directly) or fall back to DB
+      const clubLang = reqLanguage ? normalizeLanguageCode(reqLanguage) : await getClubLanguage(client, clubId);
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
         parentName: parentName || 'Parent',
         parentEmail: parentEmail,
@@ -2937,7 +2938,7 @@ async function handleGetFirstStudent(req: VercelRequest, res: VercelResponse) {
 
 async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { clubId, name, email, location, assignedClasses, password } = parseBody(req);
+  const { clubId, name, email, location, assignedClasses, password, language: reqLanguage } = parseBody(req);
 
   if (!clubId || !name || !email) {
     return res.status(400).json({ error: 'Club ID, coach name, and email are required' });
@@ -2983,7 +2984,8 @@ async function handleInviteCoach(req: VercelRequest, res: VercelResponse) {
       );
     }
 
-    const coachLang = await getClubLanguage(client, clubId);
+    // Use language from request (wizard completion passes it directly) or fall back to DB
+    const coachLang = reqLanguage ? normalizeLanguageCode(reqLanguage) : await getClubLanguage(client, clubId);
     const coachSent = await sendTemplateEmail(email, 'COACH_INVITE', {
       name: name,
       clubName: club.name,

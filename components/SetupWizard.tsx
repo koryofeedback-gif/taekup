@@ -56,10 +56,14 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ initialData, clubId, o
     );
   }
 
+  // Map language codes (from VIP form / DB) to full names used by the dropdown
+  const langCodeToName: Record<string, string> = { fr: 'French', de: 'German', en: 'English' };
+  const resolvedLanguage = langCodeToName[initialData.language || ''] || initialData.language || 'English';
+
   const getDefaults = (): Partial<WizardData> => ({
     ownerName: '',
     city: '',
-    language: initialData.language || 'English',
+    language: resolvedLanguage,
     branches: 1,
     branchNames: ['Main Location'],
     branchAddresses: [''],
