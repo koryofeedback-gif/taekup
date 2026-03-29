@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 import sgMail from '@sendgrid/mail';
 
 // Initialize Stripe only if API key is available
-const STRIPE_KEY = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
 let stripe: Stripe | null = null;
 if (STRIPE_KEY) {
   stripe = new Stripe(STRIPE_KEY, {

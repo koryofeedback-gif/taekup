@@ -7,7 +7,7 @@ import sgMail from '@sendgrid/mail';
 import { EMAIL_TEMPLATES as DYNAMIC_TEMPLATES } from './services/emailService';
 import Stripe from 'stripe';
 
-const STRIPE_KEY = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
 const stripe = STRIPE_KEY ? new Stripe(STRIPE_KEY, { apiVersion: '2024-06-20' as any }) : null;
 
 // SendGrid client getter - tries Replit connector first, then env var

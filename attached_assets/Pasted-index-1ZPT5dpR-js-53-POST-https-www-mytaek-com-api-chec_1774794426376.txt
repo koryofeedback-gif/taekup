@@ -1,0 +1,57 @@
+index-1ZPT5dpR.js:53  POST https://www.mytaek.com/api/checkout 500 (Internal Server Error)
+Hi @ index-1ZPT5dpR.js:53
+createCheckoutSession @ index-1ZPT5dpR.js:53
+j @ index-1ZPT5dpR.js:606
+onClick @ index-1ZPT5dpR.js:606
+ak @ index-1ZPT5dpR.js:37
+nk @ index-1ZPT5dpR.js:37
+ik @ index-1ZPT5dpR.js:37
+Sg @ index-1ZPT5dpR.js:37
+Zv @ index-1ZPT5dpR.js:37
+(anonymous) @ index-1ZPT5dpR.js:37
+up @ index-1ZPT5dpR.js:40
+Nv @ index-1ZPT5dpR.js:37
+Nm @ index-1ZPT5dpR.js:37
+Ox @ index-1ZPT5dpR.js:37
+jk @ index-1ZPT5dpR.js:37
+index-1ZPT5dpR.js:53 [fetchAPI] Error 500: {error: "No such price: 'price_1TFaMCRhYhunDn2j8dxg6WWx'; a…ut a test mode key was used to make this request."}
+Hi @ index-1ZPT5dpR.js:53
+await in Hi
+createCheckoutSession @ index-1ZPT5dpR.js:53
+j @ index-1ZPT5dpR.js:606
+onClick @ index-1ZPT5dpR.js:606
+ak @ index-1ZPT5dpR.js:37
+nk @ index-1ZPT5dpR.js:37
+ik @ index-1ZPT5dpR.js:37
+Sg @ index-1ZPT5dpR.js:37
+Zv @ index-1ZPT5dpR.js:37
+(anonymous) @ index-1ZPT5dpR.js:37
+up @ index-1ZPT5dpR.js:40
+Nv @ index-1ZPT5dpR.js:37
+Nm @ index-1ZPT5dpR.js:37
+Ox @ index-1ZPT5dpR.js:37
+jk @ index-1ZPT5dpR.js:37
+index-1ZPT5dpR.js:53 [fetchAPI] Request to /checkout failed: Error: No such price: 'price_1TFaMCRhYhunDn2j8dxg6WWx'; a similar object exists in live mode, but a test mode key was used to make this request.
+    at Hi (index-1ZPT5dpR.js:53:9703)
+    at async Object.createCheckoutSession (index-1ZPT5dpR.js:53:10566)
+    at async j (index-1ZPT5dpR.js:606:50244)
+Hi @ index-1ZPT5dpR.js:53
+await in Hi
+createCheckoutSession @ index-1ZPT5dpR.js:53
+j @ index-1ZPT5dpR.js:606
+onClick @ index-1ZPT5dpR.js:606
+ak @ index-1ZPT5dpR.js:37
+nk @ index-1ZPT5dpR.js:37
+ik @ index-1ZPT5dpR.js:37
+Sg @ index-1ZPT5dpR.js:37
+Zv @ index-1ZPT5dpR.js:37
+(anonymous) @ index-1ZPT5dpR.js:37
+up @ index-1ZPT5dpR.js:40
+Nv @ index-1ZPT5dpR.js:37
+Nm @ index-1ZPT5dpR.js:37
+Ox @ index-1ZPT5dpR.js:37
+jk @ index-1ZPT5dpR.js:37
+index-1ZPT5dpR.js:606 [PricingPage] Checkout error: Error: No such price: 'price_1TFaMCRhYhunDn2j8dxg6WWx'; a similar object exists in live mode, but a test mode key was used to make this request.
+    at Hi (index-1ZPT5dpR.js:53:9703)
+    at async Object.createCheckoutSession (index-1ZPT5dpR.js:53:10566)
+    at async j (index-1ZPT5dpR.js:606:50244)

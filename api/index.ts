@@ -1727,7 +1727,7 @@ async function handleUniversalAccessToggle(req: VercelRequest, res: VercelRespon
                                  customer.default_source;
         if (!hasPaymentMethod) {
           // Detect test mode by checking the key prefix
-          const secretKey = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY || '';
+          const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY || '';
           const isTestMode = secretKey.startsWith('sk_test_');
           if (isTestMode) {
             // Attach a test payment method so Universal Access can be tested
