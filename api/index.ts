@@ -538,7 +538,7 @@ async function logAutomatedEmail(client: any, triggerType: string, recipient: st
 }
 
 function getStripeClient(): Stripe | null {
-  const secretKey = process.env.SANDBOX_STRIPE_KEY || process.env.STRIPE_SECRET_KEY;
+  const secretKey = process.env.STRIPE_SECRET_KEY || process.env.SANDBOX_STRIPE_KEY;
   if (!secretKey) return null;
   return new Stripe(secretKey);
 }
