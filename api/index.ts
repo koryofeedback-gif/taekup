@@ -1129,9 +1129,6 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
     customerId = newCustomer.id;
   }
 
-  // EU countries — charge in EUR to avoid Stripe FX conversion fee
-  const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
-
   let stripeConnectAccountId: string | null = null;
   let clubCountry: string | null = null;
   if (clubId) {
@@ -1150,16 +1147,11 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
     }
   }
 
-  const isEU = EU_COUNTRIES.has((clubCountry || '').toUpperCase());
-  const currency = isEU ? 'eur' : 'usd';
-
-  // Multi-currency price — just pass currency to Stripe, same price ID works for EUR and USD
   const lineItems = [{ price: PARENT_PREMIUM_PRICE_ID, quantity: 1 }];
 
   const sessionConfig: any = {
     customer: customerId,
     payment_method_types: ['card'],
-    currency,
     line_items: lineItems,
     mode: 'subscription',
     success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,
@@ -1167,10 +1159,8 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
     metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
     subscription_data: {
       metadata: { studentId, clubId: clubId || '', type: 'parent_premium' },
-      // 70/30 split: club earns 70%, platform keeps 30%
-      // application_fee_percent is the correct Stripe param for subscription revenue share
       ...(stripeConnectAccountId && {
-        application_fee_percent: 34.3, // 30% platform + 70% of Stripe micropayment fee (5%+$0.05) shared proportionally
+        application_fee_percent: 34.3,
         transfer_data: {
           destination: stripeConnectAccountId,
         }
@@ -1178,10 +1168,14 @@ async function handleParentPremiumCheckout(req: VercelRequest, res: VercelRespon
     }
   };
 
-  const session = await stripe.checkout.sessions.create(sessionConfig);
-
-  console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}, currency: ${currency.toUpperCase()}, club: ${clubCountry || 'unknown'}, transfer: ${stripeConnectAccountId ? 'yes (34.3% fee)' : 'no connected account'}`);
-  return res.json({ url: session.url });
+  try {
+    const session = await stripe.checkout.sessions.create(sessionConfig);
+    console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}, club: ${clubCountry || 'unknown'}, transfer: ${stripeConnectAccountId ? 'yes (34.3% fee)' : 'no connected account'}`);
+    return res.json({ url: session.url });
+  } catch (stripeErr: any) {
+    console.error('[Parent Premium] Stripe error:', stripeErr?.message || stripeErr);
+    return res.status(500).json({ error: stripeErr?.message || 'Failed to create checkout session' });
+  }
 }
 
 async function handleParentPremiumPortal(req: VercelRequest, res: VercelResponse) {

@@ -1763,10 +1763,7 @@ export function registerRoutes(app: Express) {
         customerId = newCustomer.id;
       }
 
-      // EU countries — charge in EUR to avoid Stripe FX conversion fee
-      const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
-
-      // Get club's Stripe Connect account AND country from wizard_data
+      // Get club's Stripe Connect account from wizard_data
       let stripeConnectAccountId: string | null = null;
       let clubCountry: string | null = null;
       if (clubId) {
@@ -1780,15 +1777,11 @@ export function registerRoutes(app: Express) {
         }
       }
 
-      const isEU = EU_COUNTRIES.has((clubCountry || '').toUpperCase());
-      const parentCurrency = isEU ? 'eur' : 'usd';
-
       const lineItems = [{ price: priceId, quantity: 1 }];
 
       const sessionConfig: any = {
         customer: customerId,
         payment_method_types: ['card'],
-        currency: parentCurrency,
         line_items: lineItems,
         mode: 'subscription',
         success_url: `${baseUrl}/app/parent/${studentId}?premium=success`,
@@ -1804,10 +1797,8 @@ export function registerRoutes(app: Express) {
             clubId: clubId || '',
             type: 'parent_premium'
           },
-          // 70/30 split: club earns 70%, platform keeps 30%
-          // application_fee_percent is the correct Stripe param for subscription revenue share
           ...(stripeConnectAccountId && {
-            application_fee_percent: 34.3, // 30% platform + 70% of Stripe micropayment fee (5%+$0.05) shared proportionally
+            application_fee_percent: 34.3,
             transfer_data: {
               destination: stripeConnectAccountId,
             }
@@ -1817,7 +1808,7 @@ export function registerRoutes(app: Express) {
 
       const session = await stripe.checkout.sessions.create(sessionConfig);
 
-      console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}, club transfer: ${stripeConnectAccountId ? 'yes (70%)' : 'no connected account'}`);
+      console.log(`[Parent Premium] Created checkout for student ${studentId}, session: ${session.id}, club transfer: ${stripeConnectAccountId ? 'yes (34.3% fee)' : 'no connected account'}`);
       res.json({ url: session.url });
     } catch (error: any) {
       console.error('[Parent Premium] Checkout error:', error);
