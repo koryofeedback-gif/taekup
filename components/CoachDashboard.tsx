@@ -103,7 +103,13 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
     const [apiMonthlyPTS, setApiMonthlyPTS] = useState<Map<string, number>>(new Map());
     const [cachedLeaderboard, setCachedLeaderboard] = useState<Array<{id: string, name: string, monthlyPTS: number}>>([]);
     const [retentionData, setRetentionData] = useState<Record<string, string | null> | null>(null);
-    const [birthdayEmailSentIds, setBirthdayEmailSentIds] = useState<Set<string>>(new Set());
+    const todayKey = new Date().toISOString().split('T')[0];
+    const [birthdayEmailSentIds, setBirthdayEmailSentIds] = useState<Set<string>>(() => {
+        try {
+            const stored = localStorage.getItem(`birthday_email_sent_${todayKey}`);
+            return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
+        } catch { return new Set<string>(); }
+    });
     const [birthdayEmailSending, setBirthdayEmailSending] = useState<string | null>(null);
 
     const studentDataFingerprint = useMemo(() => {
@@ -285,7 +291,11 @@ const InsightSidebar: React.FC<{ students: Student[], belts: any[], clubId?: str
                                 setBirthdayEmailSending(s.id);
                                 try {
                                     await fetch(`/api/students/${s.id}/birthday-email`, { method: 'POST' });
-                                    setBirthdayEmailSentIds(prev => new Set([...prev, s.id]));
+                                    setBirthdayEmailSentIds(prev => {
+                                        const next = new Set([...prev, s.id]);
+                                        try { localStorage.setItem(`birthday_email_sent_${todayKey}`, JSON.stringify([...next])); } catch {}
+                                        return next;
+                                    });
                                 } catch (e) {
                                     console.error('[Birthday] Failed to send email', e);
                                 } finally {

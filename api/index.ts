@@ -372,9 +372,9 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   },
   // Birthday wish
   BIRTHDAY_WISH: {
-    subject: 'Happy Birthday, {{childName}}!',
+    subject: '🎂 Happy Birthday, {{studentName}}!',
     title: 'Happy Birthday, Champion!',
-    body: `Happy Birthday <strong>{{childName}}</strong>!<br><br>Everyone at <strong>{{clubName}}</strong> wishes you an amazing birthday!<br><br>Here's to another year of growth, achievements, and martial arts excellence!<br><br>Keep training and reaching for the stars!`,
+    body: `Dear <strong>{{studentName}}</strong>,<br><br>Everyone at <strong>{{clubName}}</strong> wishes you a very Happy Birthday! 🎉<br><br>May this year bring you closer to your martial arts goals. Keep training hard, and never stop believing in yourself!<br><br>See you on the mat, champion!`,
     from: 'hello@mytaek.com'
   },
   // Payout notification
@@ -3211,6 +3211,7 @@ async function handleBirthdayEmail(req: VercelRequest, res: VercelResponse, stud
     if (!student.parent_email) return res.status(400).json({ error: 'No parent email on file' });
     const language = student.club_wizard_data?.language || 'en';
     const sent = await sendTemplateEmail(student.parent_email, 'BIRTHDAY_WISH', {
+      studentName: student.name,
       childName: student.name,
       clubName: student.club_name,
     }, language);
