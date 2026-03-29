@@ -2382,6 +2382,7 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
       // Use language from request (wizard passes it directly) or fall back to DB
       const clubLang = reqLanguage ? normalizeLanguageCode(reqLanguage) : await getClubLanguage(client, clubId);
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
+        name: parentName || 'Parent',
         parentName: parentName || 'Parent',
         parentEmail: parentEmail,
         studentName: name,
@@ -3164,6 +3165,7 @@ async function handleLinkParent(req: VercelRequest, res: VercelResponse, student
     if (!hadParentBefore) {
       const linkLang = await getClubLanguage(client, student.club_id);
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
+        name: parentName || 'Parent',
         parentName: parentName || 'Parent',
         parentEmail: parentEmail,
         studentName: student.name,
