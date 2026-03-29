@@ -1,0 +1,75 @@
+2026-03-29 10:19:46.853 [info] [SuperAdmin API] URL: /api/super-admin/revenue?path=revenue QueryPath: revenue Path: /revenue Method: GET
+2026-03-29 10:19:46.854 [info] [SuperAdmin] Auth header check: {
+  hasAuth: true,
+  headerKeys: [ 'authorization' ],
+  allHeaders: [
+    'sec-fetch-dest',
+    'accept-language',
+    'x-forwarded-host',
+    'access-control-allow-methods',
+    'x-vercel-ip-as-number',
+    'x-content-type-options',
+    'accept-encoding',
+    'x-vercel-proxy-signature-ts',
+    'x-vercel-ip-latitude',
+    'x-real-ip',
+    'host',
+    'referer',
+    'cache-control',
+    'x-vercel-proxy-signature',
+    'accept',
+    'x-vercel-ja4-digest',
+    'x-vercel-oidc-token',
+    'x-vercel-ip-continent',
+    'x-vercel-ip-longitude',
+    'x-vercel-forwarded-for',
+    'forwarded',
+    'access-control-allow-credentials',
+    'x-forwarded-for',
+    'x-forwarded-proto',
+    'x-vercel-ip-country-region',
+    'x-vercel-deployment-url',
+    'sec-ch-ua',
+    'x-vercel-ip-country',
+    'x-vercel-id',
+    'x-vercel-proxied-for',
+    'priority',
+    'sec-ch-ua-mobile',
+    'sec-ch-ua-platform',
+    'sec-fetch-site',
+    'access-control-allow-headers',
+    'user-agent',
+    'x-vercel-ip-timezone',
+    'vary',
+    'cookie',
+    'x-vercel-ip-city',
+    'sec-fetch-mode',
+    'authorization',
+    'x-vercel-ip-postal-code',
+    'access-control-allow-origin',
+    'connection',
+    'x-invocation-id'
+  ]
+}
+2026-03-29 10:19:46.857 [error] (node:4) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-03-29 10:19:46.950 [error] Revenue analytics error: PostgresError: column "tier" does not exist
+    at ErrorResponse (file:///var/task/node_modules/postgres/src/connection.js:794:26)
+    at handle (file:///var/task/node_modules/postgres/src/connection.js:480:6)
+    at TLSSocket.data (file:///var/task/node_modules/postgres/src/connection.js:315:9)
+    at TLSSocket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+    at Readable.push (node:internal/streams/readable:390:5)
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:189:23)
+    at cachedError (file:///var/task/node_modules/postgres/src/query.js:170:23)
+    at new Query (file:///var/task/node_modules/postgres/src/query.js:36:24)
+    at sql (file:///var/task/node_modules/postgres/src/index.js:112:11)
+    at handleRevenueAnalytics (/vercel/path0/api/super-admin.ts:716:38) {
+  severity_local: 'ERROR',
+  severity: 'ERROR',
+  code: '42703',
+  position: '42',
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
