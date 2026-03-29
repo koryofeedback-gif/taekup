@@ -712,20 +712,15 @@ async function handleRevenueAnalytics(req: VercelRequest, res: VercelResponse) {
       ORDER BY ds.date
     `;
 
-    // Current MRR: sum from active clubs by tier price
+    // Current MRR: sum of paid payments in the last 30 days from active clubs
     const currentMrrResult = await db`
-      SELECT COALESCE(SUM(
-        CASE tier
-          WHEN 'starter'  THEN 4900
-          WHEN 'pro'      THEN 7900
-          WHEN 'standard' THEN 9900
-          WHEN 'growth'   THEN 14900
-          WHEN 'empire'   THEN 19900
-          ELSE 4900
-        END
-      ), 0) AS mrr
-      FROM clubs
-      WHERE status = 'active' AND is_platform_owner IS NOT TRUE
+      SELECT COALESCE(SUM(p.amount), 0) AS mrr
+      FROM payments p
+      JOIN clubs c ON c.id = p.club_id
+      WHERE p.status = 'paid'
+        AND c.status = 'active'
+        AND c.is_platform_owner IS NOT TRUE
+        AND COALESCE(p.paid_at, p.created_at) >= CURRENT_DATE - INTERVAL '30 days'
     `;
     
     // Churn rate (last 30 days)
@@ -774,21 +769,19 @@ async function handleRevenueAnalytics(req: VercelRequest, res: VercelResponse) {
         AND COALESCE(paid_at, created_at) >= DATE_TRUNC('month', CURRENT_DATE)
     `;
 
-    // Churned MRR this month: clubs that went inactive this month × their tier price
+    // Churned MRR this month: last paid amount from clubs that went inactive this month
     const churnedMrrResult = await db`
-      SELECT COALESCE(SUM(
-        CASE tier
-          WHEN 'starter'  THEN 4900
-          WHEN 'pro'      THEN 7900
-          WHEN 'standard' THEN 9900
-          WHEN 'growth'   THEN 14900
-          WHEN 'empire'   THEN 19900
-          ELSE 4900
-        END
-      ), 0) AS churned_mrr
-      FROM clubs
-      WHERE status IN ('churned', 'canceled', 'inactive')
-        AND updated_at >= DATE_TRUNC('month', CURRENT_DATE)
+      SELECT COALESCE(SUM(last_payment.amount), 0) AS churned_mrr
+      FROM clubs c
+      JOIN LATERAL (
+        SELECT amount FROM payments
+        WHERE club_id = c.id AND status = 'paid'
+        ORDER BY COALESCE(paid_at, created_at) DESC
+        LIMIT 1
+      ) last_payment ON TRUE
+      WHERE c.status IN ('churned', 'canceled', 'inactive')
+        AND c.updated_at >= DATE_TRUNC('month', CURRENT_DATE)
+        AND c.is_platform_owner IS NOT TRUE
     `;
     
     return res.json({
