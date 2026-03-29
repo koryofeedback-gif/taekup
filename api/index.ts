@@ -1047,9 +1047,12 @@ async function handleChangePassword(req: VercelRequest, res: VercelResponse) {
 async function handleCheckout(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { priceId, clubId, email } = parseBody(req);
+  console.log('[Checkout] Received request — priceId:', priceId, '| clubId:', clubId, '| email:', email);
   if (!priceId) return res.status(400).json({ error: 'priceId is required' });
 
   const stripe = getStripeClient();
+  const stripeKeyPreview = process.env.STRIPE_SECRET_KEY ? `sk_live_...${process.env.STRIPE_SECRET_KEY.slice(-4)}` : (process.env.SANDBOX_STRIPE_KEY ? `sk_test_...${process.env.SANDBOX_STRIPE_KEY.slice(-4)}` : 'NONE');
+  console.log('[Checkout] Stripe key mode:', stripeKeyPreview);
   if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
 
   const host = req.headers.host || 'mytaek.com';
@@ -1466,24 +1469,29 @@ async function handleProductsWithPrices(req: VercelRequest, res: VercelResponse)
   const stripe = getStripeClient();
   if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
 
-  const products = await stripe.products.list({ active: true, limit: 20 });
-  const prices = await stripe.prices.list({ active: true, limit: 100 });
+  try {
+    const products = await stripe.products.list({ active: true, limit: 20 });
+    const prices = await stripe.prices.list({ active: true, limit: 100 });
 
-  const pricesByProduct = new Map<string, any[]>();
-  for (const price of prices.data) {
-    const productId = typeof price.product === 'string' ? price.product : price.product.id;
-    if (!pricesByProduct.has(productId)) pricesByProduct.set(productId, []);
-    pricesByProduct.get(productId)!.push({
-      id: price.id, unit_amount: price.unit_amount, currency: price.currency,
-      recurring: price.recurring, active: price.active, metadata: price.metadata,
-    });
+    const pricesByProduct = new Map<string, any[]>();
+    for (const price of prices.data) {
+      const productId = typeof price.product === 'string' ? price.product : price.product.id;
+      if (!pricesByProduct.has(productId)) pricesByProduct.set(productId, []);
+      pricesByProduct.get(productId)!.push({
+        id: price.id, unit_amount: price.unit_amount, currency: price.currency,
+        recurring: price.recurring, active: price.active, metadata: price.metadata,
+      });
+    }
+
+    const result = products.data.map(p => ({
+      id: p.id, name: p.name, description: p.description, active: p.active,
+      metadata: p.metadata, prices: pricesByProduct.get(p.id) || [],
+    }));
+    return res.json({ data: result });
+  } catch (err: any) {
+    console.error('[ProductsWithPrices] Stripe error:', err?.message || err);
+    return res.status(500).json({ error: err?.message || 'Failed to load products' });
   }
-
-  const result = products.data.map(p => ({
-    id: p.id, name: p.name, description: p.description, active: p.active,
-    metadata: p.metadata, prices: pricesByProduct.get(p.id) || [],
-  }));
-  return res.json({ data: result });
 }
 
 async function handleStripePublishableKey(req: VercelRequest, res: VercelResponse) {

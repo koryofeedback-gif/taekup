@@ -11,9 +11,11 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      console.error(`[fetchAPI] Error ${response.status}:`, text);
-      throw new Error(`API error: ${response.status}`);
+      let body: any = null;
+      try { body = await response.json(); } catch { body = await response.text().catch(() => null); }
+      const message = (typeof body === 'object' && body?.error) ? body.error : `API error: ${response.status}`;
+      console.error(`[fetchAPI] Error ${response.status}:`, body);
+      throw new Error(message);
     }
 
     return response.json();
