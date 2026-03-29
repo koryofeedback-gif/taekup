@@ -1460,23 +1460,65 @@ export function registerRoutes(app: Express) {
       const accountId = club.stripe_connect_account_id;
       const stripe = await getUncachableStripeClient();
 
-      const searchResult = await stripe.subscriptions.search({
+      const PARENT_PREMIUM_PRICE_ID = 'price_1TFa9URhYhunDn2jbBcc5aPl';
+      const TARGET_FEE = 34.3;
+
+      // Strategy 1: search by metadata
+      const metadataSearch = await stripe.subscriptions.search({
         query: `metadata['clubId']:'${clubId}' AND metadata['type']:'parent_premium' AND status:'active'`,
         limit: 100,
-      });
+      }).catch(() => ({ data: [] as any[] }));
+
+      // Strategy 2: look up parent emails from DB
+      const parentRows = await db.execute(sql`
+        SELECT u.email FROM users u
+        JOIN students s ON s.club_id = u.club_id
+        WHERE s.club_id = ${clubId}::uuid
+          AND s.premium_status = 'parent_paid'
+          AND u.role = 'parent'
+      `);
+
+      const subMap = new Map<string, any>();
+      for (const sub of metadataSearch.data) subMap.set(sub.id, sub);
+
+      for (const row of parentRows as any[]) {
+        if (!row.email) continue;
+        try {
+          const customers = await stripe.customers.list({ email: row.email.toLowerCase().trim(), limit: 5 });
+          for (const customer of customers.data) {
+            const subs = await stripe.subscriptions.list({ customer: customer.id, status: 'active', limit: 10 });
+            for (const sub of subs.data) {
+              const hasPremiumPrice = sub.items.data.some((item: any) => item.price?.id === PARENT_PREMIUM_PRICE_ID);
+              if (hasPremiumPrice) subMap.set(sub.id, sub);
+            }
+          }
+        } catch {}
+      }
+
+      // Strategy 3: search by price ID
+      const priceSearch = await stripe.subscriptions.search({
+        query: `price:'${PARENT_PREMIUM_PRICE_ID}' AND status:'active'`,
+        limit: 100,
+      }).catch(() => ({ data: [] as any[] }));
+      for (const sub of priceSearch.data) {
+        const subClubId = (sub as any).metadata?.clubId;
+        if (!subClubId || subClubId === clubId) subMap.set(sub.id, sub);
+      }
+
+      const allSubs = Array.from(subMap.values());
+      console.log(`[Stripe Connect Backfill] Found ${allSubs.length} unique parent premium subscriptions`);
 
       const updated: string[] = [];
       const skipped: string[] = [];
       const errors: string[] = [];
 
-      const TARGET_FEE = 34.3;
-      for (const sub of searchResult.data) {
+      for (const sub of allSubs) {
         const correctDest = (sub as any).transfer_data?.destination === accountId;
         const correctFee = Math.abs(((sub as any).application_fee_percent || 0) - TARGET_FEE) < 0.01;
         if (correctDest && correctFee) { skipped.push(sub.id); continue; }
         try {
           await stripe.subscriptions.update(sub.id, {
-            application_fee_percent: TARGET_FEE, // 30% platform + 70% of Stripe micropayment fee (5%+$0.05) shared proportionally
+            application_fee_percent: TARGET_FEE,
             transfer_data: { destination: accountId },
           } as any);
           updated.push(sub.id);
@@ -1486,7 +1528,7 @@ export function registerRoutes(app: Express) {
         }
       }
 
-      res.json({ success: true, total: searchResult.data.length, updated: updated.length, skipped: skipped.length, errors, updatedIds: updated });
+      res.json({ success: true, total: allSubs.length, updated: updated.length, skipped: skipped.length, errors, updatedIds: updated });
     } catch (error: any) {
       console.error('[Stripe Connect Backfill]', error);
       res.status(500).json({ error: error.message || 'Backfill failed' });

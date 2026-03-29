@@ -1346,6 +1346,9 @@ async function handleStripeConnectBackfill(req: VercelRequest, res: VercelRespon
   const stripe = getStripeClient();
   if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
 
+  const PARENT_PREMIUM_PRICE_ID = 'price_1TFa9URhYhunDn2jbBcc5aPl';
+  const TARGET_FEE = 34.3;
+
   const client = await pool.connect();
   try {
     const result = await client.query(
@@ -1355,19 +1358,74 @@ async function handleStripeConnectBackfill(req: VercelRequest, res: VercelRespon
     const accountId = result.rows[0]?.stripe_connect_account_id;
     if (!accountId) return res.status(400).json({ error: 'Club has no connected Stripe account' });
 
-    // Search Stripe for active parent_premium subscriptions for this club
-    const searchResult = await stripe.subscriptions.search({
+    // --- Strategy 1: search by metadata (fast path for subscriptions created with metadata) ---
+    const metadataSearch = await stripe.subscriptions.search({
       query: `metadata['clubId']:'${clubId}' AND metadata['type']:'parent_premium' AND status:'active'`,
       limit: 100,
-    });
+    }).catch(() => ({ data: [] as any[] }));
+
+    // --- Strategy 2: look up parent emails from DB (catches subscriptions created without metadata) ---
+    const parentRows = await client.query(
+      `SELECT u.email FROM users u
+       JOIN students s ON s.club_id = u.club_id
+       WHERE s.club_id = $1::uuid
+         AND s.premium_status = 'parent_paid'
+         AND u.role = 'parent'`,
+      [clubId]
+    );
+
+    const subMap = new Map<string, any>();
+
+    // Add metadata-search results
+    for (const sub of metadataSearch.data) {
+      subMap.set(sub.id, sub);
+    }
+
+    // For each parent email, find their Stripe customer and active parent-premium subscriptions
+    for (const row of parentRows.rows) {
+      if (!row.email) continue;
+      try {
+        const customers = await stripe.customers.list({ email: row.email.toLowerCase().trim(), limit: 5 });
+        for (const customer of customers.data) {
+          const subs = await stripe.subscriptions.list({
+            customer: customer.id,
+            status: 'active',
+            limit: 10,
+          });
+          for (const sub of subs.data) {
+            const hasParentPremiumPrice = sub.items.data.some((item: any) => item.price?.id === PARENT_PREMIUM_PRICE_ID);
+            if (hasParentPremiumPrice) {
+              subMap.set(sub.id, sub);
+            }
+          }
+        }
+      } catch (e: any) {
+        console.warn(`[Stripe Connect Backfill] Could not look up customer for ${row.email}:`, e.message);
+      }
+    }
+
+    // --- Strategy 3: search by price ID in Stripe (catches any remaining) ---
+    const priceSearch = await stripe.subscriptions.search({
+      query: `price:'${PARENT_PREMIUM_PRICE_ID}' AND status:'active'`,
+      limit: 100,
+    }).catch(() => ({ data: [] as any[] }));
+
+    for (const sub of priceSearch.data) {
+      // Only include if the subscription belongs to this club (check metadata clubId)
+      const subClubId = (sub as any).metadata?.clubId;
+      if (!subClubId || subClubId === clubId) {
+        subMap.set(sub.id, sub);
+      }
+    }
+
+    const allSubs = Array.from(subMap.values());
+    console.log(`[Stripe Connect Backfill] Found ${allSubs.length} unique parent premium subscriptions for club ${clubId}`);
 
     const updated: string[] = [];
     const skipped: string[] = [];
     const errors: string[] = [];
 
-    const TARGET_FEE = 34.3;
-    for (const sub of searchResult.data) {
-      // Skip only if destination AND fee percent are both already correct
+    for (const sub of allSubs) {
       const correctDest = (sub as any).transfer_data?.destination === accountId;
       const correctFee = Math.abs(((sub as any).application_fee_percent || 0) - TARGET_FEE) < 0.01;
       if (correctDest && correctFee) {
@@ -1376,11 +1434,11 @@ async function handleStripeConnectBackfill(req: VercelRequest, res: VercelRespon
       }
       try {
         await stripe.subscriptions.update(sub.id, {
-          application_fee_percent: TARGET_FEE, // 30% platform + 70% of Stripe micropayment fee (5%+$0.05) shared proportionally
+          application_fee_percent: TARGET_FEE,
           transfer_data: { destination: accountId },
         } as any);
         updated.push(sub.id);
-        console.log(`[Stripe Connect Backfill] Updated subscription ${sub.id} → fee=${TARGET_FEE}% account=${accountId}`);
+        console.log(`[Stripe Connect Backfill] Updated ${sub.id} → fee=${TARGET_FEE}% dest=${accountId}`);
       } catch (updateErr: any) {
         console.error(`[Stripe Connect Backfill] Failed to update ${sub.id}:`, updateErr.message);
         errors.push(`${sub.id}: ${updateErr.message}`);
@@ -1389,7 +1447,7 @@ async function handleStripeConnectBackfill(req: VercelRequest, res: VercelRespon
 
     return res.json({
       success: true,
-      total: searchResult.data.length,
+      total: allSubs.length,
       updated: updated.length,
       skipped: skipped.length,
       errors,

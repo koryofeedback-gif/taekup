@@ -2712,11 +2712,15 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                     <div>
                                         <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.connectYourBank')}</p>
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-2xl">✅</span>
+                                            <span className="text-2xl">{stripeConnectStatus.payoutsEnabled ? '✅' : '⚠️'}</span>
                                             <div>
-                                                <p className="text-sm font-bold text-green-400">Bank Connected</p>
+                                                <p className={`text-sm font-bold ${stripeConnectStatus.payoutsEnabled ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                    {stripeConnectStatus.payoutsEnabled ? 'Bank Connected' : 'Verification Required'}
+                                                </p>
                                                 <p className="text-xs text-gray-400">
-                                                    {stripeConnectStatus.payoutsEnabled ? 'Payouts enabled — $3.28 of each $4.99 goes to your bank' : 'Connected — finishing verification with Stripe'}
+                                                    {stripeConnectStatus.payoutsEnabled
+                                                        ? '$3.28 of each $4.99 goes directly to your bank'
+                                                        : 'Click "Manage" to complete identity verification — payouts are on hold until done'}
                                                 </p>
                                             </div>
                                         </div>
@@ -2724,10 +2728,12 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                             <p className="text-xs text-yellow-400 mb-2">⏳ Linking existing subscriptions…</p>
                                         )}
                                         {!backfillLoading && backfillResult && (
-                                            <p className="text-xs text-green-300 mb-2">
+                                            <p className="text-xs mb-2" style={{ color: backfillResult.updated > 0 ? '#86efac' : backfillResult.total === 0 ? '#fbbf24' : '#86efac' }}>
                                                 {backfillResult.updated > 0
-                                                    ? `✅ ${backfillResult.updated} existing subscription${backfillResult.updated > 1 ? 's' : ''} now linked — 70% share active`
-                                                    : '✅ All subscriptions already linked'}
+                                                    ? `✅ ${backfillResult.updated} subscription${backfillResult.updated > 1 ? 's' : ''} linked — 70% share active for next billing`
+                                                    : backfillResult.total === 0
+                                                        ? '⚠️ No active subscriptions found. Complete Stripe verification first.'
+                                                        : `✅ ${backfillResult.skipped} subscription${backfillResult.skipped !== 1 ? 's' : ''} already linked`}
                                             </p>
                                         )}
                                     </div>
