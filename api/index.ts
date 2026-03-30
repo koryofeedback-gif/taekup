@@ -431,6 +431,7 @@ const EMAIL_TYPE_TO_I18N_KEY: Record<string, string> = {
   SUBSCRIPTION_CANCELLED: 'subscription_cancelled', WIN_BACK: 'win_back',
   CHURN_RISK: 'churn_risk', DAY_3_CHECKIN: 'day_3_checkin', DAY_7_MID_TRIAL: 'day_7_mid_trial',
   DAY1_PARENT_QUESTS: 'day1_parent_quests',
+  DAY5_PREMIUM_UPSELL: 'day5_premium_upsell',
 };
 
 let _emailContentCache: Record<string, Record<string, any>> | null = null;

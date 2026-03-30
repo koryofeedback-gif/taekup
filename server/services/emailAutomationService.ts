@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { sql } from 'drizzle-orm';
-import emailService, { EMAIL_TEMPLATES, sendParentDay1QuestsEmail } from './emailService';
+import emailService, { EMAIL_TEMPLATES, sendParentDay1QuestsEmail, sendParentDay5UpsellEmail } from './emailService';
 
 const MASTER_TEMPLATE = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'master_template';
 
@@ -23,7 +23,8 @@ type AutomatedEmailTrigger =
   | 'attendance_alert'
   | 'coach_invite'
   | 'new_student_added'
-  | 'parent_day1_quests';
+  | 'parent_day1_quests'
+  | 'parent_day5_upsell';
 
 interface EmailSendResult {
   success: boolean;
@@ -352,6 +353,7 @@ export async function runScheduledEmailTasks(): Promise<void> {
   
   try {
     await sendParentDay1QuestsEmails();
+    await sendParentDay5UpsellEmails();
     await sendDay3CheckinEmails();
     await sendDay7MidTrialEmails();
     await sendTrialEndingSoonEmails();
@@ -423,6 +425,68 @@ async function sendParentDay1QuestsEmails(): Promise<void> {
       console.log(`[EmailAutomation] Day-1 quests email ${result.success ? 'sent' : 'FAILED'} → ${row.parent_email}`);
     } catch (err) {
       console.error(`[EmailAutomation] Day-1 quests error for ${row.parent_email}:`, err);
+    }
+  }
+}
+
+async function sendParentDay5UpsellEmails(): Promise<void> {
+  const triggerType: AutomatedEmailTrigger = 'parent_day5_upsell';
+
+  const rows = await db.execute(sql`
+    SELECT DISTINCT
+      s.id AS student_id,
+      s.parent_email,
+      s.parent_name,
+      s.name AS student_name,
+      s.premium_status,
+      c.name AS club_name,
+      c.id AS club_id,
+      c.wizard_data
+    FROM students s
+    JOIN clubs c ON c.id = s.club_id
+    JOIN automated_email_logs ael
+      ON ael.student_id = s.id
+      AND ael.trigger_type = 'parent_day1_quests'
+      AND ael.status = 'sent'
+      AND ael.created_at <= NOW() - INTERVAL '96 hours'
+      AND ael.created_at >= NOW() - INTERVAL '120 hours'
+    WHERE s.parent_email IS NOT NULL
+      AND s.premium_status NOT IN ('parent_paid', 'club_sponsored')
+      AND s.parent_email NOT LIKE '%@bltiwd.com'
+      AND s.parent_email NOT LIKE '%@example.com'
+      AND s.parent_email NOT LIKE '%@test.com'
+      AND s.id NOT IN (
+        SELECT student_id FROM automated_email_logs
+        WHERE trigger_type = 'parent_day5_upsell'
+          AND status = 'sent'
+          AND student_id IS NOT NULL
+      )
+  `);
+
+  console.log(`[EmailAutomation] Day-5 premium upsell: ${(rows as any[]).length} parents to notify`);
+
+  for (const row of rows as any[]) {
+    try {
+      const language = (row.wizard_data as any)?.language || 'English';
+      const result = await sendParentDay5UpsellEmail(row.parent_email, {
+        parentName: row.parent_name || '',
+        studentName: row.student_name || '',
+        clubName: row.club_name || '',
+        studentId: row.student_id,
+        language,
+      });
+
+      await logEmail(
+        triggerType, row.parent_email, MASTER_TEMPLATE,
+        result.success ? 'sent' : 'failed',
+        result.messageId, result.error,
+        { studentName: row.student_name, clubName: row.club_name, emailType: 'day5_premium_upsell' },
+        row.club_id, row.student_id
+      );
+
+      console.log(`[EmailAutomation] Day-5 upsell ${result.success ? 'sent' : 'FAILED'} → ${row.parent_email}`);
+    } catch (err) {
+      console.error(`[EmailAutomation] Day-5 upsell error for ${row.parent_email}:`, err);
     }
   }
 }

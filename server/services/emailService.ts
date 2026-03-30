@@ -280,6 +280,7 @@ const EMAIL_TYPE_SENDER: Record<string, SenderType> = {
   // Welcome & Engagement - hello@
   welcome_parent: 'hello',
   day1_parent_quests: 'hello',
+  day5_premium_upsell: 'hello',
   welcome_club: 'hello',
   birthday_wish: 'hello',
   win_back: 'hello',
@@ -693,6 +694,26 @@ export async function sendParentDay1QuestsEmail(
 ): Promise<EmailResult> {
   const firstName = (data.parentName || '').split(' ')[0] || data.parentName;
   return sendNotification('day1_parent_quests', { email: to, name: firstName, language: data.language }, {
+    name: firstName,
+    parent_first_name: firstName,
+    student_name: data.studentName,
+    studentName: data.studentName,
+    clubName: data.clubName,
+  });
+}
+
+export async function sendParentDay5UpsellEmail(
+  to: string,
+  data: {
+    parentName: string;
+    studentName: string;
+    clubName: string;
+    studentId?: string;
+    language?: string;
+  }
+): Promise<EmailResult> {
+  const firstName = (data.parentName || '').split(' ')[0] || data.parentName;
+  return sendNotification('day5_premium_upsell', { email: to, name: firstName, language: data.language }, {
     name: firstName,
     parent_first_name: firstName,
     student_name: data.studentName,
