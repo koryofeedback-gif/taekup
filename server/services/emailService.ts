@@ -10,6 +10,7 @@ let connectionSettings: any;
 let cachedClient: { client: typeof sgMail; fromEmail: string } | null = null;
 
 const SENDGRID_MASTER_TEMPLATE_ID = process.env.SENDGRID_MASTER_TEMPLATE_ID;
+const LOGO_URL = 'https://www.mytaek.com/mytaek-logo.png';
 
 type EmailContentType = {
   [key: string]: {
@@ -124,7 +125,7 @@ export async function sendNotification(
         btn_text: btnText,
         btn_url: btnUrl,
         is_rtl: isRtl,
-        image_url: data.image_url,
+        image_url: data.image_url || LOGO_URL,
         unsubscribe: `${baseUrl}/unsubscribe?email=${encodeURIComponent(user.email)}`,
         name: templateData.name,
       },
