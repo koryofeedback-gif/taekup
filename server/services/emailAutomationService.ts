@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { sql } from 'drizzle-orm';
-import emailService, { EMAIL_TEMPLATES } from './emailService';
+import emailService, { EMAIL_TEMPLATES, sendParentDay1QuestsEmail } from './emailService';
 
 const MASTER_TEMPLATE = process.env.SENDGRID_MASTER_TEMPLATE_ID || 'master_template';
 
@@ -22,7 +22,8 @@ type AutomatedEmailTrigger =
   | 'belt_promotion'
   | 'attendance_alert'
   | 'coach_invite'
-  | 'new_student_added';
+  | 'new_student_added'
+  | 'parent_day1_quests';
 
 interface EmailSendResult {
   success: boolean;
@@ -350,6 +351,7 @@ export async function runScheduledEmailTasks(): Promise<void> {
   console.log('[EmailAutomation] Running scheduled email tasks...');
   
   try {
+    await sendParentDay1QuestsEmails();
     await sendDay3CheckinEmails();
     await sendDay7MidTrialEmails();
     await sendTrialEndingSoonEmails();
@@ -362,6 +364,66 @@ export async function runScheduledEmailTasks(): Promise<void> {
     console.log('[EmailAutomation] Scheduled tasks completed');
   } catch (error) {
     console.error('[EmailAutomation] Error running scheduled tasks:', error);
+  }
+}
+
+async function sendParentDay1QuestsEmails(): Promise<void> {
+  const triggerType: AutomatedEmailTrigger = 'parent_day1_quests';
+
+  const rows = await db.execute(sql`
+    SELECT DISTINCT
+      s.id AS student_id,
+      s.parent_email,
+      s.parent_name,
+      s.name AS student_name,
+      c.name AS club_name,
+      c.id AS club_id,
+      c.wizard_data
+    FROM students s
+    JOIN clubs c ON c.id = s.club_id
+    JOIN automated_email_logs ael
+      ON ael.student_id = s.id
+      AND ael.trigger_type = 'parent_welcome'
+      AND ael.status = 'sent'
+      AND ael.created_at <= NOW() - INTERVAL '24 hours'
+      AND ael.created_at >= NOW() - INTERVAL '48 hours'
+    WHERE s.parent_email IS NOT NULL
+      AND s.parent_email NOT LIKE '%@bltiwd.com'
+      AND s.parent_email NOT LIKE '%@example.com'
+      AND s.parent_email NOT LIKE '%@test.com'
+      AND s.id NOT IN (
+        SELECT student_id FROM automated_email_logs
+        WHERE trigger_type = 'parent_day1_quests'
+          AND status = 'sent'
+          AND student_id IS NOT NULL
+      )
+  `);
+
+  console.log(`[EmailAutomation] Day-1 parent quests: ${(rows as any[]).length} parents to notify`);
+
+  for (const row of rows as any[]) {
+    try {
+      const language = (row.wizard_data as any)?.language || 'English';
+      const result = await sendParentDay1QuestsEmail(row.parent_email, {
+        parentName: row.parent_name || '',
+        studentName: row.student_name || '',
+        clubName: row.club_name || '',
+        studentId: row.student_id,
+        language,
+      });
+
+      await logEmail(
+        triggerType, row.parent_email, MASTER_TEMPLATE,
+        result.success ? 'sent' : 'failed',
+        result.messageId, result.error,
+        { studentName: row.student_name, clubName: row.club_name, emailType: 'day1_parent_quests' },
+        row.club_id, row.student_id
+      );
+
+      console.log(`[EmailAutomation] Day-1 quests email ${result.success ? 'sent' : 'FAILED'} → ${row.parent_email}`);
+    } catch (err) {
+      console.error(`[EmailAutomation] Day-1 quests error for ${row.parent_email}:`, err);
+    }
   }
 }
 

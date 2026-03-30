@@ -430,6 +430,7 @@ const EMAIL_TYPE_TO_I18N_KEY: Record<string, string> = {
   BIRTHDAY_WISH: 'birthday_wish', PAYOUT_NOTIFICATION: 'payout_notification',
   SUBSCRIPTION_CANCELLED: 'subscription_cancelled', WIN_BACK: 'win_back',
   CHURN_RISK: 'churn_risk', DAY_3_CHECKIN: 'day_3_checkin', DAY_7_MID_TRIAL: 'day_7_mid_trial',
+  DAY1_PARENT_QUESTS: 'day1_parent_quests',
 };
 
 let _emailContentCache: Record<string, Record<string, any>> | null = null;
