@@ -118,6 +118,7 @@ export async function sendNotification(
       subject,
       templateId: SENDGRID_MASTER_TEMPLATE_ID,
       dynamicTemplateData: {
+        subject,
         title,
         body_content: bodyContent,
         btn_text: btnText,
