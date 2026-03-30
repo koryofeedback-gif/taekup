@@ -195,25 +195,34 @@ async function initStripe() {
 
     const stripeSync = await getStripeSync();
 
-    console.log('Setting up managed webhook...');
     const domains = process.env.REPLIT_DOMAINS?.split(',') || [];
     const webhookBaseUrl = domains[0] ? `https://${domains[0]}` : `http://localhost:${PORT}`;
     
-    try {
-      const result = await stripeSync.findOrCreateManagedWebhook(
-        `${webhookBaseUrl}/api/stripe/webhook`,
-        {
-          enabled_events: ['*'],
-          description: 'TaekUp Stripe webhook',
+    // Never auto-register Stripe webhooks for dev/Replit URLs — they are unstable and
+    // cause Stripe to spam 404 errors when the dev server is offline.
+    // Production webhooks are managed manually in the Stripe Dashboard pointing to Vercel.
+    const isDevUrl = webhookBaseUrl.includes('replit.dev') || webhookBaseUrl.includes('localhost') || webhookBaseUrl.includes('riker.replit');
+    
+    if (isDevUrl) {
+      console.log('Skipping webhook registration — dev URL detected:', webhookBaseUrl);
+    } else {
+      console.log('Setting up managed webhook...');
+      try {
+        const result = await stripeSync.findOrCreateManagedWebhook(
+          `${webhookBaseUrl}/api/stripe/webhook`,
+          {
+            enabled_events: ['*'],
+            description: 'TaekUp Stripe webhook',
+          }
+        );
+        if (result && result.webhook) {
+          console.log(`Webhook configured: ${result.webhook.url}`);
+        } else {
+          console.log('Webhook created (URL not returned)');
         }
-      );
-      if (result && result.webhook) {
-        console.log(`Webhook configured: ${result.webhook.url}`);
-      } else {
-        console.log('Webhook created (URL not returned)');
+      } catch (webhookError: any) {
+        console.warn('Webhook setup skipped:', webhookError.message || webhookError);
       }
-    } catch (webhookError: any) {
-      console.warn('Webhook setup skipped:', webhookError.message || webhookError);
     }
 
     console.log('Syncing Stripe data in background...');
