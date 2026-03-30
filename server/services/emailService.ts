@@ -529,8 +529,9 @@ export async function sendParentWelcomeEmail(
     language?: string;
   }
 ): Promise<EmailResult> {
-  return sendNotification('welcome_parent', { email: to, name: data.parentName, language: data.language }, {
-    name: data.parentName,
+  const firstName = (data.parentName || 'there').split(' ')[0];
+  return sendNotification('welcome_parent', { email: to, name: firstName, language: data.language }, {
+    name: firstName,
     parentEmail: to,
     clubName: data.clubName,
     studentName: data.studentName,

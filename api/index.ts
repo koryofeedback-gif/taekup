@@ -185,7 +185,7 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
   PARENT_WELCOME: {
     subject: '🎉 {{studentName}} is ready to train at {{clubName}}!',
     title: 'Welcome to {{clubName}}! 🥋',
-    body: `Hi {{parentName}},<br><br>Great news! <strong>{{studentName}}</strong> has been enrolled at <strong>{{clubName}}</strong> and their martial arts journey is about to begin!<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 15px 0;'>🔐 Your Login Credentials:</h3><div style='background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;'><strong>Email:</strong> {{parentEmail}}<br><strong>Password:</strong> 1234</div><p style='margin: 15px 0 0 0; font-size: 13px; color: #fbbf24;'>⚠️ Please change your password after first login for security!</p></div><div style='background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 10px 0;'>🌟 What's waiting for {{studentName}}:</h3><ul style='margin: 0; padding-left: 20px;'><li>Track progress & earn <strong>HonorXP™</strong></li><li>Unlock awesome <strong>Legacy Cards™</strong></li><li>Climb the <strong>Global Shogun Rank™</strong></li><li>Complete fun challenges in the Arena</li></ul></div><div style='background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 12px; margin: 20px 0; border: 2px dashed #f59e0b;'><h3 style='margin: 0 0 12px 0; color: #92400e;'>✨ Unlock Premium for $4.99/month:</h3><div style='color: #78350f; font-size: 14px;'><div style='margin-bottom: 8px;'>🔒 <strong>ChronosBelt™ Predictor</strong> - AI predicts your child's black belt date</div><div style='margin-bottom: 8px;'>🔒 <strong>Legacy Cards™</strong> - Digital collectible cards for achievements</div><div style='margin-bottom: 8px;'>🔒 <strong>2x HonorXP™</strong> - Double points with video proof submissions</div><div style='margin-bottom: 8px;'>🔒 <strong>AI Training Insights</strong> - Personalized feedback from TaekBot</div><div style='margin-bottom: 8px;'>🔒 <strong>Priority Class Booking</strong> - Book classes before others</div><div style='margin-bottom: 8px;'>🔒 <strong>Home Dojo™ Habits</strong> - Daily practice tracking for discipline</div><div>🔒 <strong>Extended Curriculum</strong> - Access exclusive training content</div></div></div><div style='background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 12px 0;'>📱 Add MyTaek to Your Home Screen</h3><p style='margin: 0 0 12px 0; font-size: 14px; color: #d1fae5;'>Get instant access anytime — no browser needed!</p><div style='font-size: 14px;'><div style='margin-bottom: 10px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;'><strong>🤖 Android:</strong> Open mytaek.com in Chrome → tap the ⋮ menu → <strong>"Add to Home Screen"</strong></div><div style='padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;'><strong>🍎 iPhone:</strong> Open mytaek.com in Safari → tap the Share ⬆ button → <strong>"Add to Home Screen"</strong></div></div><p style='margin: 12px 0 0 0; font-size: 12px; color: #6ee7b7;'>💡 Once installed, you stay logged in automatically.</p></div>`,
+    body: `Hi {{parentName}},<br><br>Great news! <strong>{{studentName}}</strong> has just been enrolled at <strong>{{clubName}}</strong> — the journey to Black Belt begins now!<br><br><div style='background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 15px 0;'>🔑 Your Key to the Dojo:</h3><div style='background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;'><strong>Email:</strong> {{parentEmail}}<br><strong>Password:</strong> 1234</div><p style='margin: 15px 0 0 0; font-size: 13px; color: #fbbf24;'>⚠️ Please change your password after first login for security!</p></div><div style='background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); padding: 20px; border-radius: 12px; margin: 20px 0; color: white;'><h3 style='margin: 0 0 10px 0;'>🌟 What's waiting for {{studentName}}:</h3><ul style='margin: 0; padding-left: 20px;'><li>🎯 Watch them chase their <strong>Black Belt</strong> — goal by goal</li><li>🏆 Boost their <strong>HonorXP™</strong> from home with training videos</li><li>🃏 Collect legendary <strong>Legacy Cards™</strong> for every achievement</li><li>⚔️ Rise through the <strong>Global Shogun Rank™</strong> worldwide</li></ul></div><p style='font-size: 13px; color: #64748b; text-align: center; margin: 16px 0;'>📱 <strong>Add MyTaek to your Home Screen</strong> — <a href='https://mytaek.com' style='color: #0ea5e9;'>mytaek.com</a> → tap Share ⬆ or ⋮ menu → "Add to Home Screen"</p>`,
     btn_text: 'Login to Parent Portal',
     btn_url: `${BASE_URL}/login`,
     from: 'hello@mytaek.com'
@@ -2441,9 +2441,10 @@ async function handleAddStudent(req: VercelRequest, res: VercelResponse) {
     if (parentEmail) {
       // Use language from request (wizard passes it directly) or fall back to DB
       const clubLang = reqLanguage ? normalizeLanguageCode(reqLanguage) : await getClubLanguage(client, clubId);
+      const parentFirstName = (parentName || 'Parent').split(' ')[0];
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
-        name: parentName || 'Parent',
-        parentName: parentName || 'Parent',
+        name: parentFirstName,
+        parentName: parentFirstName,
         parentEmail: parentEmail,
         studentName: name,
         clubName: club.name,
@@ -3224,9 +3225,10 @@ async function handleLinkParent(req: VercelRequest, res: VercelResponse, student
 
     if (!hadParentBefore) {
       const linkLang = await getClubLanguage(client, student.club_id);
+      const linkParentFirstName = (parentName || 'Parent').split(' ')[0];
       const parentSent = await sendTemplateEmail(parentEmail, 'PARENT_WELCOME', {
-        name: parentName || 'Parent',
-        parentName: parentName || 'Parent',
+        name: linkParentFirstName,
+        parentName: linkParentFirstName,
         parentEmail: parentEmail,
         studentName: student.name,
         clubName: student.club_name,
