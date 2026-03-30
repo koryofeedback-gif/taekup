@@ -3973,34 +3973,35 @@ async function handleVerifyVideo(req: VercelRequest, res: VercelResponse, videoI
 // DAILY MYSTERY CHALLENGE - with robust fallback
 // =====================================================
 
-function getFallbackChallenge(lang: string = 'en') {
+function getFallbackChallenge(lang: string = 'en', artType: string = 'Martial Arts') {
+  const artName = artType || 'Martial Arts';
   const fallbackByLang: Record<string, Array<{title: string; question: string; options: string[]; correctIndex: number; explanation: string}>> = {
     en: [
-      { title: "Belt Wisdom", question: "What does the color of the White Belt represent?", options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"], correctIndex: 1, explanation: "The White Belt represents innocence and a beginner's pure mind - ready to absorb new knowledge like a blank canvas!" },
-      { title: "Taekwondo Origins", question: "What country did Taekwondo originate from?", options: ["Japan", "China", "Korea", "Vietnam"], correctIndex: 2, explanation: "Taekwondo was developed in Korea in the 1940s and 1950s." },
-      { title: "Martial Arts Respect", question: "What is the traditional bow called in Korean martial arts?", options: ["Hajime", "Kyungye", "Rei", "Salute"], correctIndex: 1, explanation: "Kyungye (경례) means 'bow' in Korean and is used to show respect." },
-      { title: "Training Space", question: "What is the training hall called in Taekwondo?", options: ["Dojo", "Dojang", "Gym", "Studio"], correctIndex: 1, explanation: "Dojang (도장) is the Korean word for a martial arts training hall." },
-      { title: "Black Belt Meaning", question: "What does the Black Belt traditionally symbolize?", options: ["End of training", "Mastery and maturity", "Danger level", "Teaching ability"], correctIndex: 1, explanation: "The Black Belt symbolizes maturity - it's actually the beginning of deeper learning!" },
-      { title: "Spirit of Taekwondo", question: "What does 'Taekwondo' literally mean?", options: ["Art of fighting", "The way of the foot and fist", "Korean karate", "Self-defense art"], correctIndex: 1, explanation: "Taekwondo means 'the way of the foot and fist' - Tae (foot), Kwon (fist), Do (way)." },
-      { title: "Forms Practice", question: "What are the choreographed patterns called in Taekwondo?", options: ["Kata", "Poomsae", "Kihon", "Sparring"], correctIndex: 1, explanation: "Poomsae (품새) are the forms or patterns in Taekwondo." }
+      { title: "Belt Wisdom", question: "What does the White Belt traditionally represent?", options: ["Danger", "Innocence and a beginner's mind", "Mastery", "Speed"], correctIndex: 1, explanation: "The White Belt represents innocence — the pure, open mind of a beginner." },
+      { title: "Martial Arts Respect", question: "Why do martial artists bow to each other?", options: ["To stretch their neck", "To show respect and gratitude", "To signal they are ready to fight", "It is just a custom with no meaning"], correctIndex: 1, explanation: "Bowing is a universal martial arts gesture of respect to partners, instructors, and the art itself." },
+      { title: "Core Principle", question: "Which quality is considered the foundation of all martial arts?", options: ["Raw strength", "Aggression", "Self-discipline", "Speed"], correctIndex: 2, explanation: "Self-discipline is the cornerstone of every martial art — without it no technique can be mastered." },
+      { title: `${artName} Training`, question: "What is the most important attitude to bring to every training session?", options: ["Winning at all costs", "A humble and open mind", "Overconfidence", "Showing off skills"], correctIndex: 1, explanation: "Humility and an open mind allow a student to keep learning at every level." },
+      { title: "Black Belt Journey", question: "What does earning a Black Belt really signify?", options: ["The end of training", "The beginning of true learning", "The right to teach others immediately", "Physical perfection"], correctIndex: 1, explanation: "A Black Belt marks the beginning of deeper, lifelong learning — not the finish line." },
+      { title: "Movement Patterns", question: "What are pre-arranged solo movement sequences called in martial arts?", options: ["Sparring rounds", "Forms / Kata / Poomsae", "Drills", "Combinations"], correctIndex: 1, explanation: "Depending on the style, these sequences are called Forms, Kata (Japanese), or Poomsae (Korean)." },
+      { title: "Mindset Matters", question: "What does 'Indomitable Spirit' mean in martial arts?", options: ["Fighting without rules", "Never giving up despite hardship", "Always winning competitions", "Training seven days a week"], correctIndex: 1, explanation: "Indomitable Spirit means persisting through challenges with courage and determination." }
     ],
     fr: [
-      { title: "Sagesse des Ceintures", question: "Que représente la couleur de la ceinture blanche ?", options: ["Le danger", "L'innocence/Débutant", "La maîtrise", "Le feu"], correctIndex: 1, explanation: "La ceinture blanche représente l'innocence et l'esprit pur du débutant." },
-      { title: "Origines du Taekwondo", question: "De quel pays le Taekwondo est-il originaire ?", options: ["Japon", "Chine", "Corée", "Vietnam"], correctIndex: 2, explanation: "Le Taekwondo a été développé en Corée dans les années 1940 et 1950." },
-      { title: "Respect en Arts Martiaux", question: "Comment s'appelle le salut traditionnel dans les arts martiaux coréens ?", options: ["Hajime", "Kyungye (경례)", "Rei", "Salut"], correctIndex: 1, explanation: "Kyungye (경례) signifie 'salut' en coréen et est utilisé pour montrer le respect." },
-      { title: "Lieu d'Entraînement", question: "Comment s'appelle la salle d'entraînement en Taekwondo ?", options: ["Dojo", "Dojang", "Gymnase", "Studio"], correctIndex: 1, explanation: "Dojang (도장) est le mot coréen pour une salle d'arts martiaux." },
-      { title: "Signification Ceinture Noire", question: "Que symbolise traditionnellement la ceinture noire ?", options: ["Fin de l'entraînement", "Maturité et maîtrise", "Niveau de danger", "Capacité d'enseigner"], correctIndex: 1, explanation: "La ceinture noire symbolise la maturité - c'est le début d'un apprentissage plus profond !" },
-      { title: "Esprit du Taekwondo", question: "Que signifie littéralement 'Taekwondo' ?", options: ["Art du combat", "La voie du pied et du poing", "Karaté coréen", "Art de l'auto-défense"], correctIndex: 1, explanation: "Taekwondo signifie 'la voie du pied et du poing' - Tae (pied), Kwon (poing), Do (voie)." },
-      { title: "Pratique des Formes", question: "Comment s'appellent les enchaînements chorégraphiés en Taekwondo ?", options: ["Kata", "Poomsae", "Kihon", "Combat"], correctIndex: 1, explanation: "Les Poomsae (품새) sont les formes ou enchaînements en Taekwondo." }
+      { title: "Sagesse des Ceintures", question: "Que représente traditionnellement la ceinture blanche ?", options: ["Le danger", "L'innocence et l'esprit du débutant", "La maîtrise", "La vitesse"], correctIndex: 1, explanation: "La ceinture blanche symbolise l'innocence — l'esprit pur et ouvert du débutant." },
+      { title: "Respect en Arts Martiaux", question: "Pourquoi les pratiquants d'arts martiaux se saluent-ils ?", options: ["Pour s'étirer", "Pour montrer respect et gratitude", "Pour signaler qu'ils sont prêts à combattre", "C'est une simple habitude sans sens"], correctIndex: 1, explanation: "Le salut est un geste universel de respect envers les partenaires, les instructeurs et l'art lui-même." },
+      { title: "Principe Fondamental", question: "Quelle qualité est considérée comme la base de tous les arts martiaux ?", options: ["La force brute", "L'agressivité", "La discipline", "La vitesse"], correctIndex: 2, explanation: "La discipline est la pierre angulaire de tout art martial — sans elle, aucune technique ne peut être maîtrisée." },
+      { title: `Entraînement ${artName}`, question: "Quelle est l'attitude la plus importante à apporter à chaque séance ?", options: ["Gagner à tout prix", "Un esprit humble et ouvert", "La confiance excessive", "Montrer ses capacités"], correctIndex: 1, explanation: "L'humilité et l'ouverture d'esprit permettent à l'élève de continuer à progresser à chaque niveau." },
+      { title: "Le Voyage Ceinture Noire", question: "Qu'est-ce qu'obtenir une ceinture noire signifie vraiment ?", options: ["La fin de l'entraînement", "Le début du vrai apprentissage", "Le droit d'enseigner immédiatement", "La perfection physique"], correctIndex: 1, explanation: "La ceinture noire marque le début d'un apprentissage plus profond et permanent — pas la ligne d'arrivée." },
+      { title: "Formes de Mouvement", question: "Comment appelle-t-on les séquences de mouvements solos pré-arrangées en arts martiaux ?", options: ["Tours de combat", "Formes / Kata / Poomsae", "Exercices", "Combinaisons"], correctIndex: 1, explanation: "Selon le style, ces séquences s'appellent Formes, Kata (japonais) ou Poomsae (coréen)." },
+      { title: "L'Esprit Invincible", question: "Que signifie « esprit indomptable » dans les arts martiaux ?", options: ["Se battre sans règles", "Ne jamais abandonner malgré les difficultés", "Toujours gagner les compétitions", "S'entraîner sept jours par semaine"], correctIndex: 1, explanation: "L'esprit indomptable signifie persister face aux défis avec courage et détermination." }
     ],
     de: [
-      { title: "Gürtel-Weisheit", question: "Was symbolisiert die Farbe des weißen Gürtels?", options: ["Gefahr", "Unschuld/Anfänger", "Meisterschaft", "Feuer"], correctIndex: 1, explanation: "Der weiße Gürtel steht für Unschuld und den reinen Geist des Anfängers." },
-      { title: "Ursprünge des Taekwondo", question: "Aus welchem Land stammt Taekwondo?", options: ["Japan", "China", "Korea", "Vietnam"], correctIndex: 2, explanation: "Taekwondo wurde in den 1940er und 1950er Jahren in Korea entwickelt." },
-      { title: "Respekt in Kampfkünsten", question: "Wie heißt die traditionelle Verbeugung in koreanischen Kampfkünsten?", options: ["Hajime", "Kyungye (경례)", "Rei", "Gruß"], correctIndex: 1, explanation: "Kyungye (경례) bedeutet 'Verbeugung' auf Koreanisch und zeigt Respekt." },
-      { title: "Trainingsraum", question: "Wie heißt die Trainingshalle im Taekwondo?", options: ["Dojo", "Dojang", "Fitnessstudio", "Studio"], correctIndex: 1, explanation: "Dojang (도장) ist das koreanische Wort für eine Kampfkunst-Trainingshalle." },
-      { title: "Bedeutung Schwarzer Gürtel", question: "Was symbolisiert der schwarze Gürtel traditionell?", options: ["Ende des Trainings", "Reife und Meisterschaft", "Gefahrenstufe", "Lehrfähigkeit"], correctIndex: 1, explanation: "Der schwarze Gürtel symbolisiert Reife - er ist tatsächlich der Beginn tieferen Lernens!" },
-      { title: "Geist des Taekwondo", question: "Was bedeutet 'Taekwondo' wörtlich?", options: ["Kampfkunst", "Der Weg des Fußes und der Faust", "Koreanisches Karate", "Selbstverteidigung"], correctIndex: 1, explanation: "Taekwondo bedeutet 'Der Weg des Fußes und der Faust' - Tae (Fuß), Kwon (Faust), Do (Weg)." },
-      { title: "Formentraining", question: "Wie heißen die choreografierten Bewegungsabläufe im Taekwondo?", options: ["Kata", "Poomsae", "Kihon", "Sparring"], correctIndex: 1, explanation: "Poomsae (품새) sind die Formen oder Bewegungsabläufe im Taekwondo." }
+      { title: "Gürtelsymbolik", question: "Was symbolisiert der weiße Gürtel traditionell?", options: ["Gefahr", "Unschuld und den Geist des Anfängers", "Meisterschaft", "Schnelligkeit"], correctIndex: 1, explanation: "Der weiße Gürtel steht für Unschuld — den reinen, offenen Geist eines Anfängers." },
+      { title: "Respekt in Kampfkünsten", question: "Warum verbeugen sich Kampfkünstler voreinander?", options: ["Um den Nacken zu dehnen", "Um Respekt und Dankbarkeit zu zeigen", "Um zu signalisieren, dass sie kämpfbereit sind", "Es ist nur eine leere Gewohnheit"], correctIndex: 1, explanation: "Die Verbeugung ist ein universelles Zeichen des Respekts gegenüber Partnern, Lehrern und der Kunst selbst." },
+      { title: "Grundprinzip", question: "Welche Eigenschaft gilt als Fundament aller Kampfkünste?", options: ["Rohe Kraft", "Aggression", "Selbstdisziplin", "Schnelligkeit"], correctIndex: 2, explanation: "Selbstdisziplin ist der Grundstein jeder Kampfkunst — ohne sie kann keine Technik gemeistert werden." },
+      { title: `${artName}-Training`, question: "Welche Haltung ist am wichtigsten beim Training?", options: ["Um jeden Preis gewinnen", "Ein bescheidener und offener Geist", "Übermäßiges Selbstvertrauen", "Fertigkeiten vorführen"], correctIndex: 1, explanation: "Bescheidenheit und Offenheit ermöglichen es dem Schüler, auf jeder Ebene weiter zu lernen." },
+      { title: "Der Schwarzgurt-Weg", question: "Was bedeutet es wirklich, einen schwarzen Gürtel zu erlangen?", options: ["Das Ende des Trainings", "Der Beginn des wahren Lernens", "Das sofortige Recht zu unterrichten", "Körperliche Perfektion"], correctIndex: 1, explanation: "Ein schwarzer Gürtel markiert den Beginn tieferen, lebenslangen Lernens — nicht die Ziellinie." },
+      { title: "Bewegungsformen", question: "Wie nennt man vorher festgelegte Solo-Bewegungssequenzen in Kampfkünsten?", options: ["Sparring-Runden", "Formen / Kata / Poomsae", "Übungen", "Kombinationen"], correctIndex: 1, explanation: "Je nach Stil heißen diese Sequenzen Formen, Kata (japanisch) oder Poomsae (koreanisch)." },
+      { title: "Unbezwingbarer Geist", question: "Was bedeutet 'unbezwingbarer Geist' in Kampfkünsten?", options: ["Ohne Regeln kämpfen", "Trotz Schwierigkeiten niemals aufgeben", "Immer Wettkämpfe gewinnen", "Sieben Tage pro Woche trainieren"], correctIndex: 1, explanation: "Unbezwingbarer Geist bedeutet, Herausforderungen mit Mut und Entschlossenheit standzuhalten." }
     ]
   };
   
@@ -4009,9 +4010,9 @@ function getFallbackChallenge(lang: string = 'en') {
   const selectedQuestion = questions[dayOfYear % questions.length];
   
   const descByLang: Record<string, string> = {
-    en: "Test your martial arts knowledge!",
-    fr: "Testez vos connaissances en arts martiaux !",
-    de: "Teste dein Kampfkunst-Wissen!"
+    en: `Test your ${artName} knowledge!`,
+    fr: `Testez vos connaissances en ${artName} !`,
+    de: `Teste dein ${artName}-Wissen!`
   };
   
   return {
@@ -4201,7 +4202,7 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
         console.log(`[DailyChallenge] AI generated ${lang} challenge for ${artType} ${targetBelt} belt`);
       } catch (aiError: any) {
         console.error(`[DailyChallenge] AI generation failed for ${lang}: ${aiError.message}`);
-        generated = getFallbackChallenge(lang);
+        generated = getFallbackChallenge(lang, artType);
       }
       
       // Still try to get the cached English challenge ID for submission tracking
@@ -4242,7 +4243,7 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
         console.log(`[DailyChallenge] AI generated challenge for ${artType} ${targetBelt} belt`);
       } catch (aiError: any) {
         console.error(`[DailyChallenge] AI generation failed: ${aiError.message}`);
-        generated = getFallbackChallenge('en');
+        generated = getFallbackChallenge('en', artType);
       }
       
       try {
@@ -4283,7 +4284,7 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     console.error('[DailyChallenge] Critical error:', error.message);
-    const fallback = getFallbackChallenge(lang);
+    const fallback = getFallbackChallenge(lang, artType);
     return res.json({
       completed: false,
       challenge: {
