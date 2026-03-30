@@ -692,6 +692,8 @@ export async function sendParentDay1QuestsEmail(
   const firstName = (data.parentName || '').split(' ')[0] || data.parentName;
   return sendNotification('day1_parent_quests', { email: to, name: firstName, language: data.language }, {
     name: firstName,
+    parent_first_name: firstName,
+    student_name: data.studentName,
     studentName: data.studentName,
     clubName: data.clubName,
   });
