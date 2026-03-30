@@ -3962,7 +3962,25 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         {t('parent.journey.target', { belt: blackBeltPrediction.targetBeltName })}
                                     </p>
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 text-purple-300">
-                                        {t('parent.journey.confidence', { score: blackBeltPrediction.confidenceScore })}
+                                        {(() => {
+                                            const s = blackBeltPrediction.confidenceScore;
+                                            if (lang === 'fr') {
+                                                if (s >= 85) return '🟢 Prévision fiable';
+                                                if (s >= 75) return '📊 Bonne estimation';
+                                                if (s >= 65) return '📈 Estimation correcte';
+                                                return '🔍 Estimation précoce';
+                                            }
+                                            if (lang === 'de') {
+                                                if (s >= 85) return '🟢 Zuverlässige Vorhersage';
+                                                if (s >= 75) return '📊 Solide Vorhersage';
+                                                if (s >= 65) return '📈 Gute Schätzung';
+                                                return '🔍 Frühe Schätzung';
+                                            }
+                                            if (s >= 85) return '🟢 Strong prediction';
+                                            if (s >= 75) return '📊 Solid estimate';
+                                            if (s >= 65) return '📈 Good estimate';
+                                            return '🔍 Early estimate';
+                                        })()}
                                     </span>
                                 </div>
                                 {simulatedAttendance > 1 && Number(blackBeltPrediction.yearsSaved) > 0 && (
