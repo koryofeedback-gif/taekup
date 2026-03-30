@@ -3297,17 +3297,54 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                 </button>
                             </div>
                         ) : (
-                            <button 
-                                onClick={handleGenerateAdvice} 
-                                disabled={isGeneratingAdvice}
-                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex justify-center items-center"
-                            >
-                                {isGeneratingAdvice ? (
-                                    <span className="animate-pulse">{t('parent.insights.generating')}</span>
-                                ) : (
-                                    t('parent.insights.generateAdvice')
-                                )}
-                            </button>
+                            <div className="space-y-4">
+                                {/* Unlocked Badge */}
+                                <div className="flex items-center gap-2">
+                                    <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 text-black text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-md shadow-emerald-500/30">
+                                        🔓 UNLOCKED
+                                    </div>
+                                    <span className="text-xs text-indigo-300">AI Sensei™ is ready for {student.name.split(' ')[0]}</span>
+                                </div>
+
+                                {/* Hero statement */}
+                                <div className="bg-indigo-950/60 border border-indigo-500/20 rounded-xl p-4">
+                                    <p className="text-sm text-white font-semibold leading-snug mb-1">
+                                        Your coach sees {student.name.split(' ')[0]} for 60 minutes a week.
+                                    </p>
+                                    <p className="text-xs text-indigo-300 leading-relaxed">
+                                        AI Sensei™ reads everything your coach has ever written about them — and turns it into one specific, science-backed action you can take at home <em>today</em>.
+                                    </p>
+                                </div>
+
+                                {/* Feature grid */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { icon: '📊', title: 'Real data', desc: `Reads every grading score from ${student.name.split(' ')[0]}'s history` },
+                                        { icon: '🧬', title: 'Science-backed', desc: 'Dweck, Ericsson & Deci child development methods' },
+                                        { icon: '🎯', title: 'One clear action', desc: 'Not a guess — the #1 skill to build at home this week' },
+                                        { icon: '🔄', title: 'Always fresh', desc: 'Updates automatically after every class session' },
+                                    ].map((f, i) => (
+                                        <div key={i} className="bg-indigo-950/40 border border-indigo-500/20 rounded-xl p-3">
+                                            <div className="text-lg mb-1">{f.icon}</div>
+                                            <p className="text-white text-[11px] font-bold leading-tight mb-0.5">{f.title}</p>
+                                            <p className="text-indigo-300/80 text-[10px] leading-relaxed">{f.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* CTA */}
+                                <button
+                                    onClick={handleGenerateAdvice}
+                                    disabled={isGeneratingAdvice}
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 text-white text-sm font-black py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex justify-center items-center gap-2 active:scale-95"
+                                >
+                                    {isGeneratingAdvice ? (
+                                        <span className="animate-pulse">🧠 {t('parent.insights.generating')}</span>
+                                    ) : (
+                                        <>🧠 Generate My Insight for {student.name.split(' ')[0]}</>
+                                    )}
+                                </button>
+                            </div>
                         )
                     ) : (
                         /* FREE: Premium Upgrade Banner */
