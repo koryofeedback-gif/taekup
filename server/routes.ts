@@ -4195,66 +4195,52 @@ export function registerRoutes(app: Express) {
   // AI DAILY MYSTERY CHALLENGE - "Lazy Generator" Pattern
   // =====================================================
 
-  // Fallback challenges - rotates daily to prevent same question every day
-  const getFallbackChallenge = () => {
-    const fallbackQuestions = [
-      {
-        title: "Belt Wisdom",
-        question: "What does the color of the White Belt represent?",
-        options: ["Danger", "Innocence/Beginner", "Mastery", "Fire"],
-        correctIndex: 1,
-        explanation: "The White Belt represents innocence and a beginner's pure mind."
-      },
-      {
-        title: "Martial Arts Origins",
-        question: "Which country is known as the birthplace of many martial arts?",
-        options: ["Japan", "China", "Korea", "Brazil"],
-        correctIndex: 1,
-        explanation: "China is considered the birthplace of many martial arts traditions."
-      },
-      {
-        title: "Martial Arts Respect",
-        question: "What is the purpose of bowing in martial arts?",
-        options: ["To stretch", "To show respect", "To intimidate", "To start fighting"],
-        correctIndex: 1,
-        explanation: "Bowing shows respect to instructors, training partners, and the art itself."
-      },
-      {
-        title: "Training Space",
-        question: "What is a martial arts training hall generally called?",
-        options: ["Arena", "Dojo/Dojang", "Court", "Ring"],
-        correctIndex: 1,
-        explanation: "Training halls are called Dojo (Japanese) or Dojang (Korean)."
-      },
-      {
-        title: "Black Belt Meaning",
-        question: "What does the Black Belt traditionally symbolize?",
-        options: ["End of training", "Mastery and maturity", "Danger level", "Teaching ability"],
-        correctIndex: 1,
-        explanation: "The Black Belt symbolizes maturity - it's actually the beginning of deeper learning!"
-      },
-      {
-        title: "Forms Practice",
-        question: "What are choreographed movement patterns called in martial arts?",
-        options: ["Sparring", "Forms/Kata/Poomsae", "Drills", "Combos"],
-        correctIndex: 1,
-        explanation: "Forms (Kata in Japanese, Poomsae in Korean) are solo practice patterns."
-      },
-      {
-        title: "Martial Arts Philosophy",
-        question: "What is a core principle of most martial arts?",
-        options: ["Aggression", "Self-discipline", "Competition", "Strength"],
-        correctIndex: 1,
-        explanation: "Self-discipline is fundamental to martial arts training and philosophy."
-      }
-    ];
+  // Fallback challenges - sport-agnostic, language-aware, rotates daily
+  const getFallbackChallenge = (artType: string = 'Martial Arts', lang: string = 'en') => {
+    const artName = artType || 'Martial Arts';
     
+    const questionsByLang: Record<string, Array<{title: string; question: string; options: string[]; correctIndex: number; explanation: string}>> = {
+      en: [
+        { title: "Belt Wisdom", question: "What does the White Belt traditionally represent?", options: ["Danger", "Innocence and a beginner's mind", "Mastery", "Speed"], correctIndex: 1, explanation: "The White Belt represents innocence — the pure, open mind of a beginner." },
+        { title: "Martial Arts Respect", question: "Why do martial artists bow to each other?", options: ["To stretch their neck", "To show respect and gratitude", "To signal they are ready to fight", "It is just a custom with no meaning"], correctIndex: 1, explanation: "Bowing is a universal martial arts gesture of respect to partners, instructors, and the art itself." },
+        { title: "Core Principle", question: "Which quality is considered the foundation of all martial arts?", options: ["Raw strength", "Aggression", "Self-discipline", "Speed"], correctIndex: 2, explanation: "Self-discipline is the cornerstone of every martial art — without it no technique can be mastered." },
+        { title: `${artName} Training`, question: "What is the most important attitude to bring to every training session?", options: ["Winning at all costs", "A humble and open mind", "Overconfidence", "Showing off skills"], correctIndex: 1, explanation: "Humility and an open mind allow a student to keep learning at every level." },
+        { title: "Black Belt Journey", question: "What does earning a Black Belt really signify?", options: ["The end of training", "The beginning of true learning", "The right to teach others immediately", "Physical perfection"], correctIndex: 1, explanation: "A Black Belt marks the beginning of deeper, lifelong learning — not the finish line." },
+        { title: "Movement Patterns", question: "What are pre-arranged solo movement sequences called in martial arts?", options: ["Sparring rounds", "Forms / Kata / Poomsae", "Drills", "Combinations"], correctIndex: 1, explanation: "Depending on the style, these sequences are called Forms, Kata (Japanese), or Poomsae (Korean)." },
+        { title: "Mindset Matters", question: "What does 'Indomitable Spirit' mean in a martial arts context?", options: ["Fighting without rules", "Never giving up despite hardship", "Always winning competitions", "Training seven days a week"], correctIndex: 1, explanation: "Indomitable Spirit means persisting through challenges with courage and determination." },
+      ],
+      fr: [
+        { title: "Sagesse des Ceintures", question: "Que représente traditionnellement la ceinture blanche ?", options: ["Le danger", "L'innocence et l'esprit du débutant", "La maîtrise", "La vitesse"], correctIndex: 1, explanation: "La ceinture blanche symbolise l'innocence — l'esprit pur et ouvert du débutant." },
+        { title: "Respect en Arts Martiaux", question: "Pourquoi les pratiquants d'arts martiaux se saluent-ils ?", options: ["Pour s'étirer", "Pour montrer respect et gratitude", "Pour signaler qu'ils sont prêts à combattre", "C'est une simple habitude sans sens"], correctIndex: 1, explanation: "Le salut est un geste universel de respect envers les partenaires, les instructeurs et l'art lui-même." },
+        { title: "Principe Fondamental", question: "Quelle qualité est considérée comme la base de tous les arts martiaux ?", options: ["La force brute", "L'agressivité", "La discipline", "La vitesse"], correctIndex: 2, explanation: "La discipline est la pierre angulaire de tout art martial — sans elle, aucune technique ne peut être maîtrisée." },
+        { title: `Entraînement ${artName}`, question: "Quelle est l'attitude la plus importante à apporter à chaque séance ?", options: ["Gagner à tout prix", "Un esprit humble et ouvert", "La confiance excessive", "Montrer ses capacités"], correctIndex: 1, explanation: "L'humilité et l'ouverture d'esprit permettent à l'élève de continuer à progresser à chaque niveau." },
+        { title: "Le Voyage Ceinture Noire", question: "Qu'est-ce qu'obtenir une ceinture noire signifie vraiment ?", options: ["La fin de l'entraînement", "Le début du vrai apprentissage", "Le droit d'enseigner immédiatement", "La perfection physique"], correctIndex: 1, explanation: "La ceinture noire marque le début d'un apprentissage plus profond et permanent — pas la ligne d'arrivée." },
+        { title: "Formes de Mouvement", question: "Comment appelle-t-on les séquences de mouvements solos pré-arrangées en arts martiaux ?", options: ["Tours de combat", "Formes / Kata / Poomsae", "Exercices", "Combinaisons"], correctIndex: 1, explanation: "Selon le style, ces séquences s'appellent Formes, Kata (japonais) ou Poomsae (coréen)." },
+        { title: "L'Esprit Invincible", question: "Que signifie « esprit indomptable » dans le contexte des arts martiaux ?", options: ["Se battre sans règles", "Ne jamais abandonner malgré les difficultés", "Toujours gagner les compétitions", "S'entraîner sept jours par semaine"], correctIndex: 1, explanation: "L'esprit indomptable signifie persister face aux défis avec courage et détermination." },
+      ],
+      de: [
+        { title: "Gürtelsymbolik", question: "Was symbolisiert der weiße Gürtel traditionell?", options: ["Gefahr", "Unschuld und den Geist des Anfängers", "Meisterschaft", "Schnelligkeit"], correctIndex: 1, explanation: "Der weiße Gürtel steht für Unschuld — den reinen, offenen Geist eines Anfängers." },
+        { title: "Respekt in Kampfkünsten", question: "Warum verbeugen sich Kampfkünstler voreinander?", options: ["Um den Nacken zu dehnen", "Um Respekt und Dankbarkeit zu zeigen", "Um zu signalisieren, dass sie kämpfbereit sind", "Es ist nur eine leere Gewohnheit"], correctIndex: 1, explanation: "Die Verbeugung ist ein universelles Zeichen des Respekts gegenüber Partnern, Lehrern und der Kunst selbst." },
+        { title: "Grundprinzip", question: "Welche Eigenschaft gilt als Fundament aller Kampfkünste?", options: ["Rohe Kraft", "Aggression", "Selbstdisziplin", "Schnelligkeit"], correctIndex: 2, explanation: "Selbstdisziplin ist der Grundstein jeder Kampfkunst — ohne sie kann keine Technik gemeistert werden." },
+        { title: `${artName}-Training`, question: "Welche Haltung ist am wichtigsten beim Training?", options: ["Um jeden Preis gewinnen", "Ein bescheidener und offener Geist", "Übermäßiges Selbstvertrauen", "Fertigkeiten vorführen"], correctIndex: 1, explanation: "Bescheidenheit und Offenheit ermöglichen es dem Schüler, auf jeder Ebene weiter zu lernen." },
+        { title: "Der Schwarzgurt-Weg", question: "Was bedeutet es wirklich, einen schwarzen Gürtel zu erlangen?", options: ["Das Ende des Trainings", "Der Beginn des wahren Lernens", "Das sofortige Recht zu unterrichten", "Körperliche Perfektion"], correctIndex: 1, explanation: "Ein schwarzer Gürtel markiert den Beginn tieferen, lebenslangen Lernens — nicht die Ziellinie." },
+        { title: "Bewegungsformen", question: "Wie nennt man vorher festgelegte Solo-Bewegungssequenzen in Kampfkünsten?", options: ["Sparring-Runden", "Formen / Kata / Poomsae", "Übungen", "Kombinationen"], correctIndex: 1, explanation: "Je nach Stil heißen diese Sequenzen Formen, Kata (japanisch) oder Poomsae (koreanisch)." },
+        { title: "Unbezwingbarer Geist", question: "Was bedeutet 'unbezwingbarer Geist' im Kampfkunst-Kontext?", options: ["Ohne Regeln kämpfen", "Trotz Schwierigkeiten niemals aufgeben", "Immer Wettkämpfe gewinnen", "Sieben Tage pro Woche trainieren"], correctIndex: 1, explanation: "Unbezwingbarer Geist bedeutet, Herausforderungen mit Mut und Entschlossenheit standzuhalten." },
+      ],
+    };
+    
+    const questions = questionsByLang[lang] || questionsByLang.en;
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-    const selected = fallbackQuestions[dayOfYear % fallbackQuestions.length];
+    const selected = questions[dayOfYear % questions.length];
+    const descByLang: Record<string, string> = {
+      en: `Test your ${artName} knowledge!`,
+      fr: `Testez vos connaissances en ${artName} !`,
+      de: `Teste dein ${artName}-Wissen!`,
+    };
     
     return {
       title: selected.title,
-      description: "Test your martial arts knowledge!",
+      description: descByLang[lang] || descByLang.en,
       type: 'quiz' as const,
       xpReward: 15,
       quizData: {
@@ -4318,10 +4304,10 @@ export function registerRoutes(app: Express) {
         }
       }
 
-      // "Lazy Generator" - Check if challenge exists for today + belt + art_type
+      // "Lazy Generator" - Check if challenge exists for today + belt + art_type + language
       let existingChallenge = await db.execute(sql`
         SELECT * FROM daily_challenges 
-        WHERE date = ${today} AND target_belt = ${targetBelt} AND art_type = ${artType}
+        WHERE date = ${today} AND target_belt = ${targetBelt} AND art_type = ${artType} AND language = ${lang}
         LIMIT 1
       `);
 
@@ -4341,14 +4327,14 @@ export function registerRoutes(app: Express) {
           // AI generation failed - use fallback challenge
           console.error(`[DailyChallenge] AI generation failed: ${aiError.message}`);
           console.log(`[DailyChallenge] Using fallback challenge for ${targetBelt} belt`);
-          generated = getFallbackChallenge();
+          generated = getFallbackChallenge(artType, lang);
         }
         
-        // Cache in database with art_type
+        // Cache in database with art_type + language
         try {
           const insertResult = await db.execute(sql`
-            INSERT INTO daily_challenges (date, target_belt, art_type, title, description, xp_reward, type, quiz_data, created_by_ai)
-            VALUES (${today}, ${targetBelt}, ${artType}, ${generated.title}, ${generated.description}, ${generated.xpReward}, 
+            INSERT INTO daily_challenges (date, target_belt, art_type, language, title, description, xp_reward, type, quiz_data, created_by_ai)
+            VALUES (${today}, ${targetBelt}, ${artType}, ${lang}, ${generated.title}, ${generated.description}, ${generated.xpReward}, 
                     ${generated.type}::daily_challenge_type, ${JSON.stringify(generated.quizData)}::jsonb, NOW())
             RETURNING *
           `);

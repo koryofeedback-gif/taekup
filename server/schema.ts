@@ -603,6 +603,8 @@ export const dailyChallenges = pgTable('daily_challenges', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   date: varchar('date', { length: 10 }).notNull(),
   targetBelt: varchar('target_belt', { length: 100 }).notNull(),
+  artType: varchar('art_type', { length: 100 }).default('Taekwondo'),
+  language: varchar('language', { length: 10 }).default('en'),
   title: varchar('title', { length: 255 }).notNull(),
   description: text('description').notNull(),
   xpReward: integer('xp_reward').default(25),
