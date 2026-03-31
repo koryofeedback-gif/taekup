@@ -4134,6 +4134,7 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const isValidUuid = uuidRegex.test(studentId as string);
 
+  let artType = 'Taekwondo';
   const client = await pool.connect();
   try {
     // Check if student already completed today's challenge
@@ -4181,7 +4182,6 @@ async function handleDailyChallenge(req: VercelRequest, res: VercelResponse) {
     }
 
     // Get club's art_type FIRST (needed for cache lookup)
-    let artType = 'Taekwondo';
     const clubIdStr = clubId as string;
     const isValidClubUuid = uuidRegex.test(clubIdStr);
     

@@ -2499,7 +2499,7 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
     };
 
     return (
-        <div>
+        <div className="space-y-6">
             {showStripeConnectModal && (
                 <StripeConnectModal
                     clubId={clubId || localStorage.getItem('taekup_club_id') || localStorage.getItem('clubId') || ''}
@@ -2514,123 +2514,61 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                     t={t}
                 />
             )}
-            {showUniversalAccessModal && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowUniversalAccessModal(false)}>
-                    <div className="bg-gray-800 rounded-xl border border-gray-600 max-w-md w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center mb-4">
-                            <span className="text-3xl mr-3">💎</span>
-                            <h3 className="text-xl font-bold text-white">
-                                {data.clubSponsoredPremium 
-                                    ? t('admin.billing.universalAccess.confirmDisableTitle')
-                                    : t('admin.billing.universalAccess.confirmEnableTitle')}
-                            </h3>
+
+            {/* Page Header */}
+            <div className="border-b border-gray-700 pb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-white">{t('admin.billing.billingAndSubscription')}</h2>
+                <p className="text-gray-400 text-sm mt-1">{t('admin.billing.managePlan')}</p>
+            </div>
+
+            {/* Current Plan Card */}
+            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                {/* Card Header */}
+                <div className="bg-gradient-to-r from-sky-900/40 to-cyan-900/40 px-5 py-4 border-b border-gray-700 flex flex-wrap gap-3 items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-sky-500/20 p-2 rounded-lg">
+                            <span className="text-xl">📋</span>
                         </div>
-                        
-                        <p className="text-gray-300 text-sm mb-4">
-                            {data.clubSponsoredPremium
-                                ? t('admin.billing.universalAccess.confirmDisableDesc')
-                                : t('admin.billing.universalAccess.confirmEnableDesc')}
-                        </p>
-
-                        <div className="bg-gray-900/60 rounded-lg p-4 mb-4 border border-gray-700">
-                            <p className="text-xs text-gray-400 uppercase font-bold mb-3">{t('admin.billing.universalAccess.featuresIncluded')}</p>
-                            <ul className="space-y-2">
-                                {[
-                                    { icon: '🎥', text: t('admin.billing.universalAccess.featureVideo') },
-                                    { icon: '📚', text: t('admin.billing.universalAccess.featureCurriculum') },
-                                    { icon: '🏆', text: t('admin.billing.universalAccess.featureLeaderboard') },
-                                    { icon: '🤖', text: t('admin.billing.universalAccess.featureAI') },
-                                    { icon: '🃏', text: t('admin.billing.universalAccess.featureCards') },
-                                    { icon: '📊', text: t('admin.billing.universalAccess.featureAnalytics') },
-                                    { icon: '🏠', text: t('admin.billing.universalAccess.featureHomeDojo') },
-                                ].map((f, i) => (
-                                    <li key={i} className="flex items-center text-sm">
-                                        <span className="mr-2">{f.icon}</span>
-                                        <span className={data.clubSponsoredPremium ? 'text-red-300' : 'text-green-300'}>{f.text}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        {data.clubSponsoredPremium ? (
-                            <div className="bg-red-900/30 border border-red-500/30 rounded-lg p-3 mb-4">
-                                <p className="text-red-300 text-xs">{t('admin.billing.universalAccess.disableWarning')}</p>
-                            </div>
-                        ) : (
-                            <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-3 mb-4">
-                                <p className="text-green-300 text-xs">{t('admin.billing.universalAccess.enableInfo', { cost: `$${(totalStudents * 1.99).toFixed(2)}`, count: totalStudents })}</p>
-                            </div>
-                        )}
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowUniversalAccessModal(false)}
-                                className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
-                            >
-                                {t('admin.billing.universalAccess.cancel')}
-                            </button>
-                            <button
-                                onClick={confirmUniversalAccessToggle}
-                                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors ${
-                                    data.clubSponsoredPremium 
-                                        ? 'bg-red-600 hover:bg-red-500 text-white' 
-                                        : 'bg-green-600 hover:bg-green-500 text-white'
-                                }`}
-                            >
-                                {data.clubSponsoredPremium 
-                                    ? t('admin.billing.universalAccess.confirmDisable')
-                                    : t('admin.billing.universalAccess.confirmEnable')}
-                            </button>
+                        <div>
+                            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{t('admin.billing.currentPlan')}</p>
+                            <h3 className="text-lg sm:text-xl font-bold text-white leading-tight">{currentTier.name}</h3>
                         </div>
                     </div>
+                    <span className={`${subscriptionStatus.color} px-3 py-1.5 rounded-full text-xs font-bold shrink-0`}>
+                        {subscriptionStatus.label}
+                    </span>
                 </div>
-            )}
 
-            <SectionHeader title={t('admin.billing.billingAndSubscription')} description={t('admin.billing.managePlan')} />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Current Plan Card */}
-                <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 relative overflow-hidden">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <p className="text-sm text-gray-400 uppercase">{t('admin.billing.currentPlan')}</p>
-                            <h3 className="text-2xl font-bold text-white">{currentTier.name}</h3>
+                <div className="p-5 space-y-5">
+                    {/* Student usage bar */}
+                    <div>
+                        <div className="flex justify-between text-sm mb-2">
+                            <span className="text-gray-400">{t('admin.billing.usage')}</span>
+                            <span className="text-gray-300 font-medium">
+                                {t('admin.billing.usageCount', { current: totalStudents, limit: currentTier.limit === Infinity ? '∞' : currentTier.limit })}
+                            </span>
                         </div>
-                        <span className={`${subscriptionStatus.color} px-3 py-1 rounded-full text-xs font-bold`}>{subscriptionStatus.label}</span>
-                    </div>
-                    
-                    <div className="space-y-4 mb-6">
-                        <div>
-                            <div className="flex justify-between text-sm mb-1 text-gray-400">
-                                <span>{t('admin.billing.usage')}</span>
-                                <span>{t('admin.billing.usageCount', { current: totalStudents, limit: currentTier.limit === Infinity ? '∞' : currentTier.limit })}</span>
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2">
-                                <div 
-                                    className="bg-sky-400 h-2 rounded-full" 
-                                    style={{ width: `${Math.min((totalStudents / (currentTier.limit === Infinity ? 1000 : currentTier.limit)) * 100, 100)}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                        
-                        <div className="bg-gray-900/50 p-4 rounded border border-gray-700">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-gray-300">{t('admin.billing.baseSubscription')}</span>
-                                <span className="text-white font-bold">${currentTier.price}/mo</span>
-                            </div>
-                            {data.clubSponsoredPremium && (
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-indigo-300">{t('admin.billing.dojoMintClubRate')}</span>
-                                    <span className="text-indigo-300 font-bold">+${bulkCost.toFixed(2)}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between items-center pt-2 border-t border-gray-600 mt-2">
-                                <span className="text-white font-bold">{t('admin.billing.totalMonthly')}</span>
-                                <span className="text-xl font-extrabold text-white">${totalBill.toFixed(2)}</span>
-                            </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2.5">
+                            <div
+                                className="bg-sky-400 h-2.5 rounded-full transition-all"
+                                style={{ width: `${Math.min((totalStudents / (currentTier.limit === Infinity ? 1000 : currentTier.limit)) * 100, 100)}%` }}
+                            />
                         </div>
                     </div>
-                    
+
+                    {/* Billing breakdown */}
+                    <div className="bg-gray-900/60 rounded-xl border border-gray-700 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
+                            <span className="text-gray-400 text-sm">{t('admin.billing.baseSubscription')}</span>
+                            <span className="text-white font-semibold text-sm">${currentTier.price}/mo</span>
+                        </div>
+                        <div className="flex items-center justify-between px-4 py-3 bg-gray-900/30">
+                            <span className="text-white font-bold">{t('admin.billing.totalMonthly')}</span>
+                            <span className="text-2xl font-extrabold text-white">${currentTier.price.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    {/* CTA */}
                     {subscriptionStatus.status === 'active' ? (
                         <button
                             onClick={async () => {
@@ -2660,186 +2598,157 @@ const BillingTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardD
                                     alert(t('admin.billing.failedToOpenPortal'));
                                 }
                             }}
-                            className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded"
+                            className="w-full flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white font-semibold py-3 px-4 rounded-xl transition-colors text-sm"
                         >
-                            {t('admin.billing.managePaymentMethod')}
+                            <span>⚙️</span> {t('admin.billing.managePaymentMethod')}
                         </button>
                     ) : (
                         <button
                             onClick={() => onShowPricing ? onShowPricing() : (window.location.href = '/pricing')}
-                            className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded"
+                            className="w-full flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold py-3 px-4 rounded-xl transition-colors"
                         >
-                            🚀 {t('admin.billing.viewPlansAndSubscribe') || 'View Plans & Subscribe'}
+                            <span>🚀</span> {t('admin.billing.viewPlansAndSubscribe') || 'View Plans & Subscribe'}
                         </button>
                     )}
                 </div>
-
-                {subscriptionStatus.status === 'active' && (
-                    <MarginCalculatorCard 
-                        totalStudents={totalStudents}
-                        clubSponsoredPremium={data.clubSponsoredPremium}
-                        onToggle={handleUniversalAccessToggle}
-                        loading={toggleLoading}
-                    />
-                )}
             </div>
 
-            {/* Stripe Connect - Revenue Share Section */}
-            <div className="mt-8 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 p-6 rounded-xl border border-purple-500/30">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center">
-                            <span className="text-3xl mr-3">💰</span>
-                            <div>
-                                <h3 className="font-bold text-white text-lg">{t('admin.billing.revenueShare.parentPremiumRevenueShare')}</h3>
-                                <p className="text-sm text-gray-400">{t('admin.billing.revenueShare.earnPercentage')}</p>
-                            </div>
-                        </div>
+            {/* Revenue Share Card */}
+            <div className="bg-gray-800 rounded-xl border border-purple-500/30 overflow-hidden">
+                {/* Card Header */}
+                <div className="bg-gradient-to-r from-purple-900/40 to-indigo-900/40 px-5 py-4 border-b border-purple-500/20 flex items-center gap-3">
+                    <div className="bg-purple-500/20 p-2 rounded-lg">
+                        <span className="text-xl">💰</span>
                     </div>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                        <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                            <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.howItWorks')}</p>
-                            <ul className="text-sm text-gray-300 space-y-2">
-                                <li className="flex items-start"><span className="text-green-400 mr-2">1.</span> {t('admin.billing.revenueShare.step1')}</li>
-                                <li className="flex items-start"><span className="text-green-400 mr-2">2.</span> {t('admin.billing.revenueShare.step2')}</li>
-                                <li className="flex items-start"><span className="text-green-400 mr-2">3.</span> {t('admin.billing.revenueShare.step3')}</li>
-                            </ul>
-                        </div>
-                        
-                        <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 flex flex-col justify-between">
-                            {stripeConnectStatus?.connected ? (
-                                <>
-                                    <div>
-                                        <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.connectYourBank')}</p>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-2xl">{stripeConnectStatus.payoutsEnabled ? '✅' : '⚠️'}</span>
-                                            <div>
-                                                <p className={`text-sm font-bold ${stripeConnectStatus.payoutsEnabled ? 'text-green-400' : 'text-yellow-400'}`}>
-                                                    {stripeConnectStatus.payoutsEnabled ? 'Bank Connected' : 'Verification Required'}
-                                                </p>
-                                                <p className="text-xs text-gray-400">
-                                                    {stripeConnectStatus.payoutsEnabled
-                                                        ? '$3.28 of each $4.99 goes directly to your bank'
-                                                        : 'Click "Manage" to complete identity verification — payouts are on hold until done'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {backfillLoading && (
-                                            <p className="text-xs text-yellow-400 mb-2">⏳ Linking existing subscriptions…</p>
-                                        )}
-                                        {!backfillLoading && backfillResult && (
-                                            <p className="text-xs mb-2" style={{ color: backfillResult.updated > 0 ? '#86efac' : backfillResult.total === 0 ? '#fbbf24' : '#86efac' }}>
-                                                {backfillResult.updated > 0
-                                                    ? `✅ ${backfillResult.updated} subscription${backfillResult.updated > 1 ? 's' : ''} linked — 70% share active for next billing`
-                                                    : backfillResult.total === 0
-                                                        ? '⚠️ No active subscriptions found. Complete Stripe verification first.'
-                                                        : `✅ ${backfillResult.skipped} subscription${backfillResult.skipped !== 1 ? 's' : ''} already linked`}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="flex gap-2 mt-2">
-                                        <button
-                                            onClick={handleConnectBank}
-                                            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center"
-                                        >
-                                            <span className="mr-1">⚙️</span> Manage
-                                        </button>
-                                        <button
-                                            onClick={() => { const id = clubId || localStorage.getItem('taekup_club_id'); if (id) runBackfill(id); }}
-                                            disabled={backfillLoading}
-                                            className="flex-1 bg-indigo-700 hover:bg-indigo-600 disabled:bg-gray-600 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center"
-                                        >
-                                            <span className="mr-1">🔄</span> Sync
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div>
-                                        <p className="text-xs text-gray-500 uppercase mb-2">{t('admin.billing.revenueShare.connectYourBank')}</p>
-                                        <p className="text-sm text-gray-300 mb-4">{t('admin.billing.revenueShare.connectBankDesc')}</p>
-                                    </div>
-                                    <button
-                                        onClick={handleConnectBank}
-                                        disabled={connectingBank}
-                                        className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
-                                    >
-                                        {connectingBank ? (
-                                            <>
-                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                                </svg>
-                                                {t('common.loading')}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span className="mr-2">🔗</span>
-                                                {t('admin.billing.revenueShare.connectStripeAccount')}
-                                            </>
-                                        )}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                    
-                    <div className="bg-indigo-900/30 p-3 rounded-lg border border-indigo-500/20">
-                        <p className="text-xs text-indigo-300">
-                            <span className="font-bold">{t('admin.billing.revenueShare.example')}</span> {t('admin.billing.revenueShare.exampleText')}
-                        </p>
+                    <div>
+                        <h3 className="font-bold text-white text-base sm:text-lg leading-tight">
+                            {t('admin.billing.revenueShare.parentPremiumRevenueShare')}
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-0.5">{t('admin.billing.revenueShare.earnPercentage')}</p>
                     </div>
                 </div>
 
-            {/* Club Wallet / External Profit Tracker - Only for active subscribers */}
-            {subscriptionStatus.status === 'active' && <div className="mt-8">
-                {data.clubSponsoredPremium ? (
-                    /* REAL MODE + UNIVERSAL ACCESS ACTIVE - External Profit Tracker (No bank needed) */
-                    <div className="bg-gradient-to-b from-green-900/20 to-gray-800 p-6 rounded-xl border border-green-600/30">
-                        <div className="flex items-center mb-4">
-                            <span className="text-3xl mr-2">📊</span>
-                            <div>
-                                <h3 className="font-bold text-white text-lg">{t('admin.billing.externalProfitTracker.title')}</h3>
-                                <p className="text-sm text-gray-400">{t('admin.billing.externalProfitTracker.profitCollectedViaTuition')}</p>
+                <div className="p-5 space-y-4">
+                    {/* Revenue split chips */}
+                    <div className="grid grid-cols-3 gap-2">
+                        {[
+                            { label: 'Parent pays', value: '$4.99', color: 'bg-gray-700 text-gray-200' },
+                            { label: 'Your share', value: '$3.28', color: 'bg-green-900/50 text-green-300 border border-green-500/30' },
+                            { label: 'Platform fee', value: '$1.71', color: 'bg-gray-700/60 text-gray-400' },
+                        ].map((item, i) => (
+                            <div key={i} className={`${item.color} rounded-xl p-3 text-center`}>
+                                <p className="text-xs opacity-70 mb-1 leading-tight">{item.label}</p>
+                                <p className="font-bold text-base sm:text-lg">{item.value}</p>
                             </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
-                                <div className="text-sm text-gray-300 space-y-2">
-                                    <div className="flex justify-between">
-                                        <span>{t('admin.billing.externalProfitTracker.studentsCovered')}</span>
-                                        <span className="font-bold text-white">{totalStudents}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>{t('admin.billing.externalProfitTracker.yourTuitionIncrease')}</span>
-                                        <span className="font-bold text-green-400">{t('admin.billing.externalProfitTracker.youSetThis')}</span>
+                        ))}
+                    </div>
+
+                    {/* How it works steps */}
+                    <div className="bg-gray-900/50 rounded-xl border border-gray-700 p-4">
+                        <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider mb-3">{t('admin.billing.revenueShare.howItWorks')}</p>
+                        <ol className="space-y-2.5">
+                            {[
+                                t('admin.billing.revenueShare.step1'),
+                                t('admin.billing.revenueShare.step2'),
+                                t('admin.billing.revenueShare.step3'),
+                            ].map((step, i) => (
+                                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+                                    <span className="shrink-0 w-5 h-5 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xs font-bold mt-0.5">
+                                        {i + 1}
+                                    </span>
+                                    {step}
+                                </li>
+                            ))}
+                        </ol>
+                    </div>
+
+                    {/* Bank connect section */}
+                    <div className="bg-gray-900/50 rounded-xl border border-gray-700 p-4">
+                        <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider mb-3">
+                            {t('admin.billing.revenueShare.connectYourBank')}
+                        </p>
+
+                        {stripeConnectStatus?.connected ? (
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <span className="text-2xl mt-0.5">{stripeConnectStatus.payoutsEnabled ? '✅' : '⚠️'}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-sm font-semibold ${stripeConnectStatus.payoutsEnabled ? 'text-green-400' : 'text-yellow-400'}`}>
+                                            {stripeConnectStatus.payoutsEnabled ? 'Bank Connected' : 'Verification Required'}
+                                        </p>
+                                        <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+                                            {stripeConnectStatus.payoutsEnabled
+                                                ? '$3.28 of each $4.99 goes directly to your bank'
+                                                : 'Complete identity verification — payouts are on hold until done'}
+                                        </p>
                                     </div>
                                 </div>
+
+                                {backfillLoading && (
+                                    <p className="text-xs text-yellow-400">⏳ Linking existing subscriptions…</p>
+                                )}
+                                {!backfillLoading && backfillResult && (
+                                    <p className="text-xs" style={{ color: backfillResult.updated > 0 ? '#86efac' : backfillResult.skipped === 0 ? '#fbbf24' : '#86efac' }}>
+                                        {backfillResult.updated > 0
+                                            ? `✅ ${backfillResult.updated} subscription${backfillResult.updated > 1 ? 's' : ''} linked — 70% share active for next billing`
+                                            : backfillResult.skipped === 0
+                                                ? '⚠️ No active subscriptions found. Complete Stripe verification first.'
+                                                : `✅ ${backfillResult.skipped} subscription${backfillResult.skipped !== 1 ? 's' : ''} already linked`}
+                                    </p>
+                                )}
+
+                                <div className="flex gap-2 pt-1">
+                                    <button
+                                        onClick={handleConnectBank}
+                                        className="flex-1 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white text-sm font-semibold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                                    >
+                                        <span>⚙️</span> Manage
+                                    </button>
+                                    <button
+                                        onClick={() => { const id = clubId || localStorage.getItem('taekup_club_id'); if (id) runBackfill(id); }}
+                                        disabled={backfillLoading}
+                                        className="flex-1 bg-indigo-700 hover:bg-indigo-600 active:bg-indigo-800 disabled:bg-gray-600 text-white text-sm font-semibold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                                    >
+                                        <span>🔄</span> Sync
+                                    </button>
+                                </div>
                             </div>
-                            
-                            <div className="bg-green-900/30 p-4 rounded-lg border border-green-500/30">
-                                <p className="text-xs text-green-300 uppercase mb-1">{t('admin.billing.externalProfitTracker.howThisWorks')}</p>
-                                <p className="text-sm text-gray-300">
-                                    {t('admin.billing.externalProfitTracker.howThisWorksDesc')}
-                                    <span className="text-green-400 font-medium"> {t('admin.billing.externalProfitTracker.differenceIsProfit')}</span>
-                                </p>
+                        ) : (
+                            <div className="space-y-3">
+                                <p className="text-sm text-gray-300">{t('admin.billing.revenueShare.connectBankDesc')}</p>
+                                <button
+                                    onClick={handleConnectBank}
+                                    disabled={connectingBank}
+                                    className="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 disabled:bg-gray-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {connectingBank ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                            </svg>
+                                            {t('common.loading')}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>🔗</span>
+                                            {t('admin.billing.revenueShare.connectStripeAccount')}
+                                        </>
+                                    )}
+                                </button>
                             </div>
-                        </div>
+                        )}
                     </div>
-                ) : (
-                    /* REAL MODE + UNIVERSAL ACCESS INACTIVE - Show minimal info */
-                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-6 rounded-xl border border-gray-700">
-                        <div className="flex items-center mb-4">
-                            <span className="text-3xl mr-2">💎</span>
-                            <div>
-                                <h3 className="font-bold text-white text-lg">{t('admin.billing.dojoMintNotActive.title')}</h3>
-                                <p className="text-sm text-gray-400">{t('admin.billing.dojoMintNotActive.description')}</p>
-                            </div>
-                        </div>
+
+                    {/* Example callout */}
+                    <div className="bg-indigo-900/30 rounded-xl border border-indigo-500/20 px-4 py-3">
+                        <p className="text-xs text-indigo-300 leading-relaxed">
+                            <span className="font-bold">{t('admin.billing.revenueShare.example')}</span>{' '}
+                            {t('admin.billing.revenueShare.exampleText')}
+                        </p>
                     </div>
-                )}
-            </div>}
+                </div>
+            </div>
         </div>
     )
 }
