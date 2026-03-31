@@ -2286,8 +2286,6 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                                         {vid.beltId === 'all' ? t('common.allBelts') : data.belts.find(b => b.id === vid.beltId)?.name}
                                                         <span className="mx-2">•</span>
                                                         {t('admin.creatorHub.xpLabel', { xp: vid.xpReward || 10 })}
-                                                        <span className="mx-2">•</span>
-                                                        {t('admin.creatorHub.viewsLabel', { count: vid.viewCount || 0 })}
                                                     </p>
                                                 </div>
                                             </div>
