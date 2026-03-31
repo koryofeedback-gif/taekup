@@ -504,7 +504,7 @@ export function registerRoutes(app: Express) {
         SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
                total_points, total_xp, stripes, join_date, created_at,
                location, assigned_class, global_xp, is_demo, premium_status,
-               trust_tier, video_approval_streak, last_class_at, profile_image_url
+               trust_tier, video_approval_streak, last_class_at, profile_image_url, mytaek_id
         FROM students WHERE club_id = ${clubId}::uuid
       `);
 
@@ -629,7 +629,8 @@ export function registerRoutes(app: Express) {
           videoApprovalStreak: s.video_approval_streak || saved.videoApprovalStreak || 0,
           homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] },
           lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null,
-          photo: s.profile_image_url || null
+          photo: s.profile_image_url || null,
+          mytaekId: s.mytaek_id || (saved as any).mytaekId || ''
         };
       });
 
@@ -1102,7 +1103,7 @@ export function registerRoutes(app: Express) {
             SELECT id, name, parent_email, parent_name, parent_phone, belt, birthdate,
                    total_points, total_xp, stripes, join_date, created_at,
                    location, assigned_class, global_xp, is_demo, premium_status,
-                   trust_tier, video_approval_streak, last_class_at, profile_image_url
+                   trust_tier, video_approval_streak, last_class_at, profile_image_url, mytaek_id
             FROM students WHERE club_id = ${user.club_id}::uuid
           `);
           
@@ -1151,7 +1152,8 @@ export function registerRoutes(app: Express) {
               videoApprovalStreak: s.video_approval_streak || saved.videoApprovalStreak || 0,
               homeDojo: saved.homeDojo || { character: [], chores: [], school: [], health: [] },
               lastClassAt: s.last_class_at ? (typeof s.last_class_at === 'string' ? s.last_class_at : s.last_class_at.toISOString()) : saved.lastClassAt || null,
-              photo: s.profile_image_url || null
+              photo: s.profile_image_url || null,
+              mytaekId: s.mytaek_id || (saved as any).mytaekId || ''
             };
           });
           
