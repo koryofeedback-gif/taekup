@@ -280,6 +280,78 @@ const MarginCalculatorCard: React.FC<{
     );
 };
 
+// --- PLAN LIMIT MODAL ---
+const PlanLimitModal: React.FC<{
+    type: 'hard-limit' | 'trial-expired';
+    currentCount: number;
+    currentPlan?: string;
+    neededTier: typeof PRICING_TIERS[0];
+    upgradeTier?: typeof PRICING_TIERS[0];
+    onClose: () => void;
+    onGoBilling: () => void;
+}> = ({ type, currentCount, currentPlan, neededTier, upgradeTier, onClose, onGoBilling }) => (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="bg-gray-800 rounded-2xl border border-gray-700 max-w-sm w-full shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className={`px-6 py-5 ${type === 'hard-limit' ? 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-b border-orange-500/30' : 'bg-gradient-to-r from-yellow-900/40 to-amber-900/40 border-b border-yellow-500/30'}`}>
+                <div className="flex items-center gap-3">
+                    <span className="text-3xl">{type === 'hard-limit' ? '🚫' : '⏰'}</span>
+                    <div>
+                        <h3 className="text-white font-bold text-lg leading-tight">
+                            {type === 'hard-limit' ? 'Student Limit Reached' : 'Trial Period Ended'}
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                            {type === 'hard-limit'
+                                ? `Your ${currentPlan} plan supports up to ${neededTier.limit === Infinity ? '∞' : neededTier.limit} students`
+                                : 'Subscribe to continue managing your students'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+                {type === 'hard-limit' && upgradeTier ? (
+                    <>
+                        <div className="flex items-center justify-between bg-gray-900/60 rounded-xl p-4 border border-gray-700">
+                            <div>
+                                <p className="text-xs text-gray-500 uppercase font-semibold">Current plan</p>
+                                <p className="text-white font-bold">{currentPlan}</p>
+                                <p className="text-gray-400 text-sm">Up to {neededTier.limit} students</p>
+                            </div>
+                            <span className="text-2xl text-gray-500">→</span>
+                            <div className="text-right">
+                                <p className="text-xs text-sky-400 uppercase font-semibold">Upgrade to</p>
+                                <p className="text-sky-400 font-bold">{upgradeTier.name}</p>
+                                <p className="text-sky-300 text-sm">${upgradeTier.price}/mo</p>
+                            </div>
+                        </div>
+                        <p className="text-gray-400 text-sm text-center">
+                            You have <span className="text-white font-bold">{currentCount} students</span> — upgrade to add more.
+                        </p>
+                    </>
+                ) : (
+                    <div className="bg-gray-900/60 rounded-xl p-4 border border-gray-700 text-center">
+                        <p className="text-gray-300 text-sm mb-2">Your 14-day free trial has ended.</p>
+                        <p className="text-gray-400 text-sm">Subscribe to any plan to keep adding students. All your existing data is safe.</p>
+                        <div className="mt-3 flex justify-center gap-3 text-xs text-gray-500">
+                            <span>Starter from <span className="text-white font-semibold">$24.99/mo</span></span>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-medium py-2.5 rounded-xl text-sm transition-colors">
+                        Cancel
+                    </button>
+                    <button onClick={onGoBilling} className="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-1.5">
+                        <span>💳</span> View Plans
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
 // --- SUB-SECTIONS ---
 
 const OverviewTab: React.FC<{ data: WizardData, onNavigate: (view: any) => void, onOpenModal: (type: string) => void, onNavigateTab?: (tab: 'overview' | 'students' | 'staff' | 'schedule' | 'creator' | 'settings' | 'billing') => void }> = ({ data, onNavigate, onOpenModal, onNavigateTab }) => {
@@ -2789,7 +2861,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [uploadedFileName, setUploadedFileName] = useState('');
     const [importStatus, setImportStatus] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
     const [isImporting, setIsImporting] = useState(false);
+    const [planLimitModal, setPlanLimitModal] = useState<{
+        type: 'hard-limit' | 'trial-expired';
+        currentCount: number;
+        currentPlan?: string;
+        neededTier: typeof PRICING_TIERS[0];
+        upgradeTier?: typeof PRICING_TIERS[0];
+    } | null>(null);
     const [clearingDemo, setClearingDemo] = useState(false);
+
+    const getSubState = () => {
+        let planId: string | null = null;
+        let isTrialActive = false;
+        try {
+            const saved = localStorage.getItem('taekup_subscription');
+            if (saved) { const p = JSON.parse(saved); planId = p.planId || null; isTrialActive = p.isTrialActive || false; }
+        } catch {}
+        let trialDaysLeft = 14;
+        try {
+            const signup = localStorage.getItem('taekup_signup_data');
+            if (signup) {
+                const p = JSON.parse(signup);
+                if (p.trialStartDate) {
+                    const end = new Date(new Date(p.trialStartDate).getTime() + 14 * 24 * 60 * 60 * 1000);
+                    trialDaysLeft = Math.max(0, Math.ceil((end.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+                }
+            }
+        } catch {}
+        const inTrial = isTrialActive || (!planId && trialDaysLeft > 0);
+        const trialExpired = !planId && !inTrial;
+        const subscribedTier = planId ? PRICING_TIERS.find(t => t.name.toLowerCase() === planId!.toLowerCase()) || null : null;
+        return { planId, inTrial, trialExpired, subscribedTier, trialDaysLeft };
+    };
 
     const handleClearDemo = async () => {
         if (!clubId) return;
@@ -2983,6 +3086,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     };
 
     const handleCSVImport = async (importedStudents: ImportedStudent[]) => {
+        const totalStudents = data.students.length;
+        const { inTrial, trialExpired, subscribedTier } = getSubState();
+
+        if (trialExpired) {
+            const neededTier = PRICING_TIERS.find(t => (totalStudents + importedStudents.length) <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
+            setPlanLimitModal({ type: 'trial-expired', currentCount: totalStudents, neededTier });
+            return;
+        }
+
+        if (!inTrial && subscribedTier && subscribedTier.limit !== Infinity) {
+            const afterCount = totalStudents + importedStudents.length;
+            if (afterCount > subscribedTier.limit) {
+                const upgradeTier = PRICING_TIERS.find(t => t.limit >= afterCount) || PRICING_TIERS[PRICING_TIERS.length - 1];
+                setPlanLimitModal({ type: 'hard-limit', currentCount: totalStudents, currentPlan: subscribedTier.name, neededTier: subscribedTier, upgradeTier });
+                return;
+            }
+        }
 
         setIsImporting(true);
         const studentsWithDbIds: Student[] = [];
@@ -3058,7 +3178,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
     const confirmBulkImport = async () => {
         const validStudents = parsedBulkStudents.filter(s => s.beltId !== 'INVALID_BELT');
-        
+        const totalStudents = data.students.length;
+        const { inTrial, trialExpired, subscribedTier, trialDaysLeft } = getSubState();
+
+        if (trialExpired) {
+            const neededTier = PRICING_TIERS.find(t => (totalStudents + validStudents.length) <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
+            setPlanLimitModal({ type: 'trial-expired', currentCount: totalStudents, neededTier });
+            return;
+        }
+
+        if (!inTrial && subscribedTier && subscribedTier.limit !== Infinity) {
+            const afterCount = totalStudents + validStudents.length;
+            if (afterCount > subscribedTier.limit) {
+                const upgradeTier = PRICING_TIERS.find(t => t.limit >= afterCount) || PRICING_TIERS[PRICING_TIERS.length - 1];
+                setPlanLimitModal({ type: 'hard-limit', currentCount: totalStudents, currentPlan: subscribedTier.name, neededTier: subscribedTier, upgradeTier });
+                return;
+            }
+        }
+
         setIsImporting(true);
         setImportStatus(null);
         
@@ -3133,6 +3270,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
         
         const hasIssues = emailFailedCount > 0 || saveFailedCount > 0;
         const hasWarnings = noEmailCount > 0 || emailSkippedCount > 0;
+
+        // Trial plan tip: inform which plan they'll need when trial ends
+        const newTotal = data.students.length + (validStudents.length - saveFailedCount);
+        if (inTrial && !hasIssues) {
+            const planNeeded = PRICING_TIERS.find(t => newTotal <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
+            if (planNeeded.limit !== Infinity) {
+                statusParts.push(`📋 You'll need the ${planNeeded.name} plan ($${planNeeded.price}/mo) when your trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}`);
+            }
+        }
         
         setImportStatus({
             type: hasIssues ? 'error' : hasWarnings ? 'warning' : 'success',
@@ -3152,10 +3298,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
     const handleAddStudent = async () => {
         const totalStudents = data.students.length;
-        const currentTier = PRICING_TIERS.find(t => totalStudents < t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
-        
-        if(totalStudents >= currentTier.limit && currentTier.limit !== Infinity) {
-            alert(`Tier Limit Reached! Please upgrade to the ${PRICING_TIERS.find(t => t.limit > currentTier.limit)?.name} plan to add more students.`);
+        const { inTrial, trialExpired, subscribedTier } = getSubState();
+
+        if (trialExpired) {
+            const neededTier = PRICING_TIERS.find(t => totalStudents < t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
+            setPlanLimitModal({ type: 'trial-expired', currentCount: totalStudents, neededTier });
+            return;
+        }
+
+        if (!inTrial && subscribedTier && totalStudents >= subscribedTier.limit && subscribedTier.limit !== Infinity) {
+            const upgradeTier = PRICING_TIERS.find(t => t.limit > subscribedTier.limit);
+            setPlanLimitModal({ type: 'hard-limit', currentCount: totalStudents, currentPlan: subscribedTier.name, neededTier: subscribedTier, upgradeTier });
             return;
         }
 
@@ -3389,6 +3542,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
     return (
         <div className="min-h-screen bg-gray-900 flex">
+            {/* PLAN LIMIT MODAL */}
+            {planLimitModal && (
+                <PlanLimitModal
+                    type={planLimitModal.type}
+                    currentCount={planLimitModal.currentCount}
+                    currentPlan={planLimitModal.currentPlan}
+                    neededTier={planLimitModal.neededTier}
+                    upgradeTier={planLimitModal.upgradeTier}
+                    onClose={() => setPlanLimitModal(null)}
+                    onGoBilling={() => { setPlanLimitModal(null); setActiveTab('billing'); setModalType(null); }}
+                />
+            )}
             {/* SIDEBAR */}
             <div className="w-64 bg-gray-800 border-r border-gray-700 hidden md:flex flex-col">
                 <div className="p-6 border-b border-gray-700">
@@ -3656,6 +3821,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     {t('admin.students.addStudentModal.addsToBill')}
                                 </p>
                             )}
+                            {(() => {
+                                const { inTrial, trialDaysLeft } = getSubState();
+                                if (!inTrial) return null;
+                                const afterCount = data.students.length + 1;
+                                const planNeeded = PRICING_TIERS.find(t => afterCount <= t.limit) || PRICING_TIERS[PRICING_TIERS.length - 1];
+                                if (planNeeded.limit === Infinity) return null;
+                                return (
+                                    <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg px-3 py-2 flex items-start gap-2">
+                                        <span className="text-amber-400 mt-0.5 shrink-0">💡</span>
+                                        <p className="text-xs text-amber-300 leading-relaxed">
+                                            With {afterCount} student{afterCount !== 1 ? 's' : ''} you'll be on the <span className="font-bold">{planNeeded.name} plan (${planNeeded.price}/mo)</span> — subscription required after your trial ends in {trialDaysLeft} day{trialDaysLeft === 1 ? '' : 's'}.
+                                        </p>
+                                    </div>
+                                );
+                            })()}
                             <button onClick={handleAddStudent} className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 rounded">{t('admin.students.addStudentModal.addStudentButton')}</button>
                         </div>
                     ) : studentImportMethod === 'bulk' ? (
