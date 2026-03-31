@@ -412,6 +412,15 @@ const EMAIL_CONTENT: Record<string, { subject: string; title: string; body: stri
     btn_text: 'Contact Support',
     btn_url: `${BASE_URL}/support`,
     from: 'support@mytaek.com'
+  },
+  // New Creator Hub content notification
+  NEW_CONTENT: {
+    subject: '🥋 New content from {{clubName}}: {{contentTitle}}',
+    title: 'Fresh Content Just Dropped!',
+    body: `Hi {{parentName}},<br><br><strong>{{clubName}}</strong> just published new training content — and your warrior should be the first to check it out!<br><br><div style='background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 22px; border-radius: 14px; margin: 20px 0; border-left: 4px solid #0ea5e9;'><div style='margin-bottom: 12px;'>{{badgeHtml}}</div><h3 style='margin: 0 0 10px 0; color: #f1f5f9; font-size: 17px; font-family: Arial, Helvetica, sans-serif;'>{{contentTitle}}</h3><p style='margin: 0; color: #94a3b8; font-size: 14px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;'>{{contentTeaser}}</p></div><p style='color: #64748b; font-size: 13px; text-align: center; margin: 0;'>Log in to the Parent Portal to access the full content.</p>`,
+    btn_text: 'View Content Now',
+    btn_url: `https://www.mytaek.com/login`,
+    from: 'hello@mytaek.com'
   }
 };
 
@@ -432,6 +441,7 @@ const EMAIL_TYPE_TO_I18N_KEY: Record<string, string> = {
   CHURN_RISK: 'churn_risk', DAY_3_CHECKIN: 'day_3_checkin', DAY_7_MID_TRIAL: 'day_7_mid_trial',
   DAY1_PARENT_QUESTS: 'day1_parent_quests',
   DAY5_PREMIUM_UPSELL: 'day5_premium_upsell',
+  NEW_CONTENT: 'new_content',
 };
 
 let _emailContentCache: Record<string, Record<string, any>> | null = null;
@@ -8496,6 +8506,89 @@ async function handleContentSync(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// Content Publish Notification — send teaser emails to matching parents
+async function handleContentNotify(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const client = await pool.connect();
+  try {
+    const { clubId, title, description, beltId, pricingType, locationFilter, classFilter, contentType } = req.body;
+    if (!clubId || !title) return res.status(400).json({ error: 'clubId and title are required' });
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(clubId)) return res.status(400).json({ error: 'Invalid club ID format' });
+
+    const clubResult = await client.query('SELECT name, wizard_data FROM clubs WHERE id = $1::uuid LIMIT 1', [clubId]);
+    if (clubResult.rows.length === 0) return res.status(404).json({ error: 'Club not found' });
+    const club = clubResult.rows[0];
+    const clubName: string = club.name || 'Your Club';
+    const language: string = (typeof club.wizard_data === 'object' && club.wizard_data?.language) ? club.wizard_data.language : 'en';
+
+    const studentsResult = await client.query(
+      `SELECT DISTINCT parent_email, parent_name, premium_status, belt, location, assigned_class
+       FROM students
+       WHERE club_id = $1::uuid
+         AND parent_email IS NOT NULL
+         AND parent_email != ''`,
+      [clubId]
+    );
+    const rows = studentsResult.rows;
+
+    const filtered = rows.filter((s: any) => {
+      if (pricingType === 'premium' && !['parent_paid', 'club_sponsored'].includes(s.premium_status)) return false;
+      if (locationFilter && locationFilter !== 'all' && s.location && s.location !== locationFilter) return false;
+      if (classFilter && classFilter !== 'all' && s.assigned_class && s.assigned_class !== classFilter) return false;
+      if (beltId && beltId !== 'all' && s.belt && s.belt !== beltId) return false;
+      return true;
+    });
+
+    const seen = new Set<string>();
+    const uniqueParents = filtered.filter((s: any) => {
+      const key = s.parent_email.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    function buildBadgeHtml(cType: string, pType: string, belt: string): string {
+      const typeBadge = cType === 'video'
+        ? `<span style='display:inline-block;background:#0ea5e9;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:6px;'>📹 Video</span>`
+        : `<span style='display:inline-block;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:6px;'>📄 Document</span>`;
+      const accessBadge = pType === 'premium'
+        ? `<span style='display:inline-block;background:#d97706;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:6px;'>⭐ Premium</span>`
+        : `<span style='display:inline-block;background:#16a34a;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:6px;'>🆓 Free</span>`;
+      const beltBadge = (belt && belt !== 'all')
+        ? `<span style='display:inline-block;background:#334155;color:#e2e8f0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;'>🥋 ${belt.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())} Belt</span>`
+        : '';
+      return typeBadge + accessBadge + beltBadge;
+    }
+
+    const rawTeaser = (description || '').trim();
+    const contentTeaser = rawTeaser.length > 120 ? rawTeaser.slice(0, 117) + '...' : rawTeaser || 'New exclusive content has been added to your training library.';
+    const badgeHtml = buildBadgeHtml(contentType || 'video', pricingType || 'free', beltId || 'all');
+    const lang = normalizeLanguageCode(language);
+
+    let sent = 0;
+    for (const parent of uniqueParents) {
+      try {
+        const firstName = ((parent.parent_name || '').split(' ')[0] || parent.parent_name || 'there');
+        const templateData = { parentName: firstName, clubName, contentTitle: title, contentTeaser, badgeHtml };
+        await sendTemplateEmail(parent.parent_email, 'NEW_CONTENT' as any, templateData, lang);
+        sent++;
+      } catch (emailErr: any) {
+        console.error('[Content Notify] Email failed for', parent.parent_email, emailErr.message);
+      }
+    }
+
+    console.log(`[Content Notify] Sent ${sent}/${uniqueParents.length} emails for content: ${title}`);
+    return res.json({ success: true, sent, total: uniqueParents.length });
+  } catch (error: any) {
+    console.error('[Content Notify] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to send notifications' });
+  } finally {
+    client.release();
+  }
+}
+
 // Get XP transaction history for a student
 async function handleGetGradingSessions(req: VercelRequest, res: VercelResponse, studentId: string) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -9011,6 +9104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Content Management (Creator Hub)
     if (path === '/content/sync' || path === '/content/sync/') return await handleContentSync(req, res);
+    if (path === '/content/notify' || path === '/content/notify/') return await handleContentNotify(req, res);
     if (path === '/content/view' || path === '/content/view/') return await handleContentView(req, res);
     
     const contentCompletionsMatch = path.match(/^\/content\/completions\/([^/]+)\/?$/);

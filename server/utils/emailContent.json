@@ -1033,5 +1033,28 @@
       "btn_text": "👉 Premium für 4,99€/Monat freischalten",
       "btn_url": "https://www.mytaek.com/login"
     }
+  },
+  "new_content": {
+    "en": {
+      "subject": "🥋 New content from {{clubName}}: {{contentTitle}}",
+      "title": "Fresh Content Just Dropped!",
+      "body": "Hi {{parentName}},<br><br><strong>{{clubName}}</strong> just published new training content — and your warrior should be the first to check it out!<br><br><div style='background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 22px; border-radius: 14px; margin: 20px 0; border-left: 4px solid #0ea5e9;'><div style='margin-bottom: 12px;'>{{badgeHtml}}</div><h3 style='margin: 0 0 10px 0; color: #f1f5f9; font-size: 17px; font-family: Arial, Helvetica, sans-serif;'>{{contentTitle}}</h3><p style='margin: 0; color: #94a3b8; font-size: 14px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;'>{{contentTeaser}}</p></div><p style='color: #64748b; font-size: 13px; text-align: center; margin: 0;'>Log in to the Parent Portal to access the full content.</p>",
+      "btn_text": "View Content Now",
+      "btn_url": "https://www.mytaek.com/login"
+    },
+    "fr": {
+      "subject": "🥋 Nouveau contenu de {{clubName}} : {{contentTitle}}",
+      "title": "Nouveau Contenu Disponible !",
+      "body": "Bonjour {{parentName}},<br><br><strong>{{clubName}}</strong> vient de publier un nouveau contenu d'entraînement — votre guerrier devrait être le premier à le découvrir !<br><br><div style='background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 22px; border-radius: 14px; margin: 20px 0; border-left: 4px solid #0ea5e9;'><div style='margin-bottom: 12px;'>{{badgeHtml}}</div><h3 style='margin: 0 0 10px 0; color: #f1f5f9; font-size: 17px; font-family: Arial, Helvetica, sans-serif;'>{{contentTitle}}</h3><p style='margin: 0; color: #94a3b8; font-size: 14px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;'>{{contentTeaser}}</p></div><p style='color: #64748b; font-size: 13px; text-align: center; margin: 0;'>Connectez-vous au Portail Parent pour accéder au contenu complet.</p>",
+      "btn_text": "Voir le Contenu",
+      "btn_url": "https://www.mytaek.com/login"
+    },
+    "de": {
+      "subject": "🥋 Neuer Inhalt von {{clubName}}: {{contentTitle}}",
+      "title": "Neuer Inhalt Verfügbar!",
+      "body": "Hallo {{parentName}},<br><br><strong>{{clubName}}</strong> hat gerade neuen Trainingsinhalt veröffentlicht — Ihr Krieger sollte einer der Ersten sein, der ihn entdeckt!<br><br><div style='background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 22px; border-radius: 14px; margin: 20px 0; border-left: 4px solid #0ea5e9;'><div style='margin-bottom: 12px;'>{{badgeHtml}}</div><h3 style='margin: 0 0 10px 0; color: #f1f5f9; font-size: 17px; font-family: Arial, Helvetica, sans-serif;'>{{contentTitle}}</h3><p style='margin: 0; color: #94a3b8; font-size: 14px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;'>{{contentTeaser}}</p></div><p style='color: #64748b; font-size: 13px; text-align: center; margin: 0;'>Melden Sie sich im Elternportal an, um auf den vollständigen Inhalt zuzugreifen.</p>",
+      "btn_text": "Inhalt Jetzt Ansehen",
+      "btn_url": "https://www.mytaek.com/login"
+    }
   }
 }

@@ -314,6 +314,9 @@ const EMAIL_TYPE_SENDER: Record<string, SenderType> = {
   // Transactional (no reply expected) - noreply@
   password_reset: 'noreply',
   password_changed: 'noreply',
+
+  // Creator Hub content notifications - hello@
+  new_content: 'hello',
 };
 
 function getSenderForEmailType(emailType: string): SenderType {
@@ -722,6 +725,45 @@ export async function sendParentDay5UpsellEmail(
   });
 }
 
+function buildContentBadgeHtml(contentType: string, pricingType: string, beltId: string): string {
+  const typeBadge = contentType === 'video'
+    ? `<span style='display:inline-block;background:#0ea5e9;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:6px;'>📹 Video</span>`
+    : `<span style='display:inline-block;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:6px;'>📄 Document</span>`;
+  const accessBadge = pricingType === 'premium'
+    ? `<span style='display:inline-block;background:#d97706;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:6px;'>⭐ Premium</span>`
+    : `<span style='display:inline-block;background:#16a34a;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:6px;'>🆓 Free</span>`;
+  const beltBadge = (beltId && beltId !== 'all')
+    ? `<span style='display:inline-block;background:#334155;color:#e2e8f0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;'>🥋 ${beltId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} Belt</span>`
+    : '';
+  return typeBadge + accessBadge + beltBadge;
+}
+
+export async function sendNewContentEmail(
+  to: string,
+  data: {
+    parentName: string;
+    clubName: string;
+    contentTitle: string;
+    contentDescription: string;
+    contentType: 'video' | 'document';
+    pricingType: 'free' | 'premium';
+    beltId: string;
+    language?: string;
+  }
+): Promise<EmailResult> {
+  const firstName = (data.parentName || '').split(' ')[0] || data.parentName || 'there';
+  const rawTeaser = (data.contentDescription || '').trim();
+  const contentTeaser = rawTeaser.length > 120 ? rawTeaser.slice(0, 117) + '...' : rawTeaser || 'New exclusive content has been added to your training library.';
+  const badgeHtml = buildContentBadgeHtml(data.contentType, data.pricingType, data.beltId);
+  return sendNotification('new_content', { email: to, name: firstName, language: data.language }, {
+    parentName: firstName,
+    clubName: data.clubName,
+    contentTitle: data.contentTitle,
+    contentTeaser,
+    badgeHtml,
+  });
+}
+
 export async function sendVideoSubmittedNotification(
   to: string,
   data: { 
@@ -782,6 +824,7 @@ export default {
   sendChurnRiskEmail,
   sendVideoSubmittedNotification,
   sendVideoVerifiedNotification,
+  sendNewContentEmail,
   sendNotification,
   sendBulkNotification,
   getAvailableEmailTypes,

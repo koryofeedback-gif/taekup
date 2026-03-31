@@ -1839,6 +1839,23 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                     const updatedCurriculum = [...curriculum, { ...item, id: syncResult.contentId }];
                     onUpdateData({ curriculum: updatedCurriculum });
                 }
+                if (finalStatus === 'live') {
+                    fetch('/api/content/notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            clubId,
+                            contentId: syncResult.contentId || item.id,
+                            title: item.title,
+                            description: item.description,
+                            beltId: item.beltId,
+                            pricingType: item.pricingType,
+                            locationFilter: item.locationFilter,
+                            classFilter: item.classFilter,
+                            contentType: item.contentType,
+                        })
+                    }).catch(err => console.error('Failed to send content notifications:', err));
+                }
             } catch (err) {
                 console.error('Failed to sync content:', err);
             }

@@ -3399,6 +3399,72 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Content Publish Notification — send teaser emails to matching parents
+  app.post('/api/content/notify', async (req: Request, res: Response) => {
+    try {
+      const { clubId, contentId, title, description, beltId, pricingType, locationFilter, classFilter, contentType } = req.body;
+      if (!clubId || !title) return res.status(400).json({ error: 'clubId and title are required' });
+
+      const clubResult = await db.execute(sql`SELECT name, wizard_data FROM clubs WHERE id = ${clubId}::uuid LIMIT 1`);
+      const club = (clubResult as any[])[0];
+      if (!club) return res.status(404).json({ error: 'Club not found' });
+
+      const clubName: string = club.name || 'Your Club';
+      const language: string = club.wizard_data?.language || 'en';
+
+      let query = sql`
+        SELECT DISTINCT parent_email, parent_name, premium_status, belt, location, assigned_class
+        FROM students
+        WHERE club_id = ${clubId}::uuid
+          AND parent_email IS NOT NULL
+          AND parent_email != ''
+      `;
+
+      const rows = (await db.execute(query)) as any[];
+
+      const filtered = rows.filter(s => {
+        if (pricingType === 'premium' && !['parent_paid', 'club_sponsored'].includes(s.premium_status)) return false;
+        if (locationFilter && locationFilter !== 'all' && s.location && s.location !== locationFilter) return false;
+        if (classFilter && classFilter !== 'all' && s.assigned_class && s.assigned_class !== classFilter) return false;
+        if (beltId && beltId !== 'all' && s.belt && s.belt !== beltId) return false;
+        return true;
+      });
+
+      const seen = new Set<string>();
+      const uniqueParents = filtered.filter(s => {
+        const key = s.parent_email.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      let sent = 0;
+      for (const parent of uniqueParents) {
+        try {
+          await emailService.sendNewContentEmail(parent.parent_email, {
+            parentName: parent.parent_name || 'there',
+            clubName,
+            contentTitle: title,
+            contentDescription: description || '',
+            contentType: contentType || 'video',
+            pricingType: pricingType || 'free',
+            beltId: beltId || 'all',
+            language,
+          });
+          sent++;
+        } catch (emailErr: any) {
+          console.error('[Content Notify] Email failed for', parent.parent_email, emailErr.message);
+        }
+      }
+
+      console.log(`[Content Notify] Sent ${sent}/${uniqueParents.length} emails for content: ${title}`);
+      res.json({ success: true, sent, total: uniqueParents.length });
+    } catch (error: any) {
+      console.error('[Content Notify] Error:', error.message);
+      res.status(500).json({ error: 'Failed to send notifications' });
+    }
+  });
+
   // Content Analytics - Record content view/completion
   app.post('/api/content/view', async (req: Request, res: Response) => {
     try {
