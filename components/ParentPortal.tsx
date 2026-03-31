@@ -3223,30 +3223,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 </div>
             )}
 
-            {/* Sensei Intel Section */}
-            <div className="space-y-3">
-                <h3 className="font-bold text-gray-200 text-sm uppercase tracking-wider flex items-center">
-                    <span className="mr-2">💬</span> {t('parent.home.senseiIntel')}
-                    {student.feedbackHistory && student.feedbackHistory.length > 0 && (
-                        <span className="ml-2 bg-sky-500/20 text-sky-400 text-[10px] px-2 py-0.5 rounded-full">{student.feedbackHistory.length}</span>
-                    )}
-                </h3>
-                {student.feedbackHistory && student.feedbackHistory.length > 0 ? (
-                    student.feedbackHistory.slice().reverse().slice(0, 2).map((fb, idx) => (
-                        <div key={idx} className="bg-gray-800 p-3 rounded-xl border-l-4 border-sky-500 shadow-sm relative overflow-hidden">
-                            <p className="text-gray-300 text-sm italic relative z-10 line-clamp-2">"{fb.text}"</p>
-                            <div className="flex justify-between items-center text-[10px] text-gray-500 mt-2 relative z-10">
-                                <span>{new Date(fb.date).toLocaleDateString()}</span>
-                                <span className="text-sky-400">{fb.isAIGenerated ? t('parent.home.aiLabel') : fb.coachName}</span>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="text-center py-6 text-gray-500 bg-gray-800/30 rounded-xl border border-dashed border-gray-700 text-sm">
-                        {t('parent.home.noActiveMissions')}
-                    </div>
-                )}
-            </div>
         </div>
     );
 
