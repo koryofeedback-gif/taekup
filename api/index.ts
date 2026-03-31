@@ -8521,23 +8521,40 @@ async function handleContentNotify(req: VercelRequest, res: VercelResponse) {
     if (clubResult.rows.length === 0) return res.status(404).json({ error: 'Club not found' });
     const club = clubResult.rows[0];
     const clubName: string = club.name || 'Your Club';
-    const language: string = (typeof club.wizard_data === 'object' && club.wizard_data?.language) ? club.wizard_data.language : 'en';
+    const wizardData = typeof club.wizard_data === 'string' ? JSON.parse(club.wizard_data) : (club.wizard_data || {});
+    const language: string = wizardData.language || 'en';
 
+    // Pull from students table
     const studentsResult = await client.query(
-      `SELECT DISTINCT parent_email, parent_name, premium_status, belt, location, assigned_class
+      `SELECT parent_email, parent_name, premium_status, belt, location, assigned_class
        FROM students
        WHERE club_id = $1::uuid
          AND parent_email IS NOT NULL
          AND parent_email != ''`,
       [clubId]
     );
-    const rows = studentsResult.rows;
+    const dbRows = studentsResult.rows;
 
-    const filtered = rows.filter((s: any) => {
+    // Also pull from wizard_data.students JSON array (where most students live)
+    const wizardStudents: any[] = Array.isArray(wizardData.students) ? wizardData.students : [];
+    const wizardRows = wizardStudents
+      .filter((s: any) => s.parentEmail && s.parentEmail.trim())
+      .map((s: any) => ({
+        parent_email: s.parentEmail,
+        parent_name: s.parentName || '',
+        premium_status: s.premiumStatus || 'none',
+        belt: s.belt || '',
+        location: s.location || '',
+        assigned_class: s.assignedClass || '',
+      }));
+
+    const allRows = [...dbRows, ...wizardRows];
+
+    const filtered = allRows.filter((s: any) => {
       if (pricingType === 'premium' && !['parent_paid', 'club_sponsored'].includes(s.premium_status)) return false;
-      if (locationFilter && locationFilter !== 'all' && s.location && s.location !== locationFilter) return false;
-      if (classFilter && classFilter !== 'all' && s.assigned_class && s.assigned_class !== classFilter) return false;
-      if (beltId && beltId !== 'all' && s.belt && s.belt !== beltId) return false;
+      if (locationFilter && locationFilter !== 'all' && s.location && s.location.toLowerCase() !== locationFilter.toLowerCase()) return false;
+      if (classFilter && classFilter !== 'all' && s.assigned_class && s.assigned_class.toLowerCase() !== classFilter.toLowerCase()) return false;
+      if (beltId && beltId !== 'all' && s.belt && s.belt.toLowerCase() !== beltId.toLowerCase()) return false;
       return true;
     });
 

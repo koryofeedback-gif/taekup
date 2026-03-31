@@ -3412,21 +3412,35 @@ export function registerRoutes(app: Express) {
       const clubName: string = club.name || 'Your Club';
       const language: string = club.wizard_data?.language || 'en';
 
-      let query = sql`
-        SELECT DISTINCT parent_email, parent_name, premium_status, belt, location, assigned_class
+      // Pull from students table
+      const dbRows = (await db.execute(sql`
+        SELECT parent_email, parent_name, premium_status, belt, location, assigned_class
         FROM students
         WHERE club_id = ${clubId}::uuid
           AND parent_email IS NOT NULL
           AND parent_email != ''
-      `;
+      `)) as any[];
 
-      const rows = (await db.execute(query)) as any[];
+      // Also pull from wizard_data.students JSON array (where most students live)
+      const wizardStudents: any[] = Array.isArray(club.wizard_data?.students) ? club.wizard_data.students : [];
+      const wizardRows = wizardStudents
+        .filter((s: any) => s.parentEmail && s.parentEmail.trim())
+        .map((s: any) => ({
+          parent_email: s.parentEmail,
+          parent_name: s.parentName || '',
+          premium_status: s.premiumStatus || 'none',
+          belt: s.belt || '',
+          location: s.location || '',
+          assigned_class: s.assignedClass || '',
+        }));
 
-      const filtered = rows.filter(s => {
+      const allRows = [...dbRows, ...wizardRows];
+
+      const filtered = allRows.filter(s => {
         if (pricingType === 'premium' && !['parent_paid', 'club_sponsored'].includes(s.premium_status)) return false;
-        if (locationFilter && locationFilter !== 'all' && s.location && s.location !== locationFilter) return false;
-        if (classFilter && classFilter !== 'all' && s.assigned_class && s.assigned_class !== classFilter) return false;
-        if (beltId && beltId !== 'all' && s.belt && s.belt !== beltId) return false;
+        if (locationFilter && locationFilter !== 'all' && s.location && s.location.toLowerCase() !== locationFilter.toLowerCase()) return false;
+        if (classFilter && classFilter !== 'all' && s.assigned_class && s.assigned_class.toLowerCase() !== classFilter.toLowerCase()) return false;
+        if (beltId && beltId !== 'all' && s.belt && s.belt.toLowerCase() !== beltId.toLowerCase()) return false;
         return true;
       });
 
