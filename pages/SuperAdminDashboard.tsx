@@ -267,6 +267,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ token,
             <Link to="/super-admin/payments" className="text-gray-400 hover:text-white">Payments</Link>
             <Link to="/super-admin/analytics" className="text-gray-400 hover:text-white">Analytics</Link>
             <Link to="/super-admin/training" className="text-gray-400 hover:text-white">Training</Link>
+            <Link to="/super-admin/broadcast" className="text-gray-400 hover:text-white">Broadcast</Link>
             <button
               onClick={onLogout}
               className="flex items-center gap-2 text-gray-400 hover:text-white"

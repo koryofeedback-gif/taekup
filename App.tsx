@@ -16,7 +16,7 @@ import { RequestAccessPage } from './pages/RequestAccess';
 import { AccountLockedPage } from './pages/AccountLockedPage';
 import { SubscriptionSuccess } from './pages/SubscriptionSuccess';
 import { SuperAdminLogin } from './pages/SuperAdminLogin';
-import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute, SuperAdminPaymentsRoute, SuperAdminAnalyticsRoute, SuperAdminTrainingRoute } from './components/SuperAdminRoutes';
+import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute, SuperAdminPaymentsRoute, SuperAdminAnalyticsRoute, SuperAdminTrainingRoute, SuperAdminBroadcastRoute } from './components/SuperAdminRoutes';
 import { TrialBanner } from './components/TrialBanner';
 import { ImpersonationBanner, isImpersonating } from './components/ImpersonationBanner';
 import { TermsPage, PrivacyPage, ContactPage, SupportPage } from './components/LegalPages';
@@ -1333,6 +1333,10 @@ const AppContent: React.FC<AppContentProps> = ({
                         element={
                             <SuperAdminTrainingRoute />
                         }
+                    />
+                    <Route
+                        path="/super-admin/broadcast"
+                        element={<SuperAdminBroadcastRoute />}
                     />
                     <Route
                         path="/super-admin"

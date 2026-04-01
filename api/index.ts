@@ -8940,6 +8940,104 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Database setup (admin only)
     if (path === '/admin/db-setup' || path === '/admin/db-setup/') return await handleDbSetup(req, res);
     
+    // Super Admin Broadcast
+    if ((path === '/super-admin/broadcast/audience' || path === '/super-admin/broadcast/audience/') && req.method === 'GET') {
+      const auth = await verifySuperAdminToken(req);
+      if (!auth.valid) return res.status(401).json({ error: 'Unauthorized' });
+      const userType = (req.query?.userType as string) || 'club_owners';
+      const planFilter = (req.query?.plan as string) || 'all';
+      const premiumFilter = (req.query?.premium as string) || 'all';
+      const artFilter = (req.query?.art as string) || 'all';
+      const bc = await pool.connect();
+      try {
+        let rows: any[];
+        const hasArt = artFilter && artFilter !== 'all';
+        if (userType === 'club_owners') {
+          let q = `SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL`;
+          const params: any[] = [];
+          if (planFilter === 'trial') q += ` AND trial_status = 'active'`;
+          else if (planFilter === 'paying') q += ` AND trial_status = 'converted'`;
+          if (hasArt) { params.push(artFilter); q += ` AND art_type ILIKE $${params.length}`; }
+          q += ` AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          const r = await bc.query(q, params);
+          rows = r.rows;
+        } else if (userType === 'coaches') {
+          let q = `SELECT DISTINCT co.email, co.name FROM coaches co JOIN clubs cl ON co.club_id = cl.id WHERE co.email IS NOT NULL AND co.is_active = true`;
+          const params: any[] = [];
+          if (hasArt) { params.push(artFilter); q += ` AND cl.art_type ILIKE $${params.length}`; }
+          q += ` AND co.email NOT IN (SELECT email FROM email_unsubscribes)`;
+          const r = await bc.query(q, params);
+          rows = r.rows;
+        } else {
+          let q = `SELECT DISTINCT parent_email as email, parent_name as name FROM students WHERE parent_email IS NOT NULL`;
+          if (premiumFilter === 'premium') q += ` AND premium_status IN ('parent_paid', 'club_sponsored')`;
+          else if (premiumFilter === 'free') q += ` AND (premium_status = 'none' OR premium_status IS NULL)`;
+          q += ` AND parent_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          const r = await bc.query(q);
+          rows = r.rows;
+        }
+        return res.json({ count: rows.length, sample: rows.slice(0, 20).map((r: any) => ({ email: r.email, name: r.name || '' })) });
+      } finally { bc.release(); }
+    }
+
+    if ((path === '/super-admin/broadcast/send' || path === '/super-admin/broadcast/send/') && req.method === 'POST') {
+      const auth = await verifySuperAdminToken(req);
+      if (!auth.valid) return res.status(401).json({ error: 'Unauthorized' });
+      const { userType = 'club_owners', planFilter = 'all', premiumFilter = 'all', artFilter = 'all', subject, body, fromName = 'MyTaek Team' } = req.body || {};
+      if (!subject || !body) return res.status(400).json({ error: 'subject and body required' });
+      const bc = await pool.connect();
+      try {
+        let rows: any[];
+        const hasArt = artFilter && artFilter !== 'all';
+        if (userType === 'club_owners') {
+          let q = `SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL`;
+          const params: any[] = [];
+          if (planFilter === 'trial') q += ` AND trial_status = 'active'`;
+          else if (planFilter === 'paying') q += ` AND trial_status = 'converted'`;
+          if (hasArt) { params.push(artFilter); q += ` AND art_type ILIKE $${params.length}`; }
+          q += ` AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          rows = (await bc.query(q, params)).rows;
+        } else if (userType === 'coaches') {
+          let q = `SELECT DISTINCT co.email, co.name FROM coaches co JOIN clubs cl ON co.club_id = cl.id WHERE co.email IS NOT NULL AND co.is_active = true`;
+          const params: any[] = [];
+          if (hasArt) { params.push(artFilter); q += ` AND cl.art_type ILIKE $${params.length}`; }
+          q += ` AND co.email NOT IN (SELECT email FROM email_unsubscribes)`;
+          rows = (await bc.query(q, params)).rows;
+        } else {
+          let q = `SELECT DISTINCT parent_email as email, parent_name as name FROM students WHERE parent_email IS NOT NULL`;
+          if (premiumFilter === 'premium') q += ` AND premium_status IN ('parent_paid', 'club_sponsored')`;
+          else if (premiumFilter === 'free') q += ` AND (premium_status = 'none' OR premium_status IS NULL)`;
+          q += ` AND parent_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          rows = (await bc.query(q)).rows;
+        }
+        if (rows.length === 0) return res.json({ sent: 0, skipped: 0, errors: 0, batches: 0 });
+        if (!process.env.SENDGRID_API_KEY) return res.status(500).json({ error: 'SendGrid not configured' });
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+        const footer = `<br><br><hr style="border:none;border-top:1px solid #374151;margin:24px 0"><p style="font-size:11px;color:#6b7280;text-align:center">You receive this email because you use MyTaek. <a href="https://app.mytaek.com/unsubscribe?email={{email}}" style="color:#9ca3af">Unsubscribe</a> | <a href="https://app.mytaek.com/privacy" style="color:#9ca3af">Privacy</a><br>© ${new Date().getFullYear()} MyTaek Inc.</p>`;
+        const BATCH = 1000;
+        let sent = 0, errors = 0, batches = 0;
+        for (let i = 0; i < rows.length; i += BATCH) {
+          const chunk = rows.slice(i, i + BATCH);
+          try {
+            await sgMail.send({
+              personalizations: chunk.map((r: any) => ({ to: [{ email: r.email, name: r.name || '' }] })),
+              from: { email: 'hello@mytaek.com', name: fromName },
+              subject,
+              html: body + footer,
+              text: body.replace(/<[^>]*>/g, ''),
+            } as any);
+            sent += chunk.length; batches++;
+          } catch (e: any) {
+            console.error('[Broadcast] Batch error:', e?.response?.body || e.message);
+            errors += chunk.length;
+          }
+          if (i + BATCH < rows.length) await new Promise(r => setTimeout(r, 500));
+        }
+        console.log(`[Broadcast] sent=${sent} errors=${errors} batches=${batches}`);
+        return res.json({ sent, skipped: 0, errors, batches });
+      } finally { bc.release(); }
+    }
+
     // Super Admin routes
     if (path === '/super-admin/verify' || path === '/super-admin/verify/') return await handleSuperAdminVerify(req, res);
     if (path === '/super-admin/gauntlet-challenges' || path === '/super-admin/gauntlet-challenges/') return await handleSuperAdminGauntletChallenges(req, res);

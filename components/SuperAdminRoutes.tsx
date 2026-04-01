@@ -6,6 +6,7 @@ import { SuperAdminParents } from '../pages/SuperAdminParents';
 import { SuperAdminPayments } from '../pages/SuperAdminPayments';
 import SuperAdminAnalytics from '../pages/SuperAdminAnalytics';
 import { SuperAdminTraining } from '../pages/SuperAdminTraining';
+import { SuperAdminBroadcast } from '../pages/SuperAdminBroadcast';
 
 export const SuperAdminDashboardRoute: React.FC = () => {
     const [isValid, setIsValid] = React.useState<boolean | null>(null);
@@ -258,4 +259,37 @@ export const SuperAdminTrainingRoute: React.FC = () => {
     };
     
     return <SuperAdminTraining token={token || ''} onLogout={handleLogout} />;
+};
+
+export const SuperAdminBroadcastRoute: React.FC = () => {
+    const [isValid, setIsValid] = React.useState<boolean | null>(null);
+    const token = localStorage.getItem('superAdminToken');
+
+    React.useEffect(() => {
+        if (!token) { setIsValid(false); return; }
+        fetch('/api/super-admin/verify', { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(res => res.ok ? setIsValid(true) : setIsValid(false))
+            .catch(() => setIsValid(false));
+    }, [token]);
+
+    if (isValid === null) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-400">Verifying access...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isValid) return <Navigate to="/super-admin/login" replace />;
+
+    const handleLogout = () => {
+        localStorage.removeItem('superAdminToken');
+        localStorage.removeItem('superAdminEmail');
+        window.location.href = '/super-admin/login';
+    };
+
+    return <SuperAdminBroadcast token={token || ''} onLogout={handleLogout} />;
 };
