@@ -508,6 +508,19 @@ export function registerRoutes(app: Express) {
         FROM students WHERE club_id = ${clubId}::uuid
       `);
 
+      // Auto-generate MyTaek IDs for any student missing one
+      for (const s of studentsResult as any[]) {
+        if (!s.mytaek_id) {
+          const year = new Date().getFullYear();
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          let code = '';
+          for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+          const newId = `MTK-${year}-${code}`;
+          await db.execute(sql`UPDATE students SET mytaek_id = ${newId} WHERE id = ${s.id}::uuid`);
+          s.mytaek_id = newId;
+        }
+      }
+
       const coachesResult = await db.execute(sql`
         SELECT id, name, email, location, assigned_classes
         FROM coaches WHERE club_id = ${clubId}::uuid AND is_active = true
@@ -1106,6 +1119,19 @@ export function registerRoutes(app: Express) {
                    trust_tier, video_approval_streak, last_class_at, profile_image_url, mytaek_id
             FROM students WHERE club_id = ${user.club_id}::uuid
           `);
+
+          // Auto-generate MyTaek IDs for any student missing one
+          for (const s of studentsResult as any[]) {
+            if (!s.mytaek_id) {
+              const year = new Date().getFullYear();
+              const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+              let code = '';
+              for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+              const newId = `MTK-${year}-${code}`;
+              await db.execute(sql`UPDATE students SET mytaek_id = ${newId} WHERE id = ${s.id}::uuid`);
+              s.mytaek_id = newId;
+            }
+          }
           
           const savedBelts = wizardData.belts || [];
           const getBeltIdFromName = (beltName: string): string => {
