@@ -1987,18 +1987,21 @@ router.post('/access-requests/:id/reject', verifySuperAdmin, async (req: Request
 // EMAIL BROADCAST
 // =====================================================
 
+const PAID_PLANS = ['Starter', 'Pro', 'Standard', 'Growth', 'Empire'];
+
 async function buildBroadcastAudience(userType: string, planFilter: string, premiumFilter: string, artFilter: string): Promise<{ email: string; name: string }[]> {
   const hasArt = artFilter && artFilter !== 'all';
+  const isPaidPlan = PAID_PLANS.includes(planFilter);
 
   if (userType === 'club_owners') {
     if (planFilter === 'trial' && hasArt) {
       return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'active' AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
     } else if (planFilter === 'trial') {
       return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'active' AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
-    } else if (planFilter === 'paying' && hasArt) {
-      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'converted' AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
-    } else if (planFilter === 'paying') {
-      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'converted' AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else if (isPaidPlan && hasArt) {
+      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c JOIN subscriptions s ON s.club_id = c.id WHERE c.owner_email IS NOT NULL AND s.plan_name = ${planFilter} AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else if (isPaidPlan) {
+      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c JOIN subscriptions s ON s.club_id = c.id WHERE c.owner_email IS NOT NULL AND s.plan_name = ${planFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
     } else if (hasArt) {
       return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
     } else {

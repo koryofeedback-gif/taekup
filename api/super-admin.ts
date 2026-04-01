@@ -2872,17 +2872,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const premiumFilter = (req.query.premium as string) || 'all';
       const artFilter = (req.query.art as string) || 'all';
       const hasArt = artFilter && artFilter !== 'all';
+      const isPaidPlan = ['Starter', 'Pro', 'Standard', 'Growth', 'Empire'].includes(planFilter);
       try {
         let rows: any[];
         if (userType === 'club_owners') {
           if (planFilter === 'trial' && hasArt) {
-            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'active' AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+            rows = await db`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'active' AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
           } else if (planFilter === 'trial') {
             rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'active' AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
-          } else if (planFilter === 'paying' && hasArt) {
-            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'converted' AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
-          } else if (planFilter === 'paying') {
-            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'converted' AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (isPaidPlan && hasArt) {
+            rows = await db`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c JOIN subscriptions s ON s.club_id = c.id WHERE c.owner_email IS NOT NULL AND s.plan_name = ${planFilter} AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (isPaidPlan) {
+            rows = await db`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c JOIN subscriptions s ON s.club_id = c.id WHERE c.owner_email IS NOT NULL AND s.plan_name = ${planFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
           } else if (hasArt) {
             rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
           } else {
@@ -2921,17 +2922,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { userType = 'club_owners', planFilter = 'all', premiumFilter = 'all', artFilter = 'all', subject, body, fromName = 'MyTaek Team' } = req.body || {};
       if (!subject || !body) return res.status(400).json({ error: 'subject and body required' });
       const hasArt = artFilter && artFilter !== 'all';
+      const isPaidPlan = ['Starter', 'Pro', 'Standard', 'Growth', 'Empire'].includes(planFilter);
       try {
         let rows: any[];
         if (userType === 'club_owners') {
           if (planFilter === 'trial' && hasArt) {
-            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'active' AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+            rows = await db`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'active' AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
           } else if (planFilter === 'trial') {
             rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'active' AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
-          } else if (planFilter === 'paying' && hasArt) {
-            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'converted' AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
-          } else if (planFilter === 'paying') {
-            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'converted' AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (isPaidPlan && hasArt) {
+            rows = await db`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c JOIN subscriptions s ON s.club_id = c.id WHERE c.owner_email IS NOT NULL AND s.plan_name = ${planFilter} AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (isPaidPlan) {
+            rows = await db`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c JOIN subscriptions s ON s.club_id = c.id WHERE c.owner_email IS NOT NULL AND s.plan_name = ${planFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
           } else if (hasArt) {
             rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
           } else {

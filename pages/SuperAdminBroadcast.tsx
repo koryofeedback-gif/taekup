@@ -11,9 +11,19 @@ interface SuperAdminBroadcastProps {
 }
 
 type UserType = 'club_owners' | 'coaches' | 'parents';
-type PlanFilter = 'all' | 'trial' | 'paying';
+type PlanFilter = 'all' | 'trial' | 'Starter' | 'Pro' | 'Standard' | 'Growth' | 'Empire';
 type PremiumFilter = 'all' | 'free' | 'premium';
 type ArtFilter = 'all' | 'Taekwondo' | 'Karate' | 'BJJ' | 'Judo' | 'MMA' | 'Kickboxing' | 'Kung Fu' | 'Custom';
+
+const PLAN_OPTIONS: { value: PlanFilter; label: string; badge?: string }[] = [
+  { value: 'all', label: 'All plans' },
+  { value: 'trial', label: 'Trial only', badge: 'active trial' },
+  { value: 'Starter', label: 'Starter', badge: '$24.99/mo' },
+  { value: 'Pro', label: 'Pro', badge: '$39.99/mo' },
+  { value: 'Standard', label: 'Standard', badge: '$69/mo' },
+  { value: 'Growth', label: 'Growth', badge: '$129/mo' },
+  { value: 'Empire', label: 'Empire', badge: '$199/mo' },
+];
 
 interface AudiencePreview {
   count: number;
@@ -117,7 +127,8 @@ export const SuperAdminBroadcast: React.FC<SuperAdminBroadcastProps> = ({ token,
   };
 
   const segmentLabel = () => {
-    if (userType === 'club_owners') return `Club Owners · ${planFilter === 'all' ? 'All plans' : planFilter === 'trial' ? 'Trial only' : 'Paying only'} · ${artFilter === 'all' ? 'All disciplines' : artFilter}`;
+    const planLabel = planFilter === 'all' ? 'All plans' : planFilter === 'trial' ? 'Trial only' : `${planFilter} plan`;
+    if (userType === 'club_owners') return `Club Owners · ${planLabel} · ${artFilter === 'all' ? 'All disciplines' : artFilter}`;
     if (userType === 'coaches') return `Coaches · ${artFilter === 'all' ? 'All disciplines' : artFilter}`;
     return `Parents · ${premiumFilter === 'all' ? 'All' : premiumFilter === 'premium' ? 'Premium' : 'Free'}`;
   };
@@ -193,15 +204,22 @@ export const SuperAdminBroadcast: React.FC<SuperAdminBroadcastProps> = ({ token,
                 {/* Plan filter (club owners only) */}
                 {userType === 'club_owners' && (
                   <div className="mb-5">
-                    <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Filter by plan</p>
+                    <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Filter by package</p>
                     <div className="space-y-1.5">
-                      {([['all', 'All plans'], ['trial', 'Trial only (active trial)'], ['paying', 'Paying only (converted)']] as [PlanFilter, string][]).map(([val, label]) => (
-                        <label key={val} className="flex items-center gap-2.5 cursor-pointer group">
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${planFilter === val ? 'border-purple-500 bg-purple-500' : 'border-gray-600 group-hover:border-gray-500'}`}>
-                            {planFilter === val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      {PLAN_OPTIONS.map(({ value, label, badge }) => (
+                        <label key={value} className="flex items-center gap-2.5 cursor-pointer group">
+                          <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${planFilter === value ? 'border-purple-500 bg-purple-500' : 'border-gray-600 group-hover:border-gray-500'}`}>
+                            {planFilter === value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </div>
                           <span className="text-sm text-gray-300">{label}</span>
-                          <input type="radio" className="hidden" checked={planFilter === val} onChange={() => setPlanFilter(val)} />
+                          {badge && (
+                            <span className={`ml-auto text-xs px-1.5 py-0.5 rounded font-medium ${
+                              value === 'trial' ? 'bg-yellow-900/40 text-yellow-400' :
+                              value === 'Empire' ? 'bg-purple-900/40 text-purple-300' :
+                              'bg-gray-800 text-gray-500'
+                            }`}>{badge}</span>
+                          )}
+                          <input type="radio" className="hidden" checked={planFilter === value} onChange={() => setPlanFilter(value)} />
                         </label>
                       ))}
                     </div>
