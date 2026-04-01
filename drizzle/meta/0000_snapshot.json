@@ -1,0 +1,5493 @@
+{
+  "id": "6834222b-c2e1-49fd-b450-acc8d2192e56",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.activity_log": {
+      "name": "activity_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_title": {
+          "name": "event_title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_description": {
+          "name": "event_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_email": {
+          "name": "actor_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_type": {
+          "name": "actor_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "activity_log_club_id_clubs_id_fk": {
+          "name": "activity_log_club_id_clubs_id_fk",
+          "tableFrom": "activity_log",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.arena_challenges": {
+      "name": "arena_challenges",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "icon": {
+          "name": "icon",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'💪'"
+        },
+        "category": {
+          "name": "category",
+          "type": "arena_category",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "difficulty_tier": {
+          "name": "difficulty_tier",
+          "type": "difficulty_tier",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'MEDIUM'"
+        },
+        "xp_reward": {
+          "name": "xp_reward",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 30
+        },
+        "is_system_default": {
+          "name": "is_system_default",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "arena_challenges_club_id_clubs_id_fk": {
+          "name": "arena_challenges_club_id_clubs_id_fk",
+          "tableFrom": "arena_challenges",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.attendance_events": {
+      "name": "attendance_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attended_at": {
+          "name": "attended_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "class_name": {
+          "name": "class_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_demo": {
+          "name": "is_demo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "attendance_events_club_id_clubs_id_fk": {
+          "name": "attendance_events_club_id_clubs_id_fk",
+          "tableFrom": "attendance_events",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "attendance_events_student_id_students_id_fk": {
+          "name": "attendance_events_student_id_students_id_fk",
+          "tableFrom": "attendance_events",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.automated_email_logs": {
+      "name": "automated_email_logs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trigger_type": {
+          "name": "trigger_type",
+          "type": "automated_email_trigger",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient": {
+          "name": "recipient",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template_id": {
+          "name": "template_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "email_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'sent'"
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "automated_email_logs_club_id_clubs_id_fk": {
+          "name": "automated_email_logs_club_id_clubs_id_fk",
+          "tableFrom": "automated_email_logs",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "automated_email_logs_student_id_students_id_fk": {
+          "name": "automated_email_logs_student_id_students_id_fk",
+          "tableFrom": "automated_email_logs",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "automated_email_logs_user_id_users_id_fk": {
+          "name": "automated_email_logs_user_id_users_id_fk",
+          "tableFrom": "automated_email_logs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.automation_executions": {
+      "name": "automation_executions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "rule_id": {
+          "name": "rule_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trigger_data": {
+          "name": "trigger_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actions_taken": {
+          "name": "actions_taken",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "success": {
+          "name": "success",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "executed_at": {
+          "name": "executed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "automation_executions_rule_id_automation_rules_id_fk": {
+          "name": "automation_executions_rule_id_automation_rules_id_fk",
+          "tableFrom": "automation_executions",
+          "tableTo": "automation_rules",
+          "columnsFrom": [
+            "rule_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "automation_executions_club_id_clubs_id_fk": {
+          "name": "automation_executions_club_id_clubs_id_fk",
+          "tableFrom": "automation_executions",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.automation_rules": {
+      "name": "automation_rules",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "rule_type": {
+          "name": "rule_type",
+          "type": "automation_rule_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "conditions": {
+          "name": "conditions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actions": {
+          "name": "actions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email_template": {
+          "name": "email_template",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slack_enabled": {
+          "name": "slack_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "email_enabled": {
+          "name": "email_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "last_triggered_at": {
+          "name": "last_triggered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trigger_count": {
+          "name": "trigger_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.challenge_submissions": {
+      "name": "challenge_submissions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "challenge_id": {
+          "name": "challenge_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "answer": {
+          "name": "answer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_correct": {
+          "name": "is_correct",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "xp_awarded": {
+          "name": "xp_awarded",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "mode": {
+          "name": "mode",
+          "type": "challenge_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'SOLO'"
+        },
+        "opponent_id": {
+          "name": "opponent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "challenge_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'COMPLETED'"
+        },
+        "proof_type": {
+          "name": "proof_type",
+          "type": "proof_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'TRUST'"
+        },
+        "video_url": {
+          "name": "video_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "challenge_category_type": {
+          "name": "challenge_category_type",
+          "type": "challenge_category_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "challenge_difficulty": {
+          "name": "challenge_difficulty",
+          "type": "challenge_difficulty",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "global_rank_points": {
+          "name": "global_rank_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "challenge_submissions_challenge_id_daily_challenges_id_fk": {
+          "name": "challenge_submissions_challenge_id_daily_challenges_id_fk",
+          "tableFrom": "challenge_submissions",
+          "tableTo": "daily_challenges",
+          "columnsFrom": [
+            "challenge_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "challenge_submissions_student_id_students_id_fk": {
+          "name": "challenge_submissions_student_id_students_id_fk",
+          "tableFrom": "challenge_submissions",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "challenge_submissions_club_id_clubs_id_fk": {
+          "name": "challenge_submissions_club_id_clubs_id_fk",
+          "tableFrom": "challenge_submissions",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "challenge_submissions_opponent_id_students_id_fk": {
+          "name": "challenge_submissions_opponent_id_students_id_fk",
+          "tableFrom": "challenge_submissions",
+          "tableTo": "students",
+          "columnsFrom": [
+            "opponent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.challenge_video_votes": {
+      "name": "challenge_video_votes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "video_id": {
+          "name": "video_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "voter_student_id": {
+          "name": "voter_student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vote_value": {
+          "name": "vote_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "challenge_video_votes_video_id_challenge_videos_id_fk": {
+          "name": "challenge_video_votes_video_id_challenge_videos_id_fk",
+          "tableFrom": "challenge_video_votes",
+          "tableTo": "challenge_videos",
+          "columnsFrom": [
+            "video_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "challenge_video_votes_voter_student_id_students_id_fk": {
+          "name": "challenge_video_votes_voter_student_id_students_id_fk",
+          "tableFrom": "challenge_video_votes",
+          "tableTo": "students",
+          "columnsFrom": [
+            "voter_student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.challenge_videos": {
+      "name": "challenge_videos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "challenge_id": {
+          "name": "challenge_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "video_url": {
+          "name": "video_url",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "video_key": {
+          "name": "video_key",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thumbnail_url": {
+          "name": "thumbnail_url",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "challenge_name": {
+          "name": "challenge_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "challenge_category": {
+          "name": "challenge_category",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "video_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'pending'"
+        },
+        "coach_notes": {
+          "name": "coach_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verified_by": {
+          "name": "verified_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verified_at": {
+          "name": "verified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "xp_awarded": {
+          "name": "xp_awarded",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "vote_count": {
+          "name": "vote_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "is_spot_check": {
+          "name": "is_spot_check",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "auto_approved": {
+          "name": "auto_approved",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "ai_flag": {
+          "name": "ai_flag",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_flag_reason": {
+          "name": "ai_flag_reason",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "video_duration": {
+          "name": "video_duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "video_hash": {
+          "name": "video_hash",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "challenge_videos_student_id_students_id_fk": {
+          "name": "challenge_videos_student_id_students_id_fk",
+          "tableFrom": "challenge_videos",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "challenge_videos_club_id_clubs_id_fk": {
+          "name": "challenge_videos_club_id_clubs_id_fk",
+          "tableFrom": "challenge_videos",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "challenge_videos_verified_by_coaches_id_fk": {
+          "name": "challenge_videos_verified_by_coaches_id_fk",
+          "tableFrom": "challenge_videos",
+          "tableTo": "coaches",
+          "columnsFrom": [
+            "verified_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.churn_reasons": {
+      "name": "churn_reasons",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subscription_id": {
+          "name": "subscription_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "churn_reason_category",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "additional_feedback": {
+          "name": "additional_feedback",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "would_recommend": {
+          "name": "would_recommend",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "churn_reasons_club_id_clubs_id_fk": {
+          "name": "churn_reasons_club_id_clubs_id_fk",
+          "tableFrom": "churn_reasons",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "churn_reasons_subscription_id_subscriptions_id_fk": {
+          "name": "churn_reasons_subscription_id_subscriptions_id_fk",
+          "tableFrom": "churn_reasons",
+          "tableTo": "subscriptions",
+          "columnsFrom": [
+            "subscription_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.class_feedback": {
+      "name": "class_feedback",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coach_id": {
+          "name": "coach_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "class_name": {
+          "name": "class_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "class_date": {
+          "name": "class_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "highlights": {
+          "name": "highlights",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "feedback_text": {
+          "name": "feedback_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email_sent_at": {
+          "name": "email_sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "class_feedback_club_id_clubs_id_fk": {
+          "name": "class_feedback_club_id_clubs_id_fk",
+          "tableFrom": "class_feedback",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "class_feedback_student_id_students_id_fk": {
+          "name": "class_feedback_student_id_students_id_fk",
+          "tableFrom": "class_feedback",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "class_feedback_coach_id_coaches_id_fk": {
+          "name": "class_feedback_coach_id_coaches_id_fk",
+          "tableFrom": "class_feedback",
+          "tableTo": "coaches",
+          "columnsFrom": [
+            "coach_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.clubs": {
+      "name": "clubs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_email": {
+          "name": "owner_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_name": {
+          "name": "owner_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country": {
+          "name": "country",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "name": "city",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "art_type": {
+          "name": "art_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'Taekwondo'"
+        },
+        "trial_start": {
+          "name": "trial_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "trial_end": {
+          "name": "trial_end",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trial_status": {
+          "name": "trial_status",
+          "type": "trial_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'active'"
+        },
+        "status": {
+          "name": "status",
+          "type": "club_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'active'"
+        },
+        "stripe_customer_id": {
+          "name": "stripe_customer_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_connect_account_id": {
+          "name": "stripe_connect_account_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wizard_data": {
+          "name": "wizard_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "world_rankings_enabled": {
+          "name": "world_rankings_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "global_score": {
+          "name": "global_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "has_demo_data": {
+          "name": "has_demo_data",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "is_platform_owner": {
+          "name": "is_platform_owner",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "clubs_owner_email_unique": {
+          "name": "clubs_owner_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "owner_email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coaches": {
+      "name": "coaches",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invite_sent_at": {
+          "name": "invite_sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invite_accepted_at": {
+          "name": "invite_accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "coaches_club_id_clubs_id_fk": {
+          "name": "coaches_club_id_clubs_id_fk",
+          "tableFrom": "coaches",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coaches_user_id_users_id_fk": {
+          "name": "coaches_user_id_users_id_fk",
+          "tableFrom": "coaches",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.content_views": {
+      "name": "content_views",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "content_id": {
+          "name": "content_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_email": {
+          "name": "parent_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "watched_seconds": {
+          "name": "watched_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "completed": {
+          "name": "completed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "xp_awarded": {
+          "name": "xp_awarded",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "viewed_at": {
+          "name": "viewed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "content_views_content_id_curriculum_content_id_fk": {
+          "name": "content_views_content_id_curriculum_content_id_fk",
+          "tableFrom": "content_views",
+          "tableTo": "curriculum_content",
+          "columnsFrom": [
+            "content_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "content_views_student_id_students_id_fk": {
+          "name": "content_views_student_id_students_id_fk",
+          "tableFrom": "content_views",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.course_enrollments": {
+      "name": "course_enrollments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "course_id": {
+          "name": "course_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "progress": {
+          "name": "progress",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "completed_items": {
+          "name": "completed_items",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "xp_awarded": {
+          "name": "xp_awarded",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "course_enrollments_course_id_curriculum_courses_id_fk": {
+          "name": "course_enrollments_course_id_curriculum_courses_id_fk",
+          "tableFrom": "course_enrollments",
+          "tableTo": "curriculum_courses",
+          "columnsFrom": [
+            "course_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "course_enrollments_student_id_students_id_fk": {
+          "name": "course_enrollments_student_id_students_id_fk",
+          "tableFrom": "course_enrollments",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.creator_earnings": {
+      "name": "creator_earnings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_id": {
+          "name": "content_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "course_id": {
+          "name": "course_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platform_fee": {
+          "name": "platform_fee",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "net_amount": {
+          "name": "net_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "buyer_email": {
+          "name": "buyer_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_payment_id": {
+          "name": "stripe_payment_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paid_out": {
+          "name": "paid_out",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "paid_out_at": {
+          "name": "paid_out_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "creator_earnings_club_id_clubs_id_fk": {
+          "name": "creator_earnings_club_id_clubs_id_fk",
+          "tableFrom": "creator_earnings",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "creator_earnings_content_id_curriculum_content_id_fk": {
+          "name": "creator_earnings_content_id_curriculum_content_id_fk",
+          "tableFrom": "creator_earnings",
+          "tableTo": "curriculum_content",
+          "columnsFrom": [
+            "content_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "creator_earnings_course_id_curriculum_courses_id_fk": {
+          "name": "creator_earnings_course_id_curriculum_courses_id_fk",
+          "tableFrom": "creator_earnings",
+          "tableTo": "curriculum_courses",
+          "columnsFrom": [
+            "course_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.curriculum_content": {
+      "name": "curriculum_content",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "course_id": {
+          "name": "course_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thumbnail_url": {
+          "name": "thumbnail_url",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content_type": {
+          "name": "content_type",
+          "type": "content_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'video'"
+        },
+        "belt_id": {
+          "name": "belt_id",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duration": {
+          "name": "duration",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "content_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'draft'"
+        },
+        "pricing_type": {
+          "name": "pricing_type",
+          "type": "pricing_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'free'"
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "xp_reward": {
+          "name": "xp_reward",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 10
+        },
+        "order_index": {
+          "name": "order_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "view_count": {
+          "name": "view_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "completion_count": {
+          "name": "completion_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "author_name": {
+          "name": "author_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "publish_at": {
+          "name": "publish_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "requires_video": {
+          "name": "requires_video",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "video_access": {
+          "name": "video_access",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'premium'"
+        },
+        "max_per_week": {
+          "name": "max_per_week",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location_filter": {
+          "name": "location_filter",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'all'"
+        },
+        "class_filter": {
+          "name": "class_filter",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'all'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "curriculum_content_club_id_clubs_id_fk": {
+          "name": "curriculum_content_club_id_clubs_id_fk",
+          "tableFrom": "curriculum_content",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "curriculum_content_course_id_curriculum_courses_id_fk": {
+          "name": "curriculum_content_course_id_curriculum_courses_id_fk",
+          "tableFrom": "curriculum_content",
+          "tableTo": "curriculum_courses",
+          "columnsFrom": [
+            "course_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.curriculum_courses": {
+      "name": "curriculum_courses",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cover_image_url": {
+          "name": "cover_image_url",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "belt_id": {
+          "name": "belt_id",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "status": {
+          "name": "status",
+          "type": "content_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'draft'"
+        },
+        "order_index": {
+          "name": "order_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "xp_reward": {
+          "name": "xp_reward",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 50
+        },
+        "estimated_minutes": {
+          "name": "estimated_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 30
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "curriculum_courses_club_id_clubs_id_fk": {
+          "name": "curriculum_courses_club_id_clubs_id_fk",
+          "tableFrom": "curriculum_courses",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.daily_challenges": {
+      "name": "daily_challenges",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "date": {
+          "name": "date",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_belt": {
+          "name": "target_belt",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "art_type": {
+          "name": "art_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'Taekwondo'"
+        },
+        "language": {
+          "name": "language",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'en'"
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "xp_reward": {
+          "name": "xp_reward",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 25
+        },
+        "type": {
+          "name": "type",
+          "type": "daily_challenge_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'quiz'"
+        },
+        "quiz_data": {
+          "name": "quiz_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_ai": {
+          "name": "created_by_ai",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.discounts": {
+      "name": "discounts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "percent_off": {
+          "name": "percent_off",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration": {
+          "name": "duration",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'once'"
+        },
+        "stripe_coupon_id": {
+          "name": "stripe_coupon_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applied_by": {
+          "name": "applied_by",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "discounts_club_id_clubs_id_fk": {
+          "name": "discounts_club_id_clubs_id_fk",
+          "tableFrom": "discounts",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dojo_inventory": {
+      "name": "dojo_inventory",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_name": {
+          "name": "item_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_type": {
+          "name": "item_type",
+          "type": "dojo_item_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_rarity": {
+          "name": "item_rarity",
+          "type": "dojo_item_rarity",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'COMMON'"
+        },
+        "item_emoji": {
+          "name": "item_emoji",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'🎁'"
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 1
+        },
+        "evolution_points": {
+          "name": "evolution_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dojo_inventory_student_id_students_id_fk": {
+          "name": "dojo_inventory_student_id_students_id_fk",
+          "tableFrom": "dojo_inventory",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.email_log": {
+      "name": "email_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recipient": {
+          "name": "recipient",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_type": {
+          "name": "email_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template_id": {
+          "name": "template_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "email_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'sent'"
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "email_log_club_id_clubs_id_fk": {
+          "name": "email_log_club_id_clubs_id_fk",
+          "tableFrom": "email_log",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "email_log_user_id_users_id_fk": {
+          "name": "email_log_user_id_users_id_fk",
+          "tableFrom": "email_log",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "email_log_student_id_students_id_fk": {
+          "name": "email_log_student_id_students_id_fk",
+          "tableFrom": "email_log",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.family_challenges": {
+      "name": "family_challenges",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description_fr": {
+          "name": "description_fr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description_de": {
+          "name": "description_de",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "icon": {
+          "name": "icon",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'🎯'"
+        },
+        "category": {
+          "name": "category",
+          "type": "family_challenge_category",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "demo_video_url": {
+          "name": "demo_video_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.gauntlet_challenges": {
+      "name": "gauntlet_challenges",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "day_of_week": {
+          "name": "day_of_week",
+          "type": "gauntlet_day",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day_theme": {
+          "name": "day_theme",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description_fr": {
+          "name": "description_fr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description_de": {
+          "name": "description_de",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "icon": {
+          "name": "icon",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'💪'"
+        },
+        "score_type": {
+          "name": "score_type",
+          "type": "gauntlet_score_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "gauntlet_sort_order",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_value": {
+          "name": "target_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.gauntlet_personal_bests": {
+      "name": "gauntlet_personal_bests",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "challenge_id": {
+          "name": "challenge_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "best_score": {
+          "name": "best_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "achieved_at": {
+          "name": "achieved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "has_video_proof": {
+          "name": "has_video_proof",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "gauntlet_personal_bests_challenge_id_gauntlet_challenges_id_fk": {
+          "name": "gauntlet_personal_bests_challenge_id_gauntlet_challenges_id_fk",
+          "tableFrom": "gauntlet_personal_bests",
+          "tableTo": "gauntlet_challenges",
+          "columnsFrom": [
+            "challenge_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "gauntlet_personal_bests_student_id_students_id_fk": {
+          "name": "gauntlet_personal_bests_student_id_students_id_fk",
+          "tableFrom": "gauntlet_personal_bests",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.gauntlet_submissions": {
+      "name": "gauntlet_submissions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "challenge_id": {
+          "name": "challenge_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "proof_type": {
+          "name": "proof_type",
+          "type": "proof_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'TRUST'"
+        },
+        "video_url": {
+          "name": "video_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "xp_awarded": {
+          "name": "xp_awarded",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "global_rank_points": {
+          "name": "global_rank_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "is_personal_best": {
+          "name": "is_personal_best",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "week_number": {
+          "name": "week_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "gauntlet_submissions_challenge_id_gauntlet_challenges_id_fk": {
+          "name": "gauntlet_submissions_challenge_id_gauntlet_challenges_id_fk",
+          "tableFrom": "gauntlet_submissions",
+          "tableTo": "gauntlet_challenges",
+          "columnsFrom": [
+            "challenge_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "gauntlet_submissions_student_id_students_id_fk": {
+          "name": "gauntlet_submissions_student_id_students_id_fk",
+          "tableFrom": "gauntlet_submissions",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.grading_sessions": {
+      "name": "grading_sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "class_name": {
+          "name": "class_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "class_date": {
+          "name": "class_date",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coach_name": {
+          "name": "coach_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scores": {
+          "name": "scores",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skills": {
+          "name": "skills",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "homework_points": {
+          "name": "homework_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "bonus_points": {
+          "name": "bonus_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "total_points": {
+          "name": "total_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "green_count": {
+          "name": "green_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "yellow_count": {
+          "name": "yellow_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "red_count": {
+          "name": "red_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "total_skills": {
+          "name": "total_skills",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "coach_note": {
+          "name": "coach_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_progress": {
+          "name": "stripe_progress",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_xp": {
+          "name": "session_xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "grading_sessions_club_id_clubs_id_fk": {
+          "name": "grading_sessions_club_id_clubs_id_fk",
+          "tableFrom": "grading_sessions",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "grading_sessions_student_id_students_id_fk": {
+          "name": "grading_sessions_student_id_students_id_fk",
+          "tableFrom": "grading_sessions",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.habit_logs": {
+      "name": "habit_logs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "habit_name": {
+          "name": "habit_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "xp_awarded": {
+          "name": "xp_awarded",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 10
+        },
+        "log_date": {
+          "name": "log_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "habit_logs_student_id_students_id_fk": {
+          "name": "habit_logs_student_id_students_id_fk",
+          "tableFrom": "habit_logs",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mrr_goals": {
+      "name": "mrr_goals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "month": {
+          "name": "month",
+          "type": "varchar(7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_mrr": {
+          "name": "target_mrr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.onboarding_progress": {
+      "name": "onboarding_progress",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "step1_club_info": {
+          "name": "step1_club_info",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "step1_completed_at": {
+          "name": "step1_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "step2_belt_system": {
+          "name": "step2_belt_system",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "step2_completed_at": {
+          "name": "step2_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "step3_skills": {
+          "name": "step3_skills",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "step3_completed_at": {
+          "name": "step3_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "step4_scoring": {
+          "name": "step4_scoring",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "step4_completed_at": {
+          "name": "step4_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "step5_people": {
+          "name": "step5_people",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "step5_completed_at": {
+          "name": "step5_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "step6_branding": {
+          "name": "step6_branding",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "step6_completed_at": {
+          "name": "step6_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wizard_completed": {
+          "name": "wizard_completed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "wizard_completed_at": {
+          "name": "wizard_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_active_step": {
+          "name": "last_active_step",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 1
+        },
+        "total_time_spent_seconds": {
+          "name": "total_time_spent_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "onboarding_progress_club_id_clubs_id_fk": {
+          "name": "onboarding_progress_club_id_clubs_id_fk",
+          "tableFrom": "onboarding_progress",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "onboarding_progress_club_id_unique": {
+          "name": "onboarding_progress_club_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "club_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.payment_recovery_attempts": {
+      "name": "payment_recovery_attempts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_id": {
+          "name": "payment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_invoice_id": {
+          "name": "stripe_invoice_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempt_number": {
+          "name": "attempt_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 1
+        },
+        "email_sent": {
+          "name": "email_sent",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "email_sent_at": {
+          "name": "email_sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recovered": {
+          "name": "recovered",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "recovered_at": {
+          "name": "recovered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recovered_amount": {
+          "name": "recovered_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "payment_recovery_attempts_club_id_clubs_id_fk": {
+          "name": "payment_recovery_attempts_club_id_clubs_id_fk",
+          "tableFrom": "payment_recovery_attempts",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payment_recovery_attempts_payment_id_payments_id_fk": {
+          "name": "payment_recovery_attempts_payment_id_payments_id_fk",
+          "tableFrom": "payment_recovery_attempts",
+          "tableTo": "payments",
+          "columnsFrom": [
+            "payment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.payments": {
+      "name": "payments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stripe_invoice_id": {
+          "name": "stripe_invoice_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_payment_intent_id": {
+          "name": "stripe_payment_intent_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'usd'"
+        },
+        "status": {
+          "name": "status",
+          "type": "payment_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'open'"
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period_start": {
+          "name": "period_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "payments_club_id_clubs_id_fk": {
+          "name": "payments_club_id_clubs_id_fk",
+          "tableFrom": "payments",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.promotions": {
+      "name": "promotions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_belt": {
+          "name": "from_belt",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_belt": {
+          "name": "to_belt",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "promotion_date": {
+          "name": "promotion_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "total_xp": {
+          "name": "total_xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "classes_attended": {
+          "name": "classes_attended",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "months_trained": {
+          "name": "months_trained",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "email_sent_at": {
+          "name": "email_sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "promotions_club_id_clubs_id_fk": {
+          "name": "promotions_club_id_clubs_id_fk",
+          "tableFrom": "promotions",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "promotions_student_id_students_id_fk": {
+          "name": "promotions_student_id_students_id_fk",
+          "tableFrom": "promotions",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.schedule_classes": {
+      "name": "schedule_classes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coach_id": {
+          "name": "coach_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "class_name": {
+          "name": "class_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coach_name": {
+          "name": "coach_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'General'"
+        },
+        "color": {
+          "name": "color",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'sky'"
+        },
+        "day_of_week": {
+          "name": "day_of_week",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_time": {
+          "name": "start_time",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_time": {
+          "name": "end_time",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_capacity": {
+          "name": "max_capacity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 20
+        },
+        "location": {
+          "name": "location",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "belt_requirement": {
+          "name": "belt_requirement",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'All'"
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "schedule_classes_club_id_clubs_id_fk": {
+          "name": "schedule_classes_club_id_clubs_id_fk",
+          "tableFrom": "schedule_classes",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_classes_coach_id_coaches_id_fk": {
+          "name": "schedule_classes_coach_id_coaches_id_fk",
+          "tableFrom": "schedule_classes",
+          "tableTo": "coaches",
+          "columnsFrom": [
+            "coach_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.schedule_events": {
+      "name": "schedule_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'social'"
+        },
+        "date": {
+          "name": "date",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "time": {
+          "name": "time",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "schedule_events_club_id_clubs_id_fk": {
+          "name": "schedule_events_club_id_clubs_id_fk",
+          "tableFrom": "schedule_events",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.schedule_private_slots": {
+      "name": "schedule_private_slots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coach_id": {
+          "name": "coach_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coach_name": {
+          "name": "coach_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "time": {
+          "name": "time",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 50
+        },
+        "is_booked": {
+          "name": "is_booked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "booked_by_student_id": {
+          "name": "booked_by_student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "schedule_private_slots_club_id_clubs_id_fk": {
+          "name": "schedule_private_slots_club_id_clubs_id_fk",
+          "tableFrom": "schedule_private_slots",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_private_slots_coach_id_coaches_id_fk": {
+          "name": "schedule_private_slots_coach_id_coaches_id_fk",
+          "tableFrom": "schedule_private_slots",
+          "tableTo": "coaches",
+          "columnsFrom": [
+            "coach_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "schedule_private_slots_booked_by_student_id_students_id_fk": {
+          "name": "schedule_private_slots_booked_by_student_id_students_id_fk",
+          "tableFrom": "schedule_private_slots",
+          "tableTo": "students",
+          "columnsFrom": [
+            "booked_by_student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_transfers": {
+      "name": "student_transfers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_club_id": {
+          "name": "from_club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_club_id": {
+          "name": "to_club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "transfer_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'pending'"
+        },
+        "requested_at": {
+          "name": "requested_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "responded_at": {
+          "name": "responded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transferred_at": {
+          "name": "transferred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "belt_at_transfer": {
+          "name": "belt_at_transfer",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "xp_at_transfer": {
+          "name": "xp_at_transfer",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_transfers_student_id_students_id_fk": {
+          "name": "student_transfers_student_id_students_id_fk",
+          "tableFrom": "student_transfers",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "student_transfers_from_club_id_clubs_id_fk": {
+          "name": "student_transfers_from_club_id_clubs_id_fk",
+          "tableFrom": "student_transfers",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "from_club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "student_transfers_to_club_id_clubs_id_fk": {
+          "name": "student_transfers_to_club_id_clubs_id_fk",
+          "tableFrom": "student_transfers",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "to_club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.students": {
+      "name": "students",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mytaek_id": {
+          "name": "mytaek_id",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_email": {
+          "name": "parent_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_name": {
+          "name": "parent_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_phone": {
+          "name": "parent_phone",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assigned_class": {
+          "name": "assigned_class",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "belt": {
+          "name": "belt",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'White'"
+        },
+        "stripes": {
+          "name": "stripes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "birthdate": {
+          "name": "birthdate",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "join_date": {
+          "name": "join_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "last_class_at": {
+          "name": "last_class_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_stripe_points": {
+          "name": "current_stripe_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "lifetime_xp": {
+          "name": "lifetime_xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "global_xp": {
+          "name": "global_xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "world_rank": {
+          "name": "world_rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previous_world_rank": {
+          "name": "previous_world_rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "premium_status": {
+          "name": "premium_status",
+          "type": "premium_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'none'"
+        },
+        "premium_gifted": {
+          "name": "premium_gifted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "premium_started_at": {
+          "name": "premium_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "premium_canceled_at": {
+          "name": "premium_canceled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_customer_id": {
+          "name": "stripe_customer_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dojo_inventory": {
+          "name": "dojo_inventory",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
+        },
+        "dojo_monster": {
+          "name": "dojo_monster",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{\"stage\":\"egg\",\"evolutionPoints\":0,\"name\":\"My Monster\"}'::jsonb"
+        },
+        "trust_tier": {
+          "name": "trust_tier",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'unverified'"
+        },
+        "video_approval_streak": {
+          "name": "video_approval_streak",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "video_rejection_count": {
+          "name": "video_rejection_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "last_spot_check_at": {
+          "name": "last_spot_check_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_demo": {
+          "name": "is_demo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "profile_image_url": {
+          "name": "profile_image_url",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "students_club_id_clubs_id_fk": {
+          "name": "students_club_id_clubs_id_fk",
+          "tableFrom": "students",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "students_mytaek_id_unique": {
+          "name": "students_mytaek_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "mytaek_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.subscriptions": {
+      "name": "subscriptions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stripe_subscription_id": {
+          "name": "stripe_subscription_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_price_id": {
+          "name": "stripe_price_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "subscription_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'trialing'"
+        },
+        "current_period_start": {
+          "name": "current_period_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_period_end": {
+          "name": "current_period_end",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancel_at": {
+          "name": "cancel_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "canceled_at": {
+          "name": "canceled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trial_start": {
+          "name": "trial_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trial_end": {
+          "name": "trial_end",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "plan_name": {
+          "name": "plan_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "monthly_amount": {
+          "name": "monthly_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "subscriptions_club_id_clubs_id_fk": {
+          "name": "subscriptions_club_id_clubs_id_fk",
+          "tableFrom": "subscriptions",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.support_sessions": {
+      "name": "support_sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "super_admin_id": {
+          "name": "super_admin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_user_id": {
+          "name": "target_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_club_id": {
+          "name": "target_club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token": {
+          "name": "token",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip": {
+          "name": "ip",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "was_used": {
+          "name": "was_used",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "support_sessions_super_admin_id_users_id_fk": {
+          "name": "support_sessions_super_admin_id_users_id_fk",
+          "tableFrom": "support_sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "super_admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "support_sessions_target_user_id_users_id_fk": {
+          "name": "support_sessions_target_user_id_users_id_fk",
+          "tableFrom": "support_sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "target_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "support_sessions_target_club_id_clubs_id_fk": {
+          "name": "support_sessions_target_club_id_clubs_id_fk",
+          "tableFrom": "support_sessions",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "target_club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "support_sessions_token_unique": {
+          "name": "support_sessions_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trial_extensions": {
+      "name": "trial_extensions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "days_added": {
+          "name": "days_added",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 7
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extended_by": {
+          "name": "extended_by",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previous_trial_end": {
+          "name": "previous_trial_end",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "new_trial_end": {
+          "name": "new_trial_end",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "trial_extensions_club_id_clubs_id_fk": {
+          "name": "trial_extensions_club_id_clubs_id_fk",
+          "tableFrom": "trial_extensions",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_custom_habits": {
+      "name": "user_custom_habits",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "icon": {
+          "name": "icon",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'✨'"
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_custom_habits_student_id_students_id_fk": {
+          "name": "user_custom_habits_student_id_students_id_fk",
+          "tableFrom": "user_custom_habits",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "club_id": {
+          "name": "club_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "user_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'owner'"
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temp_password": {
+          "name": "temp_password",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mfa_secret": {
+          "name": "mfa_secret",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reset_token": {
+          "name": "reset_token",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reset_token_expires_at": {
+          "name": "reset_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "last_login_at": {
+          "name": "last_login_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "users_club_id_clubs_id_fk": {
+          "name": "users_club_id_clubs_id_fk",
+          "tableFrom": "users",
+          "tableTo": "clubs",
+          "columnsFrom": [
+            "club_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.world_rankings": {
+      "name": "world_rankings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "world_ranking_entity_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sport": {
+          "name": "sport",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country": {
+          "name": "country",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rank": {
+          "name": "rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "previous_rank": {
+          "name": "previous_rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "period": {
+          "name": "period",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'weekly'"
+        },
+        "snapshot_at": {
+          "name": "snapshot_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.xp_transactions": {
+      "name": "xp_transactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "xp_transaction_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "xp_transactions_student_id_students_id_fk": {
+          "name": "xp_transactions_student_id_students_id_fk",
+          "tableFrom": "xp_transactions",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.arena_category": {
+      "name": "arena_category",
+      "schema": "public",
+      "values": [
+        "POWER",
+        "TECHNIQUE",
+        "FLEXIBILITY"
+      ]
+    },
+    "public.automated_email_trigger": {
+      "name": "automated_email_trigger",
+      "schema": "public",
+      "values": [
+        "welcome",
+        "day_3_checkin",
+        "day_7_mid_trial",
+        "trial_ending_soon",
+        "trial_expired",
+        "win_back",
+        "churn_risk",
+        "parent_welcome",
+        "birthday_wish",
+        "belt_promotion",
+        "attendance_alert",
+        "coach_invite",
+        "new_student_added"
+      ]
+    },
+    "public.automation_rule_type": {
+      "name": "automation_rule_type",
+      "schema": "public",
+      "values": [
+        "health_score_email",
+        "trial_reminder",
+        "payment_dunning",
+        "churn_alert",
+        "conversion_alert",
+        "signup_alert"
+      ]
+    },
+    "public.challenge_category_type": {
+      "name": "challenge_category_type",
+      "schema": "public",
+      "values": [
+        "coach_pick",
+        "general"
+      ]
+    },
+    "public.challenge_difficulty": {
+      "name": "challenge_difficulty",
+      "schema": "public",
+      "values": [
+        "EASY",
+        "MEDIUM",
+        "HARD",
+        "EPIC"
+      ]
+    },
+    "public.challenge_mode": {
+      "name": "challenge_mode",
+      "schema": "public",
+      "values": [
+        "SOLO",
+        "PVP"
+      ]
+    },
+    "public.challenge_status": {
+      "name": "challenge_status",
+      "schema": "public",
+      "values": [
+        "PENDING",
+        "PENDING_OPPONENT",
+        "ACTIVE",
+        "COMPLETED",
+        "VERIFIED",
+        "REJECTED"
+      ]
+    },
+    "public.churn_reason_category": {
+      "name": "churn_reason_category",
+      "schema": "public",
+      "values": [
+        "too_expensive",
+        "missing_features",
+        "switched_competitor",
+        "closed_business",
+        "not_enough_time",
+        "technical_issues",
+        "poor_support",
+        "other"
+      ]
+    },
+    "public.club_status": {
+      "name": "club_status",
+      "schema": "public",
+      "values": [
+        "active",
+        "churned",
+        "paused"
+      ]
+    },
+    "public.content_status": {
+      "name": "content_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "live",
+        "archived"
+      ]
+    },
+    "public.content_type": {
+      "name": "content_type",
+      "schema": "public",
+      "values": [
+        "video",
+        "document",
+        "quiz"
+      ]
+    },
+    "public.daily_challenge_type": {
+      "name": "daily_challenge_type",
+      "schema": "public",
+      "values": [
+        "quiz",
+        "photo",
+        "text"
+      ]
+    },
+    "public.difficulty_tier": {
+      "name": "difficulty_tier",
+      "schema": "public",
+      "values": [
+        "EASY",
+        "MEDIUM",
+        "HARD"
+      ]
+    },
+    "public.dojo_item_rarity": {
+      "name": "dojo_item_rarity",
+      "schema": "public",
+      "values": [
+        "COMMON",
+        "RARE",
+        "EPIC",
+        "LEGENDARY"
+      ]
+    },
+    "public.dojo_item_type": {
+      "name": "dojo_item_type",
+      "schema": "public",
+      "values": [
+        "FOOD",
+        "DECORATION"
+      ]
+    },
+    "public.email_status": {
+      "name": "email_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "sent",
+        "delivered",
+        "bounced",
+        "failed",
+        "skipped"
+      ]
+    },
+    "public.family_challenge_category": {
+      "name": "family_challenge_category",
+      "schema": "public",
+      "values": [
+        "Strength",
+        "Speed",
+        "Focus"
+      ]
+    },
+    "public.gauntlet_day": {
+      "name": "gauntlet_day",
+      "schema": "public",
+      "values": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "public.gauntlet_score_type": {
+      "name": "gauntlet_score_type",
+      "schema": "public",
+      "values": [
+        "REPS",
+        "TIME",
+        "DISTANCE",
+        "COUNT",
+        "SETS"
+      ]
+    },
+    "public.gauntlet_sort_order": {
+      "name": "gauntlet_sort_order",
+      "schema": "public",
+      "values": [
+        "ASC",
+        "DESC"
+      ]
+    },
+    "public.payment_status": {
+      "name": "payment_status",
+      "schema": "public",
+      "values": [
+        "paid",
+        "open",
+        "unpaid",
+        "void",
+        "failed"
+      ]
+    },
+    "public.premium_status": {
+      "name": "premium_status",
+      "schema": "public",
+      "values": [
+        "none",
+        "club_sponsored",
+        "parent_paid"
+      ]
+    },
+    "public.pricing_type": {
+      "name": "pricing_type",
+      "schema": "public",
+      "values": [
+        "free",
+        "premium",
+        "course_only"
+      ]
+    },
+    "public.proof_type": {
+      "name": "proof_type",
+      "schema": "public",
+      "values": [
+        "TRUST",
+        "VIDEO"
+      ]
+    },
+    "public.subscription_status": {
+      "name": "subscription_status",
+      "schema": "public",
+      "values": [
+        "trialing",
+        "active",
+        "past_due",
+        "canceled",
+        "incomplete"
+      ]
+    },
+    "public.transfer_status": {
+      "name": "transfer_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "approved",
+        "rejected",
+        "cancelled"
+      ]
+    },
+    "public.trial_status": {
+      "name": "trial_status",
+      "schema": "public",
+      "values": [
+        "active",
+        "expired",
+        "converted"
+      ]
+    },
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": [
+        "owner",
+        "coach",
+        "parent",
+        "super_admin"
+      ]
+    },
+    "public.video_status": {
+      "name": "video_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
+    "public.world_ranking_entity_type": {
+      "name": "world_ranking_entity_type",
+      "schema": "public",
+      "values": [
+        "student",
+        "club",
+        "coach"
+      ]
+    },
+    "public.xp_transaction_type": {
+      "name": "xp_transaction_type",
+      "schema": "public",
+      "values": [
+        "SPEND",
+        "EARN",
+        "REFUND"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
