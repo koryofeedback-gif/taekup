@@ -48,6 +48,8 @@ export const SuperAdminBroadcast: React.FC<SuperAdminBroadcastProps> = ({ token,
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
 
+  const fetchIdRef = React.useRef(0);
+
   const buildParams = useCallback(() => {
     const p = new URLSearchParams({ userType });
     if (userType === 'club_owners') { p.set('plan', planFilter); p.set('art', artFilter); }
@@ -57,22 +59,25 @@ export const SuperAdminBroadcast: React.FC<SuperAdminBroadcastProps> = ({ token,
   }, [userType, planFilter, premiumFilter, artFilter]);
 
   const fetchAudience = useCallback(async () => {
+    const id = ++fetchIdRef.current;
     setLoadingAudience(true);
     setAudience(null);
     try {
       const res = await fetch(`/api/super-admin/broadcast/audience?${buildParams()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (fetchIdRef.current !== id) return;
       const data = await res.json();
+      if (fetchIdRef.current !== id) return;
       if (res.ok && typeof data?.count === 'number') {
         setAudience(data);
       } else {
         setAudience({ count: 0, sample: [] });
       }
     } catch {
-      setAudience({ count: 0, sample: [] });
+      if (fetchIdRef.current === id) setAudience({ count: 0, sample: [] });
     } finally {
-      setLoadingAudience(false);
+      if (fetchIdRef.current === id) setLoadingAudience(false);
     }
   }, [buildParams, token]);
 
