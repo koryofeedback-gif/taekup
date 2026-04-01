@@ -64,7 +64,11 @@ export const SuperAdminBroadcast: React.FC<SuperAdminBroadcastProps> = ({ token,
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      setAudience(data);
+      if (res.ok && typeof data?.count === 'number') {
+        setAudience(data);
+      } else {
+        setAudience({ count: 0, sample: [] });
+      }
     } catch {
       setAudience({ count: 0, sample: [] });
     } finally {
@@ -247,10 +251,10 @@ export const SuperAdminBroadcast: React.FC<SuperAdminBroadcastProps> = ({ token,
                   ) : audience ? (
                     <>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-black text-white">{audience.count.toLocaleString()}</span>
+                        <span className="text-3xl font-black text-white">{(audience.count ?? 0).toLocaleString()}</span>
                         <span className="text-sm text-gray-400">recipients</span>
                       </div>
-                      {audience.sample.length > 0 && (
+                      {(audience.sample?.length ?? 0) > 0 && (
                         <div className="mt-3">
                           <button
                             onClick={() => setShowPreview(!showPreview)}
