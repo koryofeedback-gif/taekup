@@ -20,6 +20,7 @@ import { SuperAdminDashboardRoute, SuperAdminClubsRoute, SuperAdminParentsRoute,
 import { TrialBanner } from './components/TrialBanner';
 import { ImpersonationBanner, isImpersonating } from './components/ImpersonationBanner';
 import { TermsPage, PrivacyPage, ContactPage, SupportPage } from './components/LegalPages';
+import { UnsubscribePage } from './components/UnsubscribePage';
 import {
     getOnboardingMessage,
 } from './services/geminiService';
@@ -1343,6 +1344,9 @@ const AppContent: React.FC<AppContentProps> = ({
 
                     {/* Awakening Ritual redirect to main page */}
                     <Route path="/awakening" element={<Navigate to="/" replace />} />
+
+                    {/* Unsubscribe */}
+                    <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
                     {/* Legal Pages */}
                     <Route path="/terms" element={<TermsPage />} />

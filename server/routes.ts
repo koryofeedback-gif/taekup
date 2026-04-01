@@ -7421,4 +7421,66 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to clear demo data' });
     }
   });
+
+  // =====================================================
+  // EMAIL UNSUBSCRIBE
+  // =====================================================
+  app.get('/api/unsubscribe/status', async (req: Request, res: Response) => {
+    try {
+      const email = (req.query.email as string || '').toLowerCase().trim();
+      if (!email) return res.status(400).json({ error: 'email required' });
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS email_unsubscribes (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+      const result = await db.execute(sql`
+        SELECT 1 FROM email_unsubscribes WHERE email = ${email} LIMIT 1
+      `);
+      return res.json({ unsubscribed: (result as any[]).length > 0 });
+    } catch (err: any) {
+      console.error('[Unsubscribe] Status error:', err.message);
+      return res.status(500).json({ error: 'Internal error' });
+    }
+  });
+
+  app.post('/api/unsubscribe', async (req: Request, res: Response) => {
+    try {
+      const email = (req.body.email || '').toLowerCase().trim();
+      if (!email) return res.status(400).json({ error: 'email required' });
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS email_unsubscribes (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+      await db.execute(sql`
+        INSERT INTO email_unsubscribes (email) VALUES (${email})
+        ON CONFLICT (email) DO NOTHING
+      `);
+      console.log(`[Unsubscribe] ${email} unsubscribed`);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error('[Unsubscribe] Error:', err.message);
+      return res.status(500).json({ error: 'Internal error' });
+    }
+  });
+
+  app.delete('/api/unsubscribe', async (req: Request, res: Response) => {
+    try {
+      const email = (req.body.email || '').toLowerCase().trim();
+      if (!email) return res.status(400).json({ error: 'email required' });
+      await db.execute(sql`
+        DELETE FROM email_unsubscribes WHERE email = ${email}
+      `);
+      console.log(`[Unsubscribe] ${email} re-subscribed`);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error('[Unsubscribe] Re-subscribe error:', err.message);
+      return res.status(500).json({ error: 'Internal error' });
+    }
+  });
 }

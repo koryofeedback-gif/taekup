@@ -48,6 +48,13 @@ async function ensureSchema() {
       ALTER TABLE access_requests ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'en';
       ALTER TABLE attendance_events ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT false;
     `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_unsubscribes (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
     // Ensure unique constraint on onboarding_progress.club_id so ON CONFLICT (club_id) works
     await client.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS onboarding_progress_club_id_unique
@@ -9142,6 +9149,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     const transferActionMatch = path.match(/^\/transfers\/([^/]+)\/?$/);
     if (transferActionMatch && req.method === 'PATCH') return await handleTransferAction(req, res, transferActionMatch[1]);
+
+    // Email Unsubscribe
+    if ((path === '/unsubscribe/status' || path === '/unsubscribe/status/') && req.method === 'GET') {
+      const email = ((req.query?.email as string) || '').toLowerCase().trim();
+      if (!email) return res.status(400).json({ error: 'email required' });
+      const uc = await pool.connect();
+      try {
+        const result = await uc.query(
+          `SELECT 1 FROM email_unsubscribes WHERE email = $1 LIMIT 1`,
+          [email]
+        );
+        return res.json({ unsubscribed: result.rows.length > 0 });
+      } finally { uc.release(); }
+    }
+    if ((path === '/unsubscribe' || path === '/unsubscribe/') && req.method === 'POST') {
+      const email = ((req.body?.email) || '').toLowerCase().trim();
+      if (!email) return res.status(400).json({ error: 'email required' });
+      const uc = await pool.connect();
+      try {
+        await uc.query(
+          `INSERT INTO email_unsubscribes (email) VALUES ($1) ON CONFLICT (email) DO NOTHING`,
+          [email]
+        );
+        console.log(`[Unsubscribe] ${email} unsubscribed`);
+        return res.json({ success: true });
+      } finally { uc.release(); }
+    }
+    if ((path === '/unsubscribe' || path === '/unsubscribe/') && req.method === 'DELETE') {
+      const email = ((req.body?.email) || '').toLowerCase().trim();
+      if (!email) return res.status(400).json({ error: 'email required' });
+      const uc = await pool.connect();
+      try {
+        await uc.query(`DELETE FROM email_unsubscribes WHERE email = $1`, [email]);
+        console.log(`[Unsubscribe] ${email} re-subscribed`);
+        return res.json({ success: true });
+      } finally { uc.release(); }
+    }
 
     return res.status(404).json({ error: 'Not found', path });
   } catch (error: any) {

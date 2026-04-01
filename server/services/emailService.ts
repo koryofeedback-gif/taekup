@@ -326,7 +326,7 @@ function getSenderForEmailType(emailType: string): SenderType {
 const BASE_URL = process.env.APP_URL || 'https://app.mytaek.com';
 
 const commonLinks = {
-  unsubscribeUrl: `${BASE_URL}/email-preferences`,
+  unsubscribeUrl: `${BASE_URL}/unsubscribe`,
   privacyUrl: `${BASE_URL}/privacy`,
   dashboardUrl: `${BASE_URL}/dashboard`,
   loginUrl: `${BASE_URL}/login`,
