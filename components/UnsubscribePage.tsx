@@ -60,13 +60,13 @@ export const UnsubscribePage: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors">
+          <Link to="/" className="inline-flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">Back to MyTaek</span>
           </Link>
           <div className="mt-6">
             <div className="text-2xl font-black tracking-tight text-white">
-              My<span className="text-cyan-400">Taek</span>
+              My<span className="text-red-500">Taek</span>
             </div>
             <p className="text-gray-500 text-xs mt-1">Email Preferences</p>
           </div>
