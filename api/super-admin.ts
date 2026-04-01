@@ -2862,6 +2862,131 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
     
+    // Broadcast audience
+    if ((path === '/broadcast/audience' || path === 'broadcast/audience') && req.method === 'GET') {
+      const auth = await verifySuperAdminToken(req);
+      if (!auth.valid) return res.status(401).json({ error: 'Unauthorized' });
+      const db = getDb();
+      const userType = (req.query.userType as string) || 'club_owners';
+      const planFilter = (req.query.plan as string) || 'all';
+      const premiumFilter = (req.query.premium as string) || 'all';
+      const artFilter = (req.query.art as string) || 'all';
+      const hasArt = artFilter && artFilter !== 'all';
+      try {
+        let rows: any[];
+        if (userType === 'club_owners') {
+          if (planFilter === 'trial' && hasArt) {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'active' AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (planFilter === 'trial') {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'active' AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (planFilter === 'paying' && hasArt) {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'converted' AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (planFilter === 'paying') {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'converted' AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (hasArt) {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          }
+        } else if (userType === 'coaches') {
+          if (hasArt) {
+            rows = await db`SELECT DISTINCT co.email, co.name FROM coaches co JOIN clubs cl ON co.club_id = cl.id WHERE co.email IS NOT NULL AND co.is_active = true AND cl.art_type ILIKE ${artFilter} AND co.email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else {
+            rows = await db`SELECT DISTINCT co.email, co.name FROM coaches co WHERE co.email IS NOT NULL AND co.is_active = true AND co.email NOT IN (SELECT email FROM email_unsubscribes)`;
+          }
+        } else {
+          if (premiumFilter === 'premium') {
+            rows = await db`SELECT DISTINCT parent_email as email, parent_name as name FROM students WHERE parent_email IS NOT NULL AND premium_status IN ('parent_paid', 'club_sponsored') AND parent_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (premiumFilter === 'free') {
+            rows = await db`SELECT DISTINCT parent_email as email, parent_name as name FROM students WHERE parent_email IS NOT NULL AND (premium_status = 'none' OR premium_status IS NULL) AND parent_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else {
+            rows = await db`SELECT DISTINCT parent_email as email, parent_name as name FROM students WHERE parent_email IS NOT NULL AND parent_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          }
+        }
+        const count = rows.length;
+        const sample = rows.slice(0, 20).map((r: any) => ({ email: r.email || '', name: r.name || '' }));
+        console.log(`[Broadcast] Audience: userType=${userType} count=${count}`);
+        return res.json({ count, sample });
+      } catch (err: any) {
+        console.error('[Broadcast] Audience error:', err.message);
+        return res.status(500).json({ error: 'Failed to query audience' });
+      }
+    }
+
+    // Broadcast send
+    if ((path === '/broadcast/send' || path === 'broadcast/send') && req.method === 'POST') {
+      const auth = await verifySuperAdminToken(req);
+      if (!auth.valid) return res.status(401).json({ error: 'Unauthorized' });
+      const db = getDb();
+      const { userType = 'club_owners', planFilter = 'all', premiumFilter = 'all', artFilter = 'all', subject, body, fromName = 'MyTaek Team' } = req.body || {};
+      if (!subject || !body) return res.status(400).json({ error: 'subject and body required' });
+      const hasArt = artFilter && artFilter !== 'all';
+      try {
+        let rows: any[];
+        if (userType === 'club_owners') {
+          if (planFilter === 'trial' && hasArt) {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'active' AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (planFilter === 'trial') {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'active' AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (planFilter === 'paying' && hasArt) {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'converted' AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (planFilter === 'paying') {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND trial_status = 'converted' AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (hasArt) {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND art_type ILIKE ${artFilter} AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else {
+            rows = await db`SELECT DISTINCT owner_email as email, COALESCE(owner_name, name) as name FROM clubs WHERE owner_email IS NOT NULL AND owner_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          }
+        } else if (userType === 'coaches') {
+          if (hasArt) {
+            rows = await db`SELECT DISTINCT co.email, co.name FROM coaches co JOIN clubs cl ON co.club_id = cl.id WHERE co.email IS NOT NULL AND co.is_active = true AND cl.art_type ILIKE ${artFilter} AND co.email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else {
+            rows = await db`SELECT DISTINCT co.email, co.name FROM coaches co WHERE co.email IS NOT NULL AND co.is_active = true AND co.email NOT IN (SELECT email FROM email_unsubscribes)`;
+          }
+        } else {
+          if (premiumFilter === 'premium') {
+            rows = await db`SELECT DISTINCT parent_email as email, parent_name as name FROM students WHERE parent_email IS NOT NULL AND premium_status IN ('parent_paid', 'club_sponsored') AND parent_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else if (premiumFilter === 'free') {
+            rows = await db`SELECT DISTINCT parent_email as email, parent_name as name FROM students WHERE parent_email IS NOT NULL AND (premium_status = 'none' OR premium_status IS NULL) AND parent_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          } else {
+            rows = await db`SELECT DISTINCT parent_email as email, parent_name as name FROM students WHERE parent_email IS NOT NULL AND parent_email NOT IN (SELECT email FROM email_unsubscribes)`;
+          }
+        }
+        if (rows.length === 0) return res.json({ sent: 0, skipped: 0, errors: 0, batches: 0 });
+
+        const sg = await getUncachableSendGridClient();
+        if (!sg) return res.status(500).json({ error: 'SendGrid not configured' });
+
+        const footer = `<br><br><hr style="border:none;border-top:1px solid #374151;margin:24px 0"><p style="font-size:11px;color:#6b7280;text-align:center">You receive this email because you use MyTaek. <a href="https://app.mytaek.com/unsubscribe" style="color:#9ca3af">Unsubscribe</a> | <a href="https://app.mytaek.com/privacy" style="color:#9ca3af">Privacy</a><br>© ${new Date().getFullYear()} MyTaek Inc.</p>`;
+        const BATCH = 1000;
+        let sent = 0, errors = 0, batches = 0;
+
+        for (let i = 0; i < rows.length; i += BATCH) {
+          const chunk = rows.slice(i, i + BATCH);
+          try {
+            await sg.client.send({
+              personalizations: chunk.map((r: any) => ({ to: [{ email: r.email, name: r.name || '' }] })),
+              from: { email: sg.fromEmail, name: fromName },
+              subject,
+              html: body + footer,
+              text: body.replace(/<[^>]*>/g, ''),
+            } as any);
+            sent += chunk.length; batches++;
+          } catch (e: any) {
+            console.error('[Broadcast] Batch error:', e?.response?.body || e.message);
+            errors += chunk.length;
+          }
+          if (i + BATCH < rows.length) await new Promise(r => setTimeout(r, 500));
+        }
+
+        console.log(`[Broadcast] Done: sent=${sent} errors=${errors} batches=${batches}`);
+        return res.json({ sent, skipped: 0, errors, batches });
+      } catch (err: any) {
+        console.error('[Broadcast] Send error:', err.message);
+        return res.status(500).json({ error: err.message || 'Send failed' });
+      }
+    }
+
     return res.status(404).json({ error: 'Route not found', path, url, queryPath });
   } catch (error: any) {
     console.error('[SuperAdmin API] Error:', error);
