@@ -1983,5 +1983,101 @@ router.post('/access-requests/:id/reject', verifySuperAdmin, async (req: Request
   }
 });
 
+// =====================================================
+// EMAIL BROADCAST
+// =====================================================
+
+async function buildBroadcastAudience(userType: string, planFilter: string, premiumFilter: string, artFilter: string): Promise<{ email: string; name: string }[]> {
+  const hasArt = artFilter && artFilter !== 'all';
+
+  if (userType === 'club_owners') {
+    if (planFilter === 'trial' && hasArt) {
+      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'active' AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else if (planFilter === 'trial') {
+      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'active' AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else if (planFilter === 'paying' && hasArt) {
+      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'converted' AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else if (planFilter === 'paying') {
+      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.trial_status = 'converted' AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else if (hasArt) {
+      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.art_type ILIKE ${artFilter} AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else {
+      return (await db.execute(sql`SELECT DISTINCT c.owner_email as email, COALESCE(c.owner_name, c.name) as name FROM clubs c WHERE c.owner_email IS NOT NULL AND c.owner_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    }
+  } else if (userType === 'coaches') {
+    if (hasArt) {
+      return (await db.execute(sql`SELECT DISTINCT co.email, co.name FROM coaches co JOIN clubs cl ON co.club_id = cl.id WHERE co.email IS NOT NULL AND co.is_active = true AND cl.art_type ILIKE ${artFilter} AND co.email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else {
+      return (await db.execute(sql`SELECT DISTINCT co.email, co.name FROM coaches co WHERE co.email IS NOT NULL AND co.is_active = true AND co.email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    }
+  } else {
+    if (premiumFilter === 'premium') {
+      return (await db.execute(sql`SELECT DISTINCT s.parent_email as email, s.parent_name as name FROM students s WHERE s.parent_email IS NOT NULL AND s.premium_status IN ('parent_paid', 'club_sponsored') AND s.parent_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else if (premiumFilter === 'free') {
+      return (await db.execute(sql`SELECT DISTINCT s.parent_email as email, s.parent_name as name FROM students s WHERE s.parent_email IS NOT NULL AND (s.premium_status = 'none' OR s.premium_status IS NULL) AND s.parent_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    } else {
+      return (await db.execute(sql`SELECT DISTINCT s.parent_email as email, s.parent_name as name FROM students s WHERE s.parent_email IS NOT NULL AND s.parent_email NOT IN (SELECT email FROM email_unsubscribes)`)) as any[];
+    }
+  }
+}
+
+router.get('/broadcast/audience', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const userType = (req.query.userType as string) || 'club_owners';
+    const planFilter = (req.query.plan as string) || 'all';
+    const premiumFilter = (req.query.premium as string) || 'all';
+    const artFilter = (req.query.art as string) || 'all';
+
+    const rows = await buildBroadcastAudience(userType, planFilter, premiumFilter, artFilter);
+    const count = Array.isArray(rows) ? rows.length : (rows as any).count || 0;
+    const sample = (Array.isArray(rows) ? rows : []).slice(0, 20).map((r: any) => ({ email: r.email || '', name: r.name || '' }));
+    console.log(`[Broadcast] Audience: userType=${userType} count=${count}`);
+    return res.json({ count, sample });
+  } catch (err: any) {
+    console.error('[Broadcast] Audience error:', err.message);
+    return res.status(500).json({ error: 'Failed to query audience' });
+  }
+});
+
+router.post('/broadcast/send', verifySuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { userType = 'club_owners', planFilter = 'all', premiumFilter = 'all', artFilter = 'all', subject, body, fromName = 'MyTaek Team' } = req.body;
+    if (!subject || !body) return res.status(400).json({ error: 'subject and body required' });
+
+    const rows = await buildBroadcastAudience(userType, planFilter, premiumFilter, artFilter);
+    const allRows = Array.isArray(rows) ? rows : [];
+    if (allRows.length === 0) return res.json({ sent: 0, skipped: 0, errors: 0, batches: 0 });
+
+    const { client: sg, fromEmail } = await getSendGridClient();
+    const footer = `<br><br><hr style="border:none;border-top:1px solid #374151;margin:24px 0"><p style="font-size:11px;color:#6b7280;text-align:center">You receive this email because you use MyTaek. <a href="https://app.mytaek.com/unsubscribe" style="color:#9ca3af">Unsubscribe</a> | <a href="https://app.mytaek.com/privacy" style="color:#9ca3af">Privacy</a><br>© ${new Date().getFullYear()} MyTaek Inc.</p>`;
+    const BATCH = 1000;
+    let sent = 0, errors = 0, batches = 0;
+
+    for (let i = 0; i < allRows.length; i += BATCH) {
+      const chunk = allRows.slice(i, i + BATCH);
+      try {
+        await sg.send({
+          personalizations: chunk.map((r: any) => ({ to: [{ email: r.email, name: r.name || '' }] })),
+          from: { email: fromEmail, name: fromName },
+          subject,
+          html: body + footer,
+          text: body.replace(/<[^>]*>/g, ''),
+        } as any);
+        sent += chunk.length; batches++;
+      } catch (e: any) {
+        console.error('[Broadcast] Batch error:', e?.response?.body || e.message);
+        errors += chunk.length;
+      }
+      if (i + BATCH < allRows.length) await new Promise(r => setTimeout(r, 500));
+    }
+
+    console.log(`[Broadcast] Done: sent=${sent} errors=${errors} batches=${batches}`);
+    return res.json({ sent, skipped: 0, errors, batches });
+  } catch (err: any) {
+    console.error('[Broadcast] Send error:', err.message);
+    return res.status(500).json({ error: err.message || 'Send failed' });
+  }
+});
+
 export { router as superAdminRouter, verifySuperAdmin };
 // Force redeploy Sun Feb 23 11:05:00 PM UTC 2026

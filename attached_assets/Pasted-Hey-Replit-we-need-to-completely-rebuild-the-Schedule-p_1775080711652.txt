@@ -1,0 +1,34 @@
+Hey Replit, we need to completely rebuild the "Schedule" page in the Admin Dashboard from a static mockup into a fully functional, database-connected, interactive calendar system. 
+
+This page is the operational heart of the MyTaek SaaS. It must have high-end UI/UX and connect to our existing database structures (Students, Coaches, Parents).
+
+Please implement the following architecture from 0 to 100:
+
+1. DATABASE & RELATIONSHIPS (Backend Setup):
+Ensure we have database models/tables for:
+- `Classes`: Fields -> id, name, coach_id, belt_level/category, days_of_week, start_time, end_time, max_capacity, color_code. (Must relationally link to enrolled Students).
+- `Private_Slots`: Fields -> id, coach_id, date, start_time, end_time, price, status (available/booked), parent_id (if booked).
+- `Events`: Fields -> id, title, type (Competition, Belt Test, Seminar), date, location.
+
+2. DRAG & DROP WEEKLY CALENDAR (The UI Core):
+- Build a Kanban-style or Calendar grid for Monday-Sunday.
+- Make the class cards draggable (use a library like react-beautiful-dnd, dnd-kit, or standard HTML5 drag-and-drop depending on our stack).
+- When an admin drags a class from Wednesday to Thursday, it should trigger an API call to update the database AND trigger a notification event to alert enrolled parents of the time change.
+
+3. DYNAMIC CLASS CARDS (The "Badass" UI):
+Each Class Card on the weekly grid MUST display:
+- Class Name & Coach Name.
+- Color-Coding: Dynamically set the card's background or border color based on the category (e.g., Yellow for Kids, Blue for Adults, Red for Sparring Team).
+- Capacity Progress Bar: Calculate (Enrolled Students / Max Capacity). Display a visual progress bar (e.g., 18/20). 
+- Waitlist Logic: If enrolled >= max_capacity, automatically display a "Waitlist Active" badge on the card.
+
+4. THE 3 ACTION MODALS (Connecting the Buttons):
+A) [Add Class] Modal: 
+Inputs for Class Name, Assign Coach (dropdown), Category/Color, Select Days, Time, and Max Capacity.
+B) [Add Private Slot] Modal: 
+Inputs for Date, Time, Assign Coach, and Price ($). Once created, it appears in a list below the calendar as "Available".
+C) [Add Event] Modal: 
+Inputs for Event Name, Type (dropdown), Date/Time, and Location.
+
+5. TECH CONSTRAINTS:
+Make sure the UI matches our dark-mode premium MyTaek theme. State updates should be optimistic (UI updates instantly when dragged, reverting only if the API call fails) to make it feel lightning-fast.
