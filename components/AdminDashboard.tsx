@@ -5181,10 +5181,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     <input type="number" min="0" placeholder="0" className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, pointsReward: parseInt(e.target.value) || 0} as any)} />
                                 </div>
                             </div>
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input type="checkbox" className="mt-0.5 rounded" onChange={e => setTempEvent({...tempEvent, isGlobalRankImpact: e.target.checked} as any)} />
-                                <span className="text-sm text-gray-300">{t('admin.schedule.addEventModal.globalRankToggle')} <span className="text-gray-500 text-xs">{t('admin.schedule.addEventModal.globalRankToggleOff')}</span></span>
-                            </label>
                         </div>
 
                         <button onClick={handleAddEvent} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-lg transition-colors">Save Event</button>

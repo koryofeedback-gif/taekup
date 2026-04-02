@@ -3246,96 +3246,6 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 </div>
             </div>
 
-            {/* ── Upcoming Events (RSVP) ── */}
-            {(() => {
-                const upcomingEvts = (data.events || [])
-                    .filter(evt => new Date(evt.date) >= new Date(new Date().toDateString()))
-                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                    .slice(0, 5);
-                if (upcomingEvts.length === 0) return null;
-                const TYPE_EMOJI: Record<string, string> = { competition: '🏆', test: '🥋', seminar: '📚', social: '🎉' };
-                return (
-                    <div className="space-y-3">
-                        <h3 className="font-bold text-white text-base px-1 flex items-center gap-2">
-                            {t('parent.home.upcomingClubEvents')}
-                        </h3>
-                        {upcomingEvts.map(evt => {
-                            const rsvp = eventRsvpMap[evt.id] || null;
-                            const isSubmitting = rsvpSubmitting === evt.id;
-                            const d = new Date(evt.date);
-                            const hasReward = (evt.xpReward || 0) > 0 || (evt.pointsReward || 0) > 0;
-                            return (
-                                <div key={evt.id} className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
-                                    <div className="p-4">
-                                        <div className="flex items-start gap-3">
-                                            {/* Date badge */}
-                                            <div className="flex-shrink-0 w-12 bg-gray-900 rounded-xl text-center py-1.5 border border-gray-700">
-                                                <p className="text-gray-500 text-[10px] uppercase font-bold">{d.toLocaleString('default', { month: 'short' })}</p>
-                                                <p className="text-white text-lg font-bold leading-none">{d.getDate()}</p>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-1.5 mb-0.5">
-                                                    <span>{TYPE_EMOJI[evt.type] || '📅'}</span>
-                                                    <h4 className="font-bold text-white text-sm leading-tight">{evt.title}</h4>
-                                                </div>
-                                                <p className="text-gray-400 text-xs">{evt.time} · {evt.location}</p>
-                                                {hasReward && (
-                                                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                                                        {(evt.xpReward || 0) > 0 && (
-                                                            <span className="text-[10px] bg-purple-900/50 border border-purple-800 text-purple-300 px-1.5 py-0.5 rounded-full font-semibold">+{evt.xpReward} HonorXP™</span>
-                                                        )}
-                                                        {(evt.pointsReward || 0) > 0 && (
-                                                            <span className="text-[10px] bg-amber-900/50 border border-amber-800 text-amber-300 px-1.5 py-0.5 rounded-full font-semibold">+{evt.pointsReward} Belt Pts</span>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* RSVP Buttons */}
-                                        <div className="mt-3">
-                                            {rsvp === 'coming' ? (
-                                                <div className="flex items-center justify-between bg-emerald-900/30 border border-emerald-700/50 rounded-xl px-4 py-2.5">
-                                                    <span className="text-emerald-300 text-sm font-semibold">{t('parent.home.rsvpGoing')}</span>
-                                                    <span className="text-emerald-500/60 text-xs">{t('parent.home.rsvpWaitingApproval')}</span>
-                                                </div>
-                                            ) : rsvp === 'not_coming' ? (
-                                                <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5">
-                                                    <span className="text-gray-500 text-sm">{t('parent.home.rsvpNotAttending')}</span>
-                                                    <button
-                                                        onClick={() => handleEventRsvp(evt.id, 'coming')}
-                                                        className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
-                                                    >
-                                                        {t('parent.home.rsvpChangedMind')}
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <button
-                                                        onClick={() => handleEventRsvp(evt.id, 'coming')}
-                                                        disabled={isSubmitting}
-                                                        className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-colors"
-                                                    >
-                                                        {isSubmitting ? '...' : t('parent.home.rsvpComing')}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleEventRsvp(evt.id, 'not_coming')}
-                                                        disabled={isSubmitting}
-                                                        className="flex items-center justify-center gap-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-300 font-bold py-2.5 rounded-xl text-sm transition-colors"
-                                                    >
-                                                        {isSubmitting ? '...' : t('parent.home.rsvpNotComing')}
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                );
-            })()}
-
             {/* Manage Subscription — subtle footer link, only for self-paid premium parents */}
             {studentPremiumStatus === 'parent_paid' && (
                 <div className="text-center pt-1 pb-2">
@@ -4548,37 +4458,86 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                      )}
                  </div>
                  
-                 {/* Section 2: Upcoming Events */}
-                 <div className="space-y-4">
-                     <h3 className="font-bold text-white text-lg px-2">{t('parent.booking.upcomingEvents')}</h3>
-                     {eventsData.length > 0 ? (
-                         eventsData.map(evt => (
-                             <div key={evt.id} className="bg-gray-800 p-4 rounded-xl border border-gray-700">
-                                 <div className="flex justify-between items-start mb-2">
-                                     <div>
-                                         <span className="text-xs font-bold text-indigo-400 uppercase tracking-wide">{evt.type}</span>
-                                         <h4 className="font-bold text-white text-lg">{evt.title}</h4>
-                                     </div>
-                                     <div className="text-center bg-gray-700 p-2 rounded-lg min-w-[60px]">
-                                         <span className="block text-xs text-gray-400 uppercase">{new Date(evt.date).toLocaleString('default', { month: 'short' })}</span>
-                                         <span className="block text-xl font-bold text-white">{new Date(evt.date).getDate()}</span>
-                                     </div>
+                 {/* Section 2: Upcoming Events with RSVP */}
+                 {(() => {
+                     const upcomingEvts = eventsData
+                         .filter(evt => new Date(evt.date) >= new Date(new Date().toDateString()))
+                         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                     const TYPE_EMOJI: Record<string, string> = { competition: '🏆', test: '🥋', seminar: '📚', social: '🎉' };
+                     return (
+                         <div className="space-y-4">
+                             <h3 className="font-bold text-white text-lg px-2">{t('parent.home.upcomingClubEvents')}</h3>
+                             {upcomingEvts.length === 0 ? (
+                                 <p className="text-gray-500 text-center italic py-4">{t('parent.booking.noUpcomingEvents')}</p>
+                             ) : (
+                                 <div className="space-y-3">
+                                     {upcomingEvts.map(evt => {
+                                         const rsvp = eventRsvpMap[evt.id] || null;
+                                         const isSubmitting = rsvpSubmitting === evt.id;
+                                         const d = new Date(evt.date);
+                                         const hasReward = (evt.xpReward || 0) > 0 || (evt.pointsReward || 0) > 0;
+                                         return (
+                                             <div key={evt.id} className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
+                                                 <div className="p-4">
+                                                     <div className="flex items-start gap-3">
+                                                         <div className="flex-shrink-0 w-12 bg-gray-900 rounded-xl text-center py-1.5 border border-gray-700">
+                                                             <p className="text-gray-500 text-[10px] uppercase font-bold">{d.toLocaleString('default', { month: 'short' })}</p>
+                                                             <p className="text-white text-lg font-bold leading-none">{d.getDate()}</p>
+                                                         </div>
+                                                         <div className="flex-1 min-w-0">
+                                                             <div className="flex items-center gap-1.5 mb-0.5">
+                                                                 <span>{TYPE_EMOJI[evt.type] || '📅'}</span>
+                                                                 <h4 className="font-bold text-white text-sm leading-tight">{evt.title}</h4>
+                                                             </div>
+                                                             <p className="text-gray-400 text-xs">{evt.time} · {evt.location}</p>
+                                                             {hasReward && (
+                                                                 <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                                                                     {(evt.xpReward || 0) > 0 && (
+                                                                         <span className="text-[10px] bg-purple-900/50 border border-purple-800 text-purple-300 px-1.5 py-0.5 rounded-full font-semibold">+{evt.xpReward} HonorXP™</span>
+                                                                     )}
+                                                                     {(evt.pointsReward || 0) > 0 && (
+                                                                         <span className="text-[10px] bg-amber-900/50 border border-amber-800 text-amber-300 px-1.5 py-0.5 rounded-full font-semibold">+{evt.pointsReward} Belt Pts</span>
+                                                                     )}
+                                                                 </div>
+                                                             )}
+                                                             <a href={generateGoogleCalendarUrl(evt)} target="_blank" rel="noopener noreferrer" className="inline-block mt-1.5 text-[10px] text-cyan-500 hover:text-cyan-400 transition-colors">
+                                                                 + {t('parent.booking.addToGoogleCalendar')}
+                                                             </a>
+                                                         </div>
+                                                     </div>
+                                                     <div className="mt-3">
+                                                         {rsvp === 'coming' ? (
+                                                             <div className="flex items-center justify-between bg-emerald-900/30 border border-emerald-700/50 rounded-xl px-4 py-2.5">
+                                                                 <span className="text-emerald-300 text-sm font-semibold">{t('parent.home.rsvpGoing')}</span>
+                                                                 <span className="text-emerald-500/60 text-xs">{t('parent.home.rsvpWaitingApproval')}</span>
+                                                             </div>
+                                                         ) : rsvp === 'not_coming' ? (
+                                                             <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5">
+                                                                 <span className="text-gray-500 text-sm">{t('parent.home.rsvpNotAttending')}</span>
+                                                                 <button onClick={() => handleEventRsvp(evt.id, 'coming')} className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
+                                                                     {t('parent.home.rsvpChangedMind')}
+                                                                 </button>
+                                                             </div>
+                                                         ) : (
+                                                             <div className="grid grid-cols-2 gap-2">
+                                                                 <button onClick={() => handleEventRsvp(evt.id, 'coming')} disabled={isSubmitting} className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                                                                     {isSubmitting ? '...' : t('parent.home.rsvpComing')}
+                                                                 </button>
+                                                                 <button onClick={() => handleEventRsvp(evt.id, 'not_coming')} disabled={isSubmitting} className="flex items-center justify-center gap-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-300 font-bold py-2.5 rounded-xl text-sm transition-colors">
+                                                                     {isSubmitting ? '...' : t('parent.home.rsvpNotComing')}
+                                                                 </button>
+                                                             </div>
+                                                         )}
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         );
+                                     })}
                                  </div>
-                                 <p className="text-sm text-gray-400 mb-4">{evt.time} @ {evt.location}</p>
-                                 <a 
-                                     href={generateGoogleCalendarUrl(evt)} 
-                                     target="_blank" 
-                                     rel="noopener noreferrer"
-                                     className="block w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded-lg text-sm transition-colors"
-                                 >
-                                     {t('parent.booking.addToGoogleCalendar')}
-                                 </a>
-                             </div>
-                         ))
-                     ) : (
-                         <p className="text-gray-500 text-center italic py-4">{t('parent.booking.noUpcomingEvents')}</p>
-                     )}
-                 </div>
+                             )}
+                         </div>
+                     );
+                 })()}
 
                  {/* Section 3: Private Lessons Upsell */}
                  <div className="bg-gradient-to-br from-purple-900/50 to-indigo-900/50 p-6 rounded-2xl border border-purple-500/30">
