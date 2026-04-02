@@ -112,6 +112,14 @@ export const en = {
       arenaRanks: "Arena Ranks",
       leaderboardAndRankings: "Leaderboard & Rankings",
 
+      upcomingClubEvents: "📅 Upcoming Club Events",
+      rsvpGoing: "You're going!",
+      rsvpWaitingApproval: "Waiting for coach approval",
+      rsvpChangedMind: "Changed your mind?",
+      rsvpComing: "✅ I'm Coming",
+      rsvpNotComing: "❌ Not Coming",
+      rsvpNotAttending: "Not attending",
+
       senseiIntel: "Sensei Intel",
       noActiveMissions: "No active missions yet. Keep training hard!",
       aiLabel: "✨ AI",
@@ -887,10 +895,33 @@ export const en = {
         title: "Add Club Event",
         eventTitle: "Event Title",
         location: "Location",
+        attendanceReward: "Attendance Reward (Optional)",
+        honorXpReward: "HonorXP™ Reward",
+        beltPointsReward: "Belt Points Reward",
+        globalRankToggle: "Count HonorXP™ toward Global Shogun Rank™",
+        globalRankToggleOff: "(off = local only)",
       },
 
       addPrivateSlotModal: {
         title: "Add Private Lesson Slot",
+      },
+
+      rsvp: {
+        responsesBtn: "Responses",
+        coming: "Coming",
+        notComing: "Not Coming",
+        pending: "Pending",
+        comingGroup: "✅ Coming",
+        notComingGroup: "❌ Not Coming",
+        pendingGroup: "⏳ Pending",
+        approve: "Approve",
+        approved: "✓ Approved",
+        rewardIssued: "Reward Issued",
+        noResponses: "No responses yet",
+        noResponsesDesc: "Parents will appear here once they RSVP from their portal",
+        affectsGlobalRank: "Affects Global Rank",
+        noEventsTitle: "No upcoming events",
+        noEventsDesc: "Add competitions, belt tests or socials to notify parents",
       },
     },
 

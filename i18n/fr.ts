@@ -112,6 +112,14 @@ export const fr = {
       arenaRanks: "Classements de l'Arène",
       leaderboardAndRankings: "Classement & Classements",
 
+      upcomingClubEvents: "📅 Événements du club",
+      rsvpGoing: "Vous y allez !",
+      rsvpWaitingApproval: "En attente de la confirmation du coach",
+      rsvpChangedMind: "Changement d'avis ?",
+      rsvpComing: "✅ Je viens",
+      rsvpNotComing: "❌ Je ne viens pas",
+      rsvpNotAttending: "Je n'y assiste pas",
+
       senseiIntel: "Intel Sensei",
       noActiveMissions: "Aucune mission active pour le moment. Continuez à vous entraîner !",
       aiLabel: "✨ IA",
@@ -887,10 +895,33 @@ export const fr = {
         title: "Ajouter un événement de club",
         eventTitle: "Titre de l'événement",
         location: "Lieu",
+        attendanceReward: "Récompense de présence (optionnel)",
+        honorXpReward: "Récompense HonorXP™",
+        beltPointsReward: "Points de ceinture",
+        globalRankToggle: "Compter les HonorXP™ dans le Global Shogun Rank™",
+        globalRankToggleOff: "(désactivé = local uniquement)",
       },
 
       addPrivateSlotModal: {
         title: "Ajouter un créneau de cours privé",
+      },
+
+      rsvp: {
+        responsesBtn: "Réponses",
+        coming: "Présent",
+        notComing: "Absent",
+        pending: "En attente",
+        comingGroup: "✅ Présents",
+        notComingGroup: "❌ Absents",
+        pendingGroup: "⏳ En attente",
+        approve: "Approuver",
+        approved: "✓ Approuvé",
+        rewardIssued: "Récompense accordée",
+        noResponses: "Aucune réponse pour l'instant",
+        noResponsesDesc: "Les parents apparaîtront ici une fois leur RSVP soumis",
+        affectsGlobalRank: "Impact sur le classement mondial",
+        noEventsTitle: "Aucun événement à venir",
+        noEventsDesc: "Ajoutez des compétitions, passages de ceinture ou activités sociales",
       },
     },
 

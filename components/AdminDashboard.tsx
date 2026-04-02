@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Loader2, Calendar, X, Users, CheckSquare } from 'lucide-react';
+import { Loader2, Calendar, X, Users, CheckSquare, Brain } from 'lucide-react';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
@@ -1039,6 +1039,13 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     const [attendLoading, setAttendLoading] = React.useState(false);
     const [attendSaving, setAttendSaving] = React.useState(false);
 
+    // AI Lesson Plan state
+    const [aiPlanSession, setAiPlanSession] = React.useState<DbClassSession | null>(null);
+    const [aiPlanFocus, setAiPlanFocus] = React.useState('General Training');
+    const [aiPlanDuration, setAiPlanDuration] = React.useState(60);
+    const [aiPlanResult, setAiPlanResult] = React.useState('');
+    const [aiPlanLoading, setAiPlanLoading] = React.useState(false);
+
     const [mobileDay, setMobileDay] = React.useState('Monday');
 
     // Manage Responses state
@@ -1213,6 +1220,33 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
 
     const DAY_SHORT_LABELS: Record<string, string> = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
 
+    const openAiPlan = (session: DbClassSession) => {
+        setAiPlanSession(session);
+        setAiPlanFocus('General Training');
+        setAiPlanDuration(60);
+        setAiPlanResult('');
+    };
+
+    const generateAiPlan = async () => {
+        if (!aiPlanSession) return;
+        setAiPlanLoading(true);
+        try {
+            const res = await fetch('/api/ai/class-plan', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    beltLevel: aiPlanSession.belt_requirement || 'All Levels',
+                    focusArea: aiPlanFocus || 'General Training',
+                    classDuration: aiPlanDuration,
+                    studentCount: aiPlanSession.enrolled_count || 10,
+                    language: data.language || 'en',
+                })
+            });
+            if (res.ok) { const d = await res.json(); setAiPlanResult(d.plan || ''); }
+            else setAiPlanResult('Failed to generate plan. Please try again.');
+        } catch { setAiPlanResult('Failed to generate plan. Please try again.'); }
+        setAiPlanLoading(false);
+    };
+
     const ClassCard = ({ session }: { session: DbClassSession }) => {
         const pct = fillPct(session);
         const beltKey = session.belt_requirement || 'All';
@@ -1275,6 +1309,12 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         <CheckSquare size={12} /> Attend
                     </button>
                 </div>
+                <button
+                    onClick={() => openAiPlan(session)}
+                    className="mt-1.5 w-full flex items-center justify-center gap-1.5 bg-purple-900/30 hover:bg-purple-900/50 border border-purple-800/50 hover:border-purple-600 text-purple-300 hover:text-purple-200 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                >
+                    <Brain size={12} /> AI Lesson Plan
+                </button>
             </div>
         );
     };
@@ -1753,7 +1793,7 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                         <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{manageEvent.pointsReward} Belt Points</span>
                                     )}
                                     {manageEvent.isGlobalRankImpact && (
-                                        <span className="text-xs bg-cyan-900/40 border border-cyan-800 text-cyan-300 px-2 py-0.5 rounded-full">Affects Global Rank</span>
+                                        <span className="text-xs bg-cyan-900/40 border border-cyan-800 text-cyan-300 px-2 py-0.5 rounded-full">{t('admin.schedule.rsvp.affectsGlobalRank')}</span>
                                     )}
                                 </div>
                             </div>
@@ -1766,7 +1806,7 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         <div className="grid grid-cols-3 divide-x divide-gray-800 border-b border-gray-800">
                             {(['coming', 'not_coming', 'pending'] as const).map(status => {
                                 const count = eventResponses.filter(r => r.rsvp_status === status).length;
-                                const label = status === 'coming' ? 'Coming' : status === 'not_coming' ? 'Not Coming' : 'Pending';
+                                const label = status === 'coming' ? t('admin.schedule.rsvp.coming') : status === 'not_coming' ? t('admin.schedule.rsvp.notComing') : t('admin.schedule.rsvp.pending');
                                 const color = status === 'coming' ? 'text-emerald-400' : status === 'not_coming' ? 'text-red-400' : 'text-gray-400';
                                 return (
                                     <div key={status} className="p-3 text-center">
@@ -1786,8 +1826,8 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                             )}
                             {!responsesLoading && eventResponses.length === 0 && (
                                 <div className="text-center py-12 px-6">
-                                    <p className="text-gray-500 text-sm">No responses yet</p>
-                                    <p className="text-gray-700 text-xs mt-1">Parents will appear here once they RSVP from their portal</p>
+                                    <p className="text-gray-500 text-sm">{t('admin.schedule.rsvp.noResponses')}</p>
+                                    <p className="text-gray-700 text-xs mt-1">{t('admin.schedule.rsvp.noResponsesDesc')}</p>
                                 </div>
                             )}
                             {!responsesLoading && eventResponses.length > 0 && (
@@ -1795,7 +1835,7 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                     {(['coming', 'not_coming', 'pending'] as const).map(status => {
                                         const group = eventResponses.filter(r => r.rsvp_status === status);
                                         if (group.length === 0) return null;
-                                        const groupLabel = status === 'coming' ? '✅ Coming' : status === 'not_coming' ? '❌ Not Coming' : '⏳ Pending';
+                                        const groupLabel = status === 'coming' ? t('admin.schedule.rsvp.comingGroup') : status === 'not_coming' ? t('admin.schedule.rsvp.notComingGroup') : t('admin.schedule.rsvp.pendingGroup');
                                         return (
                                             <div key={status}>
                                                 <div className="px-4 py-2 bg-gray-800/50 border-b border-gray-800">
@@ -1819,8 +1859,8 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                                             <div className="flex-shrink-0">
                                                                 {resp.attendance_confirmed ? (
                                                                     <div className="text-center">
-                                                                        <span className="text-emerald-400 text-xs font-bold block">✓ Approved</span>
-                                                                        {resp.reward_issued && <span className="text-purple-400 text-xs">Reward Issued</span>}
+                                                                        <span className="text-emerald-400 text-xs font-bold block">{t('admin.schedule.rsvp.approved')}</span>
+                                                                        {resp.reward_issued && <span className="text-purple-400 text-xs">{t('admin.schedule.rsvp.rewardIssued')}</span>}
                                                                     </div>
                                                                 ) : (
                                                                     <button
@@ -1828,7 +1868,7 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                                                         disabled={approvingId === resp.id}
                                                                         className="bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
                                                                     >
-                                                                        {approvingId === resp.id ? <Loader2 size={12} className="animate-spin" /> : 'Approve'}
+                                                                        {approvingId === resp.id ? <Loader2 size={12} className="animate-spin" /> : t('admin.schedule.rsvp.approve')}
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -1838,6 +1878,65 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                                             </div>
                                         );
                                     })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── AI Lesson Plan Panel ─── */}
+            {aiPlanSession && (
+                <div className="fixed inset-0 z-50 flex">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setAiPlanSession(null)} />
+                    <div className="relative ml-auto w-full max-w-lg bg-gray-900 border-l border-gray-700 flex flex-col h-full overflow-y-auto shadow-2xl">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Brain size={18} className="text-purple-400" />
+                                    <h3 className="font-bold text-white">AI Lesson Plan</h3>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    {aiPlanSession.class_name} · {aiPlanSession.belt_requirement || 'All Belts'} · {aiPlanSession.enrolled_count} students
+                                </p>
+                            </div>
+                            <button onClick={() => setAiPlanSession(null)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-4 flex-1">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Focus Area</label>
+                                <select
+                                    value={aiPlanFocus}
+                                    onChange={e => setAiPlanFocus(e.target.value)}
+                                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500"
+                                >
+                                    {['General Training', 'Kicks & Footwork', 'Sparring & Combat', 'Forms / Poomsae', 'Self-Defence', 'Conditioning & Fitness', 'Belt Test Prep', 'Fun Games & Warm-Up'].map(f => (
+                                        <option key={f} value={f}>{f}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Class Duration (minutes)</label>
+                                <input
+                                    type="number"
+                                    value={aiPlanDuration}
+                                    onChange={e => setAiPlanDuration(parseInt(e.target.value) || 60)}
+                                    min={15} max={180} step={5}
+                                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500"
+                                />
+                            </div>
+                            <button
+                                onClick={generateAiPlan}
+                                disabled={aiPlanLoading}
+                                className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl transition-colors"
+                            >
+                                {aiPlanLoading ? <><Loader2 size={16} className="animate-spin" /> Generating…</> : <><Brain size={16} /> Generate Plan</>}
+                            </button>
+                            {aiPlanResult && (
+                                <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 mt-2">
+                                    <pre className="text-sm text-gray-200 whitespace-pre-wrap font-sans leading-relaxed">{aiPlanResult}</pre>
                                 </div>
                             )}
                         </div>
@@ -5071,20 +5170,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
                         {/* Reward Section */}
                         <div className="border-t border-gray-700 pt-4">
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Attendance Reward (Optional)</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">{t('admin.schedule.addEventModal.attendanceReward')}</p>
                             <div className="grid grid-cols-2 gap-3 mb-3">
                                 <div>
-                                    <label className="text-xs text-gray-400 block mb-1">HonorXP™ Reward</label>
+                                    <label className="text-xs text-gray-400 block mb-1">{t('admin.schedule.addEventModal.honorXpReward')}</label>
                                     <input type="number" min="0" placeholder="0" className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, xpReward: parseInt(e.target.value) || 0} as any)} />
                                 </div>
                                 <div>
-                                    <label className="text-xs text-gray-400 block mb-1">Belt Points Reward</label>
+                                    <label className="text-xs text-gray-400 block mb-1">{t('admin.schedule.addEventModal.beltPointsReward')}</label>
                                     <input type="number" min="0" placeholder="0" className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, pointsReward: parseInt(e.target.value) || 0} as any)} />
                                 </div>
                             </div>
                             <label className="flex items-start gap-3 cursor-pointer">
                                 <input type="checkbox" className="mt-0.5 rounded" onChange={e => setTempEvent({...tempEvent, isGlobalRankImpact: e.target.checked} as any)} />
-                                <span className="text-sm text-gray-300">Count HonorXP™ toward Global Shogun Rank™ <span className="text-gray-500 text-xs">(off = local only)</span></span>
+                                <span className="text-sm text-gray-300">{t('admin.schedule.addEventModal.globalRankToggle')} <span className="text-gray-500 text-xs">{t('admin.schedule.addEventModal.globalRankToggleOff')}</span></span>
                             </label>
                         </div>
 

@@ -112,6 +112,14 @@ export const de = {
       arenaRanks: "Arena-Rangliste",
       leaderboardAndRankings: "Bestenliste & Ranglisten",
 
+      upcomingClubEvents: "📅 Vereinsveranstaltungen",
+      rsvpGoing: "Sie nehmen teil!",
+      rsvpWaitingApproval: "Wartet auf Coach-Bestätigung",
+      rsvpChangedMind: "Meinung geändert?",
+      rsvpComing: "✅ Ich komme",
+      rsvpNotComing: "❌ Ich komme nicht",
+      rsvpNotAttending: "Nicht teilnehmend",
+
       senseiIntel: "Sensei-Analyse",
       noActiveMissions: "Noch keine aktiven Missionen. Trainieren Sie weiter!",
       aiLabel: "✨ KI",
@@ -887,10 +895,33 @@ export const de = {
         title: "Vereinsveranstaltung hinzufügen",
         eventTitle: "Veranstaltungstitel",
         location: "Standort",
+        attendanceReward: "Anwesenheitsprämie (optional)",
+        honorXpReward: "HonorXP™-Belohnung",
+        beltPointsReward: "Gürtelpunkte",
+        globalRankToggle: "HonorXP™ für Global Shogun Rank™ anrechnen",
+        globalRankToggleOff: "(aus = nur lokal)",
       },
 
       addPrivateSlotModal: {
         title: "Privatstunden-Termin hinzufügen",
+      },
+
+      rsvp: {
+        responsesBtn: "Antworten",
+        coming: "Kommt",
+        notComing: "Kommt nicht",
+        pending: "Ausstehend",
+        comingGroup: "✅ Kommt",
+        notComingGroup: "❌ Kommt nicht",
+        pendingGroup: "⏳ Ausstehend",
+        approve: "Bestätigen",
+        approved: "✓ Bestätigt",
+        rewardIssued: "Belohnung vergeben",
+        noResponses: "Noch keine Antworten",
+        noResponsesDesc: "Eltern erscheinen hier, sobald sie sich über das Portal anmelden",
+        affectsGlobalRank: "Beeinflusst globale Rangliste",
+        noEventsTitle: "Keine bevorstehenden Veranstaltungen",
+        noEventsDesc: "Fügen Sie Wettkämpfe, Gürtelprüfungen oder Vereinsevents hinzu",
       },
     },
 

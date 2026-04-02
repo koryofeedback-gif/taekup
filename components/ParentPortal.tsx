@@ -3257,7 +3257,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                 return (
                     <div className="space-y-3">
                         <h3 className="font-bold text-white text-base px-1 flex items-center gap-2">
-                            📅 Upcoming Club Events
+                            {t('parent.home.upcomingClubEvents')}
                         </h3>
                         {upcomingEvts.map(evt => {
                             const rsvp = eventRsvpMap[evt.id] || null;
@@ -3296,17 +3296,17 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                         <div className="mt-3">
                                             {rsvp === 'coming' ? (
                                                 <div className="flex items-center justify-between bg-emerald-900/30 border border-emerald-700/50 rounded-xl px-4 py-2.5">
-                                                    <span className="text-emerald-300 text-sm font-semibold">✅ You're going!</span>
-                                                    <span className="text-emerald-500/60 text-xs">Waiting for coach approval</span>
+                                                    <span className="text-emerald-300 text-sm font-semibold">{t('parent.home.rsvpGoing')}</span>
+                                                    <span className="text-emerald-500/60 text-xs">{t('parent.home.rsvpWaitingApproval')}</span>
                                                 </div>
                                             ) : rsvp === 'not_coming' ? (
                                                 <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5">
-                                                    <span className="text-gray-500 text-sm">Not attending</span>
+                                                    <span className="text-gray-500 text-sm">{t('parent.home.rsvpNotAttending')}</span>
                                                     <button
                                                         onClick={() => handleEventRsvp(evt.id, 'coming')}
                                                         className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
                                                     >
-                                                        Changed your mind?
+                                                        {t('parent.home.rsvpChangedMind')}
                                                     </button>
                                                 </div>
                                             ) : (
@@ -3316,14 +3316,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                                                         disabled={isSubmitting}
                                                         className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-colors"
                                                     >
-                                                        {isSubmitting ? '...' : '✅ I\'m Coming'}
+                                                        {isSubmitting ? '...' : t('parent.home.rsvpComing')}
                                                     </button>
                                                     <button
                                                         onClick={() => handleEventRsvp(evt.id, 'not_coming')}
                                                         disabled={isSubmitting}
                                                         className="flex items-center justify-center gap-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-300 font-bold py-2.5 rounded-xl text-sm transition-colors"
                                                     >
-                                                        {isSubmitting ? '...' : '❌ Not Coming'}
+                                                        {isSubmitting ? '...' : t('parent.home.rsvpNotComing')}
                                                     </button>
                                                 </div>
                                             )}
