@@ -105,6 +105,16 @@ export interface ScheduleItem {
     location: string;
 }
 
+export interface WizardClassSchedule {
+    id: string;
+    name: string;
+    days: string[]; // e.g. ["Monday", "Wednesday", "Friday"]
+    startTime: string; // "17:00"
+    endTime: string;   // "18:00"
+    beltRequirement?: string;
+    capacity?: number;
+}
+
 export interface CalendarEvent {
     id: string;
     title: string;
@@ -338,6 +348,7 @@ export interface WizardData {
   customVideoTags?: string[];
   classes: string[]; // Flat list of all unique class names (legacy/fallback)
   locationClasses: Record<string, string[]>; // MAP: Location Name -> List of Class Names
+  locationClassSchedules?: Record<string, WizardClassSchedule[]>; // NEW: structured class data with days/times
   // Scheduling
   schedule: ScheduleItem[];
   events: CalendarEvent[];

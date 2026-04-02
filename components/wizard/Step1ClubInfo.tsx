@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import type { WizardData } from '../../types';
+import type { WizardData, WizardClassSchedule } from '../../types';
 import { COUNTRIES, LANGUAGES, COUNTRY_LANGUAGE_MAP } from '../../constants';
 import { generateSlogan } from '../../services/geminiService';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -10,12 +10,26 @@ interface Step1Props {
   onUpdate: (data: Partial<WizardData>) => void;
 }
 
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const emptyDraft = (): Omit<WizardClassSchedule, 'id'> => ({
+    name: '',
+    days: [],
+    startTime: '17:00',
+    endTime: '18:00',
+    beltRequirement: 'All Belts',
+    capacity: 20,
+});
+
 export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
   const { t } = useTranslation(data.language);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSloganLoading, setIsSloganLoading] = useState(false);
-  const [newClassName, setNewClassName] = useState<Record<number, string>>({});
+
+  const [drafts, setDrafts] = useState<Record<number, Omit<WizardClassSchedule, 'id'>>>({});
+  const [showForm, setShowForm] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
       const count = data.branches || 1;
@@ -61,13 +75,18 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
       newNames[index] = newName;
       
       const newLocationClasses = { ...data.locationClasses };
+      const newLocationClassSchedules = { ...(data.locationClassSchedules || {}) };
       
       if (newLocationClasses[oldName]) {
           newLocationClasses[newName] = newLocationClasses[oldName];
           delete newLocationClasses[oldName];
       }
+      if (newLocationClassSchedules[oldName]) {
+          newLocationClassSchedules[newName] = newLocationClassSchedules[oldName];
+          delete newLocationClassSchedules[oldName];
+      }
 
-      onUpdate({ branchNames: newNames, locationClasses: newLocationClasses });
+      onUpdate({ branchNames: newNames, locationClasses: newLocationClasses, locationClassSchedules: newLocationClassSchedules });
   }
 
   const handleBranchAddressChange = (index: number, newAddress: string) => {
@@ -75,31 +94,64 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
       newAddresses[index] = newAddress;
       onUpdate({ branchAddresses: newAddresses });
   }
-  
-  const handleAddClassToLocation = (locationIndex: number, locationName: string) => {
-      const className = newClassName[locationIndex]?.trim();
-      if (!className) return;
 
-      const currentMap = data.locationClasses || {};
-      const classesForLocation = currentMap[locationName] || [];
-      
-      const newMap = {
-          ...currentMap,
-          [locationName]: [...classesForLocation, className]
-      };
-      
-      const allUniqueClasses = Array.from(new Set([...(data.classes || []), className]));
+  const getDraft = (idx: number) => drafts[idx] || emptyDraft();
 
-      onUpdate({ locationClasses: newMap, classes: allUniqueClasses });
-      setNewClassName(prev => ({ ...prev, [locationIndex]: '' }));
+  const setDraft = (idx: number, patch: Partial<Omit<WizardClassSchedule, 'id'>>) => {
+      setDrafts(prev => ({ ...prev, [idx]: { ...getDraft(idx), ...patch } }));
   }
 
-  const handleRemoveClassFromLocation = (locationName: string, classIndex: number) => {
-      const currentMap = { ...data.locationClasses };
-      const classes = [...(currentMap[locationName] || [])];
-      classes.splice(classIndex, 1);
-      currentMap[locationName] = classes;
-      onUpdate({ locationClasses: currentMap });
+  const toggleDay = (idx: number, day: string) => {
+      const current = getDraft(idx).days;
+      const updated = current.includes(day) ? current.filter(d => d !== day) : [...current, day];
+      setDraft(idx, { days: updated });
+  }
+
+  const handleAddClass = (locationIndex: number, locationName: string) => {
+      const draft = getDraft(locationIndex);
+      if (!draft.name.trim() || draft.days.length === 0) return;
+
+      const newClass: WizardClassSchedule = {
+          id: `cls-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          name: draft.name.trim(),
+          days: draft.days,
+          startTime: draft.startTime,
+          endTime: draft.endTime,
+          beltRequirement: draft.beltRequirement || 'All Belts',
+          capacity: draft.capacity || 20,
+      };
+
+      const currentSchedules = { ...(data.locationClassSchedules || {}) };
+      currentSchedules[locationName] = [...(currentSchedules[locationName] || []), newClass];
+
+      const currentFlatClasses = { ...data.locationClasses };
+      const flatForLoc = currentFlatClasses[locationName] || [];
+      if (!flatForLoc.includes(newClass.name)) {
+          currentFlatClasses[locationName] = [...flatForLoc, newClass.name];
+      }
+      const allUniqueClasses = Array.from(new Set([...(data.classes || []), newClass.name]));
+
+      onUpdate({
+          locationClassSchedules: currentSchedules,
+          locationClasses: currentFlatClasses,
+          classes: allUniqueClasses,
+      });
+
+      setDrafts(prev => ({ ...prev, [locationIndex]: emptyDraft() }));
+      setShowForm(prev => ({ ...prev, [locationIndex]: false }));
+  }
+
+  const handleRemoveClass = (locationName: string, classId: string) => {
+      const currentSchedules = { ...(data.locationClassSchedules || {}) };
+      const removedName = currentSchedules[locationName]?.find(c => c.id === classId)?.name;
+      currentSchedules[locationName] = (currentSchedules[locationName] || []).filter(c => c.id !== classId);
+
+      const currentFlatClasses = { ...data.locationClasses };
+      if (removedName) {
+          currentFlatClasses[locationName] = (currentFlatClasses[locationName] || []).filter(n => n !== removedName);
+      }
+
+      onUpdate({ locationClassSchedules: currentSchedules, locationClasses: currentFlatClasses });
   }
 
   return (
@@ -163,65 +215,177 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {data.branchNames?.map((branchName, index) => (
-                  <div key={index} className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-lg relative overflow-hidden">
-                      <div className="mb-4 space-y-3">
-                          <div>
-                              <label className="block text-xs text-sky-300 font-bold uppercase tracking-wider mb-1">{t('wizard.step1.locationName')} {index + 1}</label>
-                              <input 
-                                  type="text" 
-                                  value={branchName} 
-                                  onChange={(e) => handleBranchNameChange(index, e.target.value)}
-                                  className="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white font-bold w-full focus:ring-2 focus:ring-sky-500 outline-none"
-                                  placeholder={t('wizard.step1.locationPlaceholder')}
-                              />
-                          </div>
-                          <div>
-                              <label className="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">{t('wizard.step1.address')}</label>
-                              <input 
-                                  type="text" 
-                                  value={data.branchAddresses?.[index] || ''} 
-                                  onChange={(e) => handleBranchAddressChange(index, e.target.value)}
-                                  className="bg-gray-700/50 border border-gray-600 rounded px-3 py-2 text-white text-sm w-full focus:ring-2 focus:ring-sky-500 outline-none"
-                                  placeholder={t('wizard.step1.addressPlaceholder')}
-                              />
-                          </div>
-                      </div>
+              {data.branchNames?.map((branchName, index) => {
+                  const scheduledClasses = data.locationClassSchedules?.[branchName] || [];
+                  const draft = getDraft(index);
+                  const isOpen = showForm[index] || false;
 
-                      <div className="bg-gray-700/30 p-3 rounded-md border border-gray-700">
-                          <label className="block text-xs text-gray-400 mb-2">{t('wizard.step1.classes')}</label>
-                          
-                          <div className="flex space-x-2 mb-3">
-                              <input 
-                                  type="text" 
-                                  value={newClassName[index] || ''} 
-                                  onChange={(e) => setNewClassName(p => ({...p, [index]: e.target.value}))}
-                                  onKeyDown={(e) => e.key === 'Enter' && handleAddClassToLocation(index, branchName)}
-                                  placeholder={t('wizard.step1.className')}
-                                  className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white w-full focus:outline-none focus:border-sky-500"
-                              />
-                              <button 
-                                  onClick={() => handleAddClassToLocation(index, branchName)}
-                                  className="bg-sky-500 hover:bg-sky-600 text-white px-3 rounded text-sm font-bold"
-                              >
-                                  +
-                              </button>
+                  return (
+                      <div key={index} className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-lg">
+                          <div className="mb-4 space-y-3">
+                              <div>
+                                  <label className="block text-xs text-sky-300 font-bold uppercase tracking-wider mb-1">{t('wizard.step1.locationName')} {index + 1}</label>
+                                  <input
+                                      type="text"
+                                      value={branchName}
+                                      onChange={(e) => handleBranchNameChange(index, e.target.value)}
+                                      className="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white font-bold w-full focus:ring-2 focus:ring-sky-500 outline-none"
+                                      placeholder={t('wizard.step1.locationPlaceholder')}
+                                  />
+                              </div>
+                              <div>
+                                  <label className="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">{t('wizard.step1.address')}</label>
+                                  <input
+                                      type="text"
+                                      value={data.branchAddresses?.[index] || ''}
+                                      onChange={(e) => handleBranchAddressChange(index, e.target.value)}
+                                      className="bg-gray-700/50 border border-gray-600 rounded px-3 py-2 text-white text-sm w-full focus:ring-2 focus:ring-sky-500 outline-none"
+                                      placeholder={t('wizard.step1.addressPlaceholder')}
+                                  />
+                              </div>
                           </div>
 
-                          <div className="flex flex-wrap gap-2">
-                              {(data.locationClasses?.[branchName] || []).map((cls, clsIdx) => (
-                                  <div key={clsIdx} className="bg-gray-600 text-white px-2 py-1 rounded text-xs flex items-center">
-                                      {cls}
-                                      <button onClick={() => handleRemoveClassFromLocation(branchName, clsIdx)} className="ml-2 text-gray-400 hover:text-red-300 font-bold">&times;</button>
+                          <div className="bg-gray-700/30 p-3 rounded-md border border-gray-700 space-y-3">
+                              <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider">Classes</label>
+                                  <button
+                                      onClick={() => setShowForm(prev => ({ ...prev, [index]: !isOpen }))}
+                                      className="text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded font-bold transition-colors"
+                                  >
+                                      {isOpen ? '✕ Cancel' : '+ Add Class'}
+                                  </button>
+                              </div>
+
+                              {isOpen && (
+                                  <div className="bg-gray-900 border border-gray-600 rounded-lg p-3 space-y-3 animate-fadeIn">
+                                      <div>
+                                          <label className="block text-xs text-gray-400 mb-1">Class Name</label>
+                                          <input
+                                              type="text"
+                                              value={draft.name}
+                                              onChange={e => setDraft(index, { name: e.target.value })}
+                                              placeholder="e.g. Kids Taekwondo"
+                                              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white w-full focus:outline-none focus:border-sky-500"
+                                              autoFocus
+                                          />
+                                      </div>
+
+                                      <div>
+                                          <label className="block text-xs text-gray-400 mb-2">Days of the Week</label>
+                                          <div className="flex flex-wrap gap-1.5">
+                                              {DAYS_OF_WEEK.map((day, di) => {
+                                                  const active = draft.days.includes(day);
+                                                  return (
+                                                      <button
+                                                          key={day}
+                                                          type="button"
+                                                          onClick={() => toggleDay(index, day)}
+                                                          className={`px-2 py-1 rounded text-xs font-bold border transition-colors ${
+                                                              active
+                                                                  ? 'bg-sky-500 border-sky-400 text-white'
+                                                                  : 'bg-gray-700 border-gray-600 text-gray-400 hover:border-sky-500 hover:text-white'
+                                                          }`}
+                                                      >
+                                                          {DAY_SHORT[di]}
+                                                      </button>
+                                                  );
+                                              })}
+                                          </div>
+                                          {draft.days.length === 0 && (
+                                              <p className="text-xs text-amber-400 mt-1">Select at least one day</p>
+                                          )}
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-3">
+                                          <div>
+                                              <label className="block text-xs text-gray-400 mb-1">Start Time</label>
+                                              <input
+                                                  type="time"
+                                                  value={draft.startTime}
+                                                  onChange={e => setDraft(index, { startTime: e.target.value })}
+                                                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white w-full focus:outline-none focus:border-sky-500"
+                                              />
+                                          </div>
+                                          <div>
+                                              <label className="block text-xs text-gray-400 mb-1">End Time</label>
+                                              <input
+                                                  type="time"
+                                                  value={draft.endTime}
+                                                  onChange={e => setDraft(index, { endTime: e.target.value })}
+                                                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white w-full focus:outline-none focus:border-sky-500"
+                                              />
+                                          </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-3">
+                                          <div>
+                                              <label className="block text-xs text-gray-400 mb-1">Belt Level</label>
+                                              <select
+                                                  value={draft.beltRequirement || 'All Belts'}
+                                                  onChange={e => setDraft(index, { beltRequirement: e.target.value })}
+                                                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white w-full focus:outline-none focus:border-sky-500"
+                                              >
+                                                  <option value="All Belts">All Belts</option>
+                                                  {(data.belts || []).map(b => (
+                                                      <option key={b.id} value={b.name}>{b.name}</option>
+                                                  ))}
+                                              </select>
+                                          </div>
+                                          <div>
+                                              <label className="block text-xs text-gray-400 mb-1">Capacity</label>
+                                              <input
+                                                  type="number"
+                                                  min="1"
+                                                  max="200"
+                                                  value={draft.capacity || 20}
+                                                  onChange={e => setDraft(index, { capacity: parseInt(e.target.value, 10) || 20 })}
+                                                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white w-full focus:outline-none focus:border-sky-500"
+                                              />
+                                          </div>
+                                      </div>
+
+                                      <button
+                                          onClick={() => handleAddClass(index, branchName)}
+                                          disabled={!draft.name.trim() || draft.days.length === 0}
+                                          className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold py-2 rounded transition-colors"
+                                      >
+                                          Add Class to Schedule
+                                      </button>
                                   </div>
-                              ))}
-                              {(!data.locationClasses?.[branchName] || data.locationClasses[branchName].length === 0) && (
-                                  <span className="text-xs text-gray-500 italic">{t('wizard.step5.noStudents').replace('students', t('wizard.step1.classes').toLowerCase())}</span>
+                              )}
+
+                              {scheduledClasses.length === 0 && !isOpen ? (
+                                  <p className="text-xs text-gray-500 italic text-center py-2">No classes yet — click &quot;+ Add Class&quot; to build your schedule</p>
+                              ) : (
+                                  <div className="space-y-2">
+                                      {scheduledClasses.map(cls => (
+                                          <div key={cls.id} className="bg-gray-800 border border-gray-700 rounded-md px-3 py-2 flex items-start justify-between gap-2">
+                                              <div className="min-w-0">
+                                                  <p className="text-sm font-semibold text-white truncate">{cls.name}</p>
+                                                  <p className="text-xs text-sky-400 mt-0.5">
+                                                      {cls.days.map(d => d.slice(0, 3)).join(' · ')}
+                                                      {' · '}
+                                                      {cls.startTime} – {cls.endTime}
+                                                  </p>
+                                                  <div className="flex gap-2 mt-1">
+                                                      <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">{cls.beltRequirement || 'All Belts'}</span>
+                                                      <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">Max {cls.capacity || 20}</span>
+                                                  </div>
+                                              </div>
+                                              <button
+                                                  onClick={() => handleRemoveClass(branchName, cls.id)}
+                                                  className="text-gray-500 hover:text-red-400 flex-shrink-0 mt-0.5 transition-colors"
+                                              >
+                                                  ✕
+                                              </button>
+                                          </div>
+                                      ))}
+                                  </div>
                               )}
                           </div>
                       </div>
-                  </div>
-              ))}
+                  );
+              })}
           </div>
       </div>
       
@@ -244,9 +408,9 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
 
        <style>{`
         .wizard-input {
-            background-color: #374151; /* bg-gray-700 */
-            border: 1px solid #4B5563; /* border-gray-600 */
-            border-radius: 0.375rem; /* rounded-md */
+            background-color: #374151;
+            border: 1px solid #4B5563;
+            border-radius: 0.375rem;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             padding: 0.5rem 0.75rem;
             color: white;
@@ -254,9 +418,11 @@ export const Step1ClubInfo: React.FC<Step1Props> = ({ data, onUpdate }) => {
         }
         .wizard-input:focus {
             outline: none;
-            border-color: #3B82F6; /* focus:border-sky-500 */
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* focus:ring-sky-500 */
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.15s ease-out; }
        `}</style>
     </div>
   );

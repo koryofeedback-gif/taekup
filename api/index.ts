@@ -9237,12 +9237,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           `, [csClubId]);
           return res.json(result.rows);
         } else if (req.method === 'POST') {
-          const { className, day, time, instructor, location, beltRequirement, capacity } = req.body || {};
+          const { className, day, time, endTime, instructor, location, beltRequirement, capacity } = req.body || {};
           if (!className || !day || !time) return res.status(400).json({ error: 'className, day, time required' });
           const ins = await client.query(`
-            INSERT INTO class_sessions (club_id, class_name, day, time, instructor, location, belt_requirement, capacity)
-            VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8) RETURNING *
-          `, [csClubId, className, day, time, instructor || null, location || null, beltRequirement || 'All', capacity || 20]);
+            INSERT INTO class_sessions (club_id, class_name, day, time, end_time, instructor, location, belt_requirement, capacity)
+            VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *
+          `, [csClubId, className, day, time, endTime || null, instructor || null, location || null, beltRequirement || 'All', capacity || 20]);
           return res.json(ins.rows[0]);
         }
         return res.status(200).json([]);

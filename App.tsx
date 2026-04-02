@@ -486,6 +486,37 @@ const App: React.FC = () => {
             }
         }
 
+        // Save class schedules from Step 1 to class_sessions table
+        if (clubId && data.locationClassSchedules) {
+            const classSessionPromises: Promise<any>[] = [];
+            for (const [locationName, classes] of Object.entries(data.locationClassSchedules)) {
+                for (const cls of classes) {
+                    for (const day of cls.days) {
+                        classSessionPromises.push(
+                            fetch(`/api/clubs/${clubId}/class-sessions`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    className: cls.name,
+                                    day,
+                                    time: cls.startTime,
+                                    endTime: cls.endTime,
+                                    instructor: data.coaches?.[0]?.name || data.ownerName || '',
+                                    location: locationName,
+                                    beltRequirement: cls.beltRequirement || 'All Belts',
+                                    capacity: cls.capacity || 20,
+                                })
+                            }).catch(err => console.error('[Wizard] Failed to save class session:', cls.name, day, err))
+                        );
+                    }
+                }
+            }
+            if (classSessionPromises.length > 0) {
+                await Promise.all(classSessionPromises);
+                console.log('[Wizard] Saved', classSessionPromises.length, 'class session(s) to DB');
+            }
+        }
+
         const message = await getOnboardingMessage();
         setOnboardingMessage(message);
 

@@ -6813,11 +6813,11 @@ export function registerRoutes(app: Express) {
   app.post('/api/clubs/:clubId/class-sessions', async (req: Request, res: Response) => {
     try {
       const { clubId } = req.params;
-      const { className, day, time, instructor, location, beltRequirement, capacity } = req.body;
+      const { className, day, time, endTime, instructor, location, beltRequirement, capacity } = req.body;
       if (!className || !day || !time) return res.status(400).json({ error: 'className, day, time required' });
       const rows = await db.execute(sql`
-        INSERT INTO class_sessions (club_id, class_name, day, time, instructor, location, belt_requirement, capacity)
-        VALUES (${clubId}::uuid, ${className}, ${day}, ${time}, ${instructor || null}, ${location || null}, ${beltRequirement || 'All'}, ${capacity || 20})
+        INSERT INTO class_sessions (club_id, class_name, day, time, end_time, instructor, location, belt_requirement, capacity)
+        VALUES (${clubId}::uuid, ${className}, ${day}, ${time}, ${endTime || null}, ${instructor || null}, ${location || null}, ${beltRequirement || 'All'}, ${capacity || 20})
         RETURNING *
       `);
       res.json(rows[0]);

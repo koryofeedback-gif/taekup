@@ -3183,6 +3183,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     // Modal State
     const [modalType, setModalType] = useState<string | null>(null);
     
+    // Class sessions fetched from DB for the Add Student modal dropdown
+    const [modalDbClasses, setModalDbClasses] = useState<{id: number; class_name: string; location: string; day: string; time: string}[]>([]);
+    useEffect(() => {
+        if (!clubId) return;
+        fetch(`/api/clubs/${clubId}/class-sessions`)
+            .then(r => r.ok ? r.json() : [])
+            .then(rows => setModalDbClasses(Array.isArray(rows) ? rows : []))
+            .catch(() => {});
+    }, [clubId]);
+
     // Temporary state for forms
     const [tempStudent, setTempStudent] = useState<Partial<Student>>({});
     const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
@@ -3702,6 +3712,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     // CRITICAL: Use the database-generated UUID
                     databaseStudentId = result.student.id;
                     console.log('[AdminDashboard] Student added successfully with database ID:', databaseStudentId);
+
+                    // Create enrollment record for each matching class session
+                    if (tempStudent.assignedClass) {
+                        const loc = tempStudent.location || data.branchNames?.[0] || '';
+                        const matchingSessions = modalDbClasses.filter(s =>
+                            s.class_name === tempStudent.assignedClass &&
+                            (!loc || s.location === loc)
+                        );
+                        for (const session of matchingSessions) {
+                            fetch(`/api/class-sessions/${session.id}/enroll`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ studentId: databaseStudentId, clubId })
+                            }).catch(err => console.error('[Enroll] Failed for session', session.id, err));
+                        }
+                    }
+
                     if (tempStudent.parentEmail) {
                         alert(`Welcome email sent to parent at ${tempStudent.parentEmail}!`);
                     }
@@ -4165,8 +4192,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     <option value="">{t('admin.students.addStudentModal.selectClass')}</option>
                                     {(() => {
                                         const loc = tempStudent.location || data.branchNames?.[0] || '';
-                                        const classes = data.locationClasses?.[loc] || data.classes || [];
-                                        return classes.map(c => <option key={c} value={c}>{c}</option>);
+                                        const dbClassNames = Array.from(new Set(
+                                            modalDbClasses.filter(s => !loc || s.location === loc).map(s => s.class_name)
+                                        ));
+                                        const fallbackClasses = data.locationClasses?.[loc] || data.classes || [];
+                                        const classNames = dbClassNames.length > 0 ? dbClassNames : fallbackClasses;
+                                        return classNames.map(c => <option key={c} value={c}>{c}</option>);
                                     })()}
                                 </select>
                             </div>
@@ -4465,8 +4496,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     <option value="">Select Class</option>
                                     {(() => {
                                         const loc = tempStudent.location || '';
-                                        const classes = loc ? (data.locationClasses?.[loc] || []) : (data.classes || []);
-                                        return classes.map(c => <option key={c} value={c}>{c}</option>);
+                                        const dbClassNames = Array.from(new Set(
+                                            modalDbClasses.filter(s => !loc || s.location === loc).map(s => s.class_name)
+                                        ));
+                                        const fallbackClasses = loc ? (data.locationClasses?.[loc] || []) : (data.classes || []);
+                                        const classNames = dbClassNames.length > 0 ? dbClassNames : fallbackClasses;
+                                        return classNames.map(c => <option key={c} value={c}>{c}</option>);
                                     })()}
                                 </select>
                             </div>

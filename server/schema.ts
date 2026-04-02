@@ -850,6 +850,7 @@ export const classSessions = pgTable('class_sessions', {
   time: varchar('time', { length: 10 }).notNull(),
   instructor: varchar('instructor', { length: 255 }),
   location: varchar('location', { length: 255 }),
+  endTime: varchar('end_time', { length: 10 }),
   beltRequirement: varchar('belt_requirement', { length: 100 }).default('All'),
   capacity: integer('capacity').default(20),
   isActive: boolean('is_active').default(true),
