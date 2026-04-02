@@ -55,6 +55,38 @@ async function ensureSchema() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS class_sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        club_id UUID NOT NULL,
+        class_name VARCHAR(255) NOT NULL,
+        day VARCHAR(20) NOT NULL,
+        time VARCHAR(10) NOT NULL,
+        instructor VARCHAR(255),
+        location VARCHAR(255),
+        belt_requirement VARCHAR(100) DEFAULT 'All',
+        capacity INTEGER DEFAULT 20,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS class_enrollments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id UUID NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+        student_id UUID NOT NULL,
+        club_id UUID NOT NULL,
+        enrolled_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(session_id, student_id)
+      );
+      CREATE TABLE IF NOT EXISTS class_attendance (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id UUID NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
+        student_id UUID NOT NULL,
+        club_id UUID NOT NULL,
+        attendance_date DATE NOT NULL,
+        present BOOLEAN DEFAULT false,
+        UNIQUE(session_id, student_id, attendance_date)
+      );
+    `);
     // Ensure unique constraint on onboarding_progress.club_id so ON CONFLICT (club_id) works
     await client.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS onboarding_progress_club_id_unique
@@ -9192,17 +9224,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ---- Class Sessions (DB-backed schedule) ----
     const classSessionsListMatch = path.match(/^\/clubs\/([^/]+)\/class-sessions\/?$/);
     if (classSessionsListMatch) {
-      const clubId = classSessionsListMatch[1];
+      const csClubId = classSessionsListMatch[1];
       const client = await pool.connect();
       try {
         if (req.method === 'GET') {
           const result = await client.query(`
-            SELECT cs.*, COUNT(ce.id) FILTER (WHERE ce.id IS NOT NULL) as enrolled_count
+            SELECT cs.*, COALESCE(COUNT(ce.id), 0)::int as enrolled_count
             FROM class_sessions cs
             LEFT JOIN class_enrollments ce ON ce.session_id = cs.id
             WHERE cs.club_id = $1::uuid AND cs.is_active = true
             GROUP BY cs.id ORDER BY cs.day, cs.time
-          `, [clubId]);
+          `, [csClubId]);
           return res.json(result.rows);
         } else if (req.method === 'POST') {
           const { className, day, time, instructor, location, beltRequirement, capacity } = req.body || {};
@@ -9210,58 +9242,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const ins = await client.query(`
             INSERT INTO class_sessions (club_id, class_name, day, time, instructor, location, belt_requirement, capacity)
             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8) RETURNING *
-          `, [clubId, className, day, time, instructor || null, location || null, beltRequirement || 'All', capacity || 20]);
+          `, [csClubId, className, day, time, instructor || null, location || null, beltRequirement || 'All', capacity || 20]);
           return res.json(ins.rows[0]);
         }
+        return res.status(200).json([]);
+      } catch (csErr: any) {
+        console.error('[class-sessions] Error:', csErr.message, 'clubId:', csClubId);
+        return res.status(500).json({ error: 'Failed to process class sessions', detail: csErr.message });
       } finally { client.release(); }
     }
 
-    const classSessionDeleteMatch = path.match(/^\/class-sessions\/([^/]+)\/?$/) && req.method === 'DELETE';
-    if (classSessionDeleteMatch) {
-      const sessionId = path.match(/^\/class-sessions\/([^/]+)\/?$/)![1];
+    const classSessionDeleteMatch = path.match(/^\/class-sessions\/([^/]+)\/?$/);
+    if (classSessionDeleteMatch && req.method === 'DELETE') {
+      const csSessionId = classSessionDeleteMatch[1];
       const client = await pool.connect();
       try {
-        await client.query(`UPDATE class_sessions SET is_active = false WHERE id = $1::uuid`, [sessionId]);
+        await client.query(`UPDATE class_sessions SET is_active = false WHERE id = $1::uuid`, [csSessionId]);
         return res.json({ success: true });
-      } finally { client.release(); }
+      } catch (e: any) { return res.status(500).json({ error: e.message }); }
+      finally { client.release(); }
     }
 
     const rosterMatch = path.match(/^\/class-sessions\/([^/]+)\/roster\/?$/);
     if (rosterMatch) {
-      const sessionId = rosterMatch[1];
+      const csSessionId = rosterMatch[1];
       const client = await pool.connect();
       try {
         const result = await client.query(`
           SELECT s.id, s.name, s.belt, s.stripes, s.parent_email, s.parent_name, ce.enrolled_at
           FROM class_enrollments ce JOIN students s ON ce.student_id = s.id
           WHERE ce.session_id = $1::uuid ORDER BY s.name ASC
-        `, [sessionId]);
+        `, [csSessionId]);
         return res.json(result.rows);
-      } finally { client.release(); }
+      } catch (e: any) { return res.status(500).json({ error: e.message }); }
+      finally { client.release(); }
     }
 
     const enrollMatch = path.match(/^\/class-sessions\/([^/]+)\/enroll(?:\/([^/]+))?\/?$/);
     if (enrollMatch) {
-      const sessionId = enrollMatch[1];
+      const csSessionId = enrollMatch[1];
       const client = await pool.connect();
       try {
         if (req.method === 'POST') {
-          const { studentId, clubId } = req.body || {};
+          const { studentId, clubId: enrollClubId } = req.body || {};
           await client.query(`
             INSERT INTO class_enrollments (session_id, student_id, club_id)
             VALUES ($1::uuid, $2::uuid, $3::uuid) ON CONFLICT (session_id, student_id) DO NOTHING
-          `, [sessionId, studentId, clubId]);
+          `, [csSessionId, studentId, enrollClubId]);
           return res.json({ success: true });
         } else if (req.method === 'DELETE' && enrollMatch[2]) {
-          await client.query(`DELETE FROM class_enrollments WHERE session_id = $1::uuid AND student_id = $2::uuid`, [sessionId, enrollMatch[2]]);
+          await client.query(`DELETE FROM class_enrollments WHERE session_id = $1::uuid AND student_id = $2::uuid`, [csSessionId, enrollMatch[2]]);
           return res.json({ success: true });
         }
-      } finally { client.release(); }
+        return res.status(405).json({ error: 'Method not allowed' });
+      } catch (e: any) { return res.status(500).json({ error: e.message }); }
+      finally { client.release(); }
     }
 
     const attendanceMatch = path.match(/^\/class-sessions\/([^/]+)\/attendance(?:\/([^/]+))?\/?$/);
     if (attendanceMatch) {
-      const sessionId = attendanceMatch[1];
+      const csSessionId = attendanceMatch[1];
       const client = await pool.connect();
       try {
         if (req.method === 'GET' && attendanceMatch[2]) {
@@ -9269,21 +9309,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             SELECT ca.student_id, ca.present, s.name, s.belt
             FROM class_attendance ca JOIN students s ON ca.student_id = s.id
             WHERE ca.session_id = $1::uuid AND ca.attendance_date = $2
-          `, [sessionId, attendanceMatch[2]]);
+          `, [csSessionId, attendanceMatch[2]]);
           return res.json(result.rows);
         } else if (req.method === 'POST') {
-          const { date, attendance, clubId } = req.body || {};
-          if (!date || !attendance || !clubId) return res.status(400).json({ error: 'date, attendance, clubId required' });
+          const { date, attendance, clubId: attClubId } = req.body || {};
+          if (!date || !attendance || !attClubId) return res.status(400).json({ error: 'date, attendance, clubId required' });
           for (const entry of attendance) {
             await client.query(`
               INSERT INTO class_attendance (session_id, student_id, club_id, attendance_date, present)
               VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5)
               ON CONFLICT (session_id, student_id, attendance_date) DO UPDATE SET present = EXCLUDED.present
-            `, [sessionId, entry.studentId, clubId, date, entry.present]);
+            `, [csSessionId, entry.studentId, attClubId, date, entry.present]);
           }
           return res.json({ success: true, count: attendance.length });
         }
-      } finally { client.release(); }
+        return res.status(405).json({ error: 'Method not allowed' });
+      } catch (e: any) { return res.status(500).json({ error: e.message }); }
+      finally { client.release(); }
     }
 
     // World Rankings endpoints
