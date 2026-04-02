@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import { Loader2, Calendar, X } from 'lucide-react';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
@@ -1001,28 +1002,156 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
     )
 }
 
-const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void }> = ({ data, onUpdateData, onOpenModal }) => {
+interface DbClassSession {
+    id: string; class_name: string; day: string; time: string;
+    instructor: string | null; location: string | null;
+    belt_requirement: string; capacity: number;
+    enrolled_count: number; is_active: boolean;
+}
+
+const BELT_COLORS: Record<string, string> = {
+    White: 'bg-gray-200 text-gray-800', Yellow: 'bg-yellow-400 text-yellow-900',
+    Orange: 'bg-orange-500 text-white', Green: 'bg-green-500 text-white',
+    Blue: 'bg-blue-500 text-white', Purple: 'bg-purple-600 text-white',
+    Red: 'bg-red-600 text-white', Brown: 'bg-yellow-800 text-white',
+    Black: 'bg-gray-900 text-white border border-gray-600', All: 'bg-sky-600 text-white',
+};
+
+const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void, clubId?: string }> = ({ data, onUpdateData, onOpenModal, clubId }) => {
     const { t } = useTranslation(data.language);
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const dayKeys: Record<string, string> = { Monday: 'monday', Tuesday: 'tuesday', Wednesday: 'wednesday', Thursday: 'thursday', Friday: 'friday', Saturday: 'saturday', Sunday: 'sunday' };
 
-    const handleRemoveClass = (id: string) => {
-        if(confirm(t('admin.schedule.removeClassConfirm'))) {
-            onUpdateData({ schedule: data.schedule.filter(s => s.id !== id) });
-        }
-    }
+    // DB-backed class sessions
+    const [dbSessions, setDbSessions] = React.useState<DbClassSession[]>([]);
+    const [sessionsLoaded, setSessionsLoaded] = React.useState(false);
+
+    // Roster panel state
+    const [rosterSession, setRosterSession] = React.useState<DbClassSession | null>(null);
+    const [roster, setRoster] = React.useState<any[]>([]);
+    const [rosterLoading, setRosterLoading] = React.useState(false);
+    const [addStudentId, setAddStudentId] = React.useState('');
+
+    // Attendance modal state
+    const [attendSession, setAttendSession] = React.useState<DbClassSession | null>(null);
+    const [attendDate, setAttendDate] = React.useState(() => new Date().toISOString().slice(0, 10));
+    const [attendList, setAttendList] = React.useState<{ studentId: string; name: string; belt: string; present: boolean }[]>([]);
+    const [attendLoading, setAttendLoading] = React.useState(false);
+    const [attendSaving, setAttendSaving] = React.useState(false);
+
+    // AI Plan modal state
+    const [aiPlanSession, setAiPlanSession] = React.useState<DbClassSession | null>(null);
+    const [aiPlan, setAiPlan] = React.useState('');
+    const [aiPlanLoading, setAiPlanLoading] = React.useState(false);
+
+    const loadSessions = React.useCallback(async () => {
+        if (!clubId) return;
+        try {
+            const res = await fetch(`/api/clubs/${clubId}/class-sessions`);
+            if (res.ok) { const d = await res.json(); setDbSessions(d); }
+        } catch {}
+        setSessionsLoaded(true);
+    }, [clubId]);
+
+    React.useEffect(() => { loadSessions(); }, [loadSessions]);
+
+    // Listen for new class added from parent component
+    React.useEffect(() => {
+        const handler = () => loadSessions();
+        window.addEventListener('reloadClassSessions', handler);
+        return () => window.removeEventListener('reloadClassSessions', handler);
+    }, [loadSessions]);
+
+    const handleDeleteSession = async (id: string) => {
+        if (!confirm('Remove this class from the schedule?')) return;
+        await fetch(`/api/class-sessions/${id}`, { method: 'DELETE' });
+        setDbSessions(prev => prev.filter(s => s.id !== id));
+        onUpdateData({ schedule: data.schedule.filter(s => s.id !== id) });
+    };
+
+    // Roster
+    const openRoster = async (session: DbClassSession) => {
+        setRosterSession(session); setRosterLoading(true); setAddStudentId('');
+        const res = await fetch(`/api/class-sessions/${session.id}/roster`);
+        if (res.ok) setRoster(await res.json());
+        setRosterLoading(false);
+    };
+    const enrollStudent = async () => {
+        if (!addStudentId || !rosterSession || !clubId) return;
+        await fetch(`/api/class-sessions/${rosterSession.id}/enroll`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentId: addStudentId, clubId })
+        });
+        setAddStudentId('');
+        await openRoster(rosterSession);
+        setDbSessions(prev => prev.map(s => s.id === rosterSession.id ? { ...s, enrolled_count: s.enrolled_count + 1 } : s));
+    };
+    const unenrollStudent = async (studentId: string) => {
+        if (!rosterSession) return;
+        await fetch(`/api/class-sessions/${rosterSession.id}/enroll/${studentId}`, { method: 'DELETE' });
+        setRoster(prev => prev.filter(s => s.id !== studentId));
+        setDbSessions(prev => prev.map(s => s.id === rosterSession!.id ? { ...s, enrolled_count: Math.max(0, s.enrolled_count - 1) } : s));
+    };
+
+    // Attendance
+    const openAttendance = async (session: DbClassSession, date?: string) => {
+        const d = date || attendDate;
+        setAttendSession(session); setAttendLoading(true); setAttendDate(d);
+        const rosterRes = await fetch(`/api/class-sessions/${session.id}/roster`);
+        const rosterData = rosterRes.ok ? await rosterRes.json() : [];
+        const attendRes = await fetch(`/api/class-sessions/${session.id}/attendance/${d}`);
+        const attendData = attendRes.ok ? await attendRes.json() : [];
+        const attendMap: Record<string, boolean> = {};
+        attendData.forEach((a: any) => { attendMap[a.student_id] = a.present; });
+        setAttendList(rosterData.map((s: any) => ({ studentId: s.id, name: s.name, belt: s.belt, present: attendMap[s.id] ?? false })));
+        setAttendLoading(false);
+    };
+    const saveAttendance = async () => {
+        if (!attendSession || !clubId) return;
+        setAttendSaving(true);
+        await fetch(`/api/class-sessions/${attendSession.id}/attendance`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: attendDate, attendance: attendList.map(a => ({ studentId: a.studentId, present: a.present })), clubId })
+        });
+        setAttendSaving(false); setAttendSession(null);
+    };
+
+    // AI Lesson Plan
+    const openAiPlan = async (session: DbClassSession) => {
+        setAiPlanSession(session); setAiPlanLoading(true); setAiPlan('');
+        try {
+            const res = await fetch('/api/ai/class-plan', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    beltLevel: session.belt_requirement === 'All' ? 'All Levels' : session.belt_requirement,
+                    focusArea: session.class_name,
+                    classDuration: 60,
+                    studentCount: session.enrolled_count || 10,
+                    language: data.language === 'fr' ? 'French' : data.language === 'de' ? 'German' : 'English',
+                })
+            });
+            if (res.ok) { const d = await res.json(); setAiPlan(d.plan || d.content || 'Plan generated.'); }
+            else setAiPlan('Could not generate plan. Please try again.');
+        } catch { setAiPlan('Could not generate plan. Please try again.'); }
+        setAiPlanLoading(false);
+    };
 
     const handleRemoveEvent = (id: string) => {
         if(confirm(t('admin.schedule.cancelEventConfirm'))) {
             onUpdateData({ events: data.events.filter(e => e.id !== id) });
         }
-    }
+    };
 
     const handleRemovePrivateSlot = (id: string) => {
         if(confirm(t('admin.schedule.removeSlotConfirm'))) {
             onUpdateData({ privateSlots: (data.privateSlots || []).filter(s => s.id !== id) });
         }
-    }
+    };
+
+    const notEnrolledStudents = (data.students || []).filter(s => !roster.some((r: any) => r.id === s.id));
+    const formatTime = (t: string) => { try { const [h, m] = t.split(':'); const h12 = parseInt(h) % 12 || 12; return `${h12}:${m} ${parseInt(h) < 12 ? 'AM' : 'PM'}`; } catch { return t; } };
+    const fillPct = (sess: DbClassSession) => sess.capacity > 0 ? Math.min(100, Math.round((sess.enrolled_count / sess.capacity) * 100)) : 0;
+    const fillColor = (pct: number) => pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-yellow-500' : 'bg-green-500';
 
     return (
         <div className="space-y-8">
@@ -1030,40 +1159,219 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             <div>
                 <SectionHeader 
                     title={t('admin.schedule.weeklyClassSchedule')} 
-                    description={t('admin.schedule.defineRecurring')} 
+                    description="DB-backed class roster, attendance tracking, and AI lesson planning"
                     action={
                         <button onClick={() => onOpenModal('class')} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-lg">
                             {t('admin.schedule.addClass')}
                         </button>
                     }
                 />
-                <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                    {days.map(day => {
-                        const classes = (data.schedule || []).filter(s => s.day === day).sort((a,b) => a.time.localeCompare(b.time));
-                        return (
-                            <div key={day} className="bg-gray-800 rounded-lg border border-gray-700 p-3 min-h-[200px]">
-                                <h4 className="font-bold text-gray-400 text-sm mb-3 border-b border-gray-700 pb-2">{t(`admin.schedule.days.${dayKeys[day]}`)}</h4>
-                                <div className="space-y-2">
-                                    {classes.map(c => (
-                                        <div key={c.id} className="bg-gray-700/50 p-2 rounded text-xs group relative hover:bg-gray-700 transition-colors">
-                                            <p className="font-bold text-sky-300">{c.time}</p>
-                                            <p className="text-white font-medium truncate">{c.className}</p>
-                                            <p className="text-gray-500 truncate">{c.instructor}</p>
-                                            <button 
-                                                onClick={() => handleRemoveClass(c.id)}
-                                                className="absolute top-1 right-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100"
-                                            >
-                                                &times;
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {classes.length === 0 && <p className="text-gray-600 text-xs italic">{t('admin.schedule.noClasses')}</p>}
+
+                {!sessionsLoaded && clubId && (
+                    <div className="text-center py-12 text-gray-500"><Loader2 className="animate-spin mx-auto mb-2" size={24} />Loading schedule...</div>
+                )}
+
+                {sessionsLoaded && dbSessions.length === 0 && (data.schedule || []).length === 0 && (
+                    <div className="bg-gray-800 rounded-lg border border-gray-700 p-12 text-center">
+                        <Calendar size={40} className="mx-auto mb-3 text-gray-600" />
+                        <p className="text-gray-400 font-medium">No classes scheduled yet</p>
+                        <p className="text-gray-600 text-sm mt-1">Add your first class to start building your weekly schedule</p>
+                        <button onClick={() => onOpenModal('class')} className="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded">Add First Class</button>
+                    </div>
+                )}
+
+                {(sessionsLoaded || !clubId) && (dbSessions.length > 0 || (data.schedule || []).length > 0) && (
+                    <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+                        {days.map(day => {
+                            const dbClasses = dbSessions.filter(s => s.day === day).sort((a,b) => a.time.localeCompare(b.time));
+                            const legacyClasses = (data.schedule || []).filter(s => s.day === day && !dbSessions.some(db => db.class_name === s.className && db.day === s.day)).sort((a,b) => a.time.localeCompare(b.time));
+                            return (
+                                <div key={day} className="bg-gray-800 rounded-lg border border-gray-700 p-3 min-h-[160px]">
+                                    <h4 className="font-bold text-gray-400 text-xs uppercase mb-3 border-b border-gray-700 pb-2 tracking-wide">{t(`admin.schedule.days.${dayKeys[day]}`)}</h4>
+                                    <div className="space-y-2">
+                                        {/* DB-backed class cards */}
+                                        {dbClasses.map(session => {
+                                            const pct = fillPct(session);
+                                            const beltKey = session.belt_requirement || 'All';
+                                            const beltColor = BELT_COLORS[beltKey] || 'bg-sky-700 text-white';
+                                            return (
+                                                <div key={session.id} className="bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-xs group">
+                                                    <div className="flex items-start justify-between mb-1">
+                                                        <span className="font-bold text-cyan-400">{formatTime(session.time)}</span>
+                                                        <button onClick={() => handleDeleteSession(session.id)} className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 ml-1 -mt-0.5" title="Remove">&times;</button>
+                                                    </div>
+                                                    <p className="text-white font-semibold leading-tight truncate">{session.class_name}</p>
+                                                    {session.instructor && <p className="text-gray-500 text-xs truncate mt-0.5">{session.instructor}</p>}
+                                                    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${beltColor}`}>{beltKey === 'All' ? 'All Belts' : beltKey}</span>
+                                                    </div>
+                                                    {/* Fill rate bar */}
+                                                    <div className="mt-2">
+                                                        <div className="flex justify-between text-gray-500 mb-1">
+                                                            <span>{session.enrolled_count}/{session.capacity}</span>
+                                                            <span>{pct}%</span>
+                                                        </div>
+                                                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                                                            <div className={`h-full rounded-full transition-all ${fillColor(pct)}`} style={{ width: `${pct}%` }} />
+                                                        </div>
+                                                    </div>
+                                                    {/* Action buttons */}
+                                                    <div className="flex gap-1 mt-2 pt-2 border-t border-gray-700">
+                                                        <button onClick={() => openRoster(session)} className="flex-1 text-center bg-gray-700 hover:bg-gray-600 text-gray-300 py-1 rounded text-xs font-medium transition-colors">Roster</button>
+                                                        <button onClick={() => { openAttendance(session); }} className="flex-1 text-center bg-gray-700 hover:bg-blue-700 text-gray-300 hover:text-white py-1 rounded text-xs font-medium transition-colors">Attend</button>
+                                                        <button onClick={() => { openAiPlan(session); }} className="flex-1 text-center bg-gray-700 hover:bg-purple-700 text-gray-300 hover:text-white py-1 rounded text-xs font-medium transition-colors" title="AI Lesson Plan">AI Plan</button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {/* Legacy wizard_data classes (not yet in DB) */}
+                                        {legacyClasses.map(c => (
+                                            <div key={c.id} className="bg-gray-700/40 p-2 rounded text-xs border border-dashed border-gray-600">
+                                                <p className="font-bold text-gray-400">{formatTime(c.time)}</p>
+                                                <p className="text-white font-medium truncate">{c.className}</p>
+                                                <p className="text-gray-600 truncate text-xs">{c.instructor}</p>
+                                                <p className="text-yellow-600 text-xs mt-1 italic">Legacy — re-add to upgrade</p>
+                                            </div>
+                                        ))}
+                                        {dbClasses.length === 0 && legacyClasses.length === 0 && (
+                                            <p className="text-gray-700 text-xs italic text-center py-4">No classes</p>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
+
+            {/* ─── Roster Panel (slide-in overlay) ─── */}
+            {rosterSession && (
+                <div className="fixed inset-0 z-50 flex justify-end">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setRosterSession(null)} />
+                    <div className="relative w-full max-w-sm bg-gray-900 border-l border-gray-700 flex flex-col h-full shadow-2xl">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                            <div>
+                                <h3 className="font-bold text-white">{rosterSession.class_name}</h3>
+                                <p className="text-xs text-gray-500">{rosterSession.day} · {formatTime(rosterSession.time)} · {roster.length}/{rosterSession.capacity} enrolled</p>
+                            </div>
+                            <button onClick={() => setRosterSession(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                        </div>
+                        {/* Add student */}
+                        <div className="p-4 border-b border-gray-800">
+                            <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Add student to roster</p>
+                            <div className="flex gap-2">
+                                <select value={addStudentId} onChange={e => setAddStudentId(e.target.value)} className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm text-white">
+                                    <option value="">Select student...</option>
+                                    {notEnrolledStudents.map(s => <option key={s.id} value={s.id}>{s.name} ({s.belt})</option>)}
+                                </select>
+                                <button onClick={enrollStudent} disabled={!addStudentId} className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-3 py-1.5 rounded text-sm font-bold">Add</button>
+                            </div>
+                        </div>
+                        {/* Roster list */}
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {rosterLoading && <div className="text-center text-gray-500 py-8"><Loader2 className="animate-spin mx-auto" size={20} /></div>}
+                            {!rosterLoading && roster.length === 0 && (
+                                <div className="text-center text-gray-600 py-8 text-sm">No students enrolled yet</div>
+                            )}
+                            {!rosterLoading && roster.map((s: any) => (
+                                <div key={s.id} className="flex items-center justify-between py-2.5 border-b border-gray-800">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-white">{s.name.charAt(0)}</div>
+                                        <div>
+                                            <p className="text-white text-sm font-medium">{s.name}</p>
+                                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${BELT_COLORS[s.belt] || 'bg-gray-700 text-gray-300'}`}>{s.belt}</span>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => unenrollStudent(s.id)} className="text-red-500 hover:text-red-400 text-xs font-bold px-2 py-1 rounded hover:bg-red-900/20">Remove</button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-4 border-t border-gray-700">
+                            <button onClick={() => { setAttendSession(rosterSession); openAttendance(rosterSession); setRosterSession(null); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-sm">Take Today's Attendance</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Attendance Modal ─── */}
+            {attendSession && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setAttendSession(null)} />
+                    <div className="relative bg-gray-900 rounded-xl border border-gray-700 w-full max-w-md shadow-2xl flex flex-col max-h-[85vh]">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                            <div>
+                                <h3 className="font-bold text-white">Attendance</h3>
+                                <p className="text-xs text-gray-400">{attendSession.class_name} · {attendSession.day}</p>
+                            </div>
+                            <button onClick={() => setAttendSession(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                        </div>
+                        <div className="p-4 border-b border-gray-800">
+                            <label className="text-xs text-gray-500 uppercase font-semibold block mb-1">Date</label>
+                            <input type="date" value={attendDate} onChange={e => { setAttendDate(e.target.value); openAttendance(attendSession, e.target.value); }} className="bg-gray-800 border border-gray-600 rounded px-3 py-1.5 text-white text-sm w-full" />
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {attendLoading && <div className="text-center text-gray-500 py-8"><Loader2 className="animate-spin mx-auto" size={20} /></div>}
+                            {!attendLoading && attendList.length === 0 && (
+                                <div className="text-center text-gray-600 py-8 text-sm">No students enrolled — add students via Roster first</div>
+                            )}
+                            {!attendLoading && attendList.map((s, i) => (
+                                <div key={s.studentId} className="flex items-center justify-between py-3 border-b border-gray-800">
+                                    <div className="flex items-center gap-3">
+                                        <button onClick={() => setAttendList(prev => prev.map((a, j) => j === i ? { ...a, present: !a.present } : a))}
+                                            className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${s.present ? 'bg-green-600 border-green-500' : 'border-gray-600'}`}>
+                                            {s.present && <span className="text-white text-xs font-bold">✓</span>}
+                                        </button>
+                                        <div>
+                                            <p className="text-white text-sm font-medium">{s.name}</p>
+                                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${BELT_COLORS[s.belt] || 'bg-gray-700 text-gray-300'}`}>{s.belt}</span>
+                                        </div>
+                                    </div>
+                                    <span className={`text-xs font-bold ${s.present ? 'text-green-400' : 'text-gray-600'}`}>{s.present ? 'Present' : 'Absent'}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-4 border-t border-gray-700 flex gap-2">
+                            <div className="text-sm text-gray-500 flex-1 self-center">{attendList.filter(a => a.present).length}/{attendList.length} present</div>
+                            <button onClick={() => setAttendSession(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
+                            <button onClick={saveAttendance} disabled={attendSaving || attendList.length === 0} className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white font-bold py-2 px-5 rounded text-sm">
+                                {attendSaving ? 'Saving...' : 'Save Attendance'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── AI Lesson Plan Modal ─── */}
+            {aiPlanSession && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setAiPlanSession(null)} />
+                    <div className="relative bg-gray-900 rounded-xl border border-gray-700 w-full max-w-xl shadow-2xl flex flex-col max-h-[85vh]">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                            <div>
+                                <h3 className="font-bold text-white flex items-center gap-2"><span>AI Lesson Plan</span><span className="text-purple-400 text-xs bg-purple-900/30 px-2 py-0.5 rounded">GPT-4o</span></h3>
+                                <p className="text-xs text-gray-400">{aiPlanSession.class_name} · {aiPlanSession.day} {formatTime(aiPlanSession.time)}</p>
+                            </div>
+                            <button onClick={() => setAiPlanSession(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-5">
+                            {aiPlanLoading && (
+                                <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+                                    <Loader2 className="animate-spin mb-3" size={32} />
+                                    <p>Generating lesson plan for {aiPlanSession.class_name}...</p>
+                                </div>
+                            )}
+                            {!aiPlanLoading && aiPlan && (
+                                <pre className="whitespace-pre-wrap text-gray-300 text-sm leading-relaxed font-sans">{aiPlan}</pre>
+                            )}
+                        </div>
+                        {!aiPlanLoading && aiPlan && (
+                            <div className="p-4 border-t border-gray-700">
+                                <button onClick={() => { navigator.clipboard?.writeText(aiPlan); }} className="w-full border border-gray-600 hover:border-gray-500 text-gray-300 py-2 rounded text-sm font-medium">Copy to Clipboard</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Private Lessons */}
             <div>
@@ -3487,7 +3795,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
         setTempCoach({});
     };
 
-    const handleAddClass = () => {
+    const handleAddClass = async () => {
         if(!tempClass.className || !tempClass.day || !tempClass.time) return;
         const location = tempClass.location || data.branchNames?.[0] || 'Main Location';
         const newClass: ScheduleItem = {
@@ -3497,23 +3805,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             className: tempClass.className,
             instructor: tempClass.instructor || data.ownerName,
             location,
-            beltRequirement: tempClass.beltRequirement || 'All'
+            beltRequirement: (tempClass as any).beltRequirement || 'All'
         };
+        
+        // Save to DB if we have a clubId
+        if (clubId) {
+            try {
+                await fetch(`/api/clubs/${clubId}/class-sessions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        className: tempClass.className, day: tempClass.day, time: tempClass.time,
+                        instructor: tempClass.instructor || data.ownerName,
+                        location, beltRequirement: (tempClass as any).beltRequirement || 'All',
+                        capacity: (tempClass as any).capacity || 20
+                    })
+                });
+                // Reload sessions from DB
+                const res = await fetch(`/api/clubs/${clubId}/class-sessions`);
+                if (res.ok) { /* will be refreshed by ScheduleTab on mount */ }
+            } catch {}
+        }
         
         // Also add to locationClasses for dropdown population
         const updatedLocationClasses = { ...(data.locationClasses || {}) };
-        if (!updatedLocationClasses[location]) {
-            updatedLocationClasses[location] = [];
-        }
+        if (!updatedLocationClasses[location]) updatedLocationClasses[location] = [];
         if (!updatedLocationClasses[location].includes(tempClass.className)) {
             updatedLocationClasses[location] = [...updatedLocationClasses[location], tempClass.className];
         }
         
         // Also add to general classes list
         const updatedClasses = [...(data.classes || [])];
-        if (!updatedClasses.includes(tempClass.className)) {
-            updatedClasses.push(tempClass.className);
-        }
+        if (!updatedClasses.includes(tempClass.className)) updatedClasses.push(tempClass.className);
         
         onUpdateData({ 
             schedule: [...(data.schedule || []), newClass],
@@ -3522,6 +3845,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
         });
         setModalType(null);
         setTempClass({});
+        // Trigger a page refresh of sessions (ScheduleTab will reload)
+        window.dispatchEvent(new CustomEvent('reloadClassSessions'));
     };
 
     const handleAddEvent = () => {
@@ -3640,7 +3965,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} onNavigateTab={setActiveTab} />}
                     {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
                     {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
-                    {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
+                    {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} clubId={clubId} />}
                     {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} clubId={clubId} onShowPricing={onShowPricing} />}
@@ -4317,10 +4642,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                         <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, location: e.target.value})}>
                             {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
-                        <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, beltRequirement: e.target.value})}>
+                        <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, beltRequirement: e.target.value} as any)}>
                             <option value="All">All Belts</option>
-                            {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                            {data.belts.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                         </select>
+                        <div>
+                            <label className="text-sm text-gray-400 block mb-1">Max Capacity (students)</label>
+                            <input type="number" min="1" max="200" defaultValue={20} className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, capacity: parseInt(e.target.value) || 20} as any)} />
+                        </div>
                         <button onClick={handleAddClass} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded">Save to Schedule</button>
                     </div>
                 </Modal>

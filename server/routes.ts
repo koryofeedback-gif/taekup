@@ -6786,6 +6786,157 @@ export function registerRoutes(app: Express) {
   });
 
   // =====================================================
+  // CLASS SESSIONS - Schedule Management (DB-backed)
+  // =====================================================
+
+  // List all class sessions for a club (with enrollment counts)
+  app.get('/api/clubs/:clubId/class-sessions', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      const rows = await db.execute(sql`
+        SELECT cs.*, 
+          COUNT(ce.id) FILTER (WHERE ce.id IS NOT NULL) as enrolled_count
+        FROM class_sessions cs
+        LEFT JOIN class_enrollments ce ON ce.session_id = cs.id
+        WHERE cs.club_id = ${clubId}::uuid AND cs.is_active = true
+        GROUP BY cs.id
+        ORDER BY cs.day, cs.time
+      `);
+      res.json(rows);
+    } catch (err: any) {
+      console.error('Error fetching class sessions:', err.message);
+      res.status(500).json({ error: 'Failed to fetch class sessions' });
+    }
+  });
+
+  // Create a new class session
+  app.post('/api/clubs/:clubId/class-sessions', async (req: Request, res: Response) => {
+    try {
+      const { clubId } = req.params;
+      const { className, day, time, instructor, location, beltRequirement, capacity } = req.body;
+      if (!className || !day || !time) return res.status(400).json({ error: 'className, day, time required' });
+      const rows = await db.execute(sql`
+        INSERT INTO class_sessions (club_id, class_name, day, time, instructor, location, belt_requirement, capacity)
+        VALUES (${clubId}::uuid, ${className}, ${day}, ${time}, ${instructor || null}, ${location || null}, ${beltRequirement || 'All'}, ${capacity || 20})
+        RETURNING *
+      `);
+      res.json(rows[0]);
+    } catch (err: any) {
+      console.error('Error creating class session:', err.message);
+      res.status(500).json({ error: 'Failed to create class session' });
+    }
+  });
+
+  // Delete a class session
+  app.delete('/api/class-sessions/:sessionId', async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      await db.execute(sql`UPDATE class_sessions SET is_active = false WHERE id = ${sessionId}::uuid`);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Error deleting class session:', err.message);
+      res.status(500).json({ error: 'Failed to delete class session' });
+    }
+  });
+
+  // Get roster for a class session (enrolled students with details)
+  app.get('/api/class-sessions/:sessionId/roster', async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const rows = await db.execute(sql`
+        SELECT s.id, s.name, s.belt, s.stripes, s.parent_email, s.parent_name, ce.enrolled_at
+        FROM class_enrollments ce
+        JOIN students s ON ce.student_id = s.id
+        WHERE ce.session_id = ${sessionId}::uuid
+        ORDER BY s.name ASC
+      `);
+      res.json(rows);
+    } catch (err: any) {
+      console.error('Error fetching roster:', err.message);
+      res.status(500).json({ error: 'Failed to fetch roster' });
+    }
+  });
+
+  // Enroll a student in a class session
+  app.post('/api/class-sessions/:sessionId/enroll', async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const { studentId, clubId } = req.body;
+      if (!studentId || !clubId) return res.status(400).json({ error: 'studentId and clubId required' });
+      await db.execute(sql`
+        INSERT INTO class_enrollments (session_id, student_id, club_id)
+        VALUES (${sessionId}::uuid, ${studentId}::uuid, ${clubId}::uuid)
+        ON CONFLICT (session_id, student_id) DO NOTHING
+      `);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Error enrolling student:', err.message);
+      res.status(500).json({ error: 'Failed to enroll student' });
+    }
+  });
+
+  // Unenroll a student from a class session
+  app.delete('/api/class-sessions/:sessionId/enroll/:studentId', async (req: Request, res: Response) => {
+    try {
+      const { sessionId, studentId } = req.params;
+      await db.execute(sql`
+        DELETE FROM class_enrollments
+        WHERE session_id = ${sessionId}::uuid AND student_id = ${studentId}::uuid
+      `);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Error unenrolling student:', err.message);
+      res.status(500).json({ error: 'Failed to unenroll student' });
+    }
+  });
+
+  // Get attendance for a class session on a specific date
+  app.get('/api/class-sessions/:sessionId/attendance/:date', async (req: Request, res: Response) => {
+    try {
+      const { sessionId, date } = req.params;
+      const rows = await db.execute(sql`
+        SELECT ca.student_id, ca.present, s.name, s.belt
+        FROM class_attendance ca
+        JOIN students s ON ca.student_id = s.id
+        WHERE ca.session_id = ${sessionId}::uuid AND ca.attendance_date = ${date}
+      `);
+      res.json(rows);
+    } catch (err: any) {
+      console.error('Error fetching attendance:', err.message);
+      res.status(500).json({ error: 'Failed to fetch attendance' });
+    }
+  });
+
+  // Save attendance for a class session (bulk upsert)
+  app.post('/api/class-sessions/:sessionId/attendance', async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const { date, attendance, clubId } = req.body; // attendance: [{studentId, present}]
+      if (!date || !attendance || !clubId) return res.status(400).json({ error: 'date, attendance, clubId required' });
+      for (const entry of attendance) {
+        await db.execute(sql`
+          INSERT INTO class_attendance (session_id, student_id, club_id, attendance_date, present)
+          VALUES (${sessionId}::uuid, ${entry.studentId}::uuid, ${clubId}::uuid, ${date}, ${entry.present})
+          ON CONFLICT (session_id, student_id, attendance_date) DO UPDATE SET present = EXCLUDED.present
+        `);
+        // If present, record attendance event for XP
+        if (entry.present) {
+          await db.execute(sql`
+            INSERT INTO attendance_events (club_id, student_id, class_name)
+            SELECT ${clubId}::uuid, ${entry.studentId}::uuid, cs.class_name
+            FROM class_sessions cs WHERE cs.id = ${sessionId}::uuid
+            ON CONFLICT DO NOTHING
+          `);
+        }
+      }
+      res.json({ success: true, count: attendance.length });
+    } catch (err: any) {
+      console.error('Error saving attendance:', err.message);
+      res.status(500).json({ error: 'Failed to save attendance' });
+    }
+  });
+
+  // =====================================================
   // WORLD RANKINGS - Global Leaderboard System
   // =====================================================
 

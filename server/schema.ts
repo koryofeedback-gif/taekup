@@ -837,3 +837,44 @@ export const familyChallenges = pgTable('family_challenges', {
 
 export type FamilyChallenge = typeof familyChallenges.$inferSelect;
 export type NewFamilyChallenge = typeof familyChallenges.$inferInsert;
+
+// =====================================================
+// CLASS SESSIONS - DB-backed recurring class schedule
+// =====================================================
+
+export const classSessions = pgTable('class_sessions', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  className: varchar('class_name', { length: 255 }).notNull(),
+  day: varchar('day', { length: 20 }).notNull(),
+  time: varchar('time', { length: 10 }).notNull(),
+  instructor: varchar('instructor', { length: 255 }),
+  location: varchar('location', { length: 255 }),
+  beltRequirement: varchar('belt_requirement', { length: 100 }).default('All'),
+  capacity: integer('capacity').default(20),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const classEnrollments = pgTable('class_enrollments', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: uuid('session_id').references(() => classSessions.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  enrolledAt: timestamp('enrolled_at', { withTimezone: true }).defaultNow(),
+});
+
+export const classAttendance = pgTable('class_attendance', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: uuid('session_id').references(() => classSessions.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => students.id, { onDelete: 'cascade' }).notNull(),
+  clubId: uuid('club_id').references(() => clubs.id, { onDelete: 'cascade' }).notNull(),
+  attendanceDate: varchar('attendance_date', { length: 20 }).notNull(),
+  present: boolean('present').default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export type ClassSession = typeof classSessions.$inferSelect;
+export type NewClassSession = typeof classSessions.$inferInsert;
+export type ClassEnrollment = typeof classEnrollments.$inferSelect;
+export type ClassAttendance = typeof classAttendance.$inferSelect;
