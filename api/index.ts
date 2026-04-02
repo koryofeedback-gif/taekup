@@ -9328,6 +9328,88 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       finally { client.release(); }
     }
 
+    // ── Event RSVP & Reward System ──
+    const eventsRsvpMatch = path.match(/^\/events\/([^/]+)\/rsvp\/?$/);
+    if (eventsRsvpMatch && req.method === 'POST') {
+      const eventId = eventsRsvpMatch[1];
+      const { clubId, parentEmail, studentId, status } = req.body || {};
+      if (!clubId || !parentEmail || !status) return res.status(400).json({ error: 'clubId, parentEmail, status required' });
+      const ec = await pool.connect();
+      try {
+        const r = await ec.query(`
+          INSERT INTO event_responses (event_id, club_id, parent_email, student_id, rsvp_status)
+          VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (event_id, parent_email, student_id) DO UPDATE SET rsvp_status = EXCLUDED.rsvp_status
+          RETURNING *
+        `, [eventId, clubId, parentEmail, studentId || null, status]);
+        return res.json(r.rows[0]);
+      } catch (e: any) { return res.status(500).json({ error: e.message }); }
+      finally { ec.release(); }
+    }
+
+    const eventsResponsesMatch = path.match(/^\/clubs\/([^/]+)\/events\/([^/]+)\/responses\/?$/);
+    if (eventsResponsesMatch) {
+      const [, erClubId, erEventId] = eventsResponsesMatch;
+      const ec = await pool.connect();
+      try {
+        if (req.method === 'GET') {
+          const r = await ec.query(`
+            SELECT er.id, er.event_id, er.parent_email, er.student_id, er.rsvp_status,
+                   er.attendance_confirmed, er.reward_issued, er.created_at,
+                   s.name as student_name, s.belt as student_belt
+            FROM event_responses er
+            LEFT JOIN students s ON s.id = er.student_id::uuid
+            WHERE er.event_id = $1 AND er.club_id = $2
+            ORDER BY er.rsvp_status, er.created_at DESC
+          `, [erEventId, erClubId]);
+          return res.json(r.rows);
+        }
+      } catch (e: any) { return res.status(500).json({ error: e.message }); }
+      finally { ec.release(); }
+    }
+
+    const eventsApproveMatch = path.match(/^\/clubs\/([^/]+)\/events\/([^/]+)\/responses\/([^/]+)\/approve\/?$/);
+    if (eventsApproveMatch && req.method === 'POST') {
+      const [, apClubId, apEventId, apResponseId] = eventsApproveMatch;
+      const { xpReward = 0, pointsReward = 0, isGlobalRankImpact = false } = req.body || {};
+      const ec = await pool.connect();
+      try {
+        const existing = await ec.query(`SELECT * FROM event_responses WHERE id = $1 AND club_id = $2 AND event_id = $3`, [apResponseId, apClubId, apEventId]);
+        const resp = existing.rows[0];
+        if (!resp) return res.status(404).json({ error: 'Response not found' });
+        await ec.query(`UPDATE event_responses SET attendance_confirmed = true WHERE id = $1`, [apResponseId]);
+        let xpGiven = 0, pointsGiven = 0;
+        const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!resp.reward_issued && resp.student_id && uuidRe.test(resp.student_id)) {
+          if (xpReward > 0) {
+            await ec.query(`UPDATE students SET total_xp = COALESCE(total_xp,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [xpReward, resp.student_id]);
+            if (isGlobalRankImpact) await ec.query(`UPDATE students SET global_xp = COALESCE(global_xp,0)+$1 WHERE id=$2::uuid`, [xpReward, resp.student_id]);
+            xpGiven = xpReward;
+          }
+          if (pointsReward > 0) {
+            await ec.query(`UPDATE students SET total_points = COALESCE(total_points,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [pointsReward, resp.student_id]);
+            pointsGiven = pointsReward;
+          }
+          await ec.query(`UPDATE event_responses SET reward_issued = true WHERE id=$1`, [apResponseId]);
+        }
+        return res.json({ success: true, xpGiven, pointsGiven });
+      } catch (e: any) { return res.status(500).json({ error: e.message }); }
+      finally { ec.release(); }
+    }
+
+    const studentEventRsvpsMatch = path.match(/^\/students\/([^/]+)\/event-rsvps\/?$/);
+    if (studentEventRsvpsMatch && req.method === 'GET') {
+      const serId = studentEventRsvpsMatch[1];
+      const clubIdQ = req.query.clubId as string;
+      if (!clubIdQ) return res.status(400).json({ error: 'clubId required' });
+      const ec = await pool.connect();
+      try {
+        const r = await ec.query(`SELECT event_id, rsvp_status, attendance_confirmed, reward_issued FROM event_responses WHERE student_id=$1 AND club_id=$2`, [serId, clubIdQ]);
+        return res.json(r.rows);
+      } catch (e: any) { return res.status(500).json({ error: e.message }); }
+      finally { ec.release(); }
+    }
+
     // World Rankings endpoints
     if (path === '/world-rankings' || path === '/world-rankings/') return await handleWorldRankings(req, res);
     if (path === '/world-rankings/sports' || path === '/world-rankings/sports/') return await handleWorldRankingsSports(req, res);

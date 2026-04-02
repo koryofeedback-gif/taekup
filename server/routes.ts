@@ -6937,6 +6937,129 @@ export function registerRoutes(app: Express) {
   });
 
   // =====================================================
+  // EVENT RSVP & REWARD SYSTEM
+  // =====================================================
+
+  // Parent submits / updates their RSVP for an event
+  app.post('/api/events/:eventId/rsvp', async (req: Request, res: Response) => {
+    try {
+      const { eventId } = req.params;
+      const { clubId, parentEmail, studentId, status } = req.body;
+      if (!clubId || !parentEmail || !status) return res.status(400).json({ error: 'clubId, parentEmail, status required' });
+      if (!['coming', 'not_coming', 'pending'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+
+      const result = await db.execute(sql`
+        INSERT INTO event_responses (event_id, club_id, parent_email, student_id, rsvp_status)
+        VALUES (${eventId}, ${clubId}, ${parentEmail}, ${studentId || null}, ${status})
+        ON CONFLICT (event_id, parent_email, student_id) DO UPDATE
+          SET rsvp_status = EXCLUDED.rsvp_status
+        RETURNING *
+      `);
+      res.json((result as any[])[0]);
+    } catch (err: any) {
+      console.error('[RSVP] Error:', err.message);
+      res.status(500).json({ error: 'Failed to save RSVP' });
+    }
+  });
+
+  // Admin: get all responses for an event
+  app.get('/api/clubs/:clubId/events/:eventId/responses', async (req: Request, res: Response) => {
+    try {
+      const { clubId, eventId } = req.params;
+      const result = await db.execute(sql`
+        SELECT er.id, er.event_id, er.parent_email, er.student_id, er.rsvp_status,
+               er.attendance_confirmed, er.reward_issued, er.created_at,
+               s.name as student_name, s.belt as student_belt
+        FROM event_responses er
+        LEFT JOIN students s ON s.id = er.student_id::uuid
+        WHERE er.event_id = ${eventId} AND er.club_id = ${clubId}
+        ORDER BY er.rsvp_status, er.created_at DESC
+      `);
+      res.json(result as any[]);
+    } catch (err: any) {
+      console.error('[RSVP] Error getting responses:', err.message);
+      res.status(500).json({ error: 'Failed to get responses' });
+    }
+  });
+
+  // Admin: approve attendance and issue reward
+  app.post('/api/clubs/:clubId/events/:eventId/responses/:responseId/approve', async (req: Request, res: Response) => {
+    try {
+      const { clubId, eventId, responseId } = req.params;
+      const { xpReward = 0, pointsReward = 0, isGlobalRankImpact = false } = req.body;
+
+      // Get the response to find studentId
+      const existing = await db.execute(sql`
+        SELECT * FROM event_responses WHERE id = ${responseId} AND club_id = ${clubId} AND event_id = ${eventId}
+      `);
+      const response = (existing as any[])[0];
+      if (!response) return res.status(404).json({ error: 'Response not found' });
+
+      // Mark confirmed
+      await db.execute(sql`
+        UPDATE event_responses SET attendance_confirmed = true WHERE id = ${responseId}
+      `);
+
+      let xpGiven = 0;
+      let pointsGiven = 0;
+
+      // Issue rewards if not already given
+      if (!response.reward_issued && response.student_id) {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(response.student_id)) {
+          if (xpReward > 0) {
+            // Always local XP
+            await db.execute(sql`
+              UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpReward}, updated_at = NOW()
+              WHERE id = ${response.student_id}::uuid
+            `);
+            // Also global if flagged
+            if (isGlobalRankImpact) {
+              await db.execute(sql`
+                UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${xpReward}
+                WHERE id = ${response.student_id}::uuid
+              `);
+            }
+            xpGiven = xpReward;
+          }
+          if (pointsReward > 0) {
+            await db.execute(sql`
+              UPDATE students SET total_points = COALESCE(total_points, 0) + ${pointsReward}, updated_at = NOW()
+              WHERE id = ${response.student_id}::uuid
+            `);
+            pointsGiven = pointsReward;
+          }
+          await db.execute(sql`
+            UPDATE event_responses SET reward_issued = true WHERE id = ${responseId}
+          `);
+        }
+      }
+
+      res.json({ success: true, xpGiven, pointsGiven });
+    } catch (err: any) {
+      console.error('[RSVP] Approve error:', err.message);
+      res.status(500).json({ error: 'Failed to approve' });
+    }
+  });
+
+  // Parent portal: get all event RSVPs for a student in a club
+  app.get('/api/students/:studentId/event-rsvps', async (req: Request, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      const { clubId } = req.query;
+      if (!clubId) return res.status(400).json({ error: 'clubId required' });
+      const result = await db.execute(sql`
+        SELECT event_id, rsvp_status, attendance_confirmed, reward_issued
+        FROM event_responses
+        WHERE student_id = ${studentId} AND club_id = ${clubId as string}
+      `);
+      res.json(result as any[]);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to get RSVPs' });
+    }
+  });
+
+  // =====================================================
   // WORLD RANKINGS - Global Leaderboard System
   // =====================================================
 

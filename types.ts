@@ -123,6 +123,23 @@ export interface CalendarEvent {
     location: string;
     description: string;
     type: 'competition' | 'test' | 'seminar' | 'social';
+    xpReward?: number;
+    pointsReward?: number;
+    isGlobalRankImpact?: boolean;
+}
+
+export interface EventResponse {
+    id: string;
+    event_id: string;
+    club_id: string;
+    parent_email: string;
+    student_id: string;
+    student_name?: string;
+    student_belt?: string;
+    rsvp_status: 'coming' | 'not_coming' | 'pending';
+    attendance_confirmed: boolean;
+    reward_issued: boolean;
+    created_at: string;
 }
 
 export interface PrivateSlot {

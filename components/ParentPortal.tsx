@@ -682,6 +682,42 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     const [premiumCheckoutLoading, setPremiumCheckoutLoading] = useState(false);
     const [manageSubLoading, setManageSubLoading] = useState(false);
 
+    // Event RSVP state
+    const [eventRsvpMap, setEventRsvpMap] = useState<Record<string, 'coming' | 'not_coming' | 'pending'>>({});
+    const [rsvpSubmitting, setRsvpSubmitting] = useState<string | null>(null);
+
+    // Load existing RSVP statuses for this student
+    useEffect(() => {
+        if (!student.id || !student.clubId || data.isDemo) return;
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(student.id)) return;
+        fetch(`/api/students/${student.id}/event-rsvps?clubId=${student.clubId}`)
+            .then(r => r.ok ? r.json() : [])
+            .then((rows: any[]) => {
+                const map: Record<string, 'coming' | 'not_coming' | 'pending'> = {};
+                rows.forEach(r => { map[r.event_id] = r.rsvp_status; });
+                setEventRsvpMap(map);
+            })
+            .catch(() => {});
+    }, [student.id, student.clubId, data.isDemo]);
+
+    const handleEventRsvp = async (eventId: string, status: 'coming' | 'not_coming') => {
+        const parentEmail = localStorage.getItem('taekup_user_email') || student.parentEmail || '';
+        if (!parentEmail || !student.clubId) return;
+        setRsvpSubmitting(eventId);
+        try {
+            const res = await fetch(`/api/events/${eventId}/rsvp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clubId: student.clubId, parentEmail, studentId: student.id, status }),
+            });
+            if (res.ok) {
+                setEventRsvpMap(prev => ({ ...prev, [eventId]: status }));
+            }
+        } catch {}
+        setRsvpSubmitting(null);
+    };
+
     const handleManageSubscription = async () => {
         const parentEmail = localStorage.getItem('taekup_user_email') || data.students?.[0]?.parentEmail || '';
         if (!parentEmail) {
@@ -3209,6 +3245,96 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                     <p className="text-[10px] text-gray-400 mt-1">{t('parent.home.leaderboardAndRankings')}</p>
                 </div>
             </div>
+
+            {/* ── Upcoming Events (RSVP) ── */}
+            {(() => {
+                const upcomingEvts = (data.events || [])
+                    .filter(evt => new Date(evt.date) >= new Date(new Date().toDateString()))
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .slice(0, 5);
+                if (upcomingEvts.length === 0) return null;
+                const TYPE_EMOJI: Record<string, string> = { competition: '🏆', test: '🥋', seminar: '📚', social: '🎉' };
+                return (
+                    <div className="space-y-3">
+                        <h3 className="font-bold text-white text-base px-1 flex items-center gap-2">
+                            📅 Upcoming Club Events
+                        </h3>
+                        {upcomingEvts.map(evt => {
+                            const rsvp = eventRsvpMap[evt.id] || null;
+                            const isSubmitting = rsvpSubmitting === evt.id;
+                            const d = new Date(evt.date);
+                            const hasReward = (evt.xpReward || 0) > 0 || (evt.pointsReward || 0) > 0;
+                            return (
+                                <div key={evt.id} className="bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
+                                    <div className="p-4">
+                                        <div className="flex items-start gap-3">
+                                            {/* Date badge */}
+                                            <div className="flex-shrink-0 w-12 bg-gray-900 rounded-xl text-center py-1.5 border border-gray-700">
+                                                <p className="text-gray-500 text-[10px] uppercase font-bold">{d.toLocaleString('default', { month: 'short' })}</p>
+                                                <p className="text-white text-lg font-bold leading-none">{d.getDate()}</p>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                    <span>{TYPE_EMOJI[evt.type] || '📅'}</span>
+                                                    <h4 className="font-bold text-white text-sm leading-tight">{evt.title}</h4>
+                                                </div>
+                                                <p className="text-gray-400 text-xs">{evt.time} · {evt.location}</p>
+                                                {hasReward && (
+                                                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                                                        {(evt.xpReward || 0) > 0 && (
+                                                            <span className="text-[10px] bg-purple-900/50 border border-purple-800 text-purple-300 px-1.5 py-0.5 rounded-full font-semibold">+{evt.xpReward} HonorXP™</span>
+                                                        )}
+                                                        {(evt.pointsReward || 0) > 0 && (
+                                                            <span className="text-[10px] bg-amber-900/50 border border-amber-800 text-amber-300 px-1.5 py-0.5 rounded-full font-semibold">+{evt.pointsReward} Belt Pts</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* RSVP Buttons */}
+                                        <div className="mt-3">
+                                            {rsvp === 'coming' ? (
+                                                <div className="flex items-center justify-between bg-emerald-900/30 border border-emerald-700/50 rounded-xl px-4 py-2.5">
+                                                    <span className="text-emerald-300 text-sm font-semibold">✅ You're going!</span>
+                                                    <span className="text-emerald-500/60 text-xs">Waiting for coach approval</span>
+                                                </div>
+                                            ) : rsvp === 'not_coming' ? (
+                                                <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5">
+                                                    <span className="text-gray-500 text-sm">Not attending</span>
+                                                    <button
+                                                        onClick={() => handleEventRsvp(evt.id, 'coming')}
+                                                        className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                                                    >
+                                                        Changed your mind?
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button
+                                                        onClick={() => handleEventRsvp(evt.id, 'coming')}
+                                                        disabled={isSubmitting}
+                                                        className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-colors"
+                                                    >
+                                                        {isSubmitting ? '...' : '✅ I\'m Coming'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleEventRsvp(evt.id, 'not_coming')}
+                                                        disabled={isSubmitting}
+                                                        className="flex items-center justify-center gap-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-300 font-bold py-2.5 rounded-xl text-sm transition-colors"
+                                                    >
+                                                        {isSubmitting ? '...' : '❌ Not Coming'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+            })()}
 
             {/* Manage Subscription — subtle footer link, only for self-paid premium parents */}
             {studentPremiumStatus === 'parent_paid' && (
