@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Loader2, Calendar, X } from 'lucide-react';
+import { Loader2, Calendar, X, Users, CheckSquare } from 'lucide-react';
 import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
@@ -1039,10 +1039,7 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     const [attendLoading, setAttendLoading] = React.useState(false);
     const [attendSaving, setAttendSaving] = React.useState(false);
 
-    // AI Plan modal state
-    const [aiPlanSession, setAiPlanSession] = React.useState<DbClassSession | null>(null);
-    const [aiPlan, setAiPlan] = React.useState('');
-    const [aiPlanLoading, setAiPlanLoading] = React.useState(false);
+    const [mobileDay, setMobileDay] = React.useState('Monday');
     const migrationDoneRef = React.useRef(false);
 
     const loadSessions = React.useCallback(async () => {
@@ -1141,26 +1138,6 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
         setAttendSaving(false); setAttendSession(null);
     };
 
-    // AI Lesson Plan
-    const openAiPlan = async (session: DbClassSession) => {
-        setAiPlanSession(session); setAiPlanLoading(true); setAiPlan('');
-        try {
-            const res = await fetch('/api/ai/class-plan', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    beltLevel: session.belt_requirement === 'All' ? 'All Levels' : session.belt_requirement,
-                    focusArea: session.class_name,
-                    classDuration: 60,
-                    studentCount: session.enrolled_count || 10,
-                    language: data.language === 'fr' ? 'French' : data.language === 'de' ? 'German' : 'English',
-                })
-            });
-            if (res.ok) { const d = await res.json(); setAiPlan(d.plan || d.content || 'Plan generated.'); }
-            else setAiPlan('Could not generate plan. Please try again.');
-        } catch { setAiPlan('Could not generate plan. Please try again.'); }
-        setAiPlanLoading(false);
-    };
-
     const handleRemoveEvent = (id: string) => {
         if(confirm(t('admin.schedule.cancelEventConfirm'))) {
             onUpdateData({ events: data.events.filter(e => e.id !== id) });
@@ -1178,94 +1155,193 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     const fillPct = (sess: DbClassSession) => sess.capacity > 0 ? Math.min(100, Math.round((sess.enrolled_count / sess.capacity) * 100)) : 0;
     const fillColor = (pct: number) => pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-yellow-500' : 'bg-green-500';
 
+    const DAY_SHORT_LABELS: Record<string, string> = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
+
+    const ClassCard = ({ session }: { session: DbClassSession }) => {
+        const pct = fillPct(session);
+        const beltKey = session.belt_requirement || 'All';
+        const beltColor = BELT_COLORS[beltKey] || 'bg-sky-700 text-white';
+        const timeRange = (session as any).end_time
+            ? `${formatTime(session.time)} – ${formatTime((session as any).end_time)}`
+            : formatTime(session.time);
+        const isFull = pct >= 100;
+        const isNearFull = pct >= 80;
+        return (
+            <div className="bg-gray-900 border border-gray-700 hover:border-gray-600 rounded-xl p-3 group transition-colors">
+                <div className="flex items-start justify-between gap-1 mb-2">
+                    <div className="min-w-0">
+                        <p className="text-white font-bold text-sm leading-tight truncate">{session.class_name}</p>
+                        <p className="text-cyan-400 text-xs font-medium mt-0.5">{timeRange}</p>
+                    </div>
+                    <button
+                        onClick={() => handleDeleteSession(session.id)}
+                        className="text-gray-700 hover:text-red-400 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-all p-0.5 rounded"
+                        title="Remove class"
+                    >
+                        <X size={14} />
+                    </button>
+                </div>
+                {session.instructor && (
+                    <p className="text-gray-500 text-xs truncate mb-2">{session.instructor}</p>
+                )}
+                <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${beltColor}`}>
+                        {beltKey === 'All' ? 'All Belts' : beltKey}
+                    </span>
+                    {session.location && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">{session.location}</span>
+                    )}
+                </div>
+                {/* Fill rate */}
+                <div className="mb-3">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className={`text-xs font-medium ${isFull ? 'text-red-400' : isNearFull ? 'text-yellow-400' : 'text-gray-400'}`}>
+                            {session.enrolled_count}/{session.capacity} enrolled
+                        </span>
+                        <span className={`text-xs font-bold ${isFull ? 'text-red-400' : isNearFull ? 'text-yellow-400' : 'text-green-400'}`}>{pct}%</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-300 ${fillColor(pct)}`} style={{ width: `${pct}%` }} />
+                    </div>
+                </div>
+                {/* Actions */}
+                <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                        onClick={() => openRoster(session)}
+                        className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    >
+                        <Users size={12} /> Roster
+                    </button>
+                    <button
+                        onClick={() => openAttendance(session)}
+                        className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-blue-900/50 border border-gray-700 hover:border-blue-700 text-gray-300 hover:text-blue-300 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    >
+                        <CheckSquare size={12} /> Attend
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-8">
             {/* Weekly Schedule */}
             <div>
-                <SectionHeader 
-                    title={t('admin.schedule.weeklyClassSchedule')} 
-                    description="DB-backed class roster, attendance tracking, and AI lesson planning"
+                <SectionHeader
+                    title={t('admin.schedule.weeklyClassSchedule')}
+                    description="Manage your weekly classes, rosters and attendance"
                     action={
-                        <button onClick={() => onOpenModal('class')} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-lg">
+                        <button onClick={() => onOpenModal('class')} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
                             {t('admin.schedule.addClass')}
                         </button>
                     }
                 />
 
                 {!sessionsLoaded && clubId && (
-                    <div className="text-center py-12 text-gray-500"><Loader2 className="animate-spin mx-auto mb-2" size={24} />Loading schedule...</div>
+                    <div className="text-center py-12 text-gray-500">
+                        <Loader2 className="animate-spin mx-auto mb-2" size={24} />
+                        <p className="text-sm">Loading schedule...</p>
+                    </div>
                 )}
 
                 {sessionsLoaded && dbSessions.length === 0 && (data.schedule || []).length === 0 && (
-                    <div className="bg-gray-800 rounded-lg border border-gray-700 p-12 text-center">
+                    <div className="bg-gray-800/50 rounded-xl border border-gray-700 border-dashed p-12 text-center">
                         <Calendar size={40} className="mx-auto mb-3 text-gray-600" />
-                        <p className="text-gray-400 font-medium">No classes scheduled yet</p>
+                        <p className="text-gray-300 font-semibold">No classes scheduled yet</p>
                         <p className="text-gray-600 text-sm mt-1">Add your first class to start building your weekly schedule</p>
-                        <button onClick={() => onOpenModal('class')} className="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded">Add First Class</button>
+                        <button onClick={() => onOpenModal('class')} className="mt-5 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                            Add First Class
+                        </button>
                     </div>
                 )}
 
                 {(sessionsLoaded || !clubId) && (dbSessions.length > 0 || (data.schedule || []).length > 0) && (
-                    <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-                        {days.map(day => {
-                            const dbClasses = dbSessions.filter(s => s.day === day).sort((a,b) => a.time.localeCompare(b.time));
-                            const legacyClasses = (data.schedule || []).filter(s => s.day === day && !dbSessions.some(db => db.class_name === s.className && db.day === s.day)).sort((a,b) => a.time.localeCompare(b.time));
-                            return (
-                                <div key={day} className="bg-gray-800 rounded-lg border border-gray-700 p-3 min-h-[160px]">
-                                    <h4 className="font-bold text-gray-400 text-xs uppercase mb-3 border-b border-gray-700 pb-2 tracking-wide">{t(`admin.schedule.days.${dayKeys[day]}`)}</h4>
-                                    <div className="space-y-2">
-                                        {/* DB-backed class cards */}
-                                        {dbClasses.map(session => {
-                                            const pct = fillPct(session);
-                                            const beltKey = session.belt_requirement || 'All';
-                                            const beltColor = BELT_COLORS[beltKey] || 'bg-sky-700 text-white';
-                                            return (
-                                                <div key={session.id} className="bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-xs group">
-                                                    <div className="flex items-start justify-between mb-1">
-                                                        <span className="font-bold text-cyan-400">{formatTime(session.time)}</span>
-                                                        <button onClick={() => handleDeleteSession(session.id)} className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 ml-1 -mt-0.5" title="Remove">&times;</button>
-                                                    </div>
-                                                    <p className="text-white font-semibold leading-tight truncate">{session.class_name}</p>
-                                                    {session.instructor && <p className="text-gray-500 text-xs truncate mt-0.5">{session.instructor}</p>}
-                                                    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                                                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${beltColor}`}>{beltKey === 'All' ? 'All Belts' : beltKey}</span>
-                                                    </div>
-                                                    {/* Fill rate bar */}
-                                                    <div className="mt-2">
-                                                        <div className="flex justify-between text-gray-500 mb-1">
-                                                            <span>{session.enrolled_count}/{session.capacity}</span>
-                                                            <span>{pct}%</span>
-                                                        </div>
-                                                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                                                            <div className={`h-full rounded-full transition-all ${fillColor(pct)}`} style={{ width: `${pct}%` }} />
-                                                        </div>
-                                                    </div>
-                                                    {/* Action buttons */}
-                                                    <div className="flex gap-1 mt-2 pt-2 border-t border-gray-700">
-                                                        <button onClick={() => openRoster(session)} className="flex-1 text-center bg-gray-700 hover:bg-gray-600 text-gray-300 py-1 rounded text-xs font-medium transition-colors">Roster</button>
-                                                        <button onClick={() => { openAttendance(session); }} className="flex-1 text-center bg-gray-700 hover:bg-blue-700 text-gray-300 hover:text-white py-1 rounded text-xs font-medium transition-colors">Attend</button>
-                                                        <button onClick={() => { openAiPlan(session); }} className="flex-1 text-center bg-gray-700 hover:bg-purple-700 text-gray-300 hover:text-white py-1 rounded text-xs font-medium transition-colors" title="AI Lesson Plan">AI Plan</button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                        {/* Legacy wizard_data classes (not yet in DB) */}
-                                        {legacyClasses.map(c => (
-                                            <div key={c.id} className="bg-gray-700/40 p-2 rounded text-xs border border-dashed border-gray-600">
-                                                <p className="font-bold text-gray-400">{formatTime(c.time)}</p>
-                                                <p className="text-white font-medium truncate">{c.className}</p>
-                                                <p className="text-gray-600 truncate text-xs">{c.instructor}</p>
-                                                <p className="text-yellow-600 text-xs mt-1 italic">Legacy — re-add to upgrade</p>
+                    <>
+                        {/* ── Mobile: horizontal day tabs ── */}
+                        <div className="md:hidden">
+                            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-hide">
+                                {days.map(day => {
+                                    const count = dbSessions.filter(s => s.day === day).length;
+                                    const isActive = mobileDay === day;
+                                    return (
+                                        <button
+                                            key={day}
+                                            onClick={() => setMobileDay(day)}
+                                            className={`flex-shrink-0 flex flex-col items-center px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                                                isActive
+                                                    ? 'bg-cyan-600 border-cyan-500 text-white'
+                                                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                                            }`}
+                                        >
+                                            <span>{DAY_SHORT_LABELS[day]}</span>
+                                            {count > 0 && (
+                                                <span className={`mt-0.5 w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-cyan-500'}`} />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div className="space-y-3">
+                                {(() => {
+                                    const dbClasses = dbSessions.filter(s => s.day === mobileDay).sort((a, b) => a.time.localeCompare(b.time));
+                                    const legacyClasses = (data.schedule || []).filter(s => s.day === mobileDay && !dbSessions.some(db => db.class_name === s.className && db.day === s.day));
+                                    if (dbClasses.length === 0 && legacyClasses.length === 0) {
+                                        return (
+                                            <div className="text-center py-10 text-gray-600">
+                                                <Calendar size={28} className="mx-auto mb-2 opacity-30" />
+                                                <p className="text-sm">No classes on {mobileDay}</p>
+                                                <button onClick={() => onOpenModal('class')} className="mt-3 text-xs text-cyan-500 hover:text-cyan-400 font-medium">+ Add class</button>
                                             </div>
-                                        ))}
-                                        {dbClasses.length === 0 && legacyClasses.length === 0 && (
-                                            <p className="text-gray-700 text-xs italic text-center py-4">No classes</p>
-                                        )}
+                                        );
+                                    }
+                                    return (
+                                        <>
+                                            {dbClasses.map(session => <ClassCard key={session.id} session={session} />)}
+                                            {legacyClasses.map(c => (
+                                                <div key={c.id} className="bg-gray-800/50 border border-dashed border-gray-700 rounded-xl p-3 text-xs">
+                                                    <p className="font-bold text-gray-400">{formatTime(c.time)}</p>
+                                                    <p className="text-white font-medium">{c.className}</p>
+                                                    <p className="text-yellow-600 mt-1 italic">Legacy — re-add to upgrade</p>
+                                                </div>
+                                            ))}
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+
+                        {/* ── Desktop: 7-column grid ── */}
+                        <div className="hidden md:grid grid-cols-7 gap-2.5">
+                            {days.map(day => {
+                                const dbClasses = dbSessions.filter(s => s.day === day).sort((a, b) => a.time.localeCompare(b.time));
+                                const legacyClasses = (data.schedule || []).filter(s => s.day === day && !dbSessions.some(db => db.class_name === s.className && db.day === s.day)).sort((a, b) => a.time.localeCompare(b.time));
+                                const hasClasses = dbClasses.length > 0 || legacyClasses.length > 0;
+                                return (
+                                    <div key={day} className={`rounded-xl border p-2.5 min-h-[180px] ${hasClasses ? 'bg-gray-800 border-gray-700' : 'bg-gray-800/30 border-gray-800'}`}>
+                                        <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-gray-700/50">
+                                            <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wide">{DAY_SHORT_LABELS[day]}</h4>
+                                            {dbClasses.length > 0 && (
+                                                <span className="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded-full">{dbClasses.length}</span>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            {dbClasses.map(session => <ClassCard key={session.id} session={session} />)}
+                                            {legacyClasses.map(c => (
+                                                <div key={c.id} className="bg-gray-700/30 border border-dashed border-gray-700 rounded-lg p-2 text-xs">
+                                                    <p className="font-bold text-gray-500">{formatTime(c.time)}</p>
+                                                    <p className="text-gray-300 font-medium truncate">{c.className}</p>
+                                                    <p className="text-yellow-700 mt-1 italic">Legacy</p>
+                                                </div>
+                                            ))}
+                                            {!hasClasses && (
+                                                <p className="text-gray-800 text-xs italic text-center py-6">Empty</p>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -1277,42 +1353,84 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         <div className="flex items-center justify-between p-4 border-b border-gray-700">
                             <div>
                                 <h3 className="font-bold text-white">{rosterSession.class_name}</h3>
-                                <p className="text-xs text-gray-500">{rosterSession.day} · {formatTime(rosterSession.time)} · {roster.length}/{rosterSession.capacity} enrolled</p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    {rosterSession.day} · {formatTime(rosterSession.time)} · {roster.length}/{rosterSession.capacity} enrolled
+                                </p>
                             </div>
-                            <button onClick={() => setRosterSession(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                            <button onClick={() => setRosterSession(null)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        {/* Fill bar in panel header */}
+                        <div className="px-4 pt-3 pb-1">
+                            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full rounded-full transition-all ${fillColor(fillPct(rosterSession))}`}
+                                    style={{ width: `${fillPct(rosterSession)}%` }}
+                                />
+                            </div>
                         </div>
                         {/* Add student */}
                         <div className="p-4 border-b border-gray-800">
-                            <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Add student to roster</p>
+                            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide mb-2">Add student to roster</p>
                             <div className="flex gap-2">
-                                <select value={addStudentId} onChange={e => setAddStudentId(e.target.value)} className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm text-white">
+                                <select
+                                    value={addStudentId}
+                                    onChange={e => setAddStudentId(e.target.value)}
+                                    className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-cyan-600 outline-none"
+                                >
                                     <option value="">Select student...</option>
-                                    {notEnrolledStudents.map(s => <option key={s.id} value={s.id}>{s.name} ({s.belt})</option>)}
+                                    {notEnrolledStudents.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
-                                <button onClick={enrollStudent} disabled={!addStudentId} className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-3 py-1.5 rounded text-sm font-bold">Add</button>
+                                <button
+                                    onClick={enrollStudent}
+                                    disabled={!addStudentId}
+                                    className="bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                                >
+                                    Add
+                                </button>
                             </div>
                         </div>
                         {/* Roster list */}
-                        <div className="flex-1 overflow-y-auto p-4">
-                            {rosterLoading && <div className="text-center text-gray-500 py-8"><Loader2 className="animate-spin mx-auto" size={20} /></div>}
+                        <div className="flex-1 overflow-y-auto">
+                            {rosterLoading && (
+                                <div className="text-center text-gray-500 py-10">
+                                    <Loader2 className="animate-spin mx-auto mb-2" size={20} />
+                                </div>
+                            )}
                             {!rosterLoading && roster.length === 0 && (
-                                <div className="text-center text-gray-600 py-8 text-sm">No students enrolled yet</div>
+                                <div className="text-center text-gray-600 py-10 px-4">
+                                    <Users size={28} className="mx-auto mb-2 opacity-30" />
+                                    <p className="text-sm">No students enrolled yet</p>
+                                </div>
                             )}
                             {!rosterLoading && roster.map((s: any) => (
-                                <div key={s.id} className="flex items-center justify-between py-2.5 border-b border-gray-800">
+                                <div key={s.id} className="flex items-center justify-between px-4 py-3 border-b border-gray-800/80 hover:bg-gray-800/30 transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-white">{s.name.charAt(0)}</div>
+                                        <div className="w-9 h-9 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                                            {s.name.charAt(0).toUpperCase()}
+                                        </div>
                                         <div>
                                             <p className="text-white text-sm font-medium">{s.name}</p>
                                             <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${BELT_COLORS[s.belt] || 'bg-gray-700 text-gray-300'}`}>{s.belt}</span>
                                         </div>
                                     </div>
-                                    <button onClick={() => unenrollStudent(s.id)} className="text-red-500 hover:text-red-400 text-xs font-bold px-2 py-1 rounded hover:bg-red-900/20">Remove</button>
+                                    <button
+                                        onClick={() => unenrollStudent(s.id)}
+                                        className="text-gray-600 hover:text-red-400 text-xs font-bold px-2 py-1.5 rounded-lg hover:bg-red-900/20 transition-colors"
+                                    >
+                                        Remove
+                                    </button>
                                 </div>
                             ))}
                         </div>
                         <div className="p-4 border-t border-gray-700">
-                            <button onClick={() => { setAttendSession(rosterSession); openAttendance(rosterSession); setRosterSession(null); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-sm">Take Today's Attendance</button>
+                            <button
+                                onClick={() => { setAttendSession(rosterSession); openAttendance(rosterSession); setRosterSession(null); }}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                            >
+                                <CheckSquare size={16} /> Take Today's Attendance
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1320,80 +1438,72 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
 
             {/* ─── Attendance Modal ─── */}
             {attendSession && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setAttendSession(null)} />
-                    <div className="relative bg-gray-900 rounded-xl border border-gray-700 w-full max-w-md shadow-2xl flex flex-col max-h-[85vh]">
+                    <div className="relative bg-gray-900 rounded-t-2xl sm:rounded-xl border border-gray-700 w-full sm:max-w-md shadow-2xl flex flex-col max-h-[90vh]">
                         <div className="flex items-center justify-between p-4 border-b border-gray-700">
                             <div>
                                 <h3 className="font-bold text-white">Attendance</h3>
-                                <p className="text-xs text-gray-400">{attendSession.class_name} · {attendSession.day}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">{attendSession.class_name} · {attendSession.day}</p>
                             </div>
-                            <button onClick={() => setAttendSession(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                            <button onClick={() => setAttendSession(null)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors">
+                                <X size={20} />
+                            </button>
                         </div>
                         <div className="p-4 border-b border-gray-800">
-                            <label className="text-xs text-gray-500 uppercase font-semibold block mb-1">Date</label>
-                            <input type="date" value={attendDate} onChange={e => { setAttendDate(e.target.value); openAttendance(attendSession, e.target.value); }} className="bg-gray-800 border border-gray-600 rounded px-3 py-1.5 text-white text-sm w-full" />
+                            <label className="text-xs text-gray-500 uppercase font-semibold tracking-wide block mb-1.5">Date</label>
+                            <input
+                                type="date"
+                                value={attendDate}
+                                onChange={e => { setAttendDate(e.target.value); openAttendance(attendSession, e.target.value); }}
+                                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm w-full focus:border-cyan-600 outline-none"
+                            />
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4">
-                            {attendLoading && <div className="text-center text-gray-500 py-8"><Loader2 className="animate-spin mx-auto" size={20} /></div>}
+                        <div className="flex-1 overflow-y-auto">
+                            {attendLoading && (
+                                <div className="text-center text-gray-500 py-10">
+                                    <Loader2 className="animate-spin mx-auto" size={20} />
+                                </div>
+                            )}
                             {!attendLoading && attendList.length === 0 && (
-                                <div className="text-center text-gray-600 py-8 text-sm">No students enrolled — add students via Roster first</div>
+                                <div className="text-center text-gray-600 py-10 px-4 text-sm">
+                                    No students enrolled — add students via Roster first
+                                </div>
                             )}
                             {!attendLoading && attendList.map((s, i) => (
-                                <div key={s.studentId} className="flex items-center justify-between py-3 border-b border-gray-800">
+                                <div
+                                    key={s.studentId}
+                                    className="flex items-center justify-between px-4 py-3.5 border-b border-gray-800/80"
+                                    onClick={() => setAttendList(prev => prev.map((a, j) => j === i ? { ...a, present: !a.present } : a))}
+                                >
                                     <div className="flex items-center gap-3">
-                                        <button onClick={() => setAttendList(prev => prev.map((a, j) => j === i ? { ...a, present: !a.present } : a))}
-                                            className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${s.present ? 'bg-green-600 border-green-500' : 'border-gray-600'}`}>
+                                        <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer flex-shrink-0 ${s.present ? 'bg-green-600 border-green-500' : 'border-gray-600 bg-gray-800'}`}>
                                             {s.present && <span className="text-white text-xs font-bold">✓</span>}
-                                        </button>
+                                        </div>
                                         <div>
                                             <p className="text-white text-sm font-medium">{s.name}</p>
                                             <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${BELT_COLORS[s.belt] || 'bg-gray-700 text-gray-300'}`}>{s.belt}</span>
                                         </div>
                                     </div>
-                                    <span className={`text-xs font-bold ${s.present ? 'text-green-400' : 'text-gray-600'}`}>{s.present ? 'Present' : 'Absent'}</span>
+                                    <span className={`text-xs font-bold ${s.present ? 'text-green-400' : 'text-gray-600'}`}>
+                                        {s.present ? 'Present' : 'Absent'}
+                                    </span>
                                 </div>
                             ))}
                         </div>
-                        <div className="p-4 border-t border-gray-700 flex gap-2">
-                            <div className="text-sm text-gray-500 flex-1 self-center">{attendList.filter(a => a.present).length}/{attendList.length} present</div>
-                            <button onClick={() => setAttendSession(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
-                            <button onClick={saveAttendance} disabled={attendSaving || attendList.length === 0} className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white font-bold py-2 px-5 rounded text-sm">
-                                {attendSaving ? 'Saving...' : 'Save Attendance'}
+                        <div className="p-4 border-t border-gray-700 flex items-center gap-3">
+                            <div className="text-sm text-gray-500 flex-1">
+                                <span className="font-bold text-white">{attendList.filter(a => a.present).length}</span>/{attendList.length} present
+                            </div>
+                            <button onClick={() => setAttendSession(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors">Cancel</button>
+                            <button
+                                onClick={saveAttendance}
+                                disabled={attendSaving || attendList.length === 0}
+                                className="bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2 px-5 rounded-lg text-sm transition-colors"
+                            >
+                                {attendSaving ? 'Saving...' : 'Save'}
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ─── AI Lesson Plan Modal ─── */}
-            {aiPlanSession && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setAiPlanSession(null)} />
-                    <div className="relative bg-gray-900 rounded-xl border border-gray-700 w-full max-w-xl shadow-2xl flex flex-col max-h-[85vh]">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-                            <div>
-                                <h3 className="font-bold text-white flex items-center gap-2"><span>AI Lesson Plan</span><span className="text-purple-400 text-xs bg-purple-900/30 px-2 py-0.5 rounded">GPT-4o</span></h3>
-                                <p className="text-xs text-gray-400">{aiPlanSession.class_name} · {aiPlanSession.day} {formatTime(aiPlanSession.time)}</p>
-                            </div>
-                            <button onClick={() => setAiPlanSession(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-5">
-                            {aiPlanLoading && (
-                                <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-                                    <Loader2 className="animate-spin mb-3" size={32} />
-                                    <p>Generating lesson plan for {aiPlanSession.class_name}...</p>
-                                </div>
-                            )}
-                            {!aiPlanLoading && aiPlan && (
-                                <pre className="whitespace-pre-wrap text-gray-300 text-sm leading-relaxed font-sans">{aiPlan}</pre>
-                            )}
-                        </div>
-                        {!aiPlanLoading && aiPlan && (
-                            <div className="p-4 border-t border-gray-700">
-                                <button onClick={() => { navigator.clipboard?.writeText(aiPlan); }} className="w-full border border-gray-600 hover:border-gray-500 text-gray-300 py-2 rounded text-sm font-medium">Copy to Clipboard</button>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
