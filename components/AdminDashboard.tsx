@@ -1043,14 +1043,39 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
     const [aiPlanSession, setAiPlanSession] = React.useState<DbClassSession | null>(null);
     const [aiPlan, setAiPlan] = React.useState('');
     const [aiPlanLoading, setAiPlanLoading] = React.useState(false);
+    const migrationDoneRef = React.useRef(false);
 
     const loadSessions = React.useCallback(async () => {
         if (!clubId) return;
         try {
             const res = await fetch(`/api/clubs/${clubId}/class-sessions`);
-            if (res.ok) { const d = await res.json(); setDbSessions(d); }
+            if (res.ok) {
+                const d = await res.json();
+                // Auto-migrate legacy wizard_data.schedule entries into DB on first load (runs once)
+                if (d.length === 0 && !migrationDoneRef.current && data.schedule && data.schedule.length > 0) {
+                    migrationDoneRef.current = true;
+                    await Promise.all(data.schedule.map((c: any) =>
+                        fetch(`/api/clubs/${clubId}/class-sessions`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                className: c.className, day: c.day, time: c.time,
+                                instructor: c.instructor || data.ownerName || '',
+                                location: c.location || data.branchNames?.[0] || 'Main Dojang',
+                                beltRequirement: c.beltRequirement || 'All',
+                                capacity: c.capacity || 20
+                            })
+                        }).catch(() => {})
+                    ));
+                    // Reload after migration
+                    const res2 = await fetch(`/api/clubs/${clubId}/class-sessions`);
+                    if (res2.ok) { const d2 = await res2.json(); setDbSessions(d2); }
+                } else {
+                    setDbSessions(d);
+                }
+            }
         } catch {}
         setSessionsLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [clubId]);
 
     React.useEffect(() => { loadSessions(); }, [loadSessions]);
