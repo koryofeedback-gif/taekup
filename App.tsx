@@ -412,7 +412,44 @@ const App: React.FC = () => {
             await Promise.all(coachInvitePromises);
         }
 
-        // Add students via backend API (sends real emails via SendGrid)
+        // STEP A: Save class sessions FIRST so we have IDs before enrolling students.
+        // Build a lookup map: "ClassName::Location" -> [sessionId, ...]
+        const sessionIdMap: Record<string, string[]> = {};
+        if (clubId && data.locationClassSchedules) {
+            await Promise.all(
+                Object.entries(data.locationClassSchedules).flatMap(([locationName, classes]) =>
+                    classes.flatMap(cls =>
+                        cls.days.map(day =>
+                            fetch(`/api/clubs/${clubId}/class-sessions`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    className: cls.name,
+                                    day,
+                                    time: cls.startTime,
+                                    endTime: cls.endTime,
+                                    instructor: data.coaches?.[0]?.name || data.ownerName || '',
+                                    location: locationName,
+                                    beltRequirement: cls.beltRequirement || 'All Belts',
+                                    capacity: cls.capacity || 20,
+                                })
+                            })
+                            .then(r => r.ok ? r.json() : null)
+                            .then(session => {
+                                if (session?.id) {
+                                    const key = `${cls.name}::${locationName}`;
+                                    sessionIdMap[key] = [...(sessionIdMap[key] || []), session.id];
+                                }
+                            })
+                            .catch(err => console.error('[Wizard] Failed to save class session:', cls.name, day, err))
+                        )
+                    )
+                )
+            );
+            console.log('[Wizard] Saved class sessions, map keys:', Object.keys(sessionIdMap));
+        }
+
+        // STEP B: Save students, then immediately enroll them in matching sessions.
         // CRITICAL: Update local student IDs with database-generated UUIDs
         if (clubId && data.students.length > 0) {
             const updatedStudents = [...data.students];
@@ -444,8 +481,25 @@ const App: React.FC = () => {
                         if (response.ok) {
                             const result = await response.json();
                             if (result.student?.id) {
-                                updatedStudents[i] = { ...student, id: result.student.id };
-                                console.log('[Wizard] Student created with DB ID:', student.name, result.student.id);
+                                const dbStudentId = result.student.id;
+                                updatedStudents[i] = { ...student, id: dbStudentId };
+                                console.log('[Wizard] Student created with DB ID:', student.name, dbStudentId);
+
+                                // Create enrollment records if student has an assigned class
+                                if (student.assignedClass && student.location) {
+                                    const key = `${student.assignedClass}::${student.location}`;
+                                    const sessionIds = sessionIdMap[key] || [];
+                                    for (const sessionId of sessionIds) {
+                                        fetch(`/api/class-sessions/${sessionId}/enroll`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ studentId: dbStudentId, clubId })
+                                        }).catch(err => console.error('[Wizard] Failed to enroll student:', student.name, sessionId, err));
+                                    }
+                                    if (sessionIds.length > 0) {
+                                        console.log('[Wizard] Enrolled', student.name, 'in', sessionIds.length, 'session(s)');
+                                    }
+                                }
                                 break;
                             }
                         }
@@ -483,37 +537,6 @@ const App: React.FC = () => {
                 console.log('[Wizard] Saved wizard data to database');
             } catch (err) {
                 console.error('Failed to save wizard data:', err);
-            }
-        }
-
-        // Save class schedules from Step 1 to class_sessions table
-        if (clubId && data.locationClassSchedules) {
-            const classSessionPromises: Promise<any>[] = [];
-            for (const [locationName, classes] of Object.entries(data.locationClassSchedules)) {
-                for (const cls of classes) {
-                    for (const day of cls.days) {
-                        classSessionPromises.push(
-                            fetch(`/api/clubs/${clubId}/class-sessions`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    className: cls.name,
-                                    day,
-                                    time: cls.startTime,
-                                    endTime: cls.endTime,
-                                    instructor: data.coaches?.[0]?.name || data.ownerName || '',
-                                    location: locationName,
-                                    beltRequirement: cls.beltRequirement || 'All Belts',
-                                    capacity: cls.capacity || 20,
-                                })
-                            }).catch(err => console.error('[Wizard] Failed to save class session:', cls.name, day, err))
-                        );
-                    }
-                }
-            }
-            if (classSessionPromises.length > 0) {
-                await Promise.all(classSessionPromises);
-                console.log('[Wizard] Saved', classSessionPromises.length, 'class session(s) to DB');
             }
         }
 
