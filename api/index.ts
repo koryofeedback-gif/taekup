@@ -56,12 +56,17 @@ async function ensureSchema() {
       )
     `);
     await client.query(`
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS total_points INTEGER DEFAULT 0;
+      ALTER TABLE class_sessions ADD COLUMN IF NOT EXISTS end_time VARCHAR(10);
+    `);
+    await client.query(`
       CREATE TABLE IF NOT EXISTS class_sessions (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         club_id UUID NOT NULL,
         class_name VARCHAR(255) NOT NULL,
         day VARCHAR(20) NOT NULL,
         time VARCHAR(10) NOT NULL,
+        end_time VARCHAR(10),
         instructor VARCHAR(255),
         location VARCHAR(255),
         belt_requirement VARCHAR(100) DEFAULT 'All',
@@ -9334,8 +9339,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const eventId = eventsRsvpMatch[1];
       const { clubId, parentEmail, studentId, status } = req.body || {};
       if (!clubId || !parentEmail || !status) return res.status(400).json({ error: 'clubId, parentEmail, status required' });
-      const ec = await pool.connect();
+      let ec: any = null;
       try {
+        ec = await pool.connect();
         const r = await ec.query(`
           INSERT INTO event_responses (event_id, club_id, parent_email, student_id, rsvp_status)
           VALUES ($1, $2, $3, $4, $5)
@@ -9343,15 +9349,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           RETURNING *
         `, [eventId, clubId, parentEmail, studentId || null, status]);
         return res.json(r.rows[0]);
-      } catch (e: any) { return res.status(500).json({ error: e.message }); }
-      finally { ec.release(); }
+      } catch (e: any) {
+        console.error('[RSVP] Error:', e.message, { eventId, clubId, parentEmail, studentId, status });
+        return res.status(500).json({ error: e.message });
+      } finally { if (ec) ec.release(); }
     }
 
     const eventsResponsesMatch = path.match(/^\/clubs\/([^/]+)\/events\/([^/]+)\/responses\/?$/);
     if (eventsResponsesMatch) {
       const [, erClubId, erEventId] = eventsResponsesMatch;
-      const ec = await pool.connect();
+      let ec: any = null;
       try {
+        ec = await pool.connect();
         if (req.method === 'GET') {
           const r = await ec.query(`
             SELECT er.id, er.event_id, er.parent_email, er.student_id, er.rsvp_status,
@@ -9365,15 +9374,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.json(r.rows);
         }
       } catch (e: any) { return res.status(500).json({ error: e.message }); }
-      finally { ec.release(); }
+      finally { if (ec) ec.release(); }
     }
 
     const eventsApproveMatch = path.match(/^\/clubs\/([^/]+)\/events\/([^/]+)\/responses\/([^/]+)\/approve\/?$/);
     if (eventsApproveMatch && req.method === 'POST') {
       const [, apClubId, apEventId, apResponseId] = eventsApproveMatch;
       const { xpReward = 0, pointsReward = 0, isGlobalRankImpact = false } = req.body || {};
-      const ec = await pool.connect();
+      let ec: any = null;
       try {
+        ec = await pool.connect();
         const existing = await ec.query(`SELECT * FROM event_responses WHERE id = $1 AND club_id = $2 AND event_id = $3`, [apResponseId, apClubId, apEventId]);
         const resp = existing.rows[0];
         if (!resp) return res.status(404).json({ error: 'Response not found' });
@@ -9394,7 +9404,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         return res.json({ success: true, xpGiven, pointsGiven });
       } catch (e: any) { return res.status(500).json({ error: e.message }); }
-      finally { ec.release(); }
+      finally { if (ec) ec.release(); }
     }
 
     const studentEventRsvpsMatch = path.match(/^\/students\/([^/]+)\/event-rsvps\/?$/);
@@ -9402,12 +9412,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const serId = studentEventRsvpsMatch[1];
       const clubIdQ = req.query.clubId as string;
       if (!clubIdQ) return res.status(400).json({ error: 'clubId required' });
-      const ec = await pool.connect();
+      let ec: any = null;
       try {
+        ec = await pool.connect();
         const r = await ec.query(`SELECT event_id, rsvp_status, attendance_confirmed, reward_issued FROM event_responses WHERE student_id=$1 AND club_id=$2`, [serId, clubIdQ]);
         return res.json(r.rows);
       } catch (e: any) { return res.status(500).json({ error: e.message }); }
-      finally { ec.release(); }
+      finally { if (ec) ec.release(); }
     }
 
     // World Rankings endpoints
