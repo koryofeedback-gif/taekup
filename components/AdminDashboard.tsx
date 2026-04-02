@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem, PrivateSlot } from '../types';
+import type { WizardData, Student, Coach, Belt, CalendarEvent, ScheduleItem, CurriculumItem } from '../types';
 import { generateParentingAdvice } from '../services/geminiService';
 import { WT_BELTS, ITF_BELTS, KARATE_BELTS, BJJ_BELTS, JUDO_BELTS, HAPKIDO_BELTS, TANGSOODO_BELTS, AIKIDO_BELTS, KRAVMAGA_BELTS, KUNGFU_BELTS } from '../constants';
 import { CSVImport, ImportedStudent } from './CSVImport';
@@ -1001,138 +1001,28 @@ const StaffTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardDat
     )
 }
 
-// Category color map for class cards
-const CATEGORY_COLORS: Record<string, { border: string; bg: string; badge: string; text: string }> = {
-    'Kids': { border: 'border-l-yellow-400', bg: 'bg-yellow-900/20', badge: 'bg-yellow-900/50 text-yellow-300', text: 'text-yellow-300' },
-    'Beginners': { border: 'border-l-green-400', bg: 'bg-green-900/20', badge: 'bg-green-900/50 text-green-300', text: 'text-green-300' },
-    'Advanced': { border: 'border-l-red-400', bg: 'bg-red-900/20', badge: 'bg-red-900/50 text-red-300', text: 'text-red-300' },
-    'Sparring': { border: 'border-l-orange-400', bg: 'bg-orange-900/20', badge: 'bg-orange-900/50 text-orange-300', text: 'text-orange-300' },
-    'Competition': { border: 'border-l-purple-400', bg: 'bg-purple-900/20', badge: 'bg-purple-900/50 text-purple-300', text: 'text-purple-300' },
-    'Weapons': { border: 'border-l-rose-400', bg: 'bg-rose-900/20', badge: 'bg-rose-900/50 text-rose-300', text: 'text-rose-300' },
-    'Fitness': { border: 'border-l-cyan-400', bg: 'bg-cyan-900/20', badge: 'bg-cyan-900/50 text-cyan-300', text: 'text-cyan-300' },
-    'General': { border: 'border-l-sky-400', bg: 'bg-sky-900/20', badge: 'bg-sky-900/50 text-sky-300', text: 'text-sky-300' },
-};
-
-const CLASS_CATEGORIES = ['General', 'Kids', 'Beginners', 'Advanced', 'Sparring', 'Competition', 'Weapons', 'Fitness'];
-
-interface DbScheduleClass {
-    id: string;
-    club_id: string;
-    coach_id: string | null;
-    class_name: string;
-    coach_name: string | null;
-    category: string;
-    color: string;
-    day_of_week: string;
-    start_time: string;
-    end_time: string | null;
-    max_capacity: number;
-    location: string | null;
-    belt_requirement: string;
-    is_active: boolean;
-    enrolled_count: number;
-}
-
-interface DbPrivateSlot {
-    id: string;
-    coach_name: string;
-    date: string;
-    time: string;
-    price: number;
-    is_booked: boolean;
-}
-
-interface DbScheduleEvent {
-    id: string;
-    title: string;
-    event_type: string;
-    date: string;
-    time: string | null;
-    location: string | null;
-}
-
-const ScheduleTab: React.FC<{ data: WizardData, clubId?: string, userId?: string, refreshKey?: number, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void }> = ({ data, clubId, userId, refreshKey, onUpdateData, onOpenModal }) => {
+const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, onOpenModal: (type: string) => void }> = ({ data, onUpdateData, onOpenModal }) => {
     const { t } = useTranslation(data.language);
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const dayKeys: Record<string, string> = { Monday: 'monday', Tuesday: 'tuesday', Wednesday: 'wednesday', Thursday: 'thursday', Friday: 'friday', Saturday: 'saturday', Sunday: 'sunday' };
 
-    const [dbClasses, setDbClasses] = useState<DbScheduleClass[]>([]);
-    const [dbPrivateSlots, setDbPrivateSlots] = useState<DbPrivateSlot[]>([]);
-    const [dbEvents, setDbEvents] = useState<DbScheduleEvent[]>([]);
-    const [loadingSchedule, setLoadingSchedule] = useState(false);
-
-    const buildScheduleQS = () => {
-        const params = new URLSearchParams({ clubId: clubId || '' });
-        if (userId) params.set('userId', userId);
-        return params.toString();
-    };
-
-    const fetchScheduleData = async () => {
-        if (!clubId) return;
-        setLoadingSchedule(true);
-        try {
-            const qs = buildScheduleQS();
-            const [classesRes, slotsRes, eventsRes] = await Promise.all([
-                fetch(`/api/schedule/classes?${qs}`),
-                fetch(`/api/schedule/private-slots?${qs}`),
-                fetch(`/api/schedule/events?${qs}`)
-            ]);
-            if (classesRes.ok) setDbClasses(await classesRes.json());
-            if (slotsRes.ok) setDbPrivateSlots(await slotsRes.json());
-            if (eventsRes.ok) setDbEvents(await eventsRes.json());
-        } catch (e) {
-            console.error('[Schedule] Fetch error:', e);
-        } finally {
-            setLoadingSchedule(false);
-        }
-    };
-
-    useEffect(() => { fetchScheduleData(); }, [clubId, userId, refreshKey]);
-
-    const handleRemoveClass = async (id: string) => {
-        if (!confirm(t('admin.schedule.removeClassConfirm'))) return;
-        if (clubId) {
-            try {
-                const qs = new URLSearchParams({ clubId });
-                if (userId) qs.set('userId', userId);
-                await fetch(`/api/schedule/classes/${id}?${qs.toString()}`, { method: 'DELETE' });
-                setDbClasses(prev => prev.filter(c => c.id !== id));
-            } catch (e) { console.error('[Schedule] Delete class error:', e); }
-        } else {
+    const handleRemoveClass = (id: string) => {
+        if(confirm(t('admin.schedule.removeClassConfirm'))) {
             onUpdateData({ schedule: data.schedule.filter(s => s.id !== id) });
         }
-    };
+    }
 
-    const handleRemoveEvent = async (id: string) => {
-        if (!confirm(t('admin.schedule.cancelEventConfirm'))) return;
-        if (clubId) {
-            try {
-                const qs = new URLSearchParams({ clubId });
-                if (userId) qs.set('userId', userId);
-                await fetch(`/api/schedule/events/${id}?${qs.toString()}`, { method: 'DELETE' });
-                setDbEvents(prev => prev.filter(e => e.id !== id));
-            } catch (e) { console.error('[Schedule] Delete event error:', e); }
-        } else {
+    const handleRemoveEvent = (id: string) => {
+        if(confirm(t('admin.schedule.cancelEventConfirm'))) {
             onUpdateData({ events: data.events.filter(e => e.id !== id) });
         }
-    };
+    }
 
-    const handleRemovePrivateSlot = async (id: string) => {
-        if (!confirm(t('admin.schedule.removeSlotConfirm'))) return;
-        if (clubId) {
-            try {
-                const qs = new URLSearchParams({ clubId });
-                if (userId) qs.set('userId', userId);
-                await fetch(`/api/schedule/private-slots/${id}?${qs.toString()}`, { method: 'DELETE' });
-                setDbPrivateSlots(prev => prev.filter(s => s.id !== id));
-            } catch (e) { console.error('[Schedule] Delete slot error:', e); }
-        } else {
+    const handleRemovePrivateSlot = (id: string) => {
+        if(confirm(t('admin.schedule.removeSlotConfirm'))) {
             onUpdateData({ privateSlots: (data.privateSlots || []).filter(s => s.id !== id) });
         }
-    };
-
-    // Use DB data only when both clubId and userId are available (authenticated owner/coach)
-    const useDbData = !!clubId && !!userId;
+    }
 
     return (
         <div className="space-y-8">
@@ -1147,50 +1037,14 @@ const ScheduleTab: React.FC<{ data: WizardData, clubId?: string, userId?: string
                         </button>
                     }
                 />
-                {loadingSchedule && <div className="text-gray-500 text-sm mb-4">Loading schedule...</div>}
                 <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
                     {days.map(day => {
-                        const dbDayClasses = dbClasses.filter(c => c.day_of_week === day).sort((a, b) => a.start_time.localeCompare(b.start_time));
-                        const legacyClasses = (data.schedule || []).filter(s => s.day === day).sort((a,b) => a.time.localeCompare(b.time));
-                        const hasAny = useDbData ? dbDayClasses.length > 0 : legacyClasses.length > 0;
+                        const classes = (data.schedule || []).filter(s => s.day === day).sort((a,b) => a.time.localeCompare(b.time));
                         return (
                             <div key={day} className="bg-gray-800 rounded-lg border border-gray-700 p-3 min-h-[200px]">
                                 <h4 className="font-bold text-gray-400 text-sm mb-3 border-b border-gray-700 pb-2">{t(`admin.schedule.days.${dayKeys[day]}`)}</h4>
                                 <div className="space-y-2">
-                                    {useDbData ? dbDayClasses.map((c: DbScheduleClass) => {
-                                        const catColors = CATEGORY_COLORS[c.category] || CATEGORY_COLORS['General'];
-                                        const enrolled = c.enrolled_count || 0;
-                                        const maxCap = c.max_capacity || 20;
-                                        const isFull = enrolled >= maxCap;
-                                        const pct = Math.min(100, Math.round((enrolled / maxCap) * 100));
-                                        return (
-                                            <div key={c.id} className={`border-l-4 ${catColors.border} ${catColors.bg} p-2 rounded-r text-xs group relative hover:opacity-90 transition-opacity`}>
-                                                <p className="font-bold text-sky-300">{c.start_time}{c.end_time ? `–${c.end_time}` : ''}</p>
-                                                <p className="text-white font-semibold truncate">{c.class_name}</p>
-                                                {c.coach_name && <p className="text-gray-400 truncate text-[10px]">{c.coach_name}</p>}
-                                                <span className={`text-[9px] px-1 py-0.5 rounded font-bold ${catColors.badge}`}>{c.category}</span>
-                                                {/* Capacity bar */}
-                                                <div className="mt-1">
-                                                    <div className="flex justify-between items-center mb-0.5">
-                                                        <span className="text-[9px] text-gray-400">{enrolled}/{maxCap}</span>
-                                                        {isFull && <span className="text-[9px] bg-red-900/70 text-red-300 px-1 py-0.5 rounded font-bold">Waitlist Active</span>}
-                                                    </div>
-                                                    <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
-                                                        <div 
-                                                            className={`h-full rounded-full transition-all ${isFull ? 'bg-red-400' : pct > 75 ? 'bg-yellow-400' : 'bg-green-400'}`}
-                                                            style={{ width: `${pct}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <button 
-                                                    onClick={() => handleRemoveClass(c.id)}
-                                                    className="absolute top-1 right-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100"
-                                                >
-                                                    &times;
-                                                </button>
-                                            </div>
-                                        );
-                                    }) : legacyClasses.map((c) => (
+                                    {classes.map(c => (
                                         <div key={c.id} className="bg-gray-700/50 p-2 rounded text-xs group relative hover:bg-gray-700 transition-colors">
                                             <p className="font-bold text-sky-300">{c.time}</p>
                                             <p className="text-white font-medium truncate">{c.className}</p>
@@ -1203,10 +1057,10 @@ const ScheduleTab: React.FC<{ data: WizardData, clubId?: string, userId?: string
                                             </button>
                                         </div>
                                     ))}
-                                    {!hasAny && <p className="text-gray-600 text-xs italic">{t('admin.schedule.noClasses')}</p>}
+                                    {classes.length === 0 && <p className="text-gray-600 text-xs italic">{t('admin.schedule.noClasses')}</p>}
                                 </div>
                             </div>
-                        );
+                        )
                     })}
                 </div>
             </div>
@@ -1236,102 +1090,56 @@ const ScheduleTab: React.FC<{ data: WizardData, clubId?: string, userId?: string
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700">
-                            {useDbData
-                                ? dbPrivateSlots.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((slot: DbPrivateSlot) => (
-                                    <tr key={slot.id} className="hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 font-medium text-white">{new Date(slot.date).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4">{slot.time}</td>
-                                        <td className="px-6 py-4">{slot.coach_name}</td>
-                                        <td className="px-6 py-4 text-green-400 font-bold">${slot.price}</td>
-                                        <td className="px-6 py-4">
-                                            {slot.is_booked ? (
-                                                <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
-                                            ) : (
-                                                <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.remove')}</button>
-                                        </td>
-                                    </tr>
-                                ))
-                                : (data.privateSlots || []).slice().sort((a: PrivateSlot, b: PrivateSlot) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((slot: PrivateSlot) => (
-                                    <tr key={slot.id} className="hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 font-medium text-white">{new Date(slot.date).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4">{slot.time}</td>
-                                        <td className="px-6 py-4">{slot.coachName}</td>
-                                        <td className="px-6 py-4 text-green-400 font-bold">${slot.price}</td>
-                                        <td className="px-6 py-4">
-                                            {slot.isBooked ? (
-                                                <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
-                                            ) : (
-                                                <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.remove')}</button>
-                                        </td>
-                                    </tr>
-                                ))
-                            }
-                            {(useDbData ? dbPrivateSlots : (data.privateSlots || [])).length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">{t('admin.schedule.noPrivateSlots')}</td></tr>}
+                            {(data.privateSlots || []).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(slot => (
+                                <tr key={slot.id} className="hover:bg-gray-700/50">
+                                    <td className="px-6 py-4 font-medium text-white">{new Date(slot.date).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4">{slot.time}</td>
+                                    <td className="px-6 py-4">{slot.coachName}</td>
+                                    <td className="px-6 py-4 text-green-400 font-bold">${slot.price}</td>
+                                    <td className="px-6 py-4">
+                                        {slot.isBooked ? (
+                                            <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
+                                        ) : (
+                                            <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.remove')}</button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(data.privateSlots || []).length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">{t('admin.schedule.noPrivateSlots')}</td></tr>}
                         </tbody>
                     </table>
                 </div>
 
                 {/* Mobile Card View */}
                 <div className="md:hidden space-y-3">
-                    {useDbData
-                        ? dbPrivateSlots.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((slot: DbPrivateSlot) => (
-                            <div key={slot.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                        <h3 className="font-bold text-white">{new Date(slot.date).toLocaleDateString()}</h3>
-                                        <span className="text-gray-400 text-sm">{slot.time}</span>
-                                    </div>
-                                    {slot.is_booked ? (
-                                        <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
-                                    ) : (
-                                        <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
-                                    )}
+                    {(data.privateSlots || []).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(slot => (
+                        <div key={slot.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 className="font-bold text-white">{new Date(slot.date).toLocaleDateString()}</h3>
+                                    <span className="text-gray-400 text-sm">{slot.time}</span>
                                 </div>
-                                <div className="text-sm text-gray-400 mb-3">
-                                    <span className="text-white">{slot.coach_name}</span>
-                                    <span className="text-green-400 font-bold ml-2">${slot.price}</span>
-                                </div>
-                                <div className="flex pt-2 border-t border-gray-700">
-                                    <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
-                                        {t('common.remove')}
-                                    </button>
-                                </div>
+                                {slot.isBooked ? (
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
+                                ) : (
+                                    <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
+                                )}
                             </div>
-                        ))
-                        : (data.privateSlots || []).slice().sort((a: PrivateSlot, b: PrivateSlot) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((slot: PrivateSlot) => (
-                            <div key={slot.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                        <h3 className="font-bold text-white">{new Date(slot.date).toLocaleDateString()}</h3>
-                                        <span className="text-gray-400 text-sm">{slot.time}</span>
-                                    </div>
-                                    {slot.isBooked ? (
-                                        <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
-                                    ) : (
-                                        <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
-                                    )}
-                                </div>
-                                <div className="text-sm text-gray-400 mb-3">
-                                    <span className="text-white">{slot.coachName}</span>
-                                    <span className="text-green-400 font-bold ml-2">${slot.price}</span>
-                                </div>
-                                <div className="flex pt-2 border-t border-gray-700">
-                                    <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
-                                        {t('common.remove')}
-                                    </button>
-                                </div>
+                            <div className="text-sm text-gray-400 mb-3">
+                                <span className="text-white">{slot.coachName}</span>
+                                <span className="text-green-400 font-bold ml-2">${slot.price}</span>
                             </div>
-                        ))
-                    }
-                    {(useDbData ? dbPrivateSlots : (data.privateSlots || [])).length === 0 && (
+                            <div className="flex pt-2 border-t border-gray-700">
+                                <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
+                                    {t('common.remove')}
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {(data.privateSlots || []).length === 0 && (
                         <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
                             {t('admin.schedule.noPrivateSlots')}
                         </div>
@@ -1363,74 +1171,42 @@ const ScheduleTab: React.FC<{ data: WizardData, clubId?: string, userId?: string
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700">
-                            {useDbData
-                                ? dbEvents.map((evt: DbScheduleEvent) => (
-                                    <tr key={evt.id} className="hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 font-medium text-white">{evt.title}</td>
-                                        <td className="px-6 py-4"><span className="bg-gray-700 px-2 py-1 rounded text-xs uppercase font-bold text-indigo-300">{evt.event_type}</span></td>
-                                        <td className="px-6 py-4">{new Date(evt.date).toLocaleDateString()} {evt.time}</td>
-                                        <td className="px-6 py-4">{evt.location}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.cancel')}</button>
-                                        </td>
-                                    </tr>
-                                ))
-                                : (data.events || []).map((evt: CalendarEvent) => (
-                                    <tr key={evt.id} className="hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 font-medium text-white">{evt.title}</td>
-                                        <td className="px-6 py-4"><span className="bg-gray-700 px-2 py-1 rounded text-xs uppercase font-bold text-indigo-300">{evt.type}</span></td>
-                                        <td className="px-6 py-4">{new Date(evt.date).toLocaleDateString()} {evt.time}</td>
-                                        <td className="px-6 py-4">{evt.location}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.cancel')}</button>
-                                        </td>
-                                    </tr>
-                                ))
-                            }
-                            {(useDbData ? dbEvents : (data.events || [])).length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">{t('admin.schedule.noUpcomingEvents')}</td></tr>}
+                            {(data.events || []).map(evt => (
+                                <tr key={evt.id} className="hover:bg-gray-700/50">
+                                    <td className="px-6 py-4 font-medium text-white">{evt.title}</td>
+                                    <td className="px-6 py-4"><span className="bg-gray-700 px-2 py-1 rounded text-xs uppercase font-bold text-indigo-300">{evt.type}</span></td>
+                                    <td className="px-6 py-4">{new Date(evt.date).toLocaleDateString()} {evt.time}</td>
+                                    <td className="px-6 py-4">{evt.location}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.cancel')}</button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(data.events || []).length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">{t('admin.schedule.noUpcomingEvents')}</td></tr>}
                         </tbody>
                     </table>
                 </div>
 
                 {/* Mobile Card View */}
                 <div className="md:hidden space-y-3">
-                    {useDbData
-                        ? dbEvents.map((evt: DbScheduleEvent) => (
-                            <div key={evt.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-white text-lg">{evt.title}</h3>
-                                    <span className="bg-gray-700 px-2 py-1 rounded text-xs uppercase font-bold text-indigo-300">{evt.event_type}</span>
-                                </div>
-                                <div className="text-sm text-gray-400 mb-3 space-y-1">
-                                    <div>{new Date(evt.date).toLocaleDateString()} · {evt.time}</div>
-                                    <div className="text-white">{evt.location}</div>
-                                </div>
-                                <div className="flex pt-2 border-t border-gray-700">
-                                    <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
-                                        {t('common.cancel')}
-                                    </button>
-                                </div>
+                    {(data.events || []).map(evt => (
+                        <div key={evt.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                            <div className="flex justify-between items-start mb-2">
+                                <h3 className="font-bold text-white text-lg">{evt.title}</h3>
+                                <span className="bg-gray-700 px-2 py-1 rounded text-xs uppercase font-bold text-indigo-300">{evt.type}</span>
                             </div>
-                        ))
-                        : (data.events || []).map((evt: CalendarEvent) => (
-                            <div key={evt.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-white text-lg">{evt.title}</h3>
-                                    <span className="bg-gray-700 px-2 py-1 rounded text-xs uppercase font-bold text-indigo-300">{evt.type}</span>
-                                </div>
-                                <div className="text-sm text-gray-400 mb-3 space-y-1">
-                                    <div>{new Date(evt.date).toLocaleDateString()} · {evt.time}</div>
-                                    <div className="text-white">{evt.location}</div>
-                                </div>
-                                <div className="flex pt-2 border-t border-gray-700">
-                                    <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
-                                        {t('common.cancel')}
-                                    </button>
-                                </div>
+                            <div className="text-sm text-gray-400 mb-3 space-y-1">
+                                <div>{new Date(evt.date).toLocaleDateString()} · {evt.time}</div>
+                                <div className="text-white">{evt.location}</div>
                             </div>
-                        ))
-                    }
-                    {(useDbData ? dbEvents : (data.events || [])).length === 0 && (
+                            <div className="flex pt-2 border-t border-gray-700">
+                                <button onClick={() => handleRemoveEvent(evt.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
+                                    {t('common.cancel')}
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {(data.events || []).length === 0 && (
                         <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
                             {t('admin.schedule.noUpcomingEvents')}
                         </div>
@@ -1438,7 +1214,7 @@ const ScheduleTab: React.FC<{ data: WizardData, clubId?: string, userId?: string
                 </div>
             </div>
         </div>
-    );
+    )
 }
 
 const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void; }> = ({ checked, onChange }) => (
@@ -3079,10 +2855,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
     const [tempCoach, setTempCoach] = useState<Partial<Coach>>({});
     const [editingCoachId, setEditingCoachId] = useState<string | null>(null);
-    const [tempClass, setTempClass] = useState<Partial<ScheduleItem> & { category?: string; maxCapacity?: number; endTime?: string; coachId?: string }>({});
+    const [tempClass, setTempClass] = useState<Partial<ScheduleItem>>({});
     const [tempEvent, setTempEvent] = useState<Partial<CalendarEvent>>({});
-    const [tempPrivate, setTempPrivate] = useState<{coachName: string, date: string, time: string, price: number, coachId?: string}>({coachName: '', date: '', time: '', price: 50});
-    const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
+    const [tempPrivate, setTempPrivate] = useState<{coachName: string, date: string, time: string, price: number}>({coachName: '', date: '', time: '', price: 50});
     
     // Bulk Import State
     const [studentImportMethod, setStudentImportMethod] = useState<'single' | 'bulk' | 'excel' | 'google' | 'transfer'>('single');
@@ -3712,140 +3487,73 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
         setTempCoach({});
     };
 
-    const handleAddClass = async () => {
+    const handleAddClass = () => {
         if(!tempClass.className || !tempClass.day || !tempClass.time) return;
         const location = tempClass.location || data.branchNames?.[0] || 'Main Location';
-
-        if (clubId) {
-            try {
-                const res = await fetch('/api/schedule/classes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        clubId,
-                        userId: localStorage.getItem('taekup_user_id') || undefined,
-                        coachId: (tempClass.coachId && tempClass.coachId !== '__owner') ? tempClass.coachId : null,
-                        className: tempClass.className,
-                        coachName: tempClass.instructor || data.ownerName,
-                        category: tempClass.category || 'General',
-                        color: tempClass.category || 'sky',
-                        dayOfWeek: tempClass.day,
-                        startTime: tempClass.time,
-                        endTime: tempClass.endTime || null,
-                        maxCapacity: tempClass.maxCapacity || 20,
-                        location,
-                        beltRequirement: tempClass.beltRequirement || 'All'
-                    })
-                });
-                if (!res.ok) throw new Error('Failed to create class');
-                setScheduleRefreshKey(k => k + 1);
-            } catch (e) {
-                console.error('[Schedule] Create class error:', e);
-                alert('Failed to save class. Please try again.');
-                return;
-            }
-        } else {
-            const newClass: ScheduleItem = {
-                id: `sched-${Date.now()}`,
-                day: tempClass.day,
-                time: tempClass.time,
-                className: tempClass.className,
-                instructor: tempClass.instructor || data.ownerName,
-                location,
-                beltRequirement: tempClass.beltRequirement || 'All'
-            };
-            const updatedLocationClasses = { ...(data.locationClasses || {}) };
-            if (!updatedLocationClasses[location]) updatedLocationClasses[location] = [];
-            if (!updatedLocationClasses[location].includes(tempClass.className!)) {
-                updatedLocationClasses[location] = [...updatedLocationClasses[location], tempClass.className!];
-            }
-            const updatedClasses = [...(data.classes || [])];
-            if (!updatedClasses.includes(tempClass.className!)) updatedClasses.push(tempClass.className!);
-            onUpdateData({ schedule: [...(data.schedule || []), newClass], locationClasses: updatedLocationClasses, classes: updatedClasses });
+        const newClass: ScheduleItem = {
+            id: `sched-${Date.now()}`,
+            day: tempClass.day,
+            time: tempClass.time,
+            className: tempClass.className,
+            instructor: tempClass.instructor || data.ownerName,
+            location,
+            beltRequirement: tempClass.beltRequirement || 'All'
+        };
+        
+        // Also add to locationClasses for dropdown population
+        const updatedLocationClasses = { ...(data.locationClasses || {}) };
+        if (!updatedLocationClasses[location]) {
+            updatedLocationClasses[location] = [];
         }
+        if (!updatedLocationClasses[location].includes(tempClass.className)) {
+            updatedLocationClasses[location] = [...updatedLocationClasses[location], tempClass.className];
+        }
+        
+        // Also add to general classes list
+        const updatedClasses = [...(data.classes || [])];
+        if (!updatedClasses.includes(tempClass.className)) {
+            updatedClasses.push(tempClass.className);
+        }
+        
+        onUpdateData({ 
+            schedule: [...(data.schedule || []), newClass],
+            locationClasses: updatedLocationClasses,
+            classes: updatedClasses
+        });
         setModalType(null);
         setTempClass({});
     };
 
-    const handleAddEvent = async () => {
+    const handleAddEvent = () => {
         if(!tempEvent.title || !tempEvent.date) return;
-        if (clubId) {
-            try {
-                const res = await fetch('/api/schedule/events', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        clubId,
-                        userId: localStorage.getItem('taekup_user_id') || undefined,
-                        title: tempEvent.title,
-                        eventType: tempEvent.type || 'social',
-                        date: tempEvent.date,
-                        time: tempEvent.time || '10:00',
-                        location: tempEvent.location || 'Dojang',
-                        description: ''
-                    })
-                });
-                if (!res.ok) throw new Error('Failed to create event');
-                setScheduleRefreshKey(k => k + 1);
-            } catch (e) {
-                console.error('[Schedule] Create event error:', e);
-                alert('Failed to save event. Please try again.');
-                return;
-            }
-        } else {
-            const newEvent: CalendarEvent = {
-                id: `evt-${Date.now()}`,
-                title: tempEvent.title,
-                date: tempEvent.date,
-                time: tempEvent.time || '10:00',
-                location: tempEvent.location || 'Dojang',
-                type: tempEvent.type || 'social',
-                description: ''
-            };
-            onUpdateData({ events: [...(data.events || []), newEvent] });
-        }
+        const newEvent: CalendarEvent = {
+            id: `evt-${Date.now()}`,
+            title: tempEvent.title,
+            date: tempEvent.date,
+            time: tempEvent.time || '10:00',
+            location: tempEvent.location || 'Dojang',
+            type: tempEvent.type || 'social',
+            description: ''
+        };
+        onUpdateData({ events: [...(data.events || []), newEvent] });
         setModalType(null);
         setTempEvent({});
-    };
+    }
 
-    const handleAddPrivate = async () => {
+    const handleAddPrivate = () => {
         if(!tempPrivate.coachName || !tempPrivate.date || !tempPrivate.time) return;
-        if (clubId) {
-            try {
-                const res = await fetch('/api/schedule/private-slots', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        clubId,
-                        userId: localStorage.getItem('taekup_user_id') || undefined,
-                        coachId: (tempPrivate.coachId && tempPrivate.coachId !== '__owner') ? tempPrivate.coachId : null,
-                        coachName: tempPrivate.coachName,
-                        date: tempPrivate.date,
-                        time: tempPrivate.time,
-                        price: tempPrivate.price || 50
-                    })
-                });
-                if (!res.ok) throw new Error('Failed to create slot');
-                setScheduleRefreshKey(k => k + 1);
-            } catch (e) {
-                console.error('[Schedule] Create slot error:', e);
-                alert('Failed to save private slot. Please try again.');
-                return;
-            }
-        } else {
-            const newSlot = {
-                id: `prv-${Date.now()}`,
-                coachName: tempPrivate.coachName,
-                date: tempPrivate.date,
-                time: tempPrivate.time,
-                price: tempPrivate.price || 50,
-                isBooked: false
-            };
-            onUpdateData({ privateSlots: [...(data.privateSlots || []), newSlot] });
-        }
+        const newSlot = {
+            id: `prv-${Date.now()}`,
+            coachName: tempPrivate.coachName,
+            date: tempPrivate.date,
+            time: tempPrivate.time,
+            price: tempPrivate.price || 50,
+            isBooked: false
+        };
+        onUpdateData({ privateSlots: [...(data.privateSlots || []), newSlot] });
         setModalType(null);
         setTempPrivate({coachName: '', date: '', time: '', price: 50});
-    };
+    }
 
     return (
         <div className="min-h-screen bg-gray-900 flex">
@@ -3932,7 +3640,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     {activeTab === 'overview' && <OverviewTab data={data} onNavigate={onNavigate} onOpenModal={setModalType} onNavigateTab={setActiveTab} />}
                     {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
                     {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
-                    {activeTab === 'schedule' && <ScheduleTab data={data} clubId={clubId} userId={localStorage.getItem('taekup_user_id') || undefined} refreshKey={scheduleRefreshKey} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
+                    {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} />}
                     {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} clubId={clubId} onShowPricing={onShowPricing} />}
@@ -4599,35 +4307,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                 <option value="">Select Day</option>
                                 {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d => <option key={d} value={d}>{d}</option>)}
                             </select>
-                            <select className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, category: e.target.value})}>
-                                <option value="">Category</option>
-                                {CLASS_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                            </select>
+                            <input type="time" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, time: e.target.value})} />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-gray-400 mb-1">Start Time</label>
-                                <input type="time" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, time: e.target.value})} />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-400 mb-1">End Time (optional)</label>
-                                <input type="time" className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, endTime: e.target.value})} />
-                            </div>
-                        </div>
-                        <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => {
-                            const selectedCoach = data.coaches.find(c => c.id === e.target.value);
-                            setTempClass({...tempClass, coachId: e.target.value || undefined, instructor: selectedCoach?.name || (e.target.value === '__owner' ? data.ownerName : '')});
-                        }}>
+                        <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, instructor: e.target.value})}>
                             <option value="">Assign Instructor</option>
-                            <option value="__owner">{data.ownerName} (Owner)</option>
-                            {data.coaches.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            <option value={data.ownerName}>{data.ownerName} (Owner)</option>
+                            {data.coaches.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                         </select>
-                        <div>
-                            <label className="block text-xs text-gray-400 mb-1">Max Capacity</label>
-                            <input type="number" min="1" defaultValue={20} className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, maxCapacity: parseInt(e.target.value) || 20})} />
-                        </div>
                         <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, location: e.target.value})}>
-                            <option value="">Select Location</option>
                             {data.branchNames?.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                         <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempClass({...tempClass, beltRequirement: e.target.value})}>
@@ -4662,13 +4349,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             {modalType === 'private' && (
                 <Modal title={t('admin.schedule.addPrivateSlotModal.title')} onClose={() => setModalType(null)}>
                     <div className="space-y-4">
-                        <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => {
-                            const selectedCoach = data.coaches.find(c => c.id === e.target.value);
-                            setTempPrivate({...tempPrivate, coachId: e.target.value || undefined, coachName: selectedCoach?.name || (e.target.value === '__owner' ? data.ownerName : '')});
-                        }}>
+                        <select className="w-full bg-gray-700 rounded p-2 text-white" onChange={e => setTempPrivate({...tempPrivate, coachName: e.target.value})}>
                             <option value="">Select Coach</option>
-                            <option value="__owner">{data.ownerName} (Owner)</option>
-                            {data.coaches.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            <option value={data.ownerName}>{data.ownerName} (Owner)</option>
+                            {data.coaches.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                         </select>
                         <div className="grid grid-cols-2 gap-4">
                             <input type="date" className="bg-gray-700 rounded p-2 text-white" onChange={e => setTempPrivate({...tempPrivate, date: e.target.value})} />

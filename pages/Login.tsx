@@ -50,9 +50,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ signupData, finalWizardDat
             localStorage.setItem('taekup_user_type', userType);
             localStorage.setItem('taekup_user_name', user.name || user.clubName || 'User');
             localStorage.setItem('taekup_user_email', user.email || email);
-            if (user.id) {
-                localStorage.setItem('taekup_user_id', user.id);
-            }
             if (user.clubId) {
                 localStorage.setItem('taekup_club_id', user.clubId);
             }
