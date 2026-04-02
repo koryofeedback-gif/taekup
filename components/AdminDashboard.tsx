@@ -3581,12 +3581,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                             parentName: student.parentName,
                             parentPhone: student.parentPhone,
                             belt: belt?.name || 'White',
-                            birthdate: student.birthday
+                            birthdate: student.birthday,
+                            location: student.location || bulkLocation || data.branchNames?.[0] || null,
+                            assignedClass: student.assignedClass || bulkClass || null
                         })
                     });
                     const result = await response.json();
                     if (response.ok && result.student?.id) {
                         studentsWithDbIds.push({ ...student, id: result.student.id });
+
+                        // Create enrollment records for matching class sessions
+                        const assignedCls = student.assignedClass || bulkClass;
+                        const assignedLoc = student.location || bulkLocation;
+                        if (assignedCls) {
+                            const matchingSessions = modalDbClasses.filter(s =>
+                                s.class_name === assignedCls &&
+                                (!assignedLoc || s.location === assignedLoc)
+                            );
+                            for (const session of matchingSessions) {
+                                fetch(`/api/class-sessions/${session.id}/enroll`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ studentId: result.student.id, clubId })
+                                }).catch(err => console.error('[Bulk Enroll] Failed for session', session.id, err));
+                            }
+                        }
                         
                         if (result.welcomeEmail?.success) {
                             if (result.welcomeEmail.skipped) {
@@ -4247,7 +4266,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     <label className="block text-xs font-bold text-gray-400 mb-1">{t('admin.students.bulkImport.defaultClass')}</label>
                                     <select value={bulkClass} onChange={e => setBulkClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
                                         <option value="">{t('admin.students.bulkImport.autoAssign')}</option>
-                                        {(data.locationClasses?.[bulkLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
+                                        {(Array.from(new Set(modalDbClasses.filter(s => !bulkLocation || s.location === bulkLocation).map(s => s.class_name))).length > 0
+                                            ? Array.from(new Set(modalDbClasses.filter(s => !bulkLocation || s.location === bulkLocation).map(s => s.class_name)))
+                                            : (data.locationClasses?.[bulkLocation] || data.classes || [])
+                                        ).map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -4324,7 +4346,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     <label className="block text-xs font-bold text-gray-400 mb-1">{t('admin.students.bulkImport.defaultClass')}</label>
                                     <select value={bulkClass} onChange={e => setBulkClass(e.target.value)} className="w-full bg-gray-700 rounded p-2 text-white text-sm">
                                         <option value="">{t('admin.students.bulkImport.autoAssign')}</option>
-                                        {(data.locationClasses?.[bulkLocation] || data.classes || []).map(c => <option key={c} value={c}>{c}</option>)}
+                                        {(Array.from(new Set(modalDbClasses.filter(s => !bulkLocation || s.location === bulkLocation).map(s => s.class_name))).length > 0
+                                            ? Array.from(new Set(modalDbClasses.filter(s => !bulkLocation || s.location === bulkLocation).map(s => s.class_name)))
+                                            : (data.locationClasses?.[bulkLocation] || data.classes || [])
+                                        ).map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                             </div>
