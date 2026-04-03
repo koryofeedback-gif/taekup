@@ -9435,26 +9435,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await ec.query(`UPDATE event_responses SET attendance_confirmed = true WHERE id = $1`, [apResponseId]);
         let xpGiven = 0, pointsGiven = 0;
 
-        // Resolve the real student DB UUID — try direct match first, then fallback by parent_email
+        // Resolve the real student DB UUID — 3-level fallback
         const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         let resolvedStudentId: string | null = null;
+
+        // Level 1: direct UUID match in students table
         if (resp.student_id && uuidRe.test(resp.student_id)) {
           const check = await ec.query(`SELECT id FROM students WHERE id = $1::uuid LIMIT 1`, [resp.student_id]);
-          if (check.rowCount > 0) {
-            resolvedStudentId = resp.student_id;
-          }
+          if (check.rowCount > 0) resolvedStudentId = resp.student_id;
         }
-        // Fallback: look up by parent_email + club_id (handles wizard_data ID mismatches)
+
+        // Level 2: parent_email + club_id lookup (handles wizard_data ID mismatches)
         if (!resolvedStudentId && resp.parent_email) {
           const fallback = await ec.query(
             `SELECT id FROM students WHERE LOWER(parent_email) = LOWER($1) AND club_id = $2 LIMIT 1`,
             [resp.parent_email, apClubId]
           );
-          if (fallback.rowCount > 0) {
-            resolvedStudentId = fallback.rows[0].id;
-            // Patch the RSVP row with the correct student_id so future calls resolve instantly
-            await ec.query(`UPDATE event_responses SET student_id = $1 WHERE id = $2`, [resolvedStudentId, apResponseId]);
-          }
+          if (fallback.rowCount > 0) resolvedStudentId = fallback.rows[0].id;
+        }
+
+        // Level 3: student only exists in wizard_data — upsert them into students table
+        if (!resolvedStudentId && resp.parent_email) {
+          try {
+            const clubRow = await ec.query(`SELECT wizard_data FROM clubs WHERE id = $1 LIMIT 1`, [apClubId]);
+            const wd = clubRow.rows[0]?.wizard_data || {};
+            const wdStudents: any[] = wd.students || [];
+            const wdStudent = wdStudents.find((s: any) =>
+              s.parentEmail && s.parentEmail.toLowerCase() === resp.parent_email.toLowerCase()
+            );
+            if (wdStudent) {
+              // Check if already in DB by name+club before inserting
+              const existing2 = await ec.query(
+                `SELECT id FROM students WHERE club_id=$1 AND LOWER(name)=LOWER($2) LIMIT 1`,
+                [apClubId, wdStudent.name || 'Student']
+              );
+              if (existing2.rowCount > 0) {
+                resolvedStudentId = existing2.rows[0].id;
+              } else {
+                const inserted = await ec.query(`
+                  INSERT INTO students (club_id, name, parent_email, belt, total_points, total_xp, join_date, created_at)
+                  VALUES ($1, $2, $3, $4, 0, 0, NOW(), NOW()) RETURNING id
+                `, [apClubId, wdStudent.name || 'Student', resp.parent_email, wdStudent.belt || 'white']);
+                if (inserted.rowCount > 0) resolvedStudentId = inserted.rows[0].id;
+              }
+              if (resolvedStudentId) console.log('[Approve] Synced wizard_data student to DB:', wdStudent.name, '->', resolvedStudentId);
+            }
+          } catch (e: any) { console.error('[Approve] wizard_data sync failed:', e.message); }
+        }
+
+        // Patch RSVP with resolved student_id for future fast lookups
+        if (resolvedStudentId && resolvedStudentId !== resp.student_id) {
+          try { await ec.query(`UPDATE event_responses SET student_id = $1 WHERE id = $2`, [resolvedStudentId, apResponseId]); } catch {}
         }
 
         if (resolvedStudentId) {

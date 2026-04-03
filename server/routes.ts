@@ -7014,23 +7014,56 @@ export function registerRoutes(app: Express) {
       let xpGiven = 0;
       let pointsGiven = 0;
 
-      // Resolve the real student DB UUID — try direct match first, then fallback by parent_email
+      // Resolve the real student DB UUID — 3-level fallback
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       let resolvedStudentId: string | null = null;
+
+      // Level 1: direct UUID match
       if (response.student_id && uuidRegex.test(response.student_id)) {
         const check = await db.execute(sql`SELECT id FROM students WHERE id = ${response.student_id}::uuid LIMIT 1`);
         if ((check as any[]).length > 0) resolvedStudentId = response.student_id;
       }
-      // Fallback: look up by parent_email + club_id (handles wizard_data ID mismatches)
+
+      // Level 2: parent_email + club_id lookup
       if (!resolvedStudentId && response.parent_email) {
         const fallback = await db.execute(sql`
           SELECT id FROM students WHERE LOWER(parent_email) = LOWER(${response.parent_email}) AND club_id = ${clubId} LIMIT 1
         `);
-        if ((fallback as any[]).length > 0) {
-          resolvedStudentId = (fallback as any[])[0].id;
-          // Patch the RSVP row with the correct student_id so future calls resolve instantly
-          await db.execute(sql`UPDATE event_responses SET student_id = ${resolvedStudentId} WHERE id = ${responseId}`);
-        }
+        if ((fallback as any[]).length > 0) resolvedStudentId = (fallback as any[])[0].id;
+      }
+
+      // Level 3: student only in wizard_data — upsert into students table
+      if (!resolvedStudentId && response.parent_email) {
+        try {
+          const clubRow = await db.execute(sql`SELECT wizard_data FROM clubs WHERE id = ${clubId} LIMIT 1`);
+          const wd = (clubRow as any[])[0]?.wizard_data || {};
+          const wdStudents: any[] = wd.students || [];
+          const wdStudent = wdStudents.find((s: any) =>
+            s.parentEmail && s.parentEmail.toLowerCase() === response.parent_email.toLowerCase()
+          );
+          if (wdStudent) {
+            // Check if already in DB by name+club before inserting
+            const existing2 = await db.execute(sql`
+              SELECT id FROM students WHERE club_id=${clubId} AND LOWER(name)=LOWER(${wdStudent.name || 'Student'}) LIMIT 1
+            `);
+            if ((existing2 as any[]).length > 0) {
+              resolvedStudentId = (existing2 as any[])[0].id;
+            } else {
+              const inserted = await db.execute(sql`
+                INSERT INTO students (club_id, name, parent_email, belt, total_points, total_xp, join_date, created_at)
+                VALUES (${clubId}, ${wdStudent.name || 'Student'}, ${response.parent_email}, ${wdStudent.belt || 'white'}, 0, 0, NOW(), NOW())
+                RETURNING id
+              `);
+              if ((inserted as any[]).length > 0) resolvedStudentId = (inserted as any[])[0].id;
+            }
+            if (resolvedStudentId) console.log('[Approve] Synced wizard_data student to DB:', wdStudent.name, '->', resolvedStudentId);
+          }
+        } catch (e: any) { console.error('[Approve] wizard_data sync failed:', e.message); }
+      }
+
+      // Patch RSVP with resolved student_id for future fast lookups
+      if (resolvedStudentId && resolvedStudentId !== response.student_id) {
+        try { await db.execute(sql`UPDATE event_responses SET student_id = ${resolvedStudentId} WHERE id = ${responseId}`); } catch {}
       }
 
       if (resolvedStudentId) {
