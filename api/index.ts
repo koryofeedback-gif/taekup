@@ -97,6 +97,30 @@ async function ensureSchema() {
       CREATE UNIQUE INDEX IF NOT EXISTS onboarding_progress_club_id_unique
       ON onboarding_progress (club_id)
     `);
+    // Event RSVP table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS event_responses (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        event_id VARCHAR NOT NULL,
+        club_id VARCHAR NOT NULL,
+        parent_email VARCHAR NOT NULL,
+        student_id VARCHAR,
+        rsvp_status VARCHAR NOT NULL DEFAULT 'pending',
+        attendance_confirmed BOOLEAN NOT NULL DEFAULT false,
+        reward_issued BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_event_responses_event_id ON event_responses (event_id);
+      CREATE INDEX IF NOT EXISTS idx_event_responses_club_id  ON event_responses (club_id);
+      CREATE INDEX IF NOT EXISTS idx_event_responses_parent_email ON event_responses (parent_email);
+    `);
+    // Unique constraint — NULLS NOT DISTINCT so student_id=NULL only conflicts with itself
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS event_responses_uq
+      ON event_responses (event_id, parent_email, COALESCE(student_id, ''))
+    `);
     _schemaReady = true;
     console.log('[Schema] Startup migrations applied');
   } catch (e: any) {
@@ -9345,7 +9369,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const r = await ec.query(`
           INSERT INTO event_responses (event_id, club_id, parent_email, student_id, rsvp_status)
           VALUES ($1, $2, $3, $4, $5)
-          ON CONFLICT (event_id, parent_email, student_id) DO UPDATE SET rsvp_status = EXCLUDED.rsvp_status
+          ON CONFLICT (event_id, parent_email, COALESCE(student_id, '')) DO UPDATE SET rsvp_status = EXCLUDED.rsvp_status
           RETURNING *
         `, [eventId, clubId, parentEmail, studentId || null, status]);
         return res.json(r.rows[0]);

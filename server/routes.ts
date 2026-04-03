@@ -6951,7 +6951,7 @@ export function registerRoutes(app: Express) {
       const result = await db.execute(sql`
         INSERT INTO event_responses (event_id, club_id, parent_email, student_id, rsvp_status)
         VALUES (${eventId}, ${clubId}, ${parentEmail}, ${studentId || null}, ${status})
-        ON CONFLICT (event_id, parent_email, student_id) DO UPDATE
+        ON CONFLICT (event_id, parent_email, COALESCE(student_id, '')) DO UPDATE
           SET rsvp_status = EXCLUDED.rsvp_status
         RETURNING *
       `);
