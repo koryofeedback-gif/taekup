@@ -114,7 +114,7 @@ export const en = {
 
       upcomingClubEvents: "📅 Upcoming Club Events",
       rsvpGoing: "You're going!",
-      rsvpWaitingApproval: "Waiting for coach approval",
+      rsvpWaitingApproval: "RSVP confirmed — rewards granted after the event",
       rsvpChangedMind: "Changed your mind?",
       rsvpComing: "✅ I'm Coming",
       rsvpNotComing: "❌ Not Coming",

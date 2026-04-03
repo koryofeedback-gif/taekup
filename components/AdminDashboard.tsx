@@ -2238,6 +2238,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     const [responsesLoading, setResponsesLoading] = React.useState(false);
     const [approvingId, setApprovingId] = React.useState<string | null>(null);
     const [rsvpCounts, setRsvpCounts] = React.useState<Record<string, number>>({});
+    const [rewardFeedback, setRewardFeedback] = React.useState<{ id: string; xp: number; pts: number } | null>(null);
 
     const loadResponses = React.useCallback(async (evt: import('../types').CalendarEvent) => {
         if (!clubId) return;
@@ -2259,15 +2260,24 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
     const approveAttendance = async (response: import('../types').EventResponse) => {
         if (!clubId || !manageEvent) return;
         setApprovingId(response.id);
-        await fetch(`/api/clubs/${clubId}/events/${manageEvent.id}/responses/${response.id}/approve`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                xpReward: manageEvent.xpReward || 0,
-                pointsReward: manageEvent.pointsReward || 0,
-                isGlobalRankImpact: manageEvent.isGlobalRankImpact || false,
-            }),
-        });
+        setRewardFeedback(null);
+        try {
+            const res = await fetch(`/api/clubs/${clubId}/events/${manageEvent.id}/responses/${response.id}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    xpReward: manageEvent.xpReward || 0,
+                    pointsReward: manageEvent.pointsReward || 0,
+                }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if ((data.xpGiven || 0) > 0 || (data.pointsGiven || 0) > 0) {
+                    setRewardFeedback({ id: response.id, xp: data.xpGiven || 0, pts: data.pointsGiven || 0 });
+                    setTimeout(() => setRewardFeedback(null), 4000);
+                }
+            }
+        } catch {}
         await loadResponses(manageEvent);
         setApprovingId(null);
     };
@@ -2833,9 +2843,20 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                     {(manageEvent.xpReward || 0) > 0 && <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{manageEvent.xpReward} HonorXP™</span>}
                                     {(manageEvent.pointsReward || 0) > 0 && <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{manageEvent.pointsReward} Belt Points</span>}
                                 </div>
+                                <p className="text-xs text-cyan-400/70 mt-2">After the event, click <strong className="text-cyan-300">Award Rewards</strong> next to each attendee to grant their XP & Belt Points.</p>
                             </div>
-                            <button onClick={() => setManageEvent(null)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors mt-0.5"><X size={20} /></button>
+                            <button onClick={() => { setManageEvent(null); setRewardFeedback(null); }} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors mt-0.5"><X size={20} /></button>
                         </div>
+                        {rewardFeedback && (
+                            <div className="mx-4 mt-3 flex items-center gap-2 bg-emerald-900/40 border border-emerald-700 rounded-lg px-3 py-2">
+                                <span className="text-emerald-400 text-lg">🎉</span>
+                                <p className="text-xs text-emerald-300 font-medium">
+                                    Rewards awarded!
+                                    {rewardFeedback.xp > 0 && <span className="ml-1 text-purple-300">+{rewardFeedback.xp} HonorXP™</span>}
+                                    {rewardFeedback.pts > 0 && <span className="ml-1 text-amber-300">+{rewardFeedback.pts} Belt Points</span>}
+                                </p>
+                            </div>
+                        )}
                         <div className="grid grid-cols-3 divide-x divide-gray-800 border-b border-gray-800">
                             {(['coming', 'not_coming', 'pending'] as const).map(status => {
                                 const count = eventResponses.filter(r => r.rsvp_status === status).length;
@@ -2869,7 +2890,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                                         </div>
                                                         {status === 'coming' && !resp.attendance_confirmed && (
                                                             <button disabled={approvingId === resp.id} onClick={() => approveAttendance(resp)} className="shrink-0 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
-                                                                {approvingId === resp.id ? '...' : t('admin.schedule.rsvp.approveAttendance')}
+                                                                {approvingId === resp.id ? '…' : '🏅 Award Rewards'}
                                                             </button>
                                                         )}
                                                         {resp.attendance_confirmed && <span className="shrink-0 text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-1 rounded-lg">{resp.reward_issued ? t('admin.schedule.rsvp.rewardIssued') : t('admin.schedule.rsvp.confirmed')}</span>}
@@ -4110,7 +4131,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             description: tempEvent.description || '',
             xpReward: tempEvent.xpReward || 0,
             pointsReward: tempEvent.pointsReward || 0,
-            isGlobalRankImpact: tempEvent.isGlobalRankImpact || false,
             beltFilter: tempEvent.beltFilter || 'all',
             locationFilter: tempEvent.locationFilter || 'all',
             classFilter: tempEvent.classFilter || 'all',
@@ -5063,10 +5083,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                                     <input type="number" min="0" placeholder="0" value={tempEvent.pointsReward || ''} onChange={e => setTempEvent({...tempEvent, pointsReward: parseInt(e.target.value) || 0})} className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" />
                                 </div>
                             </div>
-                            <label className="flex items-center gap-2 mt-3 cursor-pointer">
-                                <input type="checkbox" checked={tempEvent.isGlobalRankImpact || false} onChange={e => setTempEvent({...tempEvent, isGlobalRankImpact: e.target.checked})} className="w-4 h-4 rounded border-gray-500 bg-gray-600 text-purple-500 focus:ring-purple-500" />
-                                <span className="text-xs text-gray-300">Count HonorXP™ toward Global Shogun Rank™</span>
-                            </label>
                         </div>
 
                         <button
