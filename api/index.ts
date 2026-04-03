@@ -9401,6 +9401,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let ec: any = null;
       try {
         ec = await pool.connect();
+        // Guarantee points_issued column exists before selecting it
+        try { await ec.query(`ALTER TABLE event_responses ADD COLUMN IF NOT EXISTS points_issued BOOLEAN NOT NULL DEFAULT false`); } catch {}
         if (req.method === 'GET') {
           const r = await ec.query(`
             SELECT er.id, er.event_id, er.parent_email, er.student_id, er.rsvp_status,
