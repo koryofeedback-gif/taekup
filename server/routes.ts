@@ -7014,16 +7014,32 @@ export function registerRoutes(app: Express) {
       let xpGiven = 0;
       let pointsGiven = 0;
 
+      // Resolve the real student DB UUID — try direct match first, then fallback by parent_email
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const hasValidStudent = response.student_id && uuidRegex.test(response.student_id);
+      let resolvedStudentId: string | null = null;
+      if (response.student_id && uuidRegex.test(response.student_id)) {
+        const check = await db.execute(sql`SELECT id FROM students WHERE id = ${response.student_id}::uuid LIMIT 1`);
+        if ((check as any[]).length > 0) resolvedStudentId = response.student_id;
+      }
+      // Fallback: look up by parent_email + club_id (handles wizard_data ID mismatches)
+      if (!resolvedStudentId && response.parent_email) {
+        const fallback = await db.execute(sql`
+          SELECT id FROM students WHERE LOWER(parent_email) = LOWER(${response.parent_email}) AND club_id = ${clubId} LIMIT 1
+        `);
+        if ((fallback as any[]).length > 0) {
+          resolvedStudentId = (fallback as any[])[0].id;
+          // Patch the RSVP row with the correct student_id so future calls resolve instantly
+          await db.execute(sql`UPDATE event_responses SET student_id = ${resolvedStudentId} WHERE id = ${responseId}`);
+        }
+      }
 
-      if (hasValidStudent) {
+      if (resolvedStudentId) {
         // XP gate: only award XP once (reward_issued flag)
         if (!response.reward_issued && xpReward > 0) {
           try {
             await db.execute(sql`
               UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpReward}, updated_at = NOW()
-              WHERE id = ${response.student_id}::uuid
+              WHERE id = ${resolvedStudentId}::uuid
             `);
             await db.execute(sql`UPDATE event_responses SET reward_issued = true WHERE id = ${responseId}`);
             xpGiven = xpReward;
@@ -7034,15 +7050,17 @@ export function registerRoutes(app: Express) {
           try {
             await db.execute(sql`
               UPDATE students SET total_points = COALESCE(total_points, 0) + ${pointsReward}, updated_at = NOW()
-              WHERE id = ${response.student_id}::uuid
+              WHERE id = ${resolvedStudentId}::uuid
             `);
             await db.execute(sql`UPDATE event_responses SET points_issued = true WHERE id = ${responseId}`);
             pointsGiven = pointsReward;
           } catch (e: any) { console.error('[Approve] Points award failed:', e.message); }
         }
+      } else {
+        console.warn('[Approve] No student found for response', responseId, 'student_id:', response.student_id, 'parent_email:', response.parent_email);
       }
 
-      res.json({ success: true, xpGiven, pointsGiven });
+      res.json({ success: true, xpGiven, pointsGiven, studentFound: !!resolvedStudentId });
     } catch (err: any) {
       console.error('[RSVP] Approve error:', err.message);
       res.status(500).json({ error: 'Failed to approve' });

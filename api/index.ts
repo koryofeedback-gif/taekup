@@ -9434,27 +9434,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!resp) return res.status(404).json({ error: 'Response not found' });
         await ec.query(`UPDATE event_responses SET attendance_confirmed = true WHERE id = $1`, [apResponseId]);
         let xpGiven = 0, pointsGiven = 0;
+
+        // Resolve the real student DB UUID — try direct match first, then fallback by parent_email
         const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        const hasValidStudent = resp.student_id && uuidRe.test(resp.student_id);
-        if (hasValidStudent) {
+        let resolvedStudentId: string | null = null;
+        if (resp.student_id && uuidRe.test(resp.student_id)) {
+          const check = await ec.query(`SELECT id FROM students WHERE id = $1::uuid LIMIT 1`, [resp.student_id]);
+          if (check.rowCount > 0) {
+            resolvedStudentId = resp.student_id;
+          }
+        }
+        // Fallback: look up by parent_email + club_id (handles wizard_data ID mismatches)
+        if (!resolvedStudentId && resp.parent_email) {
+          const fallback = await ec.query(
+            `SELECT id FROM students WHERE LOWER(parent_email) = LOWER($1) AND club_id = $2 LIMIT 1`,
+            [resp.parent_email, apClubId]
+          );
+          if (fallback.rowCount > 0) {
+            resolvedStudentId = fallback.rows[0].id;
+            // Patch the RSVP row with the correct student_id so future calls resolve instantly
+            await ec.query(`UPDATE event_responses SET student_id = $1 WHERE id = $2`, [resolvedStudentId, apResponseId]);
+          }
+        }
+
+        if (resolvedStudentId) {
           // XP gate: only award XP once (reward_issued flag)
           if (!resp.reward_issued && xpReward > 0) {
             try {
-              await ec.query(`UPDATE students SET total_xp = COALESCE(total_xp,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [xpReward, resp.student_id]);
+              await ec.query(`UPDATE students SET total_xp = COALESCE(total_xp,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [xpReward, resolvedStudentId]);
               await ec.query(`UPDATE event_responses SET reward_issued = true WHERE id=$1`, [apResponseId]);
               xpGiven = xpReward;
             } catch (e: any) { console.error('[Approve] XP award failed:', e.message); }
           }
-          // Points gate: points_issued column (added above) — independent of XP
+          // Points gate: points_issued column — independent of XP
           if (!resp.points_issued && pointsReward > 0) {
             try {
-              await ec.query(`UPDATE students SET total_points = COALESCE(total_points,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [pointsReward, resp.student_id]);
+              await ec.query(`UPDATE students SET total_points = COALESCE(total_points,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [pointsReward, resolvedStudentId]);
               await ec.query(`UPDATE event_responses SET points_issued = true WHERE id=$1`, [apResponseId]);
               pointsGiven = pointsReward;
             } catch (e: any) { console.error('[Approve] Points award failed:', e.message); }
           }
+        } else {
+          console.warn('[Approve] No student found for response', apResponseId, 'student_id:', resp.student_id, 'parent_email:', resp.parent_email);
         }
-        return res.json({ success: true, xpGiven, pointsGiven });
+        return res.json({ success: true, xpGiven, pointsGiven, studentFound: !!resolvedStudentId });
       } catch (e: any) { return res.status(500).json({ error: e.message }); }
       finally { if (ec) ec.release(); }
     }
