@@ -1124,7 +1124,7 @@ export const de = {
 
     creatorHub: {
       title: "Creator Hub",
-      description: "Laden Sie Ihre Trainingsinhalte hoch und verwalten Sie diese.",
+      description: "Erstellen und veröffentlichen Sie Trainingsvideos, Dokumente und Clubveranstaltungen für Ihre Schüler und Eltern.",
       searchPlaceholder: "Inhalte nach Titel oder Beschreibung suchen...",
       allTypes: "Alle Typen",
       videos: "Videos",

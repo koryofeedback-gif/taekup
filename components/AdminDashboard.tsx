@@ -1048,61 +1048,6 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
 
     const [mobileDay, setMobileDay] = React.useState('Monday');
 
-    // Manage Responses state
-    const [manageEvent, setManageEvent] = React.useState<import('../types').CalendarEvent | null>(null);
-    const [eventResponses, setEventResponses] = React.useState<import('../types').EventResponse[]>([]);
-    const [responsesLoading, setResponsesLoading] = React.useState(false);
-    const [approvingId, setApprovingId] = React.useState<string | null>(null);
-    const [rsvpCounts, setRsvpCounts] = React.useState<Record<string, number>>({});
-
-    const loadResponses = React.useCallback(async (evt: import('../types').CalendarEvent) => {
-        if (!clubId) return;
-        setResponsesLoading(true);
-        const res = await fetch(`/api/clubs/${clubId}/events/${evt.id}/responses`);
-        if (res.ok) {
-            const rows = await res.json();
-            setEventResponses(rows);
-            setRsvpCounts(prev => ({ ...prev, [evt.id]: rows.filter((r: any) => r.rsvp_status === 'coming').length }));
-        }
-        setResponsesLoading(false);
-    }, [clubId]);
-
-    const openManageEvent = (evt: import('../types').CalendarEvent) => {
-        setManageEvent(evt);
-        loadResponses(evt);
-    };
-
-    const approveAttendance = async (response: import('../types').EventResponse) => {
-        if (!clubId || !manageEvent) return;
-        setApprovingId(response.id);
-        await fetch(`/api/clubs/${clubId}/events/${manageEvent.id}/responses/${response.id}/approve`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                xpReward: manageEvent.xpReward || 0,
-                pointsReward: manageEvent.pointsReward || 0,
-                isGlobalRankImpact: manageEvent.isGlobalRankImpact || false,
-            }),
-        });
-        await loadResponses(manageEvent);
-        setApprovingId(null);
-    };
-
-    // Load RSVP counts for all events on mount
-    React.useEffect(() => {
-        if (!clubId || !(data.events || []).length) return;
-        (data.events || []).forEach(async (evt) => {
-            try {
-                const res = await fetch(`/api/clubs/${clubId}/events/${evt.id}/responses`);
-                if (res.ok) {
-                    const rows = await res.json();
-                    const count = rows.filter((r: any) => r.rsvp_status === 'coming').length;
-                    setRsvpCounts(prev => ({ ...prev, [evt.id]: count }));
-                }
-            } catch {}
-        });
-    }, [clubId, data.events]);
-
     const migrationDoneRef = React.useRef(false);
 
     const loadSessions = React.useCallback(async () => {
@@ -1199,12 +1144,6 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
             body: JSON.stringify({ date: attendDate, attendance: attendList.map(a => ({ studentId: a.studentId, present: a.present })), clubId })
         });
         setAttendSaving(false); setAttendSession(null);
-    };
-
-    const handleRemoveEvent = (id: string) => {
-        if(confirm(t('admin.schedule.cancelEventConfirm'))) {
-            onUpdateData({ events: data.events.filter(e => e.id !== id) });
-        }
     };
 
     const handleRemovePrivateSlot = (id: string) => {
@@ -1685,205 +1624,6 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     )}
                 </div>
             </div>
-
-            {/* Events */}
-            <div>
-                <SectionHeader
-                    title={t('admin.schedule.upcomingEvents')}
-                    description="Competitions, belt tests, seminars — with RSVP tracking and rewards"
-                    action={
-                        <button onClick={() => onOpenModal('event')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
-                            {t('admin.schedule.addEvent')}
-                        </button>
-                    }
-                />
-
-                {(data.events || []).length === 0 && (
-                    <div className="bg-gray-800/50 rounded-xl border border-dashed border-gray-700 p-10 text-center">
-                        <p className="text-gray-400 font-medium">No upcoming events</p>
-                        <p className="text-gray-600 text-sm mt-1">Add competitions, belt tests or socials to notify parents</p>
-                    </div>
-                )}
-
-                <div className="space-y-3">
-                    {(data.events || []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(evt => {
-                        const comingCount = rsvpCounts[evt.id] || 0;
-                        const hasReward = (evt.xpReward || 0) > 0 || (evt.pointsReward || 0) > 0;
-                        const TYPE_COLORS: Record<string, string> = {
-                            competition: 'bg-red-900/50 text-red-300 border-red-800',
-                            test: 'bg-yellow-900/50 text-yellow-300 border-yellow-800',
-                            seminar: 'bg-blue-900/50 text-blue-300 border-blue-800',
-                            social: 'bg-green-900/50 text-green-300 border-green-800',
-                        };
-                        const typeColor = TYPE_COLORS[evt.type] || 'bg-gray-700 text-gray-300 border-gray-600';
-                        const d = new Date(evt.date);
-                        return (
-                            <div key={evt.id} className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors">
-                                <div className="flex items-start gap-4">
-                                    {/* Date badge */}
-                                    <div className="flex-shrink-0 w-14 bg-gray-900 rounded-xl text-center py-2 border border-gray-700">
-                                        <p className="text-gray-500 text-xs uppercase font-bold">{d.toLocaleString('default', { month: 'short' })}</p>
-                                        <p className="text-white text-xl font-bold leading-none mt-0.5">{d.getDate()}</p>
-                                    </div>
-                                    {/* Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                                            <h4 className="font-bold text-white text-base">{evt.title}</h4>
-                                            <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold uppercase ${typeColor}`}>{evt.type}</span>
-                                            {comingCount > 0 && (
-                                                <span className="text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-0.5 rounded-full font-semibold">
-                                                    ✓ {comingCount} Coming
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-gray-400 text-sm">{evt.time} · {evt.location}</p>
-                                        {hasReward && (
-                                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                                {(evt.xpReward || 0) > 0 && (
-                                                    <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{evt.xpReward} HonorXP™</span>
-                                                )}
-                                                {(evt.pointsReward || 0) > 0 && (
-                                                    <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{evt.pointsReward} Belt Points</span>
-                                                )}
-                                                {evt.isGlobalRankImpact && (
-                                                    <span className="text-xs bg-cyan-900/40 border border-cyan-800 text-cyan-300 px-2 py-0.5 rounded-full">Global Rank</span>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {/* Actions */}
-                                    <div className="flex flex-col gap-1.5 flex-shrink-0">
-                                        <button
-                                            onClick={() => openManageEvent(evt)}
-                                            className="bg-gray-700 hover:bg-purple-800 border border-gray-600 hover:border-purple-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1"
-                                        >
-                                            <Users size={11} /> Responses
-                                        </button>
-                                        <button
-                                            onClick={() => handleRemoveEvent(evt.id)}
-                                            className="text-gray-700 hover:text-red-400 text-xs font-medium px-3 py-1 rounded-lg hover:bg-red-900/20 transition-colors text-right"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* ─── Manage Responses Panel ─── */}
-            {manageEvent && (
-                <div className="fixed inset-0 z-50 flex justify-end">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setManageEvent(null)} />
-                    <div className="relative w-full max-w-md bg-gray-900 border-l border-gray-700 flex flex-col h-full shadow-2xl">
-                        {/* Header */}
-                        <div className="flex items-start justify-between p-5 border-b border-gray-700">
-                            <div>
-                                <h3 className="font-bold text-white text-lg">{manageEvent.title}</h3>
-                                <p className="text-xs text-gray-400 mt-0.5">
-                                    {new Date(manageEvent.date).toLocaleDateString()} · {manageEvent.time} · {manageEvent.location}
-                                </p>
-                                <div className="flex gap-2 mt-2 flex-wrap">
-                                    {(manageEvent.xpReward || 0) > 0 && (
-                                        <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{manageEvent.xpReward} HonorXP™</span>
-                                    )}
-                                    {(manageEvent.pointsReward || 0) > 0 && (
-                                        <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{manageEvent.pointsReward} Belt Points</span>
-                                    )}
-                                    {manageEvent.isGlobalRankImpact && (
-                                        <span className="text-xs bg-cyan-900/40 border border-cyan-800 text-cyan-300 px-2 py-0.5 rounded-full">{t('admin.schedule.rsvp.affectsGlobalRank')}</span>
-                                    )}
-                                </div>
-                            </div>
-                            <button onClick={() => setManageEvent(null)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors mt-0.5">
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        {/* Stats bar */}
-                        <div className="grid grid-cols-3 divide-x divide-gray-800 border-b border-gray-800">
-                            {(['coming', 'not_coming', 'pending'] as const).map(status => {
-                                const count = eventResponses.filter(r => r.rsvp_status === status).length;
-                                const label = status === 'coming' ? t('admin.schedule.rsvp.coming') : status === 'not_coming' ? t('admin.schedule.rsvp.notComing') : t('admin.schedule.rsvp.pending');
-                                const color = status === 'coming' ? 'text-emerald-400' : status === 'not_coming' ? 'text-red-400' : 'text-gray-400';
-                                return (
-                                    <div key={status} className="p-3 text-center">
-                                        <p className={`text-lg font-bold ${color}`}>{count}</p>
-                                        <p className="text-xs text-gray-600">{label}</p>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Response list */}
-                        <div className="flex-1 overflow-y-auto">
-                            {responsesLoading && (
-                                <div className="flex items-center justify-center py-12">
-                                    <Loader2 className="animate-spin text-gray-500" size={24} />
-                                </div>
-                            )}
-                            {!responsesLoading && eventResponses.length === 0 && (
-                                <div className="text-center py-12 px-6">
-                                    <p className="text-gray-500 text-sm">{t('admin.schedule.rsvp.noResponses')}</p>
-                                    <p className="text-gray-700 text-xs mt-1">{t('admin.schedule.rsvp.noResponsesDesc')}</p>
-                                </div>
-                            )}
-                            {!responsesLoading && eventResponses.length > 0 && (
-                                <div>
-                                    {(['coming', 'not_coming', 'pending'] as const).map(status => {
-                                        const group = eventResponses.filter(r => r.rsvp_status === status);
-                                        if (group.length === 0) return null;
-                                        const groupLabel = status === 'coming' ? t('admin.schedule.rsvp.comingGroup') : status === 'not_coming' ? t('admin.schedule.rsvp.notComingGroup') : t('admin.schedule.rsvp.pendingGroup');
-                                        return (
-                                            <div key={status}>
-                                                <div className="px-4 py-2 bg-gray-800/50 border-b border-gray-800">
-                                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">{groupLabel}</p>
-                                                </div>
-                                                {group.map(resp => (
-                                                    <div key={resp.id} className="flex items-center justify-between px-4 py-3.5 border-b border-gray-800/60 hover:bg-gray-800/20">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-9 h-9 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
-                                                                {(resp.student_name || resp.parent_email).charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-white text-sm font-semibold">{resp.student_name || '—'}</p>
-                                                                <p className="text-gray-500 text-xs">{resp.parent_email}</p>
-                                                                {resp.student_belt && (
-                                                                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium mt-0.5 inline-block ${BELT_COLORS[resp.student_belt] || 'bg-gray-700 text-gray-300'}`}>{resp.student_belt}</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        {status === 'coming' && (
-                                                            <div className="flex-shrink-0">
-                                                                {resp.attendance_confirmed ? (
-                                                                    <div className="text-center">
-                                                                        <span className="text-emerald-400 text-xs font-bold block">{t('admin.schedule.rsvp.approved')}</span>
-                                                                        {resp.reward_issued && <span className="text-purple-400 text-xs">{t('admin.schedule.rsvp.rewardIssued')}</span>}
-                                                                    </div>
-                                                                ) : (
-                                                                    <button
-                                                                        onClick={() => approveAttendance(resp)}
-                                                                        disabled={approvingId === resp.id}
-                                                                        className="bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
-                                                                    >
-                                                                        {approvingId === resp.id ? <Loader2 size={12} className="animate-spin" /> : t('admin.schedule.rsvp.approve')}
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ─── AI Lesson Plan Panel ─── */}
             {aiPlanSession && (
@@ -2489,8 +2229,69 @@ const DEFAULT_VIDEO_TAGS = [
     { id: 'black-belt', name: 'Black Belt', icon: '⬛' },
 ];
 
-const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string }> = ({ data, onUpdateData, clubId }) => {
+const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<WizardData>) => void, clubId?: string, onOpenModal?: (type: string) => void }> = ({ data, onUpdateData, clubId, onOpenModal }) => {
     const { t } = useTranslation(data.language);
+
+    // ── Event management state ──
+    const [manageEvent, setManageEvent] = React.useState<import('../types').CalendarEvent | null>(null);
+    const [eventResponses, setEventResponses] = React.useState<import('../types').EventResponse[]>([]);
+    const [responsesLoading, setResponsesLoading] = React.useState(false);
+    const [approvingId, setApprovingId] = React.useState<string | null>(null);
+    const [rsvpCounts, setRsvpCounts] = React.useState<Record<string, number>>({});
+
+    const loadResponses = React.useCallback(async (evt: import('../types').CalendarEvent) => {
+        if (!clubId) return;
+        setResponsesLoading(true);
+        const res = await fetch(`/api/clubs/${clubId}/events/${evt.id}/responses`);
+        if (res.ok) {
+            const rows = await res.json();
+            setEventResponses(rows);
+            setRsvpCounts(prev => ({ ...prev, [evt.id]: rows.filter((r: any) => r.rsvp_status === 'coming').length }));
+        }
+        setResponsesLoading(false);
+    }, [clubId]);
+
+    const openManageEvent = (evt: import('../types').CalendarEvent) => {
+        setManageEvent(evt);
+        loadResponses(evt);
+    };
+
+    const approveAttendance = async (response: import('../types').EventResponse) => {
+        if (!clubId || !manageEvent) return;
+        setApprovingId(response.id);
+        await fetch(`/api/clubs/${clubId}/events/${manageEvent.id}/responses/${response.id}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                xpReward: manageEvent.xpReward || 0,
+                pointsReward: manageEvent.pointsReward || 0,
+                isGlobalRankImpact: manageEvent.isGlobalRankImpact || false,
+            }),
+        });
+        await loadResponses(manageEvent);
+        setApprovingId(null);
+    };
+
+    const handleRemoveEvent = (id: string) => {
+        if (confirm('Cancel this event? Parents will no longer see it.')) {
+            onUpdateData({ events: (data.events || []).filter(e => e.id !== id) });
+        }
+    };
+
+    React.useEffect(() => {
+        if (!clubId || !(data.events || []).length) return;
+        (data.events || []).forEach(async (evt) => {
+            try {
+                const res = await fetch(`/api/clubs/${clubId}/events/${evt.id}/responses`);
+                if (res.ok) {
+                    const rows = await res.json();
+                    const count = rows.filter((r: any) => r.rsvp_status === 'coming').length;
+                    setRsvpCounts(prev => ({ ...prev, [evt.id]: count }));
+                }
+            } catch {}
+        });
+    }, [clubId, data.events]);
+
     const [newVideo, setNewVideo] = useState({ 
         title: '', 
         url: '', 
@@ -3107,6 +2908,149 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
 
                     </div>
                 </div>
+
+            {/* ── Club Events ── */}
+            <div className="mt-10">
+                <SectionHeader
+                    title="Club Events"
+                    description="Competitions, belt tests, seminars — parents RSVP from their Training Ops tab"
+                    action={
+                        <button onClick={() => onOpenModal?.('event')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors flex items-center gap-2">
+                            <span>+ Add Event</span>
+                        </button>
+                    }
+                />
+
+                <div className="bg-purple-900/20 border border-purple-800/40 rounded-xl p-3 mb-4 flex items-start gap-2.5">
+                    <span className="text-purple-400 mt-0.5">📲</span>
+                    <p className="text-xs text-purple-300 leading-relaxed">
+                        Events you add here appear in the <strong>parent portal → Training Ops tab</strong> as upcoming events. Parents can RSVP, and attendance rewards (HonorXP™ &amp; Belt Points) are issued when you approve their attendance.
+                    </p>
+                </div>
+
+                {(data.events || []).length === 0 && (
+                    <div className="bg-gray-800/50 rounded-xl border border-dashed border-gray-700 p-10 text-center">
+                        <p className="text-gray-400 font-medium">No upcoming events</p>
+                        <p className="text-gray-600 text-sm mt-1">Add competitions, belt tests or socials to notify parents</p>
+                    </div>
+                )}
+
+                <div className="space-y-3">
+                    {(data.events || []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(evt => {
+                        const comingCount = rsvpCounts[evt.id] || 0;
+                        const hasReward = (evt.xpReward || 0) > 0 || (evt.pointsReward || 0) > 0;
+                        const TYPE_COLORS: Record<string, string> = {
+                            competition: 'bg-red-900/50 text-red-300 border-red-800',
+                            test: 'bg-yellow-900/50 text-yellow-300 border-yellow-800',
+                            seminar: 'bg-blue-900/50 text-blue-300 border-blue-800',
+                            social: 'bg-green-900/50 text-green-300 border-green-800',
+                        };
+                        const typeColor = TYPE_COLORS[evt.type] || 'bg-gray-700 text-gray-300 border-gray-600';
+                        const d = new Date(evt.date);
+                        return (
+                            <div key={evt.id} className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors">
+                                <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0 w-14 bg-gray-900 rounded-xl text-center py-2 border border-gray-700">
+                                        <p className="text-gray-500 text-xs uppercase font-bold">{d.toLocaleString('default', { month: 'short' })}</p>
+                                        <p className="text-white text-xl font-bold leading-none mt-0.5">{d.getDate()}</p>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                            <h4 className="font-bold text-white text-base">{evt.title}</h4>
+                                            <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold uppercase ${typeColor}`}>{evt.type}</span>
+                                            {comingCount > 0 && (
+                                                <span className="text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-0.5 rounded-full font-semibold">
+                                                    ✓ {comingCount} Coming
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-gray-400 text-sm">{evt.time} · {evt.location}</p>
+                                        {hasReward && (
+                                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                {(evt.xpReward || 0) > 0 && <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{evt.xpReward} HonorXP™</span>}
+                                                {(evt.pointsReward || 0) > 0 && <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{evt.pointsReward} Belt Points</span>}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 flex-shrink-0">
+                                        <button onClick={() => openManageEvent(evt)} className="bg-gray-700 hover:bg-purple-800 border border-gray-600 hover:border-purple-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1">
+                                            <Users size={11} /> Responses
+                                        </button>
+                                        <button onClick={() => handleRemoveEvent(evt.id)} className="text-gray-700 hover:text-red-400 text-xs font-medium px-3 py-1 rounded-lg hover:bg-red-900/20 transition-colors text-right">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* ─── Manage Responses Panel ─── */}
+            {manageEvent && (
+                <div className="fixed inset-0 z-50 flex justify-end">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setManageEvent(null)} />
+                    <div className="relative w-full max-w-md bg-gray-900 border-l border-gray-700 flex flex-col h-full shadow-2xl">
+                        <div className="flex items-start justify-between p-5 border-b border-gray-700">
+                            <div>
+                                <h3 className="font-bold text-white text-lg">{manageEvent.title}</h3>
+                                <p className="text-xs text-gray-400 mt-0.5">{new Date(manageEvent.date).toLocaleDateString()} · {manageEvent.time} · {manageEvent.location}</p>
+                                <div className="flex gap-2 mt-2 flex-wrap">
+                                    {(manageEvent.xpReward || 0) > 0 && <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{manageEvent.xpReward} HonorXP™</span>}
+                                    {(manageEvent.pointsReward || 0) > 0 && <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{manageEvent.pointsReward} Belt Points</span>}
+                                </div>
+                            </div>
+                            <button onClick={() => setManageEvent(null)} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors mt-0.5"><X size={20} /></button>
+                        </div>
+                        <div className="grid grid-cols-3 divide-x divide-gray-800 border-b border-gray-800">
+                            {(['coming', 'not_coming', 'pending'] as const).map(status => {
+                                const count = eventResponses.filter(r => r.rsvp_status === status).length;
+                                const label = status === 'coming' ? t('admin.schedule.rsvp.coming') : status === 'not_coming' ? t('admin.schedule.rsvp.notComing') : t('admin.schedule.rsvp.pending');
+                                const color = status === 'coming' ? 'text-emerald-400' : status === 'not_coming' ? 'text-red-400' : 'text-gray-400';
+                                return (
+                                    <div key={status} className="p-3 text-center">
+                                        <p className={`text-xl font-bold ${color}`}>{count}</p>
+                                        <p className="text-xs text-gray-500">{label}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                            {responsesLoading && <div className="text-center py-8"><div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>}
+                            {!responsesLoading && eventResponses.length === 0 && <p className="text-center text-gray-500 py-8 text-sm">No responses yet</p>}
+                            {!responsesLoading && eventResponses.length > 0 && (
+                                <div className="space-y-2">
+                                    {(['coming', 'not_coming'] as const).map(status => {
+                                        const group = eventResponses.filter(r => r.rsvp_status === status);
+                                        if (!group.length) return null;
+                                        return (
+                                            <div key={status}>
+                                                <p className="text-xs text-gray-500 uppercase font-semibold mb-2">{status === 'coming' ? t('admin.schedule.rsvp.coming') : t('admin.schedule.rsvp.notComing')} ({group.length})</p>
+                                                {group.map(resp => (
+                                                    <div key={resp.id} className="bg-gray-800 rounded-lg p-3 flex items-center justify-between gap-3 mb-2">
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium text-white truncate">{resp.student_name || t('admin.schedule.rsvp.unknownStudent')}</p>
+                                                            <p className="text-xs text-gray-400 truncate">{resp.parent_email}</p>
+                                                            {resp.student_belt && <p className="text-xs text-cyan-400">{resp.student_belt}</p>}
+                                                        </div>
+                                                        {status === 'coming' && !resp.attendance_confirmed && (
+                                                            <button disabled={approvingId === resp.id} onClick={() => approveAttendance(resp)} className="shrink-0 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                                                                {approvingId === resp.id ? '...' : t('admin.schedule.rsvp.approveAttendance')}
+                                                            </button>
+                                                        )}
+                                                        {resp.attendance_confirmed && <span className="shrink-0 text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-1 rounded-lg">{resp.reward_issued ? t('admin.schedule.rsvp.rewardIssued') : t('admin.schedule.rsvp.confirmed')}</span>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -4437,7 +4381,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
                     {activeTab === 'students' && <StudentsTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onViewPortal={onViewStudentPortal} onEditStudent={(s) => { setEditingStudentId(s.id); setTempStudent(s); setModalType('editStudent'); }} clubId={clubId} />}
                     {activeTab === 'staff' && <StaffTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} onEditCoach={(c) => { setEditingCoachId(c.id); setTempCoach(c); setModalType('editCoach'); }} />}
                     {activeTab === 'schedule' && <ScheduleTab data={data} onUpdateData={onUpdateData} onOpenModal={setModalType} clubId={clubId} />}
-                    {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
+                    {activeTab === 'creator' && <CreatorHubTab data={data} onUpdateData={onUpdateData} clubId={clubId} onOpenModal={setModalType} />}
                     {activeTab === 'settings' && <SettingsTab data={data} onUpdateData={onUpdateData} clubId={clubId} />}
                     {activeTab === 'billing' && <BillingTab data={data} onUpdateData={onUpdateData} clubId={clubId} onShowPricing={onShowPricing} />}
                 </div>
@@ -5143,6 +5087,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             {modalType === 'event' && (
                 <Modal title={t('admin.schedule.addEventModal.title')} onClose={() => setModalType(null)}>
                     <div className="space-y-4">
+                        <div className="flex items-start gap-2 bg-purple-900/20 border border-purple-800/40 rounded-lg p-3">
+                            <span className="text-purple-400 text-sm mt-0.5">📲</span>
+                            <p className="text-xs text-purple-300 leading-relaxed">
+                                This event will appear in the <strong>parent portal → Training Ops tab</strong> as an upcoming event. Parents can RSVP and earn rewards when you approve their attendance.
+                            </p>
+                        </div>
                         <input type="text" placeholder={t('admin.schedule.addEventModal.eventTitle')} className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, title: e.target.value})} />
                         <div className="grid grid-cols-2 gap-3">
                             <div>

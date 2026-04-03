@@ -1124,7 +1124,7 @@ export const fr = {
 
     creatorHub: {
       title: "Espace créateur",
-      description: "Téléversez et gérez votre contenu d'entraînement.",
+      description: "Créez et publiez des vidéos d'entraînement, des documents et des événements pour vos étudiants et parents.",
       searchPlaceholder: "Rechercher du contenu par titre ou description...",
       allTypes: "Tous les types",
       videos: "Vidéos",
