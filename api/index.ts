@@ -9420,10 +9420,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const eventsApproveMatch = path.match(/^\/clubs\/([^/]+)\/events\/([^/]+)\/responses\/([^/]+)\/approve\/?$/);
     if (eventsApproveMatch && req.method === 'POST') {
       const [, apClubId, apEventId, apResponseId] = eventsApproveMatch;
-      const { xpReward = 0, pointsReward = 0 } = req.body || {};
+      const xpReward = Number(req.body?.xpReward) || 0;
+      const pointsReward = Number(req.body?.pointsReward) || 0;
       let ec: any = null;
       try {
         ec = await pool.connect();
+        // Ensure points_issued column exists (idempotent — safe to run every time)
+        try { await ec.query(`ALTER TABLE event_responses ADD COLUMN IF NOT EXISTS points_issued BOOLEAN NOT NULL DEFAULT false`); } catch {}
         const existing = await ec.query(`SELECT * FROM event_responses WHERE id = $1 AND club_id = $2 AND event_id = $3`, [apResponseId, apClubId, apEventId]);
         const resp = existing.rows[0];
         if (!resp) return res.status(404).json({ error: 'Response not found' });
@@ -9434,15 +9437,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (hasValidStudent) {
           // XP gate: only award XP once (reward_issued flag)
           if (!resp.reward_issued && xpReward > 0) {
-            await ec.query(`UPDATE students SET total_xp = COALESCE(total_xp,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [xpReward, resp.student_id]);
-            await ec.query(`UPDATE event_responses SET reward_issued = true WHERE id=$1`, [apResponseId]);
-            xpGiven = xpReward;
+            try {
+              await ec.query(`UPDATE students SET total_xp = COALESCE(total_xp,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [xpReward, resp.student_id]);
+              await ec.query(`UPDATE event_responses SET reward_issued = true WHERE id=$1`, [apResponseId]);
+              xpGiven = xpReward;
+            } catch (e: any) { console.error('[Approve] XP award failed:', e.message); }
           }
-          // Points gate: separate column — allows awarding points even if XP was already issued
+          // Points gate: points_issued column (added above) — independent of XP
           if (!resp.points_issued && pointsReward > 0) {
-            await ec.query(`UPDATE students SET total_points = COALESCE(total_points,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [pointsReward, resp.student_id]);
-            await ec.query(`UPDATE event_responses SET points_issued = true WHERE id=$1`, [apResponseId]);
-            pointsGiven = pointsReward;
+            try {
+              await ec.query(`UPDATE students SET total_points = COALESCE(total_points,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [pointsReward, resp.student_id]);
+              await ec.query(`UPDATE event_responses SET points_issued = true WHERE id=$1`, [apResponseId]);
+              pointsGiven = pointsReward;
+            } catch (e: any) { console.error('[Approve] Points award failed:', e.message); }
           }
         }
         return res.json({ success: true, xpGiven, pointsGiven });

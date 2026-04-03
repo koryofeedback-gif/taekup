@@ -6993,7 +6993,11 @@ export function registerRoutes(app: Express) {
   app.post('/api/clubs/:clubId/events/:eventId/responses/:responseId/approve', async (req: Request, res: Response) => {
     try {
       const { clubId, eventId, responseId } = req.params;
-      const { xpReward = 0, pointsReward = 0 } = req.body;
+      const xpReward = Number(req.body?.xpReward) || 0;
+      const pointsReward = Number(req.body?.pointsReward) || 0;
+
+      // Ensure points_issued column exists (idempotent)
+      try { await db.execute(sql`ALTER TABLE event_responses ADD COLUMN IF NOT EXISTS points_issued BOOLEAN NOT NULL DEFAULT false`); } catch {}
 
       // Get the response to find studentId
       const existing = await db.execute(sql`
@@ -7016,25 +7020,25 @@ export function registerRoutes(app: Express) {
       if (hasValidStudent) {
         // XP gate: only award XP once (reward_issued flag)
         if (!response.reward_issued && xpReward > 0) {
-          await db.execute(sql`
-            UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpReward}, updated_at = NOW()
-            WHERE id = ${response.student_id}::uuid
-          `);
-          await db.execute(sql`
-            UPDATE event_responses SET reward_issued = true WHERE id = ${responseId}
-          `);
-          xpGiven = xpReward;
+          try {
+            await db.execute(sql`
+              UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpReward}, updated_at = NOW()
+              WHERE id = ${response.student_id}::uuid
+            `);
+            await db.execute(sql`UPDATE event_responses SET reward_issued = true WHERE id = ${responseId}`);
+            xpGiven = xpReward;
+          } catch (e: any) { console.error('[Approve] XP award failed:', e.message); }
         }
-        // Points gate: separate column — allows awarding points even if XP was already issued
+        // Points gate: points_issued column — independent of XP
         if (!response.points_issued && pointsReward > 0) {
-          await db.execute(sql`
-            UPDATE students SET total_points = COALESCE(total_points, 0) + ${pointsReward}, updated_at = NOW()
-            WHERE id = ${response.student_id}::uuid
-          `);
-          await db.execute(sql`
-            UPDATE event_responses SET points_issued = true WHERE id = ${responseId}
-          `);
-          pointsGiven = pointsReward;
+          try {
+            await db.execute(sql`
+              UPDATE students SET total_points = COALESCE(total_points, 0) + ${pointsReward}, updated_at = NOW()
+              WHERE id = ${response.student_id}::uuid
+            `);
+            await db.execute(sql`UPDATE event_responses SET points_issued = true WHERE id = ${responseId}`);
+            pointsGiven = pointsReward;
+          } catch (e: any) { console.error('[Approve] Points award failed:', e.message); }
         }
       }
 
