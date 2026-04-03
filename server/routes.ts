@@ -6940,6 +6940,13 @@ export function registerRoutes(app: Express) {
   // EVENT RSVP & REWARD SYSTEM
   // =====================================================
 
+  // Ensure points_issued column exists (separate XP/points gate)
+  void (async () => {
+    try {
+      await db.execute(sql`ALTER TABLE event_responses ADD COLUMN IF NOT EXISTS points_issued BOOLEAN NOT NULL DEFAULT false`);
+    } catch {}
+  })();
+
   // Parent submits / updates their RSVP for an event
   app.post('/api/events/:eventId/rsvp', async (req: Request, res: Response) => {
     try {
@@ -6968,7 +6975,7 @@ export function registerRoutes(app: Express) {
       const { clubId, eventId } = req.params;
       const result = await db.execute(sql`
         SELECT er.id, er.event_id, er.parent_email, er.student_id, er.rsvp_status,
-               er.attendance_confirmed, er.reward_issued, er.created_at,
+               er.attendance_confirmed, er.reward_issued, er.points_issued, er.created_at,
                s.name as student_name, s.belt as student_belt
         FROM event_responses er
         LEFT JOIN students s ON s.id = er.student_id::uuid
@@ -6986,7 +6993,7 @@ export function registerRoutes(app: Express) {
   app.post('/api/clubs/:clubId/events/:eventId/responses/:responseId/approve', async (req: Request, res: Response) => {
     try {
       const { clubId, eventId, responseId } = req.params;
-      const { xpReward = 0, pointsReward = 0, isGlobalRankImpact = false } = req.body;
+      const { xpReward = 0, pointsReward = 0 } = req.body;
 
       // Get the response to find studentId
       const existing = await db.execute(sql`
@@ -6995,7 +7002,7 @@ export function registerRoutes(app: Express) {
       const response = (existing as any[])[0];
       if (!response) return res.status(404).json({ error: 'Response not found' });
 
-      // Mark confirmed
+      // Mark attendance confirmed
       await db.execute(sql`
         UPDATE event_responses SET attendance_confirmed = true WHERE id = ${responseId}
       `);
@@ -7003,35 +7010,31 @@ export function registerRoutes(app: Express) {
       let xpGiven = 0;
       let pointsGiven = 0;
 
-      // Issue rewards if not already given
-      if (!response.reward_issued && response.student_id) {
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(response.student_id)) {
-          if (xpReward > 0) {
-            // Always local XP
-            await db.execute(sql`
-              UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpReward}, updated_at = NOW()
-              WHERE id = ${response.student_id}::uuid
-            `);
-            // Also global if flagged
-            if (isGlobalRankImpact) {
-              await db.execute(sql`
-                UPDATE students SET global_xp = COALESCE(global_xp, 0) + ${xpReward}
-                WHERE id = ${response.student_id}::uuid
-              `);
-            }
-            xpGiven = xpReward;
-          }
-          if (pointsReward > 0) {
-            await db.execute(sql`
-              UPDATE students SET total_points = COALESCE(total_points, 0) + ${pointsReward}, updated_at = NOW()
-              WHERE id = ${response.student_id}::uuid
-            `);
-            pointsGiven = pointsReward;
-          }
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const hasValidStudent = response.student_id && uuidRegex.test(response.student_id);
+
+      if (hasValidStudent) {
+        // XP gate: only award XP once (reward_issued flag)
+        if (!response.reward_issued && xpReward > 0) {
+          await db.execute(sql`
+            UPDATE students SET total_xp = COALESCE(total_xp, 0) + ${xpReward}, updated_at = NOW()
+            WHERE id = ${response.student_id}::uuid
+          `);
           await db.execute(sql`
             UPDATE event_responses SET reward_issued = true WHERE id = ${responseId}
           `);
+          xpGiven = xpReward;
+        }
+        // Points gate: separate column — allows awarding points even if XP was already issued
+        if (!response.points_issued && pointsReward > 0) {
+          await db.execute(sql`
+            UPDATE students SET total_points = COALESCE(total_points, 0) + ${pointsReward}, updated_at = NOW()
+            WHERE id = ${response.student_id}::uuid
+          `);
+          await db.execute(sql`
+            UPDATE event_responses SET points_issued = true WHERE id = ${responseId}
+          `);
+          pointsGiven = pointsReward;
         }
       }
 

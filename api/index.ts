@@ -121,6 +121,10 @@ async function ensureSchema() {
       CREATE UNIQUE INDEX IF NOT EXISTS event_responses_uq
       ON event_responses (event_id, parent_email, COALESCE(student_id, ''))
     `);
+    // Separate XP / Belt Points tracking so each can be awarded independently
+    await client.query(`
+      ALTER TABLE event_responses ADD COLUMN IF NOT EXISTS points_issued BOOLEAN NOT NULL DEFAULT false
+    `);
     _schemaReady = true;
     console.log('[Schema] Startup migrations applied');
   } catch (e: any) {
@@ -9388,7 +9392,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (req.method === 'GET') {
           const r = await ec.query(`
             SELECT er.id, er.event_id, er.parent_email, er.student_id, er.rsvp_status,
-                   er.attendance_confirmed, er.reward_issued, er.created_at,
+                   er.attendance_confirmed, er.reward_issued, er.points_issued, er.created_at,
                    s.name as student_name, s.belt as student_belt
             FROM event_responses er
             LEFT JOIN students s ON s.id = er.student_id::uuid
@@ -9404,7 +9408,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const eventsApproveMatch = path.match(/^\/clubs\/([^/]+)\/events\/([^/]+)\/responses\/([^/]+)\/approve\/?$/);
     if (eventsApproveMatch && req.method === 'POST') {
       const [, apClubId, apEventId, apResponseId] = eventsApproveMatch;
-      const { xpReward = 0, pointsReward = 0, isGlobalRankImpact = false } = req.body || {};
+      const { xpReward = 0, pointsReward = 0 } = req.body || {};
       let ec: any = null;
       try {
         ec = await pool.connect();
@@ -9414,17 +9418,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await ec.query(`UPDATE event_responses SET attendance_confirmed = true WHERE id = $1`, [apResponseId]);
         let xpGiven = 0, pointsGiven = 0;
         const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!resp.reward_issued && resp.student_id && uuidRe.test(resp.student_id)) {
-          if (xpReward > 0) {
+        const hasValidStudent = resp.student_id && uuidRe.test(resp.student_id);
+        if (hasValidStudent) {
+          // XP gate: only award XP once (reward_issued flag)
+          if (!resp.reward_issued && xpReward > 0) {
             await ec.query(`UPDATE students SET total_xp = COALESCE(total_xp,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [xpReward, resp.student_id]);
-            if (isGlobalRankImpact) await ec.query(`UPDATE students SET global_xp = COALESCE(global_xp,0)+$1 WHERE id=$2::uuid`, [xpReward, resp.student_id]);
+            await ec.query(`UPDATE event_responses SET reward_issued = true WHERE id=$1`, [apResponseId]);
             xpGiven = xpReward;
           }
-          if (pointsReward > 0) {
+          // Points gate: separate column — allows awarding points even if XP was already issued
+          if (!resp.points_issued && pointsReward > 0) {
             await ec.query(`UPDATE students SET total_points = COALESCE(total_points,0)+$1, updated_at=NOW() WHERE id=$2::uuid`, [pointsReward, resp.student_id]);
+            await ec.query(`UPDATE event_responses SET points_issued = true WHERE id=$1`, [apResponseId]);
             pointsGiven = pointsReward;
           }
-          await ec.query(`UPDATE event_responses SET reward_issued = true WHERE id=$1`, [apResponseId]);
         }
         return res.json({ success: true, xpGiven, pointsGiven });
       } catch (e: any) { return res.status(500).json({ error: e.message }); }

@@ -2888,12 +2888,17 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                                             <p className="text-xs text-gray-400 truncate">{resp.parent_email}</p>
                                                             {resp.student_belt && <p className="text-xs text-cyan-400">{resp.student_belt}</p>}
                                                         </div>
-                                                        {status === 'coming' && !resp.attendance_confirmed && (
-                                                            <button disabled={approvingId === resp.id} onClick={() => approveAttendance(resp)} className="shrink-0 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
-                                                                {approvingId === resp.id ? '…' : '🏅 Award Rewards'}
-                                                            </button>
-                                                        )}
-                                                        {resp.attendance_confirmed && <span className="shrink-0 text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-1 rounded-lg">{resp.reward_issued ? t('admin.schedule.rsvp.rewardIssued') : t('admin.schedule.rsvp.confirmed')}</span>}
+                                                        {status === 'coming' && (() => {
+                                                            const xpPending = !resp.reward_issued && (manageEvent?.xpReward || 0) > 0;
+                                                            const ptsPending = !resp.points_issued && (manageEvent?.pointsReward || 0) > 0;
+                                                            const needsAward = !resp.attendance_confirmed || xpPending || ptsPending;
+                                                            if (needsAward) return (
+                                                                <button disabled={approvingId === resp.id} onClick={() => approveAttendance(resp)} className="shrink-0 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                                                                    {approvingId === resp.id ? '…' : '🏅 Award Rewards'}
+                                                                </button>
+                                                            );
+                                                            return <span className="shrink-0 text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-1 rounded-lg">✓ All Rewarded</span>;
+                                                        })()}
                                                     </div>
                                                 ))}
                                             </div>

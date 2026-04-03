@@ -4461,7 +4461,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
                  {/* Section 2: Upcoming Events with RSVP */}
                  {(() => {
                      const upcomingEvts = eventsData
-                         .filter(evt => new Date(evt.date) >= new Date(new Date().toDateString()))
+                         .filter(evt => {
+                             if (new Date(evt.date) < new Date(new Date().toDateString())) return false;
+                             if (evt.pricingType === 'premium' && !hasPremiumAccess) return false;
+                             if (evt.beltFilter && evt.beltFilter !== 'all' && student.beltId && evt.beltFilter !== student.beltId) return false;
+                             if (evt.locationFilter && evt.locationFilter !== 'all' && student.location && evt.locationFilter !== student.location) return false;
+                             if (evt.classFilter && evt.classFilter !== 'all' && student.assignedClass && evt.classFilter !== student.assignedClass) return false;
+                             return true;
+                         })
                          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                      const TYPE_EMOJI: Record<string, string> = { competition: '🏆', test: '🥋', seminar: '📚', social: '🎉' };
                      return (

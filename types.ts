@@ -142,7 +142,8 @@ export interface EventResponse {
     student_belt?: string;
     rsvp_status: 'coming' | 'not_coming' | 'pending';
     attendance_confirmed: boolean;
-    reward_issued: boolean;
+    reward_issued: boolean;   // true = XP was issued
+    points_issued: boolean;   // true = Belt Points were issued (separate gate)
     created_at: string;
 }
 
