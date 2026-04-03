@@ -125,6 +125,18 @@ async function ensureSchema() {
     await client.query(`
       ALTER TABLE event_responses ADD COLUMN IF NOT EXISTS points_issued BOOLEAN NOT NULL DEFAULT false
     `);
+    // Email audit log table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS automated_email_logs (
+        id SERIAL PRIMARY KEY,
+        trigger_type VARCHAR(100) NOT NULL,
+        recipient VARCHAR(255) NOT NULL,
+        template_id VARCHAR(100),
+        status TEXT NOT NULL DEFAULT 'sent',
+        club_id UUID,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
     _schemaReady = true;
     console.log('[Schema] Startup migrations applied');
   } catch (e: any) {
@@ -613,7 +625,7 @@ async function logAutomatedEmail(client: any, triggerType: string, recipient: st
   try {
     await client.query(
       `INSERT INTO automated_email_logs (trigger_type, recipient, template_id, status, club_id)
-       VALUES ($1, $2, $3, $4::email_status, $5::uuid)`,
+       VALUES ($1, $2, $3, $4, $5::uuid)`,
       [triggerType, recipient, templateId, status, clubId]
     );
   } catch (err) {

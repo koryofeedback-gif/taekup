@@ -1,0 +1,99 @@
+2026-04-03 13:34:51.078 [info] [GradingSession] Saved for Edvard Brixton
+2026-04-03 13:34:51.083 [info] [GradingSession] Saved for Brayan Birmingham
+2026-04-03 13:34:51.086 [info] [GradingSession] Saved for jack Favre
+2026-04-03 13:34:51.088 [warning] Content with characters ', " or & may need to be escaped with three brackets
+{{{ content }}}
+See https://sendgrid.com/docs/for-developers/sending-email/using-handlebars/ for more information.
+2026-04-03 13:34:51.337 [info] [SendGrid] Email sent to mytaekstudent222@lnovic.com in en with master template (CLASS_FEEDBACK)
+2026-04-03 13:34:51.337 [info] [ClassFeedback] Email sent to mytaekstudent222@lnovic.com for Edvard Brixton  (en)
+2026-04-03 13:34:51.392 [error] [EmailLog] Failed to log: error: relation "automated_email_logs" does not exist
+    at /var/task/node_modules/pg/lib/client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async logAutomatedEmail (/vercel/path0/api/index.ts:614:5)
+    at async handleSendClassFeedback (/vercel/path0/api/index.ts:2914:9)
+    at async Object.handler (/vercel/path0/api/index.ts:9192:85)
+    at async r (/opt/rust/nodejs.js:2:15572)
+    at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594)
+    at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) {
+  length: 119,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '13',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+2026-04-03 13:34:51.393 [warning] Content with characters ', " or & may need to be escaped with three brackets
+{{{ content }}}
+See https://sendgrid.com/docs/for-developers/sending-email/using-handlebars/ for more information.
+2026-04-03 13:34:51.407 [info] [SendGrid] Email sent to mytaekadmin223@mrotzis.com in en with master template (CLASS_FEEDBACK)
+2026-04-03 13:34:51.407 [info] [ClassFeedback] Email sent to mytaekadmin223@mrotzis.com for Brayan Birmingham  (en)
+2026-04-03 13:34:51.410 [error] [EmailLog] Failed to log: error: relation "automated_email_logs" does not exist
+    at /var/task/node_modules/pg/lib/client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async logAutomatedEmail (/vercel/path0/api/index.ts:614:5)
+    at async handleSendClassFeedback (/vercel/path0/api/index.ts:2914:9)
+    at async Object.handler (/vercel/path0/api/index.ts:9192:85)
+    at async r (/opt/rust/nodejs.js:2:15572)
+    at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594)
+    at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) {
+  length: 119,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '13',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+2026-04-03 13:34:51.410 [warning] Content with characters ', " or & may need to be escaped with three brackets
+{{{ content }}}
+See https://sendgrid.com/docs/for-developers/sending-email/using-handlebars/ for more information.
+2026-04-03 13:34:51.454 [info] [SendGrid] Email sent to mytaekstudent333@mrotzis.com in en with master template (CLASS_FEEDBACK)
+2026-04-03 13:34:51.454 [info] [ClassFeedback] Email sent to mytaekstudent333@mrotzis.com for jack Favre  (en)
+2026-04-03 13:34:51.457 [error] [EmailLog] Failed to log: error: relation "automated_email_logs" does not exist
+    at /var/task/node_modules/pg/lib/client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async logAutomatedEmail (/vercel/path0/api/index.ts:614:5)
+    at async handleSendClassFeedback (/vercel/path0/api/index.ts:2914:9)
+    at async Object.handler (/vercel/path0/api/index.ts:9192:85)
+    at async r (/opt/rust/nodejs.js:2:15572)
+    at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594)
+    at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) {
+  length: 119,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '13',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
