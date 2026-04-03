@@ -2311,14 +2311,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         classFilter: 'all',    // 'all' or a specific class name
     });
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
-    
-    // Search and filter state
-    const [searchQuery, setSearchQuery] = useState('');
-    const [filterBelt, setFilterBelt] = useState('all');
-    const [filterType, setFilterType] = useState<'all' | 'video' | 'document'>('all');
-    const [filterAccess, setFilterAccess] = useState<'all' | 'free' | 'premium'>('all');
-    const [filterLocation, setFilterLocation] = useState('all');
-    const [filterClass, setFilterClass] = useState('all');
+    const [activeContentTab, setActiveContentTab] = useState<'video' | 'document' | 'event'>('video');
     
     const customTags = data.customVideoTags || [];
     const allTags = [...DEFAULT_VIDEO_TAGS, ...customTags.map(t => ({ id: t, name: t, icon: '🏷️' }))];
@@ -2393,20 +2386,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         }
     };
 
-    // Filter content based on search and filters
-    const filterContent = (items: CurriculumItem[]) => {
-        return items.filter(item => {
-            const matchesSearch = !searchQuery || 
-                item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.description?.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesBelt = filterBelt === 'all' || item.beltId === filterBelt;
-            const matchesType = filterType === 'all' || item.contentType === filterType;
-            const matchesAccess = filterAccess === 'all' || item.pricingType === filterAccess;
-            const matchesLocation = filterLocation === 'all' || (item.locationFilter || 'all') === filterLocation || (item.locationFilter || 'all') === 'all';
-            const matchesClass = filterClass === 'all' || (item.classFilter || 'all') === filterClass || (item.classFilter || 'all') === 'all';
-            return matchesSearch && matchesBelt && matchesType && matchesAccess && matchesLocation && matchesClass;
-        });
-    };
+    const filterContent = (items: CurriculumItem[]) => items;
 
     // Check for scheduled content that should be published
     const checkScheduledPublishing = () => {
@@ -2461,533 +2441,384 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
         }
     };
 
-    const liveContent = filterContent(curriculum.filter(c => c.status === 'live'));
-    const draftContent = filterContent(curriculum.filter(c => c.status !== 'live'));
+    const videoItems = curriculum.filter(c => c.contentType !== 'document');
+    const docItems   = curriculum.filter(c => c.contentType === 'document');
+    const liveContent = curriculum.filter(c => c.status === 'live');
+    const draftContent = curriculum.filter(c => c.status !== 'live');
     const scheduledContent = draftContent.filter(c => c.publishAt);
-    const hasActiveFilters = searchQuery || filterBelt !== 'all' || filterType !== 'all' || filterAccess !== 'all' || filterLocation !== 'all' || filterClass !== 'all';
+
+    const tabItems = activeContentTab === 'video' ? videoItems : activeContentTab === 'document' ? docItems : [];
+    const tabLive = tabItems.filter(c => c.status === 'live');
+    const tabDraft = tabItems.filter(c => c.status !== 'live');
+
+    const CONTENT_TABS: { id: 'video' | 'document' | 'event'; label: string; icon: string; count: number }[] = [
+        { id: 'video',    label: t('admin.creatorHub.videos'),    icon: '📹', count: videoItems.length },
+        { id: 'document', label: t('admin.creatorHub.documents'),  icon: '📄', count: docItems.length },
+        { id: 'event',    label: 'Events',                         icon: '📅', count: (data.events || []).length },
+    ];
 
     return (
-        <div>
+        <div className="space-y-6">
             <SectionHeader title={t('admin.creatorHub.title')} description={t('admin.creatorHub.description')} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Search and Filter Bar */}
-                        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                            <div className="flex flex-col md:flex-row gap-3">
-                                <div className="flex-1">
-                                    <input 
-                                        type="text" 
-                                        placeholder={t('admin.creatorHub.searchPlaceholder')} 
-                                        value={searchQuery}
-                                        onChange={e => setSearchQuery(e.target.value)}
-                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                    />
-                                </div>
-                                <div className="flex gap-2 flex-wrap">
-                                    <select 
-                                        value={filterBelt}
-                                        onChange={e => setFilterBelt(e.target.value)}
-                                        className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-                                    >
-                                        <option value="all">{t('common.allBelts')}</option>
-                                        {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                    </select>
-                                    <select 
-                                        value={filterType}
-                                        onChange={e => setFilterType(e.target.value as 'all' | 'video' | 'document')}
-                                        className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-                                    >
-                                        <option value="all">{t('admin.creatorHub.allTypes')}</option>
-                                        <option value="video">{t('admin.creatorHub.videos')}</option>
-                                        <option value="document">{t('admin.creatorHub.documents')}</option>
-                                    </select>
-                                    <select 
-                                        value={filterAccess}
-                                        onChange={e => setFilterAccess(e.target.value as 'all' | 'free' | 'premium')}
-                                        className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-                                    >
-                                        <option value="all">{t('admin.creatorHub.allAccess')}</option>
-                                        <option value="free">{t('common.free')}</option>
-                                        <option value="premium">{t('common.premium')}</option>
-                                    </select>
-                                    {data.branchNames && data.branchNames.length > 0 && (
-                                        <select
-                                            value={filterLocation}
-                                            onChange={e => setFilterLocation(e.target.value)}
-                                            className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-                                        >
-                                            <option value="all">{t('admin.creatorHub.allLocations')}</option>
-                                            {data.branchNames.map(loc => (
-                                                <option key={loc} value={loc}>{loc}</option>
-                                            ))}
-                                        </select>
-                                    )}
-                                    {data.classes && data.classes.length > 0 && (
-                                        <select
-                                            value={filterClass}
-                                            onChange={e => setFilterClass(e.target.value)}
-                                            className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-                                        >
-                                            <option value="all">{t('admin.creatorHub.allClasses')}</option>
-                                            {data.classes.map(cls => (
-                                                <option key={cls} value={cls}>{cls}</option>
-                                            ))}
-                                        </select>
-                                    )}
-                                    {hasActiveFilters && (
-                                        <button 
-                                            onClick={() => { setSearchQuery(''); setFilterBelt('all'); setFilterType('all'); setFilterAccess('all'); setFilterLocation('all'); setFilterClass('all'); }}
-                                            className="px-3 py-2 bg-red-600/20 text-red-400 rounded text-sm hover:bg-red-600/30"
-                                        >
-                                            {t('common.clear')}
-                                        </button>
-                                    )}
-                                </div>
+            {/* ── Quick Stats ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                    { label: t('admin.creatorHub.totalItems'),  value: curriculum.length,                                           color: 'text-white' },
+                    { label: t('admin.creatorHub.published'),   value: liveContent.length,                                          color: 'text-emerald-400' },
+                    { label: t('common.premium'),              value: curriculum.filter(c => c.pricingType === 'premium').length,   color: 'text-yellow-400' },
+                    { label: t('admin.creatorHub.drafts'),      value: draftContent.length,                                         color: 'text-gray-400' },
+                ].map(s => (
+                    <div key={s.label} className="bg-gray-800 border border-gray-700 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                        <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
+                        <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* ── Tab navigation ── */}
+            <div className="flex bg-gray-800/60 rounded-xl p-1 border border-gray-700 gap-1">
+                {CONTENT_TABS.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveContentTab(tab.id)}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
+                            activeContentTab === tab.id
+                                ? 'bg-gray-900 text-white shadow border border-gray-600'
+                                : 'text-gray-400 hover:text-white hover:bg-gray-700/40'
+                        }`}
+                    >
+                        <span>{tab.icon}</span>
+                        <span>{tab.label}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                            activeContentTab === tab.id ? 'bg-gray-700 text-gray-300' : 'bg-gray-700/50 text-gray-500'
+                        }`}>{tab.count}</span>
+                    </button>
+                ))}
+            </div>
+
+            {/* ── Content tabs: Video & Document ── */}
+            {activeContentTab !== 'event' && (
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+
+                    {/* Content list — left 3 cols */}
+                    <div className="lg:col-span-3 space-y-4">
+                        {/* Live content */}
+                        <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+                            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-700/60">
+                                <h3 className="font-bold text-white text-sm">{t('admin.creatorHub.publishedContent')} <span className="text-gray-500 font-normal">({tabLive.length})</span></h3>
                             </div>
-                            {hasActiveFilters && (
-                                <p className="text-xs text-gray-400 mt-2">
-                                    {t('admin.creatorHub.showingItems', { shown: liveContent.length + draftContent.length, total: curriculum.length })}
-                                </p>
+                            {tabLive.length === 0 ? (
+                                <p className="text-gray-500 italic text-sm px-5 py-6 text-center">{t('admin.creatorHub.noPublishedContent')}</p>
+                            ) : (
+                                <div className="divide-y divide-gray-700/50">
+                                    {tabLive.map(vid => (
+                                        <div key={vid.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-700/20 transition-colors">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="font-semibold text-white text-sm truncate">{vid.title}</p>
+                                                    <span className="text-xs px-1.5 py-0.5 bg-emerald-600/20 text-emerald-400 rounded-full font-semibold">{t('admin.creatorHub.liveLabel')}</span>
+                                                    {vid.pricingType === 'premium' && <span className="text-xs px-1.5 py-0.5 bg-yellow-600/20 text-yellow-400 rounded-full font-semibold">{t('admin.creatorHub.premiumLabel')}</span>}
+                                                    {vid.requiresVideo && <span className="text-xs px-1.5 py-0.5 bg-purple-600/20 text-purple-400 rounded-full">🎥</span>}
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                    {vid.beltId === 'all' ? t('common.allBelts') : data.belts.find(b => b.id === vid.beltId)?.name}
+                                                    <span className="mx-1.5">·</span>{t('admin.creatorHub.xpLabel', { xp: vid.xpReward || 10 })}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <button onClick={() => toggleContentStatus(vid.id)} className="text-yellow-400 hover:text-yellow-300 text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">{t('admin.creatorHub.unpublish')}</button>
+                                                <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">{t('common.delete')}</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
 
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <h3 className="font-bold text-white mb-2">{t('admin.creatorHub.addNewContent')}</h3>
-                            <p className="text-xs text-gray-400 mb-4">
-                                {t('admin.creatorHub.contentAppearsIn')}
-                                <br/>
-                                {t('admin.creatorHub.videoProofsGoTo')}
-                            </p>
-                            <div className="space-y-4">
-                                <div className="flex gap-2 mb-4">
-                                    <button 
-                                        onClick={() => setNewVideo({...newVideo, contentType: 'video'})}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium ${newVideo.contentType === 'video' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300'}`}
-                                    >{t('admin.creatorHub.videoType')}</button>
-                                    <button 
-                                        onClick={() => setNewVideo({...newVideo, contentType: 'document'})}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium ${newVideo.contentType === 'document' ? 'bg-sky-500 text-white' : 'bg-gray-700 text-gray-300'}`}
-                                    >{t('admin.creatorHub.documentType')}</button>
+                        {/* Drafts */}
+                        {tabDraft.length > 0 && (
+                            <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden opacity-80">
+                                <div className="px-5 py-3.5 border-b border-gray-700/60">
+                                    <h3 className="font-bold text-white text-sm">
+                                        {t('admin.creatorHub.drafts')} <span className="text-gray-500 font-normal">({tabDraft.length})</span>
+                                        {scheduledContent.length > 0 && <span className="text-sky-400 text-xs font-normal ml-2">· {scheduledContent.length} {t('admin.creatorHub.scheduledLabel')}</span>}
+                                    </h3>
                                 </div>
-                                <input 
-                                    type="text" 
-                                    placeholder={t('admin.creatorHub.titlePlaceholder')} 
-                                    value={newVideo.title} 
+                                <div className="divide-y divide-gray-700/50">
+                                    {tabDraft.map(vid => (
+                                        <div key={vid.id} className={`flex items-center gap-3 px-5 py-3 hover:bg-gray-700/20 transition-colors ${vid.publishAt ? 'border-l-2 border-sky-500' : ''}`}>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="font-semibold text-white text-sm truncate">{vid.title}</p>
+                                                    {vid.publishAt ? (
+                                                        <span className="text-xs px-1.5 py-0.5 bg-sky-600/20 text-sky-400 rounded-full">📅 {new Date(vid.publishAt).toLocaleDateString()}</span>
+                                                    ) : (
+                                                        <span className="text-xs px-1.5 py-0.5 bg-gray-600/50 text-gray-400 rounded-full">{t('admin.creatorHub.draftLabel')}</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                    {vid.beltId === 'all' ? t('common.allBelts') : data.belts.find(b => b.id === vid.beltId)?.name}
+                                                    {vid.publishAt && <span className="ml-2 text-sky-400">{t('admin.creatorHub.publishes')} {new Date(vid.publishAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <button onClick={() => toggleContentStatus(vid.id)} className="text-emerald-400 hover:text-emerald-300 text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+                                                    {vid.publishAt ? t('admin.creatorHub.publishNow') : t('admin.creatorHub.publish')}
+                                                </button>
+                                                <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">{t('common.delete')}</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Add new content form — right 2 cols */}
+                    <div className="lg:col-span-2">
+                        <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 sticky top-4">
+                            <h3 className="font-bold text-white text-sm mb-1">{t('admin.creatorHub.addNewContent')}</h3>
+                            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+                                {t('admin.creatorHub.contentAppearsIn')}
+                            </p>
+                            <div className="space-y-3">
+                                {/* Content type toggle */}
+                                <div className="flex gap-1.5 bg-gray-900/60 p-1 rounded-lg">
+                                    <button
+                                        onClick={() => { setNewVideo({...newVideo, contentType: 'video'}); setActiveContentTab('video'); }}
+                                        className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all ${newVideo.contentType === 'video' ? 'bg-sky-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                                    >📹 {t('admin.creatorHub.videoType')}</button>
+                                    <button
+                                        onClick={() => { setNewVideo({...newVideo, contentType: 'document'}); setActiveContentTab('document'); }}
+                                        className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all ${newVideo.contentType === 'document' ? 'bg-sky-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                                    >📄 {t('admin.creatorHub.documentType')}</button>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder={t('admin.creatorHub.titlePlaceholder')}
+                                    value={newVideo.title}
                                     onChange={e => setNewVideo({...newVideo, title: e.target.value})}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+                                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-sky-500 transition-colors"
                                 />
-                                <input 
-                                    type="text" 
-                                    placeholder={newVideo.contentType === 'video' ? t('admin.creatorHub.videoUrlPlaceholder') : t('admin.creatorHub.documentUrlPlaceholder')} 
-                                    value={newVideo.url} 
+                                <input
+                                    type="text"
+                                    placeholder={newVideo.contentType === 'video' ? t('admin.creatorHub.videoUrlPlaceholder') : t('admin.creatorHub.documentUrlPlaceholder')}
+                                    value={newVideo.url}
                                     onChange={e => setNewVideo({...newVideo, url: e.target.value})}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+                                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-sky-500 transition-colors"
                                 />
-                                <textarea 
-                                    placeholder={t('admin.creatorHub.descriptionPlaceholder')} 
-                                    value={newVideo.description} 
+                                <textarea
+                                    placeholder={t('admin.creatorHub.descriptionPlaceholder')}
+                                    value={newVideo.description}
                                     onChange={e => setNewVideo({...newVideo, description: e.target.value})}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white h-20"
+                                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm h-16 resize-none focus:outline-none focus:border-sky-500 transition-colors"
                                 />
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.beltLevel')}</label>
-                                        <select 
-                                            value={newVideo.beltId}
-                                            onChange={e => setNewVideo({...newVideo, beltId: e.target.value})}
-                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                        >
+                                        <select value={newVideo.beltId} onChange={e => setNewVideo({...newVideo, beltId: e.target.value})} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-sky-500">
                                             <option value="all">{t('common.allBelts')}</option>
                                             {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.xpReward')}</label>
-                                        <input 
-                                            type="number" 
-                                            min="0" 
-                                            max="100"
-                                            value={newVideo.xpReward}
-                                            onChange={e => setNewVideo({...newVideo, xpReward: parseInt(e.target.value) || 0})}
-                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                        />
-                                        {newVideo.pricingType === 'premium' && newVideo.xpReward < 25 && (
-                                            <p className="text-[10px] text-amber-400 mt-1">{t('admin.creatorHub.premiumTip')}</p>
-                                        )}
-                                        {newVideo.pricingType === 'free' && newVideo.xpReward > 20 && (
-                                            <p className="text-[10px] text-sky-400 mt-1">{t('admin.creatorHub.freeTip')}</p>
-                                        )}
+                                        <input type="number" min="0" max="100" value={newVideo.xpReward} onChange={e => setNewVideo({...newVideo, xpReward: parseInt(e.target.value) || 0})} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-sky-500" />
                                     </div>
                                 </div>
                                 {(data.branchNames?.length > 0 || data.classes?.length > 0) && (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {data.branchNames && data.branchNames.length > 0 && (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {data.branchNames?.length > 0 && (
                                             <div>
                                                 <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.locationLabel')}</label>
-                                                <select
-                                                    value={newVideo.locationFilter}
-                                                    onChange={e => setNewVideo({...newVideo, locationFilter: e.target.value})}
-                                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                                >
+                                                <select value={newVideo.locationFilter} onChange={e => setNewVideo({...newVideo, locationFilter: e.target.value})} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-sky-500">
                                                     <option value="all">{t('admin.creatorHub.allLocations')}</option>
-                                                    {data.branchNames.map(loc => (
-                                                        <option key={loc} value={loc}>{loc}</option>
-                                                    ))}
+                                                    {data.branchNames.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                                                 </select>
                                             </div>
                                         )}
-                                        {data.classes && data.classes.length > 0 && (
+                                        {data.classes?.length > 0 && (
                                             <div>
                                                 <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.classLabel')}</label>
-                                                <select
-                                                    value={newVideo.classFilter}
-                                                    onChange={e => setNewVideo({...newVideo, classFilter: e.target.value})}
-                                                    className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                                >
+                                                <select value={newVideo.classFilter} onChange={e => setNewVideo({...newVideo, classFilter: e.target.value})} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-sky-500">
                                                     <option value="all">{t('admin.creatorHub.allClasses')}</option>
                                                     {(newVideo.locationFilter !== 'all' && data.locationClasses?.[newVideo.locationFilter]
                                                         ? data.locationClasses[newVideo.locationFilter]
                                                         : data.classes
-                                                    ).map(cls => (
-                                                        <option key={cls} value={cls}>{cls}</option>
-                                                    ))}
+                                                    ).map(cls => <option key={cls} value={cls}>{cls}</option>)}
                                                 </select>
                                             </div>
                                         )}
                                     </div>
                                 )}
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.access')}</label>
-                                        <select 
-                                            value={newVideo.pricingType}
-                                            onChange={e => setNewVideo({...newVideo, pricingType: e.target.value as 'free' | 'premium'})}
-                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                        >
+                                        <select value={newVideo.pricingType} onChange={e => setNewVideo({...newVideo, pricingType: e.target.value as 'free' | 'premium'})} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-sky-500">
                                             <option value="free">{t('admin.creatorHub.freeForAll')}</option>
                                             <option value="premium">{t('admin.creatorHub.premiumOnly')}</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.statusLabel')}</label>
-                                        <select 
-                                            value={newVideo.status}
-                                            onChange={e => setNewVideo({...newVideo, status: e.target.value as 'draft' | 'live', publishAt: ''})}
-                                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                        >
+                                        <select value={newVideo.status} onChange={e => setNewVideo({...newVideo, status: e.target.value as 'draft' | 'live', publishAt: ''})} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-sky-500">
                                             <option value="draft">{t('admin.creatorHub.draftHidden')}</option>
                                             <option value="live">{t('admin.creatorHub.livePublished')}</option>
                                         </select>
                                     </div>
                                 </div>
+
                                 {/* Scheduled Publishing */}
-                                <div className="bg-gray-700/50 p-3 rounded border border-gray-600">
-                                    <label className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-                                        <span>📅</span> {t('admin.creatorHub.schedulePublishing')}
-                                    </label>
-                                    <input 
-                                        type="datetime-local"
-                                        value={newVideo.publishAt}
-                                        onChange={e => setNewVideo({...newVideo, publishAt: e.target.value, status: 'draft'})}
-                                        min={new Date().toISOString().slice(0, 16)}
-                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                    />
-                                    {newVideo.publishAt && (
-                                        <p className="text-xs text-sky-400 mt-1">
-                                            {t('admin.creatorHub.contentWillAutoPublish')} {new Date(newVideo.publishAt).toLocaleString()}
-                                        </p>
-                                    )}
+                                <div className="bg-gray-700/40 p-3 rounded-lg border border-gray-600/50">
+                                    <label className="flex items-center gap-1.5 text-xs text-gray-400 mb-2"><span>📅</span> {t('admin.creatorHub.schedulePublishing')}</label>
+                                    <input type="datetime-local" value={newVideo.publishAt} onChange={e => setNewVideo({...newVideo, publishAt: e.target.value, status: 'draft'})} min={new Date().toISOString().slice(0, 16)} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-sky-500" />
+                                    {newVideo.publishAt && <p className="text-xs text-sky-400 mt-1">{t('admin.creatorHub.contentWillAutoPublish')} {new Date(newVideo.publishAt).toLocaleString()}</p>}
                                 </div>
-                                {/* Video Verification */}
-                                <div className="bg-gray-700/50 p-3 rounded border border-gray-600">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={newVideo.requiresVideo}
-                                            onChange={e => setNewVideo({...newVideo, requiresVideo: e.target.checked})}
-                                            className="w-4 h-4 rounded border-gray-500 bg-gray-600 text-cyan-500 focus:ring-cyan-500"
-                                        />
-                                        <span className="text-sm text-white">{t('admin.creatorHub.requireVideoProof')}</span>
-                                        <span className="text-xs text-gray-400 ml-auto">{t('admin.creatorHub.studentsMustSubmit')}</span>
+
+                                {/* Video Proof */}
+                                <div className="bg-gray-700/40 p-3 rounded-lg border border-gray-600/50">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={newVideo.requiresVideo} onChange={e => setNewVideo({...newVideo, requiresVideo: e.target.checked})} className="w-4 h-4 rounded border-gray-500 bg-gray-600 text-cyan-500 focus:ring-cyan-500" />
+                                        <span className="text-xs text-white font-medium">{t('admin.creatorHub.requireVideoProof')}</span>
                                     </label>
                                     {newVideo.requiresVideo && (
-                                        <div className="mt-3 pl-7">
-                                            <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.whoCanSubmitVideo')}</label>
-                                            <select
-                                                value={newVideo.videoAccess}
-                                                onChange={e => setNewVideo({...newVideo, videoAccess: e.target.value as 'premium' | 'free'})}
-                                                className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                            >
+                                        <div className="mt-2 pl-6">
+                                            <select value={newVideo.videoAccess} onChange={e => setNewVideo({...newVideo, videoAccess: e.target.value as 'premium' | 'free'})} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-sky-500">
                                                 <option value="premium">{t('admin.creatorHub.premiumOnly')}</option>
                                                 <option value="free">{t('admin.creatorHub.freeForAll')}</option>
                                             </select>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                {newVideo.videoAccess === 'premium' 
-                                                    ? t('admin.creatorHub.onlyPremiumCanSubmit')
-                                                    : t('admin.creatorHub.allUsersCanSubmit')}
-                                            </p>
                                         </div>
                                     )}
                                 </div>
-                                {/* Weekly Limit - Prevent Overtraining */}
-                                <div className="bg-gray-700/50 p-3 rounded border border-gray-600">
-                                    <label className="block text-xs text-gray-400 mb-2">{t('admin.creatorHub.weeklyLimit')}</label>
-                                    <select
-                                        value={newVideo.maxPerWeek === null ? '' : newVideo.maxPerWeek}
-                                        onChange={e => setNewVideo({...newVideo, maxPerWeek: e.target.value ? parseInt(e.target.value) : null})}
-                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
-                                    >
+
+                                {/* Weekly Limit */}
+                                <div className="bg-gray-700/40 p-3 rounded-lg border border-gray-600/50">
+                                    <label className="block text-xs text-gray-400 mb-1.5">{t('admin.creatorHub.weeklyLimit')}</label>
+                                    <select value={newVideo.maxPerWeek === null ? '' : newVideo.maxPerWeek} onChange={e => setNewVideo({...newVideo, maxPerWeek: e.target.value ? parseInt(e.target.value) : null})} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-sky-500">
                                         <option value="">{t('admin.creatorHub.unlimitedNoLimit')}</option>
-                                        <option value="1">{t('admin.creatorHub.perWeek', { count: 1 })}</option>
-                                        <option value="2">{t('admin.creatorHub.perWeek', { count: 2 })}</option>
-                                        <option value="3">{t('admin.creatorHub.perWeek', { count: 3 })}</option>
-                                        <option value="4">{t('admin.creatorHub.perWeek', { count: 4 })}</option>
-                                        <option value="5">{t('admin.creatorHub.perWeek', { count: 5 })}</option>
-                                        <option value="6">{t('admin.creatorHub.perWeek', { count: 6 })}</option>
+                                        {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{t('admin.creatorHub.perWeek', { count: n })}</option>)}
                                         <option value="7">{t('admin.creatorHub.dailyPerWeek')}</option>
                                     </select>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        {newVideo.maxPerWeek 
-                                            ? `${t('admin.creatorHub.studentsCanCompleteMax')} ${newVideo.maxPerWeek}x/week, 1x/day`
-                                            : t('admin.creatorHub.noWeeklyLimit')}
-                                    </p>
                                 </div>
+
+                                {/* Tags */}
                                 <div>
-                                    <label className="block text-xs text-gray-400 mb-2">{t('admin.creatorHub.tagsLabel')}</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder={t('admin.creatorHub.tagsPlaceholder')} 
+                                    <label className="block text-xs text-gray-400 mb-1">{t('admin.creatorHub.tagsLabel')}</label>
+                                    <input
+                                        type="text"
+                                        placeholder={t('admin.creatorHub.tagsPlaceholder')}
                                         value={newVideo.tagsInput ?? newVideo.tags.join(', ')}
                                         onChange={e => {
-                                            const rawValue = e.target.value;
-                                            const parsedTags = rawValue.split(',').map(t => t.trim()).filter(t => t);
-                                            setNewVideo({...newVideo, tags: parsedTags, tagsInput: rawValue});
+                                            const raw = e.target.value;
+                                            setNewVideo({...newVideo, tags: raw.split(',').map(t => t.trim()).filter(Boolean), tagsInput: raw});
                                         }}
                                         onBlur={e => {
-                                            const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                                            const tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
                                             setNewVideo({...newVideo, tags, tagsInput: tags.join(', ')});
                                         }}
-                                        className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white text-sm"
+                                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-sky-500"
                                     />
-                                    {newVideo.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                            {newVideo.tags.map((tag, i) => (
-                                                <span key={i} className="px-2 py-0.5 bg-sky-500/20 text-sky-300 rounded-full text-xs">
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
-                                <button 
-                                    onClick={handleAddContent} 
+
+                                <button
+                                    onClick={handleAddContent}
                                     disabled={!newVideo.title}
-                                    className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-2 rounded"
+                                    className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition-colors text-sm"
                                 >
                                     {newVideo.publishAt ? t('admin.creatorHub.scheduleContent') : (newVideo.status === 'live' ? t('admin.creatorHub.publishContent') : t('admin.creatorHub.saveAsDraft'))}
                                 </button>
                             </div>
                         </div>
-
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-bold text-white">{t('admin.creatorHub.publishedContent')} ({liveContent.length})</h3>
-                            </div>
-                            <div className="space-y-2">
-                                {liveContent.length === 0 && <p className="text-gray-500 italic text-sm">{t('admin.creatorHub.noPublishedContent')}</p>}
-                                {liveContent.map(vid => {
-                                    const tags = vid.category?.split(',').filter(Boolean) || [];
-                                    return (
-                                        <div key={vid.id} className="flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl">{vid.contentType === 'document' ? '📄' : '📹'}</span>
-                                                <div>
-                                                    <p className="font-bold text-white text-sm flex items-center gap-2 flex-wrap">
-                                                        {vid.title}
-                                                        <span className="text-xs px-2 py-0.5 bg-green-600/20 text-green-400 rounded">{t('admin.creatorHub.liveLabel')}</span>
-                                                        {vid.pricingType === 'premium' && <span className="text-xs px-2 py-0.5 bg-yellow-600/20 text-yellow-400 rounded">{t('admin.creatorHub.premiumLabel')}</span>}
-                                                        {vid.requiresVideo && (
-                                                            <span className={`text-xs px-2 py-0.5 rounded ${vid.videoAccess === 'free' ? 'bg-cyan-600/20 text-cyan-400' : 'bg-purple-600/20 text-purple-400'}`}>
-                                                                {vid.videoAccess === 'free' ? t('admin.creatorHub.videoLabel') : t('admin.creatorHub.videoPlusLabel')}
-                                                            </span>
-                                                        )}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {vid.beltId === 'all' ? t('common.allBelts') : data.belts.find(b => b.id === vid.beltId)?.name}
-                                                        <span className="mx-2">•</span>
-                                                        {t('admin.creatorHub.xpLabel', { xp: vid.xpReward || 10 })}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button onClick={() => toggleContentStatus(vid.id)} className="text-yellow-400 hover:text-yellow-300 text-xs px-2 py-1 bg-gray-700 rounded">{t('admin.creatorHub.unpublish')}</button>
-                                                <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 rounded">{t('common.delete')}</button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                            <h3 className="font-bold text-white mb-4">
-                                {t('admin.creatorHub.drafts')} ({draftContent.length})
-                                {scheduledContent.length > 0 && (
-                                    <span className="text-xs font-normal text-sky-400 ml-2">
-                                        ({scheduledContent.length} {t('admin.creatorHub.scheduledLabel')})
-                                    </span>
-                                )}
-                            </h3>
-                            <div className="space-y-2">
-                                {draftContent.length === 0 && <p className="text-gray-500 italic text-sm">{t('admin.creatorHub.noDrafts')}</p>}
-                                {draftContent.map(vid => (
-                                    <div key={vid.id} className={`flex justify-between items-center bg-gray-900/50 p-3 rounded border ${vid.publishAt ? 'border-sky-500/50' : 'border-gray-700'} opacity-75`}>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-2xl">{vid.contentType === 'document' ? '📄' : '📹'}</span>
-                                            <div>
-                                                <p className="font-bold text-white text-sm flex items-center gap-2 flex-wrap">
-                                                    {vid.title}
-                                                    {vid.publishAt ? (
-                                                        <span className="text-xs px-2 py-0.5 bg-sky-600/20 text-sky-400 rounded">
-                                                            📅 {new Date(vid.publishAt).toLocaleDateString()}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-xs px-2 py-0.5 bg-gray-600/50 text-gray-400 rounded">{t('admin.creatorHub.draftLabel')}</span>
-                                                    )}
-                                                    {vid.requiresVideo && (
-                                                        <span className={`text-xs px-2 py-0.5 rounded ${vid.videoAccess === 'free' ? 'bg-cyan-600/20 text-cyan-400' : 'bg-purple-600/20 text-purple-400'}`}>
-                                                            {vid.videoAccess === 'free' ? t('admin.creatorHub.videoLabel') : t('admin.creatorHub.videoPlusLabel')}
-                                                        </span>
-                                                    )}
-                                                </p>
-                                                <p className="text-xs text-gray-500">
-                                                    {vid.beltId === 'all' ? t('common.allBelts') : data.belts.find(b => b.id === vid.beltId)?.name}
-                                                    {vid.publishAt && (
-                                                        <span className="ml-2 text-sky-400">
-                                                            {t('admin.creatorHub.publishes')} {new Date(vid.publishAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                                        </span>
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button onClick={() => toggleContentStatus(vid.id)} className="text-green-400 hover:text-green-300 text-xs px-2 py-1 bg-gray-700 rounded">
-                                                {vid.publishAt ? t('admin.creatorHub.publishNow') : t('admin.creatorHub.publish')}
-                                            </button>
-                                            <button onClick={() => onUpdateData({ curriculum: curriculum.filter(c => c.id !== vid.id) })} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-gray-700 rounded">{t('common.delete')}</button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="bg-gradient-to-br from-sky-600 to-blue-700 p-6 rounded-lg">
-                            <h3 className="font-bold text-white mb-2">{t('admin.creatorHub.quickStats')}</h3>
-                            <div className="grid grid-cols-2 gap-4 mt-4">
-                                <div className="bg-white/10 p-3 rounded">
-                                    <p className="text-3xl font-bold text-white">{curriculum.length}</p>
-                                    <p className="text-xs text-white/70">{t('admin.creatorHub.totalItems')}</p>
-                                </div>
-                                <div className="bg-white/10 p-3 rounded">
-                                    <p className="text-3xl font-bold text-white">{liveContent.length}</p>
-                                    <p className="text-xs text-white/70">{t('admin.creatorHub.published')}</p>
-                                </div>
-                                <div className="bg-white/10 p-3 rounded">
-                                    <p className="text-3xl font-bold text-white">{curriculum.filter(c => c.pricingType === 'premium').length}</p>
-                                    <p className="text-xs text-white/70">{t('common.premium')}</p>
-                                </div>
-                                <div className="bg-white/10 p-3 rounded">
-                                    <p className="text-3xl font-bold text-white">{draftContent.length}</p>
-                                    <p className="text-xs text-white/70">{t('admin.creatorHub.drafts')}</p>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
+            )}
 
-            {/* ── Club Events ── */}
-            <div className="mt-10">
-                <SectionHeader
-                    title="Club Events"
-                    description="Competitions, belt tests, seminars — parents RSVP from their Training Ops tab"
-                    action={
-                        <button onClick={() => onOpenModal?.('event')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors flex items-center gap-2">
-                            <span>+ Add Event</span>
+            {/* ── Events tab ── */}
+            {activeContentTab === 'event' && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-400">Competitions, belt tests, seminars — parents RSVP from their Training Ops tab</p>
+                        <button
+                            onClick={() => onOpenModal?.('event')}
+                            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors flex items-center gap-2 text-sm whitespace-nowrap"
+                        >
+                            + Add Event
                         </button>
-                    }
-                />
-
-                <div className="bg-purple-900/20 border border-purple-800/40 rounded-xl p-3 mb-4 flex items-start gap-2.5">
-                    <span className="text-purple-400 mt-0.5">📲</span>
-                    <p className="text-xs text-purple-300 leading-relaxed">
-                        Events you add here appear in the <strong>parent portal → Training Ops tab</strong> as upcoming events. Parents can RSVP, and attendance rewards (HonorXP™ &amp; Belt Points) are issued when you approve their attendance.
-                    </p>
-                </div>
-
-                {(data.events || []).length === 0 && (
-                    <div className="bg-gray-800/50 rounded-xl border border-dashed border-gray-700 p-10 text-center">
-                        <p className="text-gray-400 font-medium">No upcoming events</p>
-                        <p className="text-gray-600 text-sm mt-1">Add competitions, belt tests or socials to notify parents</p>
                     </div>
-                )}
 
-                <div className="space-y-3">
-                    {(data.events || []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(evt => {
-                        const comingCount = rsvpCounts[evt.id] || 0;
-                        const hasReward = (evt.xpReward || 0) > 0 || (evt.pointsReward || 0) > 0;
-                        const TYPE_COLORS: Record<string, string> = {
-                            competition: 'bg-red-900/50 text-red-300 border-red-800',
-                            test: 'bg-yellow-900/50 text-yellow-300 border-yellow-800',
-                            seminar: 'bg-blue-900/50 text-blue-300 border-blue-800',
-                            social: 'bg-green-900/50 text-green-300 border-green-800',
-                        };
-                        const typeColor = TYPE_COLORS[evt.type] || 'bg-gray-700 text-gray-300 border-gray-600';
-                        const d = new Date(evt.date);
-                        return (
-                            <div key={evt.id} className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors">
-                                <div className="flex items-start gap-4">
-                                    <div className="flex-shrink-0 w-14 bg-gray-900 rounded-xl text-center py-2 border border-gray-700">
-                                        <p className="text-gray-500 text-xs uppercase font-bold">{d.toLocaleString('default', { month: 'short' })}</p>
-                                        <p className="text-white text-xl font-bold leading-none mt-0.5">{d.getDate()}</p>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                                            <h4 className="font-bold text-white text-base">{evt.title}</h4>
-                                            <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold uppercase ${typeColor}`}>{evt.type}</span>
-                                            {comingCount > 0 && (
-                                                <span className="text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-0.5 rounded-full font-semibold">
-                                                    ✓ {comingCount} Coming
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-gray-400 text-sm">{evt.time} · {evt.location}</p>
-                                        {hasReward && (
-                                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                                {(evt.xpReward || 0) > 0 && <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{evt.xpReward} HonorXP™</span>}
-                                                {(evt.pointsReward || 0) > 0 && <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{evt.pointsReward} Belt Points</span>}
+                    <div className="flex items-start gap-2.5 bg-purple-900/20 border border-purple-800/40 rounded-xl p-3">
+                        <span className="text-purple-400 mt-0.5 shrink-0">📲</span>
+                        <p className="text-xs text-purple-300 leading-relaxed">
+                            Events appear in the <strong>parent portal → Training Ops tab</strong>. Parents can RSVP, and attendance rewards (HonorXP™ &amp; Belt Points) are issued when you approve attendance.
+                        </p>
+                    </div>
+
+                    {(data.events || []).length === 0 ? (
+                        <div className="bg-gray-800/50 rounded-xl border border-dashed border-gray-700 p-12 text-center">
+                            <p className="text-4xl mb-3">📅</p>
+                            <p className="text-gray-400 font-semibold">No upcoming events</p>
+                            <p className="text-gray-600 text-sm mt-1 mb-4">Add competitions, belt tests or socials so parents can RSVP</p>
+                            <button onClick={() => onOpenModal?.('event')} className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-5 rounded-lg text-sm transition-colors">
+                                + Add your first event
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {(data.events || []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(evt => {
+                                const comingCount = rsvpCounts[evt.id] || 0;
+                                const hasReward = (evt.xpReward || 0) > 0 || (evt.pointsReward || 0) > 0;
+                                const TYPE_COLORS: Record<string, string> = {
+                                    competition: 'bg-red-900/50 text-red-300 border-red-800',
+                                    test: 'bg-yellow-900/50 text-yellow-300 border-yellow-800',
+                                    seminar: 'bg-blue-900/50 text-blue-300 border-blue-800',
+                                    social: 'bg-green-900/50 text-green-300 border-green-800',
+                                };
+                                const typeColor = TYPE_COLORS[evt.type] || 'bg-gray-700 text-gray-300 border-gray-600';
+                                const d = new Date(evt.date);
+                                return (
+                                    <div key={evt.id} className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors">
+                                        <div className="flex items-start gap-4">
+                                            <div className="flex-shrink-0 w-14 bg-gray-900 rounded-xl text-center py-2 border border-gray-700">
+                                                <p className="text-gray-500 text-xs uppercase font-bold">{d.toLocaleString('default', { month: 'short' })}</p>
+                                                <p className="text-white text-xl font-bold leading-none mt-0.5">{d.getDate()}</p>
                                             </div>
-                                        )}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                    <h4 className="font-bold text-white text-base">{evt.title}</h4>
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold uppercase ${typeColor}`}>{evt.type}</span>
+                                                    {comingCount > 0 && (
+                                                        <span className="text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-0.5 rounded-full font-semibold">
+                                                            ✓ {comingCount} Coming
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-gray-400 text-sm">{evt.time} · {evt.location}</p>
+                                                {hasReward && (
+                                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                        {(evt.xpReward || 0) > 0 && <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{evt.xpReward} HonorXP™</span>}
+                                                        {(evt.pointsReward || 0) > 0 && <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{evt.pointsReward} Belt Points</span>}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 flex-shrink-0">
+                                                <button onClick={() => openManageEvent(evt)} className="bg-gray-700 hover:bg-purple-800 border border-gray-600 hover:border-purple-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1">
+                                                    <Users size={11} /> Responses
+                                                </button>
+                                                <button onClick={() => handleRemoveEvent(evt.id)} className="text-gray-600 hover:text-red-400 text-xs font-medium px-3 py-1 rounded-lg hover:bg-red-900/20 transition-colors text-right">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col gap-1.5 flex-shrink-0">
-                                        <button onClick={() => openManageEvent(evt)} className="bg-gray-700 hover:bg-purple-800 border border-gray-600 hover:border-purple-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1">
-                                            <Users size={11} /> Responses
-                                        </button>
-                                        <button onClick={() => handleRemoveEvent(evt.id)} className="text-gray-700 hover:text-red-400 text-xs font-medium px-3 py-1 rounded-lg hover:bg-red-900/20 transition-colors text-right">
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
-            </div>
+            )}
 
-            {/* ─── Manage Responses Panel ─── */}
+            {/* ─── Manage Responses slide-over ─── */}
             {manageEvent && (
                 <div className="fixed inset-0 z-50 flex justify-end">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setManageEvent(null)} />
@@ -3016,7 +2847,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 );
                             })}
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
                             {responsesLoading && <div className="text-center py-8"><div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>}
                             {!responsesLoading && eventResponses.length === 0 && <p className="text-center text-gray-500 py-8 text-sm">No responses yet</p>}
                             {!responsesLoading && eventResponses.length > 0 && (
