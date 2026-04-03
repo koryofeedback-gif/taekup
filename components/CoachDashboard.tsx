@@ -2788,6 +2788,10 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ data, coachName,
                                                     <div className="text-[10px] text-gray-500 uppercase">Total</div>
                                                     <div className="text-xl font-bold text-white">{sessionTotal}</div>
                                                 </div>
+                                                <div className="bg-amber-900/40 border border-amber-700/50 px-3 py-1 rounded-lg text-center">
+                                                    <div className="text-[10px] text-amber-400 uppercase">Belt Pts</div>
+                                                    <div className="text-xl font-bold text-amber-300">{(student.totalPoints || 0) + sessionTotal}</div>
+                                                </div>
                                                 <div className="flex-1">
                                                     {isReady ? (
                                                         <button 
