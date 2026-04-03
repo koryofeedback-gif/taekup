@@ -2794,12 +2794,14 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                                     )}
                                                 </div>
                                                 <p className="text-gray-400 text-sm">{evt.time} · {evt.location}</p>
-                                                {hasReward && (
-                                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                                        {(evt.xpReward || 0) > 0 && <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{evt.xpReward} HonorXP™</span>}
-                                                        {(evt.pointsReward || 0) > 0 && <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{evt.pointsReward} Belt Points</span>}
-                                                    </div>
-                                                )}
+                                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                                    {evt.pricingType === 'premium' && <span className="text-xs bg-yellow-900/40 border border-yellow-800 text-yellow-300 px-2 py-0.5 rounded-full">⭐ Premium</span>}
+                                                    {evt.beltFilter && evt.beltFilter !== 'all' && <span className="text-xs bg-sky-900/40 border border-sky-800 text-sky-300 px-2 py-0.5 rounded-full">🥋 {data.belts.find(b => b.id === evt.beltFilter)?.name || evt.beltFilter}</span>}
+                                                    {evt.locationFilter && evt.locationFilter !== 'all' && <span className="text-xs bg-gray-700 border border-gray-600 text-gray-300 px-2 py-0.5 rounded-full">📍 {evt.locationFilter}</span>}
+                                                    {evt.classFilter && evt.classFilter !== 'all' && <span className="text-xs bg-gray-700 border border-gray-600 text-gray-300 px-2 py-0.5 rounded-full">🎓 {evt.classFilter}</span>}
+                                                    {(evt.xpReward || 0) > 0 && <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{evt.xpReward} HonorXP™</span>}
+                                                    {(evt.pointsReward || 0) > 0 && <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{evt.pointsReward} Belt Pts</span>}
+                                                </div>
                                             </div>
                                             <div className="flex flex-col gap-1.5 flex-shrink-0">
                                                 <button onClick={() => openManageEvent(evt)} className="bg-gray-700 hover:bg-purple-800 border border-gray-600 hover:border-purple-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1">
@@ -3372,6 +3374,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
     const [editingCoachId, setEditingCoachId] = useState<string | null>(null);
     const [tempClass, setTempClass] = useState<Partial<ScheduleItem>>({});
     const [tempEvent, setTempEvent] = useState<Partial<CalendarEvent>>({});
+    const [isCustomEventType, setIsCustomEventType] = useState(false);
     const [tempPrivate, setTempPrivate] = useState<{coachName: string, date: string, time: string, price: number}>({coachName: '', date: '', time: '', price: 50});
     
     // Bulk Import State
@@ -4094,21 +4097,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
 
     const handleAddEvent = () => {
         if(!tempEvent.title || !tempEvent.date) return;
+        const finalType = isCustomEventType
+            ? (tempEvent.type || 'custom').trim() || 'custom'
+            : tempEvent.type || 'social';
         const newEvent: CalendarEvent = {
             id: `evt-${Date.now()}`,
             title: tempEvent.title,
             date: tempEvent.date,
             time: tempEvent.time || '10:00',
             location: tempEvent.location || 'Dojang',
-            type: tempEvent.type || 'social',
-            description: '',
-            xpReward: (tempEvent as any).xpReward || 0,
-            pointsReward: (tempEvent as any).pointsReward || 0,
-            isGlobalRankImpact: (tempEvent as any).isGlobalRankImpact || false,
+            type: finalType,
+            description: tempEvent.description || '',
+            xpReward: tempEvent.xpReward || 0,
+            pointsReward: tempEvent.pointsReward || 0,
+            isGlobalRankImpact: tempEvent.isGlobalRankImpact || false,
+            beltFilter: tempEvent.beltFilter || 'all',
+            locationFilter: tempEvent.locationFilter || 'all',
+            classFilter: tempEvent.classFilter || 'all',
+            pricingType: tempEvent.pricingType || 'free',
         };
         onUpdateData({ events: [...(data.events || []), newEvent] });
         setModalType(null);
         setTempEvent({});
+        setIsCustomEventType(false);
     }
 
     const handleAddPrivate = () => {
@@ -4916,55 +4927,155 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             )}
 
             {modalType === 'event' && (
-                <Modal title={t('admin.schedule.addEventModal.title')} onClose={() => setModalType(null)}>
+                <Modal title={t('admin.schedule.addEventModal.title')} onClose={() => { setModalType(null); setTempEvent({}); setIsCustomEventType(false); }}>
                     <div className="space-y-4">
                         <div className="flex items-start gap-2 bg-purple-900/20 border border-purple-800/40 rounded-lg p-3">
                             <span className="text-purple-400 text-sm mt-0.5">📲</span>
                             <p className="text-xs text-purple-300 leading-relaxed">
-                                This event will appear in the <strong>parent portal → Training Ops tab</strong> as an upcoming event. Parents can RSVP and earn rewards when you approve their attendance.
+                                Appears in <strong>parent portal → Training Ops</strong>. Parents RSVP and earn rewards when you approve attendance.
                             </p>
                         </div>
-                        <input type="text" placeholder={t('admin.schedule.addEventModal.eventTitle')} className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, title: e.target.value})} />
+
+                        {/* Title */}
+                        <input
+                            type="text"
+                            placeholder={t('admin.schedule.addEventModal.eventTitle')}
+                            value={tempEvent.title || ''}
+                            onChange={e => setTempEvent({...tempEvent, title: e.target.value})}
+                            className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none"
+                        />
+
+                        {/* Date + Time */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-xs text-gray-400 block mb-1">Date</label>
-                                <input type="date" className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, date: e.target.value})} />
+                                <label className="text-xs text-gray-400 block mb-1">Date *</label>
+                                <input type="date" value={tempEvent.date || ''} onChange={e => setTempEvent({...tempEvent, date: e.target.value})} className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" />
                             </div>
                             <div>
                                 <label className="text-xs text-gray-400 block mb-1">Time</label>
-                                <input type="time" className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, time: e.target.value})} />
+                                <input type="time" value={tempEvent.time || ''} onChange={e => setTempEvent({...tempEvent, time: e.target.value})} className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" />
                             </div>
                         </div>
+
+                        {/* Event Type */}
                         <div>
                             <label className="text-xs text-gray-400 block mb-1">Event Type</label>
-                            <select className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, type: e.target.value as any})}>
-                                <option value="social">Social Event</option>
-                                <option value="test">Belt Test</option>
-                                <option value="competition">Competition</option>
-                                <option value="seminar">Seminar</option>
+                            <select
+                                value={isCustomEventType ? '__custom__' : (tempEvent.type || 'social')}
+                                onChange={e => {
+                                    if (e.target.value === '__custom__') {
+                                        setIsCustomEventType(true);
+                                        setTempEvent({...tempEvent, type: ''});
+                                    } else {
+                                        setIsCustomEventType(false);
+                                        setTempEvent({...tempEvent, type: e.target.value});
+                                    }
+                                }}
+                                className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none"
+                            >
+                                <option value="social">🎉 Social Event</option>
+                                <option value="test">🥋 Belt Test</option>
+                                <option value="competition">🏆 Competition</option>
+                                <option value="seminar">📚 Seminar</option>
+                                <option value="__custom__">✏️ Custom…</option>
                             </select>
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-400 block mb-1">Location</label>
-                            <input type="text" placeholder="e.g. Main Dojo" className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, location: e.target.value})} />
+                            {isCustomEventType && (
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Fundraiser, Grading Camp, Demo Day…"
+                                    value={tempEvent.type || ''}
+                                    onChange={e => setTempEvent({...tempEvent, type: e.target.value})}
+                                    className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none mt-2"
+                                    autoFocus
+                                />
+                            )}
                         </div>
 
-                        {/* Reward Section */}
+                        {/* Venue */}
+                        <div>
+                            <label className="text-xs text-gray-400 block mb-1">Venue / Address</label>
+                            <input type="text" placeholder="e.g. Main Dojo, National Arena" value={tempEvent.location || ''} onChange={e => setTempEvent({...tempEvent, location: e.target.value})} className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" />
+                        </div>
+
+                        {/* Description */}
+                        <div>
+                            <label className="text-xs text-gray-400 block mb-1">Description <span className="text-gray-600">(optional)</span></label>
+                            <textarea placeholder="Add details parents should know…" value={tempEvent.description || ''} onChange={e => setTempEvent({...tempEvent, description: e.target.value})} rows={2} className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none resize-none text-sm" />
+                        </div>
+
+                        {/* ── Filters ── */}
                         <div className="border-t border-gray-700 pt-4">
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">{t('admin.schedule.addEventModal.attendanceReward')}</p>
-                            <div className="grid grid-cols-2 gap-3 mb-3">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Audience Filters</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Access */}
                                 <div>
-                                    <label className="text-xs text-gray-400 block mb-1">{t('admin.schedule.addEventModal.honorXpReward')}</label>
-                                    <input type="number" min="0" placeholder="0" className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, xpReward: parseInt(e.target.value) || 0} as any)} />
+                                    <label className="text-xs text-gray-400 block mb-1">Access</label>
+                                    <select value={tempEvent.pricingType || 'free'} onChange={e => setTempEvent({...tempEvent, pricingType: e.target.value as 'free' | 'premium'})} className="w-full bg-gray-700 rounded-lg p-2 text-white border border-gray-600 focus:border-purple-500 outline-none text-sm">
+                                        <option value="free">🌐 Free for All</option>
+                                        <option value="premium">⭐ Premium Members Only</option>
+                                    </select>
                                 </div>
+                                {/* Belt */}
                                 <div>
-                                    <label className="text-xs text-gray-400 block mb-1">{t('admin.schedule.addEventModal.beltPointsReward')}</label>
-                                    <input type="number" min="0" placeholder="0" className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" onChange={e => setTempEvent({...tempEvent, pointsReward: parseInt(e.target.value) || 0} as any)} />
+                                    <label className="text-xs text-gray-400 block mb-1">Belt Level</label>
+                                    <select value={tempEvent.beltFilter || 'all'} onChange={e => setTempEvent({...tempEvent, beltFilter: e.target.value})} className="w-full bg-gray-700 rounded-lg p-2 text-white border border-gray-600 focus:border-purple-500 outline-none text-sm">
+                                        <option value="all">All Belts</option>
+                                        {data.belts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                    </select>
                                 </div>
+                                {/* Location */}
+                                {data.branchNames && data.branchNames.length > 0 && (
+                                    <div>
+                                        <label className="text-xs text-gray-400 block mb-1">Branch / Location</label>
+                                        <select value={tempEvent.locationFilter || 'all'} onChange={e => setTempEvent({...tempEvent, locationFilter: e.target.value})} className="w-full bg-gray-700 rounded-lg p-2 text-white border border-gray-600 focus:border-purple-500 outline-none text-sm">
+                                            <option value="all">All Locations</option>
+                                            {data.branchNames.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                                {/* Class */}
+                                {data.classes && data.classes.length > 0 && (
+                                    <div>
+                                        <label className="text-xs text-gray-400 block mb-1">Class</label>
+                                        <select value={tempEvent.classFilter || 'all'} onChange={e => setTempEvent({...tempEvent, classFilter: e.target.value})} className="w-full bg-gray-700 rounded-lg p-2 text-white border border-gray-600 focus:border-purple-500 outline-none text-sm">
+                                            <option value="all">All Classes</option>
+                                            {(tempEvent.locationFilter && tempEvent.locationFilter !== 'all' && data.locationClasses?.[tempEvent.locationFilter]
+                                                ? data.locationClasses[tempEvent.locationFilter]
+                                                : data.classes
+                                            ).map(cls => <option key={cls} value={cls}>{cls}</option>)}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        <button onClick={handleAddEvent} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-lg transition-colors">Save Event</button>
+                        {/* ── Rewards ── */}
+                        <div className="border-t border-gray-700 pt-4">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Attendance Reward <span className="text-gray-600 font-normal normal-case">(awarded when you approve)</span></p>
+                            <p className="text-xs text-gray-500 mb-3">Both are optional. Belt tests → Belt Points. Competitions → HonorXP™. You can set both.</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-gray-400 block mb-1">{t('admin.schedule.addEventModal.honorXpReward')} 🔥</label>
+                                    <input type="number" min="0" placeholder="0" value={tempEvent.xpReward || ''} onChange={e => setTempEvent({...tempEvent, xpReward: parseInt(e.target.value) || 0})} className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-400 block mb-1">{t('admin.schedule.addEventModal.beltPointsReward')} 🥋</label>
+                                    <input type="number" min="0" placeholder="0" value={tempEvent.pointsReward || ''} onChange={e => setTempEvent({...tempEvent, pointsReward: parseInt(e.target.value) || 0})} className="w-full bg-gray-700 rounded-lg p-2.5 text-white border border-gray-600 focus:border-purple-500 outline-none" />
+                                </div>
+                            </div>
+                            <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                                <input type="checkbox" checked={tempEvent.isGlobalRankImpact || false} onChange={e => setTempEvent({...tempEvent, isGlobalRankImpact: e.target.checked})} className="w-4 h-4 rounded border-gray-500 bg-gray-600 text-purple-500 focus:ring-purple-500" />
+                                <span className="text-xs text-gray-300">Count HonorXP™ toward Global Shogun Rank™</span>
+                            </label>
+                        </div>
+
+                        <button
+                            onClick={handleAddEvent}
+                            disabled={!tempEvent.title || !tempEvent.date}
+                            className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition-colors"
+                        >
+                            Save Event
+                        </button>
                     </div>
                 </Modal>
             )}

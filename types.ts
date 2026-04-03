@@ -122,10 +122,14 @@ export interface CalendarEvent {
     time: string;
     location: string;
     description: string;
-    type: 'competition' | 'test' | 'seminar' | 'social';
+    type: string; // 'competition' | 'test' | 'seminar' | 'social' | custom
     xpReward?: number;
     pointsReward?: number;
     isGlobalRankImpact?: boolean;
+    beltFilter?: string;       // 'all' or belt id
+    locationFilter?: string;   // 'all' or branch name
+    classFilter?: string;      // 'all' or class name
+    pricingType?: 'free' | 'premium'; // who can RSVP
 }
 
 export interface EventResponse {
