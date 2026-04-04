@@ -1233,27 +1233,27 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                         <div className={`h-full rounded-full transition-all duration-300 ${fillColor(pct)}`} style={{ width: `${pct}%` }} />
                     </div>
                 </div>
-                {/* Actions */}
-                <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                        onClick={() => openRoster(session)}
-                        className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white py-1.5 rounded-lg text-xs font-semibold transition-all"
-                    >
-                        <Users size={12} /> Roster
-                    </button>
-                    <button
-                        onClick={() => openAttendance(session)}
-                        className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-blue-900/50 border border-gray-700 hover:border-blue-700 text-gray-300 hover:text-blue-300 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                    >
-                        <CheckSquare size={12} /> Attend
-                    </button>
+                {/* Actions — icon-only buttons with tooltips */}
+                <div className="flex items-center justify-end gap-1 pt-1 border-t border-gray-700/60">
+                    <div className="relative group/tip">
+                        <button
+                            onClick={() => openRoster(session)}
+                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-500 text-gray-400 hover:text-white transition-all"
+                        >
+                            <Users size={14} />
+                        </button>
+                        <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-0.5 rounded bg-gray-900 border border-gray-700 text-gray-200 text-[11px] font-medium whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity z-50">Roster</span>
+                    </div>
+                    <div className="relative group/tip2">
+                        <button
+                            onClick={() => openAttendance(session)}
+                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-800 hover:bg-blue-900/50 border border-gray-700 hover:border-blue-700 text-gray-400 hover:text-blue-300 transition-all"
+                        >
+                            <CheckSquare size={14} />
+                        </button>
+                        <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-0.5 rounded bg-gray-900 border border-gray-700 text-gray-200 text-[11px] font-medium whitespace-nowrap opacity-0 group-hover/tip2:opacity-100 transition-opacity z-50">Attend</span>
+                    </div>
                 </div>
-                <button
-                    onClick={() => openAiPlan(session)}
-                    className="mt-1.5 w-full flex items-center justify-center gap-1.5 bg-purple-900/30 hover:bg-purple-900/50 border border-purple-800/50 hover:border-purple-600 text-purple-300 hover:text-purple-200 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                >
-                    <Brain size={12} /> AI Lesson Plan
-                </button>
             </div>
         );
     };
@@ -1543,87 +1543,6 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                 </div>
             )}
 
-            {/* Private Lessons */}
-            <div>
-                <SectionHeader 
-                    title={t('admin.schedule.privateLessonSlots')} 
-                    description={t('admin.schedule.createBookable')} 
-                    action={
-                        <button onClick={() => onOpenModal('private')} className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded shadow-lg">
-                            {t('admin.schedule.addPrivateSlot')}
-                        </button>
-                    }
-                />
-                {/* Desktop Table View */}
-                <div className="hidden md:block bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-                    <table className="w-full text-left text-sm text-gray-300">
-                        <thead className="bg-gray-900 text-gray-400 uppercase text-xs">
-                            <tr>
-                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.date')}</th>
-                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.time')}</th>
-                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.coach')}</th>
-                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.price')}</th>
-                                <th className="px-6 py-3">{t('admin.schedule.tableHeaders.status')}</th>
-                                <th className="px-6 py-3 text-right">{t('admin.schedule.tableHeaders.actions')}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-700">
-                            {(data.privateSlots || []).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(slot => (
-                                <tr key={slot.id} className="hover:bg-gray-700/50">
-                                    <td className="px-6 py-4 font-medium text-white">{new Date(slot.date).toLocaleDateString()}</td>
-                                    <td className="px-6 py-4">{slot.time}</td>
-                                    <td className="px-6 py-4">{slot.coachName}</td>
-                                    <td className="px-6 py-4 text-green-400 font-bold">${slot.price}</td>
-                                    <td className="px-6 py-4">
-                                        {slot.isBooked ? (
-                                            <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
-                                        ) : (
-                                            <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs">{t('common.remove')}</button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {(data.privateSlots || []).length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">{t('admin.schedule.noPrivateSlots')}</td></tr>}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Mobile Card View */}
-                <div className="md:hidden space-y-3">
-                    {(data.privateSlots || []).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(slot => (
-                        <div key={slot.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                            <div className="flex justify-between items-start mb-2">
-                                <div>
-                                    <h3 className="font-bold text-white">{new Date(slot.date).toLocaleDateString()}</h3>
-                                    <span className="text-gray-400 text-sm">{slot.time}</span>
-                                </div>
-                                {slot.isBooked ? (
-                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-bold">{t('common.booked')}</span>
-                                ) : (
-                                    <span className="bg-gray-700 text-gray-400 px-2 py-1 rounded text-xs font-bold">{t('common.available')}</span>
-                                )}
-                            </div>
-                            <div className="text-sm text-gray-400 mb-3">
-                                <span className="text-white">{slot.coachName}</span>
-                                <span className="text-green-400 font-bold ml-2">${slot.price}</span>
-                            </div>
-                            <div className="flex pt-2 border-t border-gray-700">
-                                <button onClick={() => handleRemovePrivateSlot(slot.id)} className="text-red-400 hover:text-red-300 font-bold text-xs ml-auto">
-                                    {t('common.remove')}
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                    {(data.privateSlots || []).length === 0 && (
-                        <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center text-gray-500">
-                            {t('admin.schedule.noPrivateSlots')}
-                        </div>
-                    )}
-                </div>
-            </div>
 
             {/* ─── AI Lesson Plan Panel ─── */}
             {aiPlanSession && (
