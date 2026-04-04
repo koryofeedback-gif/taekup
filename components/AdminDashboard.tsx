@@ -1204,7 +1204,7 @@ const ScheduleTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     </div>
                     <button
                         onClick={() => handleDeleteSession(session.id)}
-                        className="text-gray-700 hover:text-red-400 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-all p-0.5 rounded"
+                        className="text-gray-600 hover:text-red-400 opacity-40 sm:opacity-0 group-hover:opacity-100 flex-shrink-0 transition-all p-0.5 rounded"
                         title="Remove class"
                     >
                         <X size={14} />
@@ -4141,9 +4141,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, clubId, on
             {/* MAIN CONTENT */}
             <div className="flex-1 overflow-auto">
                 {/* Mobile Header */}
-                <div className="md:hidden bg-gray-800 p-4 flex justify-between items-center border-b border-gray-700">
-                    <h1 className="font-bold text-white">Admin Panel</h1>
-                    <button onClick={onBack} className="text-gray-400">Exit</button>
+                <div className="md:hidden bg-gray-800 border-b border-gray-700 sticky top-0 z-30">
+                    <div className="px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                {data.clubName?.charAt(0) || 'C'}
+                            </div>
+                            <h1 className="font-bold text-white text-sm truncate max-w-[160px]">{data.clubName || 'Admin Panel'}</h1>
+                        </div>
+                        <button onClick={onBack} className="text-gray-400 text-xs font-medium px-2 py-1 rounded hover:bg-gray-700 transition-colors">Exit</button>
+                    </div>
+                    {/* Scrollable tab strip */}
+                    <div className="flex overflow-x-auto scrollbar-hide border-t border-gray-700/60">
+                        {([
+                            { id: 'overview',  icon: '📊', label: t('admin.sidebar.overview') },
+                            { id: 'students',  icon: '👥', label: t('admin.sidebar.students') },
+                            { id: 'staff',     icon: '🥋', label: t('admin.sidebar.staff') },
+                            { id: 'schedule',  icon: '📅', label: t('admin.sidebar.schedule') },
+                            { id: 'creator',   icon: '🎥', label: t('admin.sidebar.creatorHub') },
+                            { id: 'settings',  icon: '⚙️', label: t('admin.sidebar.settings') },
+                            { id: 'billing',   icon: '💳', label: t('admin.sidebar.billing') },
+                        ] as { id: typeof activeTab; icon: string; label: string }[]).map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex-shrink-0 flex flex-col items-center gap-0.5 px-4 py-2.5 text-[10px] font-semibold border-b-2 transition-colors ${
+                                    activeTab === tab.id
+                                        ? 'border-cyan-500 text-cyan-400 bg-gray-700/40'
+                                        : 'border-transparent text-gray-500 hover:text-gray-300'
+                                }`}
+                            >
+                                <span className="text-base leading-none">{tab.icon}</span>
+                                <span className="whitespace-nowrap">{tab.label}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
                 
 
