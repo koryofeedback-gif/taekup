@@ -2411,14 +2411,14 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                     <button
                         key={tab.id}
                         onClick={() => setActiveContentTab(tab.id)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-4 rounded-lg text-sm font-semibold transition-all ${
                             activeContentTab === tab.id
                                 ? 'bg-gray-900 text-white shadow border border-gray-600'
                                 : 'text-gray-400 hover:text-white hover:bg-gray-700/40'
                         }`}
                     >
                         <span>{tab.icon}</span>
-                        <span>{tab.label}</span>
+                        <span className="hidden sm:inline">{tab.label}</span>
                         <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
                             activeContentTab === tab.id ? 'bg-gray-700 text-gray-300' : 'bg-gray-700/50 text-gray-500'
                         }`}>{tab.count}</span>
@@ -2434,15 +2434,15 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                     <div className="lg:col-span-3 space-y-4">
                         {/* Live content */}
                         <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-                            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-700/60">
+                            <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-gray-700/60">
                                 <h3 className="font-bold text-white text-sm">{t('admin.creatorHub.publishedContent')} <span className="text-gray-500 font-normal">({tabLive.length})</span></h3>
                             </div>
                             {tabLive.length === 0 ? (
-                                <p className="text-gray-500 italic text-sm px-5 py-6 text-center">{t('admin.creatorHub.noPublishedContent')}</p>
+                                <p className="text-gray-500 italic text-sm px-4 sm:px-5 py-6 text-center">{t('admin.creatorHub.noPublishedContent')}</p>
                             ) : (
                                 <div className="divide-y divide-gray-700/50">
                                     {tabLive.map(vid => (
-                                        <div key={vid.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-700/20 transition-colors">
+                                        <div key={vid.id} className="flex flex-col sm:flex-row sm:items-center gap-2 px-4 sm:px-5 py-3 hover:bg-gray-700/20 transition-colors">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <p className="font-semibold text-white text-sm truncate">{vid.title}</p>
@@ -2468,7 +2468,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                         {/* Drafts */}
                         {tabDraft.length > 0 && (
                             <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden opacity-80">
-                                <div className="px-5 py-3.5 border-b border-gray-700/60">
+                                <div className="px-4 sm:px-5 py-3.5 border-b border-gray-700/60">
                                     <h3 className="font-bold text-white text-sm">
                                         {t('admin.creatorHub.drafts')} <span className="text-gray-500 font-normal">({tabDraft.length})</span>
                                         {scheduledContent.length > 0 && <span className="text-sky-400 text-xs font-normal ml-2">· {scheduledContent.length} {t('admin.creatorHub.scheduledLabel')}</span>}
@@ -2476,7 +2476,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 </div>
                                 <div className="divide-y divide-gray-700/50">
                                     {tabDraft.map(vid => (
-                                        <div key={vid.id} className={`flex items-center gap-3 px-5 py-3 hover:bg-gray-700/20 transition-colors ${vid.publishAt ? 'border-l-2 border-sky-500' : ''}`}>
+                                        <div key={vid.id} className={`flex flex-col sm:flex-row sm:items-center gap-2 px-4 sm:px-5 py-3 hover:bg-gray-700/20 transition-colors ${vid.publishAt ? 'border-l-2 border-sky-500' : ''}`}>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <p className="font-semibold text-white text-sm truncate">{vid.title}</p>
@@ -2506,7 +2506,7 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
 
                     {/* Add new content form — right 2 cols */}
                     <div className="lg:col-span-2">
-                        <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 sticky top-4">
+                        <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 lg:sticky top-4">
                             <h3 className="font-bold text-white text-sm mb-1">{t('admin.creatorHub.addNewContent')}</h3>
                             <p className="text-xs text-gray-500 mb-4 leading-relaxed">
                                 {t('admin.creatorHub.contentAppearsIn')}
@@ -2666,11 +2666,11 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
             {/* ── Events tab ── */}
             {activeContentTab === 'event' && (
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
                         <p className="text-sm text-gray-400">Competitions, belt tests, seminars — parents RSVP from their Training Ops tab</p>
                         <button
                             onClick={() => onOpenModal?.('event')}
-                            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors flex items-center gap-2 text-sm whitespace-nowrap"
+                            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors flex items-center gap-2 text-sm whitespace-nowrap self-start sm:self-auto"
                         >
                             + Add Event
                         </button>
@@ -2707,38 +2707,42 @@ const CreatorHubTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wiza
                                 const d = new Date(evt.date);
                                 return (
                                     <div key={evt.id} className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors">
-                                        <div className="flex items-start gap-4">
-                                            <div className="flex-shrink-0 w-14 bg-gray-900 rounded-xl text-center py-2 border border-gray-700">
+                                        <div className="flex items-start gap-3 sm:gap-4">
+                                            <div className="flex-shrink-0 w-12 sm:w-14 bg-gray-900 rounded-xl text-center py-2 border border-gray-700">
                                                 <p className="text-gray-500 text-xs uppercase font-bold">{d.toLocaleString('default', { month: 'short' })}</p>
-                                                <p className="text-white text-xl font-bold leading-none mt-0.5">{d.getDate()}</p>
+                                                <p className="text-white text-lg sm:text-xl font-bold leading-none mt-0.5">{d.getDate()}</p>
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                    <h4 className="font-bold text-white text-base">{evt.title}</h4>
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold uppercase ${typeColor}`}>{evt.type}</span>
-                                                    {comingCount > 0 && (
-                                                        <span className="text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-0.5 rounded-full font-semibold">
-                                                            ✓ {comingCount} Coming
-                                                        </span>
-                                                    )}
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                            <h4 className="font-bold text-white text-sm sm:text-base">{evt.title}</h4>
+                                                            <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold uppercase ${typeColor}`}>{evt.type}</span>
+                                                            {comingCount > 0 && (
+                                                                <span className="text-xs bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-0.5 rounded-full font-semibold">
+                                                                    ✓ {comingCount}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-gray-400 text-xs sm:text-sm">{evt.time} · {evt.location}</p>
+                                                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                                            {evt.pricingType === 'premium' && <span className="text-xs bg-yellow-900/40 border border-yellow-800 text-yellow-300 px-2 py-0.5 rounded-full">⭐ Premium</span>}
+                                                            {evt.beltFilter && evt.beltFilter !== 'all' && <span className="text-xs bg-sky-900/40 border border-sky-800 text-sky-300 px-2 py-0.5 rounded-full">🥋 {data.belts.find(b => b.id === evt.beltFilter)?.name || evt.beltFilter}</span>}
+                                                            {evt.locationFilter && evt.locationFilter !== 'all' && <span className="text-xs bg-gray-700 border border-gray-600 text-gray-300 px-2 py-0.5 rounded-full">📍 {evt.locationFilter}</span>}
+                                                            {evt.classFilter && evt.classFilter !== 'all' && <span className="text-xs bg-gray-700 border border-gray-600 text-gray-300 px-2 py-0.5 rounded-full">🎓 {evt.classFilter}</span>}
+                                                            {(evt.xpReward || 0) > 0 && <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{evt.xpReward} HonorXP™</span>}
+                                                            {(evt.pointsReward || 0) > 0 && <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{evt.pointsReward} Belt Pts</span>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-1.5 flex-shrink-0">
+                                                        <button onClick={() => openManageEvent(evt)} className="bg-gray-700 hover:bg-purple-800 border border-gray-600 hover:border-purple-600 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1">
+                                                            <Users size={11} /> Responses
+                                                        </button>
+                                                        <button onClick={() => handleRemoveEvent(evt.id)} className="text-gray-600 hover:text-red-400 text-xs font-medium px-2.5 py-1 rounded-lg hover:bg-red-900/20 transition-colors text-right">
+                                                            Cancel
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <p className="text-gray-400 text-sm">{evt.time} · {evt.location}</p>
-                                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                                    {evt.pricingType === 'premium' && <span className="text-xs bg-yellow-900/40 border border-yellow-800 text-yellow-300 px-2 py-0.5 rounded-full">⭐ Premium</span>}
-                                                    {evt.beltFilter && evt.beltFilter !== 'all' && <span className="text-xs bg-sky-900/40 border border-sky-800 text-sky-300 px-2 py-0.5 rounded-full">🥋 {data.belts.find(b => b.id === evt.beltFilter)?.name || evt.beltFilter}</span>}
-                                                    {evt.locationFilter && evt.locationFilter !== 'all' && <span className="text-xs bg-gray-700 border border-gray-600 text-gray-300 px-2 py-0.5 rounded-full">📍 {evt.locationFilter}</span>}
-                                                    {evt.classFilter && evt.classFilter !== 'all' && <span className="text-xs bg-gray-700 border border-gray-600 text-gray-300 px-2 py-0.5 rounded-full">🎓 {evt.classFilter}</span>}
-                                                    {(evt.xpReward || 0) > 0 && <span className="text-xs bg-purple-900/40 border border-purple-800 text-purple-300 px-2 py-0.5 rounded-full">+{evt.xpReward} HonorXP™</span>}
-                                                    {(evt.pointsReward || 0) > 0 && <span className="text-xs bg-amber-900/40 border border-amber-800 text-amber-300 px-2 py-0.5 rounded-full">+{evt.pointsReward} Belt Pts</span>}
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col gap-1.5 flex-shrink-0">
-                                                <button onClick={() => openManageEvent(evt)} className="bg-gray-700 hover:bg-purple-800 border border-gray-600 hover:border-purple-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1">
-                                                    <Users size={11} /> Responses
-                                                </button>
-                                                <button onClick={() => handleRemoveEvent(evt.id)} className="text-gray-600 hover:text-red-400 text-xs font-medium px-3 py-1 rounded-lg hover:bg-red-900/20 transition-colors text-right">
-                                                    Cancel
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
