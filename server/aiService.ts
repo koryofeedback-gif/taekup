@@ -437,42 +437,68 @@ export async function generateClassPlan(params: {
   
   const martialArt = artTypeMap[params.artType || ''] || params.artType || 'Martial Arts';
   const ageGroup = params.ageGroup || 'mixed ages';
-  
-  // Create an expert system prompt based on the martial art
-  const systemPrompt = `You are a master ${martialArt} instructor with 25+ years of experience in:
-- ${martialArt} techniques, forms, and competition
-- Age-appropriate teaching methods for ${ageGroup}
-- Sport-specific conditioning and flexibility training
-- Child development and motor skill progression
-- Korean/Japanese terminology (use authentic terms with translations)
-- Safety protocols and injury prevention
 
-You create professional, detailed lesson plans that coaches can follow minute-by-minute.`;
+  const warmupTime = Math.round(params.classDuration * 0.12);
+  const phase1Time = Math.round(params.classDuration * 0.25);
+  const phase2Time = Math.round(params.classDuration * 0.30);
+  const phase3Time = Math.round(params.classDuration * 0.23);
+  const cooldownTime = params.classDuration - warmupTime - phase1Time - phase2Time - phase3Time;
+
+  const systemPrompt = `You are an elite, traditional ${martialArt} Master Instructor with 20 years of pedagogy experience. Your task is to generate highly specific, expert-level lesson plans.
+
+RULES:
+1. NO generic fitness warm-ups (like jumping jacks or arm circles). Use ${martialArt}-specific mobility drills, stance transitions, shadow work, or footwork patterns for warm-ups.
+2. Use exact traditional terminology specific to ${martialArt} (Korean for Taekwondo/Hapkido/Tang Soo Do, Japanese for Karate/Judo/Aikido/BJJ, etc.) alongside English translations.
+3. Structure the class using this exact pedagogy framework:
+   - Phase 1 — Biomechanical Breakdown (Kihon/Kibon): Chamber position, pivot mechanics, hip rotation, weight distribution, and specific muscles engaged.
+   - Phase 2 — Target Application (Mitt/Pad Work): Specific pad drills with clear instructions for the pad holder. Include a static-to-moving progression.
+   - Phase 3 — Live Scenario / Pressure Testing: Safe application against a resisting partner or controlled sparring context with clear safety rules.
+4. Sound authoritative, precise, and deeply knowledgeable. Use bolding and bullet points for clean formatting.
+5. CRITICAL: This is a ${martialArt} class. Every technique, term, form, drill, and training method MUST be specific to ${martialArt}. Never reference techniques from other martial arts.`;
 
   try {
-    const prompt = `Create a detailed ${martialArt} class plan for ${ageGroup} students:
+    const prompt = `Generate an expert ${martialArt} lesson plan with the following parameters:
 
 **Class Details:**
 - Belt Level: ${params.beltLevel}
-- Focus: ${params.focusArea}
-- Duration: ${params.classDuration} minutes
-- Class Size: ~${params.studentCount} students
+- Focus Technique / Topic: ${params.focusArea}
+- Total Duration: ${params.classDuration} minutes
+- Class Size: ~${params.studentCount} students (${ageGroup})
 
-**Required Sections (with exact timing):**
-1. **Warm-up** (${Math.round(params.classDuration * 0.15)} min) - Dynamic stretches, ${martialArt}-specific movements
-2. **Technical Drills** (${Math.round(params.classDuration * 0.35)} min) - Focus on ${params.focusArea} with progressions
-3. **Partner Work / Application** (${Math.round(params.classDuration * 0.30)} min) - Practical application drills
-4. **Conditioning** (${Math.round(params.classDuration * 0.10)} min) - ${martialArt}-specific fitness
-5. **Cool-down & Mat Chat** (${Math.round(params.classDuration * 0.10)} min) - Stretching + character development topic
+**Use this exact structure with the timing below:**
 
-**Include:**
-- Authentic ${martialArt} terminology with English translations
-- Age-appropriate modifications for ${ageGroup}
-- Specific technique names and descriptions
-- Safety reminders where relevant
-- Fun elements to keep students engaged
+### 🔥 Warm-Up (${warmupTime} min)
+Use ${martialArt}-specific drills only — NO jumping jacks or arm circles. Include stance work, shadow movements, and joint mobility relevant to today's focus.
 
-Format with clear headers, bullet points, and timing. Respond in ${params.language}.`;
+### Phase 1 — Biomechanical Breakdown (${phase1Time} min)
+Break down ${params.focusArea} step-by-step:
+- Chamber position and starting stance
+- Pivot mechanics and footwork
+- Execution: hip rotation, shoulder alignment, weight transfer
+- Specific muscles engaged (e.g., glutes, hip flexors, lats)
+- Common errors and how to correct them
+- Authentic ${martialArt} terminology with English translation
+
+### Phase 2 — Target Application / Mitt Work (${phase2Time} min)
+Pad and target drills for ${params.focusArea}:
+- How the pad holder positions themselves and reacts
+- Drill progression: static target → moving target → combination
+- Specific cues for power and accuracy
+- Coaching points for the coach to watch
+
+### Phase 3 — Live Scenario / Pressure Testing (${phase3Time} min)
+Safe, controlled application:
+- Partner drill or light sparring context
+- Safety rules and boundaries for this drill
+- How to increase resistance progressively
+- What success looks like
+
+### 🧘 Cool-Down & Mat Chat (${cooldownTime} min)
+- ${martialArt}-specific stretches targeting muscles used today
+- Brief character development topic (discipline, respect, perseverance)
+- One key takeaway from today's lesson
+
+Respond in ${params.language}. Be authoritative, precise, and deeply specific to ${martialArt}.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',

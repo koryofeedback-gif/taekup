@@ -76,17 +76,21 @@ export const generateLessonPlanGPT = async (
   language: string = 'English',
   artType?: string
 ): Promise<string> => {
-  const fallback = `**1. Warm-up (5 min):**
-Jumping jacks, high knees, arm circles
+  const artName = artType || 'Martial Arts';
+  const fallback = `**🔥 Warm-Up (5 min):**
+${artName}-specific stance transitions and shadow work — no generic exercises
 
-**2. Technical Drill (15 min):**
-${focusTopic} - Basic form practice
+**Phase 1 — Biomechanical Breakdown (15 min):**
+${focusTopic} — chamber position, pivot mechanics, hip rotation, weight distribution
 
-**3. Application / Partner Work (15 min):**
-Partner drills focusing on ${focusTopic}
+**Phase 2 — Target Application / Mitt Work (15 min):**
+Pad drills for ${focusTopic}: static target → moving target → combination
 
-**4. Mat Chat (5 min):**
-Discussion about respect and discipline`;
+**Phase 3 — Pressure Testing (10 min):**
+Controlled partner application with safety boundaries
+
+**🧘 Cool-Down & Mat Chat (5 min):**
+${artName}-specific stretching + character development topic`;
 
   try {
     const plan = await aiAPI.generateClassPlan({

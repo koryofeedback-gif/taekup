@@ -1300,14 +1300,16 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/ai/class-plan', async (req: Request, res: Response) => {
     try {
-      const { beltLevel, focusArea, classDuration, studentCount, language } = req.body;
+      const { beltLevel, focusArea, classDuration, studentCount, language, artType, ageGroup } = req.body;
       
       const plan = await generateClassPlan({
         beltLevel: beltLevel || 'All Levels',
         focusArea: focusArea || 'General Training',
         classDuration: classDuration || 60,
         studentCount: studentCount || 10,
-        language: language || 'English'
+        language: language || 'English',
+        artType: artType || 'Martial Arts',
+        ageGroup: ageGroup || 'mixed ages'
       });
       
       res.json({ plan });

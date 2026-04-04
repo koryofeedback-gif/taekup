@@ -2446,18 +2446,85 @@ async function handleTaekBot(req: VercelRequest, res: VercelResponse) {
 
 async function handleClassPlan(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { beltLevel, focusArea, classDuration, studentCount, language } = parseBody(req);
+  const { beltLevel, focusArea, classDuration, studentCount, language, artType, ageGroup } = parseBody(req);
+
+  const artTypeMap: Record<string, string> = {
+    'wt': 'World Taekwondo (WT)', 'itf': 'ITF Taekwondo', 'karate': 'Karate',
+    'bjj': 'Brazilian Jiu-Jitsu', 'judo': 'Judo', 'hapkido': 'Hapkido',
+    'tangsoodo': 'Tang Soo Do', 'aikido': 'Aikido', 'kravmaga': 'Krav Maga',
+    'kungfu': 'Kung Fu / Wushu', 'custom': 'Martial Arts'
+  };
+  const martialArt = artTypeMap[artType || ''] || artType || 'Martial Arts';
+  const ageGrp = ageGroup || 'mixed ages';
+  const dur = Number(classDuration) || 60;
+  const warmupTime = Math.round(dur * 0.12);
+  const phase1Time = Math.round(dur * 0.25);
+  const phase2Time = Math.round(dur * 0.30);
+  const phase3Time = Math.round(dur * 0.23);
+  const cooldownTime = dur - warmupTime - phase1Time - phase2Time - phase3Time;
 
   const openai = getOpenAIClient();
   if (!openai) {
-    return res.json({ plan: `## ${beltLevel || 'All Levels'} Class Plan\n\n### Warm-up (10 min)\n- Jogging and stretches\n\n### Main Training (${Math.floor((classDuration || 60) * 0.6)} min)\n- Technique drills\n\n### Cool-down (10 min)\n- Stretching` });
+    return res.json({ plan: `## ${beltLevel || 'All Levels'} ${martialArt} Class Plan\n\n### Warm-Up (${warmupTime} min)\n- ${martialArt}-specific stance drills and shadow work\n\n### Phase 1 — Biomechanical Breakdown (${phase1Time} min)\n- Technical breakdown of ${focusArea || 'focus technique'}\n\n### Phase 2 — Target Application (${phase2Time} min)\n- Mitt/pad work with progressions\n\n### Phase 3 — Pressure Testing (${phase3Time} min)\n- Controlled partner application\n\n### Cool-Down (${cooldownTime} min)\n- Stretching and mat chat` });
   }
 
-  const prompt = `Create a martial arts class plan: Belt Level: ${beltLevel || 'All Levels'}, Focus: ${focusArea || 'General'}, Duration: ${classDuration || 60} min, Students: ${studentCount || 10}. Include warm-up, technique drills, partner work, cool-down. Respond in ${language || 'English'}.`;
+  const systemPrompt = `You are an elite, traditional ${martialArt} Master Instructor with 20 years of pedagogy experience. Your task is to generate highly specific, expert-level lesson plans.
+
+RULES:
+1. NO generic fitness warm-ups (like jumping jacks or arm circles). Use ${martialArt}-specific mobility drills, stance transitions, shadow work, or footwork patterns for warm-ups.
+2. Use exact traditional terminology specific to ${martialArt} (Korean for Taekwondo/Hapkido/Tang Soo Do, Japanese for Karate/Judo/Aikido/BJJ, etc.) alongside English translations.
+3. Structure the class using this exact pedagogy framework:
+   - Phase 1 — Biomechanical Breakdown (Kihon/Kibon): Chamber position, pivot mechanics, hip rotation, weight distribution, and specific muscles engaged.
+   - Phase 2 — Target Application (Mitt/Pad Work): Specific pad drills with clear instructions for the pad holder. Include a static-to-moving progression.
+   - Phase 3 — Live Scenario / Pressure Testing: Safe application against a resisting partner or controlled sparring context with clear safety rules.
+4. Sound authoritative, precise, and deeply knowledgeable. Use bolding and bullet points for clean formatting.
+5. CRITICAL: This is a ${martialArt} class. Every technique, term, form, drill, and training method MUST be specific to ${martialArt}. Never reference techniques from other martial arts.`;
+
+  const userPrompt = `Generate an expert ${martialArt} lesson plan with the following parameters:
+
+**Class Details:**
+- Belt Level: ${beltLevel || 'All Levels'}
+- Focus Technique / Topic: ${focusArea || 'General Training'}
+- Total Duration: ${dur} minutes
+- Class Size: ~${studentCount || 10} students (${ageGrp})
+
+**Use this exact structure with the timing below:**
+
+### 🔥 Warm-Up (${warmupTime} min)
+Use ${martialArt}-specific drills only — NO jumping jacks or arm circles. Include stance work, shadow movements, and joint mobility relevant to today's focus.
+
+### Phase 1 — Biomechanical Breakdown (${phase1Time} min)
+Break down ${focusArea || 'the focus technique'} step-by-step:
+- Chamber position and starting stance
+- Pivot mechanics and footwork
+- Execution: hip rotation, shoulder alignment, weight transfer
+- Specific muscles engaged
+- Common errors and corrections
+- Authentic ${martialArt} terminology with English translation
+
+### Phase 2 — Target Application / Mitt Work (${phase2Time} min)
+Pad and target drills:
+- How the pad holder positions themselves and reacts
+- Drill progression: static target → moving target → combination
+- Specific cues for power and accuracy
+
+### Phase 3 — Live Scenario / Pressure Testing (${phase3Time} min)
+Safe, controlled application:
+- Partner drill or light sparring context
+- Safety rules and boundaries
+- Progressive resistance
+
+### 🧘 Cool-Down & Mat Chat (${cooldownTime} min)
+- ${martialArt}-specific stretches targeting muscles used today
+- Brief character development topic
+- One key takeaway from today's lesson
+
+Respond in ${language || 'English'}. Be authoritative, precise, and deeply specific to ${martialArt}.`;
+
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
-    messages: [{ role: 'system', content: 'You are an experienced martial arts instructor.' }, { role: 'user', content: prompt }],
-    max_tokens: 1000, temperature: 0.7,
+    messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+    max_tokens: 1800, temperature: 0.7,
   });
   return res.json({ plan: completion.choices[0]?.message?.content || 'Class plan generated.' });
 }
