@@ -7820,7 +7820,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 pb-20 max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-gray-800">
+        <div className="min-h-screen bg-gray-900 pb-20 w-full md:max-w-md md:mx-auto relative md:shadow-2xl overflow-hidden md:border-x md:border-gray-800">
             {/* Real-time Challenge Toast Notification */}
             <ChallengeToast 
                 challenge={newChallengeAlert ? {
@@ -7877,7 +7877,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             )}
 
             {/* Main Content */}
-            <div className="p-4 overflow-y-auto h-[calc(100vh-60px)] no-scrollbar">
+            <div className="p-4 overflow-y-auto no-scrollbar">
                 {activeTab === 'home' && renderHome()}
                 {activeTab === 'insights' && renderInsights()}
                 {activeTab === 'card' && renderAthleteCard()}
@@ -8102,7 +8102,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ student, data, onBac
             )}
 
             {/* Bottom Navigation */}
-            <div className="fixed bottom-0 w-full max-w-md bg-gray-800 border-t border-gray-700 pb-safe z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
+            <div className="fixed bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:w-full md:max-w-md md:-translate-x-1/2 bg-gray-800 border-t border-gray-700 pb-safe z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
                 <div className="flex justify-between items-center h-16 px-2 overflow-x-auto no-scrollbar">
                     <NavButton icon="🏠" label={t('parent.tabs.hq')} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
                     <NavButton icon="⚔️" label={t('parent.tabs.arena')} active={activeTab === 'rivals'} onClick={() => setActiveTab('rivals')} />
