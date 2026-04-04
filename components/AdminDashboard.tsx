@@ -1938,7 +1938,31 @@ const SettingsTab: React.FC<{ data: WizardData, onUpdateData: (d: Partial<Wizard
                     <div className="grid gap-4">
                         {data.branchNames?.map((branch, idx) => (
                             <div key={idx} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                                <label className="block text-xs text-gray-500 uppercase mb-1">{t('admin.settings.locations.location')} {idx + 1}</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs text-gray-500 uppercase">{t('admin.settings.locations.location')} {idx + 1}</label>
+                                    {data.branchNames.length > 1 && (
+                                        <button
+                                            onClick={() => {
+                                                if (!confirm(`Remove "${branch}"? Classes or content assigned to this location will lose their location filter.`)) return;
+                                                const newNames = data.branchNames.filter((_, i) => i !== idx);
+                                                const newAddrs = (data.branchAddresses || []).filter((_, i) => i !== idx);
+                                                const newLocationClasses = data.locationClasses
+                                                    ? Object.fromEntries(Object.entries(data.locationClasses).filter(([k]) => k !== branch))
+                                                    : undefined;
+                                                onUpdateData({
+                                                    branches: newNames.length,
+                                                    branchNames: newNames,
+                                                    branchAddresses: newAddrs,
+                                                    ...(newLocationClasses !== undefined ? { locationClasses: newLocationClasses } : {}),
+                                                });
+                                            }}
+                                            className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-400 hover:bg-red-900/20 px-2 py-0.5 rounded transition-colors"
+                                            title="Remove this location"
+                                        >
+                                            <X size={12} /> Remove
+                                        </button>
+                                    )}
+                                </div>
                                 <input 
                                     type="text" 
                                     value={branch}
